@@ -26,3 +26,14 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+# Test files (not needed for plugin)
+test-example.md
+test/
+
+# Development notes
+*.txt
+AUTOCOMPLETE_FEATURE.md
+
+# Package lock (keep package.json)
+package-lock.json

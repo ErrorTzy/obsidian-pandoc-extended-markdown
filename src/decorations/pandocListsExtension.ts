@@ -88,7 +88,6 @@ class ExampleReferenceWidget extends WidgetType {
     toDOM() {
         const span = document.createElement('span');
         span.className = 'pandoc-example-reference';
-        span.style.color = 'var(--text-accent)';
         span.textContent = `(${this.number})`;
         return span;
     }

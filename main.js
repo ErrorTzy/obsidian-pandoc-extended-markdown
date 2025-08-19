@@ -107,7 +107,6 @@ var ExampleReferenceWidget = class extends import_view.WidgetType {
   toDOM() {
     const span = document.createElement("span");
     span.className = "pandoc-example-reference";
-    span.style.color = "var(--text-accent)";
     span.textContent = `(${this.number})`;
     return span;
   }
@@ -686,16 +685,13 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian2.EditorSuggest 
 // src/main.ts
 var PandocListsPlugin = class extends import_obsidian3.Plugin {
   async onload() {
-    console.log("Loading Pandoc Lists plugin");
     this.registerEditorExtension(pandocListsExtension());
     this.registerMarkdownPostProcessor((element, context) => {
       processReadingMode(element, context);
     });
     this.suggester = new ExampleReferenceSuggestFixed(this);
     this.registerEditorSuggest(this.suggester);
-    console.log("Pandoc Lists plugin loaded successfully");
   }
   onunload() {
-    console.log("Unloading Pandoc Lists plugin");
   }
 };

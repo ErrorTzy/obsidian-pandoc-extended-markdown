@@ -118,7 +118,7 @@ function renderDefinitionLists(element: HTMLElement, definitionLists: Definition
         list.terms.forEach(term => {
             const dt = document.createElement('dt');
             dt.className = 'pandoc-definition-term';
-            dt.innerHTML = parseInlineMarkdown(term.text);
+            applyInlineMarkdown(dt, term.text);
             dl.appendChild(dt);
             
             const dd = document.createElement('dd');
@@ -127,7 +127,7 @@ function renderDefinitionLists(element: HTMLElement, definitionLists: Definition
             
             term.definitions.forEach(def => {
                 const li = document.createElement('li');
-                li.innerHTML = parseInlineMarkdown(def.text);
+                applyInlineMarkdown(li, def.text);
                 ul.appendChild(li);
             });
             
@@ -150,9 +150,45 @@ function renderDefinitionLists(element: HTMLElement, definitionLists: Definition
     });
 }
 
-function parseInlineMarkdown(text: string): string {
-    return text
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/`(.+?)`/g, '<code>$1</code>');
+function applyInlineMarkdown(element: HTMLElement, text: string): void {
+    // Parse the text safely without innerHTML
+    const parts = text.split(/(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g);
+    
+    parts.forEach(part => {
+        if (!part) return;
+        
+        // Check for bold (** or __)
+        if (part.startsWith('**') && part.endsWith('**')) {
+            const strong = document.createElement('strong');
+            strong.textContent = part.slice(2, -2);
+            element.appendChild(strong);
+        } else if (part.startsWith('__') && part.endsWith('__')) {
+            const strong = document.createElement('strong');
+            strong.textContent = part.slice(2, -2);
+            element.appendChild(strong);
+        }
+        // Check for italic (* or _)
+        else if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+            const em = document.createElement('em');
+            em.textContent = part.slice(1, -1);
+            element.appendChild(em);
+        } else if (part.startsWith('_') && part.endsWith('_') && !part.startsWith('__')) {
+            const em = document.createElement('em');
+            em.textContent = part.slice(1, -1);
+            element.appendChild(em);
+        }
+        // Check for code (`)
+        else if (part.startsWith('`') && part.endsWith('`')) {
+            const code = document.createElement('code');
+            code.textContent = part.slice(1, -1);
+            element.appendChild(code);
+        }
+        // Regular text
+        else if (part.match(/^(\*\*|__|\*|_|`)/)) {
+            // Skip delimiters captured by split
+            return;
+        } else {
+            element.appendChild(document.createTextNode(part));
+        }
+    });
 }

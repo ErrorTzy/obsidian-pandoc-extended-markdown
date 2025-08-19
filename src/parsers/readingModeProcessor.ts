@@ -4,24 +4,16 @@ import { parseExampleListMarker } from './exampleListParser';
 import { parseDefinitionListMarker } from './definitionListParser';
 
 export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext) {
-    // Process all text nodes to find and replace our custom list markers
-    const walker = document.createTreeWalker(
-        element,
-        NodeFilter.SHOW_TEXT,
-        null
-    );
-
-    const nodesToProcess: Text[] = [];
-    while (walker.nextNode()) {
-        nodesToProcess.push(walker.currentNode as Text);
-    }
-
-    // Build example reference map
+    // Only process paragraphs and list items, not headings or other elements
+    const elementsToProcess = element.querySelectorAll('p, li');
+    
+    // Build example reference map first
     const exampleMap = new Map<string, number>();
     let exampleCounter = 1;
     
-    nodesToProcess.forEach(node => {
-        const text = node.textContent || '';
+    // Scan all text for example markers
+    elementsToProcess.forEach(elem => {
+        const text = elem.textContent || '';
         const lines = text.split('\n');
         
         lines.forEach(line => {
@@ -37,108 +29,156 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
         });
     });
 
-    // Process each text node
-    nodesToProcess.forEach(node => {
-        const parent = node.parentNode;
-        if (!parent) return;
+    // Process each paragraph and list item
+    elementsToProcess.forEach(elem => {
+        // Skip if element is inside a heading
+        if (elem.closest('h1, h2, h3, h4, h5, h6')) {
+            return;
+        }
         
-        const text = node.textContent || '';
-        const lines = text.split('\n');
+        // Get all text nodes in this element
+        const walker = document.createTreeWalker(
+            elem,
+            NodeFilter.SHOW_TEXT,
+            null
+        );
         
-        const newElements: (HTMLElement | Text)[] = [];
+        const nodesToProcess: Text[] = [];
+        while (walker.nextNode()) {
+            nodesToProcess.push(walker.currentNode as Text);
+        }
         
-        lines.forEach((line, lineIndex) => {
-            if (lineIndex > 0) {
-                newElements.push(document.createTextNode('\n'));
-            }
+        // Process each text node
+        nodesToProcess.forEach(node => {
+            const parent = node.parentNode;
+            if (!parent) return;
             
-            // Check for fancy list markers
-            const fancyMarker = parseFancyListMarker(line);
-            if (fancyMarker) {
-                const span = document.createElement('span');
-                span.className = `pandoc-list-${fancyMarker.type}`;
-                span.textContent = fancyMarker.marker + ' ';
-                newElements.push(span);
-                
-                const rest = line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1);
-                if (rest) {
-                    newElements.push(document.createTextNode(rest));
-                }
+            // Skip if parent is a code block or similar
+            if (parent.nodeName === 'CODE' || parent.nodeName === 'PRE') {
                 return;
             }
             
-            // Check for example list markers
-            const exampleMarker = parseExampleListMarker(line);
-            if (exampleMarker) {
-                let number = 1;
-                if (exampleMarker.label && exampleMap.has(exampleMarker.label)) {
-                    number = exampleMap.get(exampleMarker.label)!;
-                }
-                
-                const span = document.createElement('span');
-                span.className = 'pandoc-example-list';
-                span.textContent = `(${number}) `;
-                newElements.push(span);
-                
-                const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
-                if (rest) {
-                    newElements.push(document.createTextNode(rest));
-                }
+            const text = node.textContent || '';
+            
+            // Only process if text contains our patterns
+            const hasCustomSyntax = 
+                text.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|#)([.)]))(\s+)/) ||
+                text.match(/^(\s*)\(@[a-zA-Z0-9_-]*\)\s+/) ||
+                text.match(/^(\s*)[~:]\s+/) ||
+                text.match(/\(@[a-zA-Z0-9_-]+\)/);
+            
+            if (!hasCustomSyntax) {
                 return;
             }
             
-            // Check for definition list markers
-            const defMarker = parseDefinitionListMarker(line);
-            if (defMarker) {
-                if (defMarker.type === 'term') {
-                    const strong = document.createElement('strong');
-                    const u = document.createElement('u');
-                    u.textContent = defMarker.content;
-                    strong.appendChild(u);
-                    newElements.push(strong);
-                } else {
+            const lines = text.split('\n');
+            const newElements: (HTMLElement | Text)[] = [];
+            
+            lines.forEach((line, lineIndex) => {
+                if (lineIndex > 0) {
+                    newElements.push(document.createTextNode('\n'));
+                }
+                
+                // Only process definition terms if they're followed by a definition
+                let isDefinitionTerm = false;
+                if (lineIndex < lines.length - 1) {
+                    const nextLine = lines[lineIndex + 1];
+                    if (nextLine && nextLine.match(/^(\s*)[~:]\s+/)) {
+                        isDefinitionTerm = true;
+                    }
+                }
+                
+                // Check for fancy list markers (but not regular numbers)
+                const fancyMarker = parseFancyListMarker(line);
+                if (fancyMarker) {
+                    const span = document.createElement('span');
+                    span.className = `pandoc-list-${fancyMarker.type}`;
+                    span.textContent = fancyMarker.marker + ' ';
+                    newElements.push(span);
+                    
+                    const rest = line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1);
+                    if (rest) {
+                        newElements.push(document.createTextNode(rest));
+                    }
+                    return;
+                }
+                
+                // Check for example list markers
+                const exampleMarker = parseExampleListMarker(line);
+                if (exampleMarker) {
+                    let number = 1;
+                    if (exampleMarker.label && exampleMap.has(exampleMarker.label)) {
+                        number = exampleMap.get(exampleMarker.label)!;
+                    }
+                    
+                    const span = document.createElement('span');
+                    span.className = 'pandoc-example-list';
+                    span.textContent = `(${number}) `;
+                    newElements.push(span);
+                    
+                    const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
+                    if (rest) {
+                        newElements.push(document.createTextNode(rest));
+                    }
+                    return;
+                }
+                
+                // Check for definition list markers
+                const defMarker = parseDefinitionListMarker(line);
+                if (defMarker && defMarker.type === 'definition') {
                     const span = document.createElement('span');
                     span.textContent = '• ';
                     newElements.push(span);
                     newElements.push(document.createTextNode(defMarker.content));
-                }
-                return;
-            }
-            
-            // Process example references
-            const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
-            let lastIndex = 0;
-            let match;
-            
-            while ((match = refRegex.exec(line)) !== null) {
-                if (match.index > lastIndex) {
-                    newElements.push(document.createTextNode(line.substring(lastIndex, match.index)));
+                    return;
+                } else if (isDefinitionTerm && line.trim() && !line.match(/^(\s*)[~:]\s+/)) {
+                    const strong = document.createElement('strong');
+                    const u = document.createElement('u');
+                    u.textContent = line;
+                    strong.appendChild(u);
+                    newElements.push(strong);
+                    return;
                 }
                 
-                const label = match[1];
-                if (exampleMap.has(label)) {
-                    const span = document.createElement('span');
-                    span.className = 'pandoc-example-reference';
-                    span.textContent = `(${exampleMap.get(label)})`;
-                    newElements.push(span);
-                } else {
-                    newElements.push(document.createTextNode(match[0]));
+                // Process example references inline
+                const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
+                let lastIndex = 0;
+                let match;
+                let hasReferences = false;
+                
+                while ((match = refRegex.exec(line)) !== null) {
+                    hasReferences = true;
+                    if (match.index > lastIndex) {
+                        newElements.push(document.createTextNode(line.substring(lastIndex, match.index)));
+                    }
+                    
+                    const label = match[1];
+                    if (exampleMap.has(label)) {
+                        const span = document.createElement('span');
+                        span.className = 'pandoc-example-reference';
+                        span.textContent = `(${exampleMap.get(label)})`;
+                        newElements.push(span);
+                    } else {
+                        newElements.push(document.createTextNode(match[0]));
+                    }
+                    
+                    lastIndex = match.index + match[0].length;
                 }
                 
-                lastIndex = match.index + match[0].length;
-            }
+                if (hasReferences && lastIndex < line.length) {
+                    newElements.push(document.createTextNode(line.substring(lastIndex)));
+                } else if (!hasReferences) {
+                    newElements.push(document.createTextNode(line));
+                }
+            });
             
-            if (lastIndex < line.length) {
-                newElements.push(document.createTextNode(line.substring(lastIndex)));
-            } else if (lastIndex === 0) {
-                newElements.push(document.createTextNode(line));
+            // Only replace if we actually created new elements
+            if (newElements.length > 0) {
+                newElements.forEach(elem => {
+                    parent.insertBefore(elem, node);
+                });
+                parent.removeChild(node);
             }
         });
-        
-        // Replace the original text node with our new elements
-        newElements.forEach(elem => {
-            parent.insertBefore(elem, node);
-        });
-        parent.removeChild(node);
     });
 }

@@ -8,8 +8,6 @@ export default class PandocListsPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
 
     async onload() {
-        console.log('Loading Pandoc Lists plugin');
-        
         // Register CodeMirror extension for live preview
         this.registerEditorExtension(pandocListsExtension());
         
@@ -21,11 +19,9 @@ export default class PandocListsPlugin extends Plugin {
         // Register example reference suggester
         this.suggester = new ExampleReferenceSuggestFixed(this);
         this.registerEditorSuggest(this.suggester);
-        
-        console.log('Pandoc Lists plugin loaded successfully');
     }
 
     onunload() {
-        console.log('Unloading Pandoc Lists plugin');
+        // Cleanup is handled automatically by Obsidian
     }
 }
