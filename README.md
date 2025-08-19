@@ -146,9 +146,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 
-- Inspired by [Pandoc's extended markdown syntax](https://pandoc.org/MANUAL.html)
-- Built for the amazing Obsidian community
-- Thanks to all contributors and testers
+- This plugin is completely built by Claude Code.
 
 ## Author
 
