@@ -163,12 +163,21 @@ npm run dev
 ```
 pandoc-lists-plugin/
 ├── src/
-│   ├── main.ts                 # Plugin entry point
-│   ├── decorations/            # CodeMirror extensions
-│   └── parsers/                # List parsing logic
-├── tests/                      # Unit tests
-├── manifest.json              # Plugin metadata
-└── README.md
+│   ├── main.ts                           # Plugin entry point
+│   ├── settings.ts                       # Settings interface and tab
+│   ├── pandocValidator.ts                # Pandoc format validation & formatting
+│   ├── decorations/
+│   │   └── pandocListsExtension.ts       # CodeMirror 6 extension for live preview
+│   ├── parsers/
+│   │   ├── fancyListParser.ts            # Parses A., B., i., ii., etc.
+│   │   ├── exampleListParser.ts          # Parses (@label) syntax
+│   │   ├── definitionListParser.ts       # Parses definition lists
+│   │   └── readingModeProcessor.ts       # Handles reading mode rendering
+│   └── ExampleReferenceSuggestFixed.ts   # Autocomplete for (@references)
+├── manifest.json                          # Plugin metadata
+├── styles.css                             # Plugin styles
+├── esbuild.config.mjs                     # Build configuration
+└── .github/workflows/release.yml         # Automated release workflow
 ```
 
 ## Contributing
