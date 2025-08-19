@@ -40,7 +40,7 @@ Terms are rendered in bold with underline, definitions as bullet points.
 3. Click Install and Enable
 
 ### Manual Installation
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/yourusername/obsidian-pandoc-lists/releases)
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ErrorTzy/obsidian-pandoc-lists/releases)
 2. Create a folder named `pandoc-lists` in your vault's `.obsidian/plugins/` directory
 3. Copy the downloaded files into the `pandoc-lists` folder
 4. Reload Obsidian
@@ -105,7 +105,7 @@ Plugin
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/obsidian-pandoc-lists
+git clone https://github.com/ErrorTzy/obsidian-pandoc-lists
 
 # Install dependencies
 npm install
@@ -138,7 +138,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## Support
 
-If you encounter any issues or have feature requests, please file them on the [GitHub Issues](https://github.com/yourusername/obsidian-pandoc-lists/issues) page.
+If you encounter any issues or have feature requests, please file them on the [GitHub Issues](https://github.com/ErrorTzy/obsidian-pandoc-lists/issues) page.
 
 ## License
 
@@ -152,4 +152,4 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Author
 
-Created by [Your Name](https://github.com/yourusername)
+Created by [Scott Tang](https://github.com/ErrorTzy)
