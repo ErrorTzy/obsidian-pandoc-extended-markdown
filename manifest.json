@@ -4,7 +4,7 @@
 	"version": "1.0.0",
 	"minAppVersion": "1.4.0",
 	"description": "Render Pandoc extended markdown lists including fancy lists with letters and roman numerals, definition lists with special formatting, and example lists with cross-references.",
-	"author": "Your Name",
-	"authorUrl": "https://github.com/yourusername",
+	"author": "ErrorTzy",
+	"authorUrl": "https://github.com/ErrorTzy",
 	"isDesktopOnly": false
 }
