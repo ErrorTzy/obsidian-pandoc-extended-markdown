@@ -1,5 +1,6 @@
 import { Extension, StateField, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
+import { editorLivePreviewField } from 'obsidian';
 
 // Widget for rendering fancy list markers
 class FancyListMarkerWidget extends WidgetType {
@@ -9,9 +10,11 @@ class FancyListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol';
-        span.style.color = 'var(--list-marker-color)';
-        span.textContent = this.marker;
+        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        const innerSpan = document.createElement('span');
+        innerSpan.className = 'list-number';
+        innerSpan.textContent = this.marker;
+        span.appendChild(innerSpan);
         return span;
     }
 
@@ -28,9 +31,11 @@ class ExampleListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol';
-        span.style.color = 'var(--list-marker-color)';
-        span.textContent = `(${this.number}) `;
+        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        const innerSpan = document.createElement('span');
+        innerSpan.className = 'list-number';
+        innerSpan.textContent = `(${this.number}) `;
+        span.appendChild(innerSpan);
         return span;
     }
 
@@ -43,6 +48,7 @@ class ExampleListMarkerWidget extends WidgetType {
 class DefinitionBulletWidget extends WidgetType {
     toDOM() {
         const span = document.createElement('span');
+        span.className = 'cm-formatting cm-formatting-list cm-list-1';
         span.textContent = '• ';
         return span;
     }
@@ -60,9 +66,11 @@ class HashListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol';
-        span.style.color = 'var(--list-marker-color)';
-        span.textContent = `${this.number}. `;
+        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        const innerSpan = document.createElement('span');
+        innerSpan.className = 'list-number';
+        innerSpan.textContent = `${this.number}. `;
+        span.appendChild(innerSpan);
         return span;
     }
 
@@ -133,9 +141,15 @@ const pandocListsPlugin = ViewPlugin.fromClass(
         buildDecorations(view: EditorView): DecorationSet {
             const builder = new RangeSetBuilder<Decoration>();
             
-            // Track cursor position to preserve source mode on cursor line
+            // Check if we're in live preview mode - if not, return empty decorations
+            const isLivePreview = view.state.field(editorLivePreviewField);
+            if (!isLivePreview) {
+                return builder.finish();
+            }
+            
+            // Track cursor position to preserve source mode only when cursor is in the marker
             const selection = view.state.selection.main;
-            const cursorLine = view.state.doc.lineAt(selection.head).number;
+            const cursorPos = selection.head;
             
             // Collect all decorations first
             const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
@@ -146,16 +160,6 @@ const pandocListsPlugin = ViewPlugin.fromClass(
             // Process entire document for consistent numbering
             for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
                 const line = view.state.doc.line(lineNum);
-                
-                // Skip if cursor is on this line (preserve source mode)
-                if (line.number === cursorLine) {
-                    // Still count hash markers even on cursor line
-                    if (line.text.match(/^(\s*)#\.\s+/)) {
-                        hashCounter++;
-                    }
-                    continue;
-                }
-                
                 const lineText = line.text;
                 
                 // Check for hash auto-numbering FIRST
@@ -165,11 +169,41 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                     const marker = hashMatch[2];
                     const space = hashMatch[3];
                     
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + marker.length + space.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+                    
+                    // Add line decoration for proper styling
                     decorations.push({
-                        from: line.from + indent.length,
-                        to: line.from + indent.length + marker.length + space.length,
-                        decoration: Decoration.replace({
-                            widget: new HashListMarkerWidget(hashCounter)
+                        from: line.from,
+                        to: line.from,
+                        decoration: Decoration.line({
+                            class: 'HyperMD-list-line HyperMD-list-line-1',
+                            attributes: {
+                                style: 'text-indent: -29px; padding-inline-start: 29px;'
+                            }
+                        })
+                    });
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new HashListMarkerWidget(hashCounter)
+                            })
+                        });
+                    }
+                    
+                    // Wrap the rest of the line
+                    decorations.push({
+                        from: line.from + indent.length + marker.length + space.length,
+                        to: line.to,
+                        decoration: Decoration.mark({
+                            class: 'cm-list-1'
                         })
                     });
                     
@@ -184,11 +218,41 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                     const marker = fancyMatch[2];
                     const markerWithSpace = marker + fancyMatch[5];
                     
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + markerWithSpace.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+                    
+                    // Add line decoration for proper styling
                     decorations.push({
-                        from: line.from + indent.length,
-                        to: line.from + indent.length + markerWithSpace.length,
-                        decoration: Decoration.replace({
-                            widget: new FancyListMarkerWidget(markerWithSpace, 'fancy')
+                        from: line.from,
+                        to: line.from,
+                        decoration: Decoration.line({
+                            class: 'HyperMD-list-line HyperMD-list-line-1',
+                            attributes: {
+                                style: `text-indent: -${markerWithSpace.length * 7}px; padding-inline-start: ${markerWithSpace.length * 7}px;`
+                            }
+                        })
+                    });
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new FancyListMarkerWidget(markerWithSpace, 'fancy')
+                            })
+                        });
+                    }
+                    
+                    // Wrap the rest of the line
+                    decorations.push({
+                        from: line.from + indent.length + markerWithSpace.length,
+                        to: line.to,
+                        decoration: Decoration.mark({
+                            class: 'cm-list-1'
                         })
                     });
                     
@@ -202,6 +266,12 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                     const fullMarker = exampleMatch[2];
                     const label = exampleMatch[3];
                     const space = exampleMatch[4];
+                    
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + fullMarker.length + space.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
                     
                     let exampleNumber = 1;
                     
@@ -219,11 +289,35 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                         exampleNumber = tempCounter;
                     }
                     
+                    // Add line decoration for proper styling
                     decorations.push({
-                        from: line.from + indent.length,
-                        to: line.from + indent.length + fullMarker.length + space.length,
-                        decoration: Decoration.replace({
-                            widget: new ExampleListMarkerWidget(exampleNumber)
+                        from: line.from,
+                        to: line.from,
+                        decoration: Decoration.line({
+                            class: 'HyperMD-list-line HyperMD-list-line-1',
+                            attributes: {
+                                style: 'text-indent: -29px; padding-inline-start: 29px;'
+                            }
+                        })
+                    });
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new ExampleListMarkerWidget(exampleNumber)
+                            })
+                        });
+                    }
+                    
+                    // Wrap the rest of the line
+                    decorations.push({
+                        from: line.from + indent.length + fullMarker.length + space.length,
+                        to: line.to,
+                        decoration: Decoration.mark({
+                            class: 'cm-list-1'
                         })
                     });
                     
@@ -237,34 +331,49 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                     const marker = defItemMatch[2];
                     const space = defItemMatch[3];
                     
-                    decorations.push({
-                        from: line.from + indent.length,
-                        to: line.from + indent.length + marker.length + space.length,
-                        decoration: Decoration.replace({
-                            widget: new DefinitionBulletWidget()
-                        })
-                    });
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + marker.length + space.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new DefinitionBulletWidget()
+                            })
+                        });
+                    }
                     continue; // Skip term check for definition lines
                 }
                 
-                // Check for definition terms - only if NOT a definition item
-                // A term is a non-empty line that is followed by a definition
+                // Check for definition terms - now with support for empty line after term
                 if (lineText.trim() && !lineText.match(/^(\s*)[~:]\s+/)) {
-                    const nextLineNum = line.number + 1;
-                    if (nextLineNum <= view.state.doc.lines) {
-                        const nextLine = view.state.doc.line(nextLineNum);
-                        const nextText = nextLine.text;
-                        // Check if next line is a definition
-                        if (nextText.match(/^(\s*)[~:]\s+/)) {
-                            // This is a definition term - apply underline
-                            decorations.push({
-                                from: line.from,
-                                to: line.to,
-                                decoration: Decoration.mark({
-                                    class: 'pandoc-definition-term'
-                                })
-                            });
+                    // Check next non-empty line (may be 1 or 2 lines away)
+                    let isDefinitionTerm = false;
+                    for (let offset = 1; offset <= 2 && line.number + offset <= view.state.doc.lines; offset++) {
+                        const checkLine = view.state.doc.line(line.number + offset);
+                        const checkText = checkLine.text;
+                        if (checkText.match(/^(\s*)[~:]\s+/)) {
+                            isDefinitionTerm = true;
+                            break;
+                        } else if (checkText.trim() && offset === 1) {
+                            // If the immediate next line is non-empty and not a definition, stop checking
+                            break;
                         }
+                    }
+                    
+                    if (isDefinitionTerm) {
+                        decorations.push({
+                            from: line.from,
+                            to: line.to,
+                            decoration: Decoration.mark({
+                                class: 'cm-strong cm-pandoc-definition-term'
+                            })
+                        });
                     }
                 }
                 
@@ -274,14 +383,23 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                 while ((match = refRegex.exec(lineText)) !== null) {
                     const label = match[1];
                     if (this.exampleLabels.has(label)) {
-                        const number = this.exampleLabels.get(label)!;
-                        decorations.push({
-                            from: line.from + match.index,
-                            to: line.from + match.index + match[0].length,
-                            decoration: Decoration.replace({
-                                widget: new ExampleReferenceWidget(number)
-                            })
-                        });
+                        const refStart = line.from + match.index;
+                        const refEnd = line.from + match.index + match[0].length;
+                        
+                        // Check if cursor is within this reference
+                        const cursorInRef = cursorPos >= refStart && cursorPos <= refEnd;
+                        
+                        // Only replace if cursor is not within the reference
+                        if (!cursorInRef) {
+                            const number = this.exampleLabels.get(label)!;
+                            decorations.push({
+                                from: refStart,
+                                to: refEnd,
+                                decoration: Decoration.replace({
+                                    widget: new ExampleReferenceWidget(number)
+                                })
+                            });
+                        }
                     }
                 }
             }
@@ -306,8 +424,7 @@ export function pandocListsExtension(): Extension {
     return [
         pandocListsPlugin,
         EditorView.baseTheme({
-            '.pandoc-definition-term': {
-                fontWeight: 'bold',
+            '.cm-pandoc-definition-term': {
                 textDecoration: 'underline'
             },
             '.pandoc-example-reference': {
@@ -316,10 +433,6 @@ export function pandocListsExtension(): Extension {
             },
             '.pandoc-example-reference:hover': {
                 textDecoration: 'underline'
-            },
-            '.cm-line:has(.cm-formatting-list)': {
-                textIndent: '-1.5em',
-                paddingLeft: '2em'
             }
         })
     ];

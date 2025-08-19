@@ -27,11 +27,12 @@ __export(main_exports, {
   default: () => PandocListsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/decorations/pandocListsExtension.ts
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
+var import_obsidian = require("obsidian");
 var FancyListMarkerWidget = class extends import_view.WidgetType {
   constructor(marker, type) {
     super();
@@ -40,9 +41,11 @@ var FancyListMarkerWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol";
-    span.style.color = "var(--list-marker-color)";
-    span.textContent = this.marker;
+    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1";
+    const innerSpan = document.createElement("span");
+    innerSpan.className = "list-number";
+    innerSpan.textContent = this.marker;
+    span.appendChild(innerSpan);
     return span;
   }
   eq(other) {
@@ -56,9 +59,11 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol";
-    span.style.color = "var(--list-marker-color)";
-    span.textContent = `(${this.number}) `;
+    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1";
+    const innerSpan = document.createElement("span");
+    innerSpan.className = "list-number";
+    innerSpan.textContent = `(${this.number}) `;
+    span.appendChild(innerSpan);
     return span;
   }
   eq(other) {
@@ -68,6 +73,7 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
 var DefinitionBulletWidget = class extends import_view.WidgetType {
   toDOM() {
     const span = document.createElement("span");
+    span.className = "cm-formatting cm-formatting-list cm-list-1";
     span.textContent = "\u2022 ";
     return span;
   }
@@ -82,9 +88,11 @@ var HashListMarkerWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol";
-    span.style.color = "var(--list-marker-color)";
-    span.textContent = `${this.number}. `;
+    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1";
+    const innerSpan = document.createElement("span");
+    innerSpan.className = "list-number";
+    innerSpan.textContent = `${this.number}. `;
+    span.appendChild(innerSpan);
     return span;
   }
   eq(other) {
@@ -142,29 +150,49 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
     }
     buildDecorations(view) {
       const builder = new import_state.RangeSetBuilder();
+      const isLivePreview = view.state.field(import_obsidian.editorLivePreviewField);
+      if (!isLivePreview) {
+        return builder.finish();
+      }
       const selection = view.state.selection.main;
-      const cursorLine = view.state.doc.lineAt(selection.head).number;
+      const cursorPos = selection.head;
       const decorations = [];
       let hashCounter = 1;
       for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
         const line = view.state.doc.line(lineNum);
-        if (line.number === cursorLine) {
-          if (line.text.match(/^(\s*)#\.\s+/)) {
-            hashCounter++;
-          }
-          continue;
-        }
         const lineText = line.text;
         const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
         if (hashMatch) {
           const indent = hashMatch[1];
           const marker = hashMatch[2];
           const space = hashMatch[3];
+          const markerStart = line.from + indent.length;
+          const markerEnd = line.from + indent.length + marker.length + space.length;
+          const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
           decorations.push({
-            from: line.from + indent.length,
-            to: line.from + indent.length + marker.length + space.length,
-            decoration: import_view.Decoration.replace({
-              widget: new HashListMarkerWidget(hashCounter)
+            from: line.from,
+            to: line.from,
+            decoration: import_view.Decoration.line({
+              class: "HyperMD-list-line HyperMD-list-line-1",
+              attributes: {
+                style: "text-indent: -29px; padding-inline-start: 29px;"
+              }
+            })
+          });
+          if (!cursorInMarker) {
+            decorations.push({
+              from: markerStart,
+              to: markerEnd,
+              decoration: import_view.Decoration.replace({
+                widget: new HashListMarkerWidget(hashCounter)
+              })
+            });
+          }
+          decorations.push({
+            from: line.from + indent.length + marker.length + space.length,
+            to: line.to,
+            decoration: import_view.Decoration.mark({
+              class: "cm-list-1"
             })
           });
           hashCounter++;
@@ -175,11 +203,33 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
           const indent = fancyMatch[1];
           const marker = fancyMatch[2];
           const markerWithSpace = marker + fancyMatch[5];
+          const markerStart = line.from + indent.length;
+          const markerEnd = line.from + indent.length + markerWithSpace.length;
+          const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
           decorations.push({
-            from: line.from + indent.length,
-            to: line.from + indent.length + markerWithSpace.length,
-            decoration: import_view.Decoration.replace({
-              widget: new FancyListMarkerWidget(markerWithSpace, "fancy")
+            from: line.from,
+            to: line.from,
+            decoration: import_view.Decoration.line({
+              class: "HyperMD-list-line HyperMD-list-line-1",
+              attributes: {
+                style: `text-indent: -${markerWithSpace.length * 7}px; padding-inline-start: ${markerWithSpace.length * 7}px;`
+              }
+            })
+          });
+          if (!cursorInMarker) {
+            decorations.push({
+              from: markerStart,
+              to: markerEnd,
+              decoration: import_view.Decoration.replace({
+                widget: new FancyListMarkerWidget(markerWithSpace, "fancy")
+              })
+            });
+          }
+          decorations.push({
+            from: line.from + indent.length + markerWithSpace.length,
+            to: line.to,
+            decoration: import_view.Decoration.mark({
+              class: "cm-list-1"
             })
           });
           continue;
@@ -190,6 +240,9 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
           const fullMarker = exampleMatch[2];
           const label = exampleMatch[3];
           const space = exampleMatch[4];
+          const markerStart = line.from + indent.length;
+          const markerEnd = line.from + indent.length + fullMarker.length + space.length;
+          const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
           let exampleNumber = 1;
           if (label && this.exampleLabels.has(label)) {
             exampleNumber = this.exampleLabels.get(label);
@@ -204,10 +257,29 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
             exampleNumber = tempCounter;
           }
           decorations.push({
-            from: line.from + indent.length,
-            to: line.from + indent.length + fullMarker.length + space.length,
-            decoration: import_view.Decoration.replace({
-              widget: new ExampleListMarkerWidget(exampleNumber)
+            from: line.from,
+            to: line.from,
+            decoration: import_view.Decoration.line({
+              class: "HyperMD-list-line HyperMD-list-line-1",
+              attributes: {
+                style: "text-indent: -29px; padding-inline-start: 29px;"
+              }
+            })
+          });
+          if (!cursorInMarker) {
+            decorations.push({
+              from: markerStart,
+              to: markerEnd,
+              decoration: import_view.Decoration.replace({
+                widget: new ExampleListMarkerWidget(exampleNumber)
+              })
+            });
+          }
+          decorations.push({
+            from: line.from + indent.length + fullMarker.length + space.length,
+            to: line.to,
+            decoration: import_view.Decoration.mark({
+              class: "cm-list-1"
             })
           });
           continue;
@@ -217,29 +289,40 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
           const indent = defItemMatch[1];
           const marker = defItemMatch[2];
           const space = defItemMatch[3];
-          decorations.push({
-            from: line.from + indent.length,
-            to: line.from + indent.length + marker.length + space.length,
-            decoration: import_view.Decoration.replace({
-              widget: new DefinitionBulletWidget()
-            })
-          });
+          const markerStart = line.from + indent.length;
+          const markerEnd = line.from + indent.length + marker.length + space.length;
+          const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+          if (!cursorInMarker) {
+            decorations.push({
+              from: markerStart,
+              to: markerEnd,
+              decoration: import_view.Decoration.replace({
+                widget: new DefinitionBulletWidget()
+              })
+            });
+          }
           continue;
         }
         if (lineText.trim() && !lineText.match(/^(\s*)[~:]\s+/)) {
-          const nextLineNum = line.number + 1;
-          if (nextLineNum <= view.state.doc.lines) {
-            const nextLine = view.state.doc.line(nextLineNum);
-            const nextText = nextLine.text;
-            if (nextText.match(/^(\s*)[~:]\s+/)) {
-              decorations.push({
-                from: line.from,
-                to: line.to,
-                decoration: import_view.Decoration.mark({
-                  class: "pandoc-definition-term"
-                })
-              });
+          let isDefinitionTerm = false;
+          for (let offset = 1; offset <= 2 && line.number + offset <= view.state.doc.lines; offset++) {
+            const checkLine = view.state.doc.line(line.number + offset);
+            const checkText = checkLine.text;
+            if (checkText.match(/^(\s*)[~:]\s+/)) {
+              isDefinitionTerm = true;
+              break;
+            } else if (checkText.trim() && offset === 1) {
+              break;
             }
+          }
+          if (isDefinitionTerm) {
+            decorations.push({
+              from: line.from,
+              to: line.to,
+              decoration: import_view.Decoration.mark({
+                class: "cm-strong cm-pandoc-definition-term"
+              })
+            });
           }
         }
         const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
@@ -247,14 +330,19 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
         while ((match = refRegex.exec(lineText)) !== null) {
           const label = match[1];
           if (this.exampleLabels.has(label)) {
-            const number = this.exampleLabels.get(label);
-            decorations.push({
-              from: line.from + match.index,
-              to: line.from + match.index + match[0].length,
-              decoration: import_view.Decoration.replace({
-                widget: new ExampleReferenceWidget(number)
-              })
-            });
+            const refStart = line.from + match.index;
+            const refEnd = line.from + match.index + match[0].length;
+            const cursorInRef = cursorPos >= refStart && cursorPos <= refEnd;
+            if (!cursorInRef) {
+              const number = this.exampleLabels.get(label);
+              decorations.push({
+                from: refStart,
+                to: refEnd,
+                decoration: import_view.Decoration.replace({
+                  widget: new ExampleReferenceWidget(number)
+                })
+              });
+            }
           }
         }
       }
@@ -273,8 +361,7 @@ function pandocListsExtension() {
   return [
     pandocListsPlugin,
     import_view.EditorView.baseTheme({
-      ".pandoc-definition-term": {
-        fontWeight: "bold",
+      ".cm-pandoc-definition-term": {
         textDecoration: "underline"
       },
       ".pandoc-example-reference": {
@@ -283,10 +370,6 @@ function pandocListsExtension() {
       },
       ".pandoc-example-reference:hover": {
         textDecoration: "underline"
-      },
-      ".cm-line:has(.cm-formatting-list)": {
-        textIndent: "-1.5em",
-        paddingLeft: "2em"
       }
     })
   ];
@@ -373,19 +456,11 @@ function parseDefinitionListMarker(line) {
 
 // src/parsers/readingModeProcessor.ts
 function processReadingMode(element, context) {
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null
-  );
-  const nodesToProcess = [];
-  while (walker.nextNode()) {
-    nodesToProcess.push(walker.currentNode);
-  }
+  const elementsToProcess = element.querySelectorAll("p, li");
   const exampleMap = /* @__PURE__ */ new Map();
   let exampleCounter = 1;
-  nodesToProcess.forEach((node) => {
-    const text = node.textContent || "";
+  elementsToProcess.forEach((elem) => {
+    const text = elem.textContent || "";
     const lines = text.split("\n");
     lines.forEach((line) => {
       const exampleInfo = parseExampleListMarker(line);
@@ -399,99 +474,225 @@ function processReadingMode(element, context) {
       }
     });
   });
-  nodesToProcess.forEach((node) => {
-    const parent = node.parentNode;
-    if (!parent) return;
-    const text = node.textContent || "";
-    const lines = text.split("\n");
-    const newElements = [];
-    lines.forEach((line, lineIndex) => {
-      if (lineIndex > 0) {
-        newElements.push(document.createTextNode("\n"));
-      }
-      const fancyMarker = parseFancyListMarker(line);
-      if (fancyMarker) {
-        const span = document.createElement("span");
-        span.className = `pandoc-list-${fancyMarker.type}`;
-        span.textContent = fancyMarker.marker + " ";
-        newElements.push(span);
-        const rest = line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1);
-        if (rest) {
-          newElements.push(document.createTextNode(rest));
-        }
+  elementsToProcess.forEach((elem) => {
+    if (elem.closest("h1, h2, h3, h4, h5, h6")) {
+      return;
+    }
+    const walker = document.createTreeWalker(
+      elem,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    const nodesToProcess = [];
+    while (walker.nextNode()) {
+      nodesToProcess.push(walker.currentNode);
+    }
+    nodesToProcess.forEach((node) => {
+      const parent = node.parentNode;
+      if (!parent) return;
+      if (parent.nodeName === "CODE" || parent.nodeName === "PRE") {
         return;
       }
-      const exampleMarker = parseExampleListMarker(line);
-      if (exampleMarker) {
-        let number = 1;
-        if (exampleMarker.label && exampleMap.has(exampleMarker.label)) {
-          number = exampleMap.get(exampleMarker.label);
-        }
-        const span = document.createElement("span");
-        span.className = "pandoc-example-list";
-        span.textContent = `(${number}) `;
-        newElements.push(span);
-        const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
-        if (rest) {
-          newElements.push(document.createTextNode(rest));
-        }
+      const text = node.textContent || "";
+      const hasCustomSyntax = text.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|#)([.)]))(\s+)/) || text.match(/^(\s*)\(@[a-zA-Z0-9_-]*\)\s+/) || text.match(/^(\s*)[~:]\s+/) || text.match(/\(@[a-zA-Z0-9_-]+\)/);
+      if (!hasCustomSyntax) {
         return;
       }
-      const defMarker = parseDefinitionListMarker(line);
-      if (defMarker) {
-        if (defMarker.type === "term") {
-          const strong = document.createElement("strong");
-          const u = document.createElement("u");
-          u.textContent = defMarker.content;
-          strong.appendChild(u);
-          newElements.push(strong);
-        } else {
+      const lines = text.split("\n");
+      const newElements = [];
+      lines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) {
+          newElements.push(document.createTextNode("\n"));
+        }
+        let isDefinitionTerm = false;
+        if (lineIndex < lines.length - 1) {
+          const nextLine = lines[lineIndex + 1];
+          if (nextLine && nextLine.match(/^(\s*)[~:]\s+/)) {
+            isDefinitionTerm = true;
+          }
+        }
+        const fancyMarker = parseFancyListMarker(line);
+        if (fancyMarker) {
+          const span = document.createElement("span");
+          span.className = `pandoc-list-${fancyMarker.type}`;
+          span.textContent = fancyMarker.marker + " ";
+          newElements.push(span);
+          const rest = line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1);
+          if (rest) {
+            newElements.push(document.createTextNode(rest));
+          }
+          return;
+        }
+        const exampleMarker = parseExampleListMarker(line);
+        if (exampleMarker) {
+          let number = 1;
+          if (exampleMarker.label && exampleMap.has(exampleMarker.label)) {
+            number = exampleMap.get(exampleMarker.label);
+          }
+          const span = document.createElement("span");
+          span.className = "pandoc-example-list";
+          span.textContent = `(${number}) `;
+          newElements.push(span);
+          const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
+          if (rest) {
+            newElements.push(document.createTextNode(rest));
+          }
+          return;
+        }
+        const defMarker = parseDefinitionListMarker(line);
+        if (defMarker && defMarker.type === "definition") {
           const span = document.createElement("span");
           span.textContent = "\u2022 ";
           newElements.push(span);
           newElements.push(document.createTextNode(defMarker.content));
+          return;
+        } else if (isDefinitionTerm && line.trim() && !line.match(/^(\s*)[~:]\s+/)) {
+          const strong = document.createElement("strong");
+          const u = document.createElement("u");
+          u.textContent = line;
+          strong.appendChild(u);
+          newElements.push(strong);
+          return;
         }
-        return;
-      }
-      const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
-      let lastIndex = 0;
-      let match;
-      while ((match = refRegex.exec(line)) !== null) {
-        if (match.index > lastIndex) {
-          newElements.push(document.createTextNode(line.substring(lastIndex, match.index)));
+        const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
+        let lastIndex = 0;
+        let match;
+        let hasReferences = false;
+        while ((match = refRegex.exec(line)) !== null) {
+          hasReferences = true;
+          if (match.index > lastIndex) {
+            newElements.push(document.createTextNode(line.substring(lastIndex, match.index)));
+          }
+          const label = match[1];
+          if (exampleMap.has(label)) {
+            const span = document.createElement("span");
+            span.className = "pandoc-example-reference";
+            span.textContent = `(${exampleMap.get(label)})`;
+            newElements.push(span);
+          } else {
+            newElements.push(document.createTextNode(match[0]));
+          }
+          lastIndex = match.index + match[0].length;
         }
-        const label = match[1];
-        if (exampleMap.has(label)) {
-          const span = document.createElement("span");
-          span.className = "pandoc-example-reference";
-          span.textContent = `(${exampleMap.get(label)})`;
-          newElements.push(span);
-        } else {
-          newElements.push(document.createTextNode(match[0]));
+        if (hasReferences && lastIndex < line.length) {
+          newElements.push(document.createTextNode(line.substring(lastIndex)));
+        } else if (!hasReferences) {
+          newElements.push(document.createTextNode(line));
         }
-        lastIndex = match.index + match[0].length;
-      }
-      if (lastIndex < line.length) {
-        newElements.push(document.createTextNode(line.substring(lastIndex)));
-      } else if (lastIndex === 0) {
-        newElements.push(document.createTextNode(line));
+      });
+      if (newElements.length > 0) {
+        newElements.forEach((elem2) => {
+          parent.insertBefore(elem2, node);
+        });
+        parent.removeChild(node);
       }
     });
-    newElements.forEach((elem) => {
-      parent.insertBefore(elem, node);
-    });
-    parent.removeChild(node);
   });
 }
 
+// src/ExampleReferenceSuggestFixed.ts
+var import_obsidian2 = require("obsidian");
+var ExampleReferenceSuggestFixed = class extends import_obsidian2.EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+  }
+  onTrigger(cursor, editor, file) {
+    const line = editor.getLine(cursor.line).substring(0, cursor.ch);
+    if (!line.contains("(@")) return null;
+    const matches = [...line.matchAll(/\(@/g)];
+    if (matches.length === 0) return null;
+    const lastMatch = matches[matches.length - 1];
+    const startIndex = lastMatch.index;
+    const afterAt = line.substring(startIndex + 2);
+    if (afterAt.contains(")")) return null;
+    const query = afterAt;
+    return {
+      start: {
+        ch: startIndex,
+        line: cursor.line
+      },
+      end: cursor,
+      query
+    };
+  }
+  getSuggestions(context) {
+    const { query } = context;
+    const doc = context.editor.getValue();
+    const lines = doc.split("\n");
+    const exampleData = /* @__PURE__ */ new Map();
+    let counter = 1;
+    for (const line of lines) {
+      const match = line.match(/^\s*\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
+      if (match) {
+        const label = match[1];
+        const text = match[2].trim();
+        if (!exampleData.has(label)) {
+          exampleData.set(label, { number: counter, text });
+        }
+        counter++;
+      } else if (line.match(/^\s*\(@\)\s+/)) {
+        counter++;
+      }
+    }
+    const suggestions = [];
+    for (const [label, data] of exampleData) {
+      if (!query || label.toLowerCase().startsWith(query.toLowerCase())) {
+        let previewText = data.text;
+        if (previewText.length > 30) {
+          previewText = previewText.substring(0, 30) + "...";
+        }
+        suggestions.push({
+          label,
+          number: data.number,
+          previewText: previewText || "(no description)"
+        });
+      }
+    }
+    suggestions.sort((a, b) => a.label.localeCompare(b.label));
+    return suggestions;
+  }
+  renderSuggestion(suggestion, el) {
+    const container = el.createDiv({ cls: "pandoc-suggestion-content" });
+    const title = container.createDiv({ cls: "pandoc-suggestion-title" });
+    title.setText(`@${suggestion.label}`);
+    const preview = container.createDiv({ cls: "pandoc-suggestion-preview" });
+    preview.setText(suggestion.previewText);
+  }
+  selectSuggestion(suggestion, evt) {
+    if (!this.context) return;
+    const { editor, start, end } = this.context;
+    const line = editor.getLine(end.line);
+    const afterCursor = line.substring(end.ch);
+    const hasClosingParen = afterCursor.startsWith(")");
+    let replacement;
+    if (hasClosingParen) {
+      replacement = `(@${suggestion.label}`;
+    } else {
+      replacement = `(@${suggestion.label})`;
+    }
+    editor.replaceRange(replacement, start, end);
+    let newCh = start.ch + replacement.length;
+    if (hasClosingParen) {
+      newCh += 1;
+    }
+    editor.setCursor({
+      line: start.line,
+      ch: newCh
+    });
+  }
+};
+
 // src/main.ts
-var PandocListsPlugin = class extends import_obsidian.Plugin {
+var PandocListsPlugin = class extends import_obsidian3.Plugin {
   async onload() {
     console.log("Loading Pandoc Lists plugin");
     this.registerEditorExtension(pandocListsExtension());
     this.registerMarkdownPostProcessor((element, context) => {
       processReadingMode(element, context);
     });
+    this.suggester = new ExampleReferenceSuggestFixed(this);
+    this.registerEditorSuggest(this.suggester);
     console.log("Pandoc Lists plugin loaded successfully");
   }
   onunload() {

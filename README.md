@@ -20,6 +20,13 @@ Later in the document, refer to (@good) and (@bad).
 ```
 The references will automatically display the correct example numbers.
 
+#### Autocomplete for Example References
+When typing `(@` in your document, an autocomplete dropdown will appear showing all available example labels. Select a label to automatically complete the reference. The dropdown displays:
+- The label name
+- A preview of the example text (truncated to 30 characters)
+
+This feature makes it easy to reference examples without remembering their exact labels.
+
 ### Definition Lists
 Create structured term-definition pairs:
 ```markdown
@@ -89,9 +96,9 @@ Plugin
 
 ## How It Works
 
-- **Live Preview Mode**: Lists are rendered with proper formatting while preserving the source when the cursor is on the line
+- **Live Preview Mode**: Lists are rendered with proper formatting. When the cursor is within a list marker, it shows the raw markdown for editing
 - **Reading Mode**: Lists are fully rendered with enhanced styling
-- **Source Mode**: Original markdown syntax is always preserved
+- **Source Mode**: Original markdown syntax is always preserved without any rendering
 
 ## Compatibility
 

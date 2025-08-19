@@ -124,3 +124,23 @@
         font-size: inherit;
     }
 }
+
+/* Example Reference Suggestions */
+.pandoc-suggestion-content {
+    padding: 6px 10px;
+}
+
+.pandoc-suggestion-title {
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-bottom: 2px;
+}
+
+.pandoc-suggestion-preview {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
