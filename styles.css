@@ -1,0 +1,126 @@
+/* Fancy Lists Styles */
+.pandoc-list-upper-alpha {
+    list-style-type: upper-alpha;
+}
+
+.pandoc-list-lower-alpha {
+    list-style-type: lower-alpha;
+}
+
+.pandoc-list-upper-roman {
+    list-style-type: upper-roman;
+}
+
+.pandoc-list-lower-roman {
+    list-style-type: lower-roman;
+}
+
+.pandoc-list-paren {
+    counter-reset: pandoc-list;
+}
+
+.pandoc-list-paren > li {
+    counter-increment: pandoc-list;
+    list-style: none;
+    position: relative;
+}
+
+.pandoc-list-paren > li::before {
+    content: counter(pandoc-list) ") ";
+    position: absolute;
+    left: -2em;
+}
+
+/* Definition Lists Styles */
+.pandoc-definition-list {
+    margin: 1em 0;
+}
+
+.pandoc-definition-term {
+    font-weight: bold;
+    text-decoration: underline;
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
+}
+
+.pandoc-definition-items {
+    margin-left: 2em;
+    margin-top: 0.25em;
+    list-style-type: disc;
+}
+
+.pandoc-definition-items li {
+    margin: 0.25em 0;
+}
+
+/* In live preview mode */
+.cm-line .pandoc-definition-term {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.cm-line .pandoc-definition-marker {
+    display: none;
+}
+
+/* Example Lists Styles */
+.pandoc-example-list {
+    counter-reset: none;
+}
+
+.pandoc-example-item {
+    list-style: none;
+    position: relative;
+}
+
+.pandoc-example-item::before {
+    content: "(" attr(data-example-number) ") ";
+    position: absolute;
+    left: -3em;
+}
+
+.pandoc-example-reference {
+    color: var(--text-accent);
+    cursor: pointer;
+}
+
+.pandoc-example-reference:hover {
+    text-decoration: underline;
+}
+
+/* Live Preview Mode Specific */
+.cm-formatting-list-ol.pandoc-list-upper-alpha::before {
+    content: attr(data-marker);
+}
+
+.cm-formatting-list-ol.pandoc-list-lower-alpha::before {
+    content: attr(data-marker);
+}
+
+.cm-formatting-list-ol.pandoc-list-upper-roman::before {
+    content: attr(data-marker);
+}
+
+.cm-formatting-list-ol.pandoc-list-lower-roman::before {
+    content: attr(data-marker);
+}
+
+.cm-formatting-list-ol.pandoc-example-list::before {
+    content: attr(data-original);
+}
+
+/* Source Mode - preserve original text */
+.is-live-preview:not(.is-readable-line-width) .cm-s-obsidian {
+    .pandoc-list-upper-alpha,
+    .pandoc-list-lower-alpha,
+    .pandoc-list-upper-roman,
+    .pandoc-list-lower-roman,
+    .pandoc-example-list,
+    .pandoc-definition-term,
+    .pandoc-definition-marker {
+        all: initial;
+        color: inherit;
+        font-family: inherit;
+        font-size: inherit;
+    }
+}

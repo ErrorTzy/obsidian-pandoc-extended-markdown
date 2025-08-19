@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# Build output (keep main.js for releases)
+*.js.map
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# npm debug logs
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
