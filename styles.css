@@ -53,6 +53,30 @@
     margin: 0.25em 0;
 }
 
+/* Definition content paragraphs - override Obsidian's indented text styling */
+.cm-pandoc-definition-paragraph {
+    /* No extra padding - indentation handled by spaces/tabs */
+    text-indent: 0 !important;
+}
+
+/* Override code block styling for definition content */
+.cm-pandoc-definition-paragraph .cm-hmd-indented-code,
+.cm-pandoc-definition-paragraph .cm-inline-code,
+.pandoc-definition-content-text {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+}
+
+/* Ensure the indent is visible for proper cursor positioning */
+.cm-pandoc-definition-paragraph .cm-indent {
+    opacity: 1;
+}
+
 /* In live preview mode */
 .cm-line .pandoc-definition-term {
     font-weight: bold;

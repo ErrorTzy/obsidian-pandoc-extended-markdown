@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => PandocListsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 
 // src/decorations/pandocListsExtension.ts
 var import_state = require("@codemirror/state");
@@ -114,7 +114,7 @@ var ExampleReferenceWidget = class extends import_view.WidgetType {
     return other.number === this.number;
   }
 };
-var pandocListsPlugin = import_view.ViewPlugin.fromClass(
+var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
   class {
     constructor(view) {
       this.exampleLabels = /* @__PURE__ */ new Map();
@@ -128,6 +128,14 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
         }
         this.decorations = this.buildDecorations(update.view);
       }
+    }
+    isListItemForValidation(line) {
+      return !!(line.match(/^(\s*)(#\.)(\s+)/) || // Hash auto-numbering
+      line.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/) || // Fancy lists
+      line.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/) || // Example lists
+      line.match(/^[~:]\s+/) || // Definition lists
+      line.match(/^(\s*)[-*+]\s+/) || // Unordered lists
+      line.match(/^(\s*)[0-9]+[.)]\s+/));
     }
     scanExampleLabels(view) {
       this.exampleLabels.clear();
@@ -153,15 +161,61 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
       if (!isLivePreview) {
         return builder.finish();
       }
+      const settings = getSettings();
+      const lines = view.state.doc.toString().split("\n");
       const selection = view.state.selection.main;
       const cursorPos = selection.head;
       const decorations = [];
       let hashCounter = 1;
+      const invalidListBlocks = /* @__PURE__ */ new Set();
+      if (settings.strictPandocMode) {
+        let listBlockStart = -1;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const isCurrentList = this.isListItemForValidation(line);
+          const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === "");
+          const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !lines[i - 1].match(/^[~:]\s+/) && !lines[i - 1].match(/^(    |\t)/) && line.match(/^[~:]\s+/);
+          if (isCurrentList && listBlockStart === -1) {
+            listBlockStart = i;
+            if (i > 0 && lines[i - 1].trim() !== "" && !prevIsDefinitionTerm) {
+              for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                invalidListBlocks.add(j);
+              }
+            }
+          } else if (!isCurrentList && listBlockStart !== -1) {
+            if (line.trim() !== "") {
+              for (let j = listBlockStart; j < i; j++) {
+                invalidListBlocks.add(j);
+              }
+            }
+            listBlockStart = -1;
+          }
+          if (isCurrentList) {
+            const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+            if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+              for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
+                invalidListBlocks.add(j);
+              }
+              for (let j = i + 1; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                invalidListBlocks.add(j);
+              }
+            }
+          }
+        }
+      }
       for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
         const line = view.state.doc.line(lineNum);
         const lineText = line.text;
+        const validationContext = {
+          lines,
+          currentLine: lineNum - 1
+          // 0-based index
+        };
         const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
         if (hashMatch) {
+          if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+            continue;
+          }
           const indent = hashMatch[1];
           const marker = hashMatch[2];
           const space = hashMatch[3];
@@ -199,6 +253,9 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
         }
         const fancyMatch = lineText.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/);
         if (fancyMatch && !lineText.match(/^(\s*)([0-9]+[.)])/)) {
+          if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+            continue;
+          }
           const indent = fancyMatch[1];
           const marker = fancyMatch[2];
           const markerWithSpace = marker + fancyMatch[5];
@@ -235,6 +292,9 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
         }
         const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
         if (exampleMatch) {
+          if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+            continue;
+          }
           const indent = exampleMatch[1];
           const fullMarker = exampleMatch[2];
           const label = exampleMatch[3];
@@ -283,13 +343,15 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
           });
           continue;
         }
-        const defItemMatch = lineText.match(/^(\s*)([~:])(\s+)/);
+        const defItemMatch = lineText.match(/^([~:])(\s+)/);
         if (defItemMatch) {
-          const indent = defItemMatch[1];
-          const marker = defItemMatch[2];
-          const space = defItemMatch[3];
-          const markerStart = line.from + indent.length;
-          const markerEnd = line.from + indent.length + marker.length + space.length;
+          if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+            continue;
+          }
+          const marker = defItemMatch[1];
+          const space = defItemMatch[2];
+          const markerStart = line.from;
+          const markerEnd = line.from + marker.length + space.length;
           const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
           if (!cursorInMarker) {
             decorations.push({
@@ -302,16 +364,57 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
           }
           continue;
         }
-        if (lineText.trim() && !lineText.match(/^(\s*)[~:]\s+/)) {
+        const indentMatch = lineText.match(/^(    |\t)(.*)$/);
+        if (indentMatch) {
+          let inDefinitionContext = false;
+          for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
+            const prevLine = view.state.doc.line(checkLine);
+            const prevText = prevLine.text;
+            if (prevText.match(/^[~:]\s+/)) {
+              inDefinitionContext = true;
+              break;
+            }
+            if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^[~:]\s+/)) {
+              break;
+            }
+          }
+          if (inDefinitionContext) {
+            const content = indentMatch[2];
+            if (content && content.trim()) {
+              decorations.push({
+                from: line.from,
+                to: line.from,
+                decoration: import_view.Decoration.line({
+                  class: "cm-pandoc-definition-paragraph",
+                  attributes: {
+                    "data-definition-content": "true"
+                  }
+                })
+              });
+              decorations.push({
+                from: line.from,
+                to: line.to,
+                decoration: import_view.Decoration.mark({
+                  class: "pandoc-definition-content-text"
+                })
+              });
+            }
+            continue;
+          }
+        }
+        if (lineText.trim() && !lineText.match(/^[~:]\s*/) && !indentMatch) {
           let isDefinitionTerm = false;
-          for (let offset = 1; offset <= 2 && line.number + offset <= view.state.doc.lines; offset++) {
-            const checkLine = view.state.doc.line(line.number + offset);
-            const checkText = checkLine.text;
-            if (checkText.match(/^(\s*)[~:]\s+/)) {
+          let checkOffset = 1;
+          if (line.number + 1 <= view.state.doc.lines) {
+            const nextLine = view.state.doc.line(line.number + 1);
+            const nextText = nextLine.text;
+            if (nextText.match(/^[~:]\s+/)) {
               isDefinitionTerm = true;
-              break;
-            } else if (checkText.trim() && offset === 1) {
-              break;
+            } else if (nextText.trim() === "" && line.number + 2 <= view.state.doc.lines) {
+              const lineAfterEmpty = view.state.doc.line(line.number + 2);
+              if (lineAfterEmpty.text.match(/^[~:]\s+/)) {
+                isDefinitionTerm = true;
+              }
             }
           }
           if (isDefinitionTerm) {
@@ -356,12 +459,36 @@ var pandocListsPlugin = import_view.ViewPlugin.fromClass(
     decorations: (v) => v.decorations
   }
 );
-function pandocListsExtension() {
+function pandocListsExtension(getSettings) {
   return [
-    pandocListsPlugin,
+    pandocListsPlugin(getSettings),
     import_view.EditorView.baseTheme({
       ".cm-pandoc-definition-term": {
         textDecoration: "underline"
+      },
+      ".cm-pandoc-definition-paragraph": {
+        // Don't add extra padding - indentation is already handled by spaces/tabs
+        textIndent: "0 !important"
+      },
+      ".cm-pandoc-definition-paragraph .cm-hmd-indented-code": {
+        background: "transparent !important",
+        border: "none !important",
+        borderRadius: "0 !important",
+        padding: "0 !important",
+        color: "inherit !important",
+        fontFamily: "inherit !important",
+        fontSize: "inherit !important"
+      },
+      ".pandoc-definition-content-text": {
+        background: "transparent !important",
+        border: "none !important",
+        padding: "0 !important",
+        color: "inherit !important",
+        fontFamily: "inherit !important"
+      },
+      ".cm-pandoc-definition-paragraph .cm-indent": {
+        // Keep indent visible for proper cursor positioning
+        opacity: "1"
       },
       ".pandoc-example-reference": {
         color: "var(--text-accent)",
@@ -453,15 +580,180 @@ function parseDefinitionListMarker(line) {
   return null;
 }
 
+// src/pandocValidator.ts
+function isStrictPandocList(context, strictMode) {
+  if (!strictMode) {
+    return true;
+  }
+  const { lines, currentLine } = context;
+  const line = lines[currentLine];
+  const isPartOfListBlock = currentLine > 0 && isListItem(lines[currentLine - 1]);
+  if (currentLine > 0 && !isPartOfListBlock) {
+    const prevLine = lines[currentLine - 1];
+    if (prevLine.trim() !== "") {
+      return false;
+    }
+  }
+  const capitalLetterMatch = line.match(/^(\s*)([A-Z])([.)])\s+/);
+  if (capitalLetterMatch && capitalLetterMatch[3] === ".") {
+    const spacesAfterMarker = line.match(/^(\s*)([A-Z]\.)(\s+)/);
+    if (spacesAfterMarker && spacesAfterMarker[3].length < 2) {
+      return false;
+    }
+  }
+  let isLastItemInList = true;
+  if (currentLine < lines.length - 1) {
+    const nextLine = lines[currentLine + 1];
+    const nextIsListItem = isListItem(nextLine);
+    if (!nextIsListItem && nextLine.trim() !== "") {
+      return false;
+    }
+    if (nextIsListItem) {
+      isLastItemInList = false;
+    }
+  }
+  return true;
+}
+function isListItem(line) {
+  const patterns = [
+    /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/,
+    // Fancy lists
+    /^(\s*)[-*+]\s+/,
+    // Unordered lists
+    /^(\s*)\(@([a-zA-Z0-9_-]*)\)\s+/,
+    // Example lists
+    /^(\s*)[~:]\s+/
+    // Definition lists
+  ];
+  return patterns.some((pattern) => pattern.test(line));
+}
+function formatToPandocStandard(content) {
+  const lines = content.split("\n");
+  const result = [];
+  let inListBlock = false;
+  let lastWasEmpty = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isCurrentLineList = isListItem(line);
+    const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
+    const isEmpty = line.trim() === "";
+    if (isCurrentLineList && !inListBlock) {
+      if (result.length > 0 && !lastWasEmpty) {
+        result.push("");
+      }
+      inListBlock = true;
+    }
+    if (!isCurrentLineList && !isEmpty && inListBlock) {
+      if (!lastWasEmpty) {
+        result.push("");
+      }
+      inListBlock = false;
+    }
+    if (isCurrentLineHeading) {
+      if (result.length > 0 && !lastWasEmpty) {
+        result.push("");
+      }
+      let formattedLine = line;
+      result.push(formattedLine);
+      if (i < lines.length - 1 && lines[i + 1].trim() !== "") {
+        result.push("");
+        lastWasEmpty = true;
+      } else {
+        lastWasEmpty = false;
+      }
+      continue;
+    }
+    const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+    if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+      const formattedLine = line.replace(/^(\s*)([A-Z]\.)(\s+)/, "$1$2  ");
+      result.push(formattedLine);
+    } else {
+      result.push(line);
+    }
+    lastWasEmpty = isEmpty;
+  }
+  const cleanedResult = [];
+  let prevWasEmpty = false;
+  for (const line of result) {
+    if (line.trim() === "") {
+      if (!prevWasEmpty) {
+        cleanedResult.push(line);
+        prevWasEmpty = true;
+      }
+    } else {
+      cleanedResult.push(line);
+      prevWasEmpty = false;
+    }
+  }
+  return cleanedResult.join("\n");
+}
+function checkPandocFormatting(content) {
+  const lines = content.split("\n");
+  const issues = [];
+  let inListBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isCurrentLineList = isListItem(line);
+    const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
+    const isEmpty = line.trim() === "";
+    if (isCurrentLineList) {
+      if (!inListBlock && i > 0 && lines[i - 1].trim() !== "") {
+        issues.push({
+          line: i + 1,
+          message: "List should have an empty line before it"
+        });
+      }
+      const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+      if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+        issues.push({
+          line: i + 1,
+          message: "Capital letter list with period requires at least 2 spaces after marker"
+        });
+      }
+      inListBlock = true;
+    } else if (!isEmpty && inListBlock) {
+      if (i > 0 && isListItem(lines[i - 1])) {
+        issues.push({
+          line: i,
+          message: "List should have an empty line after it"
+        });
+      }
+      inListBlock = false;
+    } else if (isEmpty) {
+      inListBlock = false;
+    }
+    if (isCurrentLineHeading) {
+      if (i > 0 && lines[i - 1].trim() !== "") {
+        issues.push({
+          line: i + 1,
+          message: "Heading should have an empty line before it"
+        });
+      }
+      if (i < lines.length - 1 && lines[i + 1].trim() !== "") {
+        issues.push({
+          line: i + 1,
+          message: "Heading should have an empty line after it"
+        });
+      }
+    }
+  }
+  return issues;
+}
+
 // src/parsers/readingModeProcessor.ts
-function processReadingMode(element, context) {
+function processReadingMode(element, context, settings) {
+  var _a;
   const elementsToProcess = element.querySelectorAll("p, li");
+  const section = element.closest(".markdown-preview-section");
+  const sectionInfo = section ? (_a = section.getSection) == null ? void 0 : _a.call(section) : null;
+  const fullText = (sectionInfo == null ? void 0 : sectionInfo.text) || "";
+  const lines = fullText.split("\n");
   const exampleMap = /* @__PURE__ */ new Map();
   let exampleCounter = 1;
   elementsToProcess.forEach((elem) => {
     const text = elem.textContent || "";
-    const lines = text.split("\n");
-    lines.forEach((line) => {
+    const lines2 = text.split("\n");
+    lines2.forEach((line) => {
       const exampleInfo = parseExampleListMarker(line);
       if (exampleInfo) {
         if (exampleInfo.label && !exampleMap.has(exampleInfo.label)) {
@@ -497,21 +789,40 @@ function processReadingMode(element, context) {
       if (!hasCustomSyntax) {
         return;
       }
-      const lines = text.split("\n");
+      const lines2 = text.split("\n");
       const newElements = [];
-      lines.forEach((line, lineIndex) => {
+      lines2.forEach((line, lineIndex) => {
         if (lineIndex > 0) {
           newElements.push(document.createTextNode("\n"));
         }
         let isDefinitionTerm = false;
-        if (lineIndex < lines.length - 1) {
-          const nextLine = lines[lineIndex + 1];
+        if (lineIndex < lines2.length - 1) {
+          const nextLine = lines2[lineIndex + 1];
           if (nextLine && nextLine.match(/^(\s*)[~:]\s+/)) {
             isDefinitionTerm = true;
           }
         }
         const fancyMarker = parseFancyListMarker(line);
         if (fancyMarker) {
+          if (settings.strictPandocMode && lines2.length > 0) {
+            let lineNum = -1;
+            for (let i = 0; i < lines2.length; i++) {
+              if (lines2[i].includes(line.trim())) {
+                lineNum = i;
+                break;
+              }
+            }
+            if (lineNum >= 0) {
+              const validationContext = {
+                lines: lines2,
+                currentLine: lineNum
+              };
+              if (!isStrictPandocList(validationContext, settings.strictPandocMode)) {
+                newElements.push(document.createTextNode(line));
+                return;
+              }
+            }
+          }
           const span = document.createElement("span");
           span.className = `pandoc-list-${fancyMarker.type}`;
           span.textContent = fancyMarker.marker + " ";
@@ -682,16 +993,76 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian2.EditorSuggest 
   }
 };
 
+// src/settings.ts
+var import_obsidian3 = require("obsidian");
+var DEFAULT_SETTINGS = {
+  strictPandocMode: false
+};
+var PandocListsSettingTab = class extends import_obsidian3.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  display() {
+    const { containerEl } = this;
+    containerEl.empty();
+    containerEl.createEl("h2", { text: "Pandoc lists settings" });
+    new import_obsidian3.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+      this.plugin.settings.strictPandocMode = value;
+      await this.plugin.saveSettings();
+    }));
+  }
+};
+
 // src/main.ts
-var PandocListsPlugin = class extends import_obsidian3.Plugin {
+var PandocListsPlugin = class extends import_obsidian4.Plugin {
   async onload() {
-    this.registerEditorExtension(pandocListsExtension());
+    await this.loadSettings();
+    this.addSettingTab(new PandocListsSettingTab(this.app, this));
+    this.registerEditorExtension(pandocListsExtension(() => this.settings));
     this.registerMarkdownPostProcessor((element, context) => {
-      processReadingMode(element, context);
+      processReadingMode(element, context, this.settings);
     });
     this.suggester = new ExampleReferenceSuggestFixed(this);
     this.registerEditorSuggest(this.suggester);
+    this.addCommand({
+      id: "check-pandoc-formatting",
+      name: "Check pandoc formatting",
+      editorCallback: (editor) => {
+        const content = editor.getValue();
+        const issues = checkPandocFormatting(content);
+        if (issues.length === 0) {
+          new import_obsidian4.Notice("Document follows pandoc formatting standards");
+        } else {
+          const issueList = issues.map(
+            (issue) => `Line ${issue.line}: ${issue.message}`
+          ).join("\n");
+          new import_obsidian4.Notice(`Found ${issues.length} formatting issues:
+${issueList}`, 1e4);
+        }
+      }
+    });
+    this.addCommand({
+      id: "format-to-pandoc",
+      name: "Format document to pandoc standard",
+      editorCallback: (editor) => {
+        const content = editor.getValue();
+        const formatted = formatToPandocStandard(content);
+        if (content !== formatted) {
+          editor.setValue(formatted);
+          new import_obsidian4.Notice("Document formatted to pandoc standard");
+        } else {
+          new import_obsidian4.Notice("Document already follows pandoc standard");
+        }
+      }
+    });
   }
   onunload() {
+  }
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+  async saveSettings() {
+    await this.saveData(this.settings);
   }
 };

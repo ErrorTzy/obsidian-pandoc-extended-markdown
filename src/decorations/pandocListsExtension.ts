@@ -1,6 +1,8 @@
 import { Extension, StateField, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
 import { editorLivePreviewField } from 'obsidian';
+import { PandocListsSettings } from '../settings';
+import { isStrictPandocList, isStrictPandocHeading, ValidationContext } from '../pandocValidator';
 
 // Widget for rendering fancy list markers
 class FancyListMarkerWidget extends WidgetType {
@@ -58,6 +60,7 @@ class DefinitionBulletWidget extends WidgetType {
     }
 }
 
+
 // Widget for hash auto-numbering
 class HashListMarkerWidget extends WidgetType {
     constructor(private number: number) {
@@ -98,7 +101,7 @@ class ExampleReferenceWidget extends WidgetType {
 }
 
 // Simple view plugin without state field to avoid errors
-const pandocListsPlugin = ViewPlugin.fromClass(
+const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin.fromClass(
     class {
         decorations: DecorationSet;
         exampleLabels: Map<string, number> = new Map();
@@ -115,6 +118,18 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                 }
                 this.decorations = this.buildDecorations(update.view);
             }
+        }
+
+        isListItemForValidation(line: string): boolean {
+            // Check for various list patterns
+            return !!(
+                line.match(/^(\s*)(#\.)(\s+)/) || // Hash auto-numbering
+                line.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/) || // Fancy lists
+                line.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/) || // Example lists
+                line.match(/^[~:]\s+/) || // Definition lists
+                line.match(/^(\s*)[-*+]\s+/) || // Unordered lists
+                line.match(/^(\s*)[0-9]+[.)]\s+/) // Regular numbered lists
+            );
         }
 
         scanExampleLabels(view: EditorView) {
@@ -146,6 +161,10 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                 return builder.finish();
             }
             
+            // Get settings for strict mode checking
+            const settings = getSettings();
+            const lines = view.state.doc.toString().split('\n');
+            
             // Track cursor position to preserve source mode only when cursor is in the marker
             const selection = view.state.selection.main;
             const cursorPos = selection.head;
@@ -156,14 +175,78 @@ const pandocListsPlugin = ViewPlugin.fromClass(
             // Track hash list numbering
             let hashCounter = 1;
             
+            // In strict mode, pre-validate list blocks
+            const invalidListBlocks = new Set<number>();
+            if (settings.strictPandocMode) {
+                let listBlockStart = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const isCurrentList = this.isListItemForValidation(line);
+                    const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === '');
+                    
+                    // Check if previous line is a definition term (special case)
+                    const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
+                        !lines[i - 1].match(/^[~:]\s+/) && 
+                        !lines[i - 1].match(/^(    |\t)/) &&
+                        line.match(/^[~:]\s+/);
+                    
+                    if (isCurrentList && listBlockStart === -1) {
+                        // Start of a new list block
+                        listBlockStart = i;
+                        // Check if it has proper empty line before (unless first line or after a definition term)
+                        if (i > 0 && lines[i - 1].trim() !== '' && !prevIsDefinitionTerm) {
+                            // Mark entire block as invalid
+                            for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                                invalidListBlocks.add(j);
+                            }
+                        }
+                    } else if (!isCurrentList && listBlockStart !== -1) {
+                        // End of list block
+                        // Check if there's proper empty line after (unless it's an empty line)
+                        if (line.trim() !== '') {
+                            // Mark entire previous block as invalid
+                            for (let j = listBlockStart; j < i; j++) {
+                                invalidListBlocks.add(j);
+                            }
+                        }
+                        listBlockStart = -1;
+                    }
+                    
+                    // Check for capital letter spacing issue
+                    if (isCurrentList) {
+                        const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+                        if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+                            // Mark entire block as invalid
+                            for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
+                                invalidListBlocks.add(j);
+                            }
+                            for (let j = i + 1; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                                invalidListBlocks.add(j);
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Process entire document for consistent numbering
             for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
                 const line = view.state.doc.line(lineNum);
                 const lineText = line.text;
                 
+                // Create validation context
+                const validationContext: ValidationContext = {
+                    lines: lines,
+                    currentLine: lineNum - 1 // 0-based index
+                };
+                
                 // Check for hash auto-numbering FIRST
                 const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
                 if (hashMatch) {
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
+                    
                     const indent = hashMatch[1];
                     const marker = hashMatch[2];
                     const space = hashMatch[3];
@@ -213,6 +296,11 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                 // Check for fancy list markers (A. B. i. ii. etc)
                 const fancyMatch = lineText.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/);
                 if (fancyMatch && !lineText.match(/^(\s*)([0-9]+[.)])/)) {
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
+                    
                     const indent = fancyMatch[1];
                     const marker = fancyMatch[2];
                     const markerWithSpace = marker + fancyMatch[5];
@@ -261,6 +349,11 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                 // Check for example list markers (@)
                 const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
                 if (exampleMatch) {
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
+                    
                     const indent = exampleMatch[1];
                     const fullMarker = exampleMatch[2];
                     const label = exampleMatch[3];
@@ -324,14 +417,19 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                 }
                 
                 // Check for definition items FIRST before checking terms
-                const defItemMatch = lineText.match(/^(\s*)([~:])(\s+)/);
+                // Check for definition items FIRST before checking terms
+                const defItemMatch = lineText.match(/^([~:])(\s+)/);
                 if (defItemMatch) {
-                    const indent = defItemMatch[1];
-                    const marker = defItemMatch[2];
-                    const space = defItemMatch[3];
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
                     
-                    const markerStart = line.from + indent.length;
-                    const markerEnd = line.from + indent.length + marker.length + space.length;
+                    const marker = defItemMatch[1];
+                    const space = defItemMatch[2];
+                    
+                    const markerStart = line.from;
+                    const markerEnd = line.from + marker.length + space.length;
                     
                     // Check if cursor is within the marker area
                     const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
@@ -349,19 +447,80 @@ const pandocListsPlugin = ViewPlugin.fromClass(
                     continue; // Skip term check for definition lines
                 }
                 
-                // Check for definition terms - now with support for empty line after term
-                if (lineText.trim() && !lineText.match(/^(\s*)[~:]\s+/)) {
-                    // Check next non-empty line (may be 1 or 2 lines away)
+                // Check if we're in a definition list context
+                // A line starting with 4+ spaces after a definition marker is part of the definition
+                const indentMatch = lineText.match(/^(    |\t)(.*)$/);
+                if (indentMatch) {
+                    // Check if we're after a definition marker
+                    let inDefinitionContext = false;
+                    for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
+                        const prevLine = view.state.doc.line(checkLine);
+                        const prevText = prevLine.text;
+                        
+                        // If we find a definition marker, we're in definition context
+                        if (prevText.match(/^[~:]\s+/)) {
+                            inDefinitionContext = true;
+                            break;
+                        }
+                        // If we find a non-empty, non-indented line that's not a definition
+                        if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^[~:]\s+/)) {
+                            // Could still be in context if this is a term followed by definition
+                            break;
+                        }
+                    }
+                    
+                    if (inDefinitionContext) {
+                        const content = indentMatch[2];
+                        
+                        // Only apply decorations if there's actual content after the indent
+                        // This prevents cursor issues on empty indented lines
+                        if (content && content.trim()) {
+                            // Apply line decoration to override code block styling
+                            decorations.push({
+                                from: line.from,
+                                to: line.from,
+                                decoration: Decoration.line({
+                                    class: 'cm-pandoc-definition-paragraph',
+                                    attributes: {
+                                        'data-definition-content': 'true'
+                                    }
+                                })
+                            });
+                            
+                            // Mark the entire line content to prevent code styling
+                            decorations.push({
+                                from: line.from,
+                                to: line.to,
+                                decoration: Decoration.mark({
+                                    class: 'pandoc-definition-content-text'
+                                })
+                            });
+                        }
+                        continue; // Skip further processing for this line
+                    }
+                }
+                
+                // Check for definition terms - can be directly followed by definition or have empty line
+                if (lineText.trim() && !lineText.match(/^[~:]\s*/) && !indentMatch) {
+                    // Check next line(s) for definition marker
                     let isDefinitionTerm = false;
-                    for (let offset = 1; offset <= 2 && line.number + offset <= view.state.doc.lines; offset++) {
-                        const checkLine = view.state.doc.line(line.number + offset);
-                        const checkText = checkLine.text;
-                        if (checkText.match(/^(\s*)[~:]\s+/)) {
+                    let checkOffset = 1;
+                    
+                    // First check immediate next line
+                    if (line.number + 1 <= view.state.doc.lines) {
+                        const nextLine = view.state.doc.line(line.number + 1);
+                        const nextText = nextLine.text;
+                        
+                        // Direct definition (no empty line)
+                        if (nextText.match(/^[~:]\s+/)) {
                             isDefinitionTerm = true;
-                            break;
-                        } else if (checkText.trim() && offset === 1) {
-                            // If the immediate next line is non-empty and not a definition, stop checking
-                            break;
+                        }
+                        // Empty line followed by definition
+                        else if (nextText.trim() === '' && line.number + 2 <= view.state.doc.lines) {
+                            const lineAfterEmpty = view.state.doc.line(line.number + 2);
+                            if (lineAfterEmpty.text.match(/^[~:]\s+/)) {
+                                isDefinitionTerm = true;
+                            }
                         }
                     }
                     
@@ -419,12 +578,36 @@ const pandocListsPlugin = ViewPlugin.fromClass(
     }
 );
 
-export function pandocListsExtension(): Extension {
+export function pandocListsExtension(getSettings: () => PandocListsSettings): Extension {
     return [
-        pandocListsPlugin,
+        pandocListsPlugin(getSettings),
         EditorView.baseTheme({
             '.cm-pandoc-definition-term': {
                 textDecoration: 'underline'
+            },
+            '.cm-pandoc-definition-paragraph': {
+                // Don't add extra padding - indentation is already handled by spaces/tabs
+                textIndent: '0 !important'
+            },
+            '.cm-pandoc-definition-paragraph .cm-hmd-indented-code': {
+                background: 'transparent !important',
+                border: 'none !important',
+                borderRadius: '0 !important',
+                padding: '0 !important',
+                color: 'inherit !important',
+                fontFamily: 'inherit !important',
+                fontSize: 'inherit !important'
+            },
+            '.pandoc-definition-content-text': {
+                background: 'transparent !important',
+                border: 'none !important',
+                padding: '0 !important',
+                color: 'inherit !important',
+                fontFamily: 'inherit !important'
+            },
+            '.cm-pandoc-definition-paragraph .cm-indent': {
+                // Keep indent visible for proper cursor positioning
+                opacity: '1'
             },
             '.pandoc-example-reference': {
                 color: 'var(--text-accent)',

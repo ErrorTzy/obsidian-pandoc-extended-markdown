@@ -10,6 +10,12 @@ This plugin enables Obsidian to render [Pandoc extended markdown lists](https://
 - **Roman Numerals**: `I.` `II.` `III.` or `i)` `ii)` `iii)`
 - **Hash Auto-numbering**: `#.` automatically numbers items sequentially
 
+### Strict Pandoc Mode
+- **Toggle Setting**: Enable strict Pandoc formatting requirements
+- **Validation**: Only renders lists that conform to Pandoc standards
+- **Check Command**: Scan document for formatting issues
+- **Format Command**: Auto-format document to meet Pandoc standards
+
 ### Example Lists with Cross-References
 Create numbered examples that can be referenced throughout your document:
 ```markdown
@@ -28,16 +34,25 @@ When typing `(@` in your document, an autocomplete dropdown will appear showing 
 This feature makes it easy to reference examples without remembering their exact labels.
 
 ### Definition Lists
-Create structured term-definition pairs:
+Create structured term-definition pairs with enhanced support:
 ```markdown
 Term 1
 :   Definition of term 1
+    
+    Indented paragraphs are part of the definition
+    and won't be styled as code blocks
 
 Term 2
+
 ~   Alternative definition syntax
 ~   Can have multiple definitions
+
+Direct Term
+: Definition can directly follow term (no empty line needed)
 ```
-Terms are rendered in bold with underline, definitions as bullet points.
+- Terms are rendered in bold with underline
+- Definitions appear as bullet points
+- Indented paragraphs maintain proper text styling
 
 ## Installation
 
@@ -99,6 +114,23 @@ Plugin
 - **Live Preview Mode**: Lists are rendered with proper formatting. When the cursor is within a list marker, it shows the raw markdown for editing
 - **Reading Mode**: Lists are fully rendered with enhanced styling
 - **Source Mode**: Original markdown syntax is always preserved without any rendering
+- **Strict Mode**: When enabled, only lists conforming to Pandoc standards are rendered
+
+## Settings
+
+The plugin provides a settings tab where you can configure:
+
+- **Strict Pandoc Mode**: Toggle to enforce Pandoc formatting standards
+  - When enabled, lists must have proper empty lines before/after blocks
+  - Capital letters with periods require double spacing
+  - Invalid lists are displayed as plain text
+
+## Commands
+
+The plugin adds two commands to the command palette:
+
+- **Check pandoc formatting**: Scans the current document and reports any formatting issues
+- **Format document to pandoc standard**: Automatically formats lists to conform to Pandoc standards
 
 ## Compatibility
 

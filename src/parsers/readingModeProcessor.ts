@@ -2,10 +2,18 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 import { parseFancyListMarker } from './fancyListParser';
 import { parseExampleListMarker } from './exampleListParser';
 import { parseDefinitionListMarker } from './definitionListParser';
+import { PandocListsSettings } from '../settings';
+import { isStrictPandocList, ValidationContext } from '../pandocValidator';
 
-export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext) {
+export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext, settings: PandocListsSettings) {
     // Only process paragraphs and list items, not headings or other elements
     const elementsToProcess = element.querySelectorAll('p, li');
+    
+    // Get section info for strict mode validation
+    const section = element.closest('.markdown-preview-section');
+    const sectionInfo = section ? (section as any).getSection?.() : null;
+    const fullText = sectionInfo?.text || '';
+    const lines = fullText.split('\n');
     
     // Build example reference map first
     const exampleMap = new Map<string, number>();
@@ -91,6 +99,31 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                 // Check for fancy list markers (but not regular numbers)
                 const fancyMarker = parseFancyListMarker(line);
                 if (fancyMarker) {
+                    // In strict mode, validate the list formatting
+                    if (settings.strictPandocMode && lines.length > 0) {
+                        // Try to find the line number in the original text
+                        let lineNum = -1;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i].includes(line.trim())) {
+                                lineNum = i;
+                                break;
+                            }
+                        }
+                        
+                        if (lineNum >= 0) {
+                            const validationContext: ValidationContext = {
+                                lines: lines,
+                                currentLine: lineNum
+                            };
+                            
+                            if (!isStrictPandocList(validationContext, settings.strictPandocMode)) {
+                                // Don't render as fancy list in strict mode if invalid
+                                newElements.push(document.createTextNode(line));
+                                return;
+                            }
+                        }
+                    }
+                    
                     const span = document.createElement('span');
                     span.className = `pandoc-list-${fancyMarker.type}`;
                     span.textContent = fancyMarker.marker + ' ';

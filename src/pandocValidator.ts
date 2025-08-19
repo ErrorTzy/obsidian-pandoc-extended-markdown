@@ -1,0 +1,250 @@
+export interface ValidationContext {
+    lines: string[];
+    currentLine: number;
+}
+
+export function isStrictPandocList(context: ValidationContext, strictMode: boolean): boolean {
+    if (!strictMode) {
+        return true;
+    }
+
+    const { lines, currentLine } = context;
+    const line = lines[currentLine];
+    
+    // Check if previous line is also a list item (part of same list block)
+    const isPartOfListBlock = currentLine > 0 && isListItem(lines[currentLine - 1]);
+    
+    // Check for empty line before list (unless it's the first line or part of a list block)
+    if (currentLine > 0 && !isPartOfListBlock) {
+        const prevLine = lines[currentLine - 1];
+        if (prevLine.trim() !== '') {
+            return false;
+        }
+    }
+    
+    // Check for capital letter lists requiring double space
+    const capitalLetterMatch = line.match(/^(\s*)([A-Z])([.)])\s+/);
+    if (capitalLetterMatch && capitalLetterMatch[3] === '.') {
+        // Capital letter with period requires at least 2 spaces
+        const spacesAfterMarker = line.match(/^(\s*)([A-Z]\.)(\s+)/);
+        if (spacesAfterMarker && spacesAfterMarker[3].length < 2) {
+            return false;
+        }
+    }
+    
+    // Check if this is part of a list block and verify empty line after
+    let isLastItemInList = true;
+    if (currentLine < lines.length - 1) {
+        const nextLine = lines[currentLine + 1];
+        // Check if next line is also a list item
+        const nextIsListItem = isListItem(nextLine);
+        
+        if (!nextIsListItem && nextLine.trim() !== '') {
+            // Next line is not a list item and not empty - invalid in strict mode
+            return false;
+        }
+        
+        if (nextIsListItem) {
+            isLastItemInList = false;
+        }
+    }
+    
+    return true;
+}
+
+export function isListItem(line: string): boolean {
+    // Check for various list patterns
+    const patterns = [
+        /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/, // Fancy lists
+        /^(\s*)[-*+]\s+/, // Unordered lists
+        /^(\s*)\(@([a-zA-Z0-9_-]*)\)\s+/, // Example lists
+        /^(\s*)[~:]\s+/ // Definition lists
+    ];
+    
+    return patterns.some(pattern => pattern.test(line));
+}
+
+export function isStrictPandocHeading(context: ValidationContext, strictMode: boolean): boolean {
+    if (!strictMode) {
+        return true;
+    }
+    
+    const { lines, currentLine } = context;
+    const line = lines[currentLine];
+    
+    if (!line.match(/^#{1,6}\s+/)) {
+        return true; // Not a heading
+    }
+    
+    // Check for empty line before heading (unless it's the first line)
+    if (currentLine > 0) {
+        const prevLine = lines[currentLine - 1];
+        if (prevLine.trim() !== '') {
+            return false;
+        }
+    }
+    
+    // Check for empty line after heading (unless it's the last line)
+    if (currentLine < lines.length - 1) {
+        const nextLine = lines[currentLine + 1];
+        if (nextLine.trim() !== '') {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+export function formatToPandocStandard(content: string): string {
+    const lines = content.split('\n');
+    const result: string[] = [];
+    let inListBlock = false;
+    let lastWasEmpty = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const isCurrentLineList = isListItem(line);
+        const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
+        const isEmpty = line.trim() === '';
+        
+        // Handle transition into list block
+        if (isCurrentLineList && !inListBlock) {
+            // Add empty line before list if needed
+            if (result.length > 0 && !lastWasEmpty) {
+                result.push('');
+            }
+            inListBlock = true;
+        }
+        
+        // Handle transition out of list block
+        if (!isCurrentLineList && !isEmpty && inListBlock) {
+            // Add empty line after list if needed
+            if (!lastWasEmpty) {
+                result.push('');
+            }
+            inListBlock = false;
+        }
+        
+        // Handle headings
+        if (isCurrentLineHeading) {
+            // Add empty line before heading if needed
+            if (result.length > 0 && !lastWasEmpty) {
+                result.push('');
+            }
+            
+            // Process the heading line
+            let formattedLine = line;
+            result.push(formattedLine);
+            
+            // Add empty line after heading if next line exists and is not empty
+            if (i < lines.length - 1 && lines[i + 1].trim() !== '') {
+                result.push('');
+                lastWasEmpty = true;
+            } else {
+                lastWasEmpty = false;
+            }
+            continue;
+        }
+        
+        // Handle capital letter lists with period - ensure double space
+        const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+        if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+            // Add double space after capital letter with period
+            const formattedLine = line.replace(/^(\s*)([A-Z]\.)(\s+)/, '$1$2  ');
+            result.push(formattedLine);
+        } else {
+            result.push(line);
+        }
+        
+        lastWasEmpty = isEmpty;
+    }
+    
+    // Clean up any multiple consecutive empty lines
+    const cleanedResult: string[] = [];
+    let prevWasEmpty = false;
+    for (const line of result) {
+        if (line.trim() === '') {
+            if (!prevWasEmpty) {
+                cleanedResult.push(line);
+                prevWasEmpty = true;
+            }
+        } else {
+            cleanedResult.push(line);
+            prevWasEmpty = false;
+        }
+    }
+    
+    return cleanedResult.join('\n');
+}
+
+export interface LintingIssue {
+    line: number;
+    message: string;
+}
+
+export function checkPandocFormatting(content: string): LintingIssue[] {
+    const lines = content.split('\n');
+    const issues: LintingIssue[] = [];
+    let inListBlock = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const isCurrentLineList = isListItem(line);
+        const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
+        const isEmpty = line.trim() === '';
+        
+        // Check list formatting
+        if (isCurrentLineList) {
+            // Check for empty line before list
+            if (!inListBlock && i > 0 && lines[i - 1].trim() !== '') {
+                issues.push({
+                    line: i + 1,
+                    message: 'List should have an empty line before it'
+                });
+            }
+            
+            // Check capital letter lists with period
+            const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+            if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+                issues.push({
+                    line: i + 1,
+                    message: 'Capital letter list with period requires at least 2 spaces after marker'
+                });
+            }
+            
+            inListBlock = true;
+        } else if (!isEmpty && inListBlock) {
+            // Non-empty, non-list line after list
+            if (i > 0 && isListItem(lines[i - 1])) {
+                issues.push({
+                    line: i,
+                    message: 'List should have an empty line after it'
+                });
+            }
+            inListBlock = false;
+        } else if (isEmpty) {
+            inListBlock = false;
+        }
+        
+        // Check heading formatting
+        if (isCurrentLineHeading) {
+            // Check for empty line before heading
+            if (i > 0 && lines[i - 1].trim() !== '') {
+                issues.push({
+                    line: i + 1,
+                    message: 'Heading should have an empty line before it'
+                });
+            }
+            
+            // Check for empty line after heading
+            if (i < lines.length - 1 && lines[i + 1].trim() !== '') {
+                issues.push({
+                    line: i + 1,
+                    message: 'Heading should have an empty line after it'
+                });
+            }
+        }
+    }
+    
+    return issues;
+}
