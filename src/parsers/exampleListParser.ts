@@ -1,4 +1,5 @@
 import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
+import { getSectionInfo } from '../types/obsidian-extended';
 
 export interface ExampleListInfo {
     indent: string;
@@ -25,13 +26,22 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
     const exampleContent = new Map<string, string>();
     let exampleCounter = 1;
     
-    const section = element.closest('.markdown-preview-section');
+    const section = element.closest('.markdown-preview-section') as HTMLElement;
     if (!section) return;
     
-    const sectionInfo = (section as any).getSection?.();
-    if (!sectionInfo) return;
+    // Try to get section info with fallback
+    const sectionInfo = getSectionInfo(section);
+    let lines: string[] = [];
     
-    const lines = sectionInfo.text.split('\n');
+    if (sectionInfo?.text) {
+        lines = sectionInfo.text.split('\n');
+    } else {
+        // Fallback: extract text from the element
+        const fullText = element.textContent || '';
+        lines = fullText.split('\n');
+    }
+    
+    if (lines.length === 0) return;
     
     lines.forEach((line, index) => {
         const exampleInfo = parseExampleListMarker(line);
@@ -62,13 +72,22 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
     const items = list.querySelectorAll('li');
     if (items.length === 0) return;
     
-    const section = list.closest('.markdown-preview-section');
+    const section = list.closest('.markdown-preview-section') as HTMLElement;
     if (!section) return;
     
-    const sectionInfo = (section as any).getSection?.();
-    if (!sectionInfo) return;
+    // Try to get section info with fallback
+    const sectionInfo = getSectionInfo(section);
+    let lines: string[] = [];
     
-    const lines = sectionInfo.text.split('\n');
+    if (sectionInfo?.text) {
+        lines = sectionInfo.text.split('\n');
+    } else {
+        // Fallback: extract text from the list element
+        const fullText = list.textContent || '';
+        lines = fullText.split('\n');
+    }
+    
+    if (lines.length === 0) return;
     
     let hasExampleMarker = false;
     let listStartNumber: number | null = null;

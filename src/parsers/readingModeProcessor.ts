@@ -4,16 +4,26 @@ import { parseExampleListMarker } from './exampleListParser';
 import { parseDefinitionListMarker } from './definitionListParser';
 import { PandocListsSettings } from '../settings';
 import { isStrictPandocList, ValidationContext } from '../pandocValidator';
+import { getSectionInfo } from '../types/obsidian-extended';
 
 export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext, settings: PandocListsSettings) {
     // Only process paragraphs and list items, not headings or other elements
     const elementsToProcess = element.querySelectorAll('p, li');
     
-    // Get section info for strict mode validation
-    const section = element.closest('.markdown-preview-section');
-    const sectionInfo = section ? (section as any).getSection?.() : null;
-    const fullText = sectionInfo?.text || '';
-    const lines = fullText.split('\n');
+    // Get section info for strict mode validation with fallback
+    const section = element.closest('.markdown-preview-section') as HTMLElement;
+    const sectionInfo = getSectionInfo(section);
+    let fullText = '';
+    let lines: string[] = [];
+    
+    if (sectionInfo?.text) {
+        fullText = sectionInfo.text;
+        lines = fullText.split('\n');
+    } else {
+        // Fallback: extract text from the element itself
+        fullText = element.textContent || '';
+        lines = fullText.split('\n');
+    }
     
     // Build example reference map first
     const exampleMap = new Map<string, number>();

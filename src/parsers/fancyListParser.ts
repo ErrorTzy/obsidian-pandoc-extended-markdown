@@ -1,4 +1,5 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
+import { getSectionInfo } from '../types/obsidian-extended';
 
 export type FancyListType = 'upper-alpha' | 'lower-alpha' | 'upper-roman' | 'lower-roman' | 'decimal' | 'hash';
 
@@ -106,10 +107,10 @@ function processFancyOrderedList(list: HTMLOListElement) {
     
     if (!sourcePos) return;
     
-    const section = list.closest('.markdown-preview-section');
+    const section = list.closest('.markdown-preview-section') as HTMLElement;
     if (!section) return;
     
-    const sectionInfo = (section as any).getSection?.();
+    const sectionInfo = getSectionInfo(section);
     if (!sectionInfo) return;
     
     const lines = sectionInfo.text.split('\n');

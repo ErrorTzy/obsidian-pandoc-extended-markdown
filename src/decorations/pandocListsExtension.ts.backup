@@ -15,7 +15,8 @@ class FancyListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker';
+        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        span.style.cursor = 'text';
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = this.marker;
@@ -60,7 +61,8 @@ class ExampleListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker';
+        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        span.style.cursor = 'text';
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `(${this.number}) `;
@@ -105,7 +107,8 @@ class DefinitionBulletWidget extends WidgetType {
     
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker';
+        span.className = 'cm-formatting cm-formatting-list cm-list-1';
+        span.style.cursor = 'text';
         span.textContent = '• ';
         
         // Handle click events to place cursor
@@ -148,7 +151,8 @@ class HashListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker';
+        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        span.style.cursor = 'text';
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `${this.number}. `;
@@ -268,250 +272,6 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
             }
         }
 
-        validateListBlocks(lines: string[], settings: PandocListsSettings): Set<number> {
-            const invalidListBlocks = new Set<number>();
-            if (!settings.strictPandocMode) {
-                return invalidListBlocks;
-            }
-
-            let listBlockStart = -1;
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const isCurrentList = this.isListItemForValidation(line);
-                const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === '');
-                
-                // Check if previous line is a definition term (special case)
-                const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
-                    !lines[i - 1].match(/^[~:]\s+/) && 
-                    !lines[i - 1].match(/^(    |\t)/) &&
-                    line.match(/^[~:]\s+/);
-                
-                if (isCurrentList && listBlockStart === -1) {
-                    // Start of a new list block
-                    listBlockStart = i;
-                    // Check if it has proper empty line before (unless first line or after a definition term)
-                    if (i > 0 && lines[i - 1].trim() !== '' && !prevIsDefinitionTerm) {
-                        // Mark entire block as invalid
-                        for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
-                            invalidListBlocks.add(j);
-                        }
-                    }
-                } else if (!isCurrentList && listBlockStart !== -1) {
-                    // End of list block
-                    // Check if there's proper empty line after (unless it's an empty line)
-                    if (line.trim() !== '') {
-                        // Mark entire previous block as invalid
-                        for (let j = listBlockStart; j < i; j++) {
-                            invalidListBlocks.add(j);
-                        }
-                    }
-                    listBlockStart = -1;
-                }
-                
-                // Check for capital letter spacing issue
-                if (isCurrentList) {
-                    const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
-                    if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
-                        // Mark entire block as invalid
-                        for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
-                            invalidListBlocks.add(j);
-                        }
-                        for (let j = i + 1; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
-                            invalidListBlocks.add(j);
-                        }
-                    }
-                }
-            }
-            return invalidListBlocks;
-        }
-
-        processHashList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocListsSettings, hashCounter: { value: number }): Array<{from: number, to: number, decoration: Decoration}> | null {
-            const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-            const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
-            
-            if (!hashMatch) return null;
-            
-            // Check if this list item is in an invalid block
-            if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                return null;
-            }
-            
-            const indent = hashMatch[1];
-            const marker = hashMatch[2];
-            const space = hashMatch[3];
-            
-            const markerStart = line.from + indent.length;
-            const markerEnd = line.from + indent.length + marker.length + space.length;
-            
-            // Check if cursor is within the marker area
-            const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-            
-            // Add line decoration for proper styling
-            decorations.push({
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: 'HyperMD-list-line HyperMD-list-line-1',
-                    attributes: {
-                        style: 'text-indent: -29px; padding-inline-start: 29px;'
-                    }
-                })
-            });
-            
-            // Only replace the marker if cursor is not within it
-            if (!cursorInMarker) {
-                decorations.push({
-                    from: markerStart,
-                    to: markerEnd,
-                    decoration: Decoration.replace({
-                        widget: new HashListMarkerWidget(hashCounter.value, view, markerStart)
-                    })
-                });
-            }
-            
-            // Wrap the rest of the line
-            decorations.push({
-                from: line.from + indent.length + marker.length + space.length,
-                to: line.to,
-                decoration: Decoration.mark({
-                    class: 'cm-list-1'
-                })
-            });
-            
-            hashCounter.value++;
-            return decorations;
-        }
-
-        processFancyList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocListsSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
-            const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-            const fancyMatch = lineText.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/);
-            
-            if (!fancyMatch || lineText.match(/^(\s*)([0-9]+[.)])/)) return null;
-            
-            // Check if this list item is in an invalid block
-            if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                return null;
-            }
-            
-            const indent = fancyMatch[1];
-            const marker = fancyMatch[2];
-            const markerWithSpace = marker + fancyMatch[5];
-            
-            const markerStart = line.from + indent.length;
-            const markerEnd = line.from + indent.length + markerWithSpace.length;
-            
-            // Check if cursor is within the marker area
-            const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-            
-            // Add line decoration for proper styling
-            decorations.push({
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: 'HyperMD-list-line HyperMD-list-line-1',
-                    attributes: {
-                        style: `text-indent: -${markerWithSpace.length * 7}px; padding-inline-start: ${markerWithSpace.length * 7}px;`
-                    }
-                })
-            });
-            
-            // Only replace the marker if cursor is not within it
-            if (!cursorInMarker) {
-                decorations.push({
-                    from: markerStart,
-                    to: markerEnd,
-                    decoration: Decoration.replace({
-                        widget: new FancyListMarkerWidget(markerWithSpace, 'fancy', view, markerStart),
-                        inclusive: false
-                    })
-                });
-            }
-            
-            // Wrap the rest of the line
-            decorations.push({
-                from: line.from + indent.length + markerWithSpace.length,
-                to: line.to,
-                decoration: Decoration.mark({
-                    class: 'cm-list-1'
-                })
-            });
-            
-            return decorations;
-        }
-
-        processExampleList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocListsSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
-            const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-            const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
-            
-            if (!exampleMatch) return null;
-            
-            // Check if this list item is in an invalid block
-            if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                return null;
-            }
-            
-            const indent = exampleMatch[1];
-            const fullMarker = exampleMatch[2];
-            const label = exampleMatch[3];
-            const space = exampleMatch[4];
-            
-            const markerStart = line.from + indent.length;
-            const markerEnd = line.from + indent.length + fullMarker.length + space.length;
-            
-            // Check if cursor is within the marker area
-            const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-            
-            let exampleNumber = 1;
-            
-            if (label && this.exampleLabels.has(label)) {
-                exampleNumber = this.exampleLabels.get(label)!;
-            } else {
-                // Count unlabeled examples before this line
-                let tempCounter = 1;
-                for (let i = 1; i < line.number; i++) {
-                    const prevLine = view.state.doc.line(i).text;
-                    if (prevLine.match(/^(\s*)\(@\)\s+/)) {
-                        tempCounter++;
-                    }
-                }
-                exampleNumber = tempCounter;
-            }
-            
-            // Add line decoration for proper styling
-            decorations.push({
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: 'HyperMD-list-line HyperMD-list-line-1',
-                    attributes: {
-                        style: 'text-indent: -35px; padding-inline-start: 35px;'
-                    }
-                })
-            });
-            
-            // Only replace the marker if cursor is not within it
-            if (!cursorInMarker) {
-                decorations.push({
-                    from: markerStart,
-                    to: markerEnd,
-                    decoration: Decoration.replace({
-                        widget: new ExampleListMarkerWidget(exampleNumber, view, markerStart)
-                    })
-                });
-            }
-            
-            // Wrap the rest of the line
-            decorations.push({
-                from: line.from + indent.length + fullMarker.length + space.length,
-                to: line.to,
-                decoration: Decoration.mark({
-                    class: 'cm-list-1'
-                })
-            });
-            
-            return decorations;
-        }
-
         buildDecorations(view: EditorView): DecorationSet {
             const builder = new RangeSetBuilder<Decoration>();
             
@@ -533,10 +293,60 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
             const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
             
             // Track hash list numbering
-            const hashCounter = { value: 1 };
+            let hashCounter = 1;
             
             // In strict mode, pre-validate list blocks
-            const invalidListBlocks = this.validateListBlocks(lines, settings);
+            const invalidListBlocks = new Set<number>();
+            if (settings.strictPandocMode) {
+                let listBlockStart = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const isCurrentList = this.isListItemForValidation(line);
+                    const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === '');
+                    
+                    // Check if previous line is a definition term (special case)
+                    const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
+                        !lines[i - 1].match(/^[~:]\s+/) && 
+                        !lines[i - 1].match(/^(    |\t)/) &&
+                        line.match(/^[~:]\s+/);
+                    
+                    if (isCurrentList && listBlockStart === -1) {
+                        // Start of a new list block
+                        listBlockStart = i;
+                        // Check if it has proper empty line before (unless first line or after a definition term)
+                        if (i > 0 && lines[i - 1].trim() !== '' && !prevIsDefinitionTerm) {
+                            // Mark entire block as invalid
+                            for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                                invalidListBlocks.add(j);
+                            }
+                        }
+                    } else if (!isCurrentList && listBlockStart !== -1) {
+                        // End of list block
+                        // Check if there's proper empty line after (unless it's an empty line)
+                        if (line.trim() !== '') {
+                            // Mark entire previous block as invalid
+                            for (let j = listBlockStart; j < i; j++) {
+                                invalidListBlocks.add(j);
+                            }
+                        }
+                        listBlockStart = -1;
+                    }
+                    
+                    // Check for capital letter spacing issue
+                    if (isCurrentList) {
+                        const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+                        if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+                            // Mark entire block as invalid
+                            for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
+                                invalidListBlocks.add(j);
+                            }
+                            for (let j = i + 1; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                                invalidListBlocks.add(j);
+                            }
+                        }
+                    }
+                }
+            }
             
             // Process entire document for consistent numbering
             for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
@@ -549,24 +359,181 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                     currentLine: lineNum - 1 // 0-based index
                 };
                 
-                // Process hash lists
-                const hashDecorations = this.processHashList(line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings, hashCounter);
-                if (hashDecorations) {
-                    decorations.push(...hashDecorations);
+                // Check for hash auto-numbering FIRST
+                const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
+                if (hashMatch) {
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
+                    
+                    const indent = hashMatch[1];
+                    const marker = hashMatch[2];
+                    const space = hashMatch[3];
+                    
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + marker.length + space.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+                    
+                    // Add line decoration for proper styling
+                    decorations.push({
+                        from: line.from,
+                        to: line.from,
+                        decoration: Decoration.line({
+                            class: 'HyperMD-list-line HyperMD-list-line-1',
+                            attributes: {
+                                style: 'text-indent: -29px; padding-inline-start: 29px;'
+                            }
+                        })
+                    });
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new HashListMarkerWidget(hashCounter, view, markerStart)
+                            })
+                        });
+                    }
+                    
+                    // Wrap the rest of the line
+                    decorations.push({
+                        from: line.from + indent.length + marker.length + space.length,
+                        to: line.to,
+                        decoration: Decoration.mark({
+                            class: 'cm-list-1'
+                        })
+                    });
+                    
+                    hashCounter++;
                     continue;
                 }
                 
-                // Process fancy lists
-                const fancyDecorations = this.processFancyList(line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings);
-                if (fancyDecorations) {
-                    decorations.push(...fancyDecorations);
+                // Check for fancy list markers (A. B. i. ii. etc)
+                const fancyMatch = lineText.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/);
+                if (fancyMatch && !lineText.match(/^(\s*)([0-9]+[.)])/)) {
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
+                    
+                    const indent = fancyMatch[1];
+                    const marker = fancyMatch[2];
+                    const markerWithSpace = marker + fancyMatch[5];
+                    
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + markerWithSpace.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+                    
+                    // Add line decoration for proper styling
+                    decorations.push({
+                        from: line.from,
+                        to: line.from,
+                        decoration: Decoration.line({
+                            class: 'HyperMD-list-line HyperMD-list-line-1',
+                            attributes: {
+                                style: `text-indent: -${markerWithSpace.length * 7}px; padding-inline-start: ${markerWithSpace.length * 7}px;`
+                            }
+                        })
+                    });
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new FancyListMarkerWidget(markerWithSpace, 'fancy', view, markerStart),
+                                inclusive: false
+                            })
+                        });
+                    }
+                    
+                    // Wrap the rest of the line
+                    decorations.push({
+                        from: line.from + indent.length + markerWithSpace.length,
+                        to: line.to,
+                        decoration: Decoration.mark({
+                            class: 'cm-list-1'
+                        })
+                    });
+                    
                     continue;
                 }
                 
-                // Process example lists
-                const exampleDecorations = this.processExampleList(line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings);
-                if (exampleDecorations) {
-                    decorations.push(...exampleDecorations);
+                // Check for example list markers (@)
+                const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
+                if (exampleMatch) {
+                    // Check if this list item is in an invalid block
+                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+                        continue; // Skip rendering if in an invalid list block
+                    }
+                    
+                    const indent = exampleMatch[1];
+                    const fullMarker = exampleMatch[2];
+                    const label = exampleMatch[3];
+                    const space = exampleMatch[4];
+                    
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + fullMarker.length + space.length;
+                    
+                    // Check if cursor is within the marker area
+                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+                    
+                    let exampleNumber = 1;
+                    
+                    if (label && this.exampleLabels.has(label)) {
+                        exampleNumber = this.exampleLabels.get(label)!;
+                    } else {
+                        // Count unlabeled examples before this line
+                        let tempCounter = 1;
+                        for (let i = 1; i < line.number; i++) {
+                            const prevLine = view.state.doc.line(i).text;
+                            if (prevLine.match(/^(\s*)\(@\)\s+/)) {
+                                tempCounter++;
+                            }
+                        }
+                        exampleNumber = tempCounter;
+                    }
+                    
+                    // Add line decoration for proper styling
+                    decorations.push({
+                        from: line.from,
+                        to: line.from,
+                        decoration: Decoration.line({
+                            class: 'HyperMD-list-line HyperMD-list-line-1',
+                            attributes: {
+                                style: 'text-indent: -29px; padding-inline-start: 29px;'
+                            }
+                        })
+                    });
+                    
+                    // Only replace the marker if cursor is not within it
+                    if (!cursorInMarker) {
+                        decorations.push({
+                            from: markerStart,
+                            to: markerEnd,
+                            decoration: Decoration.replace({
+                                widget: new ExampleListMarkerWidget(exampleNumber, view, markerStart)
+                            })
+                        });
+                    }
+                    
+                    // Wrap the rest of the line
+                    decorations.push({
+                        from: line.from + indent.length + fullMarker.length + space.length,
+                        to: line.to,
+                        decoration: Decoration.mark({
+                            class: 'cm-list-1'
+                        })
+                    });
+                    
                     continue;
                 }
                 

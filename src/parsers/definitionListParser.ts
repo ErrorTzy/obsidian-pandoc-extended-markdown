@@ -1,4 +1,5 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
+import { getSectionInfo } from '../types/obsidian-extended';
 
 export interface DefinitionListMarker {
     type: 'term' | 'definition';
@@ -35,10 +36,10 @@ export function parseDefinitionListMarker(line: string): DefinitionListMarker | 
 }
 
 export function processDefinitionLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
-    const section = element.closest('.markdown-preview-section');
+    const section = element.closest('.markdown-preview-section') as HTMLElement;
     if (!section) return;
     
-    const sectionInfo = (section as any).getSection?.();
+    const sectionInfo = getSectionInfo(section);
     if (!sectionInfo) return;
     
     const lines = sectionInfo.text.split('\n');

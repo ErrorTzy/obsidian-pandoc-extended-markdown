@@ -9,6 +9,7 @@ This plugin enables Obsidian to render [Pandoc extended markdown lists](https://
 - **Lowercase Letters**: `a)` `b)` `c)`  
 - **Roman Numerals**: `I.` `II.` `III.` or `i)` `ii)` `iii)`
 - **Hash Auto-numbering**: `#.` automatically numbers items sequentially
+- **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
 
 ### Strict Pandoc Mode
 - **Toggle Setting**: Enable strict Pandoc formatting requirements
@@ -26,12 +27,10 @@ Later in the document, refer to (@good) and (@bad).
 ```
 The references will automatically display the correct example numbers.
 
-#### Autocomplete for Example References
-When typing `(@` in your document, an autocomplete dropdown will appear showing all available example labels. Select a label to automatically complete the reference. The dropdown displays:
-- The label name
-- A preview of the example text (truncated to 30 characters)
-
-This feature makes it easy to reference examples without remembering their exact labels.
+#### Features
+- **Autocompletion**: Press Enter after an example list item to create a new `(@)` marker with cursor positioned for label entry
+- **Autocomplete for References**: When typing `(@` in your document, an autocomplete dropdown will appear showing all available example labels
+- **Preview in Dropdown**: The dropdown displays the label name and a preview of the example text (truncated to 30 characters)
 
 ### Definition Lists
 Create structured term-definition pairs with enhanced support:
@@ -53,6 +52,7 @@ Direct Term
 - Terms are rendered in bold with underline
 - Definitions appear as bullet points
 - Indented paragraphs maintain proper text styling
+- **Autocompletion**: Press Enter after `:` or `~` markers to continue with the same marker type
 
 #### Toggle Definition Bold Style
 The plugin provides a command to toggle between explicit and implicit bold formatting for definition terms:
@@ -179,7 +179,10 @@ pandoc-lists-plugin/
 │   ├── main.ts                           # Plugin entry point, registers all features
 │   ├── settings.ts                       # Settings interface and settings tab implementation
 │   ├── pandocValidator.ts                # Validates and formats lists to Pandoc standards
+│   ├── listAutocompletion.ts             # Handles Enter key for list continuation
 │   ├── ExampleReferenceSuggestFixed.ts   # Autocomplete suggestion system for (@references)
+│   ├── constants.ts                      # Centralized constants for magic values and CSS classes
+│   ├── patterns.ts                       # Optimized regex patterns with caching
 │   ├── decorations/                      # CodeMirror decorations for live preview
 │   │   └── pandocListsExtension.ts      # CM6 ViewPlugin for rendering lists in live preview
 │   ├── parsers/                          # List parsing logic
@@ -187,6 +190,10 @@ pandoc-lists-plugin/
 │   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
 │   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
 │   │   └── readingModeProcessor.ts      # Post-processor for reading mode rendering
+│   ├── types/                            # TypeScript type definitions
+│   │   └── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
+│   ├── utils/                            # Utility functions
+│   │   └── errorHandler.ts              # Error handling utilities with error boundaries
 │   └── styles/                           # Component-specific styles
 │       └── suggestions.css              # Styles for autocomplete dropdown (not used in build)
 ├── __mocks__/                            # Jest mock implementations
@@ -224,15 +231,24 @@ pandoc-lists-plugin/
 - `main.ts` - Entry point that extends Obsidian's Plugin class, initializes all features.
 - `settings.ts` - Defines plugin settings interface and implements the settings tab UI.
 - `pandocValidator.ts` - Contains validation logic for strict Pandoc mode and formatting functions.
+- `listAutocompletion.ts` - Implements Enter key handling for automatic list continuation with context-aware detection.
 - `ExampleReferenceSuggestFixed.ts` - Extends EditorSuggest to provide autocomplete for example references.
+- `constants.ts` - Centralized constants for list markers, CSS classes, and other magic values.
+- `patterns.ts` - Performance-optimized regex patterns with caching and helper methods.
 
 **Parser Modules (`src/parsers/`):**
 - Each parser handles specific list type parsing and rendering logic.
 - Parsers work with both raw text and DOM elements depending on the mode.
+- Enhanced with fallback logic for private API compatibility.
 
 **CodeMirror Extension (`src/decorations/`):**
 - Implements live preview rendering using CodeMirror 6's decoration system.
 - Creates widgets and line decorations for visual list formatting.
+- Refactored with modular helper methods for better maintainability.
+- Includes proper memory management for event listeners.
+
+**Utility Modules (`src/utils/`):**
+- `errorHandler.ts` - Comprehensive error handling with error boundaries and custom error classes.
 
 **Testing Infrastructure:**
 - `__mocks__/` - Contains mock implementations to simulate Obsidian and CodeMirror APIs during tests.

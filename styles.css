@@ -1,3 +1,8 @@
+/* List Marker Styles */
+.pandoc-list-marker {
+    cursor: text;
+}
+
 /* Fancy Lists Styles */
 .pandoc-list-upper-alpha {
     list-style-type: upper-alpha;

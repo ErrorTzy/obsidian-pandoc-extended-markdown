@@ -1,10 +1,12 @@
 import { Plugin, MarkdownPostProcessorContext, Notice, Editor } from 'obsidian';
-import { Extension } from '@codemirror/state';
+import { Extension, Prec } from '@codemirror/state';
+import { keymap } from '@codemirror/view';
 import { pandocListsExtension } from './decorations/pandocListsExtension';
 import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
 import { PandocListsSettings, DEFAULT_SETTINGS, PandocListsSettingTab } from './settings';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
+import { listAutocompletionKeymap } from './listAutocompletion';
 
 export default class PandocListsPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
@@ -18,6 +20,9 @@ export default class PandocListsPlugin extends Plugin {
         
         // Register CodeMirror extension for live preview with settings
         this.registerEditorExtension(pandocListsExtension(() => this.settings));
+        
+        // Register list autocompletion keymap with highest priority
+        this.registerEditorExtension(Prec.highest(keymap.of(listAutocompletionKeymap)));
         
         // Register markdown post-processor for reading mode
         this.registerMarkdownPostProcessor((element, context) => {

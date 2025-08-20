@@ -56,6 +56,7 @@ export function isListItem(line: string): boolean {
     // Check for various list patterns
     const patterns = [
         /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/, // Fancy lists
+        /^(\s*)\d+\.\s+/, // Standard ordered lists (1. 2. 3. etc.)
         /^(\s*)[-*+]\s+/, // Unordered lists
         /^(\s*)\(@([a-zA-Z0-9_-]*)\)\s+/, // Example lists
         /^(\s*)[~:]\s+/ // Definition lists
