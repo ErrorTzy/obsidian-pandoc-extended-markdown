@@ -1,6 +1,6 @@
 # Pandoc Extended Markdown Plugin for Obsidian
 
-This plugin enables Obsidian to render [Pandoc extended markdown syntax](https://pandoc.org/MANUAL.html), bringing powerful formatting capabilities including advanced lists, superscripts, subscripts, and more to your notes.
+This plugin enables Obsidian to render [Pandoc extended markdown syntax](https://pandoc.org/MANUAL.html#pandocs-markdown), bringing powerful formatting capabilities including advanced lists, superscripts, subscripts, and more to your notes.
 
 ## Features
 
@@ -33,7 +33,14 @@ Create numbered examples that can be referenced throughout your document:
 
 Later in the document, refer to (@good) and (@bad).
 ```
-The references will automatically display the correct example numbers.
+The references will automatically render the correct example numbers:
+
+```markdown
+(1) This is a good example.
+(2) This is a bad example.
+
+Later in the document, refer to (1) and (2).
+```
 
 #### Features
 - **Autocompletion**: Press Enter after an example list item to create a new `(@)` marker with cursor positioned for label entry
