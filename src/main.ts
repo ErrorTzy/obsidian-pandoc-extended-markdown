@@ -63,6 +63,23 @@ export default class PandocListsPlugin extends Plugin {
                 }
             }
         });
+        
+        // Add command to toggle bold style for definition terms
+        this.addCommand({
+            id: 'toggle-definition-bold',
+            name: 'Toggle definition list bold style',
+            editorCallback: (editor: Editor) => {
+                const content = editor.getValue();
+                const toggled = this.toggleDefinitionBoldStyle(content);
+                
+                if (content !== toggled) {
+                    editor.setValue(toggled);
+                    new Notice('Definition terms bold style toggled');
+                } else {
+                    new Notice('No definition terms found to toggle');
+                }
+            }
+        });
     }
 
     onunload() {
@@ -75,5 +92,77 @@ export default class PandocListsPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+    }
+    
+    toggleDefinitionBoldStyle(content: string): string {
+        const lines = content.split('\n');
+        const modifiedLines = [...lines];
+        
+        // First pass: identify all definition terms and check if any have bold
+        const definitionTerms: {index: number, hasBold: boolean}[] = [];
+        let anyHasBold = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // Skip empty lines and lines that are definition markers
+            if (!trimmedLine || trimmedLine.match(/^[~:]\s/)) {
+                continue;
+            }
+            
+            // Check if the next line (or line after empty line) is a definition marker
+            let isDefinitionTerm = false;
+            
+            // Check immediate next line
+            if (i + 1 < lines.length) {
+                const nextLine = lines[i + 1].trim();
+                if (nextLine.match(/^[~:]\s/)) {
+                    isDefinitionTerm = true;
+                }
+                // Check line after empty line
+                else if (nextLine === '' && i + 2 < lines.length) {
+                    const lineAfterEmpty = lines[i + 2].trim();
+                    if (lineAfterEmpty.match(/^[~:]\s/)) {
+                        isDefinitionTerm = true;
+                    }
+                }
+            }
+            
+            if (isDefinitionTerm) {
+                const boldRegex = /^\*\*(.+)\*\*$/;
+                const hasBold = boldRegex.test(trimmedLine);
+                definitionTerms.push({index: i, hasBold});
+                if (hasBold) {
+                    anyHasBold = true;
+                }
+            }
+        }
+        
+        // Second pass: apply unified formatting
+        // If any term has bold, remove all bold. Otherwise, add bold to all.
+        for (const term of definitionTerms) {
+            const line = lines[term.index];
+            const trimmedLine = line.trim();
+            const originalIndent = line.match(/^(\s*)/)?.[1] || '';
+            const boldRegex = /^\*\*(.+)\*\*$/;
+            
+            if (anyHasBold) {
+                // Remove bold from all terms
+                const match = trimmedLine.match(boldRegex);
+                if (match) {
+                    modifiedLines[term.index] = originalIndent + match[1];
+                }
+                // Term already doesn't have bold, leave as is
+            } else {
+                // Add bold to all terms
+                if (!boldRegex.test(trimmedLine)) {
+                    modifiedLines[term.index] = originalIndent + '**' + trimmedLine + '**';
+                }
+                // Term already has bold (shouldn't happen in this branch), leave as is
+            }
+        }
+        
+        return modifiedLines.join('\n');
     }
 }

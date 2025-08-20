@@ -54,6 +54,13 @@ Direct Term
 - Definitions appear as bullet points
 - Indented paragraphs maintain proper text styling
 
+#### Toggle Definition Bold Style
+The plugin provides a command to toggle between explicit and implicit bold formatting for definition terms:
+- **Implicit bold**: Terms appear bold through plugin styling (e.g., `Term`)
+- **Explicit bold**: Terms have markdown bold syntax (e.g., `**Term**`)
+
+This is useful for maintaining compatibility with other markdown readers that don't have this plugin installed.
+
 ## Installation
 
 ### From Obsidian Community Plugins (Coming Soon)
@@ -127,10 +134,13 @@ The plugin provides a settings tab where you can configure:
 
 ## Commands
 
-The plugin adds two commands to the command palette:
+The plugin adds the following commands to the command palette:
 
 - **Check pandoc formatting**: Scans the current document and reports any formatting issues
 - **Format document to pandoc standard**: Automatically formats lists to conform to Pandoc standards
+- **Toggle definition list bold style**: Toggles all definition terms between explicit (`**Term**`) and implicit (styled) bold formatting
+  - If any term has explicit bold, removes bold from all terms
+  - If no terms have explicit bold, adds bold to all terms
 
 ## Compatibility
 
@@ -160,25 +170,87 @@ npm run dev
 ```
 
 ### Project Structure
+
+Complete structure of files and folders in the repository:
+
 ```
 pandoc-lists-plugin/
-├── src/
-│   ├── main.ts                           # Plugin entry point
-│   ├── settings.ts                       # Settings interface and tab
-│   ├── pandocValidator.ts                # Pandoc format validation & formatting
-│   ├── decorations/
-│   │   └── pandocListsExtension.ts       # CodeMirror 6 extension for live preview
-│   ├── parsers/
-│   │   ├── fancyListParser.ts            # Parses A., B., i., ii., etc.
-│   │   ├── exampleListParser.ts          # Parses (@label) syntax
-│   │   ├── definitionListParser.ts       # Parses definition lists
-│   │   └── readingModeProcessor.ts       # Handles reading mode rendering
-│   └── ExampleReferenceSuggestFixed.ts   # Autocomplete for (@references)
-├── manifest.json                          # Plugin metadata
-├── styles.css                             # Plugin styles
-├── esbuild.config.mjs                     # Build configuration
-└── .github/workflows/release.yml         # Automated release workflow
+├── src/                                   # Source code directory
+│   ├── main.ts                           # Plugin entry point, registers all features
+│   ├── settings.ts                       # Settings interface and settings tab implementation
+│   ├── pandocValidator.ts                # Validates and formats lists to Pandoc standards
+│   ├── ExampleReferenceSuggestFixed.ts   # Autocomplete suggestion system for (@references)
+│   ├── decorations/                      # CodeMirror decorations for live preview
+│   │   └── pandocListsExtension.ts      # CM6 ViewPlugin for rendering lists in live preview
+│   ├── parsers/                          # List parsing logic
+│   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
+│   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
+│   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
+│   │   └── readingModeProcessor.ts      # Post-processor for reading mode rendering
+│   └── styles/                           # Component-specific styles
+│       └── suggestions.css              # Styles for autocomplete dropdown (not used in build)
+├── __mocks__/                            # Jest mock implementations
+│   ├── obsidian.ts                      # Mocks Obsidian API for testing
+│   └── codemirror.ts                    # Mocks CodeMirror modules for testing
+├── tests/                                # Test files
+│   ├── definitionListParser.spec.ts     # Tests for definition list parsing
+│   ├── exampleListParser.spec.ts        # Tests for example list parsing
+│   └── fancyListParser.spec.ts          # Tests for fancy list parsing
+├── .github/                              # GitHub specific files
+│   └── workflows/
+│       └── release.yml                  # GitHub Actions workflow for automated releases
+├── main.js                              # Compiled plugin code (build output)
+├── manifest.json                         # Plugin metadata (id, name, version, minAppVersion)
+├── versions.json                         # Version compatibility mapping for updates
+├── styles.css                            # Main plugin styles for all list types
+├── package.json                          # Node.js dependencies and scripts
+├── tsconfig.json                         # TypeScript compiler configuration
+├── jest.config.js                        # Jest testing framework configuration
+├── esbuild.config.mjs                    # Build configuration for bundling the plugin
+├── .gitignore                            # Specifies files to exclude from version control
+├── LICENSE                               # MIT License file
+└── README.md                             # This documentation file
 ```
+
+#### File Descriptions
+
+**Core Plugin Files:**
+- `main.js` - The compiled JavaScript bundle that Obsidian loads. Generated from TypeScript source during build.
+- `manifest.json` - Required metadata file containing plugin ID, name, version, and minimum Obsidian version.
+- `styles.css` - CSS styles applied when plugin is loaded, includes all list type styling.
+- `versions.json` - Maps plugin versions to minimum required Obsidian versions for update compatibility.
+
+**Source Code (`src/`):**
+- `main.ts` - Entry point that extends Obsidian's Plugin class, initializes all features.
+- `settings.ts` - Defines plugin settings interface and implements the settings tab UI.
+- `pandocValidator.ts` - Contains validation logic for strict Pandoc mode and formatting functions.
+- `ExampleReferenceSuggestFixed.ts` - Extends EditorSuggest to provide autocomplete for example references.
+
+**Parser Modules (`src/parsers/`):**
+- Each parser handles specific list type parsing and rendering logic.
+- Parsers work with both raw text and DOM elements depending on the mode.
+
+**CodeMirror Extension (`src/decorations/`):**
+- Implements live preview rendering using CodeMirror 6's decoration system.
+- Creates widgets and line decorations for visual list formatting.
+
+**Testing Infrastructure:**
+- `__mocks__/` - Contains mock implementations to simulate Obsidian and CodeMirror APIs during tests.
+- `tests/` - Unit tests for each parser ensuring correct list parsing behavior.
+- `jest.config.js` - Configures Jest to use TypeScript, jsdom environment, and module mocks.
+
+**Build Configuration:**
+- `esbuild.config.mjs` - Bundles TypeScript source into single `main.js` file, excludes Obsidian and CodeMirror modules.
+- `tsconfig.json` - TypeScript compiler options for type checking and module resolution.
+- `package.json` - Defines build scripts (`dev`, `build`, `test`) and development dependencies.
+
+**GitHub Integration:**
+- `.github/workflows/release.yml` - Automates release creation when tags are pushed.
+- `.gitignore` - Excludes node_modules, coverage reports, OS files, and other build artifacts.
+
+**Documentation:**
+- `README.md` - User-facing documentation with features, installation, and usage instructions.
+- `LICENSE` - MIT license granting permission to use, modify, and distribute the plugin.
 
 ## Contributing
 

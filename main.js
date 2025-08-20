@@ -1056,6 +1056,20 @@ ${issueList}`, 1e4);
         }
       }
     });
+    this.addCommand({
+      id: "toggle-definition-bold",
+      name: "Toggle definition list bold style",
+      editorCallback: (editor) => {
+        const content = editor.getValue();
+        const toggled = this.toggleDefinitionBoldStyle(content);
+        if (content !== toggled) {
+          editor.setValue(toggled);
+          new import_obsidian4.Notice("Definition terms bold style toggled");
+        } else {
+          new import_obsidian4.Notice("No definition terms found to toggle");
+        }
+      }
+    });
   }
   onunload() {
   }
@@ -1064,5 +1078,56 @@ ${issueList}`, 1e4);
   }
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+  toggleDefinitionBoldStyle(content) {
+    var _a;
+    const lines = content.split("\n");
+    const modifiedLines = [...lines];
+    const definitionTerms = [];
+    let anyHasBold = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      if (!trimmedLine || trimmedLine.match(/^[~:]\s/)) {
+        continue;
+      }
+      let isDefinitionTerm = false;
+      if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        if (nextLine.match(/^[~:]\s/)) {
+          isDefinitionTerm = true;
+        } else if (nextLine === "" && i + 2 < lines.length) {
+          const lineAfterEmpty = lines[i + 2].trim();
+          if (lineAfterEmpty.match(/^[~:]\s/)) {
+            isDefinitionTerm = true;
+          }
+        }
+      }
+      if (isDefinitionTerm) {
+        const boldRegex = /^\*\*(.+)\*\*$/;
+        const hasBold = boldRegex.test(trimmedLine);
+        definitionTerms.push({ index: i, hasBold });
+        if (hasBold) {
+          anyHasBold = true;
+        }
+      }
+    }
+    for (const term of definitionTerms) {
+      const line = lines[term.index];
+      const trimmedLine = line.trim();
+      const originalIndent = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1]) || "";
+      const boldRegex = /^\*\*(.+)\*\*$/;
+      if (anyHasBold) {
+        const match = trimmedLine.match(boldRegex);
+        if (match) {
+          modifiedLines[term.index] = originalIndent + match[1];
+        }
+      } else {
+        if (!boldRegex.test(trimmedLine)) {
+          modifiedLines[term.index] = originalIndent + "**" + trimmedLine + "**";
+        }
+      }
+    }
+    return modifiedLines.join("\n");
   }
 };
