@@ -56,7 +56,6 @@ Term 1
 :   Definition of term 1
     
     Indented paragraphs are part of the definition
-    and won't be styled as code blocks
 
 Term 2
 
@@ -72,10 +71,14 @@ Term 3
 
 ```
 
-- Terms are rendered in bold with underline
 - Definitions appear as bullet points
-- Indented paragraphs maintain proper text styling
 - **Autocompletion**: Press Enter after `:` or `~` markers to continue with the same marker type
+- **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
+
+#### Known Limitations
+Due to how Markdown parsers work, there are some limitations with definition lists in reading mode:
+- **Definition terms**: Cannot be automatically styled with bold/underline when they appear on separate lines from the definition marker. This is because Obsidian's reading mode renders each line as a separate HTML element.
+- **Indented paragraphs**: In reading mode, indented text (using 4 spaces or tab) is treated as code blocks by the Markdown parser before the plugin can process it. This is standard Markdown behavior that cannot be overridden in post-processing.
 
 #### Toggle Definition Bold Style
 The plugin provides a command to toggle between explicit and implicit bold formatting for definition terms:
