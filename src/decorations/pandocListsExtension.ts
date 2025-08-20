@@ -250,6 +250,7 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
         decorations: DecorationSet;
         exampleLabels: Map<string, number> = new Map();
         exampleContent: Map<string, string> = new Map();
+        exampleLineNumbers: Map<number, number> = new Map();
 
         constructor(view: EditorView) {
             this.scanExampleLabels(view);
@@ -280,11 +281,13 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
         scanExampleLabels(view: EditorView) {
             this.exampleLabels.clear();
             this.exampleContent.clear();
+            this.exampleLineNumbers.clear();
             let counter = 1;
             const docText = view.state.doc.toString();
             const lines = docText.split('\n');
             
-            for (const line of lines) {
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
                 const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
                 if (match) {
                     const label = match[2];
@@ -296,10 +299,14 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                             this.exampleContent.set(label, content);
                         }
                     }
+                    // Store line number to example number mapping
+                    this.exampleLineNumbers.set(i + 1, counter);
                     counter++;
                 } else {
                     const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
                     if (unlabeledMatch) {
+                        // Store line number to example number mapping for unlabeled examples
+                        this.exampleLineNumbers.set(i + 1, counter);
                         counter++;
                     }
                 }
@@ -503,16 +510,9 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
             
             if (label && this.exampleLabels.has(label)) {
                 exampleNumber = this.exampleLabels.get(label)!;
-            } else {
-                // Count unlabeled examples before this line
-                let tempCounter = 1;
-                for (let i = 1; i < line.number; i++) {
-                    const prevLine = view.state.doc.line(i).text;
-                    if (prevLine.match(/^(\s*)\(@\)\s+/)) {
-                        tempCounter++;
-                    }
-                }
-                exampleNumber = tempCounter;
+            } else if (this.exampleLineNumbers.has(line.number)) {
+                // Get the pre-computed number for this line
+                exampleNumber = this.exampleLineNumbers.get(line.number)!;
             }
             
             // Add line decoration for proper styling

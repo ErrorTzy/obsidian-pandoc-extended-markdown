@@ -218,6 +218,24 @@ The plugin adds the following commands to the command palette:
   - If any term has explicit bold, removes bold from all terms
   - If no terms have explicit bold, adds bold to all terms
 
+## Known Limitations
+
+### Example Lists in Reading Mode
+Due to how Obsidian's reading mode processes markdown, there is a limitation with unlabeled example lists:
+- **Live preview mode**: All example lists (both labeled and unlabeled) are numbered correctly in sequence
+- **Reading mode**: 
+  - Labeled examples `(@label)` work correctly and maintain their numbers
+  - Unlabeled examples `(@)` all render as `(1)` instead of sequential numbers
+  
+This occurs because reading mode converts markdown to HTML before the plugin processes it, and there's no way to distinguish between different unlabeled `(@)` markers once they're rendered as identical HTML list items.
+
+**Workaround**: For consistent numbering in both modes, always use labels for your example lists:
+```markdown
+(@ex1) First example
+(@ex2) Second example  
+(@ex3) Third example
+```
+
 ## Compatibility
 
 - Requires Obsidian v1.4.0 or higher

@@ -419,6 +419,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
     constructor(view) {
       this.exampleLabels = /* @__PURE__ */ new Map();
       this.exampleContent = /* @__PURE__ */ new Map();
+      this.exampleLineNumbers = /* @__PURE__ */ new Map();
       this.scanExampleLabels(view);
       this.decorations = this.buildDecorations(view);
     }
@@ -441,10 +442,12 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
     scanExampleLabels(view) {
       this.exampleLabels.clear();
       this.exampleContent.clear();
+      this.exampleLineNumbers.clear();
       let counter = 1;
       const docText = view.state.doc.toString();
       const lines = docText.split("\n");
-      for (const line of lines) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
         if (match) {
           const label = match[2];
@@ -455,10 +458,12 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
               this.exampleContent.set(label, content);
             }
           }
+          this.exampleLineNumbers.set(i + 1, counter);
           counter++;
         } else {
           const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
           if (unlabeledMatch) {
+            this.exampleLineNumbers.set(i + 1, counter);
             counter++;
           }
         }
@@ -605,15 +610,8 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
       let exampleNumber = 1;
       if (label && this.exampleLabels.has(label)) {
         exampleNumber = this.exampleLabels.get(label);
-      } else {
-        let tempCounter = 1;
-        for (let i = 1; i < line.number; i++) {
-          const prevLine = view.state.doc.line(i).text;
-          if (prevLine.match(/^(\s*)\(@\)\s+/)) {
-            tempCounter++;
-          }
-        }
-        exampleNumber = tempCounter;
+      } else if (this.exampleLineNumbers.has(line.number)) {
+        exampleNumber = this.exampleLineNumbers.get(line.number);
       }
       decorations.push({
         from: line.from,

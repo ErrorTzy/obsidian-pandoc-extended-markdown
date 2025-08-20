@@ -45,6 +45,9 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
     
     if (lines.length === 0) return;
     
+    // First pass: assign numbers to all examples (labeled and unlabeled)
+    const lineNumberToExample = new Map<number, number>();
+    
     lines.forEach((line, index) => {
         const exampleInfo = parseExampleListMarker(line);
         if (exampleInfo) {
@@ -55,10 +58,10 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
                 if (match && match[1]) {
                     exampleContent.set(exampleInfo.label, match[1].trim());
                 }
-                exampleCounter++;
-            } else if (!exampleInfo.label) {
-                exampleCounter++;
             }
+            // Store line number to example number mapping for all examples
+            lineNumberToExample.set(index, exampleCounter);
+            exampleCounter++;
         }
     });
     
@@ -111,6 +114,7 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
             if (exampleInfo.label && exampleMap.has(exampleInfo.label)) {
                 number = exampleMap.get(exampleInfo.label)!;
             } else {
+                // For unlabeled examples, we need to count all examples up to this point
                 const tempMap = new Map<string, number>();
                 let tempCounter = 1;
                 
@@ -119,16 +123,11 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
                     if (info) {
                         if (info.label && !tempMap.has(info.label)) {
                             tempMap.set(info.label, tempCounter);
-                            if (i === lineNum) {
-                                number = tempCounter;
-                            }
-                            tempCounter++;
-                        } else if (!info.label) {
-                            if (i === lineNum) {
-                                number = tempCounter;
-                            }
-                            tempCounter++;
                         }
+                        if (i === lineNum) {
+                            number = tempCounter;
+                        }
+                        tempCounter++;
                     }
                 }
                 number = tempCounter - 1;
