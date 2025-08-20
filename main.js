@@ -27,97 +27,169 @@ __export(main_exports, {
   default: () => PandocListsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/decorations/pandocListsExtension.ts
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
 var import_obsidian = require("obsidian");
 var FancyListMarkerWidget = class extends import_view.WidgetType {
-  constructor(marker, type) {
+  constructor(marker, type, view, pos) {
     super();
     this.marker = marker;
     this.type = type;
+    this.view = view;
+    this.pos = pos;
   }
   toDOM() {
     const span = document.createElement("span");
     span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1";
+    span.style.cursor = "text";
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = this.marker;
     span.appendChild(innerSpan);
+    if (this.view && this.pos !== void 0) {
+      span.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.view.dispatch({
+          selection: { anchor: this.pos }
+        });
+        this.view.focus();
+      });
+    }
     return span;
   }
   eq(other) {
-    return other.marker === this.marker;
+    return other.marker === this.marker && other.pos === this.pos;
+  }
+  ignoreEvent(event) {
+    return event.type !== "mousedown";
   }
 };
 var ExampleListMarkerWidget = class extends import_view.WidgetType {
-  constructor(number) {
+  constructor(number, view, pos) {
     super();
     this.number = number;
+    this.view = view;
+    this.pos = pos;
   }
   toDOM() {
     const span = document.createElement("span");
     span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1";
+    span.style.cursor = "text";
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = `(${this.number}) `;
     span.appendChild(innerSpan);
+    if (this.view && this.pos !== void 0) {
+      span.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.view.dispatch({
+          selection: { anchor: this.pos }
+        });
+        this.view.focus();
+      });
+    }
     return span;
   }
   eq(other) {
-    return other.number === this.number;
+    return other.number === this.number && other.pos === this.pos;
+  }
+  ignoreEvent(event) {
+    return event.type !== "mousedown";
   }
 };
 var DefinitionBulletWidget = class extends import_view.WidgetType {
+  constructor(view, pos) {
+    super();
+    this.view = view;
+    this.pos = pos;
+  }
   toDOM() {
     const span = document.createElement("span");
     span.className = "cm-formatting cm-formatting-list cm-list-1";
+    span.style.cursor = "text";
     span.textContent = "\u2022 ";
+    if (this.view && this.pos !== void 0) {
+      span.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.view.dispatch({
+          selection: { anchor: this.pos }
+        });
+        this.view.focus();
+      });
+    }
     return span;
   }
   eq(other) {
-    return true;
+    return other.pos === this.pos;
+  }
+  ignoreEvent(event) {
+    return event.type !== "mousedown";
   }
 };
 var HashListMarkerWidget = class extends import_view.WidgetType {
-  constructor(number) {
+  constructor(number, view, pos) {
     super();
     this.number = number;
+    this.view = view;
+    this.pos = pos;
   }
   toDOM() {
     const span = document.createElement("span");
     span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1";
+    span.style.cursor = "text";
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = `${this.number}. `;
     span.appendChild(innerSpan);
+    if (this.view && this.pos !== void 0) {
+      span.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.view.dispatch({
+          selection: { anchor: this.pos }
+        });
+        this.view.focus();
+      });
+    }
     return span;
   }
   eq(other) {
-    return other.number === this.number;
+    return other.number === this.number && other.pos === this.pos;
+  }
+  ignoreEvent(event) {
+    return event.type !== "mousedown";
   }
 };
 var ExampleReferenceWidget = class extends import_view.WidgetType {
-  constructor(number) {
+  constructor(number, tooltipText) {
     super();
     this.number = number;
+    this.tooltipText = tooltipText;
   }
   toDOM() {
     const span = document.createElement("span");
     span.className = "pandoc-example-reference";
     span.textContent = `(${this.number})`;
+    if (this.tooltipText) {
+      (0, import_obsidian.setTooltip)(span, this.tooltipText, { delay: 300 });
+    }
     return span;
   }
   eq(other) {
-    return other.number === this.number;
+    return other.number === this.number && other.tooltipText === this.tooltipText;
   }
 };
 var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
   class {
     constructor(view) {
       this.exampleLabels = /* @__PURE__ */ new Map();
+      this.exampleContent = /* @__PURE__ */ new Map();
       this.scanExampleLabels(view);
       this.decorations = this.buildDecorations(view);
     }
@@ -139,19 +211,27 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
     }
     scanExampleLabels(view) {
       this.exampleLabels.clear();
+      this.exampleContent.clear();
       let counter = 1;
       const docText = view.state.doc.toString();
       const lines = docText.split("\n");
       for (const line of lines) {
-        const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+/);
+        const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
         if (match) {
           const label = match[2];
+          const content = match[3].trim();
           if (!this.exampleLabels.has(label)) {
             this.exampleLabels.set(label, counter);
+            if (content) {
+              this.exampleContent.set(label, content);
+            }
           }
           counter++;
-        } else if (line.match(/^(\s*)\(@\)\s+/)) {
-          counter++;
+        } else {
+          const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
+          if (unlabeledMatch) {
+            counter++;
+          }
         }
       }
     }
@@ -237,7 +317,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
               from: markerStart,
               to: markerEnd,
               decoration: import_view.Decoration.replace({
-                widget: new HashListMarkerWidget(hashCounter)
+                widget: new HashListMarkerWidget(hashCounter, view, markerStart)
               })
             });
           }
@@ -277,7 +357,8 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
               from: markerStart,
               to: markerEnd,
               decoration: import_view.Decoration.replace({
-                widget: new FancyListMarkerWidget(markerWithSpace, "fancy")
+                widget: new FancyListMarkerWidget(markerWithSpace, "fancy", view, markerStart),
+                inclusive: false
               })
             });
           }
@@ -330,7 +411,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
               from: markerStart,
               to: markerEnd,
               decoration: import_view.Decoration.replace({
-                widget: new ExampleListMarkerWidget(exampleNumber)
+                widget: new ExampleListMarkerWidget(exampleNumber, view, markerStart)
               })
             });
           }
@@ -358,7 +439,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
               from: markerStart,
               to: markerEnd,
               decoration: import_view.Decoration.replace({
-                widget: new DefinitionBulletWidget()
+                widget: new DefinitionBulletWidget(view, markerStart)
               })
             });
           }
@@ -437,11 +518,12 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
             const cursorInRef = cursorPos >= refStart && cursorPos <= refEnd;
             if (!cursorInRef) {
               const number = this.exampleLabels.get(label);
+              const tooltipText = this.exampleContent.get(label);
               decorations.push({
                 from: refStart,
                 to: refEnd,
                 decoration: import_view.Decoration.replace({
-                  widget: new ExampleReferenceWidget(number)
+                  widget: new ExampleReferenceWidget(number, tooltipText)
                 })
               });
             }
@@ -542,6 +624,7 @@ function parseFancyListMarker(line) {
 }
 
 // src/parsers/exampleListParser.ts
+var import_obsidian2 = require("obsidian");
 function parseExampleListMarker(line) {
   const match = line.match(/^(\s*)(\(@([a-zA-Z0-9_-]+)?\))\s+/);
   if (!match) {
@@ -901,8 +984,8 @@ function processReadingMode(element, context, settings) {
 }
 
 // src/ExampleReferenceSuggestFixed.ts
-var import_obsidian2 = require("obsidian");
-var ExampleReferenceSuggestFixed = class extends import_obsidian2.EditorSuggest {
+var import_obsidian3 = require("obsidian");
+var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -994,11 +1077,11 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian2.EditorSuggest 
 };
 
 // src/settings.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 var DEFAULT_SETTINGS = {
   strictPandocMode: false
 };
-var PandocListsSettingTab = class extends import_obsidian3.PluginSettingTab {
+var PandocListsSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -1007,7 +1090,7 @@ var PandocListsSettingTab = class extends import_obsidian3.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: "Pandoc lists settings" });
-    new import_obsidian3.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
     }));
@@ -1015,7 +1098,7 @@ var PandocListsSettingTab = class extends import_obsidian3.PluginSettingTab {
 };
 
 // src/main.ts
-var PandocListsPlugin = class extends import_obsidian4.Plugin {
+var PandocListsPlugin = class extends import_obsidian5.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocListsSettingTab(this.app, this));
@@ -1032,12 +1115,12 @@ var PandocListsPlugin = class extends import_obsidian4.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content);
         if (issues.length === 0) {
-          new import_obsidian4.Notice("Document follows pandoc formatting standards");
+          new import_obsidian5.Notice("Document follows pandoc formatting standards");
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian4.Notice(`Found ${issues.length} formatting issues:
+          new import_obsidian5.Notice(`Found ${issues.length} formatting issues:
 ${issueList}`, 1e4);
         }
       }
@@ -1050,9 +1133,9 @@ ${issueList}`, 1e4);
         const formatted = formatToPandocStandard(content);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian4.Notice("Document formatted to pandoc standard");
+          new import_obsidian5.Notice("Document formatted to pandoc standard");
         } else {
-          new import_obsidian4.Notice("Document already follows pandoc standard");
+          new import_obsidian5.Notice("Document already follows pandoc standard");
         }
       }
     });
@@ -1064,9 +1147,9 @@ ${issueList}`, 1e4);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian4.Notice("Definition terms bold style toggled");
+          new import_obsidian5.Notice("Definition terms bold style toggled");
         } else {
-          new import_obsidian4.Notice("No definition terms found to toggle");
+          new import_obsidian5.Notice("No definition terms found to toggle");
         }
       }
     });

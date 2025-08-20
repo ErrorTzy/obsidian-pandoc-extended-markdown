@@ -1,90 +1,166 @@
 import { Extension, StateField, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
-import { editorLivePreviewField } from 'obsidian';
+import { editorLivePreviewField, setTooltip } from 'obsidian';
 import { PandocListsSettings } from '../settings';
 import { isStrictPandocList, isStrictPandocHeading, ValidationContext } from '../pandocValidator';
 
 // Widget for rendering fancy list markers
 class FancyListMarkerWidget extends WidgetType {
-    constructor(private marker: string, private type: string) {
+    constructor(private marker: string, private type: string, private view?: EditorView, private pos?: number) {
         super();
     }
 
     toDOM() {
         const span = document.createElement('span');
         span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        span.style.cursor = 'text';
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = this.marker;
         span.appendChild(innerSpan);
+        
+        // Handle click events to place cursor
+        if (this.view && this.pos !== undefined) {
+            span.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.view!.dispatch({
+                    selection: { anchor: this.pos! }
+                });
+                this.view!.focus();
+            });
+        }
+        
         return span;
     }
 
     eq(other: FancyListMarkerWidget) {
-        return other.marker === this.marker;
+        return other.marker === this.marker && other.pos === this.pos;
+    }
+
+    ignoreEvent(event: Event) {
+        return event.type !== 'mousedown';
     }
 }
 
 // Widget for example list markers
 class ExampleListMarkerWidget extends WidgetType {
-    constructor(private number: number) {
+    constructor(private number: number, private view?: EditorView, private pos?: number) {
         super();
     }
 
     toDOM() {
         const span = document.createElement('span');
         span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        span.style.cursor = 'text';
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `(${this.number}) `;
         span.appendChild(innerSpan);
+        
+        // Handle click events to place cursor
+        if (this.view && this.pos !== undefined) {
+            span.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.view!.dispatch({
+                    selection: { anchor: this.pos! }
+                });
+                this.view!.focus();
+            });
+        }
+        
         return span;
     }
 
     eq(other: ExampleListMarkerWidget) {
-        return other.number === this.number;
+        return other.number === this.number && other.pos === this.pos;
+    }
+
+    ignoreEvent(event: Event) {
+        return event.type !== 'mousedown';
     }
 }
 
 // Widget for definition list bullets
 class DefinitionBulletWidget extends WidgetType {
+    constructor(private view?: EditorView, private pos?: number) {
+        super();
+    }
+    
     toDOM() {
         const span = document.createElement('span');
         span.className = 'cm-formatting cm-formatting-list cm-list-1';
+        span.style.cursor = 'text';
         span.textContent = '• ';
+        
+        // Handle click events to place cursor
+        if (this.view && this.pos !== undefined) {
+            span.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.view!.dispatch({
+                    selection: { anchor: this.pos! }
+                });
+                this.view!.focus();
+            });
+        }
+        
         return span;
     }
     
     eq(other: DefinitionBulletWidget) {
-        return true;
+        return other.pos === this.pos;
+    }
+
+    ignoreEvent(event: Event) {
+        return event.type !== 'mousedown';
     }
 }
 
 
 // Widget for hash auto-numbering
 class HashListMarkerWidget extends WidgetType {
-    constructor(private number: number) {
+    constructor(private number: number, private view?: EditorView, private pos?: number) {
         super();
     }
 
     toDOM() {
         const span = document.createElement('span');
         span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1';
+        span.style.cursor = 'text';
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `${this.number}. `;
         span.appendChild(innerSpan);
+        
+        // Handle click events to place cursor
+        if (this.view && this.pos !== undefined) {
+            span.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.view!.dispatch({
+                    selection: { anchor: this.pos! }
+                });
+                this.view!.focus();
+            });
+        }
+        
         return span;
     }
 
     eq(other: HashListMarkerWidget) {
-        return other.number === this.number;
+        return other.number === this.number && other.pos === this.pos;
+    }
+
+    ignoreEvent(event: Event) {
+        return event.type !== 'mousedown';
     }
 }
 
 // Widget for example references
 class ExampleReferenceWidget extends WidgetType {
-    constructor(private number: number) {
+    constructor(private number: number, private tooltipText?: string) {
         super();
     }
 
@@ -92,11 +168,17 @@ class ExampleReferenceWidget extends WidgetType {
         const span = document.createElement('span');
         span.className = 'pandoc-example-reference';
         span.textContent = `(${this.number})`;
+        
+        // Add tooltip if available
+        if (this.tooltipText) {
+            setTooltip(span, this.tooltipText, { delay: 300 });
+        }
+        
         return span;
     }
 
     eq(other: ExampleReferenceWidget) {
-        return other.number === this.number;
+        return other.number === this.number && other.tooltipText === this.tooltipText;
     }
 }
 
@@ -105,6 +187,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
     class {
         decorations: DecorationSet;
         exampleLabels: Map<string, number> = new Map();
+        exampleContent: Map<string, string> = new Map();
 
         constructor(view: EditorView) {
             this.scanExampleLabels(view);
@@ -134,20 +217,29 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
 
         scanExampleLabels(view: EditorView) {
             this.exampleLabels.clear();
+            this.exampleContent.clear();
             let counter = 1;
             const docText = view.state.doc.toString();
             const lines = docText.split('\n');
             
             for (const line of lines) {
-                const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+/);
+                const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
                 if (match) {
                     const label = match[2];
+                    const content = match[3].trim();
                     if (!this.exampleLabels.has(label)) {
                         this.exampleLabels.set(label, counter);
+                        // Store the content after the marker
+                        if (content) {
+                            this.exampleContent.set(label, content);
+                        }
                     }
                     counter++;
-                } else if (line.match(/^(\s*)\(@\)\s+/)) {
-                    counter++;
+                } else {
+                    const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
+                    if (unlabeledMatch) {
+                        counter++;
+                    }
                 }
             }
         }
@@ -275,7 +367,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                             from: markerStart,
                             to: markerEnd,
                             decoration: Decoration.replace({
-                                widget: new HashListMarkerWidget(hashCounter)
+                                widget: new HashListMarkerWidget(hashCounter, view, markerStart)
                             })
                         });
                     }
@@ -329,7 +421,8 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                             from: markerStart,
                             to: markerEnd,
                             decoration: Decoration.replace({
-                                widget: new FancyListMarkerWidget(markerWithSpace, 'fancy')
+                                widget: new FancyListMarkerWidget(markerWithSpace, 'fancy', view, markerStart),
+                                inclusive: false
                             })
                         });
                     }
@@ -399,7 +492,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                             from: markerStart,
                             to: markerEnd,
                             decoration: Decoration.replace({
-                                widget: new ExampleListMarkerWidget(exampleNumber)
+                                widget: new ExampleListMarkerWidget(exampleNumber, view, markerStart)
                             })
                         });
                     }
@@ -440,7 +533,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                             from: markerStart,
                             to: markerEnd,
                             decoration: Decoration.replace({
-                                widget: new DefinitionBulletWidget()
+                                widget: new DefinitionBulletWidget(view, markerStart)
                             })
                         });
                     }
@@ -550,11 +643,12 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                         // Only replace if cursor is not within the reference
                         if (!cursorInRef) {
                             const number = this.exampleLabels.get(label)!;
+                            const tooltipText = this.exampleContent.get(label);
                             decorations.push({
                                 from: refStart,
                                 to: refEnd,
                                 decoration: Decoration.replace({
-                                    widget: new ExampleReferenceWidget(number)
+                                    widget: new ExampleReferenceWidget(number, tooltipText)
                                 })
                             });
                         }

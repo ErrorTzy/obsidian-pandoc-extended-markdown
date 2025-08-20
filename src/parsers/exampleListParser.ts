@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext } from 'obsidian';
+import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
 
 export interface ExampleListInfo {
     indent: string;
@@ -22,6 +22,7 @@ export function parseExampleListMarker(line: string): ExampleListInfo | null {
 
 export function processExampleLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
     const exampleMap = new Map<string, number>();
+    const exampleContent = new Map<string, string>();
     let exampleCounter = 1;
     
     const section = element.closest('.markdown-preview-section');
@@ -37,6 +38,11 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
         if (exampleInfo) {
             if (exampleInfo.label && !exampleMap.has(exampleInfo.label)) {
                 exampleMap.set(exampleInfo.label, exampleCounter);
+                // Extract content after the marker
+                const match = line.match(/^\s*\(@[a-zA-Z0-9_-]+\)\s+(.*)$/);
+                if (match && match[1]) {
+                    exampleContent.set(exampleInfo.label, match[1].trim());
+                }
                 exampleCounter++;
             } else if (!exampleInfo.label) {
                 exampleCounter++;
@@ -49,7 +55,7 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
         processExampleOrderedList(list, exampleMap);
     });
     
-    processExampleReferences(element, exampleMap);
+    processExampleReferences(element, exampleMap, exampleContent);
 }
 
 function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<string, number>) {
@@ -122,7 +128,7 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
     }
 }
 
-function processExampleReferences(element: HTMLElement, exampleMap: Map<string, number>) {
+function processExampleReferences(element: HTMLElement, exampleMap: Map<string, number>, exampleContent: Map<string, string>) {
     const walker = document.createTreeWalker(
         element,
         NodeFilter.SHOW_TEXT,
@@ -165,6 +171,13 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
                 span.className = 'pandoc-example-reference';
                 span.setAttribute('data-example-ref', label);
                 span.textContent = `(${number})`;
+                
+                // Add tooltip if content is available
+                const tooltipText = exampleContent.get(label);
+                if (tooltipText) {
+                    setTooltip(span, tooltipText, { delay: 300 });
+                }
+                
                 fragments.push(span);
                 
                 lastIndex = match.index + match[0].length;
