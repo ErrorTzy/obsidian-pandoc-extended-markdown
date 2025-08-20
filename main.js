@@ -24,7 +24,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => PandocListsPlugin
+  default: () => PandocExtendedMarkdownPlugin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian5 = require("obsidian");
@@ -35,6 +35,191 @@ var import_view2 = require("@codemirror/view");
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
 var import_obsidian = require("obsidian");
+
+// src/constants.ts
+var INDENTATION = {
+  TAB_SIZE: 4,
+  MIN_INDENT: 0,
+  MAX_INDENT: 40,
+  SINGLE_SPACE: 1,
+  DOUBLE_SPACE: 2,
+  TAB: "	",
+  FOUR_SPACES: "    "
+};
+var CSS_CLASSES = {
+  // Fancy List Classes
+  FANCY_LIST: "pandoc-list-fancy",
+  FANCY_LIST_UPPER_ALPHA: "pandoc-list-upper-alpha",
+  FANCY_LIST_LOWER_ALPHA: "pandoc-list-lower-alpha",
+  FANCY_LIST_UPPER_ROMAN: "pandoc-list-upper-roman",
+  FANCY_LIST_LOWER_ROMAN: "pandoc-list-lower-roman",
+  FANCY_LIST_PAREN: "pandoc-list-paren",
+  // Definition List Classes
+  DEFINITION_LIST: "pandoc-definition-list",
+  DEFINITION_TERM: "pandoc-definition-term",
+  DEFINITION_DESC: "pandoc-list-definition-desc",
+  DEFINITION_ITEMS: "pandoc-definition-items",
+  // Example List Classes
+  EXAMPLE_REF: "pandoc-example-reference",
+  EXAMPLE_LIST: "pandoc-example-list",
+  EXAMPLE_ITEM: "pandoc-example-item",
+  // Superscript and Subscript Classes
+  SUPERSCRIPT: "pandoc-superscript",
+  SUBSCRIPT: "pandoc-subscript",
+  // Suggestion Classes
+  SUGGESTION_CONTENT: "pandoc-suggestion-content",
+  SUGGESTION_TITLE: "pandoc-suggestion-title",
+  SUGGESTION_PREVIEW: "pandoc-suggestion-preview",
+  // CodeMirror Classes
+  LIST_LINE: "HyperMD-list-line",
+  LIST_LINE_1: "HyperMD-list-line-1",
+  CM_LIST_1: "cm-list-1",
+  CM_FORMATTING: "cm-formatting",
+  CM_FORMATTING_LIST: "cm-formatting-list",
+  CM_FORMATTING_LIST_OL: "cm-formatting-list-ol",
+  LIST_NUMBER: "list-number",
+  DEFINITION_TERM_DECORATION: "cm-pandoc-definition-term",
+  DEFINITION_PARAGRAPH: "cm-pandoc-definition-paragraph",
+  // Generic Classes
+  PANDOC_LIST_MARKER: "pandoc-list-marker"
+};
+var MESSAGES = {
+  // Success messages
+  FORMAT_SUCCESS: "Document formatted to pandoc standard",
+  FORMAT_ALREADY_COMPLIANT: "Document already follows pandoc standard",
+  PANDOC_COMPLIANT: "Document follows pandoc formatting standards",
+  TOGGLE_BOLD_SUCCESS: "Definition terms bold style toggled",
+  // Error messages
+  NO_DEFINITION_TERMS: "No definition terms found to toggle",
+  // Formatting issue messages
+  FORMATTING_ISSUES: (count) => `Found ${count} formatting issues`
+};
+var COMMANDS = {
+  CHECK_PANDOC: "check-pandoc-formatting",
+  FORMAT_PANDOC: "format-to-pandoc-standard",
+  TOGGLE_DEFINITION_BOLD: "toggle-definition-bold-style"
+};
+
+// src/patterns.ts
+var ListPatterns = class {
+  /**
+   * Get a cached RegExp pattern by name.
+   * This allows for lazy compilation and caching of patterns.
+   */
+  static getPattern(name) {
+    if (!this.compiledPatterns.has(name)) {
+      const pattern = this[name];
+      if (pattern instanceof RegExp) {
+        this.compiledPatterns.set(name, new RegExp(pattern));
+      }
+    }
+    return this.compiledPatterns.get(name) || this[name];
+  }
+  /**
+   * Test if a line matches a hash list pattern.
+   */
+  static isHashList(line) {
+    return line.match(this.HASH_LIST);
+  }
+  /**
+   * Test if a line matches a fancy list pattern.
+   */
+  static isFancyList(line) {
+    const match = line.match(this.FANCY_LIST);
+    if (match && !line.match(this.NUMBERED_LIST)) {
+      return match;
+    }
+    return null;
+  }
+  /**
+   * Test if a line matches an example list pattern.
+   */
+  static isExampleList(line) {
+    return line.match(this.EXAMPLE_LIST);
+  }
+  /**
+   * Test if a line matches a definition marker pattern.
+   */
+  static isDefinitionMarker(line) {
+    return line.match(this.DEFINITION_MARKER);
+  }
+  /**
+   * Test if a line is indented (for definition list content).
+   */
+  static isIndentedContent(line) {
+    return this.DEFINITION_INDENTED.test(line);
+  }
+  /**
+   * Find all example references in a text.
+   */
+  static findExampleReferences(text) {
+    const matches = [];
+    const regex = new RegExp(this.EXAMPLE_REFERENCE.source, "g");
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match);
+    }
+    return matches;
+  }
+  /**
+   * Check if a string is a roman numeral.
+   */
+  static isRomanNumeral(str) {
+    return this.ROMAN_NUMERALS.test(str) || this.LOWER_ROMAN_NUMERALS.test(str);
+  }
+  /**
+   * Check if a line is any type of list item.
+   */
+  static isListItem(line) {
+    return !!(this.isHashList(line) || this.isFancyList(line) || this.isExampleList(line) || this.isDefinitionMarker(line) || line.match(this.UNORDERED_LIST) || line.match(this.NUMBERED_LIST));
+  }
+  /**
+   * Find all superscripts in a text.
+   */
+  static findSuperscripts(text) {
+    const matches = [];
+    const regex = new RegExp(this.SUPERSCRIPT.source, "g");
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match);
+    }
+    return matches;
+  }
+  /**
+   * Find all subscripts in a text.
+   */
+  static findSubscripts(text) {
+    const matches = [];
+    const regex = new RegExp(this.SUBSCRIPT.source, "g");
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      matches.push(match);
+    }
+    return matches;
+  }
+};
+// Base patterns as static readonly properties
+ListPatterns.HASH_LIST = /^(\s*)(#\.)(\s+)/;
+ListPatterns.FANCY_LIST = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/;
+ListPatterns.EXAMPLE_LIST = /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/;
+ListPatterns.EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
+ListPatterns.DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
+ListPatterns.DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
+ListPatterns.DEFINITION_INDENTED = /^(    |\t)/;
+ListPatterns.NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
+ListPatterns.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
+ListPatterns.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
+ListPatterns.ROMAN_NUMERALS = /^[IVXLCDM]+$/;
+ListPatterns.LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
+// Superscript and subscript patterns
+// Matches ^text^ for superscript and ~text~ for subscript
+// Text can contain escaped spaces (\ ) but not unescaped spaces
+ListPatterns.SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
+ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
+// Cache for compiled patterns
+ListPatterns.compiledPatterns = /* @__PURE__ */ new Map();
+
+// src/decorations/pandocListsExtension.ts
 var FancyListMarkerWidget = class extends import_view.WidgetType {
   constructor(marker, type, view, pos) {
     super();
@@ -46,7 +231,7 @@ var FancyListMarkerWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker";
+    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = this.marker;
@@ -83,7 +268,7 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker";
+    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = `(${this.number}) `;
@@ -153,7 +338,7 @@ var HashListMarkerWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker";
+    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = `${this.number}. `;
@@ -199,6 +384,36 @@ var ExampleReferenceWidget = class extends import_view.WidgetType {
     return other.number === this.number && other.tooltipText === this.tooltipText;
   }
 };
+var SuperscriptWidget = class extends import_view.WidgetType {
+  constructor(content) {
+    super();
+    this.content = content;
+  }
+  toDOM() {
+    const sup = document.createElement("sup");
+    sup.className = CSS_CLASSES.SUPERSCRIPT;
+    sup.textContent = this.content;
+    return sup;
+  }
+  eq(other) {
+    return other.content === this.content;
+  }
+};
+var SubscriptWidget = class extends import_view.WidgetType {
+  constructor(content) {
+    super();
+    this.content = content;
+  }
+  toDOM() {
+    const sub = document.createElement("sub");
+    sub.className = CSS_CLASSES.SUBSCRIPT;
+    sub.textContent = this.content;
+    return sub;
+  }
+  eq(other) {
+    return other.content === this.content;
+  }
+};
 var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
   class {
     constructor(view) {
@@ -216,12 +431,12 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
       }
     }
     isListItemForValidation(line) {
-      return !!(line.match(/^(\s*)(#\.)(\s+)/) || // Hash auto-numbering
-      line.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/) || // Fancy lists
-      line.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/) || // Example lists
-      line.match(/^\s*[~:]\s+/) || // Definition lists
-      line.match(/^(\s*)[-*+]\s+/) || // Unordered lists
-      line.match(/^(\s*)[0-9]+[.)]\s+/));
+      return !!(ListPatterns.isHashList(line) || // Hash auto-numbering
+      ListPatterns.isFancyList(line) || // Fancy lists
+      ListPatterns.isExampleList(line) || // Example lists
+      ListPatterns.isDefinitionMarker(line) || // Definition lists
+      line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
+      line.match(ListPatterns.NUMBERED_LIST));
     }
     scanExampleLabels(view) {
       this.exampleLabels.clear();
@@ -276,7 +491,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
           listBlockStart = -1;
         }
         if (isCurrentList) {
-          const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+          const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
           if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
             for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
               invalidListBlocks.add(j);
@@ -484,7 +699,6 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
               })
             });
           }
-          continue;
         }
         const indentMatch = lineText.match(/^(    |\t)(.*)$/);
         if (indentMatch) {
@@ -524,7 +738,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
             continue;
           }
         }
-        if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch) {
+        if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch && !defItemMatch) {
           let isDefinitionTerm = false;
           let checkOffset = 1;
           if (line.number + 1 <= view.state.doc.lines) {
@@ -568,6 +782,38 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
                 })
               });
             }
+          }
+        }
+        const superscripts = ListPatterns.findSuperscripts(lineText);
+        for (const supMatch of superscripts) {
+          const supStart = line.from + supMatch.index;
+          const supEnd = line.from + supMatch.index + supMatch[0].length;
+          const cursorInSup = cursorPos >= supStart && cursorPos <= supEnd;
+          if (!cursorInSup) {
+            const content = supMatch[0].slice(1, -1).replace(/\\[ ]/g, " ");
+            decorations.push({
+              from: supStart,
+              to: supEnd,
+              decoration: import_view.Decoration.replace({
+                widget: new SuperscriptWidget(content)
+              })
+            });
+          }
+        }
+        const subscripts = ListPatterns.findSubscripts(lineText);
+        for (const subMatch of subscripts) {
+          const subStart = line.from + subMatch.index;
+          const subEnd = line.from + subMatch.index + subMatch[0].length;
+          const cursorInSub = cursorPos >= subStart && cursorPos <= subEnd;
+          if (!cursorInSub) {
+            const content = subMatch[0].slice(1, -1).replace(/\\[ ]/g, " ");
+            decorations.push({
+              from: subStart,
+              to: subEnd,
+              decoration: import_view.Decoration.replace({
+                widget: new SubscriptWidget(content)
+              })
+            });
           }
         }
       }
@@ -619,6 +865,14 @@ function pandocListsExtension(getSettings) {
       },
       ".pandoc-example-reference:hover": {
         textDecoration: "underline"
+      },
+      ".pandoc-superscript": {
+        verticalAlign: "super",
+        fontSize: "0.85em"
+      },
+      ".pandoc-subscript": {
+        verticalAlign: "sub",
+        fontSize: "0.85em"
       }
     })
   ];
@@ -636,7 +890,7 @@ function getSectionInfo(element) {
     try {
       return element.getSection();
     } catch (error) {
-      console.warn("[PandocLists] Failed to get section info:", error);
+      console.warn("[PandocExtendedMarkdown] Failed to get section info:", error);
       return null;
     }
   }
@@ -650,7 +904,7 @@ var ALPHA_UPPER = /^[A-Z]+$/;
 var ALPHA_LOWER = /^[a-z]+$/;
 var DECIMAL = /^[0-9]+$/;
 function parseFancyListMarker(line) {
-  const match = line.match(/^(\s*)(([a-zA-Z]+|[ivxlcdmIVXLCDM]+|[0-9]+|#)([.)]))\s+/);
+  const match = ListPatterns.isFancyList(line);
   if (!match) {
     return null;
   }
@@ -686,7 +940,7 @@ function parseFancyListMarker(line) {
 // src/parsers/exampleListParser.ts
 var import_obsidian2 = require("obsidian");
 function parseExampleListMarker(line) {
-  const match = line.match(/^(\s*)(\(@([a-zA-Z0-9_-]+)?\))\s+/);
+  const match = ListPatterns.isExampleList(line);
   if (!match) {
     return null;
   }
@@ -697,10 +951,90 @@ function parseExampleListMarker(line) {
   };
 }
 
+// src/parsers/superSubParser.ts
+function extractContent(match, delimiter) {
+  const content = match.slice(1, -1);
+  return content.replace(/\\[ ]/g, " ");
+}
+function findSuperSubInText(text) {
+  const matches = [];
+  const superscripts = ListPatterns.findSuperscripts(text);
+  superscripts.forEach((match) => {
+    matches.push({
+      index: match.index,
+      length: match[0].length,
+      content: extractContent(match[0], "^"),
+      type: "superscript"
+    });
+  });
+  const subscripts = ListPatterns.findSubscripts(text);
+  subscripts.forEach((match) => {
+    matches.push({
+      index: match.index,
+      length: match[0].length,
+      content: extractContent(match[0], "~"),
+      type: "subscript"
+    });
+  });
+  matches.sort((a, b) => a.index - b.index);
+  return matches;
+}
+function processSuperSub(element) {
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        const parent = node.parentElement;
+        if (parent && (parent.classList.contains(CSS_CLASSES.SUPERSCRIPT) || parent.classList.contains(CSS_CLASSES.SUBSCRIPT))) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+  const nodesToReplace = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const text = node.textContent || "";
+    const matches = findSuperSubInText(text);
+    if (matches.length > 0) {
+      nodesToReplace.push({ node, matches });
+    }
+  }
+  nodesToReplace.forEach(({ node, matches }) => {
+    const parent = node.parentNode;
+    if (!parent) return;
+    let lastIndex = 0;
+    const fragments = [];
+    matches.forEach((match) => {
+      if (match.index > lastIndex) {
+        fragments.push(node.textContent.substring(lastIndex, match.index));
+      }
+      const elem = match.type === "superscript" ? document.createElement("sup") : document.createElement("sub");
+      elem.className = match.type === "superscript" ? CSS_CLASSES.SUPERSCRIPT : CSS_CLASSES.SUBSCRIPT;
+      elem.textContent = match.content;
+      fragments.push(elem);
+      lastIndex = match.index + match.length;
+    });
+    if (lastIndex < node.textContent.length) {
+      fragments.push(node.textContent.substring(lastIndex));
+    }
+    fragments.forEach((fragment) => {
+      if (typeof fragment === "string") {
+        parent.insertBefore(document.createTextNode(fragment), node);
+      } else {
+        parent.insertBefore(fragment, node);
+      }
+    });
+    parent.removeChild(node);
+  });
+}
+
 // src/parsers/definitionListParser.ts
 function parseDefinitionListMarker(line) {
   const termMatch = line.match(/^([^\n:~]+)$/);
-  if (termMatch && !line.includes("*") && !line.includes("-") && !line.match(/^\s*\d+[.)]/)) {
+  if (termMatch && !line.includes("*") && !line.includes("-") && !line.match(ListPatterns.NUMBERED_LIST)) {
     const nextLineIndex = line.indexOf("\n");
     if (nextLineIndex === -1 || nextLineIndex === line.length - 1) {
       return {
@@ -711,13 +1045,14 @@ function parseDefinitionListMarker(line) {
       };
     }
   }
-  const defMatch = line.match(/^(\s*)([~:])(\s+)(.+)/);
+  const defMatch = ListPatterns.isDefinitionMarker(line);
   if (defMatch) {
+    const content = line.substring(defMatch[0].length);
     return {
       type: "definition",
       indent: defMatch[1],
       marker: defMatch[2],
-      content: defMatch[4]
+      content
     };
   }
   return null;
@@ -737,10 +1072,9 @@ function isStrictPandocList(context, strictMode) {
       return false;
     }
   }
-  const capitalLetterMatch = line.match(/^(\s*)([A-Z])([.)])\s+/);
+  const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
   if (capitalLetterMatch && capitalLetterMatch[3] === ".") {
-    const spacesAfterMarker = line.match(/^(\s*)([A-Z]\.)(\s+)/);
-    if (spacesAfterMarker && spacesAfterMarker[3].length < 2) {
+    if (capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
       return false;
     }
   }
@@ -808,8 +1142,8 @@ function formatToPandocStandard(content) {
       }
       continue;
     }
-    const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
-    if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+    const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
+    if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
       const formattedLine = line.replace(/^(\s*)([A-Z]\.)(\s+)/, "$1$2  ");
       result.push(formattedLine);
     } else {
@@ -848,8 +1182,8 @@ function checkPandocFormatting(content) {
           message: "List should have an empty line before it"
         });
       }
-      const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
-      if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+      const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
+      if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
         issues.push({
           line: i + 1,
           message: "Capital letter list with period requires at least 2 spaces after marker"
@@ -936,7 +1270,7 @@ function processReadingMode(element, context, settings) {
         return;
       }
       const text = node.textContent || "";
-      const hasCustomSyntax = text.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|#)([.)]))(\s+)/) || text.match(/^(\s*)\(@[a-zA-Z0-9_-]*\)\s+/) || text.match(/^(\s*)[~:]\s+/) || text.match(/\(@[a-zA-Z0-9_-]+\)/);
+      const hasCustomSyntax = ListPatterns.isFancyList(text) || ListPatterns.isExampleList(text) || ListPatterns.isDefinitionMarker(text) || ListPatterns.findExampleReferences(text).length > 0;
       if (!hasCustomSyntax) {
         return;
       }
@@ -949,7 +1283,7 @@ function processReadingMode(element, context, settings) {
         let isDefinitionTerm = false;
         if (lineIndex < lines2.length - 1) {
           const nextLine = lines2[lineIndex + 1];
-          if (nextLine && nextLine.match(/^(\s*)[~:]\s+/)) {
+          if (nextLine && ListPatterns.isDefinitionMarker(nextLine)) {
             isDefinitionTerm = true;
           }
         }
@@ -975,7 +1309,7 @@ function processReadingMode(element, context, settings) {
             }
           }
           const span = document.createElement("span");
-          span.className = `pandoc-list-${fancyMarker.type}`;
+          span.className = `${CSS_CLASSES.FANCY_LIST}-${fancyMarker.type}`;
           span.textContent = fancyMarker.marker + " ";
           newElements.push(span);
           const rest = line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1);
@@ -991,7 +1325,7 @@ function processReadingMode(element, context, settings) {
             number = exampleMap.get(exampleMarker.label);
           }
           const span = document.createElement("span");
-          span.className = "pandoc-example-list";
+          span.className = CSS_CLASSES.EXAMPLE_LIST;
           span.textContent = `(${number}) `;
           newElements.push(span);
           const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
@@ -1007,7 +1341,7 @@ function processReadingMode(element, context, settings) {
           newElements.push(span);
           newElements.push(document.createTextNode(defMarker.content));
           return;
-        } else if (isDefinitionTerm && line.trim() && !line.match(/^(\s*)[~:]\s+/)) {
+        } else if (isDefinitionTerm && line.trim() && !ListPatterns.isDefinitionMarker(line)) {
           const strong = document.createElement("strong");
           const u = document.createElement("u");
           u.textContent = line;
@@ -1027,7 +1361,7 @@ function processReadingMode(element, context, settings) {
           const label = match[1];
           if (exampleMap.has(label)) {
             const span = document.createElement("span");
-            span.className = "pandoc-example-reference";
+            span.className = CSS_CLASSES.EXAMPLE_REF;
             span.textContent = `(${exampleMap.get(label)})`;
             newElements.push(span);
           } else {
@@ -1049,6 +1383,7 @@ function processReadingMode(element, context, settings) {
       }
     });
   });
+  processSuperSub(element);
 }
 
 // src/ExampleReferenceSuggestFixed.ts
@@ -1084,7 +1419,7 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest 
     const exampleData = /* @__PURE__ */ new Map();
     let counter = 1;
     for (const line of lines) {
-      const match = line.match(/^\s*\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
+      const match = ListPatterns.isExampleList(line);
       if (match) {
         const label = match[1];
         const text = match[2].trim();
@@ -1092,7 +1427,7 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest 
           exampleData.set(label, { number: counter, text });
         }
         counter++;
-      } else if (line.match(/^\s*\(@\)\s+/)) {
+      } else if (ListPatterns.isExampleList(line)) {
         counter++;
       }
     }
@@ -1114,10 +1449,10 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest 
     return suggestions;
   }
   renderSuggestion(suggestion, el) {
-    const container = el.createDiv({ cls: "pandoc-suggestion-content" });
-    const title = container.createDiv({ cls: "pandoc-suggestion-title" });
+    const container = el.createDiv({ cls: CSS_CLASSES.SUGGESTION_CONTENT });
+    const title = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_TITLE });
     title.setText(`@${suggestion.label}`);
-    const preview = container.createDiv({ cls: "pandoc-suggestion-preview" });
+    const preview = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_PREVIEW });
     preview.setText(suggestion.previewText);
   }
   selectSuggestion(suggestion, evt) {
@@ -1150,7 +1485,7 @@ var DEFAULT_SETTINGS = {
   strictPandocMode: false,
   autoRenumberLists: false
 };
-var PandocListsSettingTab = class extends import_obsidian4.PluginSettingTab {
+var PandocExtendedMarkdownSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -1158,7 +1493,7 @@ var PandocListsSettingTab = class extends import_obsidian4.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Pandoc lists settings" });
+    containerEl.createEl("h2", { text: "Pandoc Extended Markdown Settings" });
     new import_obsidian4.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
@@ -1272,7 +1607,7 @@ function getNextRoman(roman) {
   return intToRoman(value + 1, isUpperCase);
 }
 function getNextListMarker(currentLine, allLines, currentLineIndex) {
-  const hashMatch = currentLine.match(/^(\s*)(#\.)(\s+)/);
+  const hashMatch = ListPatterns.isHashList(currentLine);
   if (hashMatch) {
     return { marker: "#.", indent: hashMatch[1], spaces: hashMatch[3] };
   }
@@ -1499,15 +1834,15 @@ function createListAutocompletionKeymap(settings) {
       }
       if (isEmptyListItem(lineText)) {
         const indentMatch = lineText.match(/^(\s+)/);
-        if (indentMatch && indentMatch[1].length >= 4) {
+        if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
           const currentIndent = indentMatch[1];
           let newIndent = "";
-          if (currentIndent.startsWith("    ")) {
-            newIndent = currentIndent.substring(4);
-          } else if (currentIndent.startsWith("	")) {
+          if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
+            newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
+          } else if (currentIndent.startsWith(INDENTATION.TAB)) {
             newIndent = currentIndent.substring(1);
           } else {
-            newIndent = currentIndent.substring(Math.min(4, currentIndent.length));
+            newIndent = currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
           }
           let previousMarker = null;
           for (let i = line.number - 1; i >= 1; i--) {
@@ -1594,7 +1929,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
         const space = listMatch[3];
         const markerEnd = currentIndent.length + marker.length + space.length;
         if (selection.from === line.from + markerEnd && selection.to === selection.from) {
-          const newIndent = currentIndent + "    ";
+          const newIndent = currentIndent + INDENTATION.FOUR_SPACES;
           const newLine = newIndent + marker + space + lineText.substring(markerEnd);
           const changes = {
             from: line.from,
@@ -1627,7 +1962,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
         const markerEnd = currentIndent.length + marker.length + space.length;
         let newIndent = "";
         if (currentIndent.startsWith("    ")) {
-          newIndent = currentIndent.substring(4);
+          newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
         } else if (currentIndent.startsWith("	")) {
           newIndent = currentIndent.substring(1);
         } else {
@@ -1660,10 +1995,10 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocListsPlugin = class extends import_obsidian5.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian5.Plugin {
   async onload() {
     await this.loadSettings();
-    this.addSettingTab(new PandocListsSettingTab(this.app, this));
+    this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
     this.registerEditorExtension(pandocListsExtension(() => this.settings));
     this.registerEditorExtension(import_state3.Prec.highest(import_view2.keymap.of(createListAutocompletionKeymap(this.settings))));
     this.registerMarkdownPostProcessor((element, context) => {
@@ -1672,47 +2007,47 @@ var PandocListsPlugin = class extends import_obsidian5.Plugin {
     this.suggester = new ExampleReferenceSuggestFixed(this);
     this.registerEditorSuggest(this.suggester);
     this.addCommand({
-      id: "check-pandoc-formatting",
+      id: COMMANDS.CHECK_PANDOC,
       name: "Check pandoc formatting",
       editorCallback: (editor) => {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content);
         if (issues.length === 0) {
-          new import_obsidian5.Notice("Document follows pandoc formatting standards");
+          new import_obsidian5.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian5.Notice(`Found ${issues.length} formatting issues:
+          new import_obsidian5.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, 1e4);
         }
       }
     });
     this.addCommand({
-      id: "format-to-pandoc",
+      id: COMMANDS.FORMAT_PANDOC,
       name: "Format document to pandoc standard",
       editorCallback: (editor) => {
         const content = editor.getValue();
         const formatted = formatToPandocStandard(content);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian5.Notice("Document formatted to pandoc standard");
+          new import_obsidian5.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian5.Notice("Document already follows pandoc standard");
+          new import_obsidian5.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
     this.addCommand({
-      id: "toggle-definition-bold",
+      id: COMMANDS.TOGGLE_DEFINITION_BOLD,
       name: "Toggle definition list bold style",
       editorCallback: (editor) => {
         const content = editor.getValue();
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian5.Notice("Definition terms bold style toggled");
+          new import_obsidian5.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian5.Notice("No definition terms found to toggle");
+          new import_obsidian5.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -1734,17 +2069,17 @@ ${issueList}`, 1e4);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
-      if (!trimmedLine || trimmedLine.match(/^[~:]\s/)) {
+      if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
         continue;
       }
       let isDefinitionTerm = false;
       if (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
-        if (nextLine.match(/^[~:]\s/)) {
+        if (ListPatterns.isDefinitionMarker(nextLine)) {
           isDefinitionTerm = true;
         } else if (nextLine === "" && i + 2 < lines.length) {
           const lineAfterEmpty = lines[i + 2].trim();
-          if (lineAfterEmpty.match(/^[~:]\s/)) {
+          if (ListPatterns.isDefinitionMarker(lineAfterEmpty)) {
             isDefinitionTerm = true;
           }
         }

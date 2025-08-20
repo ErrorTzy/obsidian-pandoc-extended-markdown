@@ -1,8 +1,15 @@
-# Pandoc Lists Plugin for Obsidian
+# Pandoc Extended Markdown Plugin for Obsidian
 
-This plugin enables Obsidian to render [Pandoc extended markdown lists](https://pandoc.org/MANUAL.html#lists), bringing powerful list formatting capabilities to your notes.
+This plugin enables Obsidian to render [Pandoc extended markdown syntax](https://pandoc.org/MANUAL.html), bringing powerful formatting capabilities including advanced lists, superscripts, subscripts, and more to your notes.
 
 ## Features
+
+### Superscripts and Subscripts
+Render Pandoc-style superscripts and subscripts:
+- **Superscript**: `^text^` renders as superscript (e.g., `2^10^` → 2¹⁰)
+- **Subscript**: `~text~` renders as subscript (e.g., `H~2~O` → H₂O)
+- **Escaped Spaces**: Use `\` to include spaces (e.g., `P~a\ cat~` → P_a cat_)
+- Works in all contexts: paragraphs, lists, definition lists, etc.
 
 ### Fancy Lists
 - **Uppercase Letters**: `A.` `B.` `C.`
@@ -103,17 +110,25 @@ This feature:
 
 ### From Obsidian Community Plugins (Coming Soon)
 1. Open Settings → Community plugins
-2. Search for "Pandoc Lists"
+2. Search for "Pandoc Extended Markdown"
 3. Click Install and Enable
 
 ### Manual Installation
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ErrorTzy/obsidian-pandoc-lists/releases)
-2. Create a folder named `pandoc-lists` in your vault's `.obsidian/plugins/` directory
-3. Copy the downloaded files into the `pandoc-lists` folder
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown/releases)
+2. Create a folder named `pandoc-extended-markdown` in your vault's `.obsidian/plugins/` directory
+3. Copy the downloaded files into the `pandoc-extended-markdown` folder
 4. Reload Obsidian
 5. Enable the plugin in Settings → Community plugins
 
 ## Usage Examples
+
+### Superscripts and Subscripts
+```markdown
+Water formula: H~2~O is essential for life.
+Einstein's equation: E = mc^2^ revolutionized physics.
+Chemical notation: Ca^2+^ + SO~4~^2-^ → CaSO~4~
+With spaces: P~a\ cat~ subscript example
+```
 
 ### Fancy Lists
 ```markdown
@@ -197,7 +212,7 @@ The plugin adds the following commands to the command palette:
 
 ```bash
 # Clone the repository
-git clone https://github.com/ErrorTzy/obsidian-pandoc-lists
+git clone https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown
 
 # Install dependencies
 npm install
@@ -217,7 +232,7 @@ npm run dev
 Complete structure of files and folders in the repository:
 
 ```
-pandoc-lists-plugin/
+pandoc-extended-markdown/
 ├── src/                                   # Source code directory
 │   ├── main.ts                           # Plugin entry point, registers all features
 │   ├── settings.ts                       # Settings interface and settings tab implementation
@@ -232,6 +247,7 @@ pandoc-lists-plugin/
 │   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
 │   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
 │   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
+│   │   ├── superSubParser.ts            # Parses superscripts (^) and subscripts (~)
 │   │   └── readingModeProcessor.ts      # Post-processor for reading mode rendering
 │   ├── types/                            # TypeScript type definitions
 │   │   └── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
@@ -280,7 +296,8 @@ pandoc-lists-plugin/
 - `patterns.ts` - Performance-optimized regex patterns with caching and helper methods.
 
 **Parser Modules (`src/parsers/`):**
-- Each parser handles specific list type parsing and rendering logic.
+- Each parser handles specific syntax parsing and rendering logic.
+- `superSubParser.ts` - Handles Pandoc superscript/subscript syntax with escaped space support.
 - Parsers work with both raw text and DOM elements depending on the mode.
 - Enhanced with fallback logic for private API compatibility.
 
@@ -317,7 +334,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## Support
 
-If you encounter any issues or have feature requests, please file them on the [GitHub Issues](https://github.com/ErrorTzy/obsidian-pandoc-lists/issues) page.
+If you encounter any issues or have feature requests, please file them on the [GitHub Issues](https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown/issues) page.
 
 ## License
 

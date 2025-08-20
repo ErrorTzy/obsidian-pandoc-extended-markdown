@@ -1,19 +1,19 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
-export interface PandocListsSettings {
+export interface PandocExtendedMarkdownSettings {
     strictPandocMode: boolean;
     autoRenumberLists: boolean;
 }
 
-export const DEFAULT_SETTINGS: PandocListsSettings = {
+export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
     autoRenumberLists: false
 };
 
-export class PandocListsSettingTab extends PluginSettingTab {
-    plugin: Plugin & { settings: PandocListsSettings; saveSettings: () => Promise<void> };
+export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
+    plugin: Plugin & { settings: PandocExtendedMarkdownSettings; saveSettings: () => Promise<void> };
 
-    constructor(app: App, plugin: Plugin & { settings: PandocListsSettings; saveSettings: () => Promise<void> }) {
+    constructor(app: App, plugin: Plugin & { settings: PandocExtendedMarkdownSettings; saveSettings: () => Promise<void> }) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -22,7 +22,7 @@ export class PandocListsSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Pandoc lists settings' });
+        containerEl.createEl('h2', { text: 'Pandoc Extended Markdown Settings' });
 
         new Setting(containerEl)
             .setName('Strict pandoc mode')

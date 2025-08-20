@@ -10,7 +10,7 @@ export class PluginError extends Error {
         public readonly recoverable: boolean = true
     ) {
         super(message);
-        this.name = 'PandocListsPluginError';
+        this.name = 'PandocExtendedMarkdownPluginError';
     }
 }
 
@@ -64,7 +64,7 @@ export async function withAsyncErrorBoundary<T>(
  */
 export function handleError(error: unknown, context: string): void {
     // Log error to console for debugging
-    console.error(`[PandocLists] Error in ${context}:`, error);
+    console.error(`[PandocExtendedMarkdown] Error in ${context}:`, error);
     
     // Determine error type and message
     let message = 'An unexpected error occurred';
@@ -86,7 +86,7 @@ export function handleError(error: unknown, context: string): void {
     
     // Show user-friendly notice for recoverable errors
     if (showNotice) {
-        new Notice(`Pandoc Lists: ${context} failed. ${message}`);
+        new Notice(`Pandoc Extended Markdown: ${context} failed. ${message}`);
     }
 }
 
@@ -103,7 +103,7 @@ export function validateApiMethod<T>(
         return obj[methodName].bind(obj);
     }
     
-    console.warn(`[PandocLists] API method '${methodName}' not available, using fallback`);
+    console.warn(`[PandocExtendedMarkdown] API method '${methodName}' not available, using fallback`);
     return fallback;
 }
 

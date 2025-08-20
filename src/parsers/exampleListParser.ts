@@ -1,5 +1,7 @@
 import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
 import { getSectionInfo } from '../types/obsidian-extended';
+import { CSS_CLASSES } from '../constants';
+import { ListPatterns } from '../patterns';
 
 export interface ExampleListInfo {
     indent: string;
@@ -8,7 +10,7 @@ export interface ExampleListInfo {
 }
 
 export function parseExampleListMarker(line: string): ExampleListInfo | null {
-    const match = line.match(/^(\s*)(\(@([a-zA-Z0-9_-]+)?\))\s+/);
+    const match = ListPatterns.isExampleList(line);
     
     if (!match) {
         return null;
@@ -49,7 +51,7 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
             if (exampleInfo.label && !exampleMap.has(exampleInfo.label)) {
                 exampleMap.set(exampleInfo.label, exampleCounter);
                 // Extract content after the marker
-                const match = line.match(/^\s*\(@[a-zA-Z0-9_-]+\)\s+(.*)$/);
+                const match = ListPatterns.isExampleList(line);
                 if (match && match[1]) {
                     exampleContent.set(exampleInfo.label, match[1].trim());
                 }
@@ -137,12 +139,12 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
             }
             
             item.setAttribute('data-example-number', String(number));
-            item.classList.add('pandoc-example-item');
+            item.classList.add(CSS_CLASSES.EXAMPLE_ITEM);
         }
     });
     
     if (hasExampleMarker && listStartNumber !== null) {
-        list.classList.add('pandoc-example-list');
+        list.classList.add(CSS_CLASSES.EXAMPLE_LIST);
         list.setAttribute('start', String(listStartNumber));
     }
 }
@@ -187,7 +189,7 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
                 fragments.push(node.textContent!.substring(lastIndex, match.index));
                 
                 const span = document.createElement('span');
-                span.className = 'pandoc-example-reference';
+                span.className = CSS_CLASSES.EXAMPLE_REF;
                 span.setAttribute('data-example-ref', label);
                 span.textContent = `(${number})`;
                 

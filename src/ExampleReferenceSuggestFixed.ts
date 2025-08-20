@@ -1,5 +1,7 @@
 import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
-import PandocListsPlugin from './main';
+import PandocExtendedMarkdownPlugin from './main';
+import { CSS_CLASSES } from './constants';
+import { ListPatterns } from './patterns';
 
 interface ExampleSuggestion {
     label: string;
@@ -8,9 +10,9 @@ interface ExampleSuggestion {
 }
 
 export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestion> {
-    plugin: PandocListsPlugin;
+    plugin: PandocExtendedMarkdownPlugin;
 
-    constructor(plugin: PandocListsPlugin) {
+    constructor(plugin: PandocExtendedMarkdownPlugin) {
         super(plugin.app);
         this.plugin = plugin;
     }
@@ -58,7 +60,7 @@ export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestio
         let counter = 1;
         
         for (const line of lines) {
-            const match = line.match(/^\s*\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
+            const match = ListPatterns.isExampleList(line);
             if (match) {
                 const label = match[1];
                 const text = match[2].trim();
@@ -66,7 +68,7 @@ export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestio
                     exampleData.set(label, { number: counter, text });
                 }
                 counter++;
-            } else if (line.match(/^\s*\(@\)\s+/)) {
+            } else if (ListPatterns.isExampleList(line)) {
                 counter++;
             }
         }
@@ -96,11 +98,11 @@ export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestio
     }
 
     renderSuggestion(suggestion: ExampleSuggestion, el: HTMLElement): void {
-        const container = el.createDiv({ cls: 'pandoc-suggestion-content' });
-        const title = container.createDiv({ cls: 'pandoc-suggestion-title' });
+        const container = el.createDiv({ cls: CSS_CLASSES.SUGGESTION_CONTENT });
+        const title = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_TITLE });
         title.setText(`@${suggestion.label}`);
         
-        const preview = container.createDiv({ cls: 'pandoc-suggestion-preview' });
+        const preview = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_PREVIEW });
         preview.setText(suggestion.previewText);
     }
 

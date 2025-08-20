@@ -1,16 +1,16 @@
 {
-  "name": "pandoc-lists-plugin",
-  "version": "1.1.0",
+  "name": "obsidian-pandoc-extended-markdown",
+  "version": "1.2.0",
   "main": "index.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "test": "jest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["obsidian", "pandoc", "markdown", "extended", "lists", "superscript", "subscript"],
+  "author": "ErrorTzy",
+  "license": "MIT",
+  "description": "Obsidian plugin for rendering Pandoc extended markdown syntax",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.3.0",

@@ -1,5 +1,7 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 import { getSectionInfo } from '../types/obsidian-extended';
+import { CSS_CLASSES } from '../constants';
+import { ListPatterns } from '../patterns';
 
 export type FancyListType = 'upper-alpha' | 'lower-alpha' | 'upper-roman' | 'lower-roman' | 'decimal' | 'hash';
 
@@ -18,7 +20,7 @@ const ALPHA_LOWER = /^[a-z]+$/;
 const DECIMAL = /^[0-9]+$/;
 
 export function parseFancyListMarker(line: string): FancyListMarker | null {
-    const match = line.match(/^(\s*)(([a-zA-Z]+|[ivxlcdmIVXLCDM]+|[0-9]+|#)([.)]))\s+/);
+    const match = ListPatterns.isFancyList(line);
     
     if (!match) {
         return null;

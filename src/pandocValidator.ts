@@ -1,3 +1,6 @@
+import { INDENTATION } from './constants';
+import { ListPatterns } from './patterns';
+
 export interface ValidationContext {
     lines: string[];
     currentLine: number;
@@ -23,11 +26,10 @@ export function isStrictPandocList(context: ValidationContext, strictMode: boole
     }
     
     // Check for capital letter lists requiring double space
-    const capitalLetterMatch = line.match(/^(\s*)([A-Z])([.)])\s+/);
+    const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
     if (capitalLetterMatch && capitalLetterMatch[3] === '.') {
         // Capital letter with period requires at least 2 spaces
-        const spacesAfterMarker = line.match(/^(\s*)([A-Z]\.)(\s+)/);
-        if (spacesAfterMarker && spacesAfterMarker[3].length < 2) {
+        if (capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
             return false;
         }
     }
@@ -148,8 +150,8 @@ export function formatToPandocStandard(content: string): string {
         }
         
         // Handle capital letter lists with period - ensure double space
-        const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
-        if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+        const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
+        if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
             // Add double space after capital letter with period
             const formattedLine = line.replace(/^(\s*)([A-Z]\.)(\s+)/, '$1$2  ');
             result.push(formattedLine);
@@ -205,8 +207,8 @@ export function checkPandocFormatting(content: string): LintingIssue[] {
             }
             
             // Check capital letter lists with period
-            const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
-            if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
+            const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
+            if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
                 issues.push({
                     line: i + 1,
                     message: 'Capital letter list with period requires at least 2 spaces after marker'

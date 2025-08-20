@@ -1,8 +1,10 @@
 import { Extension, StateField, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
 import { editorLivePreviewField, setTooltip } from 'obsidian';
-import { PandocListsSettings } from '../settings';
+import { PandocExtendedMarkdownSettings } from '../settings';
 import { isStrictPandocList, isStrictPandocHeading, ValidationContext } from '../pandocValidator';
+import { CSS_CLASSES, DECORATION_STYLES } from '../constants';
+import { ListPatterns } from '../patterns';
 
 // Widget for rendering fancy list markers
 class FancyListMarkerWidget extends WidgetType {
@@ -15,7 +17,7 @@ class FancyListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker';
+        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = this.marker;
@@ -60,7 +62,7 @@ class ExampleListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker';
+        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `(${this.number}) `;
@@ -148,7 +150,7 @@ class HashListMarkerWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-formatting-list-ol cm-list-1 pandoc-list-marker';
+        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `${this.number}. `;
@@ -206,8 +208,44 @@ class ExampleReferenceWidget extends WidgetType {
     }
 }
 
+// Widget for superscript
+class SuperscriptWidget extends WidgetType {
+    constructor(private content: string) {
+        super();
+    }
+
+    toDOM() {
+        const sup = document.createElement('sup');
+        sup.className = CSS_CLASSES.SUPERSCRIPT;
+        sup.textContent = this.content;
+        return sup;
+    }
+
+    eq(other: SuperscriptWidget) {
+        return other.content === this.content;
+    }
+}
+
+// Widget for subscript
+class SubscriptWidget extends WidgetType {
+    constructor(private content: string) {
+        super();
+    }
+
+    toDOM() {
+        const sub = document.createElement('sub');
+        sub.className = CSS_CLASSES.SUBSCRIPT;
+        sub.textContent = this.content;
+        return sub;
+    }
+
+    eq(other: SubscriptWidget) {
+        return other.content === this.content;
+    }
+}
+
 // Simple view plugin without state field to avoid errors
-const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin.fromClass(
+const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) => ViewPlugin.fromClass(
     class {
         decorations: DecorationSet;
         exampleLabels: Map<string, number> = new Map();
@@ -230,12 +268,12 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
         isListItemForValidation(line: string): boolean {
             // Check for various list patterns
             return !!(
-                line.match(/^(\s*)(#\.)(\s+)/) || // Hash auto-numbering
-                line.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/) || // Fancy lists
-                line.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/) || // Example lists
-                line.match(/^\s*[~:]\s+/) || // Definition lists
-                line.match(/^(\s*)[-*+]\s+/) || // Unordered lists
-                line.match(/^(\s*)[0-9]+[.)]\s+/) // Regular numbered lists
+                ListPatterns.isHashList(line) || // Hash auto-numbering
+                ListPatterns.isFancyList(line) || // Fancy lists
+                ListPatterns.isExampleList(line) || // Example lists
+                ListPatterns.isDefinitionMarker(line) || // Definition lists
+                line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
+                line.match(ListPatterns.NUMBERED_LIST) // Regular numbered lists
             );
         }
 
@@ -268,7 +306,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
             }
         }
 
-        validateListBlocks(lines: string[], settings: PandocListsSettings): Set<number> {
+        validateListBlocks(lines: string[], settings: PandocExtendedMarkdownSettings): Set<number> {
             const invalidListBlocks = new Set<number>();
             if (!settings.strictPandocMode) {
                 return invalidListBlocks;
@@ -310,7 +348,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                 
                 // Check for capital letter spacing issue
                 if (isCurrentList) {
-                    const capitalLetterMatch = line.match(/^(\s*)([A-Z])(\.)(\s+)/);
+                    const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
                     if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
                         // Mark entire block as invalid
                         for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
@@ -325,7 +363,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
             return invalidListBlocks;
         }
 
-        processHashList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocListsSettings, hashCounter: { value: number }): Array<{from: number, to: number, decoration: Decoration}> | null {
+        processHashList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocExtendedMarkdownSettings, hashCounter: { value: number }): Array<{from: number, to: number, decoration: Decoration}> | null {
             const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
             const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
             
@@ -382,7 +420,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
             return decorations;
         }
 
-        processFancyList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocListsSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
+        processFancyList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocExtendedMarkdownSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
             const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
             const fancyMatch = lineText.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/);
             
@@ -439,7 +477,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
             return decorations;
         }
 
-        processExampleList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocListsSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
+        processExampleList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocExtendedMarkdownSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
             const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
             const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
             
@@ -599,7 +637,8 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                             })
                         });
                     }
-                    continue; // Skip term check for definition lines
+                    // Don't continue here - we still need to process super/subscripts in the content
+                    // continue; // Skip term check for definition lines
                 }
                 
                 // Check if we're in a definition list context
@@ -656,7 +695,8 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                 }
                 
                 // Check for definition terms - can be directly followed by definition or have empty line
-                if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch) {
+                // But skip if this is already a definition item line
+                if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch && !defItemMatch) {
                     // Check next line(s) for definition marker
                     let isDefinitionTerm = false;
                     let checkOffset = 1;
@@ -716,6 +756,52 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                         }
                     }
                 }
+                
+                // Process superscripts
+                const superscripts = ListPatterns.findSuperscripts(lineText);
+                for (const supMatch of superscripts) {
+                    const supStart = line.from + supMatch.index!;
+                    const supEnd = line.from + supMatch.index! + supMatch[0].length;
+                    
+                    // Check if cursor is within this superscript
+                    const cursorInSup = cursorPos >= supStart && cursorPos <= supEnd;
+                    
+                    // Only replace if cursor is not within the superscript
+                    if (!cursorInSup) {
+                        // Extract content and unescape spaces
+                        const content = supMatch[0].slice(1, -1).replace(/\\[ ]/g, ' ');
+                        decorations.push({
+                            from: supStart,
+                            to: supEnd,
+                            decoration: Decoration.replace({
+                                widget: new SuperscriptWidget(content)
+                            })
+                        });
+                    }
+                }
+                
+                // Process subscripts
+                const subscripts = ListPatterns.findSubscripts(lineText);
+                for (const subMatch of subscripts) {
+                    const subStart = line.from + subMatch.index!;
+                    const subEnd = line.from + subMatch.index! + subMatch[0].length;
+                    
+                    // Check if cursor is within this subscript
+                    const cursorInSub = cursorPos >= subStart && cursorPos <= subEnd;
+                    
+                    // Only replace if cursor is not within the subscript
+                    if (!cursorInSub) {
+                        // Extract content and unescape spaces
+                        const content = subMatch[0].slice(1, -1).replace(/\\[ ]/g, ' ');
+                        decorations.push({
+                            from: subStart,
+                            to: subEnd,
+                            decoration: Decoration.replace({
+                                widget: new SubscriptWidget(content)
+                            })
+                        });
+                    }
+                }
             }
             
             // Sort decorations by from position
@@ -734,7 +820,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
     }
 );
 
-export function pandocListsExtension(getSettings: () => PandocListsSettings): Extension {
+export function pandocListsExtension(getSettings: () => PandocExtendedMarkdownSettings): Extension {
     return [
         pandocListsPlugin(getSettings),
         EditorView.baseTheme({
@@ -771,6 +857,14 @@ export function pandocListsExtension(getSettings: () => PandocListsSettings): Ex
             },
             '.pandoc-example-reference:hover': {
                 textDecoration: 'underline'
+            },
+            '.pandoc-superscript': {
+                verticalAlign: 'super',
+                fontSize: '0.85em'
+            },
+            '.pandoc-subscript': {
+                verticalAlign: 'sub',
+                fontSize: '0.85em'
             }
         })
     ];

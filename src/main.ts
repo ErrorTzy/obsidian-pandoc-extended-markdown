@@ -4,19 +4,21 @@ import { keymap } from '@codemirror/view';
 import { pandocListsExtension } from './decorations/pandocListsExtension';
 import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
-import { PandocListsSettings, DEFAULT_SETTINGS, PandocListsSettingTab } from './settings';
+import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
+import { MESSAGES, COMMANDS } from './constants';
+import { ListPatterns } from './patterns';
 
-export default class PandocListsPlugin extends Plugin {
+export default class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
-    settings: PandocListsSettings;
+    settings: PandocExtendedMarkdownSettings;
 
     async onload() {
         await this.loadSettings();
         
         // Add settings tab
-        this.addSettingTab(new PandocListsSettingTab(this.app, this));
+        this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
         
         // Register CodeMirror extension for live preview with settings
         this.registerEditorExtension(pandocListsExtension(() => this.settings));
@@ -35,26 +37,26 @@ export default class PandocListsPlugin extends Plugin {
         
         // Add command to check strict pandoc linting
         this.addCommand({
-            id: 'check-pandoc-formatting',
+            id: COMMANDS.CHECK_PANDOC,
             name: 'Check pandoc formatting',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
                 const issues = checkPandocFormatting(content);
                 
                 if (issues.length === 0) {
-                    new Notice('Document follows pandoc formatting standards');
+                    new Notice(MESSAGES.PANDOC_COMPLIANT);
                 } else {
                     const issueList = issues.map(issue => 
                         `Line ${issue.line}: ${issue.message}`
                     ).join('\n');
-                    new Notice(`Found ${issues.length} formatting issues:\n${issueList}`, 10000);
+                    new Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:\n${issueList}`, 10000);
                 }
             }
         });
         
         // Add command to auto-format to pandoc standard
         this.addCommand({
-            id: 'format-to-pandoc',
+            id: COMMANDS.FORMAT_PANDOC,
             name: 'Format document to pandoc standard',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
@@ -62,16 +64,16 @@ export default class PandocListsPlugin extends Plugin {
                 
                 if (content !== formatted) {
                     editor.setValue(formatted);
-                    new Notice('Document formatted to pandoc standard');
+                    new Notice(MESSAGES.FORMAT_SUCCESS);
                 } else {
-                    new Notice('Document already follows pandoc standard');
+                    new Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
                 }
             }
         });
         
         // Add command to toggle bold style for definition terms
         this.addCommand({
-            id: 'toggle-definition-bold',
+            id: COMMANDS.TOGGLE_DEFINITION_BOLD,
             name: 'Toggle definition list bold style',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
@@ -79,9 +81,9 @@ export default class PandocListsPlugin extends Plugin {
                 
                 if (content !== toggled) {
                     editor.setValue(toggled);
-                    new Notice('Definition terms bold style toggled');
+                    new Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
                 } else {
-                    new Notice('No definition terms found to toggle');
+                    new Notice(MESSAGES.NO_DEFINITION_TERMS);
                 }
             }
         });
@@ -112,7 +114,7 @@ export default class PandocListsPlugin extends Plugin {
             const trimmedLine = line.trim();
             
             // Skip empty lines and lines that are definition markers
-            if (!trimmedLine || trimmedLine.match(/^[~:]\s/)) {
+            if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
                 continue;
             }
             
@@ -122,13 +124,13 @@ export default class PandocListsPlugin extends Plugin {
             // Check immediate next line
             if (i + 1 < lines.length) {
                 const nextLine = lines[i + 1].trim();
-                if (nextLine.match(/^[~:]\s/)) {
+                if (ListPatterns.isDefinitionMarker(nextLine)) {
                     isDefinitionTerm = true;
                 }
                 // Check line after empty line
                 else if (nextLine === '' && i + 2 < lines.length) {
                     const lineAfterEmpty = lines[i + 2].trim();
-                    if (lineAfterEmpty.match(/^[~:]\s/)) {
+                    if (ListPatterns.isDefinitionMarker(lineAfterEmpty)) {
                         isDefinitionTerm = true;
                     }
                 }

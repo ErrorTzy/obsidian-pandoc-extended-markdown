@@ -1,6 +1,8 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
 import { EditorSelection, Transaction } from '@codemirror/state';
-import { PandocListsSettings } from './settings';
+import { PandocExtendedMarkdownSettings } from './settings';
+import { INDENTATION } from './constants';
+import { ListPatterns } from './patterns';
 
 // Helper function to get the next letter in sequence
 function getNextLetter(letter: string): string | null {
@@ -87,7 +89,7 @@ function getNextRoman(roman: string): string {
 // Helper function to detect list type and get next marker
 function getNextListMarker(currentLine: string, allLines?: string[], currentLineIndex?: number): { marker: string, indent: string, spaces?: string } | null {
     // Check for hash auto-numbering
-    const hashMatch = currentLine.match(/^(\s*)(#\.)(\s+)/);
+    const hashMatch = ListPatterns.isHashList(currentLine);
     if (hashMatch) {
         return { marker: '#.', indent: hashMatch[1], spaces: hashMatch[3] };
     }
@@ -421,7 +423,7 @@ function isEmptyListItem(line: string): boolean {
 }
 
 // Factory function to create keybindings with settings
-export function createListAutocompletionKeymap(settings: PandocListsSettings): KeyBinding[] {
+export function createListAutocompletionKeymap(settings: PandocExtendedMarkdownSettings): KeyBinding[] {
     
 // Handle Enter key for list autocompletion
 const handleListEnter: KeyBinding = {
@@ -448,17 +450,17 @@ const handleListEnter: KeyBinding = {
         if (isEmptyListItem(lineText)) {
             // Handle nested list dedent or remove marker
             const indentMatch = lineText.match(/^(\s+)/);
-            if (indentMatch && indentMatch[1].length >= 4) {
+            if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
                 // Dedent by removing 4 spaces or 1 tab
                 const currentIndent = indentMatch[1];
                 let newIndent = '';
-                if (currentIndent.startsWith('    ')) {
-                    newIndent = currentIndent.substring(4);
-                } else if (currentIndent.startsWith('\t')) {
+                if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
+                    newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
+                } else if (currentIndent.startsWith(INDENTATION.TAB)) {
                     newIndent = currentIndent.substring(1);
                 } else {
                     // Remove up to 4 spaces
-                    newIndent = currentIndent.substring(Math.min(4, currentIndent.length));
+                    newIndent = currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
                 }
                 
                 // Try to find the appropriate marker for this indent level
@@ -584,7 +586,7 @@ const handleListTab: KeyBinding = {
             // Only handle Tab if cursor is at the beginning of the content (right after marker)
             if (selection.from === line.from + markerEnd && selection.to === selection.from) {
                 // Add indentation (4 spaces or 1 tab based on user preference)
-                const newIndent = currentIndent + '    '; // Using 4 spaces
+                const newIndent = currentIndent + INDENTATION.FOUR_SPACES; // Using 4 spaces
                 const newLine = newIndent + marker + space + lineText.substring(markerEnd);
                 
                 const changes = {
@@ -629,7 +631,7 @@ const handleListShiftTab: KeyBinding = {
             // Remove indentation (4 spaces or 1 tab)
             let newIndent = '';
             if (currentIndent.startsWith('    ')) {
-                newIndent = currentIndent.substring(4);
+                newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
             } else if (currentIndent.startsWith('\t')) {
                 newIndent = currentIndent.substring(1);
             } else {

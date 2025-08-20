@@ -1,5 +1,8 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 import { getSectionInfo } from '../types/obsidian-extended';
+import { CSS_CLASSES } from '../constants';
+import { ListPatterns } from '../patterns';
+import { findSuperSubInText } from './superSubParser';
 
 export interface DefinitionListMarker {
     type: 'term' | 'definition';
@@ -10,7 +13,7 @@ export interface DefinitionListMarker {
 
 export function parseDefinitionListMarker(line: string): DefinitionListMarker | null {
     const termMatch = line.match(/^([^\n:~]+)$/);
-    if (termMatch && !line.includes('*') && !line.includes('-') && !line.match(/^\s*\d+[.)]/)) {
+    if (termMatch && !line.includes('*') && !line.includes('-') && !line.match(ListPatterns.NUMBERED_LIST)) {
         const nextLineIndex = line.indexOf('\n');
         if (nextLineIndex === -1 || nextLineIndex === line.length - 1) {
             return {
@@ -23,13 +26,15 @@ export function parseDefinitionListMarker(line: string): DefinitionListMarker | 
     }
     
     // Allow spaces before the marker (e.g., "  ~ Definition" or "~ Definition")
-    const defMatch = line.match(/^(\s*)([~:])(\s+)(.+)/);
+    const defMatch = ListPatterns.isDefinitionMarker(line);
     if (defMatch) {
+        // Extract content after the marker and spaces
+        const content = line.substring(defMatch[0].length);
         return {
             type: 'definition',
             indent: defMatch[1],
             marker: defMatch[2],
-            content: defMatch[4]
+            content: content
         };
     }
     
@@ -115,17 +120,17 @@ interface DefinitionItem {
 function renderDefinitionLists(element: HTMLElement, definitionLists: DefinitionList[]) {
     definitionLists.forEach(list => {
         const dl = document.createElement('dl');
-        dl.className = 'pandoc-definition-list';
+        dl.className = CSS_CLASSES.DEFINITION_LIST;
         
         list.terms.forEach(term => {
             const dt = document.createElement('dt');
-            dt.className = 'pandoc-definition-term';
+            dt.className = CSS_CLASSES.DEFINITION_TERM;
             applyInlineMarkdown(dt, term.text);
             dl.appendChild(dt);
             
             const dd = document.createElement('dd');
             const ul = document.createElement('ul');
-            ul.className = 'pandoc-definition-items';
+            ul.className = CSS_CLASSES.DEFINITION_ITEMS;
             
             term.definitions.forEach(def => {
                 const li = document.createElement('li');
@@ -153,6 +158,45 @@ function renderDefinitionLists(element: HTMLElement, definitionLists: Definition
 }
 
 function applyInlineMarkdown(element: HTMLElement, text: string): void {
+    // First, check for superscripts and subscripts
+    const superSubMatches = findSuperSubInText(text);
+    
+    if (superSubMatches.length > 0) {
+        let lastIndex = 0;
+        
+        superSubMatches.forEach(match => {
+            // Add text before the match
+            if (match.index > lastIndex) {
+                const beforeText = text.substring(lastIndex, match.index);
+                processMarkdownText(element, beforeText);
+            }
+            
+            // Add the super/subscript element
+            const elem = match.type === 'superscript' 
+                ? document.createElement('sup')
+                : document.createElement('sub');
+            
+            elem.className = match.type === 'superscript' 
+                ? CSS_CLASSES.SUPERSCRIPT
+                : CSS_CLASSES.SUBSCRIPT;
+            
+            elem.textContent = match.content;
+            element.appendChild(elem);
+            
+            lastIndex = match.index + match.length;
+        });
+        
+        // Add remaining text
+        if (lastIndex < text.length) {
+            const remainingText = text.substring(lastIndex);
+            processMarkdownText(element, remainingText);
+        }
+    } else {
+        processMarkdownText(element, text);
+    }
+}
+
+function processMarkdownText(element: HTMLElement, text: string): void {
     // Parse the text safely without innerHTML
     const parts = text.split(/(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g);
     

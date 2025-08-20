@@ -18,6 +18,12 @@ export class ListPatterns {
     static readonly ROMAN_NUMERALS = /^[IVXLCDM]+$/;
     static readonly LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
     
+    // Superscript and subscript patterns
+    // Matches ^text^ for superscript and ~text~ for subscript
+    // Text can contain escaped spaces (\ ) but not unescaped spaces
+    static readonly SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
+    static readonly SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
+    
     // Cache for compiled patterns
     private static compiledPatterns = new Map<string, RegExp>();
     
@@ -107,5 +113,31 @@ export class ListPatterns {
             line.match(this.UNORDERED_LIST) ||
             line.match(this.NUMBERED_LIST)
         );
+    }
+    
+    /**
+     * Find all superscripts in a text.
+     */
+    static findSuperscripts(text: string): RegExpMatchArray[] {
+        const matches: RegExpMatchArray[] = [];
+        const regex = new RegExp(this.SUPERSCRIPT.source, 'g');
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            matches.push(match);
+        }
+        return matches;
+    }
+    
+    /**
+     * Find all subscripts in a text.
+     */
+    static findSubscripts(text: string): RegExpMatchArray[] {
+        const matches: RegExpMatchArray[] = [];
+        const regex = new RegExp(this.SUBSCRIPT.source, 'g');
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            matches.push(match);
+        }
+        return matches;
     }
 }

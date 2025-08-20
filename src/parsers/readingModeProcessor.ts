@@ -2,11 +2,14 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 import { parseFancyListMarker } from './fancyListParser';
 import { parseExampleListMarker } from './exampleListParser';
 import { parseDefinitionListMarker } from './definitionListParser';
-import { PandocListsSettings } from '../settings';
+import { processSuperSub } from './superSubParser';
+import { PandocExtendedMarkdownSettings } from '../settings';
 import { isStrictPandocList, ValidationContext } from '../pandocValidator';
 import { getSectionInfo } from '../types/obsidian-extended';
+import { CSS_CLASSES } from '../constants';
+import { ListPatterns } from '../patterns';
 
-export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext, settings: PandocListsSettings) {
+export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext, settings: PandocExtendedMarkdownSettings) {
     // Only process paragraphs and list items, not headings or other elements
     const elementsToProcess = element.querySelectorAll('p, li');
     
@@ -80,10 +83,10 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
             
             // Only process if text contains our patterns
             const hasCustomSyntax = 
-                text.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|#)([.)]))(\s+)/) ||
-                text.match(/^(\s*)\(@[a-zA-Z0-9_-]*\)\s+/) ||
-                text.match(/^(\s*)[~:]\s+/) ||
-                text.match(/\(@[a-zA-Z0-9_-]+\)/);
+                ListPatterns.isFancyList(text) ||
+                ListPatterns.isExampleList(text) ||
+                ListPatterns.isDefinitionMarker(text) ||
+                ListPatterns.findExampleReferences(text).length > 0;
             
             if (!hasCustomSyntax) {
                 return;
@@ -101,7 +104,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                 let isDefinitionTerm = false;
                 if (lineIndex < lines.length - 1) {
                     const nextLine = lines[lineIndex + 1];
-                    if (nextLine && nextLine.match(/^(\s*)[~:]\s+/)) {
+                    if (nextLine && ListPatterns.isDefinitionMarker(nextLine)) {
                         isDefinitionTerm = true;
                     }
                 }
@@ -135,7 +138,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                     }
                     
                     const span = document.createElement('span');
-                    span.className = `pandoc-list-${fancyMarker.type}`;
+                    span.className = `${CSS_CLASSES.FANCY_LIST}-${fancyMarker.type}`;
                     span.textContent = fancyMarker.marker + ' ';
                     newElements.push(span);
                     
@@ -155,7 +158,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                     }
                     
                     const span = document.createElement('span');
-                    span.className = 'pandoc-example-list';
+                    span.className = CSS_CLASSES.EXAMPLE_LIST;
                     span.textContent = `(${number}) `;
                     newElements.push(span);
                     
@@ -174,7 +177,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                     newElements.push(span);
                     newElements.push(document.createTextNode(defMarker.content));
                     return;
-                } else if (isDefinitionTerm && line.trim() && !line.match(/^(\s*)[~:]\s+/)) {
+                } else if (isDefinitionTerm && line.trim() && !ListPatterns.isDefinitionMarker(line)) {
                     const strong = document.createElement('strong');
                     const u = document.createElement('u');
                     u.textContent = line;
@@ -198,7 +201,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                     const label = match[1];
                     if (exampleMap.has(label)) {
                         const span = document.createElement('span');
-                        span.className = 'pandoc-example-reference';
+                        span.className = CSS_CLASSES.EXAMPLE_REF;
                         span.textContent = `(${exampleMap.get(label)})`;
                         newElements.push(span);
                     } else {
@@ -224,4 +227,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
             }
         });
     });
+    
+    // Process superscripts and subscripts across the entire element
+    processSuperSub(element);
 }

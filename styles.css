@@ -173,3 +173,18 @@
     text-overflow: ellipsis;
     max-width: 300px;
 }
+
+/* Superscript and Subscript Styles */
+.pandoc-superscript,
+sup.pandoc-superscript {
+    vertical-align: super;
+    font-size: 0.85em;
+    line-height: 0;
+}
+
+.pandoc-subscript,
+sub.pandoc-subscript {
+    vertical-align: sub;
+    font-size: 0.85em;
+    line-height: 0;
+}
