@@ -22,13 +22,14 @@ export function parseDefinitionListMarker(line: string): DefinitionListMarker | 
         }
     }
     
-    const defMatch = line.match(/^(\s*)([~:])\s+(.+)/);
+    // Allow spaces before the marker (e.g., "  ~ Definition" or "~ Definition")
+    const defMatch = line.match(/^(\s*)([~:])(\s+)(.+)/);
     if (defMatch) {
         return {
             type: 'definition',
             indent: defMatch[1],
             marker: defMatch[2],
-            content: defMatch[3]
+            content: defMatch[4]
         };
     }
     

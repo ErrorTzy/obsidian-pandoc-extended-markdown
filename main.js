@@ -219,7 +219,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
       return !!(line.match(/^(\s*)(#\.)(\s+)/) || // Hash auto-numbering
       line.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/) || // Fancy lists
       line.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/) || // Example lists
-      line.match(/^[~:]\s+/) || // Definition lists
+      line.match(/^\s*[~:]\s+/) || // Definition lists
       line.match(/^(\s*)[-*+]\s+/) || // Unordered lists
       line.match(/^(\s*)[0-9]+[.)]\s+/));
     }
@@ -259,7 +259,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
         const line = lines[i];
         const isCurrentList = this.isListItemForValidation(line);
         const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === "");
-        const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !lines[i - 1].match(/^[~:]\s+/) && !lines[i - 1].match(/^(    |\t)/) && line.match(/^[~:]\s+/);
+        const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !lines[i - 1].match(/^\s*[~:]\s+/) && !lines[i - 1].match(/^(    |\t)/) && line.match(/^\s*[~:]\s+/);
         if (isCurrentList && listBlockStart === -1) {
           listBlockStart = i;
           if (i > 0 && lines[i - 1].trim() !== "" && !prevIsDefinitionTerm) {
@@ -464,15 +464,16 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
           decorations.push(...exampleDecorations);
           continue;
         }
-        const defItemMatch = lineText.match(/^([~:])(\s+)/);
+        const defItemMatch = lineText.match(/^(\s*)([~:])(\s+)/);
         if (defItemMatch) {
           if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
             continue;
           }
-          const marker = defItemMatch[1];
-          const space = defItemMatch[2];
-          const markerStart = line.from;
-          const markerEnd = line.from + marker.length + space.length;
+          const indent = defItemMatch[1];
+          const marker = defItemMatch[2];
+          const space = defItemMatch[3];
+          const markerStart = line.from + indent.length;
+          const markerEnd = line.from + indent.length + marker.length + space.length;
           const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
           if (!cursorInMarker) {
             decorations.push({
@@ -491,11 +492,11 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
           for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
             const prevLine = view.state.doc.line(checkLine);
             const prevText = prevLine.text;
-            if (prevText.match(/^[~:]\s+/)) {
+            if (prevText.match(/^\s*[~:]\s+/)) {
               inDefinitionContext = true;
               break;
             }
-            if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^[~:]\s+/)) {
+            if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^\s*[~:]\s+/)) {
               break;
             }
           }
@@ -523,17 +524,17 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
             continue;
           }
         }
-        if (lineText.trim() && !lineText.match(/^[~:]\s*/) && !indentMatch) {
+        if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch) {
           let isDefinitionTerm = false;
           let checkOffset = 1;
           if (line.number + 1 <= view.state.doc.lines) {
             const nextLine = view.state.doc.line(line.number + 1);
             const nextText = nextLine.text;
-            if (nextText.match(/^[~:]\s+/)) {
+            if (nextText.match(/^\s*[~:]\s+/)) {
               isDefinitionTerm = true;
             } else if (nextText.trim() === "" && line.number + 2 <= view.state.doc.lines) {
               const lineAfterEmpty = view.state.doc.line(line.number + 2);
-              if (lineAfterEmpty.text.match(/^[~:]\s+/)) {
+              if (lineAfterEmpty.text.match(/^\s*[~:]\s+/)) {
                 isDefinitionTerm = true;
               }
             }
@@ -710,13 +711,13 @@ function parseDefinitionListMarker(line) {
       };
     }
   }
-  const defMatch = line.match(/^(\s*)([~:])\s+(.+)/);
+  const defMatch = line.match(/^(\s*)([~:])(\s+)(.+)/);
   if (defMatch) {
     return {
       type: "definition",
       indent: defMatch[1],
       marker: defMatch[2],
-      content: defMatch[3]
+      content: defMatch[4]
     };
   }
   return null;
@@ -1347,11 +1348,12 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
     const spaces = exampleMatch[3];
     return { marker: "(@)", indent, spaces };
   }
-  const definitionMatch = currentLine.match(/^([~:])(\s+)/);
+  const definitionMatch = currentLine.match(/^(\s*)([~:])(\s+)/);
   if (definitionMatch) {
-    const marker = definitionMatch[1];
-    const spaces = definitionMatch[2];
-    return { marker, indent: "", spaces };
+    const indent = definitionMatch[1];
+    const marker = definitionMatch[2];
+    const spaces = definitionMatch[3];
+    return { marker, indent, spaces };
   }
   return null;
 }
@@ -1478,7 +1480,7 @@ function isEmptyListItem(line) {
   if (line.match(/^(\s*)(#\.)(\s*)$/)) return true;
   if (line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/)) return true;
   if (line.match(/^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/)) return true;
-  if (line.match(/^([~:])(\s*)$/)) return true;
+  if (line.match(/^(\s*)([~:])(\s*)$/)) return true;
   return false;
 }
 function createListAutocompletionKeymap(settings) {

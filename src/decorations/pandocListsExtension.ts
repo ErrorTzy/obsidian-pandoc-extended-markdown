@@ -233,7 +233,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                 line.match(/^(\s*)(#\.)(\s+)/) || // Hash auto-numbering
                 line.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/) || // Fancy lists
                 line.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/) || // Example lists
-                line.match(/^[~:]\s+/) || // Definition lists
+                line.match(/^\s*[~:]\s+/) || // Definition lists
                 line.match(/^(\s*)[-*+]\s+/) || // Unordered lists
                 line.match(/^(\s*)[0-9]+[.)]\s+/) // Regular numbered lists
             );
@@ -282,9 +282,9 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                 
                 // Check if previous line is a definition term (special case)
                 const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
-                    !lines[i - 1].match(/^[~:]\s+/) && 
+                    !lines[i - 1].match(/^\s*[~:]\s+/) && 
                     !lines[i - 1].match(/^(    |\t)/) &&
-                    line.match(/^[~:]\s+/);
+                    line.match(/^\s*[~:]\s+/);
                 
                 if (isCurrentList && listBlockStart === -1) {
                     // Start of a new list block
@@ -572,18 +572,19 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                 
                 // Check for definition items FIRST before checking terms
                 // Check for definition items FIRST before checking terms
-                const defItemMatch = lineText.match(/^([~:])(\s+)/);
+                const defItemMatch = lineText.match(/^(\s*)([~:])(\s+)/);
                 if (defItemMatch) {
                     // Check if this list item is in an invalid block
                     if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
                         continue; // Skip rendering if in an invalid list block
                     }
                     
-                    const marker = defItemMatch[1];
-                    const space = defItemMatch[2];
+                    const indent = defItemMatch[1];
+                    const marker = defItemMatch[2];
+                    const space = defItemMatch[3];
                     
-                    const markerStart = line.from;
-                    const markerEnd = line.from + marker.length + space.length;
+                    const markerStart = line.from + indent.length;
+                    const markerEnd = line.from + indent.length + marker.length + space.length;
                     
                     // Check if cursor is within the marker area
                     const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
@@ -612,12 +613,12 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                         const prevText = prevLine.text;
                         
                         // If we find a definition marker, we're in definition context
-                        if (prevText.match(/^[~:]\s+/)) {
+                        if (prevText.match(/^\s*[~:]\s+/)) {
                             inDefinitionContext = true;
                             break;
                         }
                         // If we find a non-empty, non-indented line that's not a definition
-                        if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^[~:]\s+/)) {
+                        if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^\s*[~:]\s+/)) {
                             // Could still be in context if this is a term followed by definition
                             break;
                         }
@@ -655,7 +656,7 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                 }
                 
                 // Check for definition terms - can be directly followed by definition or have empty line
-                if (lineText.trim() && !lineText.match(/^[~:]\s*/) && !indentMatch) {
+                if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch) {
                     // Check next line(s) for definition marker
                     let isDefinitionTerm = false;
                     let checkOffset = 1;
@@ -666,13 +667,13 @@ const pandocListsPlugin = (getSettings: () => PandocListsSettings) => ViewPlugin
                         const nextText = nextLine.text;
                         
                         // Direct definition (no empty line)
-                        if (nextText.match(/^[~:]\s+/)) {
+                        if (nextText.match(/^\s*[~:]\s+/)) {
                             isDefinitionTerm = true;
                         }
                         // Empty line followed by definition
                         else if (nextText.trim() === '' && line.number + 2 <= view.state.doc.lines) {
                             const lineAfterEmpty = view.state.doc.line(line.number + 2);
-                            if (lineAfterEmpty.text.match(/^[~:]\s+/)) {
+                            if (lineAfterEmpty.text.match(/^\s*[~:]\s+/)) {
                                 isDefinitionTerm = true;
                             }
                         }

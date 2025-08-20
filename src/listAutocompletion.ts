@@ -205,11 +205,12 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
     }
     
     // Check for definition lists
-    const definitionMatch = currentLine.match(/^([~:])(\s+)/);
+    const definitionMatch = currentLine.match(/^(\s*)([~:])(\s+)/);
     if (definitionMatch) {
-        const marker = definitionMatch[1];
-        const spaces = definitionMatch[2];
-        return { marker, indent: '', spaces };
+        const indent = definitionMatch[1];
+        const marker = definitionMatch[2];
+        const spaces = definitionMatch[3];
+        return { marker, indent, spaces };
     }
     
     return null;
@@ -414,7 +415,7 @@ function isEmptyListItem(line: string): boolean {
     if (line.match(/^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/)) return true;
     
     // Check definition lists
-    if (line.match(/^([~:])(\s*)$/)) return true;
+    if (line.match(/^(\s*)([~:])(\s*)$/)) return true;
     
     return false;
 }

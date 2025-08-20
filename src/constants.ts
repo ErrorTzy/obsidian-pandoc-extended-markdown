@@ -44,7 +44,7 @@ export const REGEX_PATTERNS = {
     FANCY_LIST: /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/,
     EXAMPLE_LIST: /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/,
     EXAMPLE_REFERENCE: /\(@([a-zA-Z0-9_-]+)\)/g,
-    DEFINITION_MARKER: /^([~:])(\s+)/,
+    DEFINITION_MARKER: /^(\s*)([~:])(\s+)/,
     DEFINITION_INDENTED: /^(    |\t)/,
     NUMBERED_LIST: /^(\s*)([0-9]+[.)])/,
     UNORDERED_LIST: /^(\s*)[-*+]\s+/,

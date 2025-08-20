@@ -9,7 +9,7 @@ export class ListPatterns {
     static readonly FANCY_LIST = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/;
     static readonly EXAMPLE_LIST = /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/;
     static readonly EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
-    static readonly DEFINITION_MARKER = /^([~:])(\s+)/;
+    static readonly DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
     static readonly DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
     static readonly DEFINITION_INDENTED = /^(    |\t)/;
     static readonly NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
