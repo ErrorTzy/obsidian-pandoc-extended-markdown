@@ -1146,7 +1146,8 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest 
 // src/settings.ts
 var import_obsidian4 = require("obsidian");
 var DEFAULT_SETTINGS = {
-  strictPandocMode: false
+  strictPandocMode: false,
+  autoRenumberLists: false
 };
 var PandocListsSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
@@ -1161,6 +1162,10 @@ var PandocListsSettingTab = class extends import_obsidian4.PluginSettingTab {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
     }));
+    new import_obsidian4.Setting(containerEl).setName("Auto-renumber lists").setDesc("Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
+      this.plugin.settings.autoRenumberLists = value;
+      await this.plugin.saveSettings();
+    }));
   }
 };
 
@@ -1172,8 +1177,12 @@ function getNextLetter(letter) {
   }
   return String.fromCharCode(letter.charCodeAt(0) + 1);
 }
-function getNextRoman(roman) {
-  const romanToInt = {
+function numberToLetter(num, isUpperCase) {
+  const letter = String.fromCharCode("A".charCodeAt(0) + num - 1);
+  return isUpperCase ? letter : letter.toLowerCase();
+}
+function romanToInt(roman) {
+  const romanValues = {
     "i": 1,
     "iv": 4,
     "v": 5,
@@ -1201,7 +1210,22 @@ function getNextRoman(roman) {
     "CM": 900,
     "M": 1e3
   };
-  const intToRoman = [
+  let value = 0;
+  let i = 0;
+  const normalizedRoman = roman.toLowerCase();
+  while (i < normalizedRoman.length) {
+    if (i + 1 < normalizedRoman.length && romanValues[normalizedRoman.substring(i, i + 2)]) {
+      value += romanValues[normalizedRoman.substring(i, i + 2)];
+      i += 2;
+    } else {
+      value += romanValues[normalizedRoman[i]] || 0;
+      i++;
+    }
+  }
+  return value;
+}
+function intToRoman(num, isUpperCase) {
+  const intToRomanUpper = [
     [1e3, "M"],
     [900, "CM"],
     [500, "D"],
@@ -1231,28 +1255,20 @@ function getNextRoman(roman) {
     [4, "iv"],
     [1, "i"]
   ];
-  let value = 0;
-  let i = 0;
-  const normalizedRoman = roman.toLowerCase();
-  while (i < normalizedRoman.length) {
-    if (i + 1 < normalizedRoman.length && romanToInt[normalizedRoman.substring(i, i + 2)]) {
-      value += romanToInt[normalizedRoman.substring(i, i + 2)];
-      i += 2;
-    } else {
-      value += romanToInt[normalizedRoman[i]];
-      i++;
-    }
-  }
-  value++;
   let result = "";
-  const table = roman[0] === roman[0].toUpperCase() ? intToRoman : intToRomanLower;
-  for (const [num, sym] of table) {
-    while (value >= num) {
+  const table = isUpperCase ? intToRomanUpper : intToRomanLower;
+  for (const [value, sym] of table) {
+    while (num >= value) {
       result += sym;
-      value -= num;
+      num -= value;
     }
   }
   return result;
+}
+function getNextRoman(roman) {
+  const value = romanToInt(roman);
+  const isUpperCase = roman[0] === roman[0].toUpperCase();
+  return intToRoman(value + 1, isUpperCase);
 }
 function getNextListMarker(currentLine, allLines, currentLineIndex) {
   const hashMatch = currentLine.match(/^(\s*)(#\.)(\s+)/);
@@ -1339,6 +1355,125 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
   }
   return null;
 }
+function renumberListItems(view, insertedLineNum) {
+  const state = view.state;
+  const doc = state.doc;
+  const allLines = doc.toString().split("\n");
+  let blockStart = insertedLineNum;
+  let blockEnd = insertedLineNum;
+  const insertedLine = allLines[insertedLineNum];
+  const insertedIndentMatch = insertedLine.match(/^(\s*)/);
+  const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : "";
+  for (let i = insertedLineNum - 1; i >= 0; i--) {
+    const line = allLines[i];
+    if (!line.trim()) {
+      continue;
+    }
+    const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+    if (!listMatch) {
+      break;
+    }
+    const lineIndent = listMatch[1];
+    if (lineIndent.length < insertedIndent.length) {
+      break;
+    }
+    if (lineIndent === insertedIndent) {
+      blockStart = i;
+    }
+  }
+  for (let i = insertedLineNum + 1; i < allLines.length; i++) {
+    const line = allLines[i];
+    if (!line.trim()) {
+      continue;
+    }
+    const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+    if (!listMatch) {
+      break;
+    }
+    const lineIndent = listMatch[1];
+    if (lineIndent.length < insertedIndent.length) {
+      break;
+    }
+    if (lineIndent === insertedIndent) {
+      blockEnd = i;
+    }
+  }
+  const listItems = [];
+  for (let i = blockStart; i <= blockEnd; i++) {
+    const line = allLines[i];
+    const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/);
+    if (listMatch && listMatch[1] === insertedIndent) {
+      const marker = listMatch[2];
+      const punctuation = listMatch[3];
+      const spaces = listMatch[4];
+      const content = listMatch[5];
+      let isRoman = false;
+      let isAlpha = false;
+      if (marker === "#") {
+      } else if (marker.match(/^[A-Za-z]+$/)) {
+        if (marker.length > 1 && marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+          isRoman = true;
+        } else if (marker.length === 1 && marker.match(/^[IVXLCDM]$/i)) {
+          if (i === blockStart) {
+            isRoman = marker.match(/^[Ii]$/) !== null;
+            if (!isRoman) {
+              isAlpha = true;
+            }
+          } else {
+            isRoman = listItems.length > 0 && listItems[0].isRoman;
+            isAlpha = listItems.length > 0 && listItems[0].isAlpha;
+          }
+        } else {
+          isAlpha = true;
+        }
+      }
+      listItems.push({
+        lineNum: i,
+        marker,
+        punctuation,
+        spaces,
+        content,
+        isRoman,
+        isAlpha
+      });
+    }
+  }
+  if (listItems.length > 1) {
+    const changes = [];
+    let currentValue = 1;
+    const firstItem = listItems[0];
+    for (let i = 0; i < listItems.length; i++) {
+      const item = listItems[i];
+      let newMarker;
+      if (item.marker === "#") {
+        newMarker = "#";
+      } else if (item.isRoman) {
+        const isUpperCase = item.marker[0] === item.marker[0].toUpperCase();
+        newMarker = intToRoman(i + 1, isUpperCase);
+      } else if (item.isAlpha) {
+        const isUpperCase = item.marker[0] === item.marker[0].toUpperCase();
+        newMarker = numberToLetter(i + 1, isUpperCase);
+      } else {
+        newMarker = item.marker;
+      }
+      const newLine = `${insertedIndent}${newMarker}${item.punctuation}${item.spaces}${item.content}`;
+      const oldLine = allLines[item.lineNum];
+      if (newLine !== oldLine) {
+        const lineStartPos = doc.line(item.lineNum + 1).from;
+        const lineEndPos = doc.line(item.lineNum + 1).to;
+        changes.push({
+          from: lineStartPos,
+          to: lineEndPos,
+          insert: newLine
+        });
+      }
+    }
+    if (changes.length > 0) {
+      const transaction = state.update({ changes });
+      view.dispatch(transaction);
+    }
+  }
+}
 function isEmptyListItem(line) {
   if (line.match(/^(\s*)(#\.)(\s*)$/)) return true;
   if (line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/)) return true;
@@ -1346,23 +1481,148 @@ function isEmptyListItem(line) {
   if (line.match(/^([~:])(\s*)$/)) return true;
   return false;
 }
-var handleListEnter = {
-  key: "Enter",
-  run: (view) => {
-    const state = view.state;
-    const selection = state.selection.main;
-    const line = state.doc.lineAt(selection.from);
-    if (selection.from !== line.to || selection.from !== selection.to) {
+function createListAutocompletionKeymap(settings) {
+  const handleListEnter = {
+    key: "Enter",
+    run: (view) => {
+      const state = view.state;
+      const selection = state.selection.main;
+      const line = state.doc.lineAt(selection.from);
+      if (selection.from !== line.to || selection.from !== selection.to) {
+        return false;
+      }
+      const lineText = line.text;
+      if (lineText.match(/^\s*\d+[.)]\s/)) {
+        return false;
+      }
+      if (isEmptyListItem(lineText)) {
+        const indentMatch = lineText.match(/^(\s+)/);
+        if (indentMatch && indentMatch[1].length >= 4) {
+          const currentIndent = indentMatch[1];
+          let newIndent = "";
+          if (currentIndent.startsWith("    ")) {
+            newIndent = currentIndent.substring(4);
+          } else if (currentIndent.startsWith("	")) {
+            newIndent = currentIndent.substring(1);
+          } else {
+            newIndent = currentIndent.substring(Math.min(4, currentIndent.length));
+          }
+          let previousMarker = null;
+          for (let i = line.number - 1; i >= 1; i--) {
+            const prevLine = state.doc.line(i);
+            const prevText = prevLine.text;
+            const prevIndentMatch = prevText.match(/^(\s*)/);
+            if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
+              const allLines2 = state.doc.toString().split("\n");
+              const markerInfo2 = getNextListMarker(prevText, allLines2, i - 1);
+              if (markerInfo2) {
+                previousMarker = markerInfo2;
+                break;
+              }
+            }
+          }
+          if (previousMarker && newIndent.length > 0) {
+            const spaces = previousMarker.spaces || " ";
+            const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
+            const changes2 = {
+              from: line.from,
+              to: line.to,
+              insert: newLine
+            };
+            const transaction2 = state.update({
+              changes: changes2,
+              selection: import_state2.EditorSelection.cursor(line.from + newLine.length)
+            });
+            view.dispatch(transaction2);
+            return true;
+          }
+        }
+        const changes = {
+          from: line.from,
+          to: line.to,
+          insert: ""
+        };
+        const transaction = state.update({
+          changes,
+          selection: import_state2.EditorSelection.cursor(line.from)
+        });
+        view.dispatch(transaction);
+        return true;
+      }
+      const allLines = state.doc.toString().split("\n");
+      const currentLineIndex = line.number - 1;
+      const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex);
+      if (markerInfo) {
+        const spaces = markerInfo.spaces || " ";
+        const newLine = `
+${markerInfo.indent}${markerInfo.marker}${spaces}`;
+        const changes = {
+          from: selection.from,
+          to: selection.to,
+          insert: newLine
+        };
+        const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : newLine.length;
+        const transaction = state.update({
+          changes,
+          selection: import_state2.EditorSelection.cursor(selection.from + cursorOffset)
+        });
+        view.dispatch(transaction);
+        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "#." && !markerInfo.marker.match(/^[~:]$/)) {
+          const newLineNum = line.number;
+          setTimeout(() => {
+            renumberListItems(view, newLineNum);
+          }, 0);
+        }
+        return true;
+      }
       return false;
     }
-    const lineText = line.text;
-    if (lineText.match(/^\s*\d+[.)]\s/)) {
+  };
+  const handleListTab = {
+    key: "Tab",
+    run: (view) => {
+      const state = view.state;
+      const selection = state.selection.main;
+      const line = state.doc.lineAt(selection.from);
+      const lineText = line.text;
+      const listMatch = lineText.match(/^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
+      if (listMatch) {
+        const currentIndent = listMatch[1];
+        const marker = listMatch[2];
+        const space = listMatch[3];
+        const markerEnd = currentIndent.length + marker.length + space.length;
+        if (selection.from === line.from + markerEnd && selection.to === selection.from) {
+          const newIndent = currentIndent + "    ";
+          const newLine = newIndent + marker + space + lineText.substring(markerEnd);
+          const changes = {
+            from: line.from,
+            to: line.to,
+            insert: newLine
+          };
+          const transaction = state.update({
+            changes,
+            selection: import_state2.EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
+          });
+          view.dispatch(transaction);
+          return true;
+        }
+      }
       return false;
     }
-    if (isEmptyListItem(lineText)) {
-      const indentMatch = lineText.match(/^(\s+)/);
-      if (indentMatch && indentMatch[1].length >= 4) {
-        const currentIndent = indentMatch[1];
+  };
+  const handleListShiftTab = {
+    key: "Shift-Tab",
+    run: (view) => {
+      const state = view.state;
+      const selection = state.selection.main;
+      const line = state.doc.lineAt(selection.from);
+      const lineText = line.text;
+      const listMatch = lineText.match(/^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
+      if (listMatch && listMatch[1].length > 0) {
+        const currentIndent = listMatch[1];
+        const marker = listMatch[2];
+        const space = listMatch[3];
+        const markerEnd = currentIndent.length + marker.length + space.length;
         let newIndent = "";
         if (currentIndent.startsWith("    ")) {
           newIndent = currentIndent.substring(4);
@@ -1371,148 +1631,31 @@ var handleListEnter = {
         } else {
           newIndent = currentIndent.substring(Math.min(4, currentIndent.length));
         }
-        let previousMarker = null;
-        for (let i = line.number - 1; i >= 1; i--) {
-          const prevLine = state.doc.line(i);
-          const prevText = prevLine.text;
-          const prevIndentMatch = prevText.match(/^(\s*)/);
-          if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
-            const allLines2 = state.doc.toString().split("\n");
-            const markerInfo2 = getNextListMarker(prevText, allLines2, i - 1);
-            if (markerInfo2) {
-              previousMarker = markerInfo2;
-              break;
-            }
-          }
-        }
-        if (previousMarker && newIndent.length > 0) {
-          const spaces = previousMarker.spaces || " ";
-          const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
-          const changes2 = {
-            from: line.from,
-            to: line.to,
-            insert: newLine
-          };
-          const transaction2 = state.update({
-            changes: changes2,
-            selection: import_state2.EditorSelection.cursor(line.from + newLine.length)
-          });
-          view.dispatch(transaction2);
-          return true;
-        }
-      }
-      const changes = {
-        from: line.from,
-        to: line.to,
-        insert: ""
-      };
-      const transaction = state.update({
-        changes,
-        selection: import_state2.EditorSelection.cursor(line.from)
-      });
-      view.dispatch(transaction);
-      return true;
-    }
-    const allLines = state.doc.toString().split("\n");
-    const currentLineIndex = line.number - 1;
-    const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex);
-    if (markerInfo) {
-      const spaces = markerInfo.spaces || " ";
-      const newLine = `
-${markerInfo.indent}${markerInfo.marker}${spaces}`;
-      const changes = {
-        from: selection.from,
-        to: selection.to,
-        insert: newLine
-      };
-      const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : newLine.length;
-      const transaction = state.update({
-        changes,
-        selection: import_state2.EditorSelection.cursor(selection.from + cursorOffset)
-      });
-      view.dispatch(transaction);
-      return true;
-    }
-    return false;
-  }
-};
-var handleListTab = {
-  key: "Tab",
-  run: (view) => {
-    const state = view.state;
-    const selection = state.selection.main;
-    const line = state.doc.lineAt(selection.from);
-    const lineText = line.text;
-    const listMatch = lineText.match(/^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
-    if (listMatch) {
-      const currentIndent = listMatch[1];
-      const marker = listMatch[2];
-      const space = listMatch[3];
-      const markerEnd = currentIndent.length + marker.length + space.length;
-      if (selection.from === line.from + markerEnd && selection.to === selection.from) {
-        const newIndent = currentIndent + "    ";
         const newLine = newIndent + marker + space + lineText.substring(markerEnd);
         const changes = {
           from: line.from,
           to: line.to,
           insert: newLine
         };
+        const oldCursorOffset = selection.from - line.from;
+        const indentDiff = currentIndent.length - newIndent.length;
+        const newCursorOffset = Math.max(newIndent.length + marker.length + space.length, oldCursorOffset - indentDiff);
         const transaction = state.update({
           changes,
-          selection: import_state2.EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
+          selection: import_state2.EditorSelection.cursor(line.from + newCursorOffset)
         });
         view.dispatch(transaction);
         return true;
       }
+      return false;
     }
-    return false;
-  }
-};
-var handleListShiftTab = {
-  key: "Shift-Tab",
-  run: (view) => {
-    const state = view.state;
-    const selection = state.selection.main;
-    const line = state.doc.lineAt(selection.from);
-    const lineText = line.text;
-    const listMatch = lineText.match(/^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
-    if (listMatch && listMatch[1].length > 0) {
-      const currentIndent = listMatch[1];
-      const marker = listMatch[2];
-      const space = listMatch[3];
-      const markerEnd = currentIndent.length + marker.length + space.length;
-      let newIndent = "";
-      if (currentIndent.startsWith("    ")) {
-        newIndent = currentIndent.substring(4);
-      } else if (currentIndent.startsWith("	")) {
-        newIndent = currentIndent.substring(1);
-      } else {
-        newIndent = currentIndent.substring(Math.min(4, currentIndent.length));
-      }
-      const newLine = newIndent + marker + space + lineText.substring(markerEnd);
-      const changes = {
-        from: line.from,
-        to: line.to,
-        insert: newLine
-      };
-      const oldCursorOffset = selection.from - line.from;
-      const indentDiff = currentIndent.length - newIndent.length;
-      const newCursorOffset = Math.max(newIndent.length + marker.length + space.length, oldCursorOffset - indentDiff);
-      const transaction = state.update({
-        changes,
-        selection: import_state2.EditorSelection.cursor(line.from + newCursorOffset)
-      });
-      view.dispatch(transaction);
-      return true;
-    }
-    return false;
-  }
-};
-var listAutocompletionKeymap = [
-  handleListEnter,
-  handleListTab,
-  handleListShiftTab
-];
+  };
+  return [
+    handleListEnter,
+    handleListTab,
+    handleListShiftTab
+  ];
+}
 
 // src/main.ts
 var PandocListsPlugin = class extends import_obsidian5.Plugin {
@@ -1520,7 +1663,7 @@ var PandocListsPlugin = class extends import_obsidian5.Plugin {
     await this.loadSettings();
     this.addSettingTab(new PandocListsSettingTab(this.app, this));
     this.registerEditorExtension(pandocListsExtension(() => this.settings));
-    this.registerEditorExtension(import_state3.Prec.highest(import_view2.keymap.of(listAutocompletionKeymap)));
+    this.registerEditorExtension(import_state3.Prec.highest(import_view2.keymap.of(createListAutocompletionKeymap(this.settings))));
     this.registerMarkdownPostProcessor((element, context) => {
       processReadingMode(element, context, this.settings);
     });

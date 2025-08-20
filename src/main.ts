@@ -6,7 +6,7 @@ import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
 import { PandocListsSettings, DEFAULT_SETTINGS, PandocListsSettingTab } from './settings';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
-import { listAutocompletionKeymap } from './listAutocompletion';
+import { createListAutocompletionKeymap } from './listAutocompletion';
 
 export default class PandocListsPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
@@ -22,7 +22,7 @@ export default class PandocListsPlugin extends Plugin {
         this.registerEditorExtension(pandocListsExtension(() => this.settings));
         
         // Register list autocompletion keymap with highest priority
-        this.registerEditorExtension(Prec.highest(keymap.of(listAutocompletionKeymap)));
+        this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(this.settings))));
         
         // Register markdown post-processor for reading mode
         this.registerMarkdownPostProcessor((element, context) => {

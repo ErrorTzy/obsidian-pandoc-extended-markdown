@@ -2,10 +2,12 @@ import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 export interface PandocListsSettings {
     strictPandocMode: boolean;
+    autoRenumberLists: boolean;
 }
 
 export const DEFAULT_SETTINGS: PandocListsSettings = {
-    strictPandocMode: false
+    strictPandocMode: false,
+    autoRenumberLists: false
 };
 
 export class PandocListsSettingTab extends PluginSettingTab {
@@ -29,6 +31,16 @@ export class PandocListsSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.strictPandocMode)
                 .onChange(async (value) => {
                     this.plugin.settings.strictPandocMode = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Auto-renumber lists')
+            .setDesc('Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoRenumberLists)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoRenumberLists = value;
                     await this.plugin.saveSettings();
                 }));
     }

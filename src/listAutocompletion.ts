@@ -1,5 +1,6 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
 import { EditorSelection, Transaction } from '@codemirror/state';
+import { PandocListsSettings } from './settings';
 
 // Helper function to get the next letter in sequence
 function getNextLetter(letter: string): string | null {
@@ -9,9 +10,21 @@ function getNextLetter(letter: string): string | null {
     return String.fromCharCode(letter.charCodeAt(0) + 1);
 }
 
-// Helper function to get the next roman numeral
-function getNextRoman(roman: string): string {
-    const romanToInt: { [key: string]: number } = {
+// Helper function to convert letter to number (A=1, B=2, etc.)
+function letterToNumber(letter: string): number {
+    const upperLetter = letter.toUpperCase();
+    return upperLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+}
+
+// Helper function to convert number to letter (1=A, 2=B, etc.)
+function numberToLetter(num: number, isUpperCase: boolean): string {
+    const letter = String.fromCharCode('A'.charCodeAt(0) + num - 1);
+    return isUpperCase ? letter : letter.toLowerCase();
+}
+
+// Helper function to convert roman numeral to integer
+function romanToInt(roman: string): number {
+    const romanValues: { [key: string]: number } = {
         'i': 1, 'iv': 4, 'v': 5, 'ix': 9, 'x': 10,
         'xl': 40, 'l': 50, 'xc': 90, 'c': 100,
         'cd': 400, 'd': 500, 'cm': 900, 'm': 1000,
@@ -20,7 +33,26 @@ function getNextRoman(roman: string): string {
         'CD': 400, 'D': 500, 'CM': 900, 'M': 1000
     };
     
-    const intToRoman: [number, string][] = [
+    let value = 0;
+    let i = 0;
+    const normalizedRoman = roman.toLowerCase();
+    
+    while (i < normalizedRoman.length) {
+        if (i + 1 < normalizedRoman.length && romanValues[normalizedRoman.substring(i, i + 2)]) {
+            value += romanValues[normalizedRoman.substring(i, i + 2)];
+            i += 2;
+        } else {
+            value += romanValues[normalizedRoman[i]] || 0;
+            i++;
+        }
+    }
+    
+    return value;
+}
+
+// Helper function to convert integer to roman numeral
+function intToRoman(num: number, isUpperCase: boolean): string {
+    const intToRomanUpper: [number, string][] = [
         [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
         [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
         [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
@@ -32,36 +64,24 @@ function getNextRoman(roman: string): string {
         [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']
     ];
     
-    // Convert roman to integer
-    let value = 0;
-    let i = 0;
-    const normalizedRoman = roman.toLowerCase();
-    
-    while (i < normalizedRoman.length) {
-        if (i + 1 < normalizedRoman.length && romanToInt[normalizedRoman.substring(i, i + 2)]) {
-            value += romanToInt[normalizedRoman.substring(i, i + 2)];
-            i += 2;
-        } else {
-            value += romanToInt[normalizedRoman[i]];
-            i++;
-        }
-    }
-    
-    // Increment the value
-    value++;
-    
-    // Convert back to roman
     let result = '';
-    const table = roman[0] === roman[0].toUpperCase() ? intToRoman : intToRomanLower;
+    const table = isUpperCase ? intToRomanUpper : intToRomanLower;
     
-    for (const [num, sym] of table) {
-        while (value >= num) {
+    for (const [value, sym] of table) {
+        while (num >= value) {
             result += sym;
-            value -= num;
+            num -= value;
         }
     }
     
     return result;
+}
+
+// Helper function to get the next roman numeral
+function getNextRoman(roman: string): string {
+    const value = romanToInt(roman);
+    const isUpperCase = roman[0] === roman[0].toUpperCase();
+    return intToRoman(value + 1, isUpperCase);
 }
 
 // Helper function to detect list type and get next marker
@@ -195,6 +215,193 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
     return null;
 }
 
+// Function to renumber all list items after insertion
+function renumberListItems(view: EditorView, insertedLineNum: number): void {
+    const state = view.state;
+    const doc = state.doc;
+    const allLines = doc.toString().split('\n');
+    
+    // Find the start and end of the current list block
+    let blockStart = insertedLineNum;
+    let blockEnd = insertedLineNum;
+    
+    // Get the indentation level of the inserted line
+    const insertedLine = allLines[insertedLineNum];
+    const insertedIndentMatch = insertedLine.match(/^(\s*)/);
+    const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : '';
+    
+    // Find the start of the list block (going backwards)
+    for (let i = insertedLineNum - 1; i >= 0; i--) {
+        const line = allLines[i];
+        
+        // Skip empty lines
+        if (!line.trim()) {
+            continue;
+        }
+        
+        // Check if this line is a list item with same or less indentation
+        const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+        if (!listMatch) {
+            // Not a list item, stop here
+            break;
+        }
+        
+        const lineIndent = listMatch[1];
+        
+        // If this line has less indentation, it's a parent list - include it
+        if (lineIndent.length < insertedIndent.length) {
+            // This is a parent list item, don't include it in renumbering
+            break;
+        }
+        
+        // If same indentation, include in the block
+        if (lineIndent === insertedIndent) {
+            blockStart = i;
+        }
+        
+        // If more indentation, it's a nested list - skip it but continue looking
+    }
+    
+    // Find the end of the list block (going forwards)
+    for (let i = insertedLineNum + 1; i < allLines.length; i++) {
+        const line = allLines[i];
+        
+        // Skip empty lines within the list
+        if (!line.trim()) {
+            continue;
+        }
+        
+        // Check if this line is a list item
+        const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+        if (!listMatch) {
+            // Not a list item, stop here
+            break;
+        }
+        
+        const lineIndent = listMatch[1];
+        
+        // If this line has less indentation, it's a different list level
+        if (lineIndent.length < insertedIndent.length) {
+            break;
+        }
+        
+        // If same indentation, include in the block
+        if (lineIndent === insertedIndent) {
+            blockEnd = i;
+        }
+        
+        // If more indentation, it's a nested list - continue but don't update blockEnd
+    }
+    
+    // Now collect all list items at the same indentation level
+    const listItems: Array<{lineNum: number, marker: string, punctuation: string, spaces: string, content: string, isRoman: boolean, isAlpha: boolean}> = [];
+    
+    for (let i = blockStart; i <= blockEnd; i++) {
+        const line = allLines[i];
+        const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/);
+        
+        if (listMatch && listMatch[1] === insertedIndent) {
+            const marker = listMatch[2];
+            const punctuation = listMatch[3];
+            const spaces = listMatch[4];
+            const content = listMatch[5];
+            
+            // Determine if it's roman or alphabetic
+            let isRoman = false;
+            let isAlpha = false;
+            
+            if (marker === '#') {
+                // Hash list - neither roman nor alpha
+            } else if (marker.match(/^[A-Za-z]+$/)) {
+                // Could be either roman or alphabetic
+                if (marker.length > 1 && marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+                    isRoman = true;
+                } else if (marker.length === 1 && marker.match(/^[IVXLCDM]$/i)) {
+                    // Single character that could be roman - check context
+                    // For renumbering, we'll look at the first item to determine type
+                    if (i === blockStart) {
+                        // First item - check if it's 'I' or 'i' (assume roman for these)
+                        isRoman = marker.match(/^[Ii]$/) !== null;
+                        if (!isRoman) {
+                            // For other single chars, default to alphabetic unless clearly roman
+                            isAlpha = true;
+                        }
+                    } else {
+                        // Use the type of the first item
+                        isRoman = listItems.length > 0 && listItems[0].isRoman;
+                        isAlpha = listItems.length > 0 && listItems[0].isAlpha;
+                    }
+                } else {
+                    isAlpha = true;
+                }
+            }
+            
+            listItems.push({
+                lineNum: i,
+                marker,
+                punctuation,
+                spaces,
+                content,
+                isRoman,
+                isAlpha
+            });
+        }
+    }
+    
+    // If we have items to renumber
+    if (listItems.length > 1) {
+        const changes: Array<{from: number, to: number, insert: string}> = [];
+        
+        // Determine the starting value based on the first item
+        let currentValue = 1;
+        const firstItem = listItems[0];
+        
+        // Renumber all items
+        for (let i = 0; i < listItems.length; i++) {
+            const item = listItems[i];
+            let newMarker: string;
+            
+            if (item.marker === '#') {
+                // Hash lists always use '#'
+                newMarker = '#';
+            } else if (item.isRoman) {
+                // Roman numeral
+                const isUpperCase = item.marker[0] === item.marker[0].toUpperCase();
+                newMarker = intToRoman(i + 1, isUpperCase);
+            } else if (item.isAlpha) {
+                // Alphabetic
+                const isUpperCase = item.marker[0] === item.marker[0].toUpperCase();
+                newMarker = numberToLetter(i + 1, isUpperCase);
+            } else {
+                // Default to keeping the same marker
+                newMarker = item.marker;
+            }
+            
+            // Build the new line
+            const newLine = `${insertedIndent}${newMarker}${item.punctuation}${item.spaces}${item.content}`;
+            const oldLine = allLines[item.lineNum];
+            
+            // Only add a change if the line actually changed
+            if (newLine !== oldLine) {
+                const lineStartPos = doc.line(item.lineNum + 1).from;
+                const lineEndPos = doc.line(item.lineNum + 1).to;
+                
+                changes.push({
+                    from: lineStartPos,
+                    to: lineEndPos,
+                    insert: newLine
+                });
+            }
+        }
+        
+        // Apply all changes if there are any
+        if (changes.length > 0) {
+            const transaction = state.update({ changes });
+            view.dispatch(transaction);
+        }
+    }
+}
+
 // Helper function to check if a line is empty (only contains the list marker)
 function isEmptyListItem(line: string): boolean {
     // Check hash lists
@@ -212,8 +419,11 @@ function isEmptyListItem(line: string): boolean {
     return false;
 }
 
+// Factory function to create keybindings with settings
+export function createListAutocompletionKeymap(settings: PandocListsSettings): KeyBinding[] {
+    
 // Handle Enter key for list autocompletion
-export const handleListEnter: KeyBinding = {
+const handleListEnter: KeyBinding = {
     key: 'Enter',
     run: (view: EditorView): boolean => {
         const state = view.state;
@@ -332,6 +542,18 @@ export const handleListEnter: KeyBinding = {
             });
             
             view.dispatch(transaction);
+            
+            // If auto-renumbering is enabled and this is a fancy list, renumber the list
+            if (settings.autoRenumberLists && markerInfo.marker !== '(@)' && markerInfo.marker !== '#.' && !markerInfo.marker.match(/^[~:]$/)) {
+                // Get the line number of the newly inserted item (it's the next line)
+                const newLineNum = line.number; // This is 1-based, but we need 0-based for our function
+                
+                // Use setTimeout to ensure the insertion is complete before renumbering
+                setTimeout(() => {
+                    renumberListItems(view, newLineNum);
+                }, 0);
+            }
+            
             return true;
         }
         
@@ -340,7 +562,7 @@ export const handleListEnter: KeyBinding = {
 };
 
 // Handle Tab key for nested lists
-export const handleListTab: KeyBinding = {
+const handleListTab: KeyBinding = {
     key: 'Tab',
     run: (view: EditorView): boolean => {
         const state = view.state;
@@ -385,7 +607,7 @@ export const handleListTab: KeyBinding = {
 };
 
 // Handle Shift+Tab for dedenting
-export const handleListShiftTab: KeyBinding = {
+const handleListShiftTab: KeyBinding = {
     key: 'Shift-Tab',
     run: (view: EditorView): boolean => {
         const state = view.state;
@@ -440,9 +662,10 @@ export const handleListShiftTab: KeyBinding = {
     }
 };
 
-// Export all keybindings as an array
-export const listAutocompletionKeymap: KeyBinding[] = [
+// Return all keybindings as an array
+return [
     handleListEnter,
     handleListTab,
     handleListShiftTab
 ];
+}

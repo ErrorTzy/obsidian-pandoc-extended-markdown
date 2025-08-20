@@ -10,6 +10,7 @@ This plugin enables Obsidian to render [Pandoc extended markdown lists](https://
 - **Roman Numerals**: `I.` `II.` `III.` or `i)` `ii)` `iii)`
 - **Hash Auto-numbering**: `#.` automatically numbers items sequentially
 - **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
+- **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
 
 ### Strict Pandoc Mode
 - **Toggle Setting**: Enable strict Pandoc formatting requirements
@@ -60,6 +61,43 @@ The plugin provides a command to toggle between explicit and implicit bold forma
 - **Explicit bold**: Terms have markdown bold syntax (e.g., `**Term**`)
 
 This is useful for maintaining compatibility with other markdown readers that don't have this plugin installed.
+
+### Auto-Renumbering Lists
+
+The plugin can automatically renumber list items when you insert new items in the middle of a list:
+
+**Without auto-renumbering:**
+```markdown
+A. First item
+[Press Enter here]
+B. Second item
+```
+Result:
+```markdown
+A. First item
+B. [new item]
+B. Second item  # Duplicate marker
+```
+
+**With auto-renumbering enabled:**
+```markdown
+A. First item
+[Press Enter here]
+B. Second item
+```
+Result:
+```markdown
+A. First item
+B. [new item]
+C. Second item  # Automatically renumbered
+```
+
+This feature:
+- Works with alphabetic lists (A, B, C or a, b, c)
+- Works with roman numerals (i, ii, iii or I, II, III)
+- Maintains proper sequence even with incorrectly ordered lists
+- Respects indentation levels (only renumbers items at the same level)
+- Preserves nested list numbering independently
 
 ## Installation
 
@@ -131,6 +169,11 @@ The plugin provides a settings tab where you can configure:
   - When enabled, lists must have proper empty lines before/after blocks
   - Capital letters with periods require double spacing
   - Invalid lists are displayed as plain text
+
+- **Auto-renumber lists**: Toggle automatic renumbering of list items
+  - When enabled, inserting a new list item automatically renumbers all subsequent items
+  - Ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...)
+  - Only affects alphabetic and roman numeral lists, not hash (#.) or example (@) lists
 
 ## Commands
 
