@@ -2,7 +2,9 @@
 
 This plugin enables Obsidian to render [Pandoc extended markdown syntax](https://pandoc.org/MANUAL.html#pandocs-markdown), bringing powerful formatting capabilities including advanced lists, superscripts, subscripts, and more to your notes.
 
-## Features
+## Current Features
+
+Pandoc extended markdown syntax is a huge superset of obsidian markdown. Therefore I cannot implement every single one of them. For now I have implement the ones I found the most useful. Mainly, it's lists and super/subscripts. I am not planning to implement pandoc markdown extended table feature because I think using tables in markdown is painful anyway.
 
 ### Superscripts and Subscripts
 Render Pandoc-style superscripts and subscripts:
@@ -63,7 +65,13 @@ Term 2
 
 Direct Term
 : Definition can directly follow term (no empty line needed)
+
+Term 3
+
+  ~ You can also have spaces before the marker
+
 ```
+
 - Terms are rendered in bold with underline
 - Definitions appear as bullet points
 - Indented paragraphs maintain proper text styling
