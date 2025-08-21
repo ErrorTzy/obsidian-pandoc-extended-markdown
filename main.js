@@ -31,10 +31,31 @@ var import_obsidian5 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view2 = require("@codemirror/view");
 
-// src/decorations/pandocListsExtension.ts
-var import_state = require("@codemirror/state");
-var import_view = require("@codemirror/view");
+// src/settings.ts
 var import_obsidian = require("obsidian");
+var DEFAULT_SETTINGS = {
+  strictPandocMode: false,
+  autoRenumberLists: false
+};
+var PandocExtendedMarkdownSettingTab = class extends import_obsidian.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  display() {
+    const { containerEl } = this;
+    containerEl.empty();
+    containerEl.createEl("h2", { text: "Pandoc Extended Markdown Settings" });
+    new import_obsidian.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+      this.plugin.settings.strictPandocMode = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(containerEl).setName("Auto-renumber lists").setDesc("Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
+      this.plugin.settings.autoRenumberLists = value;
+      await this.plugin.saveSettings();
+    }));
+  }
+};
 
 // src/constants.ts
 var INDENTATION = {
@@ -59,6 +80,7 @@ var CSS_CLASSES = {
   DEFINITION_TERM: "pandoc-definition-term",
   DEFINITION_DESC: "pandoc-list-definition-desc",
   DEFINITION_ITEMS: "pandoc-definition-items",
+  DEFINITION_CONTENT_TEXT: "pandoc-definition-content-text",
   // Example List Classes
   EXAMPLE_REF: "pandoc-example-reference",
   EXAMPLE_LIST: "pandoc-example-list",
@@ -212,6 +234,12 @@ ListPatterns.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
 ListPatterns.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
 ListPatterns.ROMAN_NUMERALS = /^[IVXLCDM]+$/;
 ListPatterns.LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
+// Character type patterns for fancy list parsing
+ListPatterns.ROMAN_UPPER = /^[IVXLCDM]+$/;
+ListPatterns.ROMAN_LOWER = /^[ivxlcdm]+$/;
+ListPatterns.ALPHA_UPPER = /^[A-Z]+$/;
+ListPatterns.ALPHA_LOWER = /^[a-z]+$/;
+ListPatterns.DECIMAL = /^[0-9]+$/;
 // Autocompletion patterns
 ListPatterns.LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
 ListPatterns.LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
@@ -239,6 +267,8 @@ ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXL
 ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
 // Indentation patterns
 ListPatterns.INDENT_ONLY = /^(\s*)/;
+// Text formatting patterns
+ListPatterns.BOLD_TEXT = /^\*\*(.+)\*\*$/;
 // Superscript and subscript patterns
 // Matches ^text^ for superscript and ~text~ for subscript
 // Text can contain escaped spaces (\ ) but not unescaped spaces
@@ -248,6 +278,9 @@ ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
 ListPatterns.compiledPatterns = /* @__PURE__ */ new Map();
 
 // src/decorations/pandocListsExtension.ts
+var import_state = require("@codemirror/state");
+var import_view = require("@codemirror/view");
+var import_obsidian2 = require("obsidian");
 var FancyListMarkerWidget = class extends import_view.WidgetType {
   constructor(marker, type, view, pos) {
     super();
@@ -303,7 +336,7 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
     innerSpan.textContent = `(${this.number}) `;
     span.appendChild(innerSpan);
     const tooltipText = this.label ? `@${this.label}` : "@";
-    (0, import_obsidian.setTooltip)(span, tooltipText, { delay: 300 });
+    (0, import_obsidian2.setTooltip)(span, tooltipText, { delay: 300 });
     if (this.view && this.pos !== void 0) {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -345,7 +378,7 @@ var DuplicateExampleLabelWidget = class extends import_view.WidgetType {
       lineContent = lineContent.substring(0, 100) + "...";
     }
     const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
-    (0, import_obsidian.setTooltip)(span, tooltipText, { delay: 300 });
+    (0, import_obsidian2.setTooltip)(span, tooltipText, { delay: 300 });
     if (this.view && this.pos !== void 0) {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -446,10 +479,10 @@ var ExampleReferenceWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = "pandoc-example-reference";
+    span.className = CSS_CLASSES.EXAMPLE_REF;
     span.textContent = `(${this.number})`;
     if (this.tooltipText) {
-      (0, import_obsidian.setTooltip)(span, this.tooltipText, { delay: 300 });
+      (0, import_obsidian2.setTooltip)(span, this.tooltipText, { delay: 300 });
     }
     return span;
   }
@@ -766,7 +799,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
     }
     buildDecorations(view) {
       const builder = new import_state.RangeSetBuilder();
-      const isLivePreview = view.state.field(import_obsidian.editorLivePreviewField);
+      const isLivePreview = view.state.field(import_obsidian2.editorLivePreviewField);
       if (!isLivePreview) {
         return builder.finish();
       }
@@ -852,7 +885,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
                 from: line.from,
                 to: line.to,
                 decoration: import_view.Decoration.mark({
-                  class: "pandoc-definition-content-text"
+                  class: CSS_CLASSES.DEFINITION_CONTENT_TEXT
                 })
               });
             }
@@ -1020,12 +1053,17 @@ function getSectionInfo(element) {
 }
 
 // src/parsers/fancyListParser.ts
-var ROMAN_UPPER = /^[IVXLCDM]+$/;
-var ROMAN_LOWER = /^[ivxlcdm]+$/;
-var ALPHA_UPPER = /^[A-Z]+$/;
-var ALPHA_LOWER = /^[a-z]+$/;
-var DECIMAL = /^[0-9]+$/;
 function parseFancyListMarker(line) {
+  const hashMatch = ListPatterns.isHashList(line);
+  if (hashMatch) {
+    return {
+      indent: hashMatch[1],
+      marker: hashMatch[2],
+      type: "hash",
+      delimiter: ".",
+      value: void 0
+    };
+  }
   const match = ListPatterns.isFancyList(line);
   if (!match) {
     return null;
@@ -1035,17 +1073,15 @@ function parseFancyListMarker(line) {
   const value = match[3];
   const delimiter = match[4];
   let type;
-  if (value === "#") {
-    type = "hash";
-  } else if (DECIMAL.test(value)) {
+  if (ListPatterns.DECIMAL.test(value)) {
     return null;
-  } else if (ROMAN_UPPER.test(value)) {
+  } else if (ListPatterns.ROMAN_UPPER.test(value)) {
     type = "upper-roman";
-  } else if (ROMAN_LOWER.test(value)) {
+  } else if (ListPatterns.ROMAN_LOWER.test(value)) {
     type = "lower-roman";
-  } else if (ALPHA_UPPER.test(value)) {
+  } else if (ListPatterns.ALPHA_UPPER.test(value)) {
     type = "upper-alpha";
-  } else if (ALPHA_LOWER.test(value)) {
+  } else if (ListPatterns.ALPHA_LOWER.test(value)) {
     type = "lower-alpha";
   } else {
     return null;
@@ -1060,7 +1096,7 @@ function parseFancyListMarker(line) {
 }
 
 // src/parsers/exampleListParser.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 function parseExampleListMarker(line) {
   const match = ListPatterns.isExampleList(line);
   if (!match) {
@@ -1069,7 +1105,7 @@ function parseExampleListMarker(line) {
   return {
     indent: match[1],
     originalMarker: match[2],
-    label: match[3]
+    label: match[3] || void 0
   };
 }
 
@@ -1509,8 +1545,8 @@ function processReadingMode(element, context, settings) {
 }
 
 // src/ExampleReferenceSuggestFixed.ts
-var import_obsidian3 = require("obsidian");
-var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest {
+var import_obsidian4 = require("obsidian");
+var ExampleReferenceSuggestFixed = class extends import_obsidian4.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -1599,32 +1635,6 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest 
       line: start.line,
       ch: newCh
     });
-  }
-};
-
-// src/settings.ts
-var import_obsidian4 = require("obsidian");
-var DEFAULT_SETTINGS = {
-  strictPandocMode: false,
-  autoRenumberLists: false
-};
-var PandocExtendedMarkdownSettingTab = class extends import_obsidian4.PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.plugin = plugin;
-  }
-  display() {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.createEl("h2", { text: "Pandoc Extended Markdown Settings" });
-    new import_obsidian4.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
-      this.plugin.settings.strictPandocMode = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian4.Setting(containerEl).setName("Auto-renumber lists").setDesc("Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
-      this.plugin.settings.autoRenumberLists = value;
-      await this.plugin.saveSettings();
-    }));
   }
 };
 
@@ -2218,51 +2228,54 @@ ${issueList}`, 1e4);
   async saveSettings() {
     await this.saveData(this.settings);
   }
-  toggleDefinitionBoldStyle(content) {
-    var _a;
-    const lines = content.split("\n");
-    const modifiedLines = [...lines];
+  isDefinitionTerm(lines, index) {
+    if (index + 1 >= lines.length) {
+      return false;
+    }
+    const nextLine = lines[index + 1].trim();
+    if (ListPatterns.isDefinitionMarker(nextLine)) {
+      return true;
+    }
+    if (nextLine === "" && index + 2 < lines.length) {
+      const lineAfterEmpty = lines[index + 2].trim();
+      return ListPatterns.isDefinitionMarker(lineAfterEmpty) !== null;
+    }
+    return false;
+  }
+  identifyDefinitionTerms(lines) {
     const definitionTerms = [];
     let anyHasBold = false;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmedLine = line.trim();
+      const trimmedLine = lines[i].trim();
       if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
         continue;
       }
-      let isDefinitionTerm = false;
-      if (i + 1 < lines.length) {
-        const nextLine = lines[i + 1].trim();
-        if (ListPatterns.isDefinitionMarker(nextLine)) {
-          isDefinitionTerm = true;
-        } else if (nextLine === "" && i + 2 < lines.length) {
-          const lineAfterEmpty = lines[i + 2].trim();
-          if (ListPatterns.isDefinitionMarker(lineAfterEmpty)) {
-            isDefinitionTerm = true;
-          }
-        }
-      }
-      if (isDefinitionTerm) {
-        const boldRegex = /^\*\*(.+)\*\*$/;
-        const hasBold = boldRegex.test(trimmedLine);
+      if (this.isDefinitionTerm(lines, i)) {
+        const hasBold = ListPatterns.BOLD_TEXT.test(trimmedLine);
         definitionTerms.push({ index: i, hasBold });
         if (hasBold) {
           anyHasBold = true;
         }
       }
     }
-    for (const term of definitionTerms) {
+    return { terms: definitionTerms, anyHasBold };
+  }
+  toggleDefinitionBoldStyle(content) {
+    var _a;
+    const lines = content.split("\n");
+    const modifiedLines = [...lines];
+    const { terms, anyHasBold } = this.identifyDefinitionTerms(lines);
+    for (const term of terms) {
       const line = lines[term.index];
       const trimmedLine = line.trim();
       const originalIndent = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1]) || "";
-      const boldRegex = /^\*\*(.+)\*\*$/;
       if (anyHasBold) {
-        const match = trimmedLine.match(boldRegex);
+        const match = trimmedLine.match(ListPatterns.BOLD_TEXT);
         if (match) {
           modifiedLines[term.index] = originalIndent + match[1];
         }
       } else {
-        if (!boldRegex.test(trimmedLine)) {
+        if (!ListPatterns.BOLD_TEXT.test(trimmedLine)) {
           modifiedLines[term.index] = originalIndent + "**" + trimmedLine + "**";
         }
       }

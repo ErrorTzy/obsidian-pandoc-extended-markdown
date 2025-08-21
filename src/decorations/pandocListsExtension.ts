@@ -246,7 +246,7 @@ class ExampleReferenceWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = 'pandoc-example-reference';
+        span.className = CSS_CLASSES.EXAMPLE_REF;
         span.textContent = `(${this.number})`;
         
         // Add tooltip if available
@@ -803,7 +803,7 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                                 from: line.from,
                                 to: line.to,
                                 decoration: Decoration.mark({
-                                    class: 'pandoc-definition-content-text'
+                                    class: CSS_CLASSES.DEFINITION_CONTENT_TEXT
                                 })
                             });
                         }

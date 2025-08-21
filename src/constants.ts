@@ -33,6 +33,7 @@ export const CSS_CLASSES = {
     DEFINITION_TERM: 'pandoc-definition-term',
     DEFINITION_DESC: 'pandoc-list-definition-desc',
     DEFINITION_ITEMS: 'pandoc-definition-items',
+    DEFINITION_CONTENT_TEXT: 'pandoc-definition-content-text',
     
     // Example List Classes
     EXAMPLE_REF: 'pandoc-example-reference',
@@ -95,14 +96,7 @@ export const SETTINGS = {
     AUTO_RENUMBER: 'autoRenumberLists',
 } as const;
 
-export const REGEX_PATTERNS = {
-    HASH_LIST: /^(\s*)(#\.)(\s+)/,
-    FANCY_LIST: /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/,
-    EXAMPLE_LIST: /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/,
-    EXAMPLE_REFERENCE: /\(@([a-zA-Z0-9_-]+)\)/g,
-    DEFINITION_MARKER: /^(\s*)([~:])(\s+)/,
-    DEFINITION_INDENTED: /^(    |\t)/,
-    NUMBERED_LIST: /^(\s*)([0-9]+[.)])/,
-    UNORDERED_LIST: /^(\s*)[-*+]\s+/,
-    CAPITAL_LETTER_LIST: /^(\s*)([A-Z])(\.)(\s+)/,
-} as const;
+// Helper function to create fancy list type class names
+export function getFancyListClass(type: string): string {
+    return `pandoc-list-${type}`;
+}

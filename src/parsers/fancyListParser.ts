@@ -1,25 +1,22 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 import { getSectionInfo } from '../types/obsidian-extended';
-import { CSS_CLASSES } from '../constants';
+import { FancyListType, FancyListMarker } from '../types/listTypes';
+import { CSS_CLASSES, getFancyListClass } from '../constants';
 import { ListPatterns } from '../patterns';
 
-export type FancyListType = 'upper-alpha' | 'lower-alpha' | 'upper-roman' | 'lower-roman' | 'decimal' | 'hash';
-
-export interface FancyListMarker {
-    indent: string;
-    marker: string;
-    type: FancyListType;
-    delimiter: '.' | ')' | '';
-    value?: string;
-}
-
-const ROMAN_UPPER = /^[IVXLCDM]+$/;
-const ROMAN_LOWER = /^[ivxlcdm]+$/;
-const ALPHA_UPPER = /^[A-Z]+$/;
-const ALPHA_LOWER = /^[a-z]+$/;
-const DECIMAL = /^[0-9]+$/;
-
 export function parseFancyListMarker(line: string): FancyListMarker | null {
+    // Check for hash list first
+    const hashMatch = ListPatterns.isHashList(line);
+    if (hashMatch) {
+        return {
+            indent: hashMatch[1],
+            marker: hashMatch[2],
+            type: 'hash',
+            delimiter: '.',
+            value: undefined
+        };
+    }
+    
     const match = ListPatterns.isFancyList(line);
     
     if (!match) {
@@ -33,17 +30,15 @@ export function parseFancyListMarker(line: string): FancyListMarker | null {
     
     let type: FancyListType;
     
-    if (value === '#') {
-        type = 'hash';
-    } else if (DECIMAL.test(value)) {
+    if (ListPatterns.DECIMAL.test(value)) {
         return null;
-    } else if (ROMAN_UPPER.test(value)) {
+    } else if (ListPatterns.ROMAN_UPPER.test(value)) {
         type = 'upper-roman';
-    } else if (ROMAN_LOWER.test(value)) {
+    } else if (ListPatterns.ROMAN_LOWER.test(value)) {
         type = 'lower-roman';
-    } else if (ALPHA_UPPER.test(value)) {
+    } else if (ListPatterns.ALPHA_UPPER.test(value)) {
         type = 'upper-alpha';
-    } else if (ALPHA_LOWER.test(value)) {
+    } else if (ListPatterns.ALPHA_LOWER.test(value)) {
         type = 'lower-alpha';
     } else {
         return null;
@@ -125,10 +120,10 @@ function processFancyOrderedList(list: HTMLOListElement) {
     
     if (!marker) return;
     
-    list.classList.add(`pandoc-list-${marker.type}`);
+    list.classList.add(getFancyListClass(marker.type));
     
     if (marker.delimiter === ')') {
-        list.classList.add('pandoc-list-paren');
+        list.classList.add(CSS_CLASSES.FANCY_LIST_PAREN);
     }
     
     let startValue = 1;

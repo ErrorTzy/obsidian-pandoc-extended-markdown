@@ -1,14 +1,23 @@
+// External libraries
 import { Plugin, MarkdownPostProcessorContext, Notice, Editor } from 'obsidian';
 import { Extension, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
+
+// Types
+import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
+
+// Constants
+import { MESSAGES, COMMANDS } from './constants';
+
+// Patterns
+import { ListPatterns } from './patterns';
+
+// Internal modules
 import { pandocListsExtension } from './decorations/pandocListsExtension';
 import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
-import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
-import { MESSAGES, COMMANDS } from './constants';
-import { ListPatterns } from './patterns';
 
 export default class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
@@ -101,44 +110,39 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
         await this.saveData(this.settings);
     }
     
-    toggleDefinitionBoldStyle(content: string): string {
-        const lines = content.split('\n');
-        const modifiedLines = [...lines];
+    private isDefinitionTerm(lines: string[], index: number): boolean {
+        if (index + 1 >= lines.length) {
+            return false;
+        }
         
-        // First pass: identify all definition terms and check if any have bold
+        const nextLine = lines[index + 1].trim();
+        if (ListPatterns.isDefinitionMarker(nextLine)) {
+            return true;
+        }
+        
+        // Check line after empty line
+        if (nextLine === '' && index + 2 < lines.length) {
+            const lineAfterEmpty = lines[index + 2].trim();
+            return ListPatterns.isDefinitionMarker(lineAfterEmpty) !== null;
+        }
+        
+        return false;
+    }
+
+    private identifyDefinitionTerms(lines: string[]): {terms: {index: number, hasBold: boolean}[], anyHasBold: boolean} {
         const definitionTerms: {index: number, hasBold: boolean}[] = [];
         let anyHasBold = false;
         
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const trimmedLine = line.trim();
+            const trimmedLine = lines[i].trim();
             
             // Skip empty lines and lines that are definition markers
             if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
                 continue;
             }
             
-            // Check if the next line (or line after empty line) is a definition marker
-            let isDefinitionTerm = false;
-            
-            // Check immediate next line
-            if (i + 1 < lines.length) {
-                const nextLine = lines[i + 1].trim();
-                if (ListPatterns.isDefinitionMarker(nextLine)) {
-                    isDefinitionTerm = true;
-                }
-                // Check line after empty line
-                else if (nextLine === '' && i + 2 < lines.length) {
-                    const lineAfterEmpty = lines[i + 2].trim();
-                    if (ListPatterns.isDefinitionMarker(lineAfterEmpty)) {
-                        isDefinitionTerm = true;
-                    }
-                }
-            }
-            
-            if (isDefinitionTerm) {
-                const boldRegex = /^\*\*(.+)\*\*$/;
-                const hasBold = boldRegex.test(trimmedLine);
+            if (this.isDefinitionTerm(lines, i)) {
+                const hasBold = ListPatterns.BOLD_TEXT.test(trimmedLine);
                 definitionTerms.push({index: i, hasBold});
                 if (hasBold) {
                     anyHasBold = true;
@@ -146,27 +150,32 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
             }
         }
         
-        // Second pass: apply unified formatting
-        // If any term has bold, remove all bold. Otherwise, add bold to all.
-        for (const term of definitionTerms) {
+        return { terms: definitionTerms, anyHasBold };
+    }
+
+    toggleDefinitionBoldStyle(content: string): string {
+        const lines = content.split('\n');
+        const modifiedLines = [...lines];
+        
+        const { terms, anyHasBold } = this.identifyDefinitionTerms(lines);
+        
+        // Apply unified formatting
+        for (const term of terms) {
             const line = lines[term.index];
             const trimmedLine = line.trim();
             const originalIndent = line.match(/^(\s*)/)?.[1] || '';
-            const boldRegex = /^\*\*(.+)\*\*$/;
             
             if (anyHasBold) {
                 // Remove bold from all terms
-                const match = trimmedLine.match(boldRegex);
+                const match = trimmedLine.match(ListPatterns.BOLD_TEXT);
                 if (match) {
                     modifiedLines[term.index] = originalIndent + match[1];
                 }
-                // Term already doesn't have bold, leave as is
             } else {
                 // Add bold to all terms
-                if (!boldRegex.test(trimmedLine)) {
+                if (!ListPatterns.BOLD_TEXT.test(trimmedLine)) {
                     modifiedLines[term.index] = originalIndent + '**' + trimmedLine + '**';
                 }
-                // Term already has bold (shouldn't happen in this branch), leave as is
             }
         }
         

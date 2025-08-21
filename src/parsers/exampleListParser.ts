@@ -19,7 +19,7 @@ export function parseExampleListMarker(line: string): ExampleListInfo | null {
     return {
         indent: match[1],
         originalMarker: match[2],
-        label: match[3]
+        label: match[3] || undefined
     };
 }
 

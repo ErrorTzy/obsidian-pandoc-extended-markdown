@@ -18,6 +18,13 @@ export class ListPatterns {
     static readonly ROMAN_NUMERALS = /^[IVXLCDM]+$/;
     static readonly LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
     
+    // Character type patterns for fancy list parsing
+    static readonly ROMAN_UPPER = /^[IVXLCDM]+$/;
+    static readonly ROMAN_LOWER = /^[ivxlcdm]+$/;
+    static readonly ALPHA_UPPER = /^[A-Z]+$/;
+    static readonly ALPHA_LOWER = /^[a-z]+$/;
+    static readonly DECIMAL = /^[0-9]+$/;
+    
     // Autocompletion patterns
     static readonly LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
     static readonly LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
@@ -48,6 +55,9 @@ export class ListPatterns {
     
     // Indentation patterns
     static readonly INDENT_ONLY = /^(\s*)/;
+    
+    // Text formatting patterns
+    static readonly BOLD_TEXT = /^\*\*(.+)\*\*$/;
     
     // Superscript and subscript patterns
     // Matches ^text^ for superscript and ~text~ for subscript
