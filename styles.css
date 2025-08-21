@@ -102,12 +102,12 @@
     counter-reset: none;
 }
 
-.pandoc-example-item {
+li.pandoc-example-item {
     list-style: none;
     position: relative;
 }
 
-.pandoc-example-item::before {
+li.pandoc-example-item::before {
     content: "(" attr(data-example-number) ") ";
     position: absolute;
     left: -3em;

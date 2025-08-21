@@ -9,7 +9,25 @@ import { getSectionInfo } from '../types/obsidian-extended';
 import { CSS_CLASSES } from '../constants';
 import { ListPatterns } from '../patterns';
 
+// Global state for example numbering across all blocks
+let globalExampleCounter = 0;
+let globalExampleMap = new Map<string, number>(); // Global map for labeled examples
+let currentDocumentPath: string | null = null;
+
+// Reset counter and map when processing a new document
+function resetCounterIfNewDocument(context: MarkdownPostProcessorContext) {
+    const docPath = context.sourcePath;
+    if (docPath !== currentDocumentPath) {
+        globalExampleCounter = 0;
+        globalExampleMap.clear();
+        currentDocumentPath = docPath;
+    }
+}
+
 export function processReadingMode(element: HTMLElement, context: MarkdownPostProcessorContext, settings: PandocExtendedMarkdownSettings) {
+    // Reset counter if we're processing a new document
+    resetCounterIfNewDocument(context);
+    
     // Only process paragraphs and list items, not headings or other elements
     const elementsToProcess = element.querySelectorAll('p, li');
     
@@ -28,27 +46,8 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
         lines = fullText.split('\n');
     }
     
-    // Build example reference map first
-    const exampleMap = new Map<string, number>();
-    let exampleCounter = 1;
-    
-    // Scan all text for example markers
-    elementsToProcess.forEach(elem => {
-        const text = elem.textContent || '';
-        const lines = text.split('\n');
-        
-        lines.forEach(line => {
-            const exampleInfo = parseExampleListMarker(line);
-            if (exampleInfo) {
-                if (exampleInfo.label && !exampleMap.has(exampleInfo.label)) {
-                    exampleMap.set(exampleInfo.label, exampleCounter);
-                    exampleCounter++;
-                } else if (!exampleInfo.label) {
-                    exampleCounter++;
-                }
-            }
-        });
-    });
+    // Local map to track line text to assigned number (for duplicate detection within element)
+    const localExampleMap = new Map<string, number>();
 
     // Process each paragraph and list item
     elementsToProcess.forEach(elem => {
@@ -70,7 +69,7 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
         }
         
         // Process each text node
-        nodesToProcess.forEach(node => {
+        nodesToProcess.forEach((node, nodeIndex) => {
             const parent = node.parentNode;
             if (!parent) return;
             
@@ -81,10 +80,13 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
             
             const text = node.textContent || '';
             
+            // Check if this text node is in a paragraph element
+            const isInParagraph = parent.nodeName === 'P';
+            
             // Only process if text contains our patterns
             const hasCustomSyntax = 
                 ListPatterns.isFancyList(text) ||
-                ListPatterns.isExampleList(text) ||
+                (isInParagraph && ListPatterns.isExampleList(text)) ||
                 ListPatterns.isDefinitionMarker(text) ||
                 ListPatterns.findExampleReferences(text).length > 0;
             
@@ -149,17 +151,32 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                     return;
                 }
                 
-                // Check for example list markers
-                const exampleMarker = parseExampleListMarker(line);
+                // Check for example list markers - only in paragraph elements and at line start
+                const exampleMarker = isInParagraph ? parseExampleListMarker(line) : null;
                 if (exampleMarker) {
-                    let number = 1;
-                    if (exampleMarker.label && exampleMap.has(exampleMarker.label)) {
-                        number = exampleMap.get(exampleMarker.label)!;
+                    // Get or assign a number for this example
+                    const lineKey = line.trim();
+                    let number: number;
+                    
+                    if (localExampleMap.has(lineKey)) {
+                        // We've seen this exact line before in this element
+                        number = localExampleMap.get(lineKey)!;
+                    } else {
+                        // New example - increment global counter and use it
+                        globalExampleCounter++;
+                        number = globalExampleCounter;
+                        localExampleMap.set(lineKey, number);
+                        
+                        // Store labeled examples for references in global map
+                        if (exampleMarker.label && !globalExampleMap.has(exampleMarker.label)) {
+                            globalExampleMap.set(exampleMarker.label, number);
+                        }
                     }
                     
                     const span = document.createElement('span');
                     span.className = CSS_CLASSES.EXAMPLE_LIST;
                     span.textContent = `(${number}) `;
+                    span.dataset.exampleNumber = String(number);
                     newElements.push(span);
                     
                     const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
@@ -199,10 +216,10 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                     }
                     
                     const label = match[1];
-                    if (exampleMap.has(label)) {
+                    if (globalExampleMap.has(label)) {
                         const span = document.createElement('span');
                         span.className = CSS_CLASSES.EXAMPLE_REF;
-                        span.textContent = `(${exampleMap.get(label)})`;
+                        span.textContent = `(${globalExampleMap.get(label)})`;
                         newElements.push(span);
                     } else {
                         newElements.push(document.createTextNode(match[0]));

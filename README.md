@@ -223,24 +223,6 @@ The plugin adds the following commands to the command palette:
   - If any term has explicit bold, removes bold from all terms
   - If no terms have explicit bold, adds bold to all terms
 
-## Known Limitations
-
-### Example Lists in Reading Mode
-Due to how Obsidian's reading mode processes markdown, there is a limitation with unlabeled example lists:
-- **Live preview mode**: All example lists (both labeled and unlabeled) are numbered correctly in sequence
-- **Reading mode**: 
-  - Labeled examples `(@label)` work correctly and maintain their numbers
-  - Unlabeled examples `(@)` all render as `(1)` instead of sequential numbers
-  
-This occurs because reading mode converts markdown to HTML before the plugin processes it, and there's no way to distinguish between different unlabeled `(@)` markers once they're rendered as identical HTML list items.
-
-**Workaround**: For consistent numbering in both modes, always use labels for your example lists:
-```markdown
-(@ex1) First example
-(@ex2) Second example  
-(@ex3) Third example
-```
-
 ## Compatibility
 
 - Requires Obsidian v1.4.0 or higher
@@ -283,7 +265,22 @@ pandoc-extended-markdown/
 │   ├── constants.ts                      # Centralized constants for magic values and CSS classes
 │   ├── patterns.ts                       # Optimized regex patterns with caching
 │   ├── decorations/                      # CodeMirror decorations for live preview
-│   │   └── pandocListsExtension.ts      # CM6 ViewPlugin for rendering lists in live preview
+│   │   ├── pandocListsExtension.ts      # Main orchestrator for live preview rendering (176 lines)
+│   │   ├── widgets/                      # CodeMirror widget implementations
+│   │   │   ├── listWidgets.ts           # Widgets for list markers (fancy, hash, example)
+│   │   │   ├── definitionWidget.ts      # Widget for definition list bullets
+│   │   │   ├── referenceWidget.ts       # Widget for example references
+│   │   │   ├── formatWidgets.ts         # Widgets for super/subscripts
+│   │   │   └── index.ts                 # Re-exports all widgets
+│   │   ├── processors/                   # Decoration processing logic
+│   │   │   ├── listProcessors.ts        # Process hash, fancy, and example lists
+│   │   │   ├── definitionProcessor.ts   # Process definition lists, terms, and paragraphs
+│   │   │   ├── inlineFormatProcessor.ts # Process inline formats (references, super/subscripts)
+│   │   │   └── index.ts                 # Re-exports all processors
+│   │   ├── validators/                   # Validation utilities
+│   │   │   └── listBlockValidator.ts    # Validates list blocks for strict Pandoc mode
+│   │   └── scanners/                     # Document scanning utilities
+│   │       └── exampleScanner.ts        # Scans for example labels and duplicates
 │   ├── parsers/                          # List parsing logic
 │   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
 │   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
@@ -351,7 +348,12 @@ pandoc-extended-markdown/
 
 **CodeMirror Extension (`src/decorations/`):**
 - Implements live preview rendering using CodeMirror 6's decoration system.
-- Creates widgets and line decorations for visual list formatting.
+- Modular architecture with separate concerns:
+  - `pandocListsExtension.ts` - Main orchestrator that coordinates all rendering (reduced from 942 to 176 lines).
+  - `widgets/` - Reusable widget components for different list elements.
+  - `processors/` - Business logic for processing different list types.
+  - `validators/` - Validation logic for strict Pandoc mode.
+  - `scanners/` - Document scanning utilities for example labels.
 - All styling defined in styles.css, no inline styles in TypeScript.
 - Includes proper memory management for event listeners.
 

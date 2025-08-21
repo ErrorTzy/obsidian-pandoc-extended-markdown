@@ -26,6 +26,7 @@ export function parseExampleListMarker(line: string): ExampleListInfo | null {
 export function processExampleLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
     const exampleMap = new Map<string, number>();
     const exampleContent = new Map<string, string>();
+    const allExamplesMap = new Map<string, number>(); // Maps full example text to number
     let exampleCounter = 1;
     
     const section = element.closest('.markdown-preview-section') as HTMLElement;
@@ -51,12 +52,21 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
     lines.forEach((line, index) => {
         const exampleInfo = parseExampleListMarker(line);
         if (exampleInfo) {
+            // Store the full line text to number mapping
+            const lineContent = line.trim();
+            allExamplesMap.set(lineContent, exampleCounter);
+            
             if (exampleInfo.label && !exampleMap.has(exampleInfo.label)) {
                 exampleMap.set(exampleInfo.label, exampleCounter);
                 // Extract content after the marker
                 const match = ListPatterns.isExampleList(line);
-                if (match && match[1]) {
-                    exampleContent.set(exampleInfo.label, match[1].trim());
+                if (match) {
+                    // Content is everything after the match
+                    const contentStart = match[0].length;
+                    const content = line.substring(contentStart).trim();
+                    if (content) {
+                        exampleContent.set(exampleInfo.label, content);
+                    }
                 }
             }
             // Store line number to example number mapping for all examples
@@ -67,13 +77,13 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
     
     const lists = element.querySelectorAll('ol');
     lists.forEach((list) => {
-        processExampleOrderedList(list, exampleMap);
+        processExampleOrderedList(list, exampleMap, allExamplesMap);
     });
     
     processExampleReferences(element, exampleMap, exampleContent);
 }
 
-function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<string, number>) {
+function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<string, number>, allExamplesMap: Map<string, number>) {
     const items = list.querySelectorAll('li');
     if (items.length === 0) return;
     
@@ -92,53 +102,47 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
         lines = fullText.split('\n');
     }
     
-    if (lines.length === 0) return;
-    
+    // Check if this list contains example markers by examining the text content
     let hasExampleMarker = false;
     let listStartNumber: number | null = null;
+    let currentExampleNumber = 1;
     
+    // Find the starting number for this list by looking for the first item in our map
+    const firstItemText = items[0]?.textContent?.trim() || '';
+    if (firstItemText && allExamplesMap.has(firstItemText)) {
+        currentExampleNumber = allExamplesMap.get(firstItemText)!;
+        listStartNumber = currentExampleNumber;
+    }
+    
+    // Process each list item
     items.forEach((item, index) => {
-        const sourcePos = item.getAttribute('data-line');
-        if (!sourcePos) return;
-        
-        const lineNum = parseInt(sourcePos);
-        if (lineNum >= lines.length) return;
-        
-        const line = lines[lineNum];
-        const exampleInfo = parseExampleListMarker(line);
+        const itemText = item.textContent?.trim() || '';
+        const exampleInfo = parseExampleListMarker(itemText);
         
         if (exampleInfo) {
             hasExampleMarker = true;
             
+            // Try to find the number from our pre-computed map
             let number: number;
-            if (exampleInfo.label && exampleMap.has(exampleInfo.label)) {
-                number = exampleMap.get(exampleInfo.label)!;
+            if (allExamplesMap.has(itemText)) {
+                // Use the pre-computed number from the first pass
+                number = allExamplesMap.get(itemText)!;
             } else {
-                // For unlabeled examples, we need to count all examples up to this point
-                const tempMap = new Map<string, number>();
-                let tempCounter = 1;
-                
-                for (let i = 0; i <= lineNum; i++) {
-                    const info = parseExampleListMarker(lines[i]);
-                    if (info) {
-                        if (info.label && !tempMap.has(info.label)) {
-                            tempMap.set(info.label, tempCounter);
-                        }
-                        if (i === lineNum) {
-                            number = tempCounter;
-                        }
-                        tempCounter++;
-                    }
-                }
-                number = tempCounter - 1;
+                // Fallback: use sequential numbering
+                number = currentExampleNumber + index;
             }
             
-            if (index === 0) {
+            if (index === 0 && !listStartNumber) {
                 listStartNumber = number;
             }
             
             item.setAttribute('data-example-number', String(number));
             item.classList.add(CSS_CLASSES.EXAMPLE_ITEM);
+            
+            // Update the map if this is a labeled example (for references)
+            if (exampleInfo.label && !exampleMap.has(exampleInfo.label)) {
+                exampleMap.set(exampleInfo.label, number);
+            }
         }
     });
     

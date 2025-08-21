@@ -1,321 +1,34 @@
-import { Extension, StateField, EditorState, RangeSetBuilder } from '@codemirror/state';
-import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
-import { editorLivePreviewField, setTooltip } from 'obsidian';
+import { Extension, RangeSetBuilder } from '@codemirror/state';
+import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet } from '@codemirror/view';
+import { editorLivePreviewField } from 'obsidian';
 import { PandocExtendedMarkdownSettings } from '../settings';
-import { isStrictPandocList, isStrictPandocHeading, ValidationContext } from '../pandocValidator';
-import { CSS_CLASSES, DECORATION_STYLES } from '../constants';
-import { ListPatterns } from '../patterns';
+import { ValidationContext } from '../pandocValidator';
+import { ListBlockValidator } from './validators/listBlockValidator';
+import { scanExampleLabels, ExampleScanResult } from './scanners/exampleScanner';
+import {
+    processHashList,
+    processFancyList,
+    processExampleList,
+    ProcessorContext,
+    processDefinitionItem,
+    processDefinitionTerm,
+    processDefinitionParagraph,
+    DefinitionContext,
+    processExampleReferences,
+    processSuperscripts,
+    processSubscripts,
+    InlineFormatContext
+} from './processors';
 
-// Widget for rendering fancy list markers
-class FancyListMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private marker: string, private type: string, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
-    }
-
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = this.marker;
-        span.appendChild(innerSpan);
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.view!.dispatch({
-                    selection: { anchor: this.pos! }
-                });
-                this.view!.focus();
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
-    }
-
-    eq(other: FancyListMarkerWidget) {
-        return other.marker === this.marker && other.pos === this.pos;
-    }
-
-    ignoreEvent(event: Event) {
-        return event.type !== 'mousedown';
-    }
-
-    destroy() {
-        this.controller.abort();
-    }
-}
-
-// Widget for example list markers
-class ExampleListMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private number: number, private label: string | undefined, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
-    }
-
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER} ${CSS_CLASSES.EXAMPLE_REF}`;
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = `(${this.number}) `;
-        span.appendChild(innerSpan);
-        
-        // Add tooltip to show original label
-        const tooltipText = this.label ? `@${this.label}` : '@';
-        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.view!.dispatch({
-                    selection: { anchor: this.pos! }
-                });
-                this.view!.focus();
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
-    }
-
-    eq(other: ExampleListMarkerWidget) {
-        return other.number === this.number && other.label === this.label && other.pos === this.pos;
-    }
-
-    ignoreEvent(event: Event) {
-        return event.type !== 'mousedown';
-    }
-
-    destroy() {
-        this.controller.abort();
-    }
-}
-
-// Widget for duplicate example list labels
-class DuplicateExampleLabelWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private label: string, private originalLine: number, private originalLineContent: string, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
-    }
-
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.EXAMPLE_DUPLICATE;
-        span.textContent = `(@${this.label})`;
-        
-        // Add tooltip with full line content, truncated if necessary
-        let lineContent = this.originalLineContent.trim();
-        if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
-            lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + '...';
-        }
-        const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
-        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.view!.dispatch({
-                    selection: { anchor: this.pos! }
-                });
-                this.view!.focus();
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
-    }
-
-    eq(other: DuplicateExampleLabelWidget) {
-        return other.label === this.label && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
-    }
-
-    ignoreEvent(event: Event) {
-        return event.type !== 'mousedown';
-    }
-
-    destroy() {
-        this.controller.abort();
-    }
-}
-
-// Widget for definition list bullets
-class DefinitionBulletWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
-    }
-    
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker';
-        span.textContent = '• ';
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.view!.dispatch({
-                    selection: { anchor: this.pos! }
-                });
-                this.view!.focus();
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
-    }
-    
-    eq(other: DefinitionBulletWidget) {
-        return other.pos === this.pos;
-    }
-
-    ignoreEvent(event: Event) {
-        return event.type !== 'mousedown';
-    }
-
-    destroy() {
-        this.controller.abort();
-    }
-}
-
-
-// Widget for hash auto-numbering
-class HashListMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private number: number, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
-    }
-
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = `${this.number}. `;
-        span.appendChild(innerSpan);
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.view!.dispatch({
-                    selection: { anchor: this.pos! }
-                });
-                this.view!.focus();
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
-    }
-
-    eq(other: HashListMarkerWidget) {
-        return other.number === this.number && other.pos === this.pos;
-    }
-
-    ignoreEvent(event: Event) {
-        return event.type !== 'mousedown';
-    }
-
-    destroy() {
-        this.controller.abort();
-    }
-}
-
-// Widget for example references
-class ExampleReferenceWidget extends WidgetType {
-    constructor(private number: number, private tooltipText?: string) {
-        super();
-    }
-
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.EXAMPLE_REF;
-        span.textContent = `(${this.number})`;
-        
-        // Add tooltip if available
-        if (this.tooltipText) {
-            setTooltip(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-        }
-        
-        return span;
-    }
-    
-    // Make the widget editable - allow all editing events to pass through
-    ignoreEvent() {
-        return false;
-    }
-
-    eq(other: ExampleReferenceWidget) {
-        return other.number === this.number && other.tooltipText === this.tooltipText;
-    }
-}
-
-// Widget for superscript
-class SuperscriptWidget extends WidgetType {
-    constructor(private content: string) {
-        super();
-    }
-
-    toDOM() {
-        const sup = document.createElement('sup');
-        sup.className = CSS_CLASSES.SUPERSCRIPT;
-        sup.textContent = this.content;
-        return sup;
-    }
-
-    eq(other: SuperscriptWidget) {
-        return other.content === this.content;
-    }
-}
-
-// Widget for subscript
-class SubscriptWidget extends WidgetType {
-    constructor(private content: string) {
-        super();
-    }
-
-    toDOM() {
-        const sub = document.createElement('sub');
-        sub.className = CSS_CLASSES.SUBSCRIPT;
-        sub.textContent = this.content;
-        return sub;
-    }
-
-    eq(other: SubscriptWidget) {
-        return other.content === this.content;
-    }
-}
-
-// Simple view plugin without state field to avoid errors
+// Main view plugin for rendering Pandoc lists
 const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) => ViewPlugin.fromClass(
-    class {
+    class PandocListsView {
         decorations: DecorationSet;
-        exampleLabels: Map<string, number> = new Map();
-        exampleContent: Map<string, string> = new Map();
-        exampleLineNumbers: Map<number, number> = new Map();
-        duplicateLabels: Map<string, number> = new Map(); // Track first occurrence line number for duplicates
-        duplicateLabelContent: Map<string, string> = new Map(); // Track first occurrence line content for duplicates
+        private scanResult: ExampleScanResult;
 
         constructor(view: EditorView) {
             const settings = getSettings();
-            this.scanExampleLabels(view, settings);
+            this.scanResult = scanExampleLabels(view, settings);
             this.decorations = this.buildDecorations(view);
         }
 
@@ -323,348 +36,10 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
             if (update.docChanged || update.viewportChanged || update.selectionSet) {
                 if (update.docChanged) {
                     const settings = getSettings();
-                    this.scanExampleLabels(update.view, settings);
+                    this.scanResult = scanExampleLabels(update.view, settings);
                 }
                 this.decorations = this.buildDecorations(update.view);
             }
-        }
-
-        isListItemForValidation(line: string): boolean {
-            // Check for various list patterns
-            return !!(
-                ListPatterns.isHashList(line) || // Hash auto-numbering
-                ListPatterns.isFancyList(line) || // Fancy lists
-                ListPatterns.isExampleList(line) || // Example lists
-                ListPatterns.isDefinitionMarker(line) || // Definition lists
-                line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
-                line.match(ListPatterns.NUMBERED_LIST) // Regular numbered lists
-            );
-        }
-
-        scanExampleLabels(view: EditorView, settings: PandocExtendedMarkdownSettings) {
-            this.exampleLabels.clear();
-            this.exampleContent.clear();
-            this.exampleLineNumbers.clear();
-            this.duplicateLabels.clear();
-            this.duplicateLabelContent.clear();
-            let counter = 1;
-            const docText = view.state.doc.toString();
-            const lines = docText.split('\n');
-            
-            // In strict mode, validate list blocks first
-            const invalidListBlocks = settings.strictPandocMode ? this.validateListBlocks(lines, settings) : new Set<number>();
-            
-            for (let i = 0; i < lines.length; i++) {
-                // Skip invalid lines in strict mode
-                if (settings.strictPandocMode && invalidListBlocks.has(i)) {
-                    continue;
-                }
-                
-                const line = lines[i];
-                const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
-                if (match) {
-                    const label = match[2];
-                    const content = match[3].trim();
-                    if (!this.exampleLabels.has(label)) {
-                        this.exampleLabels.set(label, counter);
-                        // Store the content after the marker
-                        if (content) {
-                            this.exampleContent.set(label, content);
-                        }
-                        // Store the first occurrence line number (1-based) and full line content
-                        this.duplicateLabels.set(label, i + 1);
-                        this.duplicateLabelContent.set(label, line);
-                    }
-                    // Store line number to example number mapping
-                    this.exampleLineNumbers.set(i + 1, counter);
-                    counter++;
-                } else {
-                    const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
-                    if (unlabeledMatch) {
-                        // Store line number to example number mapping for unlabeled examples
-                        this.exampleLineNumbers.set(i + 1, counter);
-                        counter++;
-                    }
-                }
-            }
-        }
-
-        validateListBlocks(lines: string[], settings: PandocExtendedMarkdownSettings): Set<number> {
-            const invalidListBlocks = new Set<number>();
-            if (!settings.strictPandocMode) {
-                return invalidListBlocks;
-            }
-
-            let listBlockStart = -1;
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const isCurrentList = this.isListItemForValidation(line);
-                const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === '');
-                
-                // Check if previous line is a definition term (special case)
-                const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
-                    !lines[i - 1].match(/^\s*[~:]\s+/) && 
-                    !lines[i - 1].match(/^(    |\t)/) &&
-                    line.match(/^\s*[~:]\s+/);
-                
-                if (isCurrentList && listBlockStart === -1) {
-                    // Start of a new list block
-                    listBlockStart = i;
-                    // Check if it has proper empty line before (unless first line or after a definition term)
-                    if (i > 0 && lines[i - 1].trim() !== '' && !prevIsDefinitionTerm) {
-                        // Mark entire block as invalid
-                        for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
-                            invalidListBlocks.add(j);
-                        }
-                    }
-                } else if (!isCurrentList && listBlockStart !== -1) {
-                    // End of list block
-                    // Check if there's proper empty line after (unless it's an empty line)
-                    if (line.trim() !== '') {
-                        // Mark entire previous block as invalid
-                        for (let j = listBlockStart; j < i; j++) {
-                            invalidListBlocks.add(j);
-                        }
-                    }
-                    listBlockStart = -1;
-                }
-                
-                // Check for capital letter spacing issue
-                if (isCurrentList) {
-                    const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
-                    if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
-                        // Mark entire block as invalid
-                        for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
-                            invalidListBlocks.add(j);
-                        }
-                        for (let j = i + 1; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
-                            invalidListBlocks.add(j);
-                        }
-                    }
-                }
-            }
-            return invalidListBlocks;
-        }
-
-        processHashList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocExtendedMarkdownSettings, hashCounter: { value: number }): Array<{from: number, to: number, decoration: Decoration}> | null {
-            const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-            const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
-            
-            if (!hashMatch) return null;
-            
-            // Check if this list item is in an invalid block
-            if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                return null;
-            }
-            
-            const indent = hashMatch[1];
-            const marker = hashMatch[2];
-            const space = hashMatch[3];
-            
-            const markerStart = line.from + indent.length;
-            const markerEnd = line.from + indent.length + marker.length + space.length;
-            
-            // Check if cursor is within the marker area
-            const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-            
-            // Add line decoration for proper styling
-            decorations.push({
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: 'HyperMD-list-line HyperMD-list-line-1',
-                    attributes: {
-                        style: 'text-indent: -29px; padding-inline-start: 29px;'
-                    }
-                })
-            });
-            
-            // Only replace the marker if cursor is not within it
-            if (!cursorInMarker) {
-                decorations.push({
-                    from: markerStart,
-                    to: markerEnd,
-                    decoration: Decoration.replace({
-                        widget: new HashListMarkerWidget(hashCounter.value, view, markerStart)
-                    })
-                });
-            }
-            
-            // Wrap the rest of the line
-            decorations.push({
-                from: line.from + indent.length + marker.length + space.length,
-                to: line.to,
-                decoration: Decoration.mark({
-                    class: 'cm-list-1'
-                })
-            });
-            
-            hashCounter.value++;
-            return decorations;
-        }
-
-        processFancyList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocExtendedMarkdownSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
-            const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-            const fancyMatch = lineText.match(/^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/);
-            
-            if (!fancyMatch || lineText.match(/^(\s*)([0-9]+[.)])/)) return null;
-            
-            // Check if this list item is in an invalid block
-            if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                return null;
-            }
-            
-            const indent = fancyMatch[1];
-            const marker = fancyMatch[2];
-            const markerWithSpace = marker + fancyMatch[5];
-            
-            const markerStart = line.from + indent.length;
-            const markerEnd = line.from + indent.length + markerWithSpace.length;
-            
-            // Check if cursor is within the marker area
-            const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-            
-            // Add line decoration for proper styling
-            decorations.push({
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: 'HyperMD-list-line HyperMD-list-line-1',
-                    attributes: {
-                        style: `text-indent: -${markerWithSpace.length * 7}px; padding-inline-start: ${markerWithSpace.length * 7}px;`
-                    }
-                })
-            });
-            
-            // Only replace the marker if cursor is not within it
-            if (!cursorInMarker) {
-                decorations.push({
-                    from: markerStart,
-                    to: markerEnd,
-                    decoration: Decoration.replace({
-                        widget: new FancyListMarkerWidget(markerWithSpace, 'fancy', view, markerStart),
-                        inclusive: false
-                    })
-                });
-            }
-            
-            // Wrap the rest of the line
-            decorations.push({
-                from: line.from + indent.length + markerWithSpace.length,
-                to: line.to,
-                decoration: Decoration.mark({
-                    class: 'cm-list-1'
-                })
-            });
-            
-            return decorations;
-        }
-
-        processExampleList(line: any, lineNum: number, lineText: string, cursorPos: number, view: EditorView, invalidListBlocks: Set<number>, settings: PandocExtendedMarkdownSettings): Array<{from: number, to: number, decoration: Decoration}> | null {
-            const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-            const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
-            
-            if (!exampleMatch) return null;
-            
-            // Check if this list item is in an invalid block
-            if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                return null;
-            }
-            
-            const indent = exampleMatch[1];
-            const fullMarker = exampleMatch[2];
-            const label = exampleMatch[3];
-            const space = exampleMatch[4];
-            
-            const markerStart = line.from + indent.length;
-            const markerEnd = line.from + indent.length + fullMarker.length + space.length;
-            
-            // Check if cursor is within the marker area
-            const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-            
-            // Check if this is a duplicate label
-            const isDuplicate = label && this.duplicateLabels.has(label) && this.duplicateLabels.get(label) !== line.number;
-            
-            if (isDuplicate) {
-                // For duplicate labels, show the original label with red underline
-                // Add line decoration for proper styling
-                decorations.push({
-                    from: line.from,
-                    to: line.from,
-                    decoration: Decoration.line({
-                        class: 'HyperMD-list-line HyperMD-list-line-1',
-                        attributes: {
-                            style: 'text-indent: -35px; padding-inline-start: 35px;'
-                        }
-                    })
-                });
-                
-                // Only replace the marker if cursor is not within it
-                if (!cursorInMarker) {
-                    const originalLine = this.duplicateLabels.get(label)!;
-                    const originalLineContent = this.duplicateLabelContent.get(label)!;
-                    decorations.push({
-                        from: markerStart,
-                        to: markerStart + fullMarker.length,
-                        decoration: Decoration.replace({
-                            widget: new DuplicateExampleLabelWidget(label, originalLine, originalLineContent, view, markerStart)
-                        })
-                    });
-                    
-                    // Add the space after the marker
-                    decorations.push({
-                        from: markerStart + fullMarker.length,
-                        to: markerEnd,
-                        decoration: Decoration.mark({
-                            class: 'cm-formatting'
-                        })
-                    });
-                }
-            } else {
-                // Normal processing for non-duplicate labels
-                let exampleNumber = 1;
-                
-                if (label && this.exampleLabels.has(label)) {
-                    exampleNumber = this.exampleLabels.get(label)!;
-                } else if (this.exampleLineNumbers.has(line.number)) {
-                    // Get the pre-computed number for this line
-                    exampleNumber = this.exampleLineNumbers.get(line.number)!;
-                }
-                
-                // Add line decoration for proper styling
-                decorations.push({
-                    from: line.from,
-                    to: line.from,
-                    decoration: Decoration.line({
-                        class: 'HyperMD-list-line HyperMD-list-line-1',
-                        attributes: {
-                            style: 'text-indent: -35px; padding-inline-start: 35px;'
-                        }
-                    })
-                });
-                
-                // Only replace the marker if cursor is not within it
-                if (!cursorInMarker) {
-                    decorations.push({
-                        from: markerStart,
-                        to: markerEnd,
-                        decoration: Decoration.replace({
-                            widget: new ExampleListMarkerWidget(exampleNumber, label, view, markerStart)
-                        })
-                    });
-                }
-            }
-            
-            // Wrap the rest of the line
-            decorations.push({
-                from: line.from + indent.length + fullMarker.length + space.length,
-                to: line.to,
-                decoration: Decoration.mark({
-                    class: 'cm-list-1'
-                })
-            });
-            
-            return decorations;
         }
 
         buildDecorations(view: EditorView): DecorationSet {
@@ -691,235 +66,94 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
             const hashCounter = { value: 1 };
             
             // In strict mode, pre-validate list blocks
-            const invalidListBlocks = this.validateListBlocks(lines, settings);
+            const invalidListBlocks = ListBlockValidator.validateListBlocks(lines, settings);
             
             // Process entire document for consistent numbering
             for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
                 const line = view.state.doc.line(lineNum);
                 const lineText = line.text;
                 
-                // Create validation context
-                const validationContext: ValidationContext = {
-                    lines: lines,
-                    currentLine: lineNum - 1 // 0-based index
+                // Create processor context
+                const processorContext: ProcessorContext = {
+                    line,
+                    lineNum,
+                    lineText,
+                    cursorPos,
+                    view,
+                    invalidListBlocks,
+                    settings,
+                    exampleLabels: this.scanResult.exampleLabels,
+                    exampleLineNumbers: this.scanResult.exampleLineNumbers,
+                    duplicateLabels: this.scanResult.duplicateLabels,
+                    duplicateLabelContent: this.scanResult.duplicateLabelContent
                 };
                 
                 // Process hash lists
-                const hashDecorations = this.processHashList(line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings, hashCounter);
+                const hashDecorations = processHashList(processorContext, hashCounter);
                 if (hashDecorations) {
                     decorations.push(...hashDecorations);
                     continue;
                 }
                 
                 // Process fancy lists
-                const fancyDecorations = this.processFancyList(line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings);
+                const fancyDecorations = processFancyList(processorContext);
                 if (fancyDecorations) {
                     decorations.push(...fancyDecorations);
                     continue;
                 }
                 
                 // Process example lists
-                const exampleDecorations = this.processExampleList(line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings);
+                const exampleDecorations = processExampleList(processorContext);
                 if (exampleDecorations) {
                     decorations.push(...exampleDecorations);
                     continue;
                 }
                 
-                // Check for definition items FIRST before checking terms
-                // Check for definition items FIRST before checking terms
-                const defItemMatch = lineText.match(/^(\s*)([~:])(\s+)/);
-                if (defItemMatch) {
-                    // Check if this list item is in an invalid block
-                    if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-                        continue; // Skip rendering if in an invalid list block
-                    }
-                    
-                    const indent = defItemMatch[1];
-                    const marker = defItemMatch[2];
-                    const space = defItemMatch[3];
-                    
-                    const markerStart = line.from + indent.length;
-                    const markerEnd = line.from + indent.length + marker.length + space.length;
-                    
-                    // Check if cursor is within the marker area
-                    const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-                    
-                    // Only replace the marker if cursor is not within it
-                    if (!cursorInMarker) {
-                        decorations.push({
-                            from: markerStart,
-                            to: markerEnd,
-                            decoration: Decoration.replace({
-                                widget: new DefinitionBulletWidget(view, markerStart)
-                            })
-                        });
-                    }
-                    // Don't continue here - we still need to process super/subscripts in the content
-                    // continue; // Skip term check for definition lines
+                // Create definition context
+                const definitionContext: DefinitionContext = {
+                    line,
+                    lineNum,
+                    lineText,
+                    cursorPos,
+                    view,
+                    invalidListBlocks,
+                    settings,
+                    lines
+                };
+                
+                // Process definition items
+                const defItemDecorations = processDefinitionItem(definitionContext);
+                if (defItemDecorations) {
+                    decorations.push(...defItemDecorations);
+                    // Don't continue here - we still need to process inline formats
                 }
                 
-                // Check if we're in a definition list context
-                // A line starting with 4+ spaces after a definition marker is part of the definition
-                const indentMatch = lineText.match(/^(    |\t)(.*)$/);
-                if (indentMatch) {
-                    // Check if we're after a definition marker
-                    let inDefinitionContext = false;
-                    for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
-                        const prevLine = view.state.doc.line(checkLine);
-                        const prevText = prevLine.text;
-                        
-                        // If we find a definition marker, we're in definition context
-                        if (prevText.match(/^\s*[~:]\s+/)) {
-                            inDefinitionContext = true;
-                            break;
-                        }
-                        // If we find a non-empty, non-indented line that's not a definition
-                        if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^\s*[~:]\s+/)) {
-                            // Could still be in context if this is a term followed by definition
-                            break;
-                        }
-                    }
-                    
-                    if (inDefinitionContext) {
-                        const content = indentMatch[2];
-                        
-                        // Only apply decorations if there's actual content after the indent
-                        // This prevents cursor issues on empty indented lines
-                        if (content && content.trim()) {
-                            // Apply line decoration to override code block styling
-                            decorations.push({
-                                from: line.from,
-                                to: line.from,
-                                decoration: Decoration.line({
-                                    class: 'cm-pandoc-definition-paragraph',
-                                    attributes: {
-                                        'data-definition-content': 'true'
-                                    }
-                                })
-                            });
-                            
-                            // Mark the entire line content to prevent code styling
-                            decorations.push({
-                                from: line.from,
-                                to: line.to,
-                                decoration: Decoration.mark({
-                                    class: CSS_CLASSES.DEFINITION_CONTENT_TEXT
-                                })
-                            });
-                        }
-                        continue; // Skip further processing for this line
-                    }
+                // Process definition paragraphs
+                const defParagraphDecorations = processDefinitionParagraph(definitionContext);
+                if (defParagraphDecorations) {
+                    decorations.push(...defParagraphDecorations);
+                    continue; // Skip further processing for indented content
                 }
                 
-                // Check for definition terms - can be directly followed by definition or have empty line
-                // But skip if this is already a definition item line
-                if (lineText.trim() && !lineText.match(/^\s*[~:]\s*/) && !indentMatch && !defItemMatch) {
-                    // Check next line(s) for definition marker
-                    let isDefinitionTerm = false;
-                    let checkOffset = 1;
-                    
-                    // First check immediate next line
-                    if (line.number + 1 <= view.state.doc.lines) {
-                        const nextLine = view.state.doc.line(line.number + 1);
-                        const nextText = nextLine.text;
-                        
-                        // Direct definition (no empty line)
-                        if (nextText.match(/^\s*[~:]\s+/)) {
-                            isDefinitionTerm = true;
-                        }
-                        // Empty line followed by definition
-                        else if (nextText.trim() === '' && line.number + 2 <= view.state.doc.lines) {
-                            const lineAfterEmpty = view.state.doc.line(line.number + 2);
-                            if (lineAfterEmpty.text.match(/^\s*[~:]\s+/)) {
-                                isDefinitionTerm = true;
-                            }
-                        }
-                    }
-                    
-                    if (isDefinitionTerm) {
-                        decorations.push({
-                            from: line.from,
-                            to: line.to,
-                            decoration: Decoration.mark({
-                                class: 'cm-strong cm-pandoc-definition-term'
-                            })
-                        });
-                    }
+                // Process definition terms
+                const defTermDecorations = processDefinitionTerm(definitionContext);
+                if (defTermDecorations) {
+                    decorations.push(...defTermDecorations);
                 }
                 
-                // Process example references inline
-                const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
-                let match;
-                while ((match = refRegex.exec(lineText)) !== null) {
-                    const label = match[1];
-                    if (this.exampleLabels.has(label)) {
-                        const refStart = line.from + match.index;
-                        const refEnd = line.from + match.index + match[0].length;
-                        
-                        // Check if cursor is within this reference
-                        const cursorInRef = cursorPos >= refStart && cursorPos <= refEnd;
-                        
-                        // Only replace if cursor is not within the reference
-                        if (!cursorInRef) {
-                            const number = this.exampleLabels.get(label)!;
-                            const tooltipText = this.exampleContent.get(label);
-                            decorations.push({
-                                from: refStart,
-                                to: refEnd,
-                                decoration: Decoration.replace({
-                                    widget: new ExampleReferenceWidget(number, tooltipText),
-                                    inclusive: false
-                                })
-                            });
-                        }
-                    }
-                }
+                // Create inline format context
+                const inlineContext: InlineFormatContext = {
+                    line,
+                    lineText,
+                    cursorPos,
+                    exampleLabels: this.scanResult.exampleLabels,
+                    exampleContent: this.scanResult.exampleContent
+                };
                 
-                // Process superscripts
-                const superscripts = ListPatterns.findSuperscripts(lineText);
-                for (const supMatch of superscripts) {
-                    const supStart = line.from + supMatch.index!;
-                    const supEnd = line.from + supMatch.index! + supMatch[0].length;
-                    
-                    // Check if cursor is within this superscript
-                    const cursorInSup = cursorPos >= supStart && cursorPos <= supEnd;
-                    
-                    // Only replace if cursor is not within the superscript
-                    if (!cursorInSup) {
-                        // Extract content and unescape spaces
-                        const content = supMatch[0].slice(1, -1).replace(/\\[ ]/g, ' ');
-                        decorations.push({
-                            from: supStart,
-                            to: supEnd,
-                            decoration: Decoration.replace({
-                                widget: new SuperscriptWidget(content)
-                            })
-                        });
-                    }
-                }
-                
-                // Process subscripts
-                const subscripts = ListPatterns.findSubscripts(lineText);
-                for (const subMatch of subscripts) {
-                    const subStart = line.from + subMatch.index!;
-                    const subEnd = line.from + subMatch.index! + subMatch[0].length;
-                    
-                    // Check if cursor is within this subscript
-                    const cursorInSub = cursorPos >= subStart && cursorPos <= subEnd;
-                    
-                    // Only replace if cursor is not within the subscript
-                    if (!cursorInSub) {
-                        // Extract content and unescape spaces
-                        const content = subMatch[0].slice(1, -1).replace(/\\[ ]/g, ' ');
-                        decorations.push({
-                            from: subStart,
-                            to: subEnd,
-                            decoration: Decoration.replace({
-                                widget: new SubscriptWidget(content)
-                            })
-                        });
-                    }
-                }
+                // Process inline formats
+                decorations.push(...processExampleReferences(inlineContext));
+                decorations.push(...processSuperscripts(inlineContext));
+                decorations.push(...processSubscripts(inlineContext));
             }
             
             // Sort decorations by from position
