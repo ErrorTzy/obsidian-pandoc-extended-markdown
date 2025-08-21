@@ -1,0 +1,52 @@
+name: Documentation Generation
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Create documentation directory
+      run: mkdir -p documentation
+    
+    - name: Run documentation generation (golden files only)
+      run: node documentation/scripts/docgen.js --only-golden
+      env:
+        REPO_ROOT: ${{ github.workspace }}
+        DOCS_ROOT: ${{ github.workspace }}/documentation
+        BRANCH_NAME: docs/autogen
+    
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation
+        path: documentation/
+        retention-days: 30
+    
+    - name: Create documentation branch and commit
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git checkout -b docs/autogen-${{ github.run_number }}
+        git add documentation/
+        git commit -m "docs: autogen documentation - $(date +%Y-%m-%d) - commit ${{ github.sha }}"
+        echo "Documentation generated and committed to branch docs/autogen-${{ github.run_number }}"
