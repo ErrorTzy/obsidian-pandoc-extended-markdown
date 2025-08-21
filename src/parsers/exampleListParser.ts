@@ -1,6 +1,13 @@
+// External libraries
 import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
+
+// Types
 import { getSectionInfo } from '../types/obsidian-extended';
+
+// Constants
 import { CSS_CLASSES, DECORATION_STYLES } from '../constants';
+
+// Patterns
 import { ListPatterns } from '../patterns';
 
 export interface ExampleListInfo {
@@ -156,7 +163,9 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
     const walker = document.createTreeWalker(
         element,
         NodeFilter.SHOW_TEXT,
-        null
+        {
+            acceptNode: () => NodeFilter.FILTER_ACCEPT
+        }
     );
     
     const nodesToReplace: { node: Text; matches: RegExpMatchArray[] }[] = [];
@@ -188,8 +197,8 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
             const label = match[1];
             const number = exampleMap.get(label);
             
-            if (number !== undefined) {
-                fragments.push(node.textContent!.substring(lastIndex, match.index));
+            if (number !== undefined && node.textContent) {
+                fragments.push(node.textContent.substring(lastIndex, match.index));
                 
                 const span = document.createElement('span');
                 span.className = CSS_CLASSES.EXAMPLE_REF;
@@ -208,8 +217,8 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
             }
         });
         
-        if (lastIndex < node.textContent!.length) {
-            fragments.push(node.textContent!.substring(lastIndex));
+        if (node.textContent && lastIndex < node.textContent.length) {
+            fragments.push(node.textContent.substring(lastIndex));
         }
         
         fragments.forEach(fragment => {

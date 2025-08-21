@@ -17,6 +17,10 @@ export class SuperscriptWidget extends WidgetType {
     eq(other: SuperscriptWidget) {
         return other.content === this.content;
     }
+
+    ignoreEvent() {
+        return false; // Allow all events to pass through
+    }
 }
 
 // Widget for subscript
@@ -34,5 +38,9 @@ export class SubscriptWidget extends WidgetType {
 
     eq(other: SubscriptWidget) {
         return other.content === this.content;
+    }
+
+    ignoreEvent() {
+        return false; // Allow all events to pass through
     }
 }

@@ -33,7 +33,12 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
         }
 
         update(update: ViewUpdate) {
-            if (update.docChanged || update.viewportChanged || update.selectionSet) {
+            // Check if live preview state changed
+            const prevLivePreview = update.startState.field(editorLivePreviewField);
+            const currLivePreview = update.state.field(editorLivePreviewField);
+            const livePreviewChanged = prevLivePreview !== currLivePreview;
+            
+            if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
                 if (update.docChanged) {
                     const settings = getSettings();
                     this.scanResult = scanExampleLabels(update.view, settings);

@@ -16,7 +16,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         new Setting(containerEl)
-            .setName('Strict pandoc mode')
+            .setName('Strict Pandoc mode')
             .setDesc('Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.strictPandocMode)

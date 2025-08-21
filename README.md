@@ -257,15 +257,17 @@ Complete structure of files and folders in the repository:
 ```
 pandoc-extended-markdown/
 ├── src/                                   # Source code directory
-│   ├── main.ts                           # Plugin entry point, registers all features
+│   ├── main.ts                           # Plugin entry point, manages mode detection and state
 │   ├── settings.ts                       # Settings interface and settings tab implementation
 │   ├── pandocValidator.ts                # Validates and formats lists to Pandoc standards
 │   ├── listAutocompletion.ts             # Handles Enter key for list continuation
 │   ├── ExampleReferenceSuggestFixed.ts   # Autocomplete suggestion system for (@references)
 │   ├── constants.ts                      # Centralized constants for magic values and CSS classes
 │   ├── patterns.ts                       # Optimized regex patterns with caching
+│   ├── state/                            # State management architecture
+│   │   └── PluginStateManager.ts        # Unified state manager for all plugin state
 │   ├── decorations/                      # CodeMirror decorations for live preview
-│   │   ├── pandocListsExtension.ts      # Main orchestrator for live preview rendering (176 lines)
+│   │   ├── pandocListsExtension.ts      # Main orchestrator for live preview rendering
 │   │   ├── widgets/                      # CodeMirror widget implementations
 │   │   │   ├── listWidgets.ts           # Widgets for list markers (fancy, hash, example)
 │   │   │   ├── definitionWidget.ts      # Widget for definition list bullets
@@ -281,14 +283,18 @@ pandoc-extended-markdown/
 │   │   │   └── listBlockValidator.ts    # Validates list blocks for strict Pandoc mode
 │   │   └── scanners/                     # Document scanning utilities
 │   │       └── exampleScanner.ts        # Scans for example labels and duplicates
-│   ├── parsers/                          # List parsing logic
+│   ├── parsers/                          # Parsing and processing logic
+│   │   ├── ReadingModeParser.ts         # Parses markdown text, identifies Pandoc syntax
 │   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
 │   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
 │   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
 │   │   ├── superSubParser.ts            # Parses superscripts (^) and subscripts (~)
-│   │   └── readingModeProcessor.ts      # Post-processor for reading mode rendering
+│   │   └── readingModeProcessor.ts      # Thin orchestration layer for reading mode
+│   ├── renderers/                        # Rendering logic (DOM creation)
+│   │   └── ReadingModeRenderer.ts       # Creates DOM elements from parsed markdown
 │   ├── types/                            # TypeScript type definitions
-│   │   ├── listTypes.ts                 # List-related interfaces and types (FancyListType, FancyListMarker)
+│   │   ├── ProcessorConfig.ts           # Configuration injection interface
+│   │   ├── listTypes.ts                 # List-related interfaces and types
 │   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
 │   │   └── settingsTypes.ts             # Settings interface and default settings
 │   ├── utils/                            # Utility functions
@@ -327,7 +333,7 @@ pandoc-extended-markdown/
 - `versions.json` - Maps plugin versions to minimum required Obsidian versions for update compatibility.
 
 **Source Code (`src/`):**
-- `main.ts` - Entry point that extends Obsidian's Plugin class, initializes all features.
+- `main.ts` - Entry point that extends Obsidian's Plugin class, manages mode detection and CodeMirror refresh.
 - `settings.ts` - Implements the settings tab UI, imports settings interface from types.
 - `pandocValidator.ts` - Contains validation logic for strict Pandoc mode and formatting functions.
 - `listAutocompletion.ts` - Implements Enter key handling for automatic list continuation with context-aware detection.
@@ -335,13 +341,29 @@ pandoc-extended-markdown/
 - `constants.ts` - Centralized constants for list markers, CSS classes, UI values, and other magic values.
 - `patterns.ts` - Optimized regex patterns as static readonly properties with helper methods.
 
+**State Management (`src/state/`):**
+- `PluginStateManager.ts` - Unified state manager providing single source of truth for:
+  - Document-specific counters (example numbers, hash counters)
+  - View mode tracking per leaf (reading, live preview, source)
+  - Mode transition detection and event handling
+  - Element processing tracking to prevent duplicates
+  - Reprocess flags for mode switching scenarios
+
 **Parser Modules (`src/parsers/`):**
-- Each parser handles specific syntax parsing and rendering logic.
+- `ReadingModeParser.ts` - Identifies and parses Pandoc syntax elements without DOM manipulation.
+- `readingModeProcessor.ts` - Thin orchestration layer coordinating parser, renderer, and state (202 lines).
+- `fancyListParser.ts` - Parses fancy lists (A., B., i., ii., #.).
+- `exampleListParser.ts` - Parses example lists with (@label) syntax.
+- `definitionListParser.ts` - Parses definition lists (: and ~ markers).
 - `superSubParser.ts` - Handles Pandoc superscript/subscript syntax with escaped space support.
-- Parsers work with both raw text and DOM elements depending on the mode.
-- Enhanced with fallback logic for private API compatibility.
+
+**Renderer Module (`src/renderers/`):**
+- `ReadingModeRenderer.ts` - Creates DOM elements from parsed markdown data.
+- Separates rendering logic from parsing and state management.
+- Handles line breaks, tooltips, and reference resolution.
 
 **Type Definitions (`src/types/`):**
+- `ProcessorConfig.ts` - Configuration injection interface for decoupling from Obsidian App object.
 - `listTypes.ts` - List-related interfaces including FancyListType and FancyListMarker.
 - `obsidian-extended.ts` - Type definitions for Obsidian's internal/undocumented APIs with fallback logic.
 - `settingsTypes.ts` - Settings interface and default settings configuration.
@@ -349,7 +371,7 @@ pandoc-extended-markdown/
 **CodeMirror Extension (`src/decorations/`):**
 - Implements live preview rendering using CodeMirror 6's decoration system.
 - Modular architecture with separate concerns:
-  - `pandocListsExtension.ts` - Main orchestrator that coordinates all rendering (reduced from 942 to 176 lines).
+  - `pandocListsExtension.ts` - Main orchestrator that detects mode changes and rebuilds decorations.
   - `widgets/` - Reusable widget components for different list elements.
   - `processors/` - Business logic for processing different list types.
   - `validators/` - Validation logic for strict Pandoc mode.

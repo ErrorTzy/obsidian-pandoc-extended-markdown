@@ -20,10 +20,12 @@ export class DefinitionBulletWidget extends WidgetType {
             span.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.view!.dispatch({
-                    selection: { anchor: this.pos! }
-                });
-                this.view!.focus();
+                if (this.view && this.pos !== undefined) {
+                    this.view.dispatch({
+                        selection: { anchor: this.pos }
+                    });
+                    this.view.focus();
+                }
             }, { signal: this.controller.signal });
         }
         

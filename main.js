@@ -49,7 +49,7 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian.PluginSetti
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("Strict Pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
     }));
@@ -59,6 +59,20 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian.PluginSetti
     }));
   }
 };
+
+// src/types/ProcessorConfig.ts
+function createProcessorConfig(vaultConfig, pluginSettings) {
+  var _a, _b;
+  return {
+    strictLineBreaks: (_a = vaultConfig.strictLineBreaks) != null ? _a : false,
+    strictPandocMode: (_b = pluginSettings.strictPandocMode) != null ? _b : false,
+    enableHashLists: true,
+    enableFancyLists: true,
+    enableExampleLists: true,
+    enableDefinitionLists: true,
+    enableSuperSubscripts: true
+  };
+}
 
 // src/constants.ts
 var INDENTATION = {
@@ -403,10 +417,12 @@ var FancyListMarkerWidget = class extends import_view.WidgetType {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.view.dispatch({
-          selection: { anchor: this.pos }
-        });
-        this.view.focus();
+        if (this.view && this.pos !== void 0) {
+          this.view.dispatch({
+            selection: { anchor: this.pos }
+          });
+          this.view.focus();
+        }
       }, { signal: this.controller.signal });
     }
     return span;
@@ -440,10 +456,12 @@ var HashListMarkerWidget = class extends import_view.WidgetType {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.view.dispatch({
-          selection: { anchor: this.pos }
-        });
-        this.view.focus();
+        if (this.view && this.pos !== void 0) {
+          this.view.dispatch({
+            selection: { anchor: this.pos }
+          });
+          this.view.focus();
+        }
       }, { signal: this.controller.signal });
     }
     return span;
@@ -480,10 +498,12 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.view.dispatch({
-          selection: { anchor: this.pos }
-        });
-        this.view.focus();
+        if (this.view && this.pos !== void 0) {
+          this.view.dispatch({
+            selection: { anchor: this.pos }
+          });
+          this.view.focus();
+        }
       }, { signal: this.controller.signal });
     }
     return span;
@@ -522,10 +542,12 @@ var DuplicateExampleLabelWidget = class extends import_view.WidgetType {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.view.dispatch({
-          selection: { anchor: this.pos }
-        });
-        this.view.focus();
+        if (this.view && this.pos !== void 0) {
+          this.view.dispatch({
+            selection: { anchor: this.pos }
+          });
+          this.view.focus();
+        }
       }, { signal: this.controller.signal });
     }
     return span;
@@ -558,10 +580,12 @@ var DefinitionBulletWidget = class extends import_view2.WidgetType {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.view.dispatch({
-          selection: { anchor: this.pos }
-        });
-        this.view.focus();
+        if (this.view && this.pos !== void 0) {
+          this.view.dispatch({
+            selection: { anchor: this.pos }
+          });
+          this.view.focus();
+        }
       }, { signal: this.controller.signal });
     }
     return span;
@@ -620,6 +644,9 @@ var SuperscriptWidget = class extends import_view4.WidgetType {
   eq(other) {
     return other.content === this.content;
   }
+  ignoreEvent() {
+    return false;
+  }
 };
 var SubscriptWidget = class extends import_view4.WidgetType {
   constructor(content) {
@@ -634,6 +661,9 @@ var SubscriptWidget = class extends import_view4.WidgetType {
   }
   eq(other) {
     return other.content === this.content;
+  }
+  ignoreEvent() {
+    return false;
   }
 };
 
@@ -990,7 +1020,10 @@ var pandocListsPlugin = (getSettings) => import_view8.ViewPlugin.fromClass(
       this.decorations = this.buildDecorations(view);
     }
     update(update) {
-      if (update.docChanged || update.viewportChanged || update.selectionSet) {
+      const prevLivePreview = update.startState.field(import_obsidian4.editorLivePreviewField);
+      const currLivePreview = update.state.field(import_obsidian4.editorLivePreviewField);
+      const livePreviewChanged = prevLivePreview !== currLivePreview;
+      if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
         if (update.docChanged) {
           const settings = getSettings();
           this.scanResult = scanExampleLabels(update.view, settings);
@@ -1091,9 +1124,6 @@ function pandocListsExtension(getSettings) {
   return pandocListsPlugin(getSettings);
 }
 
-// src/parsers/readingModeProcessor.ts
-var import_obsidian6 = require("obsidian");
-
 // src/types/obsidian-extended.ts
 function isMarkdownPreviewSection(element) {
   return element !== null && element.classList.contains("markdown-preview-section");
@@ -1178,21 +1208,25 @@ function findSuperSubInText(text) {
   const matches = [];
   const superscripts = ListPatterns.findSuperscripts(text);
   superscripts.forEach((match) => {
-    matches.push({
-      index: match.index,
-      length: match[0].length,
-      content: extractContent(match[0], "^"),
-      type: "superscript"
-    });
+    if (match.index !== void 0) {
+      matches.push({
+        index: match.index,
+        length: match[0].length,
+        content: extractContent(match[0], "^"),
+        type: "superscript"
+      });
+    }
   });
   const subscripts = ListPatterns.findSubscripts(text);
   subscripts.forEach((match) => {
-    matches.push({
-      index: match.index,
-      length: match[0].length,
-      content: extractContent(match[0], "~"),
-      type: "subscript"
-    });
+    if (match.index !== void 0) {
+      matches.push({
+        index: match.index,
+        length: match[0].length,
+        content: extractContent(match[0], "~"),
+        type: "subscript"
+      });
+    }
   });
   matches.sort((a, b) => a.index - b.index);
   return matches;
@@ -1275,6 +1309,527 @@ function parseDefinitionListMarker(line) {
   }
   return null;
 }
+
+// src/parsers/ReadingModeParser.ts
+var ReadingModeParser = class {
+  /**
+   * Parse a single line and identify its type and data
+   */
+  parseLine(line, context) {
+    const hashMatch = ListPatterns.isHashList(line);
+    if (hashMatch) {
+      return {
+        type: "hash",
+        content: line,
+        metadata: {
+          indent: hashMatch[1],
+          marker: hashMatch[2],
+          spacing: hashMatch[3],
+          content: line.substring(hashMatch[1].length + hashMatch[2].length + hashMatch[3].length)
+        }
+      };
+    }
+    const fancyMarker = parseFancyListMarker(line);
+    if (fancyMarker && fancyMarker.type !== "hash") {
+      return {
+        type: "fancy",
+        content: line,
+        metadata: {
+          type: fancyMarker.type,
+          marker: fancyMarker.marker,
+          indent: fancyMarker.indent,
+          content: line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1)
+        }
+      };
+    }
+    if (context == null ? void 0 : context.isInParagraph) {
+      const exampleMarker = parseExampleListMarker(line);
+      if (exampleMarker) {
+        const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
+        return {
+          type: "example",
+          content: line,
+          metadata: {
+            indent: exampleMarker.indent,
+            originalMarker: exampleMarker.originalMarker,
+            label: exampleMarker.label,
+            content: line.substring(contentStart)
+          }
+        };
+      }
+    }
+    const defMarker = parseDefinitionListMarker(line);
+    if (defMarker && defMarker.type === "definition") {
+      return {
+        type: "definition-item",
+        content: line,
+        metadata: {
+          content: defMarker.content
+        }
+      };
+    }
+    if ((context == null ? void 0 : context.nextLine) && ListPatterns.isDefinitionMarker(context.nextLine)) {
+      return {
+        type: "definition-term",
+        content: line,
+        metadata: {
+          content: line.trim()
+        }
+      };
+    }
+    const references = this.findExampleReferences(line);
+    if (references.length > 0) {
+      return {
+        type: "reference",
+        content: line,
+        metadata: {
+          references
+        }
+      };
+    }
+    return {
+      type: "plain",
+      content: line
+    };
+  }
+  /**
+   * Parse multiple lines with context
+   */
+  parseLines(lines, isInParagraph = false) {
+    return lines.map((line, index) => {
+      const nextLine = index < lines.length - 1 ? lines[index + 1] : void 0;
+      return this.parseLine(line, { nextLine, isInParagraph });
+    });
+  }
+  /**
+   * Find example references in text
+   */
+  findExampleReferences(text) {
+    const references = [];
+    const regex = /\(@([a-zA-Z0-9_-]+)\)/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      references.push({
+        fullMatch: match[0],
+        label: match[1],
+        startIndex: match.index,
+        endIndex: match.index + match[0].length
+      });
+    }
+    return references;
+  }
+  /**
+   * Check if strict validation should be applied
+   */
+  shouldValidateStrict(parsedLine, lines, currentLineIndex) {
+    if (parsedLine.type !== "fancy") {
+      return false;
+    }
+    return true;
+  }
+};
+
+// src/renderers/ReadingModeRenderer.ts
+var import_obsidian6 = require("obsidian");
+var ReadingModeRenderer = class {
+  /**
+   * Render a parsed line to DOM elements
+   */
+  renderLine(parsedLine, context, lineNumber) {
+    switch (parsedLine.type) {
+      case "hash":
+        return this.renderHashList(parsedLine.metadata, lineNumber);
+      case "fancy":
+        return this.renderFancyList(parsedLine.metadata);
+      case "example":
+        return this.renderExampleList(parsedLine.metadata, lineNumber);
+      case "definition-term":
+        return this.renderDefinitionTerm(parsedLine.metadata);
+      case "definition-item":
+        return this.renderDefinitionItem(parsedLine.metadata);
+      case "reference":
+        return this.renderWithReferences(parsedLine.content, parsedLine.metadata, context);
+      default:
+        return [document.createTextNode(parsedLine.content)];
+    }
+  }
+  /**
+   * Render multiple parsed lines with line breaks
+   */
+  renderLines(parsedLines, context, numberProvider) {
+    const elements = [];
+    parsedLines.forEach((parsedLine, index) => {
+      if (index > 0) {
+        if (context.strictLineBreaks) {
+          elements.push(document.createElement("br"));
+        }
+        elements.push(document.createTextNode("\n"));
+      }
+      let lineNumber;
+      if (numberProvider) {
+        if (parsedLine.type === "hash") {
+          lineNumber = numberProvider("hash", index);
+        } else if (parsedLine.type === "example") {
+          lineNumber = numberProvider("example", index);
+        }
+      }
+      const lineElements = this.renderLine(parsedLine, context, lineNumber);
+      elements.push(...lineElements);
+    });
+    return elements;
+  }
+  /**
+   * Render hash auto-numbering list
+   */
+  renderHashList(data, number) {
+    const elements = [];
+    const span = document.createElement("span");
+    span.className = `${CSS_CLASSES.FANCY_LIST}-hash`;
+    span.textContent = `${number || "#"}. `;
+    elements.push(span);
+    if (data.content) {
+      elements.push(document.createTextNode(data.content));
+    }
+    return elements;
+  }
+  /**
+   * Render fancy list marker
+   */
+  renderFancyList(data) {
+    const elements = [];
+    const span = document.createElement("span");
+    span.className = `${CSS_CLASSES.FANCY_LIST}-${data.type}`;
+    span.textContent = data.marker + " ";
+    elements.push(span);
+    if (data.content) {
+      elements.push(document.createTextNode(data.content));
+    }
+    return elements;
+  }
+  /**
+   * Render example list
+   */
+  renderExampleList(data, number) {
+    const elements = [];
+    const span = document.createElement("span");
+    span.className = CSS_CLASSES.EXAMPLE_LIST;
+    span.textContent = `(${number || "@"}) `;
+    if (number) {
+      span.dataset.exampleNumber = String(number);
+    }
+    elements.push(span);
+    if (data.content) {
+      elements.push(document.createTextNode(data.content));
+    }
+    return elements;
+  }
+  /**
+   * Render definition term
+   */
+  renderDefinitionTerm(data) {
+    const strong = document.createElement("strong");
+    const u = document.createElement("u");
+    u.textContent = data.content;
+    strong.appendChild(u);
+    return [strong];
+  }
+  /**
+   * Render definition item
+   */
+  renderDefinitionItem(data) {
+    const elements = [];
+    const span = document.createElement("span");
+    span.textContent = "\u2022 ";
+    elements.push(span);
+    elements.push(document.createTextNode(data.content));
+    return elements;
+  }
+  /**
+   * Render text with example references
+   */
+  renderWithReferences(text, data, context) {
+    const elements = [];
+    let lastIndex = 0;
+    data.references.forEach((ref) => {
+      var _a, _b;
+      if (ref.startIndex > lastIndex) {
+        elements.push(document.createTextNode(text.substring(lastIndex, ref.startIndex)));
+      }
+      const exampleNumber = (_a = context.getExampleNumber) == null ? void 0 : _a.call(context, ref.label);
+      if (exampleNumber !== void 0) {
+        const span = document.createElement("span");
+        span.className = CSS_CLASSES.EXAMPLE_REF;
+        span.textContent = `(${exampleNumber})`;
+        const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, ref.label);
+        if (tooltipText) {
+          (0, import_obsidian6.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+        }
+        elements.push(span);
+      } else {
+        elements.push(document.createTextNode(ref.fullMatch));
+      }
+      lastIndex = ref.endIndex;
+    });
+    if (lastIndex < text.length) {
+      elements.push(document.createTextNode(text.substring(lastIndex)));
+    }
+    return elements;
+  }
+  /**
+   * Create a line break element
+   */
+  createLineBreak() {
+    return document.createElement("br");
+  }
+  /**
+   * Create a newline text node
+   */
+  createNewline() {
+    return document.createTextNode("\n");
+  }
+};
+
+// src/state/PluginStateManager.ts
+var PluginStateManager = class {
+  constructor() {
+    // Document-specific counters
+    this.documentCounters = /* @__PURE__ */ new Map();
+    // View state tracking per leaf
+    this.viewStates = /* @__PURE__ */ new Map();
+    // Mode change listeners
+    this.modeChangeListeners = /* @__PURE__ */ new Set();
+    // Track processed elements to prevent duplicate counter increments
+    this.processedElements = /* @__PURE__ */ new WeakMap();
+    // Track which documents need element reprocessing
+    this.documentsNeedingReprocess = /* @__PURE__ */ new Set();
+  }
+  /**
+   * Get or create counters for a document
+   */
+  getDocumentCounters(docPath) {
+    if (!this.documentCounters.has(docPath)) {
+      this.documentCounters.set(docPath, this.createEmptyCounters());
+    }
+    return this.documentCounters.get(docPath);
+  }
+  /**
+   * Reset counters for a specific document
+   */
+  resetDocumentCounters(docPath) {
+    if (this.documentCounters.has(docPath)) {
+      const counters = this.documentCounters.get(docPath);
+      counters.exampleCounter = 0;
+      counters.exampleMap.clear();
+      counters.exampleContent.clear();
+      counters.hashCounter = 0;
+    }
+    this.documentsNeedingReprocess.add(docPath);
+  }
+  /**
+   * Clear counters for a document (remove from memory)
+   */
+  clearDocumentCounters(docPath) {
+    this.documentCounters.delete(docPath);
+    this.documentsNeedingReprocess.delete(docPath);
+  }
+  /**
+   * Update view state and detect mode/document changes
+   */
+  updateViewState(leaf) {
+    var _a;
+    const leafId = this.getLeafId(leaf);
+    const view = leaf.view;
+    const currentMode = this.detectViewMode(view);
+    const currentPath = ((_a = view.file) == null ? void 0 : _a.path) || null;
+    const previous = this.viewStates.get(leafId);
+    const previousMode = (previous == null ? void 0 : previous.mode) || null;
+    const previousPath = (previous == null ? void 0 : previous.filePath) || null;
+    this.viewStates.set(leafId, {
+      mode: currentMode,
+      filePath: currentPath
+    });
+    const modeChanged = previousMode !== currentMode;
+    const pathChanged = previousPath !== currentPath;
+    if (modeChanged || pathChanged) {
+      const event = {
+        leafId,
+        previousMode,
+        currentMode,
+        previousPath,
+        currentPath
+      };
+      this.handleStateTransition(event);
+      this.notifyModeChange(event);
+      return event;
+    }
+    return null;
+  }
+  /**
+   * Handle state transitions (e.g., reset counters)
+   */
+  handleStateTransition(event) {
+    if (event.previousMode === "reading" && event.currentMode !== "reading") {
+      if (event.previousPath) {
+        this.resetDocumentCounters(event.previousPath);
+      }
+    }
+    if (event.currentMode === "reading" && event.previousPath && event.currentPath && event.previousPath !== event.currentPath) {
+      this.resetDocumentCounters(event.currentPath);
+    }
+    if (event.currentMode === "reading" && event.currentPath) {
+      setTimeout(() => {
+        this.clearReprocessFlag(event.currentPath);
+      }, 100);
+    }
+  }
+  /**
+   * Register a mode change listener
+   */
+  onModeChange(callback) {
+    this.modeChangeListeners.add(callback);
+    return () => {
+      this.modeChangeListeners.delete(callback);
+    };
+  }
+  /**
+   * Notify all mode change listeners
+   */
+  notifyModeChange(event) {
+    this.modeChangeListeners.forEach((callback) => callback(event));
+  }
+  /**
+   * Increment example counter for a document
+   */
+  incrementExampleCounter(docPath) {
+    const counters = this.getDocumentCounters(docPath);
+    counters.exampleCounter++;
+    return counters.exampleCounter;
+  }
+  /**
+   * Increment hash counter for a document
+   */
+  incrementHashCounter(docPath) {
+    const counters = this.getDocumentCounters(docPath);
+    counters.hashCounter++;
+    return counters.hashCounter;
+  }
+  /**
+   * Store labeled example data
+   */
+  setLabeledExample(docPath, label, number, content) {
+    const counters = this.getDocumentCounters(docPath);
+    counters.exampleMap.set(label, number);
+    if (content) {
+      counters.exampleContent.set(label, content);
+    }
+  }
+  /**
+   * Get labeled example number
+   */
+  getLabeledExampleNumber(docPath, label) {
+    const counters = this.getDocumentCounters(docPath);
+    return counters.exampleMap.get(label);
+  }
+  /**
+   * Get labeled example content
+   */
+  getLabeledExampleContent(docPath, label) {
+    const counters = this.getDocumentCounters(docPath);
+    return counters.exampleContent.get(label);
+  }
+  /**
+   * Mark an element as processed to prevent duplicate processing
+   */
+  markElementProcessed(element, key, value) {
+    if (!this.processedElements.has(element)) {
+      this.processedElements.set(element, /* @__PURE__ */ new Map());
+    }
+    this.processedElements.get(element).set(key, value);
+  }
+  /**
+   * Check if an element has been processed
+   */
+  isElementProcessed(element, key, docPath) {
+    if (docPath && this.documentsNeedingReprocess.has(docPath)) {
+      return false;
+    }
+    return this.processedElements.has(element) && this.processedElements.get(element).has(key);
+  }
+  /**
+   * Clear reprocess flag for a document after processing
+   */
+  clearReprocessFlag(docPath) {
+    this.documentsNeedingReprocess.delete(docPath);
+  }
+  /**
+   * Get processed element data
+   */
+  getProcessedElementData(element, key) {
+    if (this.processedElements.has(element)) {
+      return this.processedElements.get(element).get(key);
+    }
+    return void 0;
+  }
+  /**
+   * Scan all leaves and update states
+   * Returns true if any mode changes were detected
+   */
+  scanAllLeaves(leaves) {
+    var _a;
+    let anyChanges = false;
+    for (const leaf of leaves) {
+      if (((_a = leaf.view) == null ? void 0 : _a.getViewType()) === "markdown") {
+        const event = this.updateViewState(leaf);
+        if (event) {
+          anyChanges = true;
+        }
+      }
+    }
+    return anyChanges;
+  }
+  /**
+   * Clear all states (for plugin unload)
+   */
+  clearAllStates() {
+    this.documentCounters.clear();
+    this.viewStates.clear();
+    this.modeChangeListeners.clear();
+  }
+  /**
+   * Create empty counters object
+   */
+  createEmptyCounters() {
+    return {
+      exampleCounter: 0,
+      exampleMap: /* @__PURE__ */ new Map(),
+      exampleContent: /* @__PURE__ */ new Map(),
+      hashCounter: 0
+    };
+  }
+  /**
+   * Detect the current view mode from a MarkdownView
+   */
+  detectViewMode(view) {
+    const state = view.getState();
+    if ((state == null ? void 0 : state.mode) === "preview") return "reading";
+    if ((state == null ? void 0 : state.mode) === "source") {
+      return state.source ? "source" : "live";
+    }
+    return view.getMode() === "preview" ? "reading" : "live";
+  }
+  /**
+   * Get a stable ID for a leaf
+   */
+  getLeafId(leaf) {
+    var _a, _b;
+    if ("id" in leaf && leaf.id) {
+      return leaf.id;
+    }
+    const view = leaf.view;
+    return `${(_b = (_a = view == null ? void 0 : view.file) == null ? void 0 : _a.path) != null ? _b : "unknown"}::${Math.random()}`;
+  }
+};
+var pluginStateManager = new PluginStateManager();
 
 // src/pandocValidator.ts
 function isStrictPandocList(context, strictMode) {
@@ -1438,187 +1993,119 @@ function checkPandocFormatting(content) {
 }
 
 // src/parsers/readingModeProcessor.ts
-var globalExampleCounter = 0;
-var globalExampleMap = /* @__PURE__ */ new Map();
-var globalExampleContent = /* @__PURE__ */ new Map();
-var currentDocumentPath = null;
-function resetCounterIfNewDocument(context) {
-  const docPath = context.sourcePath;
-  if (docPath !== currentDocumentPath) {
-    globalExampleCounter = 0;
-    globalExampleMap.clear();
-    globalExampleContent.clear();
-    currentDocumentPath = docPath;
-  }
-}
-function processReadingMode(element, context, settings) {
-  resetCounterIfNewDocument(context);
+function processReadingMode(element, context, config) {
+  const docPath = context.sourcePath || "unknown";
+  const parser = new ReadingModeParser();
+  const renderer = new ReadingModeRenderer();
   const elementsToProcess = element.querySelectorAll("p, li");
-  const section = element.closest(".markdown-preview-section");
-  const sectionInfo = getSectionInfo(section);
-  let fullText = "";
-  let lines = [];
-  if (sectionInfo == null ? void 0 : sectionInfo.text) {
-    fullText = sectionInfo.text;
-    lines = fullText.split("\n");
-  } else {
-    fullText = element.textContent || "";
-    lines = fullText.split("\n");
+  let validationLines = [];
+  if (config.strictPandocMode) {
+    const section = element.closest(".markdown-preview-section");
+    const sectionInfo = getSectionInfo(section);
+    if (sectionInfo == null ? void 0 : sectionInfo.text) {
+      validationLines = sectionInfo.text.split("\n");
+    }
   }
-  const localExampleMap = /* @__PURE__ */ new Map();
   elementsToProcess.forEach((elem) => {
     if (elem.closest("h1, h2, h3, h4, h5, h6")) {
       return;
     }
-    const walker = document.createTreeWalker(
-      elem,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
-    const nodesToProcess = [];
-    while (walker.nextNode()) {
-      nodesToProcess.push(walker.currentNode);
+    if (pluginStateManager.isElementProcessed(elem, "pandoc-processed", docPath)) {
+      return;
     }
-    nodesToProcess.forEach((node, nodeIndex) => {
-      const parent = node.parentNode;
-      if (!parent) return;
-      if (parent.nodeName === "CODE" || parent.nodeName === "PRE") {
-        return;
-      }
-      const text = node.textContent || "";
-      const isInParagraph = parent.nodeName === "P";
-      const hasCustomSyntax = ListPatterns.isFancyList(text) || isInParagraph && ListPatterns.isExampleList(text) || ListPatterns.isDefinitionMarker(text) || ListPatterns.findExampleReferences(text).length > 0;
-      if (!hasCustomSyntax) {
-        return;
-      }
-      const lines2 = text.split("\n");
-      const newElements = [];
-      lines2.forEach((line, lineIndex) => {
-        if (lineIndex > 0) {
-          newElements.push(document.createTextNode("\n"));
-        }
-        let isDefinitionTerm = false;
-        if (lineIndex < lines2.length - 1) {
-          const nextLine = lines2[lineIndex + 1];
-          if (nextLine && ListPatterns.isDefinitionMarker(nextLine)) {
-            isDefinitionTerm = true;
+    processElementTextNodes(elem, parser, renderer, config, docPath, validationLines);
+    pluginStateManager.markElementProcessed(elem, "pandoc-processed", true);
+  });
+  if (config.enableSuperSubscripts) {
+    processSuperSub(element);
+  }
+}
+function processElementTextNodes(elem, parser, renderer, config, docPath, validationLines) {
+  const walker = document.createTreeWalker(
+    elem,
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+  const nodesToProcess = [];
+  while (walker.nextNode()) {
+    nodesToProcess.push(walker.currentNode);
+  }
+  nodesToProcess.forEach((node) => {
+    const parent = node.parentNode;
+    if (!parent) return;
+    if (parent.nodeName === "CODE" || parent.nodeName === "PRE") {
+      return;
+    }
+    const text = node.textContent || "";
+    if (!containsPandocSyntax(text)) {
+      return;
+    }
+    const isInParagraph = parent.nodeName === "P";
+    const lines = text.split("\n");
+    const parsedLines = parser.parseLines(lines, isInParagraph);
+    if (config.strictPandocMode) {
+      parsedLines.forEach((parsedLine, index) => {
+        if (parsedLine.type === "fancy" && validationLines.length > 0) {
+          if (!validateListInStrictMode(lines[index], validationLines, config)) {
+            parsedLine.type = "plain";
           }
-        }
-        const fancyMarker = parseFancyListMarker(line);
-        if (fancyMarker) {
-          if (settings.strictPandocMode && lines2.length > 0) {
-            let lineNum = -1;
-            for (let i = 0; i < lines2.length; i++) {
-              if (lines2[i].includes(line.trim())) {
-                lineNum = i;
-                break;
-              }
-            }
-            if (lineNum >= 0) {
-              const validationContext = {
-                lines: lines2,
-                currentLine: lineNum
-              };
-              if (!isStrictPandocList(validationContext, settings.strictPandocMode)) {
-                newElements.push(document.createTextNode(line));
-                return;
-              }
-            }
-          }
-          const span = document.createElement("span");
-          span.className = `${CSS_CLASSES.FANCY_LIST}-${fancyMarker.type}`;
-          span.textContent = fancyMarker.marker + " ";
-          newElements.push(span);
-          const rest = line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1);
-          if (rest) {
-            newElements.push(document.createTextNode(rest));
-          }
-          return;
-        }
-        const exampleMarker = isInParagraph ? parseExampleListMarker(line) : null;
-        if (exampleMarker) {
-          const lineKey = line.trim();
-          let number;
-          if (localExampleMap.has(lineKey)) {
-            number = localExampleMap.get(lineKey);
-          } else {
-            globalExampleCounter++;
-            number = globalExampleCounter;
-            localExampleMap.set(lineKey, number);
-            if (exampleMarker.label && !globalExampleMap.has(exampleMarker.label)) {
-              globalExampleMap.set(exampleMarker.label, number);
-              const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
-              const content = line.substring(contentStart).trim();
-              if (content) {
-                globalExampleContent.set(exampleMarker.label, content);
-              }
-            }
-          }
-          const span = document.createElement("span");
-          span.className = CSS_CLASSES.EXAMPLE_LIST;
-          span.textContent = `(${number}) `;
-          span.dataset.exampleNumber = String(number);
-          newElements.push(span);
-          const rest = line.substring(exampleMarker.indent.length + exampleMarker.originalMarker.length + 1);
-          if (rest) {
-            newElements.push(document.createTextNode(rest));
-          }
-          return;
-        }
-        const defMarker = parseDefinitionListMarker(line);
-        if (defMarker && defMarker.type === "definition") {
-          const span = document.createElement("span");
-          span.textContent = "\u2022 ";
-          newElements.push(span);
-          newElements.push(document.createTextNode(defMarker.content));
-          return;
-        } else if (isDefinitionTerm && line.trim() && !ListPatterns.isDefinitionMarker(line)) {
-          const strong = document.createElement("strong");
-          const u = document.createElement("u");
-          u.textContent = line;
-          strong.appendChild(u);
-          newElements.push(strong);
-          return;
-        }
-        const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
-        let lastIndex = 0;
-        let match;
-        let hasReferences = false;
-        while ((match = refRegex.exec(line)) !== null) {
-          hasReferences = true;
-          if (match.index > lastIndex) {
-            newElements.push(document.createTextNode(line.substring(lastIndex, match.index)));
-          }
-          const label = match[1];
-          if (globalExampleMap.has(label)) {
-            const span = document.createElement("span");
-            span.className = CSS_CLASSES.EXAMPLE_REF;
-            span.textContent = `(${globalExampleMap.get(label)})`;
-            const tooltipText = globalExampleContent.get(label);
-            if (tooltipText) {
-              (0, import_obsidian6.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-            }
-            newElements.push(span);
-          } else {
-            newElements.push(document.createTextNode(match[0]));
-          }
-          lastIndex = match.index + match[0].length;
-        }
-        if (hasReferences && lastIndex < line.length) {
-          newElements.push(document.createTextNode(line.substring(lastIndex)));
-        } else if (!hasReferences) {
-          newElements.push(document.createTextNode(line));
         }
       });
-      if (newElements.length > 0) {
-        newElements.forEach((elem2) => {
-          parent.insertBefore(elem2, node);
-        });
-        parent.removeChild(node);
+    }
+    const renderContext = {
+      strictLineBreaks: config.strictLineBreaks,
+      getExampleNumber: (label) => pluginStateManager.getLabeledExampleNumber(docPath, label),
+      getExampleContent: (label) => pluginStateManager.getLabeledExampleContent(docPath, label)
+    };
+    const numberProvider = (type, index) => {
+      var _a;
+      const parsedLine = parsedLines[index];
+      if (type === "hash") {
+        return pluginStateManager.incrementHashCounter(docPath);
       }
-    });
+      if (type === "example" && parsedLine.type === "example") {
+        const metadata = parsedLine.metadata;
+        const number = pluginStateManager.incrementExampleCounter(docPath);
+        if (metadata.label) {
+          pluginStateManager.setLabeledExample(
+            docPath,
+            metadata.label,
+            number,
+            (_a = metadata.content) == null ? void 0 : _a.trim()
+          );
+        }
+        return number;
+      }
+      return 0;
+    };
+    const newElements = renderer.renderLines(parsedLines, renderContext, numberProvider);
+    if (newElements.length > 0) {
+      newElements.forEach((elem2) => {
+        parent.insertBefore(elem2, node);
+      });
+      parent.removeChild(node);
+    }
   });
-  processSuperSub(element);
+}
+function containsPandocSyntax(text) {
+  return ListPatterns.isHashList(text) || ListPatterns.isFancyList(text) || ListPatterns.isExampleList(text) || ListPatterns.isDefinitionMarker(text) || ListPatterns.findExampleReferences(text).length > 0;
+}
+function validateListInStrictMode(line, documentLines, config) {
+  let lineNum = -1;
+  for (let i = 0; i < documentLines.length; i++) {
+    if (documentLines[i].includes(line.trim())) {
+      lineNum = i;
+      break;
+    }
+  }
+  if (lineNum >= 0) {
+    const validationContext = {
+      lines: documentLines,
+      currentLine: lineNum
+    };
+    return isStrictPandocList(validationContext, config.strictPandocMode);
+  }
+  return true;
 }
 
 // src/ExampleReferenceSuggestFixed.ts
@@ -2243,13 +2730,46 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian8.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
-    this.registerEditorExtension(pandocListsExtension(() => this.settings));
-    this.registerEditorExtension(import_state3.Prec.highest(import_view9.keymap.of(createListAutocompletionKeymap(this.settings))));
-    this.registerMarkdownPostProcessor((element, context) => {
-      processReadingMode(element, context, this.settings);
-    });
+    this.registerExtensions();
+    this.registerPostProcessor();
+    this.setupModeChangeDetection();
     this.suggester = new ExampleReferenceSuggestFixed(this);
     this.registerEditorSuggest(this.suggester);
+    this.registerCommands();
+  }
+  registerExtensions() {
+    this.registerEditorExtension(pandocListsExtension(() => this.settings));
+    this.registerEditorExtension(import_state3.Prec.highest(import_view9.keymap.of(createListAutocompletionKeymap(this.settings))));
+  }
+  registerPostProcessor() {
+    this.registerMarkdownPostProcessor((element, context) => {
+      const config = createProcessorConfig(
+        { strictLineBreaks: this.app.vault.getConfig("strictLineBreaks") },
+        this.settings
+      );
+      processReadingMode(element, context, config);
+    });
+  }
+  setupModeChangeDetection() {
+    const updateStates = () => {
+      const leaves = this.app.workspace.getLeavesOfType("markdown");
+      const hadChanges = pluginStateManager.scanAllLeaves(leaves);
+      if (hadChanges) {
+        setTimeout(() => {
+          this.app.workspace.iterateCodeMirrors((cm) => {
+            if (cm.dispatch) {
+              cm.dispatch({ effects: [] });
+            }
+          });
+        }, 10);
+      }
+    };
+    updateStates();
+    this.registerEvent(this.app.workspace.on("layout-change", updateStates));
+    this.registerEvent(this.app.workspace.on("active-leaf-change", updateStates));
+    this.registerEvent(this.app.workspace.on("file-open", updateStates));
+  }
+  registerCommands() {
     this.addCommand({
       id: COMMANDS.CHECK_PANDOC,
       name: "Check pandoc formatting",
@@ -2297,6 +2817,7 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     });
   }
   onunload() {
+    pluginStateManager.clearAllStates();
   }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

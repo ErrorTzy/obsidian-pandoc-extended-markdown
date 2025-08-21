@@ -27,23 +27,27 @@ export function findSuperSubInText(text: string): SuperSubMatch[] {
     // Find superscripts
     const superscripts = ListPatterns.findSuperscripts(text);
     superscripts.forEach(match => {
-        matches.push({
-            index: match.index!,
-            length: match[0].length,
-            content: extractContent(match[0], '^'),
-            type: 'superscript'
-        });
+        if (match.index !== undefined) {
+            matches.push({
+                index: match.index,
+                length: match[0].length,
+                content: extractContent(match[0], '^'),
+                type: 'superscript'
+            });
+        }
     });
     
     // Find subscripts
     const subscripts = ListPatterns.findSubscripts(text);
     subscripts.forEach(match => {
-        matches.push({
-            index: match.index!,
-            length: match[0].length,
-            content: extractContent(match[0], '~'),
-            type: 'subscript'
-        });
+        if (match.index !== undefined) {
+            matches.push({
+                index: match.index,
+                length: match[0].length,
+                content: extractContent(match[0], '~'),
+                type: 'subscript'
+            });
+        }
     });
     
     // Sort by index to process in order

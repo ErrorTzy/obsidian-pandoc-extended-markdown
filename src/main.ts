@@ -1,10 +1,11 @@
 // External libraries
-import { Plugin, MarkdownPostProcessorContext, Notice, Editor } from 'obsidian';
+import { Plugin, MarkdownPostProcessorContext, Notice, Editor, MarkdownView, WorkspaceLeaf } from 'obsidian';
 import { Extension, Prec } from '@codemirror/state';
-import { keymap } from '@codemirror/view';
+import { keymap, EditorView } from '@codemirror/view';
 
 // Types
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
+import { ProcessorConfig, createProcessorConfig } from './types/ProcessorConfig';
 
 // Constants
 import { MESSAGES, COMMANDS, UI_CONSTANTS } from './constants';
@@ -18,6 +19,7 @@ import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
+import { pluginStateManager } from './state/PluginStateManager';
 
 export default class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
@@ -29,21 +31,70 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
         // Add settings tab
         this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
         
-        // Register CodeMirror extension for live preview with settings
-        this.registerEditorExtension(pandocListsExtension(() => this.settings));
+        // Register all extensions and processors
+        this.registerExtensions();
+        this.registerPostProcessor();
         
-        // Register list autocompletion keymap with highest priority
-        this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(this.settings))));
-        
-        // Register markdown post-processor for reading mode
-        this.registerMarkdownPostProcessor((element, context) => {
-            processReadingMode(element, context, this.settings);
-        });
+        // Set up mode change detection
+        this.setupModeChangeDetection();
         
         // Register example reference suggester
         this.suggester = new ExampleReferenceSuggestFixed(this);
         this.registerEditorSuggest(this.suggester);
         
+        // Register all commands
+        this.registerCommands();
+    }
+
+    private registerExtensions(): void {
+        // Register CodeMirror extension for live preview with settings
+        this.registerEditorExtension(pandocListsExtension(() => this.settings));
+        
+        // Register list autocompletion keymap with highest priority
+        this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(this.settings))));
+    }
+
+    private registerPostProcessor(): void {
+        // Register markdown post-processor for reading mode
+        this.registerMarkdownPostProcessor((element, context) => {
+            // Create processor config from current settings
+            const config = createProcessorConfig(
+                { strictLineBreaks: this.app.vault.getConfig('strictLineBreaks') },
+                this.settings
+            );
+            processReadingMode(element, context, config);
+        });
+    }
+
+    private setupModeChangeDetection(): void {
+        const updateStates = () => {
+            const leaves = this.app.workspace.getLeavesOfType("markdown");
+            const hadChanges = pluginStateManager.scanAllLeaves(leaves);
+            
+            // Only force CodeMirror refresh if there were actual mode changes
+            if (hadChanges) {
+                // Small delay to ensure mode switch is complete
+                setTimeout(() => {
+                    this.app.workspace.iterateCodeMirrors((cm: EditorView) => {
+                        // Trigger a minor update to force decoration recalculation
+                        if (cm.dispatch) {
+                            cm.dispatch({ effects: [] });
+                        }
+                    });
+                }, 10);
+            }
+        };
+        
+        // Initial scan
+        updateStates();
+        
+        // Register workspace events for mode change detection
+        this.registerEvent(this.app.workspace.on("layout-change", updateStates));
+        this.registerEvent(this.app.workspace.on("active-leaf-change", updateStates));
+        this.registerEvent(this.app.workspace.on("file-open", updateStates));
+    }
+
+    private registerCommands(): void {
         // Add command to check strict pandoc linting
         this.addCommand({
             id: COMMANDS.CHECK_PANDOC,
@@ -99,7 +150,9 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
     }
 
     onunload() {
-        // Cleanup is handled automatically by Obsidian
+        // Clear all states on unload
+        pluginStateManager.clearAllStates();
+        // Other cleanup is handled automatically by Obsidian
     }
     
     async loadSettings() {
