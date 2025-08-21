@@ -88,6 +88,11 @@
     text-decoration: underline;
 }
 
+/* CodeMirror-specific definition term styling */
+.cm-pandoc-definition-term {
+    text-decoration: underline;
+}
+
 .cm-line .pandoc-definition-marker {
     display: none;
 }

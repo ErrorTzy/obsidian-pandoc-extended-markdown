@@ -50,8 +50,8 @@ export class ListPatterns {
     
     // Complex list patterns for autocompletion
     static readonly ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
-    static readonly ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
-    static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+    static readonly ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+    static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
     
     // Indentation patterns
     static readonly INDENT_ONLY = /^(\s*)/;
@@ -65,22 +65,8 @@ export class ListPatterns {
     static readonly SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
     static readonly SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
     
-    // Cache for compiled patterns
-    private static compiledPatterns = new Map<string, RegExp>();
-    
-    /**
-     * Get a cached RegExp pattern by name.
-     * This allows for lazy compilation and caching of patterns.
-     */
-    static getPattern(name: keyof typeof ListPatterns): RegExp {
-        if (!this.compiledPatterns.has(name)) {
-            const pattern = this[name] as RegExp;
-            if (pattern instanceof RegExp) {
-                this.compiledPatterns.set(name, new RegExp(pattern));
-            }
-        }
-        return this.compiledPatterns.get(name) || this[name] as RegExp;
-    }
+    // Note: Patterns are already compiled as static readonly RegExp objects,
+    // providing optimal performance without needing additional caching.
     
     /**
      * Test if a line matches a hash list pattern.

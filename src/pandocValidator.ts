@@ -130,8 +130,8 @@ export function formatToPandocStandard(content: string): string {
         
         // Handle headings
         if (isCurrentLineHeading) {
-            // Add empty line before heading if needed
-            if (result.length > 0 && !lastWasEmpty) {
+            // Add empty line before heading if needed (but not at the beginning of the document)
+            if (result.length > 0 && !lastWasEmpty && i > 0) {
                 result.push('');
             }
             
@@ -231,7 +231,7 @@ export function checkPandocFormatting(content: string): LintingIssue[] {
         
         // Check heading formatting
         if (isCurrentLineHeading) {
-            // Check for empty line before heading
+            // Check for empty line before heading (but not at the beginning of the document)
             if (i > 0 && lines[i - 1].trim() !== '') {
                 issues.push({
                     line: i + 1,

@@ -1,6 +1,6 @@
 import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
 import { getSectionInfo } from '../types/obsidian-extended';
-import { CSS_CLASSES } from '../constants';
+import { CSS_CLASSES, DECORATION_STYLES } from '../constants';
 import { ListPatterns } from '../patterns';
 
 export interface ExampleListInfo {
@@ -195,7 +195,7 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
                 // Add tooltip if content is available
                 const tooltipText = exampleContent.get(label);
                 if (tooltipText) {
-                    setTooltip(span, tooltipText, { delay: 300 });
+                    setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
                 }
                 
                 fragments.push(span);

@@ -48,7 +48,6 @@ export function getSectionInfo(element: HTMLElement | null): SectionInfo | null 
         try {
             return element.getSection();
         } catch (error) {
-            console.warn('[PandocExtendedMarkdown] Failed to get section info:', error);
             return null;
         }
     }

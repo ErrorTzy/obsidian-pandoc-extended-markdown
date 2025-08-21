@@ -291,7 +291,9 @@ pandoc-extended-markdown/
 │   │   ├── superSubParser.ts            # Parses superscripts (^) and subscripts (~)
 │   │   └── readingModeProcessor.ts      # Post-processor for reading mode rendering
 │   ├── types/                            # TypeScript type definitions
-│   │   └── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
+│   │   ├── listTypes.ts                 # List-related interfaces and types (FancyListType, FancyListMarker)
+│   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
+│   │   └── settingsTypes.ts             # Settings interface and default settings
 │   ├── utils/                            # Utility functions
 │   │   └── errorHandler.ts              # Error handling utilities with error boundaries
 │   └── styles/                           # Component-specific styles
@@ -329,12 +331,12 @@ pandoc-extended-markdown/
 
 **Source Code (`src/`):**
 - `main.ts` - Entry point that extends Obsidian's Plugin class, initializes all features.
-- `settings.ts` - Defines plugin settings interface and implements the settings tab UI.
+- `settings.ts` - Implements the settings tab UI, imports settings interface from types.
 - `pandocValidator.ts` - Contains validation logic for strict Pandoc mode and formatting functions.
 - `listAutocompletion.ts` - Implements Enter key handling for automatic list continuation with context-aware detection.
 - `ExampleReferenceSuggestFixed.ts` - Extends EditorSuggest to provide autocomplete for example references.
-- `constants.ts` - Centralized constants for list markers, CSS classes, and other magic values.
-- `patterns.ts` - Performance-optimized regex patterns with caching and helper methods.
+- `constants.ts` - Centralized constants for list markers, CSS classes, UI values, and other magic values.
+- `patterns.ts` - Optimized regex patterns as static readonly properties with helper methods.
 
 **Parser Modules (`src/parsers/`):**
 - Each parser handles specific syntax parsing and rendering logic.
@@ -342,10 +344,15 @@ pandoc-extended-markdown/
 - Parsers work with both raw text and DOM elements depending on the mode.
 - Enhanced with fallback logic for private API compatibility.
 
+**Type Definitions (`src/types/`):**
+- `listTypes.ts` - List-related interfaces including FancyListType and FancyListMarker.
+- `obsidian-extended.ts` - Type definitions for Obsidian's internal/undocumented APIs with fallback logic.
+- `settingsTypes.ts` - Settings interface and default settings configuration.
+
 **CodeMirror Extension (`src/decorations/`):**
 - Implements live preview rendering using CodeMirror 6's decoration system.
 - Creates widgets and line decorations for visual list formatting.
-- Refactored with modular helper methods for better maintainability.
+- All styling defined in styles.css, no inline styles in TypeScript.
 - Includes proper memory management for event listeners.
 
 **Utility Modules (`src/utils/`):**

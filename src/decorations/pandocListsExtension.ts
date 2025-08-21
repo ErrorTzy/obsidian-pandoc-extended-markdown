@@ -70,7 +70,7 @@ class ExampleListMarkerWidget extends WidgetType {
         
         // Add tooltip to show original label
         const tooltipText = this.label ? `@${this.label}` : '@';
-        setTooltip(span, tooltipText, { delay: 300 });
+        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         
         // Handle click events to place cursor
         if (this.view && this.pos !== undefined) {
@@ -116,11 +116,11 @@ class DuplicateExampleLabelWidget extends WidgetType {
         
         // Add tooltip with full line content, truncated if necessary
         let lineContent = this.originalLineContent.trim();
-        if (lineContent.length > 100) {
-            lineContent = lineContent.substring(0, 100) + '...';
+        if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
+            lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + '...';
         }
         const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
-        setTooltip(span, tooltipText, { delay: 300 });
+        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         
         // Handle click events to place cursor
         if (this.view && this.pos !== undefined) {
@@ -251,7 +251,7 @@ class ExampleReferenceWidget extends WidgetType {
         
         // Add tooltip if available
         if (this.tooltipText) {
-            setTooltip(span, this.tooltipText, { delay: 300 });
+            setTooltip(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         }
         
         return span;
@@ -939,51 +939,5 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
 );
 
 export function pandocListsExtension(getSettings: () => PandocExtendedMarkdownSettings): Extension {
-    return [
-        pandocListsPlugin(getSettings),
-        EditorView.baseTheme({
-            '.cm-pandoc-definition-term': {
-                textDecoration: 'underline'
-            },
-            '.cm-pandoc-definition-paragraph': {
-                // Don't add extra padding - indentation is already handled by spaces/tabs
-                textIndent: '0 !important'
-            },
-            '.cm-pandoc-definition-paragraph .cm-hmd-indented-code': {
-                background: 'transparent !important',
-                border: 'none !important',
-                borderRadius: '0 !important',
-                padding: '0 !important',
-                color: 'inherit !important',
-                fontFamily: 'inherit !important',
-                fontSize: 'inherit !important'
-            },
-            '.pandoc-definition-content-text': {
-                background: 'transparent !important',
-                border: 'none !important',
-                padding: '0 !important',
-                color: 'inherit !important',
-                fontFamily: 'inherit !important'
-            },
-            '.cm-pandoc-definition-paragraph .cm-indent': {
-                // Keep indent visible for proper cursor positioning
-                opacity: '1'
-            },
-            '.pandoc-example-reference': {
-                color: 'var(--text-accent)',
-                cursor: 'pointer'
-            },
-            '.pandoc-example-reference:hover': {
-                textDecoration: 'underline'
-            },
-            '.pandoc-superscript': {
-                verticalAlign: 'super',
-                fontSize: '0.85em'
-            },
-            '.pandoc-subscript': {
-                verticalAlign: 'sub',
-                fontSize: '0.85em'
-            }
-        })
-    ];
+    return pandocListsPlugin(getSettings);
 }

@@ -7,7 +7,7 @@ import { keymap } from '@codemirror/view';
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
 
 // Constants
-import { MESSAGES, COMMANDS } from './constants';
+import { MESSAGES, COMMANDS, UI_CONSTANTS } from './constants';
 
 // Patterns
 import { ListPatterns } from './patterns';
@@ -58,7 +58,7 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
                     const issueList = issues.map(issue => 
                         `Line ${issue.line}: ${issue.message}`
                     ).join('\n');
-                    new Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:\n${issueList}`, 10000);
+                    new Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:\n${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
                 }
             }
         });

@@ -69,6 +69,8 @@ export const DECORATION_STYLES = {
     HASH_LIST_INDENT: 29,
     EXAMPLE_LIST_INDENT: 35,
     FANCY_LIST_INDENT_MULTIPLIER: 7,
+    LINE_TRUNCATION_LIMIT: 100,
+    TOOLTIP_DELAY_MS: 300,
 } as const;
 
 export const MESSAGES = {
@@ -94,6 +96,10 @@ export const COMMANDS = {
 export const SETTINGS = {
     STRICT_MODE: 'strictPandocMode',
     AUTO_RENUMBER: 'autoRenumberLists',
+} as const;
+
+export const UI_CONSTANTS = {
+    NOTICE_DURATION_MS: 10000,
 } as const;
 
 // Helper function to create fancy list type class names

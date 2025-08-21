@@ -33,10 +33,14 @@ var import_view2 = require("@codemirror/view");
 
 // src/settings.ts
 var import_obsidian = require("obsidian");
+
+// src/types/settingsTypes.ts
 var DEFAULT_SETTINGS = {
   strictPandocMode: false,
   autoRenumberLists: false
 };
+
+// src/settings.ts
 var PandocExtendedMarkdownSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -45,7 +49,6 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian.PluginSetti
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Pandoc Extended Markdown Settings" });
     new import_obsidian.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
@@ -106,6 +109,13 @@ var CSS_CLASSES = {
   // Generic Classes
   PANDOC_LIST_MARKER: "pandoc-list-marker"
 };
+var DECORATION_STYLES = {
+  HASH_LIST_INDENT: 29,
+  EXAMPLE_LIST_INDENT: 35,
+  FANCY_LIST_INDENT_MULTIPLIER: 7,
+  LINE_TRUNCATION_LIMIT: 100,
+  TOOLTIP_DELAY_MS: 300
+};
 var MESSAGES = {
   // Success messages
   FORMAT_SUCCESS: "Document formatted to pandoc standard",
@@ -122,22 +132,14 @@ var COMMANDS = {
   FORMAT_PANDOC: "format-to-pandoc-standard",
   TOGGLE_DEFINITION_BOLD: "toggle-definition-bold-style"
 };
+var UI_CONSTANTS = {
+  NOTICE_DURATION_MS: 1e4
+};
 
 // src/patterns.ts
 var ListPatterns = class {
-  /**
-   * Get a cached RegExp pattern by name.
-   * This allows for lazy compilation and caching of patterns.
-   */
-  static getPattern(name) {
-    if (!this.compiledPatterns.has(name)) {
-      const pattern = this[name];
-      if (pattern instanceof RegExp) {
-        this.compiledPatterns.set(name, new RegExp(pattern));
-      }
-    }
-    return this.compiledPatterns.get(name) || this[name];
-  }
+  // Note: Patterns are already compiled as static readonly RegExp objects,
+  // providing optimal performance without needing additional caching.
   /**
    * Test if a line matches a hash list pattern.
    */
@@ -263,8 +265,8 @@ ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
 ListPatterns.EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
 // Complex list patterns for autocompletion
 ListPatterns.ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
-ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
-ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
 // Indentation patterns
 ListPatterns.INDENT_ONLY = /^(\s*)/;
 // Text formatting patterns
@@ -274,8 +276,6 @@ ListPatterns.BOLD_TEXT = /^\*\*(.+)\*\*$/;
 // Text can contain escaped spaces (\ ) but not unescaped spaces
 ListPatterns.SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
 ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
-// Cache for compiled patterns
-ListPatterns.compiledPatterns = /* @__PURE__ */ new Map();
 
 // src/decorations/pandocListsExtension.ts
 var import_state = require("@codemirror/state");
@@ -336,7 +336,7 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
     innerSpan.textContent = `(${this.number}) `;
     span.appendChild(innerSpan);
     const tooltipText = this.label ? `@${this.label}` : "@";
-    (0, import_obsidian2.setTooltip)(span, tooltipText, { delay: 300 });
+    (0, import_obsidian2.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
     if (this.view && this.pos !== void 0) {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -374,11 +374,11 @@ var DuplicateExampleLabelWidget = class extends import_view.WidgetType {
     span.className = CSS_CLASSES.EXAMPLE_DUPLICATE;
     span.textContent = `(@${this.label})`;
     let lineContent = this.originalLineContent.trim();
-    if (lineContent.length > 100) {
-      lineContent = lineContent.substring(0, 100) + "...";
+    if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
+      lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + "...";
     }
     const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
-    (0, import_obsidian2.setTooltip)(span, tooltipText, { delay: 300 });
+    (0, import_obsidian2.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
     if (this.view && this.pos !== void 0) {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -482,7 +482,7 @@ var ExampleReferenceWidget = class extends import_view.WidgetType {
     span.className = CSS_CLASSES.EXAMPLE_REF;
     span.textContent = `(${this.number})`;
     if (this.tooltipText) {
-      (0, import_obsidian2.setTooltip)(span, this.tooltipText, { delay: 300 });
+      (0, import_obsidian2.setTooltip)(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
     }
     return span;
   }
@@ -984,53 +984,7 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
   }
 );
 function pandocListsExtension(getSettings) {
-  return [
-    pandocListsPlugin(getSettings),
-    import_view.EditorView.baseTheme({
-      ".cm-pandoc-definition-term": {
-        textDecoration: "underline"
-      },
-      ".cm-pandoc-definition-paragraph": {
-        // Don't add extra padding - indentation is already handled by spaces/tabs
-        textIndent: "0 !important"
-      },
-      ".cm-pandoc-definition-paragraph .cm-hmd-indented-code": {
-        background: "transparent !important",
-        border: "none !important",
-        borderRadius: "0 !important",
-        padding: "0 !important",
-        color: "inherit !important",
-        fontFamily: "inherit !important",
-        fontSize: "inherit !important"
-      },
-      ".pandoc-definition-content-text": {
-        background: "transparent !important",
-        border: "none !important",
-        padding: "0 !important",
-        color: "inherit !important",
-        fontFamily: "inherit !important"
-      },
-      ".cm-pandoc-definition-paragraph .cm-indent": {
-        // Keep indent visible for proper cursor positioning
-        opacity: "1"
-      },
-      ".pandoc-example-reference": {
-        color: "var(--text-accent)",
-        cursor: "pointer"
-      },
-      ".pandoc-example-reference:hover": {
-        textDecoration: "underline"
-      },
-      ".pandoc-superscript": {
-        verticalAlign: "super",
-        fontSize: "0.85em"
-      },
-      ".pandoc-subscript": {
-        verticalAlign: "sub",
-        fontSize: "0.85em"
-      }
-    })
-  ];
+  return pandocListsPlugin(getSettings);
 }
 
 // src/types/obsidian-extended.ts
@@ -1045,7 +999,6 @@ function getSectionInfo(element) {
     try {
       return element.getSection();
     } catch (error) {
-      console.warn("[PandocExtendedMarkdown] Failed to get section info:", error);
       return null;
     }
   }
@@ -1287,7 +1240,7 @@ function formatToPandocStandard(content) {
       inListBlock = false;
     }
     if (isCurrentLineHeading) {
-      if (result.length > 0 && !lastWasEmpty) {
+      if (result.length > 0 && !lastWasEmpty && i > 0) {
         result.push("");
       }
       let formattedLine = line;
@@ -1811,16 +1764,15 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
     }
   }
   let exampleMatch = currentLine.match(ListPatterns.EXAMPLE_LIST);
-  if (!exampleMatch) {
-    const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
-    if (altMatch && currentLine.length > altMatch[0].length) {
-      exampleMatch = altMatch;
-      exampleMatch[3] = " ";
-    }
-  }
   if (exampleMatch) {
     const indent = exampleMatch[1];
-    const spaces = exampleMatch[3] || " ";
+    const spaces = exampleMatch[4];
+    return { marker: "(@)", indent, spaces };
+  }
+  const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
+  if (altMatch && currentLine.length > altMatch[0].length) {
+    const indent = altMatch[1];
+    const spaces = altMatch[3] || " ";
     return { marker: "(@)", indent, spaces };
   }
   const definitionMatch = currentLine.match(ListPatterns.DEFINITION_MARKER);
@@ -2187,7 +2139,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian5.Plugin {
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
           new import_obsidian5.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
-${issueList}`, 1e4);
+${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
     });

@@ -63,9 +63,6 @@ export async function withAsyncErrorBoundary<T>(
  * Central error handler for the plugin.
  */
 export function handleError(error: unknown, context: string): void {
-    // Log error to console for debugging
-    console.error(`[PandocExtendedMarkdown] Error in ${context}:`, error);
-    
     // Determine error type and message
     let message = 'An unexpected error occurred';
     let showNotice = true;
@@ -103,7 +100,6 @@ export function validateApiMethod<T>(
         return obj[methodName].bind(obj);
     }
     
-    console.warn(`[PandocExtendedMarkdown] API method '${methodName}' not available, using fallback`);
     return fallback;
 }
 

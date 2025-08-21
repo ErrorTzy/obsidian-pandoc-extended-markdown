@@ -201,18 +201,18 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
     // Check for example lists
     // Try both with required spaces and with optional spaces for better compatibility
     let exampleMatch = currentLine.match(ListPatterns.EXAMPLE_LIST);
-    if (!exampleMatch) {
-        // If no spaces after marker, try to match anyway if there's content after
-        const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
-        if (altMatch && currentLine.length > altMatch[0].length) {
-            // There's content after the marker even without explicit spaces
-            exampleMatch = altMatch;
-            exampleMatch[3] = ' '; // Default to single space
-        }
-    }
     if (exampleMatch) {
         const indent = exampleMatch[1];
-        const spaces = exampleMatch[3] || ' ';
+        const spaces = exampleMatch[4]; // Group 4 is spaces in EXAMPLE_LIST pattern
+        return { marker: '(@)', indent, spaces };
+    }
+    
+    // Try optional space pattern if the first one didn't match
+    const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
+    if (altMatch && currentLine.length > altMatch[0].length) {
+        // There's content after the marker even without explicit spaces
+        const indent = altMatch[1];
+        const spaces = altMatch[3] || ' '; // Group 3 is spaces in EXAMPLE_LIST_OPTIONAL_SPACE pattern
         return { marker: '(@)', indent, spaces };
     }
     
