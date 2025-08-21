@@ -2517,7 +2517,7 @@ function renumberListItems(view, insertedLineNum) {
 function isEmptyListItem(line) {
   if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
   if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
-  if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL)) return true;
   if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
   return false;
 }
@@ -2531,8 +2531,9 @@ function createListAutocompletionKeymap(settings) {
       const lineText = line.text;
       const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
       if (isEmptyExampleList) {
-        const beforeCursor = state.sliceDoc(line.from, selection.from);
-        if (beforeCursor.endsWith("(@")) {
+        const beforeCursor = state.doc.sliceString(line.from, selection.from);
+        const afterCursor = state.doc.sliceString(selection.from, line.to);
+        if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
           const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
           const indent = indentMatch ? indentMatch[1] : "";
           const changes = {

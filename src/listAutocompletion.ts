@@ -423,8 +423,10 @@ function isEmptyListItem(line: string): boolean {
     // Check fancy lists
     if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
     
-    // Check example lists
-    if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST)) return true;
+    // Check example lists - only truly empty ones without labels
+    // Use EMPTY_EXAMPLE_LIST_NO_LABEL instead of EMPTY_EXAMPLE_LIST
+    // to avoid treating (@label) as empty
+    if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL)) return true;
     
     // Check definition lists
     if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
@@ -450,8 +452,10 @@ const handleListEnter: KeyBinding = {
         const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
         if (isEmptyExampleList) {
             // Check if cursor is between @ and )
-            const beforeCursor = state.sliceDoc(line.from, selection.from);
-            if (beforeCursor.endsWith('(@')) {
+            const beforeCursor = state.doc.sliceString(line.from, selection.from);
+            const afterCursor = state.doc.sliceString(selection.from, line.to);
+            // Only delete if cursor is truly between @ and ) with nothing else
+            if (beforeCursor.endsWith('(@') && afterCursor.startsWith(')')) {
                 // Cursor is between @ and ), treat as empty list item and remove the marker
                 const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
                 const indent = indentMatch ? indentMatch[1] : '';
