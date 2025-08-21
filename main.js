@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => PandocExtendedMarkdownPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view9 = require("@codemirror/view");
 
@@ -1091,6 +1091,9 @@ function pandocListsExtension(getSettings) {
   return pandocListsPlugin(getSettings);
 }
 
+// src/parsers/readingModeProcessor.ts
+var import_obsidian6 = require("obsidian");
+
 // src/types/obsidian-extended.ts
 function isMarkdownPreviewSection(element) {
   return element !== null && element.classList.contains("markdown-preview-section");
@@ -1437,12 +1440,14 @@ function checkPandocFormatting(content) {
 // src/parsers/readingModeProcessor.ts
 var globalExampleCounter = 0;
 var globalExampleMap = /* @__PURE__ */ new Map();
+var globalExampleContent = /* @__PURE__ */ new Map();
 var currentDocumentPath = null;
 function resetCounterIfNewDocument(context) {
   const docPath = context.sourcePath;
   if (docPath !== currentDocumentPath) {
     globalExampleCounter = 0;
     globalExampleMap.clear();
+    globalExampleContent.clear();
     currentDocumentPath = docPath;
   }
 }
@@ -1542,6 +1547,11 @@ function processReadingMode(element, context, settings) {
             localExampleMap.set(lineKey, number);
             if (exampleMarker.label && !globalExampleMap.has(exampleMarker.label)) {
               globalExampleMap.set(exampleMarker.label, number);
+              const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
+              const content = line.substring(contentStart).trim();
+              if (content) {
+                globalExampleContent.set(exampleMarker.label, content);
+              }
             }
           }
           const span = document.createElement("span");
@@ -1584,6 +1594,10 @@ function processReadingMode(element, context, settings) {
             const span = document.createElement("span");
             span.className = CSS_CLASSES.EXAMPLE_REF;
             span.textContent = `(${globalExampleMap.get(label)})`;
+            const tooltipText = globalExampleContent.get(label);
+            if (tooltipText) {
+              (0, import_obsidian6.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+            }
             newElements.push(span);
           } else {
             newElements.push(document.createTextNode(match[0]));
@@ -1608,8 +1622,8 @@ function processReadingMode(element, context, settings) {
 }
 
 // src/ExampleReferenceSuggestFixed.ts
-var import_obsidian6 = require("obsidian");
-var ExampleReferenceSuggestFixed = class extends import_obsidian6.EditorSuggest {
+var import_obsidian7 = require("obsidian");
+var ExampleReferenceSuggestFixed = class extends import_obsidian7.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -2225,7 +2239,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian7.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian8.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -2243,12 +2257,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian7.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content);
         if (issues.length === 0) {
-          new import_obsidian7.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian8.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian7.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian8.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -2261,9 +2275,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian7.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian8.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian7.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian8.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -2275,9 +2289,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian7.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian8.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian7.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian8.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

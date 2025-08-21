@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext } from 'obsidian';
+import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
 import { parseFancyListMarker } from './fancyListParser';
 import { parseExampleListMarker } from './exampleListParser';
 import { parseDefinitionListMarker } from './definitionListParser';
@@ -6,12 +6,13 @@ import { processSuperSub } from './superSubParser';
 import { PandocExtendedMarkdownSettings } from '../settings';
 import { isStrictPandocList, ValidationContext } from '../pandocValidator';
 import { getSectionInfo } from '../types/obsidian-extended';
-import { CSS_CLASSES } from '../constants';
+import { CSS_CLASSES, DECORATION_STYLES } from '../constants';
 import { ListPatterns } from '../patterns';
 
 // Global state for example numbering across all blocks
 let globalExampleCounter = 0;
 let globalExampleMap = new Map<string, number>(); // Global map for labeled examples
+let globalExampleContent = new Map<string, string>(); // Global map for example content
 let currentDocumentPath: string | null = null;
 
 // Reset counter and map when processing a new document
@@ -20,6 +21,7 @@ function resetCounterIfNewDocument(context: MarkdownPostProcessorContext) {
     if (docPath !== currentDocumentPath) {
         globalExampleCounter = 0;
         globalExampleMap.clear();
+        globalExampleContent.clear();
         currentDocumentPath = docPath;
     }
 }
@@ -170,6 +172,13 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                         // Store labeled examples for references in global map
                         if (exampleMarker.label && !globalExampleMap.has(exampleMarker.label)) {
                             globalExampleMap.set(exampleMarker.label, number);
+                            
+                            // Store the content of the labeled example for tooltips
+                            const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
+                            const content = line.substring(contentStart).trim();
+                            if (content) {
+                                globalExampleContent.set(exampleMarker.label, content);
+                            }
                         }
                     }
                     
@@ -220,6 +229,13 @@ export function processReadingMode(element: HTMLElement, context: MarkdownPostPr
                         const span = document.createElement('span');
                         span.className = CSS_CLASSES.EXAMPLE_REF;
                         span.textContent = `(${globalExampleMap.get(label)})`;
+                        
+                        // Add tooltip if content is available
+                        const tooltipText = globalExampleContent.get(label);
+                        if (tooltipText) {
+                            setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+                        }
+                        
                         newElements.push(span);
                     } else {
                         newElements.push(document.createTextNode(match[0]));
