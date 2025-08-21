@@ -21,7 +21,7 @@ import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator
 import { createListAutocompletionKeymap } from './listAutocompletion';
 import { pluginStateManager } from './state/PluginStateManager';
 
-export default class PandocExtendedMarkdownPlugin extends Plugin {
+export class PandocListsPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
     settings: PandocExtendedMarkdownSettings;
 
@@ -147,6 +147,23 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
                 }
             }
         });
+        
+        // Add command to toggle underline style for definition terms
+        this.addCommand({
+            id: COMMANDS.TOGGLE_DEFINITION_UNDERLINE,
+            name: 'Toggle definition list underline style',
+            editorCallback: (editor: Editor) => {
+                const content = editor.getValue();
+                const toggled = this.toggleDefinitionUnderlineStyle(content);
+                
+                if (content !== toggled) {
+                    editor.setValue(toggled);
+                    new Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+                } else {
+                    new Notice(MESSAGES.NO_DEFINITION_TERMS);
+                }
+            }
+        });
     }
 
     onunload() {
@@ -205,6 +222,30 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
         
         return { terms: definitionTerms, anyHasBold };
     }
+    
+    private identifyDefinitionTermsWithUnderline(lines: string[]): {terms: {index: number, hasUnderline: boolean}[], anyHasUnderline: boolean} {
+        const definitionTerms: {index: number, hasUnderline: boolean}[] = [];
+        let anyHasUnderline = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const trimmedLine = lines[i].trim();
+            
+            // Skip empty lines and lines that are definition markers
+            if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
+                continue;
+            }
+            
+            if (this.isDefinitionTerm(lines, i)) {
+                const hasUnderline = ListPatterns.UNDERLINE_SPAN.test(trimmedLine);
+                definitionTerms.push({index: i, hasUnderline});
+                if (hasUnderline) {
+                    anyHasUnderline = true;
+                }
+            }
+        }
+        
+        return { terms: definitionTerms, anyHasUnderline };
+    }
 
     toggleDefinitionBoldStyle(content: string): string {
         const lines = content.split('\n');
@@ -234,4 +275,35 @@ export default class PandocExtendedMarkdownPlugin extends Plugin {
         
         return modifiedLines.join('\n');
     }
+    
+    toggleDefinitionUnderlineStyle(content: string): string {
+        const lines = content.split('\n');
+        const modifiedLines = [...lines];
+        
+        const { terms, anyHasUnderline } = this.identifyDefinitionTermsWithUnderline(lines);
+        
+        // Apply unified formatting
+        for (const term of terms) {
+            const line = lines[term.index];
+            const trimmedLine = line.trim();
+            const originalIndent = line.match(/^(\s*)/)?.[1] || '';
+            
+            if (anyHasUnderline) {
+                // Remove underline from all terms
+                const match = trimmedLine.match(ListPatterns.UNDERLINE_SPAN);
+                if (match) {
+                    modifiedLines[term.index] = originalIndent + match[1];
+                }
+            } else {
+                // Add underline to all terms
+                if (!ListPatterns.UNDERLINE_SPAN.test(trimmedLine)) {
+                    modifiedLines[term.index] = originalIndent + '<span class="underline">' + trimmedLine + '</span>';
+                }
+            }
+        }
+        
+        return modifiedLines.join('\n');
+    }
 }
+
+export default PandocListsPlugin;

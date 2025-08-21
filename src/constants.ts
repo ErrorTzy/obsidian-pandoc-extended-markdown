@@ -79,6 +79,7 @@ export const MESSAGES = {
     FORMAT_ALREADY_COMPLIANT: 'Document already follows pandoc standard',
     PANDOC_COMPLIANT: 'Document follows pandoc formatting standards',
     TOGGLE_BOLD_SUCCESS: 'Definition terms bold style toggled',
+    TOGGLE_UNDERLINE_SUCCESS: 'Definition terms underline style toggled',
     
     // Error messages
     NO_DEFINITION_TERMS: 'No definition terms found to toggle',
@@ -91,6 +92,7 @@ export const COMMANDS = {
     CHECK_PANDOC: 'check-pandoc-formatting',
     FORMAT_PANDOC: 'format-to-pandoc-standard',
     TOGGLE_DEFINITION_BOLD: 'toggle-definition-bold-style',
+    TOGGLE_DEFINITION_UNDERLINE: 'toggle-definition-underline-style',
 } as const;
 
 export const SETTINGS = {

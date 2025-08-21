@@ -24,7 +24,8 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => PandocExtendedMarkdownPlugin
+  PandocListsPlugin: () => PandocListsPlugin,
+  default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian8 = require("obsidian");
@@ -136,6 +137,7 @@ var MESSAGES = {
   FORMAT_ALREADY_COMPLIANT: "Document already follows pandoc standard",
   PANDOC_COMPLIANT: "Document follows pandoc formatting standards",
   TOGGLE_BOLD_SUCCESS: "Definition terms bold style toggled",
+  TOGGLE_UNDERLINE_SUCCESS: "Definition terms underline style toggled",
   // Error messages
   NO_DEFINITION_TERMS: "No definition terms found to toggle",
   // Formatting issue messages
@@ -144,7 +146,8 @@ var MESSAGES = {
 var COMMANDS = {
   CHECK_PANDOC: "check-pandoc-formatting",
   FORMAT_PANDOC: "format-to-pandoc-standard",
-  TOGGLE_DEFINITION_BOLD: "toggle-definition-bold-style"
+  TOGGLE_DEFINITION_BOLD: "toggle-definition-bold-style",
+  TOGGLE_DEFINITION_UNDERLINE: "toggle-definition-underline-style"
 };
 var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4
@@ -285,6 +288,7 @@ ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[
 ListPatterns.INDENT_ONLY = /^(\s*)/;
 // Text formatting patterns
 ListPatterns.BOLD_TEXT = /^\*\*(.+)\*\*$/;
+ListPatterns.UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
 // Superscript and subscript patterns
 // Matches ^text^ for superscript and ~text~ for subscript
 // Text can contain escaped spaces (\ ) but not unescaped spaces
@@ -2726,7 +2730,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian8.Plugin {
+var PandocListsPlugin = class extends import_obsidian8.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -2815,6 +2819,20 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
     });
+    this.addCommand({
+      id: COMMANDS.TOGGLE_DEFINITION_UNDERLINE,
+      name: "Toggle definition list underline style",
+      editorCallback: (editor) => {
+        const content = editor.getValue();
+        const toggled = this.toggleDefinitionUnderlineStyle(content);
+        if (content !== toggled) {
+          editor.setValue(toggled);
+          new import_obsidian8.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+        } else {
+          new import_obsidian8.Notice(MESSAGES.NO_DEFINITION_TERMS);
+        }
+      }
+    });
   }
   onunload() {
     pluginStateManager.clearAllStates();
@@ -2857,6 +2875,24 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     }
     return { terms: definitionTerms, anyHasBold };
   }
+  identifyDefinitionTermsWithUnderline(lines) {
+    const definitionTerms = [];
+    let anyHasUnderline = false;
+    for (let i = 0; i < lines.length; i++) {
+      const trimmedLine = lines[i].trim();
+      if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
+        continue;
+      }
+      if (this.isDefinitionTerm(lines, i)) {
+        const hasUnderline = ListPatterns.UNDERLINE_SPAN.test(trimmedLine);
+        definitionTerms.push({ index: i, hasUnderline });
+        if (hasUnderline) {
+          anyHasUnderline = true;
+        }
+      }
+    }
+    return { terms: definitionTerms, anyHasUnderline };
+  }
   toggleDefinitionBoldStyle(content) {
     var _a;
     const lines = content.split("\n");
@@ -2879,4 +2915,27 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     }
     return modifiedLines.join("\n");
   }
+  toggleDefinitionUnderlineStyle(content) {
+    var _a;
+    const lines = content.split("\n");
+    const modifiedLines = [...lines];
+    const { terms, anyHasUnderline } = this.identifyDefinitionTermsWithUnderline(lines);
+    for (const term of terms) {
+      const line = lines[term.index];
+      const trimmedLine = line.trim();
+      const originalIndent = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1]) || "";
+      if (anyHasUnderline) {
+        const match = trimmedLine.match(ListPatterns.UNDERLINE_SPAN);
+        if (match) {
+          modifiedLines[term.index] = originalIndent + match[1];
+        }
+      } else {
+        if (!ListPatterns.UNDERLINE_SPAN.test(trimmedLine)) {
+          modifiedLines[term.index] = originalIndent + '<span class="underline">' + trimmedLine + "</span>";
+        }
+      }
+    }
+    return modifiedLines.join("\n");
+  }
 };
+var main_default = PandocListsPlugin;

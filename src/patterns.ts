@@ -58,6 +58,7 @@ export class ListPatterns {
     
     // Text formatting patterns
     static readonly BOLD_TEXT = /^\*\*(.+)\*\*$/;
+    static readonly UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
     
     // Superscript and subscript patterns
     // Matches ^text^ for superscript and ~text~ for subscript

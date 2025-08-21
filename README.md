@@ -85,12 +85,18 @@ Due to how Markdown parsers work, there are some limitations with definition lis
 - **Definition terms**: Cannot be automatically styled with bold/underline when they appear on separate lines from the definition marker. This is because Obsidian's reading mode renders each line as a separate HTML element.
 - **Indented paragraphs**: In reading mode, indented text (using 4 spaces or tab) is treated as code blocks by the Markdown parser before the plugin can process it. This is standard Markdown behavior that cannot be overridden in post-processing.
 
-#### Toggle Definition Bold Style
-The plugin provides a command to toggle between explicit and implicit bold formatting for definition terms:
+#### Toggle Definition Styles
+The plugin provides commands to toggle formatting styles for definition terms:
+
+**Toggle Definition Bold Style**
 - **Implicit bold**: Terms appear bold through plugin styling (e.g., `Term`)
 - **Explicit bold**: Terms have markdown bold syntax (e.g., `**Term**`)
 
-This is useful for maintaining compatibility with other markdown readers that don't have this plugin installed.
+**Toggle Definition Underline Style**
+- **Implicit underline**: Terms appear underlined through plugin styling (e.g., `Term`)
+- **Explicit underline**: Terms have HTML underline syntax (e.g., `<span class="underline">Term</span>`)
+
+These commands are useful for maintaining compatibility with other markdown readers that don't have this plugin installed.
 
 ### Auto-Renumbering Lists
 
@@ -222,6 +228,9 @@ The plugin adds the following commands to the command palette:
 - **Toggle definition list bold style**: Toggles all definition terms between explicit (`**Term**`) and implicit (styled) bold formatting
   - If any term has explicit bold, removes bold from all terms
   - If no terms have explicit bold, adds bold to all terms
+- **Toggle definition list underline style**: Toggles all definition terms between explicit (`<span class="underline">Term</span>`) and implicit (styled) underline formatting
+  - If any term has explicit underline, removes underline from all terms
+  - If no terms have explicit underline, adds underline to all terms
 
 ## Compatibility
 

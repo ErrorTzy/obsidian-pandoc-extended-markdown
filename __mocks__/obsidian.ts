@@ -22,3 +22,6 @@ export class Setting {}
 export class App {}
 export class MarkdownView {}
 export class Editor {}
+export class EditorSuggest {
+  constructor(plugin: any) {}
+}
