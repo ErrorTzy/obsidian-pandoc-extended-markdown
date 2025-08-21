@@ -63,6 +63,7 @@ var CSS_CLASSES = {
   EXAMPLE_REF: "pandoc-example-reference",
   EXAMPLE_LIST: "pandoc-example-list",
   EXAMPLE_ITEM: "pandoc-example-item",
+  EXAMPLE_DUPLICATE: "pandoc-example-duplicate",
   // Superscript and Subscript Classes
   SUPERSCRIPT: "pandoc-superscript",
   SUBSCRIPT: "pandoc-subscript",
@@ -211,6 +212,33 @@ ListPatterns.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
 ListPatterns.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
 ListPatterns.ROMAN_NUMERALS = /^[IVXLCDM]+$/;
 ListPatterns.LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
+// Autocompletion patterns
+ListPatterns.LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
+ListPatterns.LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
+ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/;
+ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/;
+ListPatterns.VALID_ROMAN_NUMERAL = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i;
+ListPatterns.SINGLE_I = /^[Ii]$/;
+ListPatterns.SINGLE_H = /^[Hh]$/;
+ListPatterns.SINGLE_AB = /^[ABab]$/;
+ListPatterns.SINGLE_ROMAN_CHAR = /^[IVXLCDM]$/i;
+ListPatterns.ANY_ROMAN_CHARS = /^[ivxlcdmIVXLCDM]+$/i;
+ListPatterns.ALPHABETIC_CHARS = /^[A-Za-z]+$/;
+ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)/;
+ListPatterns.NUMBERED_LIST_WITH_SPACE = /^\s*\d+[.)]\s/;
+ListPatterns.DEFINITION_MARKER_ONLY = /^[~:]$/;
+// Empty list item patterns
+ListPatterns.EMPTY_HASH_LIST = /^(\s*)(#\.)(\s*)$/;
+ListPatterns.EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/;
+ListPatterns.EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
+ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
+ListPatterns.EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
+// Complex list patterns for autocompletion
+ListPatterns.ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
+ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+// Indentation patterns
+ListPatterns.INDENT_ONLY = /^(\s*)/;
 // Superscript and subscript patterns
 // Matches ^text^ for superscript and ~text~ for subscript
 // Text can contain escaped spaces (\ ) but not unescaped spaces
@@ -259,20 +287,23 @@ var FancyListMarkerWidget = class extends import_view.WidgetType {
   }
 };
 var ExampleListMarkerWidget = class extends import_view.WidgetType {
-  constructor(number, view, pos) {
+  constructor(number, label, view, pos) {
     super();
     this.number = number;
+    this.label = label;
     this.view = view;
     this.pos = pos;
     this.controller = new AbortController();
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
+    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER} ${CSS_CLASSES.EXAMPLE_REF}`;
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
     innerSpan.textContent = `(${this.number}) `;
     span.appendChild(innerSpan);
+    const tooltipText = this.label ? `@${this.label}` : "@";
+    (0, import_obsidian.setTooltip)(span, tooltipText, { delay: 300 });
     if (this.view && this.pos !== void 0) {
       span.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -286,7 +317,49 @@ var ExampleListMarkerWidget = class extends import_view.WidgetType {
     return span;
   }
   eq(other) {
-    return other.number === this.number && other.pos === this.pos;
+    return other.number === this.number && other.label === this.label && other.pos === this.pos;
+  }
+  ignoreEvent(event) {
+    return event.type !== "mousedown";
+  }
+  destroy() {
+    this.controller.abort();
+  }
+};
+var DuplicateExampleLabelWidget = class extends import_view.WidgetType {
+  constructor(label, originalLine, originalLineContent, view, pos) {
+    super();
+    this.label = label;
+    this.originalLine = originalLine;
+    this.originalLineContent = originalLineContent;
+    this.view = view;
+    this.pos = pos;
+    this.controller = new AbortController();
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = CSS_CLASSES.EXAMPLE_DUPLICATE;
+    span.textContent = `(@${this.label})`;
+    let lineContent = this.originalLineContent.trim();
+    if (lineContent.length > 100) {
+      lineContent = lineContent.substring(0, 100) + "...";
+    }
+    const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
+    (0, import_obsidian.setTooltip)(span, tooltipText, { delay: 300 });
+    if (this.view && this.pos !== void 0) {
+      span.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.view.dispatch({
+          selection: { anchor: this.pos }
+        });
+        this.view.focus();
+      }, { signal: this.controller.signal });
+    }
+    return span;
+  }
+  eq(other) {
+    return other.label === this.label && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
   }
   ignoreEvent(event) {
     return event.type !== "mousedown";
@@ -380,6 +453,10 @@ var ExampleReferenceWidget = class extends import_view.WidgetType {
     }
     return span;
   }
+  // Make the widget editable - allow all editing events to pass through
+  ignoreEvent() {
+    return false;
+  }
   eq(other) {
     return other.number === this.number && other.tooltipText === this.tooltipText;
   }
@@ -416,17 +493,23 @@ var SubscriptWidget = class extends import_view.WidgetType {
 };
 var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
   class {
+    // Track first occurrence line content for duplicates
     constructor(view) {
       this.exampleLabels = /* @__PURE__ */ new Map();
       this.exampleContent = /* @__PURE__ */ new Map();
       this.exampleLineNumbers = /* @__PURE__ */ new Map();
-      this.scanExampleLabels(view);
+      this.duplicateLabels = /* @__PURE__ */ new Map();
+      // Track first occurrence line number for duplicates
+      this.duplicateLabelContent = /* @__PURE__ */ new Map();
+      const settings = getSettings();
+      this.scanExampleLabels(view, settings);
       this.decorations = this.buildDecorations(view);
     }
     update(update) {
       if (update.docChanged || update.viewportChanged || update.selectionSet) {
         if (update.docChanged) {
-          this.scanExampleLabels(update.view);
+          const settings = getSettings();
+          this.scanExampleLabels(update.view, settings);
         }
         this.decorations = this.buildDecorations(update.view);
       }
@@ -439,14 +522,20 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
       line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
       line.match(ListPatterns.NUMBERED_LIST));
     }
-    scanExampleLabels(view) {
+    scanExampleLabels(view, settings) {
       this.exampleLabels.clear();
       this.exampleContent.clear();
       this.exampleLineNumbers.clear();
+      this.duplicateLabels.clear();
+      this.duplicateLabelContent.clear();
       let counter = 1;
       const docText = view.state.doc.toString();
       const lines = docText.split("\n");
+      const invalidListBlocks = settings.strictPandocMode ? this.validateListBlocks(lines, settings) : /* @__PURE__ */ new Set();
       for (let i = 0; i < lines.length; i++) {
+        if (settings.strictPandocMode && invalidListBlocks.has(i)) {
+          continue;
+        }
         const line = lines[i];
         const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
         if (match) {
@@ -457,6 +546,8 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
             if (content) {
               this.exampleContent.set(label, content);
             }
+            this.duplicateLabels.set(label, i + 1);
+            this.duplicateLabelContent.set(label, line);
           }
           this.exampleLineNumbers.set(i + 1, counter);
           counter++;
@@ -607,30 +698,62 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
       const markerStart = line.from + indent.length;
       const markerEnd = line.from + indent.length + fullMarker.length + space.length;
       const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-      let exampleNumber = 1;
-      if (label && this.exampleLabels.has(label)) {
-        exampleNumber = this.exampleLabels.get(label);
-      } else if (this.exampleLineNumbers.has(line.number)) {
-        exampleNumber = this.exampleLineNumbers.get(line.number);
-      }
-      decorations.push({
-        from: line.from,
-        to: line.from,
-        decoration: import_view.Decoration.line({
-          class: "HyperMD-list-line HyperMD-list-line-1",
-          attributes: {
-            style: "text-indent: -35px; padding-inline-start: 35px;"
-          }
-        })
-      });
-      if (!cursorInMarker) {
+      const isDuplicate = label && this.duplicateLabels.has(label) && this.duplicateLabels.get(label) !== line.number;
+      if (isDuplicate) {
         decorations.push({
-          from: markerStart,
-          to: markerEnd,
-          decoration: import_view.Decoration.replace({
-            widget: new ExampleListMarkerWidget(exampleNumber, view, markerStart)
+          from: line.from,
+          to: line.from,
+          decoration: import_view.Decoration.line({
+            class: "HyperMD-list-line HyperMD-list-line-1",
+            attributes: {
+              style: "text-indent: -35px; padding-inline-start: 35px;"
+            }
           })
         });
+        if (!cursorInMarker) {
+          const originalLine = this.duplicateLabels.get(label);
+          const originalLineContent = this.duplicateLabelContent.get(label);
+          decorations.push({
+            from: markerStart,
+            to: markerStart + fullMarker.length,
+            decoration: import_view.Decoration.replace({
+              widget: new DuplicateExampleLabelWidget(label, originalLine, originalLineContent, view, markerStart)
+            })
+          });
+          decorations.push({
+            from: markerStart + fullMarker.length,
+            to: markerEnd,
+            decoration: import_view.Decoration.mark({
+              class: "cm-formatting"
+            })
+          });
+        }
+      } else {
+        let exampleNumber = 1;
+        if (label && this.exampleLabels.has(label)) {
+          exampleNumber = this.exampleLabels.get(label);
+        } else if (this.exampleLineNumbers.has(line.number)) {
+          exampleNumber = this.exampleLineNumbers.get(line.number);
+        }
+        decorations.push({
+          from: line.from,
+          to: line.from,
+          decoration: import_view.Decoration.line({
+            class: "HyperMD-list-line HyperMD-list-line-1",
+            attributes: {
+              style: "text-indent: -35px; padding-inline-start: 35px;"
+            }
+          })
+        });
+        if (!cursorInMarker) {
+          decorations.push({
+            from: markerStart,
+            to: markerEnd,
+            decoration: import_view.Decoration.replace({
+              widget: new ExampleListMarkerWidget(exampleNumber, label, view, markerStart)
+            })
+          });
+        }
       }
       decorations.push({
         from: line.from + indent.length + fullMarker.length + space.length,
@@ -776,7 +899,8 @@ var pandocListsPlugin = (getSettings) => import_view.ViewPlugin.fromClass(
                 from: refStart,
                 to: refEnd,
                 decoration: import_view.Decoration.replace({
-                  widget: new ExampleReferenceWidget(number, tooltipText)
+                  widget: new ExampleReferenceWidget(number, tooltipText),
+                  inclusive: false
                 })
               });
             }
@@ -1419,13 +1543,14 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian3.EditorSuggest 
     for (const line of lines) {
       const match = ListPatterns.isExampleList(line);
       if (match) {
-        const label = match[1];
-        const text = match[2].trim();
-        if (!exampleData.has(label)) {
-          exampleData.set(label, { number: counter, text });
+        const label = match[3];
+        if (label) {
+          const markerEnd = match[0].length;
+          const text = line.substring(markerEnd).trim();
+          if (!exampleData.has(label)) {
+            exampleData.set(label, { number: counter, text });
+          }
         }
-        counter++;
-      } else if (ListPatterns.isExampleList(line)) {
         counter++;
       }
     }
@@ -1609,32 +1734,32 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
   if (hashMatch) {
     return { marker: "#.", indent: hashMatch[1], spaces: hashMatch[3] };
   }
-  const listMatch = currentLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/);
+  const listMatch = currentLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
   if (listMatch) {
     const indent = listMatch[1];
     const marker = listMatch[2];
     const punctuation = listMatch[3];
     const spaces = listMatch[4];
     let isRoman = false;
-    if (marker.length > 1 && marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+    if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
       isRoman = true;
     } else if (marker.length === 1 && allLines && currentLineIndex !== void 0) {
-      if (marker.match(/^[Ii]$/)) {
+      if (marker.match(ListPatterns.SINGLE_I)) {
         isRoman = true;
         for (let i = currentLineIndex - 1; i >= 0; i--) {
           const prevLine = allLines[i];
           if (!prevLine.trim()) continue;
-          if (!prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/)) break;
-          const prevMatch = prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/);
+          if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
+          const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
           if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
             const prevMarker = prevMatch[2];
-            if (prevMarker.match(/^[Hh]$/)) {
+            if (prevMarker.match(ListPatterns.SINGLE_H)) {
               isRoman = false;
               break;
-            } else if (prevMarker.length > 1 && prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+            } else if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = true;
               break;
-            } else if (!prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+            } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = false;
               break;
             }
@@ -1644,17 +1769,17 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
         for (let i = currentLineIndex - 1; i >= 0; i--) {
           const prevLine = allLines[i];
           if (!prevLine.trim()) continue;
-          if (!prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/)) break;
-          const prevMatch = prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/);
+          if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
+          const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
           if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
             const prevMarker = prevMatch[2];
-            if (prevMarker.length > 1 && prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+            if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = true;
               break;
-            } else if (!prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+            } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = false;
               break;
-            } else if (prevMarker.match(/^[ABab]$/)) {
+            } else if (prevMarker.match(ListPatterns.SINGLE_AB)) {
               isRoman = false;
               break;
             }
@@ -1663,7 +1788,7 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
       }
     }
     if (isRoman) {
-      if (marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+      if (marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
         const nextRoman = getNextRoman(marker);
         return { marker: `${nextRoman}${punctuation}`, indent, spaces };
       }
@@ -1675,13 +1800,20 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
       return null;
     }
   }
-  const exampleMatch = currentLine.match(/^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s+)/);
+  let exampleMatch = currentLine.match(ListPatterns.EXAMPLE_LIST);
+  if (!exampleMatch) {
+    const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
+    if (altMatch && currentLine.length > altMatch[0].length) {
+      exampleMatch = altMatch;
+      exampleMatch[3] = " ";
+    }
+  }
   if (exampleMatch) {
     const indent = exampleMatch[1];
-    const spaces = exampleMatch[3];
+    const spaces = exampleMatch[3] || " ";
     return { marker: "(@)", indent, spaces };
   }
-  const definitionMatch = currentLine.match(/^(\s*)([~:])(\s+)/);
+  const definitionMatch = currentLine.match(ListPatterns.DEFINITION_MARKER);
   if (definitionMatch) {
     const indent = definitionMatch[1];
     const marker = definitionMatch[2];
@@ -1697,14 +1829,14 @@ function renumberListItems(view, insertedLineNum) {
   let blockStart = insertedLineNum;
   let blockEnd = insertedLineNum;
   const insertedLine = allLines[insertedLineNum];
-  const insertedIndentMatch = insertedLine.match(/^(\s*)/);
+  const insertedIndentMatch = insertedLine.match(ListPatterns.INDENT_ONLY);
   const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : "";
   for (let i = insertedLineNum - 1; i >= 0; i--) {
     const line = allLines[i];
     if (!line.trim()) {
       continue;
     }
-    const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+    const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
     if (!listMatch) {
       break;
     }
@@ -1736,7 +1868,7 @@ function renumberListItems(view, insertedLineNum) {
   const listItems = [];
   for (let i = blockStart; i <= blockEnd; i++) {
     const line = allLines[i];
-    const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/);
+    const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT);
     if (listMatch && listMatch[1] === insertedIndent) {
       const marker = listMatch[2];
       const punctuation = listMatch[3];
@@ -1745,12 +1877,12 @@ function renumberListItems(view, insertedLineNum) {
       let isRoman = false;
       let isAlpha = false;
       if (marker === "#") {
-      } else if (marker.match(/^[A-Za-z]+$/)) {
-        if (marker.length > 1 && marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+      } else if (marker.match(ListPatterns.ALPHABETIC_CHARS)) {
+        if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
           isRoman = true;
-        } else if (marker.length === 1 && marker.match(/^[IVXLCDM]$/i)) {
+        } else if (marker.length === 1 && marker.match(ListPatterns.SINGLE_ROMAN_CHAR)) {
           if (i === blockStart) {
-            isRoman = marker.match(/^[Ii]$/) !== null;
+            isRoman = marker.match(ListPatterns.SINGLE_I) !== null;
             if (!isRoman) {
               isAlpha = true;
             }
@@ -1810,10 +1942,10 @@ function renumberListItems(view, insertedLineNum) {
   }
 }
 function isEmptyListItem(line) {
-  if (line.match(/^(\s*)(#\.)(\s*)$/)) return true;
-  if (line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/)) return true;
-  if (line.match(/^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/)) return true;
-  if (line.match(/^(\s*)([~:])(\s*)$/)) return true;
+  if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
   return false;
 }
 function createListAutocompletionKeymap(settings) {
@@ -1823,15 +1955,42 @@ function createListAutocompletionKeymap(settings) {
       const state = view.state;
       const selection = state.selection.main;
       const line = state.doc.lineAt(selection.from);
-      if (selection.from !== line.to || selection.from !== selection.to) {
-        return false;
-      }
       const lineText = line.text;
-      if (lineText.match(/^\s*\d+[.)]\s/)) {
+      const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
+      if (isEmptyExampleList) {
+        const beforeCursor = state.sliceDoc(line.from, selection.from);
+        if (beforeCursor.endsWith("(@")) {
+          const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+          const indent = indentMatch ? indentMatch[1] : "";
+          const changes = {
+            from: line.from,
+            to: line.to,
+            insert: indent
+          };
+          const transaction = state.update({
+            changes,
+            selection: import_state2.EditorSelection.cursor(line.from + indent.length)
+          });
+          view.dispatch(transaction);
+          return true;
+        }
+      }
+      const isListItem2 = lineText.match(ListPatterns.ANY_LIST_MARKER);
+      if (!isListItem2) {
+        if (selection.from !== line.to || selection.from !== selection.to) {
+          return false;
+        }
+      } else {
+        const distanceFromEnd = line.to - selection.from;
+        if (distanceFromEnd > 2 || selection.from !== selection.to) {
+          return false;
+        }
+      }
+      if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
         return false;
       }
       if (isEmptyListItem(lineText)) {
-        const indentMatch = lineText.match(/^(\s+)/);
+        const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
         if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
           const currentIndent = indentMatch[1];
           let newIndent = "";
@@ -1846,7 +2005,7 @@ function createListAutocompletionKeymap(settings) {
           for (let i = line.number - 1; i >= 1; i--) {
             const prevLine = state.doc.line(i);
             const prevText = prevLine.text;
-            const prevIndentMatch = prevText.match(/^(\s*)/);
+            const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
             if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
               const allLines2 = state.doc.toString().split("\n");
               const markerInfo2 = getNextListMarker(prevText, allLines2, i - 1);
@@ -1891,18 +2050,19 @@ function createListAutocompletionKeymap(settings) {
         const spaces = markerInfo.spaces || " ";
         const newLine = `
 ${markerInfo.indent}${markerInfo.marker}${spaces}`;
+        const insertPos = selection.from === line.to ? selection.from : line.to;
         const changes = {
-          from: selection.from,
-          to: selection.to,
+          from: insertPos,
+          to: insertPos,
           insert: newLine
         };
         const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : newLine.length;
         const transaction = state.update({
           changes,
-          selection: import_state2.EditorSelection.cursor(selection.from + cursorOffset)
+          selection: import_state2.EditorSelection.cursor(insertPos + cursorOffset)
         });
         view.dispatch(transaction);
-        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "#." && !markerInfo.marker.match(/^[~:]$/)) {
+        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
           const newLineNum = line.number;
           setTimeout(() => {
             renumberListItems(view, newLineNum);
@@ -1920,7 +2080,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
       const selection = state.selection.main;
       const line = state.doc.lineAt(selection.from);
       const lineText = line.text;
-      const listMatch = lineText.match(/^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
+      const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE);
       if (listMatch) {
         const currentIndent = listMatch[1];
         const marker = listMatch[2];
@@ -1952,7 +2112,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
       const selection = state.selection.main;
       const line = state.doc.lineAt(selection.from);
       const lineText = line.text;
-      const listMatch = lineText.match(/^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
+      const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE);
       if (listMatch && listMatch[1].length > 0) {
         const currentIndent = listMatch[1];
         const marker = listMatch[2];

@@ -117,6 +117,13 @@
     text-decoration: underline;
 }
 
+/* Duplicate example list labels */
+.pandoc-example-duplicate {
+    color: var(--text-error);
+    text-decoration: underline;
+    cursor: help;
+}
+
 /* Live Preview Mode Specific */
 .cm-formatting-list-ol.pandoc-list-upper-alpha::before {
     content: attr(data-marker);

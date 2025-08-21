@@ -48,6 +48,11 @@ Later in the document, refer to (1) and (2).
 - **Autocompletion**: Press Enter after an example list item to create a new `(@)` marker with cursor positioned for label entry
 - **Autocomplete for References**: When typing `(@` in your document, an autocomplete dropdown will appear showing all available example labels
 - **Preview in Dropdown**: The dropdown displays the label name and a preview of the example text (truncated to 30 characters)
+- **Duplicate Label Handling**: When the same label appears multiple times:
+  - Duplicates are displayed in red with underline instead of being numbered
+  - Hovering shows which line has the first occurrence (e.g., "Duplicate index at line 2: (@good) This is a good example.")
+  - Only the first occurrence gets a number and can be referenced
+- **Label Tooltips**: Hovering over any example list number shows the original label (e.g., hovering over `(2)` shows `@good`)
 
 ### Definition Lists
 Create structured term-definition pairs with enhanced support:

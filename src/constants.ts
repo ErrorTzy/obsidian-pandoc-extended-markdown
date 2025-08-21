@@ -38,6 +38,7 @@ export const CSS_CLASSES = {
     EXAMPLE_REF: 'pandoc-example-reference',
     EXAMPLE_LIST: 'pandoc-example-list',
     EXAMPLE_ITEM: 'pandoc-example-item',
+    EXAMPLE_DUPLICATE: 'pandoc-example-duplicate',
     
     // Superscript and Subscript Classes
     SUPERSCRIPT: 'pandoc-superscript',

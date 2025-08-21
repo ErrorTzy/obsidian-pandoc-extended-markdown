@@ -55,18 +55,22 @@ class FancyListMarkerWidget extends WidgetType {
 class ExampleListMarkerWidget extends WidgetType {
     private controller: AbortController;
 
-    constructor(private number: number, private view?: EditorView, private pos?: number) {
+    constructor(private number: number, private label: string | undefined, private view?: EditorView, private pos?: number) {
         super();
         this.controller = new AbortController();
     }
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
+        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER} ${CSS_CLASSES.EXAMPLE_REF}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
         innerSpan.textContent = `(${this.number}) `;
         span.appendChild(innerSpan);
+        
+        // Add tooltip to show original label
+        const tooltipText = this.label ? `@${this.label}` : '@';
+        setTooltip(span, tooltipText, { delay: 300 });
         
         // Handle click events to place cursor
         if (this.view && this.pos !== undefined) {
@@ -84,7 +88,57 @@ class ExampleListMarkerWidget extends WidgetType {
     }
 
     eq(other: ExampleListMarkerWidget) {
-        return other.number === this.number && other.pos === this.pos;
+        return other.number === this.number && other.label === this.label && other.pos === this.pos;
+    }
+
+    ignoreEvent(event: Event) {
+        return event.type !== 'mousedown';
+    }
+
+    destroy() {
+        this.controller.abort();
+    }
+}
+
+// Widget for duplicate example list labels
+class DuplicateExampleLabelWidget extends WidgetType {
+    private controller: AbortController;
+
+    constructor(private label: string, private originalLine: number, private originalLineContent: string, private view?: EditorView, private pos?: number) {
+        super();
+        this.controller = new AbortController();
+    }
+
+    toDOM() {
+        const span = document.createElement('span');
+        span.className = CSS_CLASSES.EXAMPLE_DUPLICATE;
+        span.textContent = `(@${this.label})`;
+        
+        // Add tooltip with full line content, truncated if necessary
+        let lineContent = this.originalLineContent.trim();
+        if (lineContent.length > 100) {
+            lineContent = lineContent.substring(0, 100) + '...';
+        }
+        const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
+        setTooltip(span, tooltipText, { delay: 300 });
+        
+        // Handle click events to place cursor
+        if (this.view && this.pos !== undefined) {
+            span.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.view!.dispatch({
+                    selection: { anchor: this.pos! }
+                });
+                this.view!.focus();
+            }, { signal: this.controller.signal });
+        }
+        
+        return span;
+    }
+
+    eq(other: DuplicateExampleLabelWidget) {
+        return other.label === this.label && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
     }
 
     ignoreEvent(event: Event) {
@@ -202,6 +256,11 @@ class ExampleReferenceWidget extends WidgetType {
         
         return span;
     }
+    
+    // Make the widget editable - allow all editing events to pass through
+    ignoreEvent() {
+        return false;
+    }
 
     eq(other: ExampleReferenceWidget) {
         return other.number === this.number && other.tooltipText === this.tooltipText;
@@ -251,16 +310,20 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
         exampleLabels: Map<string, number> = new Map();
         exampleContent: Map<string, string> = new Map();
         exampleLineNumbers: Map<number, number> = new Map();
+        duplicateLabels: Map<string, number> = new Map(); // Track first occurrence line number for duplicates
+        duplicateLabelContent: Map<string, string> = new Map(); // Track first occurrence line content for duplicates
 
         constructor(view: EditorView) {
-            this.scanExampleLabels(view);
+            const settings = getSettings();
+            this.scanExampleLabels(view, settings);
             this.decorations = this.buildDecorations(view);
         }
 
         update(update: ViewUpdate) {
             if (update.docChanged || update.viewportChanged || update.selectionSet) {
                 if (update.docChanged) {
-                    this.scanExampleLabels(update.view);
+                    const settings = getSettings();
+                    this.scanExampleLabels(update.view, settings);
                 }
                 this.decorations = this.buildDecorations(update.view);
             }
@@ -278,15 +341,25 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
             );
         }
 
-        scanExampleLabels(view: EditorView) {
+        scanExampleLabels(view: EditorView, settings: PandocExtendedMarkdownSettings) {
             this.exampleLabels.clear();
             this.exampleContent.clear();
             this.exampleLineNumbers.clear();
+            this.duplicateLabels.clear();
+            this.duplicateLabelContent.clear();
             let counter = 1;
             const docText = view.state.doc.toString();
             const lines = docText.split('\n');
             
+            // In strict mode, validate list blocks first
+            const invalidListBlocks = settings.strictPandocMode ? this.validateListBlocks(lines, settings) : new Set<number>();
+            
             for (let i = 0; i < lines.length; i++) {
+                // Skip invalid lines in strict mode
+                if (settings.strictPandocMode && invalidListBlocks.has(i)) {
+                    continue;
+                }
+                
                 const line = lines[i];
                 const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
                 if (match) {
@@ -298,6 +371,9 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                         if (content) {
                             this.exampleContent.set(label, content);
                         }
+                        // Store the first occurrence line number (1-based) and full line content
+                        this.duplicateLabels.set(label, i + 1);
+                        this.duplicateLabelContent.set(label, line);
                     }
                     // Store line number to example number mapping
                     this.exampleLineNumbers.set(i + 1, counter);
@@ -506,36 +582,77 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
             // Check if cursor is within the marker area
             const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
             
-            let exampleNumber = 1;
+            // Check if this is a duplicate label
+            const isDuplicate = label && this.duplicateLabels.has(label) && this.duplicateLabels.get(label) !== line.number;
             
-            if (label && this.exampleLabels.has(label)) {
-                exampleNumber = this.exampleLabels.get(label)!;
-            } else if (this.exampleLineNumbers.has(line.number)) {
-                // Get the pre-computed number for this line
-                exampleNumber = this.exampleLineNumbers.get(line.number)!;
-            }
-            
-            // Add line decoration for proper styling
-            decorations.push({
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: 'HyperMD-list-line HyperMD-list-line-1',
-                    attributes: {
-                        style: 'text-indent: -35px; padding-inline-start: 35px;'
-                    }
-                })
-            });
-            
-            // Only replace the marker if cursor is not within it
-            if (!cursorInMarker) {
+            if (isDuplicate) {
+                // For duplicate labels, show the original label with red underline
+                // Add line decoration for proper styling
                 decorations.push({
-                    from: markerStart,
-                    to: markerEnd,
-                    decoration: Decoration.replace({
-                        widget: new ExampleListMarkerWidget(exampleNumber, view, markerStart)
+                    from: line.from,
+                    to: line.from,
+                    decoration: Decoration.line({
+                        class: 'HyperMD-list-line HyperMD-list-line-1',
+                        attributes: {
+                            style: 'text-indent: -35px; padding-inline-start: 35px;'
+                        }
                     })
                 });
+                
+                // Only replace the marker if cursor is not within it
+                if (!cursorInMarker) {
+                    const originalLine = this.duplicateLabels.get(label)!;
+                    const originalLineContent = this.duplicateLabelContent.get(label)!;
+                    decorations.push({
+                        from: markerStart,
+                        to: markerStart + fullMarker.length,
+                        decoration: Decoration.replace({
+                            widget: new DuplicateExampleLabelWidget(label, originalLine, originalLineContent, view, markerStart)
+                        })
+                    });
+                    
+                    // Add the space after the marker
+                    decorations.push({
+                        from: markerStart + fullMarker.length,
+                        to: markerEnd,
+                        decoration: Decoration.mark({
+                            class: 'cm-formatting'
+                        })
+                    });
+                }
+            } else {
+                // Normal processing for non-duplicate labels
+                let exampleNumber = 1;
+                
+                if (label && this.exampleLabels.has(label)) {
+                    exampleNumber = this.exampleLabels.get(label)!;
+                } else if (this.exampleLineNumbers.has(line.number)) {
+                    // Get the pre-computed number for this line
+                    exampleNumber = this.exampleLineNumbers.get(line.number)!;
+                }
+                
+                // Add line decoration for proper styling
+                decorations.push({
+                    from: line.from,
+                    to: line.from,
+                    decoration: Decoration.line({
+                        class: 'HyperMD-list-line HyperMD-list-line-1',
+                        attributes: {
+                            style: 'text-indent: -35px; padding-inline-start: 35px;'
+                        }
+                    })
+                });
+                
+                // Only replace the marker if cursor is not within it
+                if (!cursorInMarker) {
+                    decorations.push({
+                        from: markerStart,
+                        to: markerEnd,
+                        decoration: Decoration.replace({
+                            widget: new ExampleListMarkerWidget(exampleNumber, label, view, markerStart)
+                        })
+                    });
+                }
             }
             
             // Wrap the rest of the line
@@ -750,7 +867,8 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                                 from: refStart,
                                 to: refEnd,
                                 decoration: Decoration.replace({
-                                    widget: new ExampleReferenceWidget(number, tooltipText)
+                                    widget: new ExampleReferenceWidget(number, tooltipText),
+                                    inclusive: false
                                 })
                             });
                         }

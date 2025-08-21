@@ -18,6 +18,37 @@ export class ListPatterns {
     static readonly ROMAN_NUMERALS = /^[IVXLCDM]+$/;
     static readonly LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
     
+    // Autocompletion patterns
+    static readonly LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
+    static readonly LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
+    static readonly LETTER_OR_ROMAN_OR_HASH_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/;
+    static readonly LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/;
+    static readonly VALID_ROMAN_NUMERAL = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i;
+    static readonly SINGLE_I = /^[Ii]$/;
+    static readonly SINGLE_H = /^[Hh]$/;
+    static readonly SINGLE_AB = /^[ABab]$/;
+    static readonly SINGLE_ROMAN_CHAR = /^[IVXLCDM]$/i;
+    static readonly ANY_ROMAN_CHARS = /^[ivxlcdmIVXLCDM]+$/i;
+    static readonly ALPHABETIC_CHARS = /^[A-Za-z]+$/;
+    static readonly EXAMPLE_LIST_OPTIONAL_SPACE = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)/;
+    static readonly NUMBERED_LIST_WITH_SPACE = /^\s*\d+[.)]\s/;
+    static readonly DEFINITION_MARKER_ONLY = /^[~:]$/;
+    
+    // Empty list item patterns
+    static readonly EMPTY_HASH_LIST = /^(\s*)(#\.)(\s*)$/;
+    static readonly EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/;
+    static readonly EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
+    static readonly EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
+    static readonly EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
+    
+    // Complex list patterns for autocompletion
+    static readonly ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
+    static readonly ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+    static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+    
+    // Indentation patterns
+    static readonly INDENT_ONLY = /^(\s*)/;
+    
     // Superscript and subscript patterns
     // Matches ^text^ for superscript and ~text~ for subscript
     // Text can contain escaped spaces (\ ) but not unescaped spaces

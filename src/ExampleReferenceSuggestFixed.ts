@@ -62,13 +62,15 @@ export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestio
         for (const line of lines) {
             const match = ListPatterns.isExampleList(line);
             if (match) {
-                const label = match[1];
-                const text = match[2].trim();
-                if (!exampleData.has(label)) {
-                    exampleData.set(label, { number: counter, text });
+                const label = match[3]; // match[3] is the label from (@label)
+                if (label) { // Only process labeled examples, not (@)
+                    // Extract the text after the marker
+                    const markerEnd = match[0].length; // Length of the entire match
+                    const text = line.substring(markerEnd).trim();
+                    if (!exampleData.has(label)) {
+                        exampleData.set(label, { number: counter, text });
+                    }
                 }
-                counter++;
-            } else if (ListPatterns.isExampleList(line)) {
                 counter++;
             }
         }

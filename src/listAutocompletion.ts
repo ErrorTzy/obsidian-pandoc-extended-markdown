@@ -95,7 +95,7 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
     }
     
     // Check for letters or roman numerals
-    const listMatch = currentLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/);
+    const listMatch = currentLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
     if (listMatch) {
         const indent = listMatch[1];
         const marker = listMatch[2];
@@ -106,13 +106,13 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
         let isRoman = false;
         
         // Multi-character patterns that are valid roman numerals are always roman
-        if (marker.length > 1 && marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+        if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
             isRoman = true;
         }
         // Single character - need to check context
         else if (marker.length === 1 && allLines && currentLineIndex !== undefined) {
             // Special case: 'I' or 'i' should default to roman unless preceded by 'H' or 'h'
-            if (marker.match(/^[Ii]$/)) {
+            if (marker.match(ListPatterns.SINGLE_I)) {
                 // Default to roman for 'I' or 'i'
                 isRoman = true;
                 
@@ -124,24 +124,24 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
                     if (!prevLine.trim()) continue;
                     
                     // If we find a non-list line, stop looking
-                    if (!prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/)) break;
+                    if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
                     
-                    const prevMatch = prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/);
+                    const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
                     if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
                         const prevMarker = prevMatch[2];
                         
                         // If preceded by 'H' or 'h', it's alphabetic
-                        if (prevMarker.match(/^[Hh]$/)) {
+                        if (prevMarker.match(ListPatterns.SINGLE_H)) {
                             isRoman = false;
                             break;
                         }
                         // If previous marker is multi-char roman, keep as roman
-                        else if (prevMarker.length > 1 && prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+                        else if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
                             isRoman = true;
                             break;
                         }
                         // If previous marker is clearly alphabetic (not valid as roman), this is alphabetic
-                        else if (!prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+                        else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
                             isRoman = false;
                             break;
                         }
@@ -156,24 +156,24 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
                     if (!prevLine.trim()) continue;
                     
                     // If we find a non-list line, stop looking
-                    if (!prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/)) break;
+                    if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
                     
-                    const prevMatch = prevLine.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/);
+                    const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
                     if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
                         const prevMarker = prevMatch[2];
                         
                         // If previous marker is multi-char roman, this is roman too
-                        if (prevMarker.length > 1 && prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+                        if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
                             isRoman = true;
                             break;
                         }
                         // If previous marker is clearly alphabetic (not valid as roman), this is alphabetic
-                        else if (!prevMarker.match(/^[ivxlcdmIVXLCDM]+$/i)) {
+                        else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
                             isRoman = false;
                             break;
                         }
                         // If we found 'A' or 'B' before, it's alphabetic
-                        else if (prevMarker.match(/^[ABab]$/)) {
+                        else if (prevMarker.match(ListPatterns.SINGLE_AB)) {
                             isRoman = false;
                             break;
                         }
@@ -184,7 +184,7 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
         
         if (isRoman) {
             // Validate and continue as roman
-            if (marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+            if (marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
                 const nextRoman = getNextRoman(marker);
                 return { marker: `${nextRoman}${punctuation}`, indent, spaces };
             }
@@ -199,15 +199,25 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
     }
     
     // Check for example lists
-    const exampleMatch = currentLine.match(/^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s+)/);
+    // Try both with required spaces and with optional spaces for better compatibility
+    let exampleMatch = currentLine.match(ListPatterns.EXAMPLE_LIST);
+    if (!exampleMatch) {
+        // If no spaces after marker, try to match anyway if there's content after
+        const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
+        if (altMatch && currentLine.length > altMatch[0].length) {
+            // There's content after the marker even without explicit spaces
+            exampleMatch = altMatch;
+            exampleMatch[3] = ' '; // Default to single space
+        }
+    }
     if (exampleMatch) {
         const indent = exampleMatch[1];
-        const spaces = exampleMatch[3];
+        const spaces = exampleMatch[3] || ' ';
         return { marker: '(@)', indent, spaces };
     }
     
     // Check for definition lists
-    const definitionMatch = currentLine.match(/^(\s*)([~:])(\s+)/);
+    const definitionMatch = currentLine.match(ListPatterns.DEFINITION_MARKER);
     if (definitionMatch) {
         const indent = definitionMatch[1];
         const marker = definitionMatch[2];
@@ -230,7 +240,7 @@ function renumberListItems(view: EditorView, insertedLineNum: number): void {
     
     // Get the indentation level of the inserted line
     const insertedLine = allLines[insertedLineNum];
-    const insertedIndentMatch = insertedLine.match(/^(\s*)/);
+    const insertedIndentMatch = insertedLine.match(ListPatterns.INDENT_ONLY);
     const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : '';
     
     // Find the start of the list block (going backwards)
@@ -243,7 +253,7 @@ function renumberListItems(view: EditorView, insertedLineNum: number): void {
         }
         
         // Check if this line is a list item with same or less indentation
-        const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+        const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
         if (!listMatch) {
             // Not a list item, stop here
             break;
@@ -301,7 +311,7 @@ function renumberListItems(view: EditorView, insertedLineNum: number): void {
     
     for (let i = blockStart; i <= blockEnd; i++) {
         const line = allLines[i];
-        const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/);
+        const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT);
         
         if (listMatch && listMatch[1] === insertedIndent) {
             const marker = listMatch[2];
@@ -315,16 +325,16 @@ function renumberListItems(view: EditorView, insertedLineNum: number): void {
             
             if (marker === '#') {
                 // Hash list - neither roman nor alpha
-            } else if (marker.match(/^[A-Za-z]+$/)) {
+            } else if (marker.match(ListPatterns.ALPHABETIC_CHARS)) {
                 // Could be either roman or alphabetic
-                if (marker.length > 1 && marker.match(/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i)) {
+                if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
                     isRoman = true;
-                } else if (marker.length === 1 && marker.match(/^[IVXLCDM]$/i)) {
+                } else if (marker.length === 1 && marker.match(ListPatterns.SINGLE_ROMAN_CHAR)) {
                     // Single character that could be roman - check context
                     // For renumbering, we'll look at the first item to determine type
                     if (i === blockStart) {
                         // First item - check if it's 'I' or 'i' (assume roman for these)
-                        isRoman = marker.match(/^[Ii]$/) !== null;
+                        isRoman = marker.match(ListPatterns.SINGLE_I) !== null;
                         if (!isRoman) {
                             // For other single chars, default to alphabetic unless clearly roman
                             isAlpha = true;
@@ -408,16 +418,16 @@ function renumberListItems(view: EditorView, insertedLineNum: number): void {
 // Helper function to check if a line is empty (only contains the list marker)
 function isEmptyListItem(line: string): boolean {
     // Check hash lists
-    if (line.match(/^(\s*)(#\.)(\s*)$/)) return true;
+    if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
     
     // Check fancy lists
-    if (line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/)) return true;
+    if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
     
     // Check example lists
-    if (line.match(/^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/)) return true;
+    if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST)) return true;
     
     // Check definition lists
-    if (line.match(/^(\s*)([~:])(\s*)$/)) return true;
+    if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
     
     return false;
 }
@@ -434,22 +444,64 @@ const handleListEnter: KeyBinding = {
         
         // Only handle when cursor is at the end of a line
         const line = state.doc.lineAt(selection.from);
-        
-        if (selection.from !== line.to || selection.from !== selection.to) {
-            return false; // Let default Enter handling take over
-        }
-        
         const lineText = line.text;
         
+        // Special case: handle Enter when cursor is between @ and ) in an empty example list
+        const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
+        if (isEmptyExampleList) {
+            // Check if cursor is between @ and )
+            const beforeCursor = state.sliceDoc(line.from, selection.from);
+            if (beforeCursor.endsWith('(@')) {
+                // Cursor is between @ and ), treat as empty list item and remove the marker
+                const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+                const indent = indentMatch ? indentMatch[1] : '';
+                
+                // Remove the marker entirely, leaving just the indentation
+                const changes = {
+                    from: line.from,
+                    to: line.to,
+                    insert: indent
+                };
+                
+                const transaction = state.update({
+                    changes,
+                    selection: EditorSelection.cursor(line.from + indent.length)
+                });
+                
+                view.dispatch(transaction);
+                return true;
+            }
+        }
+        
+        // Check if we're dealing with a list item first
+        const isListItem = lineText.match(ListPatterns.ANY_LIST_MARKER);
+        
+        // For list items, be more forgiving about cursor position
+        // Allow handling if cursor is at end OR near end (within 2 chars) for fast typing
+        if (!isListItem) {
+            // Not a list item - require cursor at end of line
+            if (selection.from !== line.to || selection.from !== selection.to) {
+                return false; // Let default Enter handling take over
+            }
+        } else {
+            // For list items, allow some flexibility for fast typing
+            // Check if cursor is at end or very close to end (within 2 characters)
+            const distanceFromEnd = line.to - selection.from;
+            if (distanceFromEnd > 2 || selection.from !== selection.to) {
+                // Too far from end or there's a selection
+                return false;
+            }
+        }
+        
         // Skip regular numbered lists - let Obsidian handle those
-        if (lineText.match(/^\s*\d+[.)]\s/)) {
+        if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
             return false;
         }
         
         // Check if current line is an empty list item
         if (isEmptyListItem(lineText)) {
             // Handle nested list dedent or remove marker
-            const indentMatch = lineText.match(/^(\s+)/);
+            const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
             if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
                 // Dedent by removing 4 spaces or 1 tab
                 const currentIndent = indentMatch[1];
@@ -471,7 +523,7 @@ const handleListEnter: KeyBinding = {
                     const prevText = prevLine.text;
                     
                     // Check if this line has the same indent level we're looking for
-                    const prevIndentMatch = prevText.match(/^(\s*)/);
+                    const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
                     if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
                         const allLines = state.doc.toString().split('\n');
                         const markerInfo = getNextListMarker(prevText, allLines, i - 1);
@@ -528,9 +580,12 @@ const handleListEnter: KeyBinding = {
             // Use the same amount of spaces as the current line
             const spaces = markerInfo.spaces || ' ';
             const newLine = `\n${markerInfo.indent}${markerInfo.marker}${spaces}`;
+            
+            // If cursor is not at the end of line (fast typing), insert at the end
+            const insertPos = selection.from === line.to ? selection.from : line.to;
             const changes = {
-                from: selection.from,
-                to: selection.to,
+                from: insertPos,
+                to: insertPos,
                 insert: newLine
             };
             
@@ -541,13 +596,13 @@ const handleListEnter: KeyBinding = {
             
             const transaction = state.update({
                 changes,
-                selection: EditorSelection.cursor(selection.from + cursorOffset)
+                selection: EditorSelection.cursor(insertPos + cursorOffset)
             });
             
             view.dispatch(transaction);
             
             // If auto-renumbering is enabled and this is a fancy list, renumber the list
-            if (settings.autoRenumberLists && markerInfo.marker !== '(@)' && markerInfo.marker !== '#.' && !markerInfo.marker.match(/^[~:]$/)) {
+            if (settings.autoRenumberLists && markerInfo.marker !== '(@)' && markerInfo.marker !== '#.' && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
                 // Get the line number of the newly inserted item (it's the next line)
                 const newLineNum = line.number; // This is 1-based, but we need 0-based for our function
                 
@@ -576,7 +631,7 @@ const handleListTab: KeyBinding = {
         const lineText = line.text;
         
         // Check if we're at the start of a list item (after the marker)
-        const listMatch = lineText.match(/^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
+        const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE);
         if (listMatch) {
             const currentIndent = listMatch[1];
             const marker = listMatch[2];
@@ -621,7 +676,7 @@ const handleListShiftTab: KeyBinding = {
         const lineText = line.text;
         
         // Check if we're in a list item with indentation
-        const listMatch = lineText.match(/^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|@\([a-zA-Z0-9_-]*\)|[~:])(\s+)/);
+        const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE);
         if (listMatch && listMatch[1].length > 0) {
             const currentIndent = listMatch[1];
             const marker = listMatch[2];
