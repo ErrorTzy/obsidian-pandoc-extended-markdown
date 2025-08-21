@@ -503,7 +503,12 @@ const handleListEnter: KeyBinding = {
         }
         
         // Check if current line is an empty list item
-        if (isEmptyListItem(lineText)) {
+        // Special handling for empty example lists: (@) should not be deleted when cursor is after )
+        const isEmptyExample = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
+        if (isEmptyExample && selection.from === line.to) {
+            // This is (@) with cursor at the end - don't treat as empty, continue to next marker
+            // Fall through to normal list handling
+        } else if (isEmptyListItem(lineText)) {
             // Handle nested list dedent or remove marker
             const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
             if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
