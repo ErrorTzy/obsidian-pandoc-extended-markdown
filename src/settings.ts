@@ -34,5 +34,15 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     this.plugin.settings.autoRenumberLists = value;
                     await this.plugin.saveSettings();
                 }));
+
+        new Setting(containerEl)
+            .setName('More extended syntax')
+            .setDesc('Should use it together with more_extended_syntax.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.moreExtendedSyntax)
+                .onChange(async (value) => {
+                    this.plugin.settings.moreExtendedSyntax = value;
+                    await this.plugin.saveSettings();
+                }));
     }
 }

@@ -66,6 +66,14 @@ export class ListPatterns {
     static readonly SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
     static readonly SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
     
+    // Custom label list patterns for More Extended Syntax
+    // Matches {::LABEL} at start of line with required space after
+    static readonly CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)/;
+    // Reference to custom label anywhere in text
+    static readonly CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
+    // Valid label pattern (for validation)
+    static readonly VALID_CUSTOM_LABEL = /^[a-zA-Z][a-zA-Z0-9_']*$/;
+    
     // Note: Patterns are already compiled as static readonly RegExp objects,
     // providing optimal performance without needing additional caching.
     
@@ -162,6 +170,33 @@ export class ListPatterns {
     static findSubscripts(text: string): RegExpMatchArray[] {
         const matches: RegExpMatchArray[] = [];
         const regex = new RegExp(this.SUBSCRIPT.source, 'g');
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            matches.push(match);
+        }
+        return matches;
+    }
+    
+    /**
+     * Test if a line matches a custom label list pattern.
+     */
+    static isCustomLabelList(line: string): RegExpMatchArray | null {
+        return line.match(this.CUSTOM_LABEL_LIST);
+    }
+    
+    /**
+     * Test if a label is valid for custom label lists.
+     */
+    static isValidCustomLabel(label: string): boolean {
+        return this.VALID_CUSTOM_LABEL.test(label);
+    }
+    
+    /**
+     * Find all custom label references in a text.
+     */
+    static findCustomLabelReferences(text: string): RegExpMatchArray[] {
+        const matches: RegExpMatchArray[] = [];
+        const regex = new RegExp(this.CUSTOM_LABEL_REFERENCE.source, 'g');
         let match;
         while ((match = regex.exec(text)) !== null) {
             matches.push(match);

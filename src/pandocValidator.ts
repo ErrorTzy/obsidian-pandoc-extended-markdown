@@ -15,7 +15,7 @@ export function isStrictPandocList(context: ValidationContext, strictMode: boole
     const line = lines[currentLine];
     
     // Check if previous line is also a list item (part of same list block)
-    const isPartOfListBlock = currentLine > 0 && isListItem(lines[currentLine - 1]);
+    const isPartOfListBlock = currentLine > 0 && isListItem(lines[currentLine - 1], false);
     
     // Check for empty line before list (unless it's the first line or part of a list block)
     if (currentLine > 0 && !isPartOfListBlock) {
@@ -39,7 +39,7 @@ export function isStrictPandocList(context: ValidationContext, strictMode: boole
     if (currentLine < lines.length - 1) {
         const nextLine = lines[currentLine + 1];
         // Check if next line is also a list item
-        const nextIsListItem = isListItem(nextLine);
+        const nextIsListItem = isListItem(nextLine, false);
         
         if (!nextIsListItem && nextLine.trim() !== '') {
             // Next line is not a list item and not empty - invalid in strict mode
@@ -54,7 +54,7 @@ export function isStrictPandocList(context: ValidationContext, strictMode: boole
     return true;
 }
 
-export function isListItem(line: string): boolean {
+export function isListItem(line: string, includeCustomLabels: boolean = false): boolean {
     // Check for various list patterns
     const patterns = [
         /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/, // Fancy lists
@@ -63,6 +63,11 @@ export function isListItem(line: string): boolean {
         /^(\s*)\(@([a-zA-Z0-9_-]*)\)\s+/, // Example lists
         /^(\s*)[~:]\s+/ // Definition lists
     ];
+    
+    // Add custom label lists if enabled
+    if (includeCustomLabels) {
+        patterns.push(/^(\s*)\{::([a-zA-Z][a-zA-Z0-9_']*)\}\s+/);
+    }
     
     return patterns.some(pattern => pattern.test(line));
 }
@@ -98,7 +103,7 @@ export function isStrictPandocHeading(context: ValidationContext, strictMode: bo
     return true;
 }
 
-export function formatToPandocStandard(content: string): string {
+export function formatToPandocStandard(content: string, moreExtendedSyntax: boolean = false): string {
     const lines = content.split('\n');
     const result: string[] = [];
     let inListBlock = false;
@@ -106,7 +111,7 @@ export function formatToPandocStandard(content: string): string {
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const isCurrentLineList = isListItem(line);
+        const isCurrentLineList = isListItem(line, moreExtendedSyntax);
         const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
         const isEmpty = line.trim() === '';
         
@@ -185,14 +190,14 @@ export interface LintingIssue {
     message: string;
 }
 
-export function checkPandocFormatting(content: string): LintingIssue[] {
+export function checkPandocFormatting(content: string, moreExtendedSyntax: boolean = false): LintingIssue[] {
     const lines = content.split('\n');
     const issues: LintingIssue[] = [];
     let inListBlock = false;
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const isCurrentLineList = isListItem(line);
+        const isCurrentLineList = isListItem(line, moreExtendedSyntax);
         const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
         const isEmpty = line.trim() === '';
         

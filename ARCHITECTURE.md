@@ -34,22 +34,26 @@ pandoc-lists-plugin/
 │   │   │   ├── definitionWidget.ts      # Widget for definition list bullets
 │   │   │   ├── referenceWidget.ts       # Widget for example references
 │   │   │   ├── formatWidgets.ts         # Widgets for super/subscripts
+│   │   │   ├── customLabelWidget.ts     # Widget for custom label lists and references
 │   │   │   └── index.ts                 # Re-exports all widgets
 │   │   ├── processors/                   # Decoration processing logic
 │   │   │   ├── listProcessors.ts        # Process hash, fancy, and example lists
 │   │   │   ├── definitionProcessor.ts   # Process definition lists, terms, and paragraphs
 │   │   │   ├── inlineFormatProcessor.ts # Process inline formats (references, super/subscripts)
+│   │   │   ├── customLabelProcessor.ts  # Process custom label lists and references
 │   │   │   └── index.ts                 # Re-exports all processors
 │   │   ├── validators/                   # Validation utilities
 │   │   │   └── listBlockValidator.ts    # Validates list blocks for strict Pandoc mode
 │   │   └── scanners/                     # Document scanning utilities
-│   │       └── exampleScanner.ts        # Scans for example labels and duplicates
+│   │       ├── exampleScanner.ts        # Scans for example labels and duplicates
+│   │       └── customLabelScanner.ts    # Scans for custom labels and validates blocks
 │   ├── parsers/                          # Parsing and processing logic
 │   │   ├── ReadingModeParser.ts         # Parses markdown text, identifies Pandoc syntax
 │   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
 │   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
 │   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
 │   │   ├── superSubParser.ts            # Parses superscripts (^) and subscripts (~)
+│   │   ├── customLabelListParser.ts     # Parses custom label lists with {::LABEL} syntax
 │   │   └── readingModeProcessor.ts      # Thin orchestration layer for reading mode
 │   ├── renderers/                        # Rendering logic (DOM creation)
 │   │   └── ReadingModeRenderer.ts       # Creates DOM elements from parsed markdown
@@ -191,9 +195,9 @@ sequenceDiagram
   - Manages decoration building and application
   - Handles cursor-aware rendering (hides widgets when cursor is inside)
 
-#### 2. Document Scanner
-- **Location**: `src/decorations/scanners/exampleScanner.ts`
-- **Purpose**: Pre-processes example labels for consistent numbering
+#### 2. Document Scanners
+- **exampleScanner** (`src/decorations/scanners/exampleScanner.ts`): Pre-processes example labels for consistent numbering
+- **customLabelScanner** (`src/decorations/scanners/customLabelScanner.ts`): Scans custom labels and validates block structure in strict mode
 - **Output**:
   ```typescript
   interface ExampleScanResult {
@@ -210,6 +214,7 @@ Transform markdown syntax into decorations:
 - **List Processors**: Hash lists (#.), fancy lists (A., i.), example lists ((@))
 - **Definition Processors**: Terms, items (~/:), indented paragraphs
 - **Inline Processors**: References, superscripts, subscripts
+- **Custom Label Processor**: Custom label lists ({::LABEL}) and references
 
 #### 4. Widgets
 Visual representations that replace markdown syntax:
@@ -218,6 +223,8 @@ Visual representations that replace markdown syntax:
 - **ExampleListMarkerWidget**: Numbered examples with tooltips
 - **DefinitionBulletWidget**: Bullet points for definitions
 - **SuperscriptWidget/SubscriptWidget**: Formatted text elements
+- **CustomLabelMarkerWidget**: Custom label list markers
+- **CustomLabelReferenceWidget**: Custom label references with tooltips
 
 ### Trigger Events
 - Document changes
@@ -291,6 +298,7 @@ Each parser handles specific syntax patterns:
 - **exampleListParser**: Example lists with labels
 - **definitionListParser**: Definition terms and items
 - **superSubParser**: Superscript and subscript formatting
+- **customLabelListParser**: Custom label lists with {::LABEL} syntax
 
 #### 4. ReadingModeRenderer
 - **Location**: `src/renderers/ReadingModeRenderer.ts`

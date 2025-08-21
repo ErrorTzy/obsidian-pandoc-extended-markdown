@@ -11,6 +11,7 @@ export interface ProcessorConfig {
     
     // Plugin settings
     strictPandocMode: boolean;
+    moreExtendedSyntax?: boolean;
     
     // Optional features
     enableHashLists?: boolean;
@@ -18,6 +19,7 @@ export interface ProcessorConfig {
     enableExampleLists?: boolean;
     enableDefinitionLists?: boolean;
     enableSuperSubscripts?: boolean;
+    enableCustomLabelLists?: boolean;
 }
 
 /**
@@ -25,15 +27,21 @@ export interface ProcessorConfig {
  */
 export function createProcessorConfig(
     vaultConfig: { strictLineBreaks?: boolean },
-    pluginSettings: { strictPandocMode?: boolean }
+    pluginSettings: { 
+        strictPandocMode?: boolean,
+        moreExtendedSyntax?: boolean
+    }
 ): ProcessorConfig {
+    const moreExtendedSyntax = pluginSettings.moreExtendedSyntax ?? false;
     return {
         strictLineBreaks: vaultConfig.strictLineBreaks ?? false,
         strictPandocMode: pluginSettings.strictPandocMode ?? false,
+        moreExtendedSyntax: moreExtendedSyntax,
         enableHashLists: true,
         enableFancyLists: true,
         enableExampleLists: true,
         enableDefinitionLists: true,
-        enableSuperSubscripts: true
+        enableSuperSubscripts: true,
+        enableCustomLabelLists: moreExtendedSyntax
     };
 }

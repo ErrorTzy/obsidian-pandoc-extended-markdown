@@ -101,7 +101,7 @@ export class PandocListsPlugin extends Plugin {
             name: 'Check pandoc formatting',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
-                const issues = checkPandocFormatting(content);
+                const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
                 
                 if (issues.length === 0) {
                     new Notice(MESSAGES.PANDOC_COMPLIANT);
@@ -120,7 +120,7 @@ export class PandocListsPlugin extends Plugin {
             name: 'Format document to pandoc standard',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
-                const formatted = formatToPandocStandard(content);
+                const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
                 
                 if (content !== formatted) {
                     editor.setValue(formatted);

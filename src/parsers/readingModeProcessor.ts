@@ -11,6 +11,7 @@ import { ReadingModeRenderer, RenderContext } from '../renderers/ReadingModeRend
 import { pluginStateManager } from '../state/PluginStateManager';
 import { ProcessorConfig } from '../types/ProcessorConfig';
 import { processSuperSub } from './superSubParser';
+import { processCustomLabelLists } from './customLabelListParser';
 import { isStrictPandocList, ValidationContext } from '../pandocValidator';
 import { getSectionInfo } from '../types/obsidian-extended';
 import { ListPatterns } from '../patterns';
@@ -60,6 +61,11 @@ export function processReadingMode(
     if (config.enableSuperSubscripts) {
         processSuperSub(element);
     }
+    
+    // Process custom label lists if More Extended Syntax is enabled
+    if (config.enableCustomLabelLists) {
+        processCustomLabelLists(element, context);
+    }
 }
 
 function processElementTextNodes(
@@ -95,7 +101,7 @@ function processElementTextNodes(
         const text = node.textContent || '';
         
         // Quick check if text contains our patterns
-        if (!containsPandocSyntax(text)) {
+        if (!containsPandocSyntax(text, config)) {
             return;
         }
         
@@ -167,12 +173,19 @@ function processElementTextNodes(
     });
 }
 
-function containsPandocSyntax(text: string): boolean {
-    return ListPatterns.isHashList(text) ||
+function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {
+    const hasBasicSyntax = ListPatterns.isHashList(text) ||
            ListPatterns.isFancyList(text) ||
            ListPatterns.isExampleList(text) ||
            ListPatterns.isDefinitionMarker(text) ||
            ListPatterns.findExampleReferences(text).length > 0;
+    
+    // Check for custom label syntax if enabled
+    const hasCustomLabelSyntax = config?.enableCustomLabelLists && 
+           (ListPatterns.isCustomLabelList(text) || 
+            ListPatterns.findCustomLabelReferences(text).length > 0);
+    
+    return hasBasicSyntax || hasCustomLabelSyntax;
 }
 
 function validateListInStrictMode(

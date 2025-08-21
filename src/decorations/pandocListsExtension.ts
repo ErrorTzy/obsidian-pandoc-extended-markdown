@@ -5,6 +5,7 @@ import { PandocExtendedMarkdownSettings } from '../settings';
 import { ValidationContext } from '../pandocValidator';
 import { ListBlockValidator } from './validators/listBlockValidator';
 import { scanExampleLabels, ExampleScanResult } from './scanners/exampleScanner';
+import { scanCustomLabels, validateCustomLabelBlocks, CustomLabelScanResult } from './scanners/customLabelScanner';
 import {
     processHashList,
     processFancyList,
@@ -19,16 +20,19 @@ import {
     processSubscripts,
     InlineFormatContext
 } from './processors';
+import { processCustomLabelList, processCustomLabelReferences, CustomLabelProcessorContext } from './processors/customLabelProcessor';
 
 // Main view plugin for rendering Pandoc lists
 const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) => ViewPlugin.fromClass(
     class PandocListsView {
         decorations: DecorationSet;
         private scanResult: ExampleScanResult;
+        private customLabelScanResult: CustomLabelScanResult;
 
         constructor(view: EditorView) {
             const settings = getSettings();
             this.scanResult = scanExampleLabels(view, settings);
+            this.customLabelScanResult = scanCustomLabels(view.state.doc, settings);
             this.decorations = this.buildDecorations(view);
         }
 
@@ -42,6 +46,7 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                 if (update.docChanged) {
                     const settings = getSettings();
                     this.scanResult = scanExampleLabels(update.view, settings);
+                    this.customLabelScanResult = scanCustomLabels(update.view.state.doc, settings);
                 }
                 this.decorations = this.buildDecorations(update.view);
             }
@@ -72,6 +77,9 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
             
             // In strict mode, pre-validate list blocks
             const invalidListBlocks = ListBlockValidator.validateListBlocks(lines, settings);
+            
+            // Validate custom label blocks if in strict mode
+            const invalidCustomLabelBlocks = validateCustomLabelBlocks(view.state.doc, settings);
             
             // Process entire document for consistent numbering
             for (let lineNum = 1; lineNum <= view.state.doc.lines; lineNum++) {
@@ -112,6 +120,26 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                 if (exampleDecorations) {
                     decorations.push(...exampleDecorations);
                     continue;
+                }
+                
+                // Process custom label lists (if More Extended Syntax is enabled)
+                if (settings.moreExtendedSyntax) {
+                    const customLabelContext: CustomLabelProcessorContext = {
+                        line,
+                        lineNum,
+                        lineText,
+                        cursorPos,
+                        view,
+                        invalidListBlocks: invalidCustomLabelBlocks,
+                        settings,
+                        customLabels: this.customLabelScanResult.customLabels
+                    };
+                    
+                    const customLabelDecorations = processCustomLabelList(customLabelContext);
+                    if (customLabelDecorations) {
+                        decorations.push(...customLabelDecorations);
+                        continue;
+                    }
                 }
                 
                 // Create definition context
@@ -159,6 +187,22 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
                 decorations.push(...processExampleReferences(inlineContext));
                 decorations.push(...processSuperscripts(inlineContext));
                 decorations.push(...processSubscripts(inlineContext));
+                
+                // Process custom label references (if More Extended Syntax is enabled)
+                if (settings.moreExtendedSyntax) {
+                    // Check if this line is valid (not in invalidCustomLabelBlocks)
+                    const isValidLine = !invalidCustomLabelBlocks.has(lineNum - 1);
+                    const customLabelRefs = processCustomLabelReferences(
+                        lineText,
+                        line.from,
+                        this.customLabelScanResult.customLabels,
+                        view,
+                        cursorPos,
+                        settings,
+                        isValidLine
+                    );
+                    decorations.push(...customLabelRefs);
+                }
             }
             
             // Sort decorations by from position

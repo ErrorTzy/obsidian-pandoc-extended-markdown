@@ -4,9 +4,11 @@
 export interface PandocExtendedMarkdownSettings {
     strictPandocMode: boolean;
     autoRenumberLists: boolean;
+    moreExtendedSyntax: boolean;
 }
 
 export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
-    autoRenumberLists: false
+    autoRenumberLists: false,
+    moreExtendedSyntax: false
 };

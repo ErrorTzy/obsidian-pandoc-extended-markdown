@@ -54,6 +54,38 @@ Later in the document, refer to (1) and (2).
   - Only the first occurrence gets a number and can be referenced
 - **Label Tooltips**: Hovering over any example list number shows the original label (e.g., hovering over `(2)` shows `@good`)
 
+### Custom Label Lists (More Extended Syntax)
+
+When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
+
+```markdown
+{::P} All humans are mortal.
+{::Q} Socrates is human.
+{::R} Therefore, Socrates is mortal.
+```
+
+This renders as:
+```
+(P) All humans are mortal.
+(Q) Socrates is human.
+(R) Therefore, Socrates is mortal.
+```
+
+#### Features
+- **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
+- **Cross-References**: Reference labels elsewhere in your document (e.g., `From {::P} and {::Q}, we get {::R}`)
+- **Strict Mode Support**: When strict Pandoc mode is enabled, custom label blocks must be preceded and followed by blank lines
+- **Auto-Formatting**: The format command recognizes and properly formats custom label lists
+- **Reading Mode**: Full support in both live preview and reading modes
+
+#### Example Usage
+```markdown
+{::Axiom1} Every set is a subset of itself.
+{::Axiom2} The empty set is a subset of every set.
+
+From axioms {::Axiom1} and {::Axiom2}, we can derive...
+```
+
 ### Definition Lists
 Create structured term-definition pairs with enhanced support:
 ```markdown
@@ -218,6 +250,11 @@ The plugin provides a settings tab where you can configure:
   - When enabled, inserting a new list item automatically renumbers all subsequent items
   - Ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...)
   - Only affects alphabetic and roman numeral lists, not hash (#.) or example (@) lists
+
+- **More extended syntax**: Enables additional Pandoc extensions
+  - Custom label lists using `{::LABEL}` syntax for flexible list markers
+  - Should be used together with more_extended_syntax.lua for Pandoc output
+  - When strict mode is enabled, custom label blocks require blank lines before/after
 
 ## Commands
 
