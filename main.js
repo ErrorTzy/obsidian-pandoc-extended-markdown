@@ -2517,7 +2517,6 @@ function renumberListItems(view, insertedLineNum) {
 function isEmptyListItem(line) {
   if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
   if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
-  if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL)) return true;
   if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
   return false;
 }
@@ -2563,9 +2562,7 @@ function createListAutocompletionKeymap(settings) {
       if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
         return false;
       }
-      const isEmptyExample = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
-      if (isEmptyExample && selection.from === line.to) {
-      } else if (isEmptyListItem(lineText)) {
+      if (isEmptyListItem(lineText)) {
         const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
         if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
           const currentIndent = indentMatch[1];

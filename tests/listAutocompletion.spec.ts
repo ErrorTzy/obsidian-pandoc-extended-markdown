@@ -89,6 +89,25 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toMatch(/\n\(@\)/);
         });
         
+        it('should continue list when (@) has content on previous line', () => {
+            const doc = '(@) Example content\n(@)';
+            const cursorPos = 23; // Position after the second (@)
+            const view = createMockView(doc, cursorPos);
+            
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+            
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+            
+            const transaction = view.lastTransaction;
+            expect(transaction).toBeDefined();
+            const changes = getChangesFromTransaction(transaction);
+            expect(changes).toBeDefined();
+            // Should create a new line with the next marker, not delete the current one
+            expect(changes!.insert).toMatch(/\n\(@\)/);
+        });
+        
         it('should NOT delete example list marker when cursor is after the closing parenthesis', () => {
             const doc = '(@eg1) Example\n(@eg2)';
             const cursorPos = 21; // Position after the closing )

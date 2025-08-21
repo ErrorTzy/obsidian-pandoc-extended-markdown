@@ -423,10 +423,10 @@ function isEmptyListItem(line: string): boolean {
     // Check fancy lists
     if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
     
-    // Check example lists - only truly empty ones without labels
-    // Use EMPTY_EXAMPLE_LIST_NO_LABEL instead of EMPTY_EXAMPLE_LIST
-    // to avoid treating (@label) as empty
-    if (line.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL)) return true;
+    // Note: We do NOT check for empty example lists here
+    // (@) is a valid list marker (unlabeled example) and should continue to next item
+    // The only time (@) should be deleted is when cursor is between @ and )
+    // which is handled by the special case in handleListEnter
     
     // Check definition lists
     if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
@@ -503,12 +503,7 @@ const handleListEnter: KeyBinding = {
         }
         
         // Check if current line is an empty list item
-        // Special handling for empty example lists: (@) should not be deleted when cursor is after )
-        const isEmptyExample = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
-        if (isEmptyExample && selection.from === line.to) {
-            // This is (@) with cursor at the end - don't treat as empty, continue to next marker
-            // Fall through to normal list handling
-        } else if (isEmptyListItem(lineText)) {
+        if (isEmptyListItem(lineText)) {
             // Handle nested list dedent or remove marker
             const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
             if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
