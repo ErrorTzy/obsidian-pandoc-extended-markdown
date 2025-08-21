@@ -24,7 +24,7 @@ export class CustomLabelMarkerWidget extends WidgetType {
         
         // Make it clickable to jump to position
         if (this.view && this.position !== undefined) {
-            span.style.cursor = 'pointer';
+            span.classList.add('pandoc-custom-label-ref-clickable');
             span.addEventListener('click', () => {
                 if (this.view && this.position !== undefined) {
                     this.view.dispatch({

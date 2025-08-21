@@ -75,10 +75,7 @@ export function processCustomLabelList(
         from: line.from,
         to: line.from,
         decoration: Decoration.line({
-            class: 'HyperMD-list-line HyperMD-list-line-1',
-            attributes: {
-                style: 'text-indent: -29px; padding-inline-start: 29px;'
-            }
+            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent'
         })
     });
     

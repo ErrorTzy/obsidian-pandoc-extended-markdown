@@ -804,10 +804,7 @@ function processHashList(context, hashCounter) {
     from: line.from,
     to: line.from,
     decoration: import_view5.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1",
-      attributes: {
-        style: "text-indent: -29px; padding-inline-start: 29px;"
-      }
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
     })
   });
   if (!cursorInMarker) {
@@ -863,10 +860,7 @@ function processFancyList(context) {
     from: line.from,
     to: line.from,
     decoration: import_view5.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1",
-      attributes: {
-        style: "text-indent: -29px; padding-inline-start: 29px;"
-      }
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
     })
   });
   if (!cursorInMarker) {
@@ -919,10 +913,7 @@ function processExampleList(context) {
     from: line.from,
     to: line.from,
     decoration: import_view5.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1",
-      attributes: {
-        style: "text-indent: -29px; padding-inline-start: 29px;"
-      }
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
     })
   });
   const isDuplicate = label && (duplicateLabels == null ? void 0 : duplicateLabels.has(label)) && duplicateLabels.get(label) !== lineNum;
@@ -1150,7 +1141,7 @@ var CustomLabelMarkerWidget = class extends import_view8.WidgetType {
     innerSpan.textContent = `(${this.label}) `;
     span.appendChild(innerSpan);
     if (this.view && this.position !== void 0) {
-      span.style.cursor = "pointer";
+      span.classList.add("pandoc-custom-label-ref-clickable");
       span.addEventListener("click", () => {
         if (this.view && this.position !== void 0) {
           this.view.dispatch({
@@ -1230,10 +1221,7 @@ function processCustomLabelList(context) {
     from: line.from,
     to: line.from,
     decoration: import_view9.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1",
-      attributes: {
-        style: "text-indent: -29px; padding-inline-start: 29px;"
-      }
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
     })
   });
   if (!cursorInMarker) {

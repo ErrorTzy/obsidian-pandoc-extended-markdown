@@ -166,6 +166,23 @@ li.pandoc-example-item::before {
     }
 }
 
+/* List Line Indentation */
+.pandoc-list-line-indent {
+    text-indent: -29px;
+    padding-inline-start: 29px;
+}
+
+/* Custom Label Reference Clickable */
+.pandoc-custom-label-ref-clickable {
+    cursor: pointer;
+}
+
+/* Custom Label Lists */
+.pandoc-custom-label-item {
+    list-style: none;
+    position: relative;
+}
+
 /* Example Reference Suggestions */
 .pandoc-suggestion-content {
     padding: 6px 10px;
