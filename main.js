@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view11 = require("@codemirror/view");
 
@@ -111,7 +111,7 @@ var CSS_CLASSES = {
   EXAMPLE_REF: "pandoc-example-reference",
   EXAMPLE_LIST: "pandoc-example-list",
   EXAMPLE_ITEM: "pandoc-example-item",
-  EXAMPLE_DUPLICATE: "pandoc-example-duplicate",
+  DUPLICATE_MARKERS: "pandoc-duplicate-markers",
   // Superscript and Subscript Classes
   SUPERSCRIPT: "pandoc-superscript",
   SUBSCRIPT: "pandoc-subscript",
@@ -172,6 +172,9 @@ var COMMANDS = {
 var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4,
   STATE_TRANSITION_DELAY_MS: 100
+};
+var DOM_ATTRIBUTES = {
+  CONTENT_EDITABLE_FALSE: "false"
 };
 
 // src/patterns.ts
@@ -442,7 +445,7 @@ ListPatterns.PURE_EXPRESSION_PATTERN = /^[A-Za-z]?[\s+\-*/,()'\d]*$/;
 // src/decorations/pandocExtendedMarkdownExtension.ts
 var import_state = require("@codemirror/state");
 var import_view10 = require("@codemirror/view");
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/decorations/validators/listBlockValidator.ts
 var ListBlockValidator = class {
@@ -666,15 +669,7 @@ var PlaceholderContext = class {
 };
 
 // src/decorations/scanners/customLabelScanner.ts
-function scanCustomLabels(doc, settings, placeholderContext) {
-  const customLabels = /* @__PURE__ */ new Map();
-  const rawToProcessed = /* @__PURE__ */ new Map();
-  const duplicateLabels = /* @__PURE__ */ new Set();
-  const seenLabels = /* @__PURE__ */ new Set();
-  const context = placeholderContext || new PlaceholderContext();
-  if (!settings.moreExtendedSyntax) {
-    return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
-  }
+function collectPlaceholders(doc) {
   const placeholdersInOrder = [];
   const seenPlaceholders = /* @__PURE__ */ new Set();
   for (let i = 1; i <= doc.lines; i++) {
@@ -693,22 +688,35 @@ function scanCustomLabels(doc, settings, placeholderContext) {
       }
     }
   }
-  const existingMappings = context.getPlaceholderMappings();
-  let needsReset = false;
+  return placeholdersInOrder;
+}
+function shouldResetContext(placeholdersInOrder, existingMappings) {
   if (placeholdersInOrder.length !== existingMappings.size) {
-    needsReset = true;
-  } else {
-    for (let i = 0; i < placeholdersInOrder.length; i++) {
-      const placeholder = placeholdersInOrder[i];
-      const expectedNumber = i + 1;
-      const actualNumber = existingMappings.get(placeholder);
-      if (actualNumber !== expectedNumber) {
-        needsReset = true;
-        break;
-      }
+    return true;
+  }
+  for (let i = 0; i < placeholdersInOrder.length; i++) {
+    const placeholder = placeholdersInOrder[i];
+    const expectedNumber = i + 1;
+    const actualNumber = existingMappings.get(placeholder);
+    if (actualNumber !== expectedNumber) {
+      return true;
     }
   }
-  if (needsReset) {
+  return false;
+}
+function scanCustomLabels(doc, settings, placeholderContext) {
+  const customLabels = /* @__PURE__ */ new Map();
+  const rawToProcessed = /* @__PURE__ */ new Map();
+  const duplicateLabels = /* @__PURE__ */ new Set();
+  const duplicateLineInfo = /* @__PURE__ */ new Map();
+  const seenLabels = /* @__PURE__ */ new Map();
+  const context = placeholderContext || new PlaceholderContext();
+  if (!settings.moreExtendedSyntax) {
+    return { customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext: context };
+  }
+  const placeholdersInOrder = collectPlaceholders(doc);
+  const existingMappings = context.getPlaceholderMappings();
+  if (shouldResetContext(placeholdersInOrder, existingMappings)) {
     context.reset();
   }
   for (let i = 1; i <= doc.lines; i++) {
@@ -719,19 +727,30 @@ function scanCustomLabels(doc, settings, placeholderContext) {
       const rawLabel = match[3];
       const processedLabel = context.processLabel(rawLabel);
       rawToProcessed.set(rawLabel, processedLabel);
+      const contentStart = match[0].length;
+      const content = lineText.substring(contentStart).trim();
       if (seenLabels.has(processedLabel)) {
         duplicateLabels.add(processedLabel);
+        if (!duplicateLineInfo.has(processedLabel)) {
+          const firstOccurrence = seenLabels.get(processedLabel);
+          duplicateLineInfo.set(processedLabel, {
+            firstLine: firstOccurrence.line,
+            firstContent: firstOccurrence.content
+          });
+        }
       } else {
-        seenLabels.add(processedLabel);
-        const contentStart = match[0].length;
-        const content = lineText.substring(contentStart).trim();
+        seenLabels.set(processedLabel, {
+          line: i,
+          // line number (1-based)
+          content
+        });
         if (content) {
           customLabels.set(processedLabel, content);
         }
       }
     }
   }
-  return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
+  return { customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext: context };
 }
 function validateCustomLabelBlocks(doc, settings) {
   const invalidLines = /* @__PURE__ */ new Set();
@@ -1170,7 +1189,7 @@ var DuplicateExampleLabelWidget = class extends import_view.WidgetType {
   }
   toDOM() {
     const span = document.createElement("span");
-    span.className = CSS_CLASSES.EXAMPLE_DUPLICATE;
+    span.className = CSS_CLASSES.DUPLICATE_MARKERS;
     span.textContent = `(@${this.label})`;
     let lineContent = this.originalLineContent.trim();
     if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
@@ -1309,6 +1328,7 @@ var SubscriptWidget = class extends import_view4.WidgetType {
 
 // src/decorations/widgets/customLabelWidget.ts
 var import_view5 = require("@codemirror/view");
+var import_obsidian4 = require("obsidian");
 var CustomLabelMarkerWidget = class extends import_view5.WidgetType {
   constructor(label, view, position) {
     super();
@@ -1357,7 +1377,7 @@ var CustomLabelInlineNumberWidget = class extends import_view5.WidgetType {
     const span = document.createElement("span");
     span.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
     span.textContent = this.number;
-    span.contentEditable = "false";
+    span.contentEditable = DOM_ATTRIBUTES.CONTENT_EDITABLE_FALSE;
     return span;
   }
   eq(other) {
@@ -1390,6 +1410,57 @@ var CustomLabelReferenceWidget = class extends import_view5.WidgetType {
   }
   ignoreEvent() {
     return false;
+  }
+};
+var DuplicateCustomLabelWidget = class extends import_view5.WidgetType {
+  /**
+   * @param rawLabel - The raw label text (e.g., "P(#a)")
+   * @param originalLine - Line number of the first occurrence
+   * @param originalLineContent - Content of the first occurrence line
+   * @param view - Optional editor view for cursor positioning
+   * @param pos - Optional position for cursor placement
+   */
+  constructor(rawLabel, originalLine, originalLineContent, view, pos) {
+    super();
+    this.rawLabel = rawLabel;
+    this.originalLine = originalLine;
+    this.originalLineContent = originalLineContent;
+    this.view = view;
+    this.pos = pos;
+    this.controller = new AbortController();
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = CSS_CLASSES.DUPLICATE_MARKERS;
+    span.textContent = `{::${this.rawLabel}}`;
+    let lineContent = this.originalLineContent.trim();
+    if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
+      lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + "...";
+    }
+    const tooltipText = `Duplicate label at line ${this.originalLine}: ${lineContent}`;
+    (0, import_obsidian4.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+    if (this.view && this.pos !== void 0) {
+      span.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.view && this.pos !== void 0) {
+          this.view.dispatch({
+            selection: { anchor: this.pos }
+          });
+          this.view.focus();
+        }
+      }, { signal: this.controller.signal });
+    }
+    return span;
+  }
+  eq(other) {
+    return other.rawLabel === this.rawLabel && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
+  }
+  ignoreEvent(event) {
+    return event.type !== "mousedown";
+  }
+  destroy() {
+    this.controller.abort();
   }
 };
 
@@ -1741,6 +1812,8 @@ function processCustomLabelList(context) {
     settings,
     customLabels,
     rawToProcessed,
+    duplicateLabels,
+    duplicateLineInfo,
     placeholderContext
   } = context;
   if (!settings.moreExtendedSyntax) {
@@ -1788,15 +1861,35 @@ function processCustomLabelList(context) {
       class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE_INDENT}`
     })
   });
+  const isDuplicate = duplicateLabels == null ? void 0 : duplicateLabels.has(processedLabel);
+  const duplicateInfo = duplicateLineInfo == null ? void 0 : duplicateLineInfo.get(processedLabel);
+  const isFirstOccurrence = duplicateInfo && duplicateInfo.firstLine === lineNum;
   if (!cursorInMarker) {
-    decorations.push({
-      from: markerStart,
-      to: markerEnd,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelMarkerWidget(processedLabel, view, markerStart),
-        inclusive: false
-      })
-    });
+    if (isDuplicate && !isFirstOccurrence && duplicateInfo) {
+      decorations.push({
+        from: markerStart,
+        to: markerEnd,
+        decoration: import_view9.Decoration.replace({
+          widget: new DuplicateCustomLabelWidget(
+            rawLabel,
+            duplicateInfo.firstLine,
+            duplicateInfo.firstContent,
+            view,
+            markerStart
+          ),
+          inclusive: false
+        })
+      });
+    } else {
+      decorations.push({
+        from: markerStart,
+        to: markerEnd,
+        decoration: import_view9.Decoration.replace({
+          widget: new CustomLabelMarkerWidget(processedLabel, view, markerStart),
+          inclusive: false
+        })
+      });
+    }
   } else if (cursorInMarker && placeholderRanges.length > 0) {
     for (let i = 0; i < placeholderRanges.length; i++) {
       if (i !== cursorPlaceholderIndex) {
@@ -1966,8 +2059,8 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.Vi
       this.decorations = this.buildDecorations(view);
     }
     update(update) {
-      const prevLivePreview = update.startState.field(import_obsidian4.editorLivePreviewField);
-      const currLivePreview = update.state.field(import_obsidian4.editorLivePreviewField);
+      const prevLivePreview = update.startState.field(import_obsidian5.editorLivePreviewField);
+      const currLivePreview = update.state.field(import_obsidian5.editorLivePreviewField);
       const livePreviewChanged = prevLivePreview !== currLivePreview;
       if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
         if (update.docChanged) {
@@ -1982,7 +2075,7 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.Vi
     }
     buildDecorations(view) {
       const builder = new import_state.RangeSetBuilder();
-      const isLivePreview = view.state.field(import_obsidian4.editorLivePreviewField);
+      const isLivePreview = view.state.field(import_obsidian5.editorLivePreviewField);
       if (!isLivePreview) {
         return builder.finish();
       }
@@ -2036,6 +2129,8 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.Vi
             settings,
             customLabels: this.customLabelScanResult.customLabels,
             rawToProcessed: this.customLabelScanResult.rawToProcessed,
+            duplicateLabels: this.customLabelScanResult.duplicateLabels,
+            duplicateLineInfo: this.customLabelScanResult.duplicateLineInfo,
             placeholderContext: this.customLabelScanResult.placeholderContext
           };
           const customLabelDecorations = processCustomLabelList(customLabelContext);
@@ -2170,7 +2265,7 @@ function parseFancyListMarker(line) {
 }
 
 // src/parsers/exampleListParser.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 function parseExampleListMarker(line) {
   const match = ListPatterns.isExampleList(line);
   if (!match) {
@@ -2414,7 +2509,7 @@ var ReadingModeParser = class {
 };
 
 // src/renderers/readingModeRenderer.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var ReadingModeRenderer = class {
   /**
    * Render a parsed line to DOM elements
@@ -2546,7 +2641,7 @@ var ReadingModeRenderer = class {
         span.textContent = `(${exampleNumber})`;
         const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, ref.label);
         if (tooltipText) {
-          (0, import_obsidian6.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+          (0, import_obsidian7.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         }
         elements.push(span);
       } else {
@@ -2980,8 +3075,8 @@ function validateListInStrictMode(line, documentLines, config) {
 }
 
 // src/exampleReferenceSuggest.ts
-var import_obsidian7 = require("obsidian");
-var ExampleReferenceSuggest = class extends import_obsidian7.EditorSuggest {
+var import_obsidian8 = require("obsidian");
+var ExampleReferenceSuggest = class extends import_obsidian8.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -3074,10 +3169,10 @@ var ExampleReferenceSuggest = class extends import_obsidian7.EditorSuggest {
 };
 
 // src/customLabelReferenceSuggest.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
 // src/utils/errorHandler.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var PluginError = class extends Error {
   constructor(message, code, recoverable = true) {
     super(message);
@@ -3109,12 +3204,12 @@ function handleError(error, context) {
     message = error;
   }
   if (showNotice) {
-    new import_obsidian8.Notice(`Pandoc Extended Markdown: ${context} failed. ${message}`);
+    new import_obsidian9.Notice(`Pandoc Extended Markdown: ${context} failed. ${message}`);
   }
 }
 
 // src/customLabelReferenceSuggest.ts
-var CustomLabelReferenceSuggest = class extends import_obsidian9.EditorSuggest {
+var CustomLabelReferenceSuggest = class extends import_obsidian10.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -3846,7 +3941,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian10.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian11.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -3864,7 +3959,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian10.Plugin {
       () => this.settings,
       () => {
         var _a;
-        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian11.MarkdownView);
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       }
     ));
@@ -3906,12 +4001,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian10.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian10.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian11.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian10.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian11.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -3924,9 +4019,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian10.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian11.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian10.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian11.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -3938,9 +4033,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian10.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian11.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian10.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian11.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -3952,9 +4047,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian10.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian11.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian10.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian11.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

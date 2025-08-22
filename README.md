@@ -207,6 +207,10 @@ Which renders as:
   - **Rendered Preview**: Placeholders are shown with their assigned numbers (e.g., `P(#a)` shows as `P1(#a)` where `1` is underlined)
   - **Smart Matching**: Type either the raw label (`P(#a)`) or rendered form (`P1`) to find matches
   - **Visual Hints**: Numbers replacing placeholders have dotted underlines, original placeholders shown in grey
+- **Duplicate Detection**: Duplicate custom labels are highlighted with error styling:
+  - First occurrence renders normally (e.g., `(P1)`)
+  - Subsequent duplicates show the raw syntax in red with underline (e.g., `{::P(#a)}`)
+  - Hover over duplicates to see a tooltip showing the location and content of the first occurrence
 - **Strict Mode Support**: When strict Pandoc mode is enabled, custom label blocks must be preceded and followed by blank lines
 - **Auto-Formatting**: The format command recognizes and properly formats custom label lists
 - **Reading Mode**: Full support in both live preview and reading modes

@@ -39,7 +39,7 @@ export const CSS_CLASSES = {
     EXAMPLE_REF: 'pandoc-example-reference',
     EXAMPLE_LIST: 'pandoc-example-list',
     EXAMPLE_ITEM: 'pandoc-example-item',
-    EXAMPLE_DUPLICATE: 'pandoc-example-duplicate',
+    DUPLICATE_MARKERS: 'pandoc-duplicate-markers',
     
     // Superscript and Subscript Classes
     SUPERSCRIPT: 'pandoc-superscript',
@@ -115,6 +115,10 @@ export const SETTINGS = {
 export const UI_CONSTANTS = {
     NOTICE_DURATION_MS: 10000,
     STATE_TRANSITION_DELAY_MS: 100,
+} as const;
+
+export const DOM_ATTRIBUTES = {
+    CONTENT_EDITABLE_FALSE: 'false',
 } as const;
 
 // Helper function to create fancy list type class names

@@ -7,37 +7,24 @@ export interface CustomLabelScanResult {
     customLabels: Map<string, string>;        // processed label -> content
     rawToProcessed: Map<string, string>;      // raw label -> processed label
     duplicateLabels: Set<string>;              // labels that appear more than once
+    duplicateLineInfo?: Map<string, { firstLine: number; firstContent: string }>;  // duplicate label -> first occurrence info
     placeholderContext: PlaceholderContext;    // context for placeholder processing
 }
 
-export function scanCustomLabels(
-    doc: Text,
-    settings: PandocExtendedMarkdownSettings,
-    placeholderContext?: PlaceholderContext
-): CustomLabelScanResult {
-    const customLabels = new Map<string, string>();
-    const rawToProcessed = new Map<string, string>();
-    const duplicateLabels = new Set<string>();
-    const seenLabels = new Set<string>();
-    const context = placeholderContext || new PlaceholderContext();
-    
-    // Only scan if More Extended Syntax is enabled
-    if (!settings.moreExtendedSyntax) {
-        return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
-    }
-    
-    // First pass: collect all placeholders in document order
+/**
+ * Collects all placeholders from the document in order.
+ */
+function collectPlaceholders(doc: Text): string[] {
     const placeholdersInOrder: string[] = [];
     const seenPlaceholders = new Set<string>();
     
     for (let i = 1; i <= doc.lines; i++) {
         const line = doc.line(i);
         const lineText = line.text;
-        
         const match = ListPatterns.isCustomLabelList(lineText);
+        
         if (match) {
             const rawLabel = match[3];
-            // Extract placeholders from this label
             const matches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
             for (const m of matches) {
                 const placeholder = m[1];
@@ -49,29 +36,58 @@ export function scanCustomLabels(
         }
     }
     
-    // Check if we need to reset based on placeholder order change
-    const existingMappings = context.getPlaceholderMappings();
-    let needsReset = false;
-    
-    // If the number of placeholders changed, we need to reset
+    return placeholdersInOrder;
+}
+
+/**
+ * Checks if placeholder context needs to be reset based on order changes.
+ */
+function shouldResetContext(
+    placeholdersInOrder: string[], 
+    existingMappings: Map<string, number>
+): boolean {
     if (placeholdersInOrder.length !== existingMappings.size) {
-        needsReset = true;
-    } else {
-        // Check if the order matches what we expect
-        // The placeholders should get numbers 1, 2, 3, etc. in order
-        for (let i = 0; i < placeholdersInOrder.length; i++) {
-            const placeholder = placeholdersInOrder[i];
-            const expectedNumber = i + 1;
-            const actualNumber = existingMappings.get(placeholder);
-            if (actualNumber !== expectedNumber) {
-                needsReset = true;
-                break;
-            }
+        return true;
+    }
+    
+    for (let i = 0; i < placeholdersInOrder.length; i++) {
+        const placeholder = placeholdersInOrder[i];
+        const expectedNumber = i + 1;
+        const actualNumber = existingMappings.get(placeholder);
+        if (actualNumber !== expectedNumber) {
+            return true;
         }
     }
     
-    // Reset if needed
-    if (needsReset) {
+    return false;
+}
+
+/**
+ * Scans document for custom labels and tracks duplicates.
+ */
+export function scanCustomLabels(
+    doc: Text,
+    settings: PandocExtendedMarkdownSettings,
+    placeholderContext?: PlaceholderContext
+): CustomLabelScanResult {
+    const customLabels = new Map<string, string>();
+    const rawToProcessed = new Map<string, string>();
+    const duplicateLabels = new Set<string>();
+    const duplicateLineInfo = new Map<string, { firstLine: number; firstContent: string }>();
+    const seenLabels = new Map<string, { line: number; content: string }>();
+    const context = placeholderContext || new PlaceholderContext();
+    
+    // Only scan if More Extended Syntax is enabled
+    if (!settings.moreExtendedSyntax) {
+        return { customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext: context };
+    }
+    
+    // First pass: collect all placeholders in document order
+    const placeholdersInOrder = collectPlaceholders(doc);
+    
+    // Check if we need to reset based on placeholder order change
+    const existingMappings = context.getPlaceholderMappings();
+    if (shouldResetContext(placeholdersInOrder, existingMappings)) {
         context.reset();
     }
     
@@ -88,15 +104,31 @@ export function scanCustomLabels(
             // Store the mapping
             rawToProcessed.set(rawLabel, processedLabel);
             
+            // Extract content after the marker
+            const contentStart = match[0].length;
+            const content = lineText.substring(contentStart).trim();
+            
             // Check for duplicates (based on processed label)
             if (seenLabels.has(processedLabel)) {
+                // Mark as duplicate
                 duplicateLabels.add(processedLabel);
-            } else {
-                seenLabels.add(processedLabel);
                 
-                // Extract content after the marker
-                const contentStart = match[0].length;
-                const content = lineText.substring(contentStart).trim();
+                // Store first occurrence info if not already stored
+                if (!duplicateLineInfo.has(processedLabel)) {
+                    const firstOccurrence = seenLabels.get(processedLabel)!;
+                    duplicateLineInfo.set(processedLabel, {
+                        firstLine: firstOccurrence.line,
+                        firstContent: firstOccurrence.content
+                    });
+                }
+            } else {
+                // First occurrence - track it
+                seenLabels.set(processedLabel, {
+                    line: i,  // line number (1-based)
+                    content: content
+                });
+                
+                // Store content in customLabels
                 if (content) {
                     customLabels.set(processedLabel, content);
                 }
@@ -104,7 +136,7 @@ export function scanCustomLabels(
         }
     }
     
-    return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
+    return { customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext: context };
 }
 
 export function validateCustomLabelBlocks(

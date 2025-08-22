@@ -159,7 +159,7 @@ export class DuplicateExampleLabelWidget extends WidgetType {
 
     toDOM() {
         const span = document.createElement('span');
-        span.className = CSS_CLASSES.EXAMPLE_DUPLICATE;
+        span.className = CSS_CLASSES.DUPLICATE_MARKERS;
         span.textContent = `(@${this.label})`;
         
         // Add tooltip with full line content, truncated if necessary

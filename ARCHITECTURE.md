@@ -215,6 +215,7 @@ sequenceDiagram
   - Validates block structure in strict mode
   - Smart reset detection: only resets PlaceholderContext when placeholder order changes
   - Two-pass scanning: detects placeholders first, then processes labels
+  - Duplicate detection: tracks duplicate labels and their first occurrence
 - **Output**:
   ```typescript
   interface ExampleScanResult {
@@ -229,6 +230,7 @@ sequenceDiagram
     customLabels: Map<string, string>         // processed label -> content
     rawToProcessed: Map<string, string>       // raw label -> processed label
     duplicateLabels: Set<string>              // labels that appear more than once
+    duplicateLineInfo?: Map<string, { firstLine: number; firstContent: string }> // duplicate label -> first occurrence info
     placeholderContext: PlaceholderContext    // context for auto-numbering
   }
   ```
@@ -256,6 +258,8 @@ Visual representations that replace markdown syntax:
 - **CustomLabelPlaceholderWidget**: Styled placeholder numbers with dotted underline
 - **CustomLabelProcessedWidget**: Processed form display for semi-expanded state
 - **CustomLabelInlineNumberWidget**: Atomic inline number replacements for selective expansion
+- **DuplicateCustomLabelWidget**: Duplicate custom label warning with error styling
+- **DuplicateExampleLabelWidget**: Duplicate example label warning with error styling
 
 ### Trigger Events
 - Document changes

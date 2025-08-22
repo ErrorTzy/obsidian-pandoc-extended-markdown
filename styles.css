@@ -137,8 +137,8 @@ li.pandoc-example-item::before {
     text-decoration: underline;
 }
 
-/* Duplicate example list labels */
-.pandoc-example-duplicate {
+/* Duplicate markers (for both example lists and custom label lists) */
+.pandoc-duplicate-markers {
     color: var(--text-error);
     text-decoration: underline;
     cursor: help;

@@ -1,5 +1,9 @@
+// External libraries
 import { WidgetType, EditorView } from '@codemirror/view';
-import { CSS_CLASSES } from '../../constants';
+import { setTooltip } from 'obsidian';
+
+// Constants
+import { CSS_CLASSES, DECORATION_STYLES, DOM_ATTRIBUTES } from '../../constants';
 
 export class CustomLabelMarkerWidget extends WidgetType {
     private controller: AbortController;
@@ -136,7 +140,7 @@ export class CustomLabelInlineNumberWidget extends WidgetType {
         const span = document.createElement('span');
         span.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
         span.textContent = this.number;
-        span.contentEditable = 'false'; // Make it atomic but not editable
+        span.contentEditable = DOM_ATTRIBUTES.CONTENT_EDITABLE_FALSE; // Make it atomic but not editable
         return span;
     }
 
@@ -181,5 +185,77 @@ export class CustomLabelReferenceWidget extends WidgetType {
 
     ignoreEvent() {
         return false;
+    }
+}
+
+/**
+ * Widget for displaying duplicate custom label markers with error styling.
+ * Shows the original label syntax with a tooltip indicating the first occurrence.
+ */
+export class DuplicateCustomLabelWidget extends WidgetType {
+    private controller: AbortController;
+
+    /**
+     * @param rawLabel - The raw label text (e.g., "P(#a)")
+     * @param originalLine - Line number of the first occurrence
+     * @param originalLineContent - Content of the first occurrence line
+     * @param view - Optional editor view for cursor positioning
+     * @param pos - Optional position for cursor placement
+     */
+    constructor(
+        private rawLabel: string,
+        private originalLine: number,
+        private originalLineContent: string,
+        private view?: EditorView,
+        private pos?: number
+    ) {
+        super();
+        this.controller = new AbortController();
+    }
+
+    toDOM() {
+        const span = document.createElement('span');
+        span.className = CSS_CLASSES.DUPLICATE_MARKERS;
+        span.textContent = `{::${this.rawLabel}}`;
+        
+        // Add tooltip with full line content, truncated if necessary
+        let lineContent = this.originalLineContent.trim();
+        if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
+            lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + '...';
+        }
+        const tooltipText = `Duplicate label at line ${this.originalLine}: ${lineContent}`;
+        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+        
+        // Handle click events to place cursor (only if both view and pos are provided)
+        if (this.view && this.pos !== undefined) {
+            span.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Re-check to ensure TypeScript knows they're defined
+                if (this.view && this.pos !== undefined) {
+                    this.view.dispatch({
+                        selection: { anchor: this.pos }
+                    });
+                    this.view.focus();
+                }
+            }, { signal: this.controller.signal });
+        }
+        
+        return span;
+    }
+
+    eq(other: DuplicateCustomLabelWidget) {
+        return other.rawLabel === this.rawLabel && 
+               other.originalLine === this.originalLine && 
+               other.originalLineContent === this.originalLineContent && 
+               other.pos === this.pos;
+    }
+
+    ignoreEvent(event: Event) {
+        return event.type !== 'mousedown';
+    }
+
+    destroy() {
+        this.controller.abort();
     }
 }

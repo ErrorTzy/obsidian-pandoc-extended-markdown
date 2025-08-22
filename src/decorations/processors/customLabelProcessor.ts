@@ -20,7 +20,8 @@ import {
     CustomLabelPartialWidget,
     CustomLabelPlaceholderWidget,
     CustomLabelProcessedWidget,
-    CustomLabelInlineNumberWidget
+    CustomLabelInlineNumberWidget,
+    DuplicateCustomLabelWidget
 } from '../widgets/customLabelWidget';
 
 export interface CustomLabelProcessorContext {
@@ -33,6 +34,8 @@ export interface CustomLabelProcessorContext {
     settings: PandocExtendedMarkdownSettings;
     customLabels?: Map<string, string>; // processed label -> content
     rawToProcessed?: Map<string, string>; // raw label -> processed label
+    duplicateLabels?: Set<string>; // labels that appear more than once
+    duplicateLineInfo?: Map<string, { firstLine: number; firstContent: string }>; // duplicate label -> first occurrence info
     placeholderContext?: PlaceholderContext; // context for processing placeholders
 }
 
@@ -53,7 +56,7 @@ export function processCustomLabelList(
 ): Array<{from: number, to: number, decoration: Decoration}> | null {
     const { 
         line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings,
-        customLabels, rawToProcessed, placeholderContext
+        customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext
     } = context;
     
     // Only process if More Extended Syntax is enabled
@@ -118,17 +121,42 @@ export function processCustomLabelList(
         })
     });
     
+    // Check if this is a duplicate label
+    const isDuplicate = duplicateLabels?.has(processedLabel);
+    const duplicateInfo = duplicateLineInfo?.get(processedLabel);
+    const isFirstOccurrence = duplicateInfo && duplicateInfo.firstLine === lineNum;
+    
+    
     // Apply decorations based on cursor position
     if (!cursorInMarker) {
-        // Cursor is completely outside - show full widget
-        decorations.push({
-            from: markerStart,
-            to: markerEnd,
-            decoration: Decoration.replace({
-                widget: new CustomLabelMarkerWidget(processedLabel, view, markerStart),
-                inclusive: false
-            })
-        });
+        // Cursor is completely outside
+        if (isDuplicate && !isFirstOccurrence && duplicateInfo) {
+            // This is a duplicate (not the first occurrence) - show duplicate widget
+            decorations.push({
+                from: markerStart,
+                to: markerEnd,
+                decoration: Decoration.replace({
+                    widget: new DuplicateCustomLabelWidget(
+                        rawLabel,
+                        duplicateInfo.firstLine,
+                        duplicateInfo.firstContent,
+                        view,
+                        markerStart
+                    ),
+                    inclusive: false
+                })
+            });
+        } else {
+            // Normal label or first occurrence of duplicate - show normal widget
+            decorations.push({
+                from: markerStart,
+                to: markerEnd,
+                decoration: Decoration.replace({
+                    widget: new CustomLabelMarkerWidget(processedLabel, view, markerStart),
+                    inclusive: false
+                })
+            });
+        }
     } else if (cursorInMarker && placeholderRanges.length > 0) {
         // Cursor is in marker - selectively process placeholders
         

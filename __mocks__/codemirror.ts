@@ -3,8 +3,10 @@ export class EditorState {
   selection: any;
   
   constructor(doc?: string, selection?: any) {
+    const lines = (doc || '').split('\n');
     this.doc = {
       length: doc ? doc.length : 100,
+      lines: lines.length,
       toString: () => doc || '',
       sliceString: (from: number, to: number) => (doc || '').slice(from, to),
       sliceDoc: (from: number, to: number) => (doc || '').slice(from, to),

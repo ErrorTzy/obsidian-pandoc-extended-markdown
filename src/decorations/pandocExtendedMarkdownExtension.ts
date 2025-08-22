@@ -139,6 +139,8 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
                         settings,
                         customLabels: this.customLabelScanResult.customLabels,
                         rawToProcessed: this.customLabelScanResult.rawToProcessed,
+                        duplicateLabels: this.customLabelScanResult.duplicateLabels,
+                        duplicateLineInfo: this.customLabelScanResult.duplicateLineInfo,
                         placeholderContext: this.customLabelScanResult.placeholderContext
                     };
                     
