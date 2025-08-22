@@ -6,6 +6,7 @@ import { ValidationContext } from '../pandocValidator';
 import { ListBlockValidator } from './validators/listBlockValidator';
 import { scanExampleLabels, ExampleScanResult } from './scanners/exampleScanner';
 import { scanCustomLabels, validateCustomLabelBlocks, CustomLabelScanResult } from './scanners/customLabelScanner';
+import { pluginStateManager } from '../state/PluginStateManager';
 import {
     processHashList,
     processFancyList,
@@ -23,7 +24,7 @@ import {
 import { processCustomLabelList, processCustomLabelReferences, CustomLabelProcessorContext } from './processors/customLabelProcessor';
 
 // Main view plugin for rendering Pandoc extended markdown
-const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownSettings) => ViewPlugin.fromClass(
+const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownSettings, getDocPath: () => string | null) => ViewPlugin.fromClass(
     class PandocExtendedMarkdownView {
         decorations: DecorationSet;
         private scanResult: ExampleScanResult;
@@ -31,8 +32,10 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
 
         constructor(view: EditorView) {
             const settings = getSettings();
+            const docPath = getDocPath();
+            const placeholderContext = docPath ? pluginStateManager.getDocumentCounters(docPath).placeholderContext : undefined;
             this.scanResult = scanExampleLabels(view, settings);
-            this.customLabelScanResult = scanCustomLabels(view.state.doc, settings);
+            this.customLabelScanResult = scanCustomLabels(view.state.doc, settings, placeholderContext);
             this.decorations = this.buildDecorations(view);
         }
 
@@ -45,8 +48,10 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
             if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
                 if (update.docChanged) {
                     const settings = getSettings();
+                    const docPath = getDocPath();
+                    const placeholderContext = docPath ? pluginStateManager.getDocumentCounters(docPath).placeholderContext : undefined;
                     this.scanResult = scanExampleLabels(update.view, settings);
-                    this.customLabelScanResult = scanCustomLabels(update.view.state.doc, settings);
+                    this.customLabelScanResult = scanCustomLabels(update.view.state.doc, settings, placeholderContext);
                 }
                 this.decorations = this.buildDecorations(update.view);
             }
@@ -132,7 +137,9 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
                         view,
                         invalidListBlocks: invalidCustomLabelBlocks,
                         settings,
-                        customLabels: this.customLabelScanResult.customLabels
+                        customLabels: this.customLabelScanResult.customLabels,
+                        rawToProcessed: this.customLabelScanResult.rawToProcessed,
+                        placeholderContext: this.customLabelScanResult.placeholderContext
                     };
                     
                     const customLabelDecorations = processCustomLabelList(customLabelContext);
@@ -199,7 +206,9 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
                         view,
                         cursorPos,
                         settings,
-                        isValidLine
+                        isValidLine,
+                        this.customLabelScanResult.rawToProcessed,
+                        this.customLabelScanResult.placeholderContext
                     );
                     decorations.push(...customLabelRefs);
                 }
@@ -221,6 +230,6 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
     }
 );
 
-export function pandocExtendedMarkdownExtension(getSettings: () => PandocExtendedMarkdownSettings): Extension {
-    return pandocExtendedMarkdownPlugin(getSettings);
+export function pandocExtendedMarkdownExtension(getSettings: () => PandocExtendedMarkdownSettings, getDocPath: () => string | null): Extension {
+    return pandocExtendedMarkdownPlugin(getSettings, getDocPath);
 }

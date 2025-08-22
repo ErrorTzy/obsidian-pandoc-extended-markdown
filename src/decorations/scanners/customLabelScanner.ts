@@ -1,23 +1,29 @@
 import { Text } from '@codemirror/state';
 import { ListPatterns } from '../../patterns';
 import { PandocExtendedMarkdownSettings } from '../../settings';
+import { PlaceholderContext } from '../../utils/placeholderProcessor';
 
 export interface CustomLabelScanResult {
-    customLabels: Map<string, string>;        // label -> content
+    customLabels: Map<string, string>;        // processed label -> content
+    rawToProcessed: Map<string, string>;      // raw label -> processed label
     duplicateLabels: Set<string>;              // labels that appear more than once
+    placeholderContext: PlaceholderContext;    // context for placeholder processing
 }
 
 export function scanCustomLabels(
     doc: Text,
-    settings: PandocExtendedMarkdownSettings
+    settings: PandocExtendedMarkdownSettings,
+    placeholderContext?: PlaceholderContext
 ): CustomLabelScanResult {
     const customLabels = new Map<string, string>();
+    const rawToProcessed = new Map<string, string>();
     const duplicateLabels = new Set<string>();
     const seenLabels = new Set<string>();
+    const context = placeholderContext || new PlaceholderContext();
     
     // Only scan if More Extended Syntax is enabled
     if (!settings.moreExtendedSyntax) {
-        return { customLabels, duplicateLabels };
+        return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
     }
     
     // Process each line in the document
@@ -27,25 +33,29 @@ export function scanCustomLabels(
         
         const match = ListPatterns.isCustomLabelList(lineText);
         if (match) {
-            const label = match[3];
+            const rawLabel = match[3];
+            const processedLabel = context.processLabel(rawLabel);
             
-            // Check for duplicates
-            if (seenLabels.has(label)) {
-                duplicateLabels.add(label);
+            // Store the mapping
+            rawToProcessed.set(rawLabel, processedLabel);
+            
+            // Check for duplicates (based on processed label)
+            if (seenLabels.has(processedLabel)) {
+                duplicateLabels.add(processedLabel);
             } else {
-                seenLabels.add(label);
+                seenLabels.add(processedLabel);
                 
                 // Extract content after the marker
                 const contentStart = match[0].length;
                 const content = lineText.substring(contentStart).trim();
                 if (content) {
-                    customLabels.set(label, content);
+                    customLabels.set(processedLabel, content);
                 }
             }
         }
     }
     
-    return { customLabels, duplicateLabels };
+    return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
 }
 
 export function validateCustomLabelBlocks(

@@ -97,12 +97,15 @@ export class ListPatterns {
     
     // Custom label list patterns for More Extended Syntax
     // Matches {::LABEL} at start of line with required space after
-    static readonly CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)/;
-    static readonly CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
+    // Now supports placeholders like {::P(#first)} or pure placeholders like {::(#name)}
+    static readonly CUSTOM_LABEL_LIST = /^(\s*)(\{::([^}]+)\})(\s+)/;
+    static readonly CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([^}]+)\})(\s+)(.*)$/;
     // Reference to custom label anywhere in text
-    static readonly CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
-    // Valid label pattern (for validation)
-    static readonly VALID_CUSTOM_LABEL = /^[a-zA-Z][a-zA-Z0-9_']*$/;
+    static readonly CUSTOM_LABEL_REFERENCE = /\{::([^}]+)\}/g;
+    // Valid label pattern (for validation) - now accepts any non-empty content
+    static readonly VALID_CUSTOM_LABEL = /^[^}]+$/;
+    // Placeholder pattern for auto-numbering
+    static readonly PLACEHOLDER_PATTERN = /\(#([^)]+)\)/g;
     
     // Note: Patterns are already compiled as static readonly RegExp objects,
     // providing optimal performance without needing additional caching.

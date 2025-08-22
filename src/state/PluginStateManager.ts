@@ -7,7 +7,11 @@
  * - Mode transition detection
  */
 
+// External libraries
 import { WorkspaceLeaf, MarkdownView } from 'obsidian';
+
+// Utils
+import { PlaceholderContext } from '../utils/placeholderProcessor';
 
 export type ViewMode = "reading" | "live" | "source";
 
@@ -16,6 +20,7 @@ export interface DocumentCounters {
     exampleMap: Map<string, number>;      // Maps example labels to numbers
     exampleContent: Map<string, string>;   // Maps example labels to content
     hashCounter: number;                   // Counter for hash auto-numbering lists
+    placeholderContext: PlaceholderContext; // Context for placeholder auto-numbering
 }
 
 export interface ViewState {
@@ -69,6 +74,7 @@ class PluginStateManager {
             counters.exampleMap.clear();
             counters.exampleContent.clear();
             counters.hashCounter = 0;
+            counters.placeholderContext.reset();
         }
         // Mark that this document needs reprocessing
         this.documentsNeedingReprocess.add(docPath);
@@ -292,7 +298,8 @@ class PluginStateManager {
             exampleCounter: 0,
             exampleMap: new Map(),
             exampleContent: new Map(),
-            hashCounter: 0
+            hashCounter: 0,
+            placeholderContext: new PlaceholderContext()
         };
     }
 

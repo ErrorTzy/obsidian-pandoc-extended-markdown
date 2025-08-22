@@ -64,7 +64,8 @@ export function processReadingMode(
     
     // Process custom label lists if More Extended Syntax is enabled
     if (config.enableCustomLabelLists) {
-        processCustomLabelLists(element, context);
+        const counters = pluginStateManager.getDocumentCounters(docPath);
+        processCustomLabelLists(element, context, counters.placeholderContext);
     }
 }
 

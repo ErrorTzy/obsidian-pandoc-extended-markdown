@@ -1,36 +1,68 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 import { CSS_CLASSES } from '../constants';
 import { ListPatterns } from '../patterns';
+import { PlaceholderContext } from '../utils/placeholderProcessor';
 
 export interface CustomLabelInfo {
     indent: string;
     originalMarker: string;
     label: string;
+    processedLabel?: string;  // Label after placeholder processing
 }
 
-export function parseCustomLabelMarker(line: string): CustomLabelInfo | null {
+export function parseCustomLabelMarker(line: string, placeholderContext?: PlaceholderContext): CustomLabelInfo | null {
     const match = ListPatterns.isCustomLabelList(line);
     
     if (!match) {
         return null;
     }
     
-    return {
+    const rawLabel = match[3];
+    
+    // Validate the label using the same logic as isValidCustomLabel
+    if (!isValidCustomLabel(rawLabel)) {
+        return null;
+    }
+    
+    const processedLabel = placeholderContext ? placeholderContext.processLabel(rawLabel) : rawLabel;
+    
+    const result: CustomLabelInfo = {
         indent: match[1],
         originalMarker: match[2],
-        label: match[3]
+        label: rawLabel
     };
+    
+    // Only add processedLabel if it's different from the raw label
+    if (processedLabel !== rawLabel) {
+        result.processedLabel = processedLabel;
+    }
+    
+    return result;
 }
 
 export function isValidCustomLabel(label: string): boolean {
-    return ListPatterns.isValidCustomLabel(label);
+    // Label must not be empty and can contain any characters except }
+    if (!label || label.trim().length === 0 || label.includes('}')) {
+        return false;
+    }
+    
+    // If it contains placeholder syntax, it's valid (placeholders can have spaces and special chars)
+    if (label.includes('(#')) {
+        return true;
+    }
+    
+    // For non-placeholder labels, maintain backward compatibility
+    // Allow: letters, numbers, underscores, primes (')
+    // Disallow: spaces, angle brackets, pipes, backslashes, forward slashes, and other special chars
+    const validLabelPattern = /^[a-zA-Z][a-zA-Z0-9_']*$/;
+    return validLabelPattern.test(label);
 }
 
 /**
  * Process custom label lists in reading mode.
  * Handles both single-line and multi-line custom label blocks
  */
-export function processCustomLabelLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
+export function processCustomLabelLists(element: HTMLElement, context: MarkdownPostProcessorContext, placeholderContext?: PlaceholderContext) {
     // Skip if element has no text content with custom labels
     if (!element.textContent || !element.textContent.includes('{::')) {
         return;
@@ -39,13 +71,13 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
     // Process paragraphs
     const paragraphs = element.querySelectorAll('p');
     paragraphs.forEach(p => {
-        processElement(p);
+        processElement(p, placeholderContext);
     });
     
     // Process list items
     const listItems = element.querySelectorAll('li');
     listItems.forEach(li => {
-        processElement(li);
+        processElement(li, placeholderContext);
         // Add class if it contains a custom label list marker
         if (li.querySelector(`.${CSS_CLASSES.PANDOC_LIST_MARKER}`)) {
             li.classList.add('pandoc-custom-label-item');
@@ -53,7 +85,7 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
     });
 }
 
-function processTextNode(node: Node, container: HTMLElement): void {
+function processTextNode(node: Node, container: HTMLElement, placeholderContext?: PlaceholderContext): void {
     const text = node.textContent || '';
     
     // Check if this text starts with a custom label list pattern
@@ -62,9 +94,12 @@ function processTextNode(node: Node, container: HTMLElement): void {
     if (listMatch) {
         // This is a list marker at the start of a line
         const indent = listMatch[1];
-        const label = listMatch[3];
+        const rawLabel = listMatch[3];
         const space = listMatch[4];
         const rest = listMatch[5];
+        
+        // Process placeholders in the label
+        const processedLabel = placeholderContext ? placeholderContext.processLabel(rawLabel) : rawLabel;
         
         // Add indent text if present
         if (indent) {
@@ -74,21 +109,21 @@ function processTextNode(node: Node, container: HTMLElement): void {
         // Create marker span
         const markerSpan = document.createElement('span');
         markerSpan.className = CSS_CLASSES.PANDOC_LIST_MARKER;
-        markerSpan.textContent = `(${label})`;
+        markerSpan.textContent = `(${processedLabel})`;
         container.appendChild(markerSpan);
         
         // Add space
         container.appendChild(document.createTextNode(space));
         
         // Process remaining text for references
-        processReferencesInText(rest, container);
+        processReferencesInText(rest, container, placeholderContext);
     } else {
         // Not a list marker, process all text for references
-        processReferencesInText(text, container);
+        processReferencesInText(text, container, placeholderContext);
     }
 }
 
-function processReferencesInText(text: string, container: HTMLElement): void {
+function processReferencesInText(text: string, container: HTMLElement, placeholderContext?: PlaceholderContext): void {
     const refPattern = ListPatterns.CUSTOM_LABEL_REFERENCE;
     let lastIndex = 0;
     let match;
@@ -100,11 +135,19 @@ function processReferencesInText(text: string, container: HTMLElement): void {
         }
         
         // Create reference span
-        const refSpan = document.createElement('span');
-        refSpan.className = CSS_CLASSES.EXAMPLE_REF;
-        refSpan.setAttribute('data-custom-label-ref', match[1]);
-        refSpan.textContent = `(${match[1]})`;
-        container.appendChild(refSpan);
+        const rawLabel = match[1];
+        const processedLabel = placeholderContext ? placeholderContext.getProcessedLabel(rawLabel) : rawLabel;
+        
+        // If the label is undefined (null), leave it as raw text
+        if (processedLabel === null) {
+            container.appendChild(document.createTextNode(match[0]));
+        } else {
+            const refSpan = document.createElement('span');
+            refSpan.className = CSS_CLASSES.EXAMPLE_REF;
+            refSpan.setAttribute('data-custom-label-ref', processedLabel);
+            refSpan.textContent = `(${processedLabel})`;
+            container.appendChild(refSpan);
+        }
         
         lastIndex = refPattern.lastIndex;
     }
@@ -115,7 +158,7 @@ function processReferencesInText(text: string, container: HTMLElement): void {
     }
 }
 
-function processElement(elem: Element) {
+function processElement(elem: Element, placeholderContext?: PlaceholderContext) {
     // Skip code blocks and pre elements
     if (elem.querySelector('code, pre') || elem.closest('code, pre')) {
         return;
@@ -145,7 +188,7 @@ function processElement(elem: Element) {
                 }
                 
                 if (lines[i]) {
-                    processTextNode({ textContent: lines[i] } as Node, newContainer);
+                    processTextNode({ textContent: lines[i] } as Node, newContainer, placeholderContext);
                 }
             }
         } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'BR') {
@@ -163,7 +206,7 @@ function processElement(elem: Element) {
                 Array.from(elemNode.childNodes).forEach(child => {
                     tempContainer.appendChild(child.cloneNode(true));
                 });
-                processElement(tempContainer);
+                processElement(tempContainer, placeholderContext);
                 
                 // Move processed content to cloned element
                 while (tempContainer.firstChild) {

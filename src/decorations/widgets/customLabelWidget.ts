@@ -43,8 +43,8 @@ export class CustomLabelMarkerWidget extends WidgetType {
                other.position === this.position;
     }
 
-    ignoreEvent(event: Event) {
-        return event.type !== 'mousedown';
+    ignoreEvent() {
+        return false;  // Allow all events to pass through
     }
     
     destroy() {

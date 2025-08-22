@@ -64,7 +64,8 @@ pandoc-lists-plugin/
 │   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
 │   │   └── settingsTypes.ts             # Settings interface and default settings
 │   ├── utils/                            # Utility functions
-│   │   └── errorHandler.ts              # Error handling utilities with error boundaries
+│   │   ├── errorHandler.ts              # Error handling utilities with error boundaries
+│   │   └── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
 │   └── styles/                           # Component-specific styles
 │       └── suggestions.css              # Styles for autocomplete dropdown (not used in build)
 ├── __mocks__/                            # Jest mock implementations
@@ -198,7 +199,7 @@ sequenceDiagram
 
 #### 2. Document Scanners
 - **exampleScanner** (`src/decorations/scanners/exampleScanner.ts`): Pre-processes example labels for consistent numbering
-- **customLabelScanner** (`src/decorations/scanners/customLabelScanner.ts`): Scans custom labels and validates block structure in strict mode
+- **customLabelScanner** (`src/decorations/scanners/customLabelScanner.ts`): Scans custom labels with placeholder support and validates block structure in strict mode
 - **Output**:
   ```typescript
   interface ExampleScanResult {
@@ -208,6 +209,13 @@ sequenceDiagram
     duplicateLabels: Map<string, number>      // duplicate -> first line
     duplicateLabelContent: Map<string, string> // duplicate -> original content
   }
+  
+  interface CustomLabelScanResult {
+    customLabels: Map<string, string>         // processed label -> content
+    rawToProcessed: Map<string, string>       // raw label -> processed label
+    duplicateLabels: Set<string>              // labels that appear more than once
+    placeholderContext: PlaceholderContext    // context for auto-numbering
+  }
   ```
 
 #### 3. Processors
@@ -215,7 +223,7 @@ Transform markdown syntax into decorations:
 - **List Processors**: Hash lists (#.), fancy lists (A., i.), example lists ((@))
 - **Definition Processors**: Terms, items (~/:), indented paragraphs
 - **Inline Processors**: References, superscripts, subscripts
-- **Custom Label Processor**: Custom label lists ({::LABEL}) and references
+- **Custom Label Processor**: Custom label lists ({::LABEL}) with auto-numbering support for (#placeholder) syntax
 
 #### 4. Widgets
 Visual representations that replace markdown syntax:
@@ -375,6 +383,7 @@ classDiagram
         +exampleMap: Map~string, number~
         +exampleContent: Map~string, string~
         +hashCounter: number
+        +placeholderContext: PlaceholderContext
     }
     
     class ViewState {

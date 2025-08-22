@@ -54,7 +54,13 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
 
     private registerExtensions(): void {
         // Register CodeMirror extension for live preview with settings
-        this.registerEditorExtension(pandocExtendedMarkdownExtension(() => this.settings));
+        this.registerEditorExtension(pandocExtendedMarkdownExtension(
+            () => this.settings,
+            () => {
+                const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                return activeView?.file?.path || null;
+            }
+        ));
         
         // Register list autocompletion keymap with highest priority
         this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(this.settings))));

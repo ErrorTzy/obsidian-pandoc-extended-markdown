@@ -147,7 +147,7 @@ This feature:
 
 #### Custom Label Lists
 
-*Warning: This is a plugin-specific markdown flavor. It only works with pandoc convertion by applying lua filter in /lua_filter/more_extended_syntax.lua*
+*Warning: This is a plugin-specific markdown flavor. It only works with pandoc convertion by applying lua filter in /lua_filter/CustomLabelList.lua*
 
 When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
 
@@ -156,6 +156,37 @@ When "More extended syntax" is enabled in settings, you can use custom label lis
 {::Q} Socrates is human.
 {::R} Therefore, Socrates is mortal.
 ```
+
+##### Auto-numbering with Placeholders
+
+Custom labels support auto-numbering through placeholder syntax `(#name)`. Each unique placeholder gets a sequential number:
+
+```markdown
+{::P(#first)} First premise
+{::P(#second)} Second premise  
+{::P(#first)'} Variation of first premise
+
+From {::P(#first)} and {::P(#second)}, we derive...
+```
+
+This renders as:
+- (P1) First premise
+- (P2) Second premise
+- (P1') Variation of first premise
+- From (P1) and (P2), we derive...
+
+You can also use pure placeholder expressions:
+
+```markdown
+{::(#premise)} A premise
+{::(#conclusion)} A conclusion
+{::(#premise)+(#conclusion)} Combined expression
+```
+
+Which renders as:
+- (1) A premise  
+- (2) A conclusion
+- (1+2) Combined expression
 
 This renders as:
 ```
@@ -268,7 +299,7 @@ The plugin provides a settings tab where you can configure:
 
 - **More extended syntax**: Enables additional extensions beyond pandoc markdown
   - Custom label lists using `{::LABEL}` syntax for flexible list markers
-  - Should be used together with lua_filter/more_extended_syntax.lua for Pandoc output
+  - Should be used together with lua_filter/CustomLabelList.lua for Pandoc output
   - When strict mode is enabled, custom label blocks require blank lines before/after
 
 ## Commands

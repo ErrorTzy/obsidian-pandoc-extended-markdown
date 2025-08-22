@@ -10,6 +10,9 @@ import { CSS_CLASSES } from '../../constants';
 // Patterns
 import { ListPatterns } from '../../patterns';
 
+// Utils
+import { PlaceholderContext } from '../../utils/placeholderProcessor';
+
 // Internal modules
 import { CustomLabelMarkerWidget, CustomLabelReferenceWidget } from '../widgets/customLabelWidget';
 
@@ -21,7 +24,9 @@ export interface CustomLabelProcessorContext {
     view: EditorView;
     invalidListBlocks: Set<number>;
     settings: PandocExtendedMarkdownSettings;
-    customLabels?: Map<string, string>; // label -> content
+    customLabels?: Map<string, string>; // processed label -> content
+    rawToProcessed?: Map<string, string>; // raw label -> processed label
+    placeholderContext?: PlaceholderContext; // context for processing placeholders
 }
 
 /**
@@ -41,7 +46,7 @@ export function processCustomLabelList(
 ): Array<{from: number, to: number, decoration: Decoration}> | null {
     const { 
         line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings,
-        customLabels
+        customLabels, rawToProcessed, placeholderContext
     } = context;
     
     // Only process if More Extended Syntax is enabled
@@ -61,8 +66,11 @@ export function processCustomLabelList(
     
     const indent = customLabelMatch[1];
     const fullMarker = customLabelMatch[2];
-    const label = customLabelMatch[3];
+    const rawLabel = customLabelMatch[3];
     const space = customLabelMatch[4];
+    
+    // Get processed label (with placeholders replaced)
+    const processedLabel = rawToProcessed?.get(rawLabel) || rawLabel;
     
     const markerStart = line.from + indent.length;
     const markerEnd = line.from + indent.length + fullMarker.length + space.length;
@@ -85,27 +93,37 @@ export function processCustomLabelList(
             from: markerStart,
             to: markerEnd,
             decoration: Decoration.replace({
-                widget: new CustomLabelMarkerWidget(label, view, markerStart)
+                widget: new CustomLabelMarkerWidget(processedLabel, view, markerStart),
+                inclusive: false
             })
         });
     }
     
     // Wrap the rest of the line
+    const contentStart = line.from + indent.length + fullMarker.length + space.length;
     decorations.push({
-        from: line.from + indent.length + fullMarker.length + space.length,
+        from: contentStart,
         to: line.to,
         decoration: Decoration.mark({
             class: 'cm-list-1 pandoc-custom-label-item'
         })
     });
     
-    // Store the label content for references
-    if (customLabels) {
-        const contentStart = indent.length + fullMarker.length + space.length;
-        const content = lineText.substring(contentStart).trim();
-        if (content) {
-            customLabels.set(label, content);
-        }
+    // Process references in the content part of the custom label list
+    const contentText = lineText.substring(indent.length + fullMarker.length + space.length);
+    if (contentText) {
+        const contentRefs = processCustomLabelReferences(
+            contentText,
+            contentStart,
+            customLabels || new Map(),
+            view,
+            cursorPos,
+            settings,
+            true,
+            rawToProcessed,
+            placeholderContext
+        );
+        decorations.push(...contentRefs);
     }
     
     return decorations;
@@ -128,7 +146,9 @@ export function processCustomLabelReferences(
     view: EditorView,
     cursorPos: number,
     settings: PandocExtendedMarkdownSettings,
-    isValidLine: boolean = true
+    isValidLine: boolean = true,
+    rawToProcessed?: Map<string, string>,
+    placeholderContext?: PlaceholderContext
 ): Array<{from: number, to: number, decoration: Decoration}> {
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
     
@@ -145,23 +165,66 @@ export function processCustomLabelReferences(
     const matches = ListPatterns.findCustomLabelReferences(text);
     
     matches.forEach(match => {
-        const label = match[1];
-        const content = customLabels.get(label);
+        const rawLabel = match[1];
+        let processedLabel = rawToProcessed?.get(rawLabel);
+        
+        // If not in rawToProcessed but contains placeholders, try to process it
+        if (!processedLabel && rawLabel.includes('(#') && placeholderContext) {
+            // This is a reference with placeholders that needs processing
+            const result = placeholderContext.getProcessedLabel(rawLabel);
+            if (result !== null) {
+                processedLabel = result;
+            }
+        }
+        
+        // If still no processed label, use raw label
+        if (!processedLabel) {
+            processedLabel = rawLabel;
+        }
+        
         const matchStart = from + (match.index || 0);
         const matchEnd = matchStart + match[0].length;
         
         // Check if cursor is within the reference
         const cursorInReference = cursorPos >= matchStart && cursorPos < matchEnd;
         
-        if (!cursorInReference && customLabels.has(label)) {
+        // Check if this is a valid reference
+        let isValid = false;
+        let content: string | undefined;
+        
+        if (customLabels.has(processedLabel)) {
+            // Exact match found
+            isValid = true;
+            content = customLabels.get(processedLabel);
+        } else if (placeholderContext) {
+            // Check if it's a valid reference through placeholder context
+            const validatedLabel = placeholderContext.getProcessedLabel(rawLabel);
+            if (validatedLabel !== null) {
+                isValid = true;
+                processedLabel = validatedLabel;
+                // Try to find content for partial matches
+                const baseLabel = processedLabel.replace(/'+$/, '');
+                for (const [label, labelContent] of customLabels) {
+                    if (label.startsWith(baseLabel)) {
+                        content = labelContent;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Only process if the reference is valid
+        if (!cursorInReference && isValid) {
             decorations.push({
                 from: matchStart,
                 to: matchEnd,
                 decoration: Decoration.replace({
-                    widget: new CustomLabelReferenceWidget(label, content, view, matchStart)
+                    widget: new CustomLabelReferenceWidget(processedLabel, content, view, matchStart),
+                    inclusive: false
                 })
             });
         }
+        // If label is invalid, just leave it as plain text
     });
     
     return decorations;
