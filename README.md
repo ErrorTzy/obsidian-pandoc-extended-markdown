@@ -54,37 +54,6 @@ Later in the document, refer to (1) and (2).
   - Only the first occurrence gets a number and can be referenced
 - **Label Tooltips**: Hovering over any example list number shows the original label (e.g., hovering over `(2)` shows `@good`)
 
-### Custom Label Lists (More Extended Syntax)
-
-When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
-
-```markdown
-{::P} All humans are mortal.
-{::Q} Socrates is human.
-{::R} Therefore, Socrates is mortal.
-```
-
-This renders as:
-```
-(P) All humans are mortal.
-(Q) Socrates is human.
-(R) Therefore, Socrates is mortal.
-```
-
-#### Features
-- **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
-- **Cross-References**: Reference labels elsewhere in your document (e.g., `From {::P} and {::Q}, we get {::R}`)
-- **Strict Mode Support**: When strict Pandoc mode is enabled, custom label blocks must be preceded and followed by blank lines
-- **Auto-Formatting**: The format command recognizes and properly formats custom label lists
-- **Reading Mode**: Full support in both live preview and reading modes
-
-#### Example Usage
-```markdown
-{::Axiom1} Every set is a subset of itself.
-{::Axiom2} The empty set is a subset of every set.
-
-From axioms {::Axiom1} and {::Axiom2}, we can derive...
-```
 
 ### Definition Lists
 Create structured term-definition pairs with enhanced support:
@@ -113,18 +82,24 @@ Term 3
 - **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
 
 #### Known Limitations
+
 Due to how Markdown parsers work, there are some limitations with definition lists in reading mode:
+
 - **Definition terms**: Cannot be automatically styled with bold/underline when they appear on separate lines from the definition marker. This is because Obsidian's reading mode renders each line as a separate HTML element.
+
 - **Indented paragraphs**: In reading mode, indented text (using 4 spaces or tab) is treated as code blocks by the Markdown parser before the plugin can process it. This is standard Markdown behavior that cannot be overridden in post-processing.
 
 #### Toggle Definition Styles
+
 The plugin provides commands to toggle formatting styles for definition terms:
 
 **Toggle Definition Bold Style**
+
 - **Implicit bold**: Terms appear bold through plugin styling (e.g., `Term`)
 - **Explicit bold**: Terms have markdown bold syntax (e.g., `**Term**`)
 
 **Toggle Definition Underline Style**
+
 - **Implicit underline**: Terms appear underlined through plugin styling (e.g., `Term`)
 - **Explicit underline**: Terms have HTML underline syntax (e.g., `<span class="underline">Term</span>`)
 
@@ -166,6 +141,44 @@ This feature:
 - Maintains proper sequence even with incorrectly ordered lists
 - Respects indentation levels (only renumbers items at the same level)
 - Preserves nested list numbering independently
+
+
+### Beyond Pandoc Extended Syntax!
+
+#### Custom Label Lists
+
+*Warning: This is a plugin-specific markdown flavor. It only works with pandoc convertion by applying lua filter in /lua_filter/more_extended_syntax.lua*
+
+When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
+
+```markdown
+{::P} All humans are mortal.
+{::Q} Socrates is human.
+{::R} Therefore, Socrates is mortal.
+```
+
+This renders as:
+```
+(P) All humans are mortal.
+(Q) Socrates is human.
+(R) Therefore, Socrates is mortal.
+```
+
+##### Features
+- **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
+- **Cross-References**: Reference labels elsewhere in your document (e.g., `From {::P} and {::Q}, we get {::R}`)
+- **Strict Mode Support**: When strict Pandoc mode is enabled, custom label blocks must be preceded and followed by blank lines
+- **Auto-Formatting**: The format command recognizes and properly formats custom label lists
+- **Reading Mode**: Full support in both live preview and reading modes
+
+##### Example Usage
+```markdown
+{::Axiom1} Every set is a subset of itself.
+{::Axiom2} The empty set is a subset of every set.
+
+From axioms {::Axiom1} and {::Axiom2}, we can derive...
+```
+
 
 ## Installation
 
@@ -251,9 +264,9 @@ The plugin provides a settings tab where you can configure:
   - Ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...)
   - Only affects alphabetic and roman numeral lists, not hash (#.) or example (@) lists
 
-- **More extended syntax**: Enables additional Pandoc extensions
+- **More extended syntax**: Enables additional extensions beyond pandoc markdown
   - Custom label lists using `{::LABEL}` syntax for flexible list markers
-  - Should be used together with more_extended_syntax.lua for Pandoc output
+  - Should be used together with lua_filter/more_extended_syntax.lua for Pandoc output
   - When strict mode is enabled, custom label blocks require blank lines before/after
 
 ## Commands
@@ -314,7 +327,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 
-- This plugin is completely built by Claude Code.
+- This plugin is built with Claude Code.
 
 ## Author
 
