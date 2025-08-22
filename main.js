@@ -162,7 +162,7 @@ var UI_CONSTANTS = {
 };
 
 // src/patterns.ts
-var ListPatterns2 = class {
+var ListPatterns = class {
   // Note: Patterns are already compiled as static readonly RegExp objects,
   // providing optimal performance without needing additional caching.
   /**
@@ -329,85 +329,85 @@ var ListPatterns2 = class {
   }
 };
 // Base patterns as static readonly properties
-ListPatterns2.HASH_LIST = /^(\s*)(#\.)(\s+)/;
-ListPatterns2.FANCY_LIST = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/;
-ListPatterns2.EXAMPLE_LIST = /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/;
-ListPatterns2.EXAMPLE_LIST_WITH_CONTENT = /^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/;
-ListPatterns2.EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
-ListPatterns2.DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
-ListPatterns2.DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
-ListPatterns2.DEFINITION_INDENTED = /^(    |\t)/;
-ListPatterns2.DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
-ListPatterns2.DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
-ListPatterns2.NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
-ListPatterns2.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
-ListPatterns2.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
+ListPatterns.HASH_LIST = /^(\s*)(#\.)(\s+)/;
+ListPatterns.FANCY_LIST = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/;
+ListPatterns.EXAMPLE_LIST = /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/;
+ListPatterns.EXAMPLE_LIST_WITH_CONTENT = /^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/;
+ListPatterns.EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
+ListPatterns.DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
+ListPatterns.DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
+ListPatterns.DEFINITION_INDENTED = /^(    |\t)/;
+ListPatterns.DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
+ListPatterns.DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
+ListPatterns.NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
+ListPatterns.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
+ListPatterns.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
 // Additional list patterns for validation
-ListPatterns2.STANDARD_ORDERED_LIST = /^(\s*)\d+\.\s+/;
-ListPatterns2.CAPITAL_LETTER_REPLACE = /^(\s*)([A-Z]\.)(\s+)/;
-ListPatterns2.UNLABELED_EXAMPLE_LIST = /^(\s*)\(@\)\s+/;
+ListPatterns.STANDARD_ORDERED_LIST = /^(\s*)\d+\.\s+/;
+ListPatterns.CAPITAL_LETTER_REPLACE = /^(\s*)([A-Z]\.)(\s+)/;
+ListPatterns.UNLABELED_EXAMPLE_LIST = /^(\s*)\(@\)\s+/;
 // Combined fancy list pattern for validation (includes numbers)
-ListPatterns2.FANCY_LIST_WITH_NUMBERS = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/;
-ListPatterns2.ROMAN_NUMERALS = /^[IVXLCDM]+$/;
-ListPatterns2.LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
+ListPatterns.FANCY_LIST_WITH_NUMBERS = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/;
+ListPatterns.ROMAN_NUMERALS = /^[IVXLCDM]+$/;
+ListPatterns.LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
 // Character type patterns for fancy list parsing
-ListPatterns2.ROMAN_UPPER = /^[IVXLCDM]+$/;
-ListPatterns2.ROMAN_LOWER = /^[ivxlcdm]+$/;
-ListPatterns2.ALPHA_UPPER = /^[A-Z]+$/;
-ListPatterns2.ALPHA_LOWER = /^[a-z]+$/;
-ListPatterns2.DECIMAL = /^[0-9]+$/;
+ListPatterns.ROMAN_UPPER = /^[IVXLCDM]+$/;
+ListPatterns.ROMAN_LOWER = /^[ivxlcdm]+$/;
+ListPatterns.ALPHA_UPPER = /^[A-Z]+$/;
+ListPatterns.ALPHA_LOWER = /^[a-z]+$/;
+ListPatterns.DECIMAL = /^[0-9]+$/;
 // Autocompletion patterns
-ListPatterns2.LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
-ListPatterns2.LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
-ListPatterns2.LETTER_OR_ROMAN_OR_HASH_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/;
-ListPatterns2.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/;
-ListPatterns2.VALID_ROMAN_NUMERAL = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i;
-ListPatterns2.SINGLE_I = /^[Ii]$/;
-ListPatterns2.SINGLE_H = /^[Hh]$/;
-ListPatterns2.SINGLE_AB = /^[ABab]$/;
-ListPatterns2.SINGLE_ROMAN_CHAR = /^[IVXLCDM]$/i;
-ListPatterns2.ANY_ROMAN_CHARS = /^[ivxlcdmIVXLCDM]+$/i;
-ListPatterns2.ALPHABETIC_CHARS = /^[A-Za-z]+$/;
-ListPatterns2.EXAMPLE_LIST_OPTIONAL_SPACE = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)/;
-ListPatterns2.NUMBERED_LIST_WITH_SPACE = /^\s*\d+[.)]\s/;
-ListPatterns2.DEFINITION_MARKER_ONLY = /^[~:]$/;
+ListPatterns.LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
+ListPatterns.LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
+ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/;
+ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)(.*)$/;
+ListPatterns.VALID_ROMAN_NUMERAL = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/i;
+ListPatterns.SINGLE_I = /^[Ii]$/;
+ListPatterns.SINGLE_H = /^[Hh]$/;
+ListPatterns.SINGLE_AB = /^[ABab]$/;
+ListPatterns.SINGLE_ROMAN_CHAR = /^[IVXLCDM]$/i;
+ListPatterns.ANY_ROMAN_CHARS = /^[ivxlcdmIVXLCDM]+$/i;
+ListPatterns.ALPHABETIC_CHARS = /^[A-Za-z]+$/;
+ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)/;
+ListPatterns.NUMBERED_LIST_WITH_SPACE = /^\s*\d+[.)]\s/;
+ListPatterns.DEFINITION_MARKER_ONLY = /^[~:]$/;
 // Empty list item patterns
-ListPatterns2.EMPTY_HASH_LIST = /^(\s*)(#\.)(\s*)$/;
-ListPatterns2.EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/;
-ListPatterns2.EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
-ListPatterns2.EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
-ListPatterns2.EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
+ListPatterns.EMPTY_HASH_LIST = /^(\s*)(#\.)(\s*)$/;
+ListPatterns.EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/;
+ListPatterns.EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
+ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
+ListPatterns.EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
 // Complex list patterns for autocompletion
-ListPatterns2.ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
-ListPatterns2.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
-ListPatterns2.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+ListPatterns.ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
+ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
 // Indentation patterns
-ListPatterns2.INDENT_ONLY = /^(\s*)/;
+ListPatterns.INDENT_ONLY = /^(\s*)/;
 // Text formatting patterns
-ListPatterns2.BOLD_TEXT = /^\*\*(.+)\*\*$/;
-ListPatterns2.UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
+ListPatterns.BOLD_TEXT = /^\*\*(.+)\*\*$/;
+ListPatterns.UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
 // Inline formatting patterns for parsing
-ListPatterns2.INLINE_FORMATTING_SPLIT = /(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g;
+ListPatterns.INLINE_FORMATTING_SPLIT = /(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g;
 // Escaped space pattern
-ListPatterns2.ESCAPED_SPACE = /\\[ ]/g;
+ListPatterns.ESCAPED_SPACE = /\\[ ]/g;
 // Example reference start pattern (for autocomplete)
-ListPatterns2.EXAMPLE_REF_START = /\(@/g;
+ListPatterns.EXAMPLE_REF_START = /\(@/g;
 // Heading patterns
-ListPatterns2.HEADING = /^#{1,6}\s+/;
-ListPatterns2.HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
+ListPatterns.HEADING = /^#{1,6}\s+/;
+ListPatterns.HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
 // Superscript and subscript patterns
 // Matches ^text^ for superscript and ~text~ for subscript
 // Text can contain escaped spaces (\ ) but not unescaped spaces
-ListPatterns2.SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
-ListPatterns2.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
+ListPatterns.SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
+ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
 // Custom label list patterns for More Extended Syntax
 // Matches {::LABEL} at start of line with required space after
-ListPatterns2.CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)/;
-ListPatterns2.CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
+ListPatterns.CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)/;
+ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
 // Reference to custom label anywhere in text
-ListPatterns2.CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
+ListPatterns.CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
 // Valid label pattern (for validation)
-ListPatterns2.VALID_CUSTOM_LABEL = /^[a-zA-Z][a-zA-Z0-9_']*$/;
+ListPatterns.VALID_CUSTOM_LABEL = /^[a-zA-Z][a-zA-Z0-9_']*$/;
 
 // src/decorations/pandocListsExtension.ts
 var import_state = require("@codemirror/state");
@@ -417,12 +417,12 @@ var import_obsidian4 = require("obsidian");
 // src/decorations/validators/listBlockValidator.ts
 var ListBlockValidator = class {
   static isListItemForValidation(line) {
-    return !!(ListPatterns2.isHashList(line) || // Hash auto-numbering
-    ListPatterns2.isFancyList(line) || // Fancy lists
-    ListPatterns2.isExampleList(line) || // Example lists
-    ListPatterns2.isDefinitionMarker(line) || // Definition lists
-    line.match(ListPatterns2.UNORDERED_LIST) || // Unordered lists
-    line.match(ListPatterns2.NUMBERED_LIST));
+    return !!(ListPatterns.isHashList(line) || // Hash auto-numbering
+    ListPatterns.isFancyList(line) || // Fancy lists
+    ListPatterns.isExampleList(line) || // Example lists
+    ListPatterns.isDefinitionMarker(line) || // Definition lists
+    line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
+    line.match(ListPatterns.NUMBERED_LIST));
   }
   static validateListBlocks(lines, settings) {
     const invalidListBlocks = /* @__PURE__ */ new Set();
@@ -434,7 +434,7 @@ var ListBlockValidator = class {
       const line = lines[i];
       const isCurrentList = this.isListItemForValidation(line);
       const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === "");
-      const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !ListPatterns2.isDefinitionMarker(lines[i - 1]) && !ListPatterns2.isIndentedContent(lines[i - 1]) && ListPatterns2.isDefinitionMarker(line);
+      const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !ListPatterns.isDefinitionMarker(lines[i - 1]) && !ListPatterns.isIndentedContent(lines[i - 1]) && ListPatterns.isDefinitionMarker(line);
       if (isCurrentList && listBlockStart === -1) {
         listBlockStart = i;
         if (i > 0 && lines[i - 1].trim() !== "" && !prevIsDefinitionTerm) {
@@ -451,7 +451,7 @@ var ListBlockValidator = class {
         listBlockStart = -1;
       }
       if (isCurrentList) {
-        const capitalLetterMatch = line.match(ListPatterns2.CAPITAL_LETTER_LIST);
+        const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
         if (capitalLetterMatch && capitalLetterMatch[4].length < 2) {
           for (let j = i; j >= 0 && this.isListItemForValidation(lines[j]); j--) {
             invalidListBlocks.add(j);
@@ -520,7 +520,7 @@ function scanCustomLabels(doc, settings) {
   for (let i = 1; i <= doc.lines; i++) {
     const line = doc.line(i);
     const lineText = line.text;
-    const match = ListPatterns2.isCustomLabelList(lineText);
+    const match = ListPatterns.isCustomLabelList(lineText);
     if (match) {
       const label = match[3];
       if (seenLabels.has(label)) {
@@ -549,7 +549,7 @@ function validateCustomLabelBlocks(doc, settings) {
   for (let i = 1; i <= doc.lines; i++) {
     const line = doc.line(i);
     const lineText = line.text;
-    const isCustomLabel = ListPatterns2.isCustomLabelList(lineText);
+    const isCustomLabel = ListPatterns.isCustomLabelList(lineText);
     if (isCustomLabel) {
       if (!inBlock) {
         inBlock = true;
@@ -864,7 +864,7 @@ var SubscriptWidget = class extends import_view4.WidgetType {
 function processHashList(context, hashCounter) {
   const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
   const decorations = [];
-  const hashMatch = ListPatterns2.isHashList(lineText);
+  const hashMatch = ListPatterns.isHashList(lineText);
   if (!hashMatch) return null;
   if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
     return null;
@@ -904,7 +904,7 @@ function processHashList(context, hashCounter) {
 function processFancyList(context) {
   const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
   const decorations = [];
-  const fancyMatch = ListPatterns2.isFancyList(lineText);
+  const fancyMatch = ListPatterns.isFancyList(lineText);
   if (!fancyMatch) return null;
   if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
     return null;
@@ -916,8 +916,8 @@ function processFancyList(context) {
   const markerEnd = line.from + indent.length + marker.length + space.length;
   const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
   let listClass = CSS_CLASSES.FANCY_LIST_UPPER_ALPHA;
-  const letterMatch = ListPatterns2.extractLetterMarker(marker);
-  const romanMatch = ListPatterns2.extractRomanMarker(marker);
+  const letterMatch = ListPatterns.extractLetterMarker(marker);
+  const romanMatch = ListPatterns.extractRomanMarker(marker);
   if (letterMatch) {
     const letter = letterMatch[1];
     if (letter[0] === letter[0].toLowerCase()) {
@@ -971,7 +971,7 @@ function processExampleList(context) {
     duplicateLabelContent
   } = context;
   const decorations = [];
-  const exampleMatch = ListPatterns2.isExampleList(lineText);
+  const exampleMatch = ListPatterns.isExampleList(lineText);
   if (!exampleMatch) return null;
   if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
     return null;
@@ -1128,7 +1128,7 @@ function processExampleReferences(context) {
   const { line, lineText, cursorPos, exampleLabels, exampleContent } = context;
   const decorations = [];
   if (!exampleLabels) return decorations;
-  const refRegex = ListPatterns2.EXAMPLE_REFERENCE;
+  const refRegex = ListPatterns.EXAMPLE_REFERENCE;
   let match;
   while ((match = refRegex.exec(lineText)) !== null) {
     const label = match[1];
@@ -1155,13 +1155,13 @@ function processExampleReferences(context) {
 function processSuperscripts(context) {
   const { line, lineText, cursorPos } = context;
   const decorations = [];
-  const superscripts = ListPatterns2.findSuperscripts(lineText);
+  const superscripts = ListPatterns.findSuperscripts(lineText);
   for (const supMatch of superscripts) {
     const supStart = line.from + supMatch.index;
     const supEnd = line.from + supMatch.index + supMatch[0].length;
     const cursorInSup = cursorPos >= supStart && cursorPos <= supEnd;
     if (!cursorInSup) {
-      const content = ListPatterns2.unescapeSpaces(supMatch[0].slice(1, -1));
+      const content = ListPatterns.unescapeSpaces(supMatch[0].slice(1, -1));
       decorations.push({
         from: supStart,
         to: supEnd,
@@ -1176,13 +1176,13 @@ function processSuperscripts(context) {
 function processSubscripts(context) {
   const { line, lineText, cursorPos } = context;
   const decorations = [];
-  const subscripts = ListPatterns2.findSubscripts(lineText);
+  const subscripts = ListPatterns.findSubscripts(lineText);
   for (const subMatch of subscripts) {
     const subStart = line.from + subMatch.index;
     const subEnd = line.from + subMatch.index + subMatch[0].length;
     const cursorInSub = cursorPos >= subStart && cursorPos <= subEnd;
     if (!cursorInSub) {
-      const content = ListPatterns2.unescapeSpaces(subMatch[0].slice(1, -1));
+      const content = ListPatterns.unescapeSpaces(subMatch[0].slice(1, -1));
       decorations.push({
         from: subStart,
         to: subEnd,
@@ -1280,7 +1280,7 @@ function processCustomLabelList(context) {
     return null;
   }
   const decorations = [];
-  const customLabelMatch = ListPatterns2.isCustomLabelList(lineText);
+  const customLabelMatch = ListPatterns.isCustomLabelList(lineText);
   if (!customLabelMatch) return null;
   if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
     return null;
@@ -1329,10 +1329,10 @@ function processCustomLabelReferences(text, from, customLabels, view, cursorPos,
   if (!settings.moreExtendedSyntax) {
     return decorations;
   }
-  if (!isValidLine && ListPatterns2.isCustomLabelList(text)) {
+  if (!isValidLine && ListPatterns.isCustomLabelList(text)) {
     return decorations;
   }
-  const matches = ListPatterns2.findCustomLabelReferences(text);
+  const matches = ListPatterns.findCustomLabelReferences(text);
   matches.forEach((match) => {
     const label = match[1];
     const content = customLabels.get(label);
@@ -1518,7 +1518,7 @@ function getSectionInfo(element) {
 
 // src/parsers/fancyListParser.ts
 function parseFancyListMarker(line) {
-  const hashMatch = ListPatterns2.isHashList(line);
+  const hashMatch = ListPatterns.isHashList(line);
   if (hashMatch) {
     return {
       indent: hashMatch[1],
@@ -1528,7 +1528,7 @@ function parseFancyListMarker(line) {
       value: void 0
     };
   }
-  const match = ListPatterns2.isFancyList(line);
+  const match = ListPatterns.isFancyList(line);
   if (!match) {
     return null;
   }
@@ -1537,15 +1537,15 @@ function parseFancyListMarker(line) {
   const value = match[3];
   const delimiter = match[4];
   let type;
-  if (ListPatterns2.DECIMAL.test(value)) {
+  if (ListPatterns.DECIMAL.test(value)) {
     return null;
-  } else if (ListPatterns2.ROMAN_UPPER.test(value)) {
+  } else if (ListPatterns.ROMAN_UPPER.test(value)) {
     type = "upper-roman";
-  } else if (ListPatterns2.ROMAN_LOWER.test(value)) {
+  } else if (ListPatterns.ROMAN_LOWER.test(value)) {
     type = "lower-roman";
-  } else if (ListPatterns2.ALPHA_UPPER.test(value)) {
+  } else if (ListPatterns.ALPHA_UPPER.test(value)) {
     type = "upper-alpha";
-  } else if (ListPatterns2.ALPHA_LOWER.test(value)) {
+  } else if (ListPatterns.ALPHA_LOWER.test(value)) {
     type = "lower-alpha";
   } else {
     return null;
@@ -1562,7 +1562,7 @@ function parseFancyListMarker(line) {
 // src/parsers/exampleListParser.ts
 var import_obsidian5 = require("obsidian");
 function parseExampleListMarker(line) {
-  const match = ListPatterns2.isExampleList(line);
+  const match = ListPatterns.isExampleList(line);
   if (!match) {
     return null;
   }
@@ -1576,11 +1576,11 @@ function parseExampleListMarker(line) {
 // src/parsers/superSubParser.ts
 function extractContent(match, delimiter) {
   const content = match.slice(1, -1);
-  return ListPatterns2.unescapeSpaces(content);
+  return ListPatterns.unescapeSpaces(content);
 }
 function findSuperSubInText(text) {
   const matches = [];
-  const superscripts = ListPatterns2.findSuperscripts(text);
+  const superscripts = ListPatterns.findSuperscripts(text);
   superscripts.forEach((match) => {
     if (match.index !== void 0) {
       matches.push({
@@ -1591,7 +1591,7 @@ function findSuperSubInText(text) {
       });
     }
   });
-  const subscripts = ListPatterns2.findSubscripts(text);
+  const subscripts = ListPatterns.findSubscripts(text);
   subscripts.forEach((match) => {
     if (match.index !== void 0) {
       matches.push({
@@ -1659,8 +1659,8 @@ function processSuperSub(element) {
 
 // src/parsers/definitionListParser.ts
 function parseDefinitionListMarker(line) {
-  const termMatch = line.match(ListPatterns2.DEFINITION_TERM_PATTERN);
-  if (termMatch && !line.includes("*") && !line.includes("-") && !line.match(ListPatterns2.NUMBERED_LIST)) {
+  const termMatch = line.match(ListPatterns.DEFINITION_TERM_PATTERN);
+  if (termMatch && !line.includes("*") && !line.includes("-") && !line.match(ListPatterns.NUMBERED_LIST)) {
     const nextLineIndex = line.indexOf("\n");
     if (nextLineIndex === -1 || nextLineIndex === line.length - 1) {
       return {
@@ -1671,7 +1671,7 @@ function parseDefinitionListMarker(line) {
       };
     }
   }
-  const defMatch = ListPatterns2.isDefinitionMarker(line);
+  const defMatch = ListPatterns.isDefinitionMarker(line);
   if (defMatch) {
     const content = line.substring(defMatch[0].length);
     return {
@@ -1690,7 +1690,7 @@ var ReadingModeParser = class {
    * Parse a single line and identify its type and data
    */
   parseLine(line, context) {
-    const hashMatch = ListPatterns2.isHashList(line);
+    const hashMatch = ListPatterns.isHashList(line);
     if (hashMatch) {
       return {
         type: "hash",
@@ -1742,7 +1742,7 @@ var ReadingModeParser = class {
         }
       };
     }
-    if ((context == null ? void 0 : context.nextLine) && ListPatterns2.isDefinitionMarker(context.nextLine)) {
+    if ((context == null ? void 0 : context.nextLine) && ListPatterns.isDefinitionMarker(context.nextLine)) {
       return {
         type: "definition-term",
         content: line,
@@ -1780,7 +1780,7 @@ var ReadingModeParser = class {
    */
   findExampleReferences(text) {
     const references = [];
-    const regex = ListPatterns2.EXAMPLE_REFERENCE;
+    const regex = ListPatterns.EXAMPLE_REFERENCE;
     let match;
     while ((match = regex.exec(text)) !== null) {
       references.push({
@@ -2224,7 +2224,7 @@ function processCustomLabelLists(element, context) {
 }
 function processTextNode(node, container) {
   const text = node.textContent || "";
-  const listMatch = text.match(ListPatterns2.CUSTOM_LABEL_LIST_WITH_CONTENT);
+  const listMatch = text.match(ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT);
   if (listMatch) {
     const indent = listMatch[1];
     const label = listMatch[3];
@@ -2244,7 +2244,7 @@ function processTextNode(node, container) {
   }
 }
 function processReferencesInText(text, container) {
-  const refPattern = ListPatterns2.CUSTOM_LABEL_REFERENCE;
+  const refPattern = ListPatterns.CUSTOM_LABEL_REFERENCE;
   let lastIndex = 0;
   let match;
   while ((match = refPattern.exec(text)) !== null) {
@@ -2327,7 +2327,7 @@ function isStrictPandocList(context, strictMode) {
       return false;
     }
   }
-  const capitalLetterMatch = line.match(ListPatterns2.CAPITAL_LETTER_LIST);
+  const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
   if (capitalLetterMatch && capitalLetterMatch[3] === ".") {
     if (capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
       return false;
@@ -2347,10 +2347,10 @@ function isStrictPandocList(context, strictMode) {
   return true;
 }
 function isListItem(line, includeCustomLabels = false) {
-  if (ListPatterns2.FANCY_LIST_WITH_NUMBERS.test(line) || ListPatterns2.STANDARD_ORDERED_LIST.test(line) || ListPatterns2.UNORDERED_LIST.test(line) || ListPatterns2.isExampleList(line) || ListPatterns2.isDefinitionMarker(line)) {
+  if (ListPatterns.FANCY_LIST_WITH_NUMBERS.test(line) || ListPatterns.STANDARD_ORDERED_LIST.test(line) || ListPatterns.UNORDERED_LIST.test(line) || ListPatterns.isExampleList(line) || ListPatterns.isDefinitionMarker(line)) {
     return true;
   }
-  if (includeCustomLabels && ListPatterns2.isCustomLabelList(line)) {
+  if (includeCustomLabels && ListPatterns.isCustomLabelList(line)) {
     return true;
   }
   return false;
@@ -2363,7 +2363,7 @@ function formatToPandocStandard(content, moreExtendedSyntax = false) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isCurrentLineList = isListItem(line, moreExtendedSyntax);
-    const isCurrentLineHeading = ListPatterns2.isHeading(line);
+    const isCurrentLineHeading = ListPatterns.isHeading(line);
     const isEmpty = line.trim() === "";
     if (isCurrentLineList && !inListBlock) {
       if (result.length > 0 && !lastWasEmpty) {
@@ -2391,9 +2391,9 @@ function formatToPandocStandard(content, moreExtendedSyntax = false) {
       }
       continue;
     }
-    const capitalLetterMatch = line.match(ListPatterns2.CAPITAL_LETTER_LIST);
+    const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
     if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
-      const formattedLine = line.replace(ListPatterns2.CAPITAL_LETTER_REPLACE, "$1$2  ");
+      const formattedLine = line.replace(ListPatterns.CAPITAL_LETTER_REPLACE, "$1$2  ");
       result.push(formattedLine);
     } else {
       result.push(line);
@@ -2422,7 +2422,7 @@ function checkPandocFormatting(content, moreExtendedSyntax = false) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isCurrentLineList = isListItem(line, moreExtendedSyntax);
-    const isCurrentLineHeading = ListPatterns2.isHeading(line);
+    const isCurrentLineHeading = ListPatterns.isHeading(line);
     const isEmpty = line.trim() === "";
     if (isCurrentLineList) {
       if (!inListBlock && i > 0 && lines[i - 1].trim() !== "") {
@@ -2431,7 +2431,7 @@ function checkPandocFormatting(content, moreExtendedSyntax = false) {
           message: "List should have an empty line before it"
         });
       }
-      const capitalLetterMatch = line.match(ListPatterns2.CAPITAL_LETTER_LIST);
+      const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
       if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
         issues.push({
           line: i + 1,
@@ -2567,8 +2567,8 @@ function processElementTextNodes(elem, parser, renderer, config, docPath, valida
   });
 }
 function containsPandocSyntax(text, config) {
-  const hasBasicSyntax = ListPatterns2.isHashList(text) || ListPatterns2.isFancyList(text) || ListPatterns2.isExampleList(text) || ListPatterns2.isDefinitionMarker(text) || ListPatterns2.findExampleReferences(text).length > 0;
-  const hasCustomLabelSyntax = (config == null ? void 0 : config.enableCustomLabelLists) && (ListPatterns2.isCustomLabelList(text) || ListPatterns2.findCustomLabelReferences(text).length > 0);
+  const hasBasicSyntax = ListPatterns.isHashList(text) || ListPatterns.isFancyList(text) || ListPatterns.isExampleList(text) || ListPatterns.isDefinitionMarker(text) || ListPatterns.findExampleReferences(text).length > 0;
+  const hasCustomLabelSyntax = (config == null ? void 0 : config.enableCustomLabelLists) && (ListPatterns.isCustomLabelList(text) || ListPatterns.findCustomLabelReferences(text).length > 0);
   return hasBasicSyntax || hasCustomLabelSyntax;
 }
 function validateListInStrictMode(line, documentLines, config) {
@@ -2599,7 +2599,7 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian7.EditorSuggest 
   onTrigger(cursor, editor, file) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
     if (!line.contains("(@")) return null;
-    const matches = ListPatterns2.findExampleRefStarts(line);
+    const matches = ListPatterns.findExampleRefStarts(line);
     if (matches.length === 0) return null;
     const lastMatch = matches[matches.length - 1];
     const startIndex = lastMatch.index;
@@ -2622,7 +2622,7 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian7.EditorSuggest 
     const exampleData = /* @__PURE__ */ new Map();
     let counter = 1;
     for (const line of lines) {
-      const match = ListPatterns2.isExampleList(line);
+      const match = ListPatterns.isExampleList(line);
       if (match) {
         const label = match[3];
         if (label) {
@@ -2785,36 +2785,36 @@ function getNextRoman(roman) {
   return intToRoman(value + 1, isUpperCase);
 }
 function getNextListMarker(currentLine, allLines, currentLineIndex) {
-  const hashMatch = ListPatterns2.isHashList(currentLine);
+  const hashMatch = ListPatterns.isHashList(currentLine);
   if (hashMatch) {
     return { marker: "#.", indent: hashMatch[1], spaces: hashMatch[3] };
   }
-  const listMatch = currentLine.match(ListPatterns2.LETTER_OR_ROMAN_LIST);
+  const listMatch = currentLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
   if (listMatch) {
     const indent = listMatch[1];
     const marker = listMatch[2];
     const punctuation = listMatch[3];
     const spaces = listMatch[4];
     let isRoman = false;
-    if (marker.length > 1 && marker.match(ListPatterns2.VALID_ROMAN_NUMERAL)) {
+    if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
       isRoman = true;
     } else if (marker.length === 1 && allLines && currentLineIndex !== void 0) {
-      if (marker.match(ListPatterns2.SINGLE_I)) {
+      if (marker.match(ListPatterns.SINGLE_I)) {
         isRoman = true;
         for (let i = currentLineIndex - 1; i >= 0; i--) {
           const prevLine = allLines[i];
           if (!prevLine.trim()) continue;
-          if (!prevLine.match(ListPatterns2.LETTER_OR_ROMAN_LIST)) break;
-          const prevMatch = prevLine.match(ListPatterns2.LETTER_OR_ROMAN_LIST);
+          if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
+          const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
           if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
             const prevMarker = prevMatch[2];
-            if (prevMarker.match(ListPatterns2.SINGLE_H)) {
+            if (prevMarker.match(ListPatterns.SINGLE_H)) {
               isRoman = false;
               break;
-            } else if (prevMarker.length > 1 && prevMarker.match(ListPatterns2.ANY_ROMAN_CHARS)) {
+            } else if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = true;
               break;
-            } else if (!prevMarker.match(ListPatterns2.ANY_ROMAN_CHARS)) {
+            } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = false;
               break;
             }
@@ -2824,17 +2824,17 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
         for (let i = currentLineIndex - 1; i >= 0; i--) {
           const prevLine = allLines[i];
           if (!prevLine.trim()) continue;
-          if (!prevLine.match(ListPatterns2.LETTER_OR_ROMAN_LIST)) break;
-          const prevMatch = prevLine.match(ListPatterns2.LETTER_OR_ROMAN_LIST);
+          if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
+          const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
           if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
             const prevMarker = prevMatch[2];
-            if (prevMarker.length > 1 && prevMarker.match(ListPatterns2.ANY_ROMAN_CHARS)) {
+            if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = true;
               break;
-            } else if (!prevMarker.match(ListPatterns2.ANY_ROMAN_CHARS)) {
+            } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
               isRoman = false;
               break;
-            } else if (prevMarker.match(ListPatterns2.SINGLE_AB)) {
+            } else if (prevMarker.match(ListPatterns.SINGLE_AB)) {
               isRoman = false;
               break;
             }
@@ -2843,7 +2843,7 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
       }
     }
     if (isRoman) {
-      if (marker.match(ListPatterns2.VALID_ROMAN_NUMERAL)) {
+      if (marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
         const nextRoman = getNextRoman(marker);
         return { marker: `${nextRoman}${punctuation}`, indent, spaces };
       }
@@ -2855,19 +2855,19 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
       return null;
     }
   }
-  let exampleMatch = currentLine.match(ListPatterns2.EXAMPLE_LIST);
+  let exampleMatch = currentLine.match(ListPatterns.EXAMPLE_LIST);
   if (exampleMatch) {
     const indent = exampleMatch[1];
     const spaces = exampleMatch[4];
     return { marker: "(@)", indent, spaces };
   }
-  const altMatch = currentLine.match(ListPatterns2.EXAMPLE_LIST_OPTIONAL_SPACE);
+  const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
   if (altMatch && currentLine.length > altMatch[0].length) {
     const indent = altMatch[1];
     const spaces = altMatch[3] || " ";
     return { marker: "(@)", indent, spaces };
   }
-  const definitionMatch = currentLine.match(ListPatterns2.DEFINITION_MARKER);
+  const definitionMatch = currentLine.match(ListPatterns.DEFINITION_MARKER);
   if (definitionMatch) {
     const indent = definitionMatch[1];
     const marker = definitionMatch[2];
@@ -2883,14 +2883,14 @@ function renumberListItems(view, insertedLineNum) {
   let blockStart = insertedLineNum;
   let blockEnd = insertedLineNum;
   const insertedLine = allLines[insertedLineNum];
-  const insertedIndentMatch = insertedLine.match(ListPatterns2.INDENT_ONLY);
+  const insertedIndentMatch = insertedLine.match(ListPatterns.INDENT_ONLY);
   const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : "";
   for (let i = insertedLineNum - 1; i >= 0; i--) {
     const line = allLines[i];
     if (!line.trim()) {
       continue;
     }
-    const listMatch = line.match(ListPatterns2.LETTER_OR_ROMAN_OR_HASH_LIST);
+    const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
     if (!listMatch) {
       break;
     }
@@ -2907,7 +2907,7 @@ function renumberListItems(view, insertedLineNum) {
     if (!line.trim()) {
       continue;
     }
-    const listMatch = line.match(ListPatterns2.LETTER_OR_ROMAN_OR_HASH_LIST);
+    const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
     if (!listMatch) {
       break;
     }
@@ -2922,7 +2922,7 @@ function renumberListItems(view, insertedLineNum) {
   const listItems = [];
   for (let i = blockStart; i <= blockEnd; i++) {
     const line = allLines[i];
-    const listMatch = line.match(ListPatterns2.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT);
+    const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT);
     if (listMatch && listMatch[1] === insertedIndent) {
       const marker = listMatch[2];
       const punctuation = listMatch[3];
@@ -2931,12 +2931,12 @@ function renumberListItems(view, insertedLineNum) {
       let isRoman = false;
       let isAlpha = false;
       if (marker === "#") {
-      } else if (marker.match(ListPatterns2.ALPHABETIC_CHARS)) {
-        if (marker.length > 1 && marker.match(ListPatterns2.VALID_ROMAN_NUMERAL)) {
+      } else if (marker.match(ListPatterns.ALPHABETIC_CHARS)) {
+        if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
           isRoman = true;
-        } else if (marker.length === 1 && marker.match(ListPatterns2.SINGLE_ROMAN_CHAR)) {
+        } else if (marker.length === 1 && marker.match(ListPatterns.SINGLE_ROMAN_CHAR)) {
           if (i === blockStart) {
-            isRoman = marker.match(ListPatterns2.SINGLE_I) !== null;
+            isRoman = marker.match(ListPatterns.SINGLE_I) !== null;
             if (!isRoman) {
               isAlpha = true;
             }
@@ -2996,9 +2996,9 @@ function renumberListItems(view, insertedLineNum) {
   }
 }
 function isEmptyListItem(line) {
-  if (line.match(ListPatterns2.EMPTY_HASH_LIST)) return true;
-  if (line.match(ListPatterns2.EMPTY_FANCY_LIST)) return true;
-  if (line.match(ListPatterns2.EMPTY_DEFINITION_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
   return false;
 }
 function createListAutocompletionKeymap(settings) {
@@ -3009,12 +3009,12 @@ function createListAutocompletionKeymap(settings) {
       const selection = state.selection.main;
       const line = state.doc.lineAt(selection.from);
       const lineText = line.text;
-      const isEmptyExampleList = lineText.match(ListPatterns2.EMPTY_EXAMPLE_LIST_NO_LABEL);
+      const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
       if (isEmptyExampleList) {
         const beforeCursor = state.doc.sliceString(line.from, selection.from);
         const afterCursor = state.doc.sliceString(selection.from, line.to);
         if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
-          const indentMatch = lineText.match(ListPatterns2.INDENT_ONLY);
+          const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
           const indent = indentMatch ? indentMatch[1] : "";
           const changes = {
             from: line.from,
@@ -3029,7 +3029,7 @@ function createListAutocompletionKeymap(settings) {
           return true;
         }
       }
-      const isListItem2 = lineText.match(ListPatterns2.ANY_LIST_MARKER);
+      const isListItem2 = lineText.match(ListPatterns.ANY_LIST_MARKER);
       if (!isListItem2) {
         if (selection.from !== line.to || selection.from !== selection.to) {
           return false;
@@ -3040,11 +3040,11 @@ function createListAutocompletionKeymap(settings) {
           return false;
         }
       }
-      if (lineText.match(ListPatterns2.NUMBERED_LIST_WITH_SPACE)) {
+      if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
         return false;
       }
       if (isEmptyListItem(lineText)) {
-        const indentMatch = lineText.match(ListPatterns2.INDENT_ONLY);
+        const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
         if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
           const currentIndent = indentMatch[1];
           let newIndent = "";
@@ -3059,7 +3059,7 @@ function createListAutocompletionKeymap(settings) {
           for (let i = line.number - 1; i >= 1; i--) {
             const prevLine = state.doc.line(i);
             const prevText = prevLine.text;
-            const prevIndentMatch = prevText.match(ListPatterns2.INDENT_ONLY);
+            const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
             if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
               const allLines2 = state.doc.toString().split("\n");
               const markerInfo2 = getNextListMarker(prevText, allLines2, i - 1);
@@ -3116,7 +3116,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
           selection: import_state2.EditorSelection.cursor(insertPos + cursorOffset)
         });
         view.dispatch(transaction);
-        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns2.DEFINITION_MARKER_ONLY)) {
+        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
           const newLineNum = line.number;
           setTimeout(() => {
             renumberListItems(view, newLineNum);
@@ -3134,7 +3134,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
       const selection = state.selection.main;
       const line = state.doc.lineAt(selection.from);
       const lineText = line.text;
-      const listMatch = lineText.match(ListPatterns2.ANY_LIST_MARKER_WITH_SPACE);
+      const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE);
       if (listMatch) {
         const currentIndent = listMatch[1];
         const marker = listMatch[2];
@@ -3166,7 +3166,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
       const selection = state.selection.main;
       const line = state.doc.lineAt(selection.from);
       const lineText = line.text;
-      const listMatch = lineText.match(ListPatterns2.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE);
+      const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE);
       if (listMatch && listMatch[1].length > 0) {
         const currentIndent = listMatch[1];
         const marker = listMatch[2];
@@ -3325,12 +3325,12 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
       return false;
     }
     const nextLine = lines[index + 1].trim();
-    if (ListPatterns2.isDefinitionMarker(nextLine)) {
+    if (ListPatterns.isDefinitionMarker(nextLine)) {
       return true;
     }
     if (nextLine === "" && index + 2 < lines.length) {
       const lineAfterEmpty = lines[index + 2].trim();
-      return ListPatterns2.isDefinitionMarker(lineAfterEmpty) !== null;
+      return ListPatterns.isDefinitionMarker(lineAfterEmpty) !== null;
     }
     return false;
   }
@@ -3339,11 +3339,11 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     let anyHasBold = false;
     for (let i = 0; i < lines.length; i++) {
       const trimmedLine = lines[i].trim();
-      if (!trimmedLine || ListPatterns2.isDefinitionMarker(trimmedLine)) {
+      if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
         continue;
       }
       if (this.isDefinitionTerm(lines, i)) {
-        const hasBold = ListPatterns2.BOLD_TEXT.test(trimmedLine);
+        const hasBold = ListPatterns.BOLD_TEXT.test(trimmedLine);
         definitionTerms.push({ index: i, hasBold });
         if (hasBold) {
           anyHasBold = true;
@@ -3357,11 +3357,11 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     let anyHasUnderline = false;
     for (let i = 0; i < lines.length; i++) {
       const trimmedLine = lines[i].trim();
-      if (!trimmedLine || ListPatterns2.isDefinitionMarker(trimmedLine)) {
+      if (!trimmedLine || ListPatterns.isDefinitionMarker(trimmedLine)) {
         continue;
       }
       if (this.isDefinitionTerm(lines, i)) {
-        const hasUnderline = ListPatterns2.UNDERLINE_SPAN.test(trimmedLine);
+        const hasUnderline = ListPatterns.UNDERLINE_SPAN.test(trimmedLine);
         definitionTerms.push({ index: i, hasUnderline });
         if (hasUnderline) {
           anyHasUnderline = true;
@@ -3377,14 +3377,14 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     for (const term of terms) {
       const line = lines[term.index];
       const trimmedLine = line.trim();
-      const originalIndent = ListPatterns2.getIndent(line);
+      const originalIndent = ListPatterns.getIndent(line);
       if (anyHasBold) {
-        const match = trimmedLine.match(ListPatterns2.BOLD_TEXT);
+        const match = trimmedLine.match(ListPatterns.BOLD_TEXT);
         if (match) {
           modifiedLines[term.index] = originalIndent + match[1];
         }
       } else {
-        if (!ListPatterns2.BOLD_TEXT.test(trimmedLine)) {
+        if (!ListPatterns.BOLD_TEXT.test(trimmedLine)) {
           modifiedLines[term.index] = originalIndent + "**" + trimmedLine + "**";
         }
       }
@@ -3398,14 +3398,14 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     for (const term of terms) {
       const line = lines[term.index];
       const trimmedLine = line.trim();
-      const originalIndent = ListPatterns2.getIndent(line);
+      const originalIndent = ListPatterns.getIndent(line);
       if (anyHasUnderline) {
-        const match = trimmedLine.match(ListPatterns2.UNDERLINE_SPAN);
+        const match = trimmedLine.match(ListPatterns.UNDERLINE_SPAN);
         if (match) {
           modifiedLines[term.index] = originalIndent + match[1];
         }
       } else {
-        if (!ListPatterns2.UNDERLINE_SPAN.test(trimmedLine)) {
+        if (!ListPatterns.UNDERLINE_SPAN.test(trimmedLine)) {
           modifiedLines[term.index] = originalIndent + '<span class="underline">' + trimmedLine + "</span>";
         }
       }

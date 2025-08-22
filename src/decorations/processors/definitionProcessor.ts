@@ -3,6 +3,7 @@ import { EditorView } from '@codemirror/view';
 import { CSS_CLASSES } from '../../constants';
 import { DefinitionBulletWidget } from '../widgets';
 import { PandocExtendedMarkdownSettings } from '../../settings';
+import { ListPatterns } from '../../patterns';
 
 export interface DefinitionContext {
     line: any;

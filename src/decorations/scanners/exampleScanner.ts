@@ -1,6 +1,7 @@
 import { EditorView } from '@codemirror/view';
 import { PandocExtendedMarkdownSettings } from '../../settings';
 import { ListBlockValidator } from '../validators/listBlockValidator';
+import { ListPatterns } from '../../patterns';
 
 export interface ExampleScanResult {
     exampleLabels: Map<string, number>;
