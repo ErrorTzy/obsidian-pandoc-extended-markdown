@@ -319,9 +319,17 @@ ListPatterns2.EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
 ListPatterns2.DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
 ListPatterns2.DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
 ListPatterns2.DEFINITION_INDENTED = /^(    |\t)/;
+ListPatterns2.DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
+ListPatterns2.DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
 ListPatterns2.NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
 ListPatterns2.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
 ListPatterns2.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
+// Additional list patterns for validation
+ListPatterns2.STANDARD_ORDERED_LIST = /^(\s*)\d+\.\s+/;
+ListPatterns2.CAPITAL_LETTER_REPLACE = /^(\s*)([A-Z]\.)(\s+)/;
+ListPatterns2.UNLABELED_EXAMPLE_LIST = /^(\s*)\(@\)\s+/;
+// Combined fancy list pattern for validation (includes numbers)
+ListPatterns2.FANCY_LIST_WITH_NUMBERS = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/;
 ListPatterns2.ROMAN_NUMERALS = /^[IVXLCDM]+$/;
 ListPatterns2.LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
 // Character type patterns for fancy list parsing
@@ -371,6 +379,7 @@ ListPatterns2.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
 // Custom label list patterns for More Extended Syntax
 // Matches {::LABEL} at start of line with required space after
 ListPatterns2.CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)/;
+ListPatterns2.CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
 // Reference to custom label anywhere in text
 ListPatterns2.CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
 // Valid label pattern (for validation)
@@ -466,7 +475,7 @@ function scanExampleLabels(view, settings) {
       result.exampleLineNumbers.set(i + 1, counter);
       counter++;
     } else {
-      const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
+      const unlabeledMatch = line.match(ListPatterns.UNLABELED_EXAMPLE_LIST);
       if (unlabeledMatch) {
         result.exampleLineNumbers.set(i + 1, counter);
         counter++;
@@ -1051,7 +1060,7 @@ function processDefinitionTerm(context) {
 function processDefinitionParagraph(context) {
   const { line, lineNum, lineText, view } = context;
   const decorations = [];
-  const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(/^(    |\t)(.*)$/) : null;
+  const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(ListPatterns.DEFINITION_INDENTED_WITH_CONTENT) : null;
   if (!indentMatch) return null;
   let inDefinitionContext = false;
   for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
@@ -1626,7 +1635,7 @@ function processSuperSub(element) {
 
 // src/parsers/definitionListParser.ts
 function parseDefinitionListMarker(line) {
-  const termMatch = line.match(/^([^\n:~]+)$/);
+  const termMatch = line.match(ListPatterns2.DEFINITION_TERM_PATTERN);
   if (termMatch && !line.includes("*") && !line.includes("-") && !line.match(ListPatterns2.NUMBERED_LIST)) {
     const nextLineIndex = line.indexOf("\n");
     if (nextLineIndex === -1 || nextLineIndex === line.length - 1) {
@@ -2191,8 +2200,7 @@ function processCustomLabelLists(element, context) {
 }
 function processTextNode(node, container) {
   const text = node.textContent || "";
-  const listPattern = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
-  const listMatch = text.match(listPattern);
+  const listMatch = text.match(ListPatterns2.CUSTOM_LABEL_LIST_WITH_CONTENT);
   if (listMatch) {
     const indent = listMatch[1];
     const label = listMatch[3];
@@ -2315,22 +2323,13 @@ function isStrictPandocList(context, strictMode) {
   return true;
 }
 function isListItem(line, includeCustomLabels = false) {
-  const patterns = [
-    /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/,
-    // Fancy lists
-    /^(\s*)\d+\.\s+/,
-    // Standard ordered lists (1. 2. 3. etc.)
-    /^(\s*)[-*+]\s+/,
-    // Unordered lists
-    /^(\s*)\(@([a-zA-Z0-9_-]*)\)\s+/,
-    // Example lists
-    /^(\s*)[~:]\s+/
-    // Definition lists
-  ];
-  if (includeCustomLabels) {
-    patterns.push(/^(\s*)\{::([a-zA-Z][a-zA-Z0-9_']*)\}\s+/);
+  if (ListPatterns2.FANCY_LIST_WITH_NUMBERS.test(line) || ListPatterns2.STANDARD_ORDERED_LIST.test(line) || ListPatterns2.UNORDERED_LIST.test(line) || ListPatterns2.isExampleList(line) || ListPatterns2.isDefinitionMarker(line)) {
+    return true;
   }
-  return patterns.some((pattern) => pattern.test(line));
+  if (includeCustomLabels && ListPatterns2.isCustomLabelList(line)) {
+    return true;
+  }
+  return false;
 }
 function formatToPandocStandard(content, moreExtendedSyntax = false) {
   const lines = content.split("\n");
@@ -2370,7 +2369,7 @@ function formatToPandocStandard(content, moreExtendedSyntax = false) {
     }
     const capitalLetterMatch = line.match(ListPatterns2.CAPITAL_LETTER_LIST);
     if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
-      const formattedLine = line.replace(/^(\s*)([A-Z]\.)(\s+)/, "$1$2  ");
+      const formattedLine = line.replace(ListPatterns2.CAPITAL_LETTER_REPLACE, "$1$2  ");
       result.push(formattedLine);
     } else {
       result.push(line);

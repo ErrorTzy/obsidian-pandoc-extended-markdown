@@ -12,7 +12,7 @@ export interface DefinitionListMarker {
 }
 
 export function parseDefinitionListMarker(line: string): DefinitionListMarker | null {
-    const termMatch = line.match(/^([^\n:~]+)$/);
+    const termMatch = line.match(ListPatterns.DEFINITION_TERM_PATTERN);
     if (termMatch && !line.includes('*') && !line.includes('-') && !line.match(ListPatterns.NUMBERED_LIST)) {
         const nextLineIndex = line.indexOf('\n');
         if (nextLineIndex === -1 || nextLineIndex === line.length - 1) {

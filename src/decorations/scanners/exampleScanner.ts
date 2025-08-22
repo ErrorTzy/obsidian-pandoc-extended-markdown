@@ -56,7 +56,7 @@ export function scanExampleLabels(
             result.exampleLineNumbers.set(i + 1, counter);
             counter++;
         } else {
-            const unlabeledMatch = line.match(/^(\s*)\(@\)\s+/);
+            const unlabeledMatch = line.match(ListPatterns.UNLABELED_EXAMPLE_LIST);
             if (unlabeledMatch) {
                 // Store line number to example number mapping for unlabeled examples
                 result.exampleLineNumbers.set(i + 1, counter);

@@ -105,7 +105,7 @@ export function processDefinitionParagraph(
     const { line, lineNum, lineText, view } = context;
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
     
-    const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(/^(    |\t)(.*)$/) : null;
+    const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(ListPatterns.DEFINITION_INDENTED_WITH_CONTENT) : null;
     if (!indentMatch) return null;
     
     // Check if we're after a definition marker

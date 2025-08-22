@@ -57,8 +57,7 @@ function processTextNode(node: Node, container: HTMLElement): void {
     const text = node.textContent || '';
     
     // Check if this text starts with a custom label list pattern
-    const listPattern = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
-    const listMatch = text.match(listPattern);
+    const listMatch = text.match(ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT);
     
     if (listMatch) {
         // This is a list marker at the start of a line

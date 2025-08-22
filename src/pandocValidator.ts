@@ -56,20 +56,20 @@ export function isStrictPandocList(context: ValidationContext, strictMode: boole
 
 export function isListItem(line: string, includeCustomLabels: boolean = false): boolean {
     // Check for various list patterns
-    const patterns = [
-        /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/, // Fancy lists
-        /^(\s*)\d+\.\s+/, // Standard ordered lists (1. 2. 3. etc.)
-        /^(\s*)[-*+]\s+/, // Unordered lists
-        /^(\s*)\(@([a-zA-Z0-9_-]*)\)\s+/, // Example lists
-        /^(\s*)[~:]\s+/ // Definition lists
-    ];
-    
-    // Add custom label lists if enabled
-    if (includeCustomLabels) {
-        patterns.push(/^(\s*)\{::([a-zA-Z][a-zA-Z0-9_']*)\}\s+/);
+    if (ListPatterns.FANCY_LIST_WITH_NUMBERS.test(line) ||
+        ListPatterns.STANDARD_ORDERED_LIST.test(line) ||
+        ListPatterns.UNORDERED_LIST.test(line) ||
+        ListPatterns.isExampleList(line) ||
+        ListPatterns.isDefinitionMarker(line)) {
+        return true;
     }
     
-    return patterns.some(pattern => pattern.test(line));
+    // Add custom label lists if enabled
+    if (includeCustomLabels && ListPatterns.isCustomLabelList(line)) {
+        return true;
+    }
+    
+    return false;
 }
 
 export function isStrictPandocHeading(context: ValidationContext, strictMode: boolean): boolean {
@@ -158,7 +158,7 @@ export function formatToPandocStandard(content: string, moreExtendedSyntax: bool
         const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
         if (capitalLetterMatch && capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
             // Add double space after capital letter with period
-            const formattedLine = line.replace(/^(\s*)([A-Z]\.)(\s+)/, '$1$2  ');
+            const formattedLine = line.replace(ListPatterns.CAPITAL_LETTER_REPLACE, '$1$2  ');
             result.push(formattedLine);
         } else {
             result.push(line);

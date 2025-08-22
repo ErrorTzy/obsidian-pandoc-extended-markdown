@@ -13,9 +13,19 @@ export class ListPatterns {
     static readonly DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
     static readonly DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
     static readonly DEFINITION_INDENTED = /^(    |\t)/;
+    static readonly DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
+    static readonly DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
     static readonly NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
     static readonly UNORDERED_LIST = /^(\s*)[-*+]\s+/;
     static readonly CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
+    
+    // Additional list patterns for validation
+    static readonly STANDARD_ORDERED_LIST = /^(\s*)\d+\.\s+/;
+    static readonly CAPITAL_LETTER_REPLACE = /^(\s*)([A-Z]\.)(\s+)/;
+    static readonly UNLABELED_EXAMPLE_LIST = /^(\s*)\(@\)\s+/;
+    
+    // Combined fancy list pattern for validation (includes numbers)
+    static readonly FANCY_LIST_WITH_NUMBERS = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+|[0-9]+|#)([.)]))(\s+)/;
     static readonly ROMAN_NUMERALS = /^[IVXLCDM]+$/;
     static readonly LOWER_ROMAN_NUMERALS = /^[ivxlcdm]+$/;
     
@@ -74,6 +84,7 @@ export class ListPatterns {
     // Custom label list patterns for More Extended Syntax
     // Matches {::LABEL} at start of line with required space after
     static readonly CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)/;
+    static readonly CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)\})(\s+)(.*)$/;
     // Reference to custom label anywhere in text
     static readonly CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
     // Valid label pattern (for validation)
