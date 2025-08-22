@@ -1,12 +1,12 @@
 import { Editor, EditorPosition, TFile } from 'obsidian';
-import { PandocListsPlugin } from '../src/main';
+import { PandocExtendedMarkdownPlugin } from '../src/main';
 import { CustomLabelReferenceSuggest } from '../src/customLabelReferenceSuggest';
 
 // Mock the Obsidian objects
 const mockApp = {} as any;
 
 describe('Custom Label Reference Suggestions', () => {
-    let plugin: PandocListsPlugin;
+    let plugin: PandocExtendedMarkdownPlugin;
     let suggest: CustomLabelReferenceSuggest;
     let mockEditor: Editor;
     

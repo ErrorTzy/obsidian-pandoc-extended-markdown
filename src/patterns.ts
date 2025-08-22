@@ -1,5 +1,5 @@
 /**
- * Centralized regex patterns for the Pandoc Lists plugin.
+ * Centralized regex patterns for the Pandoc Extended Markdown plugin.
  * These patterns are pre-compiled and cached for better performance.
  */
 

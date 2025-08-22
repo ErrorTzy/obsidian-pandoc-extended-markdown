@@ -1,6 +1,6 @@
-# Pandoc Lists Plugin Architecture
+# Pandoc Extended Markdown Plugin Architecture
 
-This document provides a comprehensive technical overview of the pandoc-lists-plugin architecture. It details the rendering pipelines, state management, and component interactions to facilitate debugging and feature development.
+This document provides a comprehensive technical overview of the pandoc-extended-markdown-plugin architecture. It details the rendering pipelines, state management, and component interactions to facilitate debugging and feature development.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ pandoc-lists-plugin/
 │   ├── state/                            # State management architecture
 │   │   └── PluginStateManager.ts        # Unified state manager for all plugin state
 │   ├── decorations/                      # CodeMirror decorations for live preview
-│   │   ├── pandocListsExtension.ts      # Main orchestrator for live preview rendering
+│   │   ├── pandocExtendedMarkdownExtension.ts # Main orchestrator for live preview rendering
 │   │   ├── widgets/                      # CodeMirror widget implementations
 │   │   │   ├── listWidgets.ts           # Widgets for list markers (fancy, hash, example)
 │   │   │   ├── definitionWidget.ts      # Widget for definition list bullets
@@ -110,7 +110,7 @@ graph TB
     end
     
     subgraph "Live Preview Pipeline"
-        CMExt[pandocListsExtension<br/>CodeMirror Extension]
+        CMExt[pandocExtendedMarkdownExtension<br/>CodeMirror Extension]
         Scanner[exampleScanner<br/>Document Scanner]
         Validator[listBlockValidator<br/>Pandoc Validator]
         Processors[Processors<br/>List/Definition/Inline]
@@ -153,7 +153,7 @@ The live preview system transforms markdown syntax in real-time as users type, u
 sequenceDiagram
     participant User
     participant CM as CodeMirror
-    participant Ext as pandocListsExtension
+    participant Ext as pandocExtendedMarkdownExtension
     participant Scan as exampleScanner
     participant Val as listBlockValidator
     participant Proc as Processors
@@ -187,8 +187,8 @@ sequenceDiagram
 
 ### Key Components
 
-#### 1. pandocListsExtension (Orchestrator)
-- **Location**: `src/decorations/pandocListsExtension.ts`
+#### 1. pandocExtendedMarkdownExtension (Orchestrator)
+- **Location**: `src/decorations/pandocExtendedMarkdownExtension.ts`
 - **Role**: Main coordinator for live preview rendering
 - **Responsibilities**:
   - Detects live preview mode state
@@ -474,7 +474,7 @@ flowchart LR
 
 | Component | Responsibility | Input | Output |
 |-----------|---------------|-------|--------|
-| `pandocListsExtension` | Orchestration | ViewUpdate events | Decorations |
+| `pandocExtendedMarkdownExtension` | Orchestration | ViewUpdate events | Decorations |
 | `exampleScanner` | Label preprocessing | Document text | Label mappings |
 | `listBlockValidator` | Strict mode validation | Document lines | Invalid line set |
 | `processors/*` | Syntax processing | Line text, context | Decoration specs |

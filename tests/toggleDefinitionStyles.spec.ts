@@ -1,11 +1,11 @@
-import { PandocListsPlugin } from '../src/main';
+import { PandocExtendedMarkdownPlugin } from '../src/main';
 
 describe('Toggle Definition Styles', () => {
-    let plugin: PandocListsPlugin;
+    let plugin: PandocExtendedMarkdownPlugin;
 
     beforeEach(() => {
         // Create a minimal plugin instance for testing
-        plugin = new PandocListsPlugin();
+        plugin = new PandocExtendedMarkdownPlugin();
     });
 
     describe('toggleDefinitionUnderlineStyle', () => {

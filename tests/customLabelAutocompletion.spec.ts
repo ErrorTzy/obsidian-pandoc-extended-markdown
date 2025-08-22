@@ -12,7 +12,7 @@ describe('Custom Label List Autocompletion', () => {
             enablePandocMarkdown: true,
             enableExampleLists: true,
             enableDefinitionLists: true,
-            enablePandocListMarkers: true,
+            enablePandocExtendedMarkdown: true,
             enableSuperSub: true,
             moreExtendedSyntax: true,
             autoRenumberLists: false,

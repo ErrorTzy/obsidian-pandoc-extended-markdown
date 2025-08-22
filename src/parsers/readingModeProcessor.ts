@@ -12,7 +12,7 @@ import { pluginStateManager } from '../state/PluginStateManager';
 import { ProcessorConfig } from '../types/ProcessorConfig';
 import { processSuperSub } from './superSubParser';
 import { processCustomLabelLists } from './customLabelListParser';
-import { isStrictPandocList, ValidationContext } from '../pandocValidator';
+import { isStrictPandocFormatting, ValidationContext } from '../pandocValidator';
 import { getSectionInfo } from '../types/obsidian-extended';
 import { ListPatterns } from '../patterns';
 
@@ -208,7 +208,7 @@ function validateListInStrictMode(
             currentLine: lineNum
         };
         
-        return isStrictPandocList(validationContext, config.strictPandocMode);
+        return isStrictPandocFormatting(validationContext, config.strictPandocMode);
     }
     
     return true; // Allow if we can't find the line

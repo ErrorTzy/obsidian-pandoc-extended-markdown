@@ -1,7 +1,7 @@
 import { Notice } from 'obsidian';
 
 /**
- * Custom error class for the Pandoc Lists plugin.
+ * Custom error class for the Pandoc Extended Markdown plugin.
  */
 export class PluginError extends Error {
     constructor(

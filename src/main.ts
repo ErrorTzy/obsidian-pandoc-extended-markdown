@@ -14,7 +14,7 @@ import { MESSAGES, COMMANDS, UI_CONSTANTS } from './constants';
 import { ListPatterns } from './patterns';
 
 // Internal modules
-import { pandocListsExtension } from './decorations/pandocListsExtension';
+import { pandocExtendedMarkdownExtension } from './decorations/pandocExtendedMarkdownExtension';
 import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
 import { CustomLabelReferenceSuggest } from './customLabelReferenceSuggest';
@@ -22,7 +22,7 @@ import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator
 import { createListAutocompletionKeymap } from './listAutocompletion';
 import { pluginStateManager } from './state/PluginStateManager';
 
-export class PandocListsPlugin extends Plugin {
+export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
     private customLabelSuggester: CustomLabelReferenceSuggest;
     settings: PandocExtendedMarkdownSettings;
@@ -54,7 +54,7 @@ export class PandocListsPlugin extends Plugin {
 
     private registerExtensions(): void {
         // Register CodeMirror extension for live preview with settings
-        this.registerEditorExtension(pandocListsExtension(() => this.settings));
+        this.registerEditorExtension(pandocExtendedMarkdownExtension(() => this.settings));
         
         // Register list autocompletion keymap with highest priority
         this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(this.settings))));
@@ -312,4 +312,4 @@ export class PandocListsPlugin extends Plugin {
     }
 }
 
-export default PandocListsPlugin;
+export default PandocExtendedMarkdownPlugin;

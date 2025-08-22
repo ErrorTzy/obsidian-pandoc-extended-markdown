@@ -6,7 +6,7 @@ export interface ValidationContext {
     currentLine: number;
 }
 
-export function isStrictPandocList(context: ValidationContext, strictMode: boolean): boolean {
+export function isStrictPandocFormatting(context: ValidationContext, strictMode: boolean): boolean {
     if (!strictMode) {
         return true;
     }

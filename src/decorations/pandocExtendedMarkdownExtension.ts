@@ -22,9 +22,9 @@ import {
 } from './processors';
 import { processCustomLabelList, processCustomLabelReferences, CustomLabelProcessorContext } from './processors/customLabelProcessor';
 
-// Main view plugin for rendering Pandoc lists
-const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) => ViewPlugin.fromClass(
-    class PandocListsView {
+// Main view plugin for rendering Pandoc extended markdown
+const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownSettings) => ViewPlugin.fromClass(
+    class PandocExtendedMarkdownView {
         decorations: DecorationSet;
         private scanResult: ExampleScanResult;
         private customLabelScanResult: CustomLabelScanResult;
@@ -221,6 +221,6 @@ const pandocListsPlugin = (getSettings: () => PandocExtendedMarkdownSettings) =>
     }
 );
 
-export function pandocListsExtension(getSettings: () => PandocExtendedMarkdownSettings): Extension {
-    return pandocListsPlugin(getSettings);
+export function pandocExtendedMarkdownExtension(getSettings: () => PandocExtendedMarkdownSettings): Extension {
+    return pandocExtendedMarkdownPlugin(getSettings);
 }

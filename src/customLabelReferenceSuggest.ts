@@ -1,5 +1,5 @@
 import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
-import { PandocListsPlugin } from './main';
+import { PandocExtendedMarkdownPlugin } from './main';
 import { CSS_CLASSES } from './constants';
 import { ListPatterns } from './patterns';
 
@@ -9,9 +9,9 @@ interface CustomLabelSuggestion {
 }
 
 export class CustomLabelReferenceSuggest extends EditorSuggest<CustomLabelSuggestion> {
-    plugin: PandocListsPlugin;
+    plugin: PandocExtendedMarkdownPlugin;
 
-    constructor(plugin: PandocListsPlugin) {
+    constructor(plugin: PandocExtendedMarkdownPlugin) {
         super(plugin.app);
         this.plugin = plugin;
     }

@@ -24,7 +24,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/main.ts
 var main_exports = {};
 __export(main_exports, {
-  PandocListsPlugin: () => PandocListsPlugin,
+  PandocExtendedMarkdownPlugin: () => PandocExtendedMarkdownPlugin,
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
@@ -419,7 +419,7 @@ ListPatterns.CUSTOM_LABEL_REFERENCE = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
 // Valid label pattern (for validation)
 ListPatterns.VALID_CUSTOM_LABEL = /^[a-zA-Z][a-zA-Z0-9_']*$/;
 
-// src/decorations/pandocListsExtension.ts
+// src/decorations/pandocExtendedMarkdownExtension.ts
 var import_state = require("@codemirror/state");
 var import_view10 = require("@codemirror/view");
 var import_obsidian4 = require("obsidian");
@@ -1362,9 +1362,9 @@ function processCustomLabelReferences(text, from, customLabels, view, cursorPos,
   return decorations;
 }
 
-// src/decorations/pandocListsExtension.ts
-var pandocListsPlugin = (getSettings) => import_view10.ViewPlugin.fromClass(
-  class PandocListsView {
+// src/decorations/pandocExtendedMarkdownExtension.ts
+var pandocExtendedMarkdownPlugin = (getSettings) => import_view10.ViewPlugin.fromClass(
+  class PandocExtendedMarkdownView {
     constructor(view) {
       const settings = getSettings();
       this.scanResult = scanExampleLabels(view, settings);
@@ -1504,8 +1504,8 @@ var pandocListsPlugin = (getSettings) => import_view10.ViewPlugin.fromClass(
     decorations: (v) => v.decorations
   }
 );
-function pandocListsExtension(getSettings) {
-  return pandocListsPlugin(getSettings);
+function pandocExtendedMarkdownExtension(getSettings) {
+  return pandocExtendedMarkdownPlugin(getSettings);
 }
 
 // src/types/obsidian-extended.ts
@@ -2324,7 +2324,7 @@ function processElement(elem) {
 }
 
 // src/pandocValidator.ts
-function isStrictPandocList(context, strictMode) {
+function isStrictPandocFormatting(context, strictMode) {
   if (!strictMode) {
     return true;
   }
@@ -2594,7 +2594,7 @@ function validateListInStrictMode(line, documentLines, config) {
       lines: documentLines,
       currentLine: lineNum
     };
-    return isStrictPandocList(validationContext, config.strictPandocMode);
+    return isStrictPandocFormatting(validationContext, config.strictPandocMode);
   }
   return true;
 }
@@ -3336,7 +3336,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocListsPlugin = class extends import_obsidian9.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian9.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -3350,7 +3350,7 @@ var PandocListsPlugin = class extends import_obsidian9.Plugin {
     this.registerCommands();
   }
   registerExtensions() {
-    this.registerEditorExtension(pandocListsExtension(() => this.settings));
+    this.registerEditorExtension(pandocExtendedMarkdownExtension(() => this.settings));
     this.registerEditorExtension(import_state3.Prec.highest(import_view11.keymap.of(createListAutocompletionKeymap(this.settings))));
   }
   registerPostProcessor() {
@@ -3544,4 +3544,4 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     return modifiedLines.join("\n");
   }
 };
-var main_default = PandocListsPlugin;
+var main_default = PandocExtendedMarkdownPlugin;

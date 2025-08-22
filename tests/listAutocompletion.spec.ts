@@ -12,7 +12,7 @@ describe('List Autocompletion', () => {
             enablePandocMarkdown: true,
             enableExampleLists: true,
             enableDefinitionLists: true,
-            enablePandocListMarkers: true,
+            enablePandocExtendedMarkdown: true,
             enableSuperSub: true,
             autoRenumberLists: false,
             enableLogging: false
