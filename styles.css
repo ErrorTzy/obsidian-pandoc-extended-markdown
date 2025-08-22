@@ -166,10 +166,17 @@ li.pandoc-example-item::before {
     }
 }
 
-/* List Line Indentation */
-.pandoc-list-line-indent {
-    text-indent: -29px;
+/* List Line Indentation - Matching Obsidian's default list behavior */
+/* Obsidian already handles text-indent for HyperMD-list-line */
+/* We only need to ensure proper padding for alignment */
+.HyperMD-list-line.pandoc-list-line {
+    /* Only padding needed - Obsidian handles text-indent internally */
     padding-inline-start: 29px;
+}
+
+/* For nested lists */
+.HyperMD-list-line-2.pandoc-list-line {
+    padding-inline-start: var(--list-indent-editing, 30px);
 }
 
 /* Custom Label Reference Clickable */

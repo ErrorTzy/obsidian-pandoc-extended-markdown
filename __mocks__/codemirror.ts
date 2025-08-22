@@ -114,13 +114,16 @@ export const ViewPlugin = {
 
 export class Decoration {
   static mark(config: any) {
-    return {};
+    return { spec: config };
   }
   static replace(config: any) {
-    return {};
+    return { spec: config };
   }
   static widget(config: any) {
-    return {};
+    return { spec: config };
+  }
+  static line(config: any) {
+    return { spec: config };
   }
 }
 

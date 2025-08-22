@@ -17,7 +17,7 @@ export class FancyListMarkerWidget extends WidgetType {
         span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
-        innerSpan.textContent = this.marker;
+        innerSpan.textContent = this.marker + ' '; // Add space after marker
         span.appendChild(innerSpan);
         
         // Handle click events to place cursor
@@ -64,7 +64,7 @@ export class HashListMarkerWidget extends WidgetType {
         span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
-        innerSpan.textContent = `${this.number}. `;
+        innerSpan.textContent = `${this.number}. `; // Space already included
         span.appendChild(innerSpan);
         
         // Handle click events to place cursor
@@ -111,7 +111,7 @@ export class ExampleListMarkerWidget extends WidgetType {
         span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER} ${CSS_CLASSES.EXAMPLE_REF}`;
         const innerSpan = document.createElement('span');
         innerSpan.className = 'list-number';
-        innerSpan.textContent = `(${this.number}) `;
+        innerSpan.textContent = `(${this.number}) `; // Space already included
         span.appendChild(innerSpan);
         
         // Add tooltip to show original label

@@ -49,12 +49,12 @@ export function processHashList(
     // Check if cursor is within the marker area
     const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
     
-    // Add line decoration for proper styling
+    // Add line decoration with CSS class for proper styling
     decorations.push({
         from: line.from,
         to: line.from,
         decoration: Decoration.line({
-            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent'
+            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line'
         })
     });
     
@@ -125,12 +125,12 @@ export function processFancyList(
         }
     }
     
-    // Add line decoration for proper styling
+    // Add line decoration with CSS class for proper styling
     decorations.push({
         from: line.from,
         to: line.from,
         decoration: Decoration.line({
-            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent'
+            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line'
         })
     });
     
@@ -189,12 +189,12 @@ export function processExampleList(
     // Determine the example number for this line
     const exampleNumber = exampleLineNumbers?.get(lineNum) || 1;
     
-    // Add line decoration for proper styling
+    // Add line decoration with CSS class for proper styling
     decorations.push({
         from: line.from,
         to: line.from,
         decoration: Decoration.line({
-            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent'
+            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line'
         })
     });
     

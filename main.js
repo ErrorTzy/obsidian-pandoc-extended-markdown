@@ -604,7 +604,7 @@ var FancyListMarkerWidget = class extends import_view.WidgetType {
     span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
     const innerSpan = document.createElement("span");
     innerSpan.className = "list-number";
-    innerSpan.textContent = this.marker;
+    innerSpan.textContent = this.marker + " ";
     span.appendChild(innerSpan);
     if (this.view && this.pos !== void 0) {
       span.addEventListener("mousedown", (e) => {
@@ -879,7 +879,7 @@ function processHashList(context, hashCounter) {
     from: line.from,
     to: line.from,
     decoration: import_view5.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
     })
   });
   if (!cursorInMarker) {
@@ -935,7 +935,7 @@ function processFancyList(context) {
     from: line.from,
     to: line.from,
     decoration: import_view5.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
     })
   });
   if (!cursorInMarker) {
@@ -988,7 +988,7 @@ function processExampleList(context) {
     from: line.from,
     to: line.from,
     decoration: import_view5.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent"
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
     })
   });
   const isDuplicate = label && (duplicateLabels == null ? void 0 : duplicateLabels.has(label)) && duplicateLabels.get(label) !== lineNum;
