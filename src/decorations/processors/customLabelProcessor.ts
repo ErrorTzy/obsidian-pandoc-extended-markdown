@@ -5,7 +5,7 @@ import { Decoration, EditorView } from '@codemirror/view';
 import { PandocExtendedMarkdownSettings } from '../../settings';
 
 // Constants
-import { CSS_CLASSES } from '../../constants';
+import { CSS_CLASSES, DECORATION_STYLES } from '../../constants';
 
 // Patterns
 import { ListPatterns } from '../../patterns';
@@ -14,7 +14,14 @@ import { ListPatterns } from '../../patterns';
 import { PlaceholderContext } from '../../utils/placeholderProcessor';
 
 // Internal modules
-import { CustomLabelMarkerWidget, CustomLabelReferenceWidget } from '../widgets/customLabelWidget';
+import { 
+    CustomLabelMarkerWidget, 
+    CustomLabelReferenceWidget,
+    CustomLabelPartialWidget,
+    CustomLabelPlaceholderWidget,
+    CustomLabelProcessedWidget,
+    CustomLabelInlineNumberWidget
+} from '../widgets/customLabelWidget';
 
 export interface CustomLabelProcessorContext {
     line: any;
@@ -75,20 +82,45 @@ export function processCustomLabelList(
     const markerStart = line.from + indent.length;
     const markerEnd = line.from + indent.length + fullMarker.length + space.length;
     
-    // Check if cursor is within the marker area
+    // Parse the marker to find placeholder positions
+    const placeholderMatches = [...rawLabel.matchAll(/\(#([^)]+)\)/g)];
+    const placeholderRanges: Array<{start: number, end: number, name: string}> = [];
+    
+    for (const match of placeholderMatches) {
+        if (match.index !== undefined) {
+            const placeholderStart = markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH + match.index; // Length of "{"
+            const placeholderEnd = placeholderStart + match[0].length;
+            placeholderRanges.push({
+                start: placeholderStart,
+                end: placeholderEnd,
+                name: match[1]
+            });
+        }
+    }
+    
+    // Check cursor position relative to marker and placeholders
     const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+    let cursorPlaceholderIndex = -1;
+    for (let i = 0; i < placeholderRanges.length; i++) {
+        if (cursorPos >= placeholderRanges[i].start && cursorPos < placeholderRanges[i].end) {
+            cursorPlaceholderIndex = i;
+            break;
+        }
+    }
+    const cursorInPlaceholder = cursorPlaceholderIndex !== -1;
     
     // Add line decoration for proper styling
     decorations.push({
         from: line.from,
         to: line.from,
         decoration: Decoration.line({
-            class: 'HyperMD-list-line HyperMD-list-line-1 pandoc-list-line-indent'
+            class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE_INDENT}`
         })
     });
     
-    // Only replace the marker if cursor is not within it
+    // Apply decorations based on cursor position
     if (!cursorInMarker) {
+        // Cursor is completely outside - show full widget
         decorations.push({
             from: markerStart,
             to: markerEnd,
@@ -97,7 +129,40 @@ export function processCustomLabelList(
                 inclusive: false
             })
         });
+    } else if (cursorInMarker && placeholderRanges.length > 0) {
+        // Cursor is in marker - selectively process placeholders
+        
+        // Replace placeholders with numbers, except the one under cursor
+        for (let i = 0; i < placeholderRanges.length; i++) {
+            if (i !== cursorPlaceholderIndex) {
+                // This placeholder is not under cursor - replace with number
+                const range = placeholderRanges[i];
+                const placeholderNumber = placeholderContext?.getPlaceholderNumber(range.name);
+                if (placeholderNumber !== null && placeholderNumber !== undefined) {
+                    decorations.push({
+                        from: range.start,
+                        to: range.end,
+                        decoration: Decoration.replace({
+                            widget: new CustomLabelInlineNumberWidget(placeholderNumber.toString(), view),
+                            inclusive: false,
+                            block: false
+                        })
+                    });
+                }
+            }
+            // If cursor is on this placeholder, don't decorate it (show raw text)
+        }
+        
+        // Mark the whole marker area for styling
+        decorations.push({
+            from: markerStart,
+            to: markerEnd,
+            decoration: Decoration.mark({
+                class: `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CUSTOM_LABEL_PROCESSED}`
+            })
+        });
     }
+    // If no placeholders exist, show raw text (no decorations)
     
     // Wrap the rest of the line
     const contentStart = line.from + indent.length + fullMarker.length + space.length;
@@ -105,7 +170,7 @@ export function processCustomLabelList(
         from: contentStart,
         to: line.to,
         decoration: Decoration.mark({
-            class: 'cm-list-1 pandoc-custom-label-item'
+            class: `${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.CUSTOM_LABEL_ITEM}`
         })
     });
     
@@ -165,6 +230,7 @@ export function processCustomLabelReferences(
     const matches = ListPatterns.findCustomLabelReferences(text);
     
     matches.forEach(match => {
+        const fullMatch = match[0];
         const rawLabel = match[1];
         let processedLabel = rawToProcessed?.get(rawLabel);
         
@@ -185,8 +251,32 @@ export function processCustomLabelReferences(
         const matchStart = from + (match.index || 0);
         const matchEnd = matchStart + match[0].length;
         
-        // Check if cursor is within the reference
+        // Parse placeholder positions within the reference
+        const placeholderMatches = [...rawLabel.matchAll(/\(#([^)]+)\)/g)];
+        const placeholderRanges: Array<{start: number, end: number, name: string}> = [];
+        
+        for (const phMatch of placeholderMatches) {
+            if (phMatch.index !== undefined) {
+                const placeholderStart = matchStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH + phMatch.index; // Length of "{"
+                const placeholderEnd = placeholderStart + phMatch[0].length;
+                placeholderRanges.push({
+                    start: placeholderStart,
+                    end: placeholderEnd,
+                    name: phMatch[1]
+                });
+            }
+        }
+        
+        // Check cursor position
         const cursorInReference = cursorPos >= matchStart && cursorPos < matchEnd;
+        let cursorPlaceholderIndex = -1;
+        for (let i = 0; i < placeholderRanges.length; i++) {
+            if (cursorPos >= placeholderRanges[i].start && cursorPos < placeholderRanges[i].end) {
+                cursorPlaceholderIndex = i;
+                break;
+            }
+        }
+        const cursorInPlaceholder = cursorPlaceholderIndex !== -1;
         
         // Check if this is a valid reference
         let isValid = false;
@@ -214,15 +304,51 @@ export function processCustomLabelReferences(
         }
         
         // Only process if the reference is valid
-        if (!cursorInReference && isValid) {
-            decorations.push({
-                from: matchStart,
-                to: matchEnd,
-                decoration: Decoration.replace({
-                    widget: new CustomLabelReferenceWidget(processedLabel, content, view, matchStart),
-                    inclusive: false
-                })
-            });
+        if (isValid) {
+            if (!cursorInReference) {
+                // Cursor is outside - show processed reference widget
+                decorations.push({
+                    from: matchStart,
+                    to: matchEnd,
+                    decoration: Decoration.replace({
+                        widget: new CustomLabelReferenceWidget(processedLabel, content, view, matchStart),
+                        inclusive: false
+                    })
+                });
+            } else if (cursorInReference && placeholderRanges.length > 0) {
+                // Cursor is in reference - selectively process placeholders
+                
+                // Replace placeholders with numbers, except the one under cursor
+                for (let i = 0; i < placeholderRanges.length; i++) {
+                    if (i !== cursorPlaceholderIndex) {
+                        // This placeholder is not under cursor - replace with number
+                        const range = placeholderRanges[i];
+                        const placeholderNumber = placeholderContext?.getPlaceholderNumber(range.name);
+                        if (placeholderNumber !== null && placeholderNumber !== undefined) {
+                            decorations.push({
+                                from: range.start,
+                                to: range.end,
+                                decoration: Decoration.replace({
+                                    widget: new CustomLabelInlineNumberWidget(placeholderNumber.toString(), view),
+                                    inclusive: false,
+                                    block: false
+                                })
+                            });
+                        }
+                    }
+                    // If cursor is on this placeholder, don't decorate it (show raw text)
+                }
+                
+                // Mark the reference for styling
+                decorations.push({
+                    from: matchStart,
+                    to: matchEnd,
+                    decoration: Decoration.mark({
+                        class: CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED
+                    })
+                });
+            }
+            // If no placeholders or cursor outside reference, apply appropriate decorations above
         }
         // If label is invalid, just leave it as plain text
     });

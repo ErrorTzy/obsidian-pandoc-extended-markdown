@@ -57,6 +57,16 @@ export class PlaceholderContext {
     }
     
     /**
+     * Get the number assigned to a placeholder name.
+     * 
+     * @param name - The placeholder name
+     * @returns The assigned number, or null if not found
+     */
+    getPlaceholderNumber(name: string): number | null {
+        return this.placeholderMap.get(name) || null;
+    }
+    
+    /**
      * Get the processed version of a label without modifying state.
      * Used for references to existing labels.
      * 

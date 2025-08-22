@@ -223,7 +223,10 @@ Transform markdown syntax into decorations:
 - **List Processors**: Hash lists (#.), fancy lists (A., i.), example lists ((@))
 - **Definition Processors**: Terms, items (~/:), indented paragraphs
 - **Inline Processors**: References, superscripts, subscripts
-- **Custom Label Processor**: Custom label lists ({::LABEL}) with auto-numbering support for (#placeholder) syntax
+- **Custom Label Processor**: Custom label lists ({::LABEL}) with:
+  - Auto-numbering support for (#placeholder) syntax
+  - Three-level display system based on cursor position
+  - Selective placeholder expansion (only expands placeholder under cursor)
 
 #### 4. Widgets
 Visual representations that replace markdown syntax:
@@ -234,6 +237,10 @@ Visual representations that replace markdown syntax:
 - **SuperscriptWidget/SubscriptWidget**: Formatted text elements
 - **CustomLabelMarkerWidget**: Custom label list markers
 - **CustomLabelReferenceWidget**: Custom label references with tooltips
+- **CustomLabelPartialWidget**: Partial rendering for bracket/parenthesis parts
+- **CustomLabelPlaceholderWidget**: Styled placeholder numbers with dotted underline
+- **CustomLabelProcessedWidget**: Processed form display for semi-expanded state
+- **CustomLabelInlineNumberWidget**: Atomic inline number replacements for selective expansion
 
 ### Trigger Events
 - Document changes

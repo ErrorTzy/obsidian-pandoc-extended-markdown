@@ -3,6 +3,21 @@
     cursor: text;
 }
 
+/* Custom Label Placeholder Styles */
+.pandoc-custom-label-placeholder {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--text-muted);
+}
+
+/* Inline placeholder number styles */
+.pandoc-inline-placeholder-number {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--text-muted);
+    cursor: text;
+}
+
 /* Fancy Lists Styles */
 .pandoc-list-upper-alpha {
     list-style-type: upper-alpha;

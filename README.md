@@ -188,6 +188,21 @@ Which renders as:
 - (2) A conclusion
 - (1+2) Combined expression
 
+##### Interactive Three-Level Display System (Live Preview)
+
+Custom labels with placeholders feature an intelligent three-level display system in live preview mode that adapts based on cursor position:
+
+**Level 1 - Collapsed** (cursor outside): Displays as a compact widget, e.g., `(P1')`
+
+**Level 2 - Semi-expanded** (cursor on label, not on placeholder): Shows the processed form with numbers replacing placeholders, e.g., `{::P1'}`. Numbers have a dotted underline to indicate they're interactive.
+
+**Level 3 - Fully expanded** (cursor on specific placeholder): Shows only that placeholder in raw form while keeping others as numbers, e.g., `{::(#good)+2'}` when cursor is on the first placeholder.
+
+This selective expansion feature is especially useful for complex labels with multiple placeholders:
+- `{::(#a)+(#b)+(#c)}` - When cursor is on `(#b)`, displays as `{::1+(#b)+3}`
+- Each placeholder expands independently for precise editing
+- Works for both list labels and inline references
+
 This renders as:
 ```
 (P) All humans are mortal.

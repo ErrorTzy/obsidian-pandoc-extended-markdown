@@ -24,7 +24,7 @@ export class CustomLabelMarkerWidget extends WidgetType {
         
         // Make it clickable to jump to position
         if (this.view && this.position !== undefined) {
-            span.classList.add('pandoc-custom-label-ref-clickable');
+            span.classList.add(CSS_CLASSES.CUSTOM_LABEL_REF_CLICKABLE);
             span.addEventListener('click', () => {
                 if (this.view && this.position !== undefined) {
                     this.view.dispatch({
@@ -49,6 +49,104 @@ export class CustomLabelMarkerWidget extends WidgetType {
     
     destroy() {
         this.controller.abort();
+    }
+}
+
+export class CustomLabelPartialWidget extends WidgetType {
+    constructor(
+        private text: string,
+        private view: EditorView
+    ) {
+        super();
+    }
+
+    toDOM() {
+        const span = document.createElement('span');
+        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
+        span.textContent = this.text;
+        return span;
+    }
+
+    eq(other: CustomLabelPartialWidget) {
+        return other.text === this.text;
+    }
+
+    ignoreEvent() {
+        return false;
+    }
+}
+
+export class CustomLabelPlaceholderWidget extends WidgetType {
+    constructor(
+        private number: string,
+        private view: EditorView
+    ) {
+        super();
+    }
+
+    toDOM() {
+        const span = document.createElement('span');
+        span.className = CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER;
+        span.textContent = this.number;
+        return span;
+    }
+
+    eq(other: CustomLabelPlaceholderWidget) {
+        return other.number === this.number;
+    }
+
+    ignoreEvent() {
+        return false;
+    }
+}
+
+export class CustomLabelProcessedWidget extends WidgetType {
+    constructor(
+        private text: string,
+        private view: EditorView
+    ) {
+        super();
+    }
+
+    toDOM() {
+        const span = document.createElement('span');
+        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
+        span.textContent = this.text;
+        return span;
+    }
+
+    eq(other: CustomLabelProcessedWidget) {
+        return other.text === this.text;
+    }
+
+    ignoreEvent() {
+        return false;
+    }
+}
+
+export class CustomLabelInlineNumberWidget extends WidgetType {
+    constructor(
+        private number: string,
+        private view: EditorView
+    ) {
+        super();
+    }
+
+    toDOM() {
+        const span = document.createElement('span');
+        span.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
+        span.textContent = this.number;
+        span.contentEditable = 'false'; // Make it atomic but not editable
+        return span;
+    }
+
+    eq(other: CustomLabelInlineNumberWidget) {
+        return other.number === this.number;
+    }
+
+    ignoreEvent(event: Event) {
+        // Allow click events to position cursor but not direct editing
+        return event.type !== 'mousedown' && event.type !== 'mouseup' && event.type !== 'click';
     }
 }
 

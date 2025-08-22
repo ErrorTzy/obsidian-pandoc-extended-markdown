@@ -63,6 +63,15 @@ export const CSS_CLASSES = {
     
     // Generic Classes
     PANDOC_LIST_MARKER: 'pandoc-list-marker',
+    PANDOC_LIST_LINE_INDENT: 'pandoc-list-line-indent',
+    
+    // Custom Label Classes
+    CUSTOM_LABEL_PROCESSED: 'pandoc-custom-label-processed',
+    CUSTOM_LABEL_ITEM: 'pandoc-custom-label-item',
+    CUSTOM_LABEL_REFERENCE_PROCESSED: 'pandoc-custom-label-reference-processed',
+    CUSTOM_LABEL_REF_CLICKABLE: 'pandoc-custom-label-ref-clickable',
+    CUSTOM_LABEL_PLACEHOLDER: 'pandoc-custom-label-placeholder',
+    INLINE_PLACEHOLDER_NUMBER: 'pandoc-inline-placeholder-number',
 } as const;
 
 export const DECORATION_STYLES = {
@@ -71,6 +80,7 @@ export const DECORATION_STYLES = {
     FANCY_LIST_INDENT_MULTIPLIER: 7,
     LINE_TRUNCATION_LIMIT: 100,
     TOOLTIP_DELAY_MS: 300,
+    CUSTOM_LABEL_PREFIX_LENGTH: 3, // Length of "{::" prefix
 } as const;
 
 export const MESSAGES = {
