@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view11 = require("@codemirror/view");
 
@@ -119,6 +119,8 @@ var CSS_CLASSES = {
   SUGGESTION_CONTENT: "pandoc-suggestion-content",
   SUGGESTION_TITLE: "pandoc-suggestion-title",
   SUGGESTION_PREVIEW: "pandoc-suggestion-preview",
+  SUGGESTION_NUMBER: "pandoc-suggestion-number",
+  SUGGESTION_PLACEHOLDER: "pandoc-suggestion-placeholder",
   // CodeMirror Classes
   LIST_LINE: "HyperMD-list-line",
   LIST_LINE_1: "HyperMD-list-line-1",
@@ -3072,8 +3074,47 @@ var ExampleReferenceSuggest = class extends import_obsidian7.EditorSuggest {
 };
 
 // src/customLabelReferenceSuggest.ts
+var import_obsidian9 = require("obsidian");
+
+// src/utils/errorHandler.ts
 var import_obsidian8 = require("obsidian");
-var CustomLabelReferenceSuggest = class extends import_obsidian8.EditorSuggest {
+var PluginError = class extends Error {
+  constructor(message, code, recoverable = true) {
+    super(message);
+    this.code = code;
+    this.recoverable = recoverable;
+    this.name = "PandocExtendedMarkdownPluginError";
+  }
+};
+function withErrorBoundary(fn, fallback, context) {
+  try {
+    return fn();
+  } catch (error) {
+    handleError(error, context);
+    return fallback;
+  }
+}
+function handleError(error, context) {
+  let message = "An unexpected error occurred";
+  let showNotice = true;
+  if (error instanceof PluginError) {
+    message = error.message;
+    showNotice = error.recoverable;
+    if (!error.recoverable) {
+      throw error;
+    }
+  } else if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
+  }
+  if (showNotice) {
+    new import_obsidian8.Notice(`Pandoc Extended Markdown: ${context} failed. ${message}`);
+  }
+}
+
+// src/customLabelReferenceSuggest.ts
+var CustomLabelReferenceSuggest = class extends import_obsidian9.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -3098,33 +3139,83 @@ var CustomLabelReferenceSuggest = class extends import_obsidian8.EditorSuggest {
       query
     };
   }
-  getSuggestions(context) {
-    const { query } = context;
-    const doc = context.editor.getValue();
+  /**
+   * Scans the document for custom label definitions.
+   * @returns Map of raw labels to their content
+   */
+  scanDocumentForLabels(doc) {
     const lines = doc.split("\n");
     const labelData = /* @__PURE__ */ new Map();
     for (const line of lines) {
       const match = ListPatterns.isCustomLabelList(line);
       if (match) {
-        const label = match[3];
-        if (label) {
+        const rawLabel = match[3];
+        if (rawLabel) {
           const markerEnd = match[0].length;
           const text = line.substring(markerEnd).trim();
-          if (!labelData.has(label)) {
-            labelData.set(label, text);
+          if (!labelData.has(rawLabel)) {
+            labelData.set(rawLabel, { text, rawLabel });
           }
         }
       }
     }
+    return labelData;
+  }
+  /**
+   * Processes a label to extract placeholder information.
+   */
+  extractPlaceholderParts(rawLabel, placeholderContext) {
+    const placeholderParts = [];
+    const regex = /\(#([^)]+)\)/g;
+    let match;
+    while ((match = regex.exec(rawLabel)) !== null) {
+      const placeholderName = match[1];
+      const placeholderNumber = placeholderContext.getPlaceholderNumber(placeholderName);
+      if (placeholderNumber !== null) {
+        placeholderParts.push({
+          original: match[0],
+          replacement: placeholderNumber.toString(),
+          index: match.index
+        });
+      }
+    }
+    return placeholderParts.length > 0 ? placeholderParts : null;
+  }
+  getSuggestions(context) {
+    return withErrorBoundary(() => this.getSuggestionsInternal(context), [], "CustomLabelReferenceSuggest.getSuggestions");
+  }
+  getSuggestionsInternal(context) {
+    const { query } = context;
+    const doc = context.editor.getValue();
+    const labelData = this.scanDocumentForLabels(doc);
+    const placeholderContext = new PlaceholderContext();
+    for (const [rawLabel] of labelData) {
+      if (/\(#[^)]+\)/.test(rawLabel)) {
+        placeholderContext.processLabel(rawLabel);
+      }
+    }
     const suggestions = [];
-    for (const [label, text] of labelData) {
-      if (!query || label.toLowerCase().startsWith(query.toLowerCase())) {
-        let previewText = text;
+    for (const [rawLabel, data] of labelData) {
+      let processedLabel = null;
+      if (/\(#[^)]+\)/.test(rawLabel)) {
+        processedLabel = placeholderContext.processLabel(rawLabel);
+      }
+      const matchesRaw = !query || rawLabel.toLowerCase().startsWith(query.toLowerCase());
+      const matchesProcessed = processedLabel && (!query || processedLabel.toLowerCase().startsWith(query.toLowerCase()));
+      if (matchesRaw || matchesProcessed) {
+        let previewText = data.text;
         if (previewText.length > 30) {
           previewText = previewText.substring(0, 30) + "...";
         }
+        let displayLabel = processedLabel;
+        let placeholderParts = null;
+        if (processedLabel) {
+          placeholderParts = this.extractPlaceholderParts(rawLabel, placeholderContext);
+        }
         suggestions.push({
-          label,
+          label: rawLabel,
+          displayLabel,
+          placeholderParts,
           previewText: previewText || "(no description)"
         });
       }
@@ -3132,14 +3223,47 @@ var CustomLabelReferenceSuggest = class extends import_obsidian8.EditorSuggest {
     suggestions.sort((a, b) => a.label.localeCompare(b.label));
     return suggestions;
   }
+  /**
+   * Renders a suggestion item with styled placeholder display.
+   */
   renderSuggestion(suggestion, el) {
+    withErrorBoundary(() => this.renderSuggestionInternal(suggestion, el), void 0, "CustomLabelReferenceSuggest.renderSuggestion");
+  }
+  renderSuggestionInternal(suggestion, el) {
     const container = el.createDiv({ cls: CSS_CLASSES.SUGGESTION_CONTENT });
     const title = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_TITLE });
-    title.setText(`::${suggestion.label}`);
+    if (suggestion.displayLabel && suggestion.placeholderParts) {
+      title.setText("::");
+      let lastIndex = 0;
+      const sortedParts = [...suggestion.placeholderParts].sort((a, b) => a.index - b.index);
+      for (const part of sortedParts) {
+        if (part.index > lastIndex) {
+          const beforeText = suggestion.label.substring(lastIndex, part.index);
+          title.createSpan().setText(beforeText);
+        }
+        const numberSpan = title.createSpan({ cls: CSS_CLASSES.SUGGESTION_NUMBER });
+        numberSpan.setText(part.replacement);
+        const placeholderSpan = title.createSpan({ cls: CSS_CLASSES.SUGGESTION_PLACEHOLDER });
+        placeholderSpan.setText(part.original);
+        lastIndex = part.index + part.original.length;
+      }
+      if (lastIndex < suggestion.label.length) {
+        const afterText = suggestion.label.substring(lastIndex);
+        title.createSpan().setText(afterText);
+      }
+    } else {
+      title.setText(`::${suggestion.label}`);
+    }
     const preview = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_PREVIEW });
     preview.setText(suggestion.previewText);
   }
+  /**
+   * Handles selection of a suggestion, inserting the original label.
+   */
   selectSuggestion(suggestion, evt) {
+    withErrorBoundary(() => this.selectSuggestionInternal(suggestion, evt), void 0, "CustomLabelReferenceSuggest.selectSuggestion");
+  }
+  selectSuggestionInternal(suggestion, evt) {
     if (!this.context) return;
     const { editor, start, end } = this.context;
     const line = editor.getLine(end.line);
@@ -3722,7 +3846,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian9.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian10.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -3740,7 +3864,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian9.Plugin {
       () => this.settings,
       () => {
         var _a;
-        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       }
     ));
@@ -3782,12 +3906,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian9.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian9.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian10.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian9.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian10.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -3800,9 +3924,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian9.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian10.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian9.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian10.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -3814,9 +3938,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian9.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian10.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian9.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian10.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -3828,9 +3952,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian9.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian10.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian9.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian10.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

@@ -225,6 +225,19 @@ li.pandoc-example-item::before {
     max-width: 300px;
 }
 
+.pandoc-suggestion-number {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--text-muted);
+}
+
+.pandoc-suggestion-placeholder {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
 /* Superscript and Subscript Styles */
 .pandoc-superscript,
 sup.pandoc-superscript {

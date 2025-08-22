@@ -49,6 +49,8 @@ export const CSS_CLASSES = {
     SUGGESTION_CONTENT: 'pandoc-suggestion-content',
     SUGGESTION_TITLE: 'pandoc-suggestion-title',
     SUGGESTION_PREVIEW: 'pandoc-suggestion-preview',
+    SUGGESTION_NUMBER: 'pandoc-suggestion-number',
+    SUGGESTION_PLACEHOLDER: 'pandoc-suggestion-placeholder',
     
     // CodeMirror Classes
     LIST_LINE: 'HyperMD-list-line',
