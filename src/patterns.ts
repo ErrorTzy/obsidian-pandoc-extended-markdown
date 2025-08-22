@@ -8,6 +8,7 @@ export class ListPatterns {
     static readonly HASH_LIST = /^(\s*)(#\.)(\s+)/;
     static readonly FANCY_LIST = /^(\s*)(([A-Z]+|[a-z]+|[IVXLCDM]+|[ivxlcdm]+)([.)]))(\s+)/;
     static readonly EXAMPLE_LIST = /^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/;
+    static readonly EXAMPLE_LIST_WITH_CONTENT = /^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/;
     static readonly EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
     static readonly DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
     static readonly DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
@@ -59,6 +60,10 @@ export class ListPatterns {
     // Text formatting patterns
     static readonly BOLD_TEXT = /^\*\*(.+)\*\*$/;
     static readonly UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
+    
+    // Heading patterns
+    static readonly HEADING = /^#{1,6}\s+/;
+    static readonly HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
     
     // Superscript and subscript patterns
     // Matches ^text^ for superscript and ~text~ for subscript
@@ -202,5 +207,51 @@ export class ListPatterns {
             matches.push(match);
         }
         return matches;
+    }
+    
+    /**
+     * Test if a line is a heading.
+     */
+    static isHeading(line: string): boolean {
+        return this.HEADING.test(line);
+    }
+    
+    /**
+     * Test if text might be a definition term (not a marker or indented).
+     */
+    static isDefinitionTerm(line: string): boolean {
+        const trimmed = line.trim();
+        return trimmed !== '' && 
+               !this.isDefinitionMarker(trimmed) && 
+               !this.isIndentedContent(line);
+    }
+    
+    /**
+     * Extract letter and delimiter from a fancy list marker.
+     */
+    static extractLetterMarker(marker: string): RegExpMatchArray | null {
+        return marker.match(/^([A-Za-z]+)([.)])$/);
+    }
+    
+    /**
+     * Extract roman numeral and delimiter from a fancy list marker.
+     */
+    static extractRomanMarker(marker: string): RegExpMatchArray | null {
+        return marker.match(/^([ivxlcdmIVXLCDM]+)([.)])$/);
+    }
+    
+    /**
+     * Check if text starts with a formatting marker.
+     */
+    static startsWithFormatting(text: string): boolean {
+        return /^(\*\*|__|\*|_|`)/.test(text);
+    }
+    
+    /**
+     * Get indent from a line.
+     */
+    static getIndent(line: string): string {
+        const match = line.match(this.INDENT_ONLY);
+        return match ? match[1] : '';
     }
 }

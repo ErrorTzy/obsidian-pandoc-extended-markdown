@@ -285,7 +285,7 @@ function renumberListItems(view: EditorView, insertedLineNum: number): void {
         }
         
         // Check if this line is a list item
-        const listMatch = line.match(/^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+|#)([.)])(\s+)/);
+        const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
         if (!listMatch) {
             // Not a list item, stop here
             break;

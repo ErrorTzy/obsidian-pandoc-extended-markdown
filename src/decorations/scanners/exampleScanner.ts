@@ -38,7 +38,7 @@ export function scanExampleLabels(
         }
         
         const line = lines[i];
-        const match = line.match(/^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/);
+        const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
         if (match) {
             const label = match[2];
             const content = match[3].trim();

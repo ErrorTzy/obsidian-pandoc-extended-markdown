@@ -30,7 +30,7 @@ export function processHashList(
 ): Array<{from: number, to: number, decoration: Decoration}> | null {
     const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-    const hashMatch = lineText.match(/^(\s*)(#\.)(\s+)/);
+    const hashMatch = ListPatterns.isHashList(lineText);
     
     if (!hashMatch) return null;
     
@@ -108,8 +108,8 @@ export function processFancyList(
     
     // Determine list type and appropriate class
     let listClass = CSS_CLASSES.FANCY_LIST_UPPER_ALPHA;
-    const letterMatch = marker.match(/^([A-Za-z]+)([.)])$/);
-    const romanMatch = marker.match(/^([ivxlcdmIVXLCDM]+)([.)])$/);
+    const letterMatch = ListPatterns.extractLetterMarker(marker);
+    const romanMatch = ListPatterns.extractRomanMarker(marker);
     
     if (letterMatch) {
         const letter = letterMatch[1];
@@ -166,7 +166,7 @@ export function processExampleList(
     } = context;
     
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-    const exampleMatch = lineText.match(/^(\s*)(\(@([a-zA-Z0-9_-]*)\))(\s+)/);
+    const exampleMatch = ListPatterns.isExampleList(lineText);
     
     if (!exampleMatch) return null;
     

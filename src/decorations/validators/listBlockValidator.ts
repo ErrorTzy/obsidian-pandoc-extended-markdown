@@ -28,9 +28,9 @@ export class ListBlockValidator {
             
             // Check if previous line is a definition term (special case)
             const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
-                !lines[i - 1].match(/^\s*[~:]\s+/) && 
-                !lines[i - 1].match(/^(    |\t)/) &&
-                line.match(/^\s*[~:]\s+/);
+                !ListPatterns.isDefinitionMarker(lines[i - 1]) && 
+                !ListPatterns.isIndentedContent(lines[i - 1]) &&
+                ListPatterns.isDefinitionMarker(line);
             
             if (isCurrentList && listBlockStart === -1) {
                 // Start of a new list block

@@ -21,7 +21,7 @@ export function processDefinitionItem(
     const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
     
-    const defItemMatch = lineText.match(/^(\s*)([~:])(\s+)/);
+    const defItemMatch = ListPatterns.isDefinitionMarker(lineText);
     if (!defItemMatch) return null;
     
     // Check if this list item is in an invalid block
@@ -60,7 +60,7 @@ export function processDefinitionTerm(
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
     
     // Check if this line is a definition term
-    if (!lineText.trim() || lineText.match(/^\s*[~:]\s*/) || lineText.match(/^(    |\t)/)) {
+    if (!lineText.trim() || ListPatterns.isDefinitionMarker(lineText) || ListPatterns.isIndentedContent(lineText)) {
         return null;
     }
     
@@ -73,13 +73,13 @@ export function processDefinitionTerm(
         const nextText = nextLine.text;
         
         // Direct definition (no empty line)
-        if (nextText.match(/^\s*[~:]\s+/)) {
+        if (ListPatterns.isDefinitionMarker(nextText)) {
             isDefinitionTerm = true;
         }
         // Empty line followed by definition
         else if (nextText.trim() === '' && line.number + 1 < view.state.doc.lines) {
             const lineAfterEmpty = view.state.doc.line(line.number + 2);
-            if (lineAfterEmpty.text.match(/^\s*[~:]\s+/)) {
+            if (ListPatterns.isDefinitionMarker(lineAfterEmpty.text)) {
                 isDefinitionTerm = true;
             }
         }
@@ -105,7 +105,7 @@ export function processDefinitionParagraph(
     const { line, lineNum, lineText, view } = context;
     const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
     
-    const indentMatch = lineText.match(/^(    |\t)(.*)$/);
+    const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(/^(    |\t)(.*)$/) : null;
     if (!indentMatch) return null;
     
     // Check if we're after a definition marker
@@ -115,12 +115,12 @@ export function processDefinitionParagraph(
         const prevText = prevLine.text;
         
         // If we find a definition marker, we're in definition context
-        if (prevText.match(/^\s*[~:]\s+/)) {
+        if (ListPatterns.isDefinitionMarker(prevText)) {
             inDefinitionContext = true;
             break;
         }
         // If we find a non-empty, non-indented line that's not a definition
-        if (prevText.trim() && !prevText.match(/^(    |\t)/) && !prevText.match(/^\s*[~:]\s+/)) {
+        if (prevText.trim() && !ListPatterns.isIndentedContent(prevText) && !ListPatterns.isDefinitionMarker(prevText)) {
             // Could still be in context if this is a term followed by definition
             break;
         }

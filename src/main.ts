@@ -257,7 +257,7 @@ export class PandocListsPlugin extends Plugin {
         for (const term of terms) {
             const line = lines[term.index];
             const trimmedLine = line.trim();
-            const originalIndent = line.match(/^(\s*)/)?.[1] || '';
+            const originalIndent = ListPatterns.getIndent(line);
             
             if (anyHasBold) {
                 // Remove bold from all terms
@@ -286,7 +286,7 @@ export class PandocListsPlugin extends Plugin {
         for (const term of terms) {
             const line = lines[term.index];
             const trimmedLine = line.trim();
-            const originalIndent = line.match(/^(\s*)/)?.[1] || '';
+            const originalIndent = ListPatterns.getIndent(line);
             
             if (anyHasUnderline) {
                 // Remove underline from all terms

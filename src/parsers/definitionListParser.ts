@@ -230,7 +230,7 @@ function processMarkdownText(element: HTMLElement, text: string): void {
             element.appendChild(code);
         }
         // Regular text
-        else if (part.match(/^(\*\*|__|\*|_|`)/)) {
+        else if (ListPatterns.startsWithFormatting(part)) {
             // Skip delimiters captured by split
             return;
         } else {

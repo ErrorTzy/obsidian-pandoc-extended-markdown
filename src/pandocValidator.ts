@@ -80,7 +80,7 @@ export function isStrictPandocHeading(context: ValidationContext, strictMode: bo
     const { lines, currentLine } = context;
     const line = lines[currentLine];
     
-    if (!line.match(/^#{1,6}\s+/)) {
+    if (!ListPatterns.isHeading(line)) {
         return true; // Not a heading
     }
     
@@ -112,7 +112,7 @@ export function formatToPandocStandard(content: string, moreExtendedSyntax: bool
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const isCurrentLineList = isListItem(line, moreExtendedSyntax);
-        const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
+        const isCurrentLineHeading = ListPatterns.isHeading(line);
         const isEmpty = line.trim() === '';
         
         // Handle transition into list block
@@ -198,7 +198,7 @@ export function checkPandocFormatting(content: string, moreExtendedSyntax: boole
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const isCurrentLineList = isListItem(line, moreExtendedSyntax);
-        const isCurrentLineHeading = line.match(/^#{1,6}\s+/) !== null;
+        const isCurrentLineHeading = ListPatterns.isHeading(line);
         const isEmpty = line.trim() === '';
         
         // Check list formatting
