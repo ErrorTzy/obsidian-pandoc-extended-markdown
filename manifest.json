@@ -1,7 +1,7 @@
 {
 	"id": "pandoc-extended-markdown",
 	"name": "Pandoc Extended Markdown",
-	"version": "1.3.2",
+	"version": "1.4.0",
 	"minAppVersion": "1.4.0",
 	"description": "Render Pandoc extended markdown syntax: fancy lists, definition lists, example lists with cross-references, superscripts, and subscripts.",
 	"author": "ErrorTzy",
