@@ -89,7 +89,7 @@ function processTextNode(node: Node, container: HTMLElement): void {
 }
 
 function processReferencesInText(text: string, container: HTMLElement): void {
-    const refPattern = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
+    const refPattern = ListPatterns.CUSTOM_LABEL_REFERENCE;
     let lastIndex = 0;
     let match;
     

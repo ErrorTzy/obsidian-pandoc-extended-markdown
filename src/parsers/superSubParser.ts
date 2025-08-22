@@ -15,7 +15,7 @@ export interface SuperSubMatch {
 function extractContent(match: string, delimiter: string): string {
     // Remove the delimiters and unescape spaces
     const content = match.slice(1, -1);
-    return content.replace(/\\[ ]/g, ' ');
+    return ListPatterns.unescapeSpaces(content);
 }
 
 /**

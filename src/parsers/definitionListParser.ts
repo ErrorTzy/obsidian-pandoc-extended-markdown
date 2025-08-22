@@ -198,7 +198,7 @@ function applyInlineMarkdown(element: HTMLElement, text: string): void {
 
 function processMarkdownText(element: HTMLElement, text: string): void {
     // Parse the text safely without innerHTML
-    const parts = text.split(/(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g);
+    const parts = ListPatterns.splitByInlineFormatting(text);
     
     parts.forEach(part => {
         if (!part) return;

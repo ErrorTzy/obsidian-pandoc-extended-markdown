@@ -71,6 +71,15 @@ export class ListPatterns {
     static readonly BOLD_TEXT = /^\*\*(.+)\*\*$/;
     static readonly UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
     
+    // Inline formatting patterns for parsing
+    static readonly INLINE_FORMATTING_SPLIT = /(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g;
+    
+    // Escaped space pattern
+    static readonly ESCAPED_SPACE = /\\[ ]/g;
+    
+    // Example reference start pattern (for autocomplete)
+    static readonly EXAMPLE_REF_START = /\(@/g;
+    
     // Heading patterns
     static readonly HEADING = /^#{1,6}\s+/;
     static readonly HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
@@ -264,5 +273,26 @@ export class ListPatterns {
     static getIndent(line: string): string {
         const match = line.match(this.INDENT_ONLY);
         return match ? match[1] : '';
+    }
+    
+    /**
+     * Replace escaped spaces with regular spaces.
+     */
+    static unescapeSpaces(text: string): string {
+        return text.replace(this.ESCAPED_SPACE, ' ');
+    }
+    
+    /**
+     * Find all example reference starts in text.
+     */
+    static findExampleRefStarts(text: string): RegExpMatchArray[] {
+        return [...text.matchAll(this.EXAMPLE_REF_START)];
+    }
+    
+    /**
+     * Split text by inline formatting markers.
+     */
+    static splitByInlineFormatting(text: string): string[] {
+        return text.split(this.INLINE_FORMATTING_SPLIT);
     }
 }

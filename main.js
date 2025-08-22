@@ -309,6 +309,24 @@ var ListPatterns2 = class {
     const match = line.match(this.INDENT_ONLY);
     return match ? match[1] : "";
   }
+  /**
+   * Replace escaped spaces with regular spaces.
+   */
+  static unescapeSpaces(text) {
+    return text.replace(this.ESCAPED_SPACE, " ");
+  }
+  /**
+   * Find all example reference starts in text.
+   */
+  static findExampleRefStarts(text) {
+    return [...text.matchAll(this.EXAMPLE_REF_START)];
+  }
+  /**
+   * Split text by inline formatting markers.
+   */
+  static splitByInlineFormatting(text) {
+    return text.split(this.INLINE_FORMATTING_SPLIT);
+  }
 };
 // Base patterns as static readonly properties
 ListPatterns2.HASH_LIST = /^(\s*)(#\.)(\s+)/;
@@ -368,6 +386,12 @@ ListPatterns2.INDENT_ONLY = /^(\s*)/;
 // Text formatting patterns
 ListPatterns2.BOLD_TEXT = /^\*\*(.+)\*\*$/;
 ListPatterns2.UNDERLINE_SPAN = /^<span class="underline">(.+)<\/span>$/;
+// Inline formatting patterns for parsing
+ListPatterns2.INLINE_FORMATTING_SPLIT = /(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)\*|`(.+?)`)/g;
+// Escaped space pattern
+ListPatterns2.ESCAPED_SPACE = /\\[ ]/g;
+// Example reference start pattern (for autocomplete)
+ListPatterns2.EXAMPLE_REF_START = /\(@/g;
 // Heading patterns
 ListPatterns2.HEADING = /^#{1,6}\s+/;
 ListPatterns2.HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
@@ -1104,7 +1128,7 @@ function processExampleReferences(context) {
   const { line, lineText, cursorPos, exampleLabels, exampleContent } = context;
   const decorations = [];
   if (!exampleLabels) return decorations;
-  const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
+  const refRegex = ListPatterns2.EXAMPLE_REFERENCE;
   let match;
   while ((match = refRegex.exec(lineText)) !== null) {
     const label = match[1];
@@ -1137,7 +1161,7 @@ function processSuperscripts(context) {
     const supEnd = line.from + supMatch.index + supMatch[0].length;
     const cursorInSup = cursorPos >= supStart && cursorPos <= supEnd;
     if (!cursorInSup) {
-      const content = supMatch[0].slice(1, -1).replace(/\\[ ]/g, " ");
+      const content = ListPatterns2.unescapeSpaces(supMatch[0].slice(1, -1));
       decorations.push({
         from: supStart,
         to: supEnd,
@@ -1158,7 +1182,7 @@ function processSubscripts(context) {
     const subEnd = line.from + subMatch.index + subMatch[0].length;
     const cursorInSub = cursorPos >= subStart && cursorPos <= subEnd;
     if (!cursorInSub) {
-      const content = subMatch[0].slice(1, -1).replace(/\\[ ]/g, " ");
+      const content = ListPatterns2.unescapeSpaces(subMatch[0].slice(1, -1));
       decorations.push({
         from: subStart,
         to: subEnd,
@@ -1552,7 +1576,7 @@ function parseExampleListMarker(line) {
 // src/parsers/superSubParser.ts
 function extractContent(match, delimiter) {
   const content = match.slice(1, -1);
-  return content.replace(/\\[ ]/g, " ");
+  return ListPatterns2.unescapeSpaces(content);
 }
 function findSuperSubInText(text) {
   const matches = [];
@@ -1756,7 +1780,7 @@ var ReadingModeParser = class {
    */
   findExampleReferences(text) {
     const references = [];
-    const regex = /\(@([a-zA-Z0-9_-]+)\)/g;
+    const regex = ListPatterns2.EXAMPLE_REFERENCE;
     let match;
     while ((match = regex.exec(text)) !== null) {
       references.push({
@@ -2220,7 +2244,7 @@ function processTextNode(node, container) {
   }
 }
 function processReferencesInText(text, container) {
-  const refPattern = /\{::([a-zA-Z][a-zA-Z0-9_']*)\}/g;
+  const refPattern = ListPatterns2.CUSTOM_LABEL_REFERENCE;
   let lastIndex = 0;
   let match;
   while ((match = refPattern.exec(text)) !== null) {
@@ -2575,7 +2599,7 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian7.EditorSuggest 
   onTrigger(cursor, editor, file) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
     if (!line.contains("(@")) return null;
-    const matches = [...line.matchAll(/\(@/g)];
+    const matches = ListPatterns2.findExampleRefStarts(line);
     if (matches.length === 0) return null;
     const lastMatch = matches[matches.length - 1];
     const startIndex = lastMatch.index;

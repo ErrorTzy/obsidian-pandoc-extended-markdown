@@ -159,7 +159,7 @@ export class ReadingModeParser {
      */
     private findExampleReferences(text: string): ReferenceData['references'] {
         const references: ReferenceData['references'] = [];
-        const regex = /\(@([a-zA-Z0-9_-]+)\)/g;
+        const regex = ListPatterns.EXAMPLE_REFERENCE;
         let match;
 
         while ((match = regex.exec(text)) !== null) {

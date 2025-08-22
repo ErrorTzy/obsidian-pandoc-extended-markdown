@@ -25,7 +25,7 @@ export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestio
         if (!line.contains('(@')) return null;
         
         // Find the last (@ occurrence
-        const matches = [...line.matchAll(/\(@/g)];
+        const matches = ListPatterns.findExampleRefStarts(line);
         if (matches.length === 0) return null;
         
         const lastMatch = matches[matches.length - 1];

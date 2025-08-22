@@ -173,7 +173,7 @@ function processExampleReferences(element: HTMLElement, exampleMap: Map<string, 
     while (walker.nextNode()) {
         const node = walker.currentNode as Text;
         const text = node.textContent || '';
-        const regex = /\(@([a-zA-Z0-9_-]+)\)/g;
+        const regex = ListPatterns.EXAMPLE_REFERENCE;
         const matches: RegExpMatchArray[] = [];
         let match;
         

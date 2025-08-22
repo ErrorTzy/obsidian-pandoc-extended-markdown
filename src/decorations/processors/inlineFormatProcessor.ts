@@ -18,7 +18,7 @@ export function processExampleReferences(
     
     if (!exampleLabels) return decorations;
     
-    const refRegex = /\(@([a-zA-Z0-9_-]+)\)/g;
+    const refRegex = ListPatterns.EXAMPLE_REFERENCE;
     let match;
     while ((match = refRegex.exec(lineText)) !== null) {
         const label = match[1];
@@ -65,7 +65,7 @@ export function processSuperscripts(
         // Only replace if cursor is not within the superscript
         if (!cursorInSup) {
             // Extract content and unescape spaces
-            const content = supMatch[0].slice(1, -1).replace(/\\[ ]/g, ' ');
+            const content = ListPatterns.unescapeSpaces(supMatch[0].slice(1, -1));
             decorations.push({
                 from: supStart,
                 to: supEnd,
@@ -96,7 +96,7 @@ export function processSubscripts(
         // Only replace if cursor is not within the subscript
         if (!cursorInSub) {
             // Extract content and unescape spaces
-            const content = subMatch[0].slice(1, -1).replace(/\\[ ]/g, ' ');
+            const content = ListPatterns.unescapeSpaces(subMatch[0].slice(1, -1));
             decorations.push({
                 from: subStart,
                 to: subEnd,
