@@ -94,6 +94,14 @@ function getNextListMarker(currentLine: string, allLines?: string[], currentLine
         return { marker: '#.', indent: hashMatch[1], spaces: hashMatch[3] };
     }
     
+    // Check for custom label lists
+    const customLabelMatch = ListPatterns.isCustomLabelList(currentLine);
+    if (customLabelMatch) {
+        const indent = customLabelMatch[1];
+        const spaces = customLabelMatch[4]; // Group 4 is spaces in CUSTOM_LABEL_LIST pattern
+        return { marker: '{::}', indent, spaces };
+    }
+    
     // Check for letters or roman numerals
     const listMatch = currentLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
     if (listMatch) {
@@ -428,6 +436,9 @@ function isEmptyListItem(line: string): boolean {
     // The only time (@) should be deleted is when cursor is between @ and )
     // which is handled by the special case in handleListEnter
     
+    // Check custom label lists
+    if (line.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)) return true;
+    
     // Check definition lists
     if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
     
@@ -457,6 +468,35 @@ const handleListEnter: KeyBinding = {
             // Only delete if cursor is truly between @ and ) with nothing else
             if (beforeCursor.endsWith('(@') && afterCursor.startsWith(')')) {
                 // Cursor is between @ and ), treat as empty list item and remove the marker
+                const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+                const indent = indentMatch ? indentMatch[1] : '';
+                
+                // Remove the marker entirely, leaving just the indentation
+                const changes = {
+                    from: line.from,
+                    to: line.to,
+                    insert: indent
+                };
+                
+                const transaction = state.update({
+                    changes,
+                    selection: EditorSelection.cursor(line.from + indent.length)
+                });
+                
+                view.dispatch(transaction);
+                return true;
+            }
+        }
+        
+        // Special case: handle Enter when cursor is between {:: and } in an empty custom label list
+        const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
+        if (isEmptyCustomLabelList) {
+            // Check if cursor is between {:: and }
+            const beforeCursor = state.doc.sliceString(line.from, selection.from);
+            const afterCursor = state.doc.sliceString(selection.from, line.to);
+            // Only delete if cursor is truly between {:: and } with nothing else
+            if (beforeCursor.endsWith('{::') && afterCursor.startsWith('}')) {
+                // Cursor is between {:: and }, treat as empty list item and remove the marker
                 const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
                 const indent = indentMatch ? indentMatch[1] : '';
                 
@@ -594,8 +634,11 @@ const handleListEnter: KeyBinding = {
             };
             
             // For example lists with (@), place cursor inside the parentheses
+            // For custom label lists with {::}, place cursor between :: and }
             const cursorOffset = markerInfo.marker === '(@)' 
                 ? newLine.length - spaces.length - 1  // Place cursor between @ and )
+                : markerInfo.marker === '{::}'
+                ? newLine.length - spaces.length - 1  // Place cursor between :: and }
                 : newLine.length;                      // Place cursor after the spaces
             
             const transaction = state.update({
@@ -606,7 +649,7 @@ const handleListEnter: KeyBinding = {
             view.dispatch(transaction);
             
             // If auto-renumbering is enabled and this is a fancy list, renumber the list
-            if (settings.autoRenumberLists && markerInfo.marker !== '(@)' && markerInfo.marker !== '#.' && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
+            if (settings.autoRenumberLists && markerInfo.marker !== '(@)' && markerInfo.marker !== '{::}' && markerInfo.marker !== '#.' && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
                 // Get the line number of the newly inserted item (it's the next line)
                 const newLineNum = line.number; // This is 1-based, but we need 0-based for our function
                 

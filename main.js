@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view11 = require("@codemirror/view");
 
@@ -322,6 +322,12 @@ var ListPatterns = class {
     return [...text.matchAll(this.EXAMPLE_REF_START)];
   }
   /**
+   * Find all custom label reference starts in text.
+   */
+  static findCustomLabelRefStarts(text) {
+    return [...text.matchAll(this.CUSTOM_LABEL_REF_START)];
+  }
+  /**
    * Split text by inline formatting markers.
    */
   static splitByInlineFormatting(text) {
@@ -377,10 +383,12 @@ ListPatterns.EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$
 ListPatterns.EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
 ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
 ListPatterns.EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
+ListPatterns.EMPTY_CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)*\})(\s*)$/;
+ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL = /^(\s*)(\{::\})(\s*)$/;
 // Complex list patterns for autocompletion
-ListPatterns.ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
-ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
-ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+ListPatterns.ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})/;
+ListPatterns.ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
+ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
 // Indentation patterns
 ListPatterns.INDENT_ONLY = /^(\s*)/;
 // Text formatting patterns
@@ -392,6 +400,8 @@ ListPatterns.INLINE_FORMATTING_SPLIT = /(__(.+?)__|\*\*(.+?)\*\*|_(.+?)_|\*(.+?)
 ListPatterns.ESCAPED_SPACE = /\\[ ]/g;
 // Example reference start pattern (for autocomplete)
 ListPatterns.EXAMPLE_REF_START = /\(@/g;
+// Custom label reference start pattern (for autocomplete)
+ListPatterns.CUSTOM_LABEL_REF_START = /\{::/g;
 // Heading patterns
 ListPatterns.HEADING = /^#{1,6}\s+/;
 ListPatterns.HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
@@ -2683,6 +2693,98 @@ var ExampleReferenceSuggestFixed = class extends import_obsidian7.EditorSuggest 
   }
 };
 
+// src/customLabelReferenceSuggest.ts
+var import_obsidian8 = require("obsidian");
+var CustomLabelReferenceSuggest = class extends import_obsidian8.EditorSuggest {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+  }
+  onTrigger(cursor, editor, file) {
+    if (!this.plugin.settings.moreExtendedSyntax) return null;
+    const line = editor.getLine(cursor.line).substring(0, cursor.ch);
+    if (!line.includes("{::")) return null;
+    const matches = ListPatterns.findCustomLabelRefStarts(line);
+    if (matches.length === 0) return null;
+    const lastMatch = matches[matches.length - 1];
+    const startIndex = lastMatch.index;
+    const afterStart = line.substring(startIndex + 3);
+    if (afterStart.includes("}")) return null;
+    const query = afterStart;
+    return {
+      start: {
+        ch: startIndex,
+        line: cursor.line
+      },
+      end: cursor,
+      query
+    };
+  }
+  getSuggestions(context) {
+    const { query } = context;
+    const doc = context.editor.getValue();
+    const lines = doc.split("\n");
+    const labelData = /* @__PURE__ */ new Map();
+    for (const line of lines) {
+      const match = ListPatterns.isCustomLabelList(line);
+      if (match) {
+        const label = match[3];
+        if (label) {
+          const markerEnd = match[0].length;
+          const text = line.substring(markerEnd).trim();
+          if (!labelData.has(label)) {
+            labelData.set(label, text);
+          }
+        }
+      }
+    }
+    const suggestions = [];
+    for (const [label, text] of labelData) {
+      if (!query || label.toLowerCase().startsWith(query.toLowerCase())) {
+        let previewText = text;
+        if (previewText.length > 30) {
+          previewText = previewText.substring(0, 30) + "...";
+        }
+        suggestions.push({
+          label,
+          previewText: previewText || "(no description)"
+        });
+      }
+    }
+    suggestions.sort((a, b) => a.label.localeCompare(b.label));
+    return suggestions;
+  }
+  renderSuggestion(suggestion, el) {
+    const container = el.createDiv({ cls: CSS_CLASSES.SUGGESTION_CONTENT });
+    const title = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_TITLE });
+    title.setText(`::${suggestion.label}`);
+    const preview = container.createDiv({ cls: CSS_CLASSES.SUGGESTION_PREVIEW });
+    preview.setText(suggestion.previewText);
+  }
+  selectSuggestion(suggestion, evt) {
+    if (!this.context) return;
+    const { editor, start, end } = this.context;
+    const line = editor.getLine(end.line);
+    const afterCursor = line.substring(end.ch);
+    const hasClosingBrace = afterCursor.startsWith("}");
+    let replacement;
+    if (hasClosingBrace) {
+      replacement = `{::${suggestion.label}`;
+    } else {
+      replacement = `{::${suggestion.label}}`;
+    }
+    editor.replaceRange(replacement, start, end);
+    let newCh = start.ch + replacement.length;
+    if (hasClosingBrace) {
+      newCh += 1;
+    }
+    editor.setCursor({
+      line: start.line,
+      ch: newCh
+    });
+  }
+};
+
 // src/listAutocompletion.ts
 var import_state2 = require("@codemirror/state");
 function getNextLetter(letter) {
@@ -2788,6 +2890,12 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
   const hashMatch = ListPatterns.isHashList(currentLine);
   if (hashMatch) {
     return { marker: "#.", indent: hashMatch[1], spaces: hashMatch[3] };
+  }
+  const customLabelMatch = ListPatterns.isCustomLabelList(currentLine);
+  if (customLabelMatch) {
+    const indent = customLabelMatch[1];
+    const spaces = customLabelMatch[4];
+    return { marker: "{::}", indent, spaces };
   }
   const listMatch = currentLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
   if (listMatch) {
@@ -2998,6 +3106,7 @@ function renumberListItems(view, insertedLineNum) {
 function isEmptyListItem(line) {
   if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
   if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)) return true;
   if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
   return false;
 }
@@ -3014,6 +3123,26 @@ function createListAutocompletionKeymap(settings) {
         const beforeCursor = state.doc.sliceString(line.from, selection.from);
         const afterCursor = state.doc.sliceString(selection.from, line.to);
         if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
+          const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+          const indent = indentMatch ? indentMatch[1] : "";
+          const changes = {
+            from: line.from,
+            to: line.to,
+            insert: indent
+          };
+          const transaction = state.update({
+            changes,
+            selection: import_state2.EditorSelection.cursor(line.from + indent.length)
+          });
+          view.dispatch(transaction);
+          return true;
+        }
+      }
+      const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
+      if (isEmptyCustomLabelList) {
+        const beforeCursor = state.doc.sliceString(line.from, selection.from);
+        const afterCursor = state.doc.sliceString(selection.from, line.to);
+        if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
           const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
           const indent = indentMatch ? indentMatch[1] : "";
           const changes = {
@@ -3110,13 +3239,13 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
           to: insertPos,
           insert: newLine
         };
-        const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : newLine.length;
+        const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
         const transaction = state.update({
           changes,
           selection: import_state2.EditorSelection.cursor(insertPos + cursorOffset)
         });
         view.dispatch(transaction);
-        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
+        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
           const newLineNum = line.number;
           setTimeout(() => {
             renumberListItems(view, newLineNum);
@@ -3207,7 +3336,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/main.ts
-var PandocListsPlugin = class extends import_obsidian8.Plugin {
+var PandocListsPlugin = class extends import_obsidian9.Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -3216,6 +3345,8 @@ var PandocListsPlugin = class extends import_obsidian8.Plugin {
     this.setupModeChangeDetection();
     this.suggester = new ExampleReferenceSuggestFixed(this);
     this.registerEditorSuggest(this.suggester);
+    this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
+    this.registerEditorSuggest(this.customLabelSuggester);
     this.registerCommands();
   }
   registerExtensions() {
@@ -3258,12 +3389,12 @@ var PandocListsPlugin = class extends import_obsidian8.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian8.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian9.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian8.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian9.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -3276,9 +3407,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian8.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian9.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian8.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian9.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -3290,9 +3421,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian8.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian9.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian8.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian9.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -3304,9 +3435,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian8.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian9.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian8.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian9.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

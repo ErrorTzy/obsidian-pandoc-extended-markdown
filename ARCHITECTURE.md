@@ -23,6 +23,7 @@ pandoc-lists-plugin/
 │   ├── pandocValidator.ts                # Validates and formats lists to Pandoc standards
 │   ├── listAutocompletion.ts             # Handles Enter key for list continuation
 │   ├── ExampleReferenceSuggestFixed.ts   # Autocomplete suggestion system for (@references)
+│   ├── customLabelReferenceSuggest.ts    # Autocomplete suggestion system for {::references}
 │   ├── constants.ts                      # Centralized constants for magic values and CSS classes
 │   ├── patterns.ts                       # Optimized regex patterns with caching
 │   ├── state/                            # State management architecture

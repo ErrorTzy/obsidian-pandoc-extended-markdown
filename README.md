@@ -167,6 +167,8 @@ This renders as:
 ##### Features
 - **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
 - **Cross-References**: Reference labels elsewhere in your document (e.g., `From {::P} and {::Q}, we get {::R}`)
+- **Autocompletion**: Press Enter after a custom label list item to create a new `{::}` marker with cursor positioned for label entry
+- **Autocomplete for References**: When typing `{::` in your document, an autocomplete dropdown will appear showing all available custom labels with preview text
 - **Strict Mode Support**: When strict Pandoc mode is enabled, custom label blocks must be preceded and followed by blank lines
 - **Auto-Formatting**: The format command recognizes and properly formats custom label lists
 - **Reading Mode**: Full support in both live preview and reading modes

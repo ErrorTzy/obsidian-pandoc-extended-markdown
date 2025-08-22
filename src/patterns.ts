@@ -58,11 +58,13 @@ export class ListPatterns {
     static readonly EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
     static readonly EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
     static readonly EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
+    static readonly EMPTY_CUSTOM_LABEL_LIST = /^(\s*)(\{::([a-zA-Z][a-zA-Z0-9_']*)*\})(\s*)$/;
+    static readonly EMPTY_CUSTOM_LABEL_LIST_NO_LABEL = /^(\s*)(\{::\})(\s*)$/;
     
     // Complex list patterns for autocompletion
-    static readonly ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])/;
-    static readonly ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
-    static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:])(\s+)/;
+    static readonly ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})/;
+    static readonly ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
+    static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
     
     // Indentation patterns
     static readonly INDENT_ONLY = /^(\s*)/;
@@ -79,6 +81,9 @@ export class ListPatterns {
     
     // Example reference start pattern (for autocomplete)
     static readonly EXAMPLE_REF_START = /\(@/g;
+    
+    // Custom label reference start pattern (for autocomplete)
+    static readonly CUSTOM_LABEL_REF_START = /\{::/g;
     
     // Heading patterns
     static readonly HEADING = /^#{1,6}\s+/;
@@ -287,6 +292,13 @@ export class ListPatterns {
      */
     static findExampleRefStarts(text: string): RegExpMatchArray[] {
         return [...text.matchAll(this.EXAMPLE_REF_START)];
+    }
+    
+    /**
+     * Find all custom label reference starts in text.
+     */
+    static findCustomLabelRefStarts(text: string): RegExpMatchArray[] {
+        return [...text.matchAll(this.CUSTOM_LABEL_REF_START)];
     }
     
     /**

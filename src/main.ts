@@ -17,12 +17,14 @@ import { ListPatterns } from './patterns';
 import { pandocListsExtension } from './decorations/pandocListsExtension';
 import { processReadingMode } from './parsers/readingModeProcessor';
 import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
+import { CustomLabelReferenceSuggest } from './customLabelReferenceSuggest';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
 import { pluginStateManager } from './state/PluginStateManager';
 
 export class PandocListsPlugin extends Plugin {
     private suggester: ExampleReferenceSuggestFixed;
+    private customLabelSuggester: CustomLabelReferenceSuggest;
     settings: PandocExtendedMarkdownSettings;
 
     async onload() {
@@ -41,6 +43,10 @@ export class PandocListsPlugin extends Plugin {
         // Register example reference suggester
         this.suggester = new ExampleReferenceSuggestFixed(this);
         this.registerEditorSuggest(this.suggester);
+        
+        // Register custom label reference suggester
+        this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
+        this.registerEditorSuggest(this.customLabelSuggester);
         
         // Register all commands
         this.registerCommands();
