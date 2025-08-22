@@ -14,18 +14,20 @@ Render Pandoc-style superscripts and subscripts:
 - Works in all contexts: paragraphs, lists, definition lists, etc.
 
 ### Fancy Lists
-- **Uppercase Letters**: `A.` `B.` `C.`
+- **Uppercase Letters**: `A.` `B.` `C.` (In strict mode, there must be two spaces after `A.`)
 - **Lowercase Letters**: `a)` `b)` `c)`  
 - **Roman Numerals**: `I.` `II.` `III.` or `i)` `ii)` `iii)`
+- **More bullets**: `+` `*`
 - **Hash Auto-numbering**: `#.` automatically numbers items sequentially
 - **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
 - **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
 
 ### Strict Pandoc Mode
+
+- **Format Command**: Auto-format document to meet Pandoc standards
 - **Toggle Setting**: Enable strict Pandoc formatting requirements
 - **Validation**: Only renders lists that conform to Pandoc standards
 - **Check Command**: Scan document for formatting issues
-- **Format Command**: Auto-format document to meet Pandoc standards
 
 ### Example Lists with Cross-References
 Create numbered examples that can be referenced throughout your document:
@@ -143,7 +145,7 @@ This feature:
 - Preserves nested list numbering independently
 
 
-### Beyond Pandoc Extended Syntax!
+### Beyond Pandoc Extended Syntax!!!
 
 #### Custom Label Lists
 
@@ -155,6 +157,14 @@ When "More extended syntax" is enabled in settings, you can use custom label lis
 {::P} All humans are mortal.
 {::Q} Socrates is human.
 {::R} Therefore, Socrates is mortal.
+```
+
+This renders as:
+
+```
+(P) All humans are mortal.
+(Q) Socrates is human.
+(R) Therefore, Socrates is mortal.
 ```
 
 ##### Auto-numbering with Placeholders
@@ -188,29 +198,8 @@ Which renders as:
 - (2) A conclusion
 - (1+2) Combined expression
 
-##### Interactive Three-Level Display System (Live Preview)
-
-Custom labels with placeholders feature an intelligent three-level display system in live preview mode that adapts based on cursor position:
-
-**Level 1 - Collapsed** (cursor outside): Displays as a compact widget, e.g., `(P1')`
-
-**Level 2 - Semi-expanded** (cursor on label, not on placeholder): Shows the processed form with numbers replacing placeholders, e.g., `{::P1'}`. Numbers have a dotted underline to indicate they're interactive.
-
-**Level 3 - Fully expanded** (cursor on specific placeholder): Shows only that placeholder in raw form while keeping others as numbers, e.g., `{::(#good)+2'}` when cursor is on the first placeholder.
-
-This selective expansion feature is especially useful for complex labels with multiple placeholders:
-- `{::(#a)+(#b)+(#c)}` - When cursor is on `(#b)`, displays as `{::1+(#b)+3}`
-- Each placeholder expands independently for precise editing
-- Works for both list labels and inline references
-
-This renders as:
-```
-(P) All humans are mortal.
-(Q) Socrates is human.
-(R) Therefore, Socrates is mortal.
-```
-
 ##### Features
+
 - **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
 - **Cross-References**: Reference labels elsewhere in your document (e.g., `From {::P} and {::Q}, we get {::R}`)
 - **Autocompletion**: Press Enter after a custom label list item to create a new `{::}` marker with cursor positioned for label entry
