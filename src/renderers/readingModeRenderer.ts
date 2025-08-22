@@ -6,7 +6,7 @@
  */
 
 import { setTooltip } from 'obsidian';
-import { ParsedLine, HashListData, FancyListData, ExampleListData, DefinitionData, ReferenceData } from '../parsers/ReadingModeParser';
+import { ParsedLine, HashListData, FancyListData, ExampleListData, DefinitionData, ReferenceData } from '../parsers/readingModeParser';
 import { CSS_CLASSES, DECORATION_STYLES } from '../constants';
 
 export interface RenderContext {

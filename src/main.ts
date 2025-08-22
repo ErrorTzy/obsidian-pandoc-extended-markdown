@@ -5,7 +5,7 @@ import { keymap, EditorView } from '@codemirror/view';
 
 // Types
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
-import { ProcessorConfig, createProcessorConfig } from './types/ProcessorConfig';
+import { ProcessorConfig, createProcessorConfig } from './types/processorConfig';
 
 // Constants
 import { MESSAGES, COMMANDS, UI_CONSTANTS } from './constants';
@@ -16,14 +16,14 @@ import { ListPatterns } from './patterns';
 // Internal modules
 import { pandocExtendedMarkdownExtension } from './decorations/pandocExtendedMarkdownExtension';
 import { processReadingMode } from './parsers/readingModeProcessor';
-import { ExampleReferenceSuggestFixed } from './ExampleReferenceSuggestFixed';
+import { ExampleReferenceSuggest } from './exampleReferenceSuggest';
 import { CustomLabelReferenceSuggest } from './customLabelReferenceSuggest';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
-import { pluginStateManager } from './state/PluginStateManager';
+import { pluginStateManager } from './state/pluginStateManager';
 
 export class PandocExtendedMarkdownPlugin extends Plugin {
-    private suggester: ExampleReferenceSuggestFixed;
+    private suggester: ExampleReferenceSuggest;
     private customLabelSuggester: CustomLabelReferenceSuggest;
     settings: PandocExtendedMarkdownSettings;
 
@@ -41,7 +41,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         this.setupModeChangeDetection();
         
         // Register example reference suggester
-        this.suggester = new ExampleReferenceSuggestFixed(this);
+        this.suggester = new ExampleReferenceSuggest(this);
         this.registerEditorSuggest(this.suggester);
         
         // Register custom label reference suggester

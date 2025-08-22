@@ -6,7 +6,7 @@ import { ValidationContext } from '../pandocValidator';
 import { ListBlockValidator } from './validators/listBlockValidator';
 import { scanExampleLabels, ExampleScanResult } from './scanners/exampleScanner';
 import { scanCustomLabels, validateCustomLabelBlocks, CustomLabelScanResult } from './scanners/customLabelScanner';
-import { pluginStateManager } from '../state/PluginStateManager';
+import { pluginStateManager } from '../state/pluginStateManager';
 import {
     processHashList,
     processFancyList,

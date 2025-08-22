@@ -6,10 +6,10 @@
  */
 
 import { MarkdownPostProcessorContext } from 'obsidian';
-import { ReadingModeParser } from './ReadingModeParser';
-import { ReadingModeRenderer, RenderContext } from '../renderers/ReadingModeRenderer';
-import { pluginStateManager } from '../state/PluginStateManager';
-import { ProcessorConfig } from '../types/ProcessorConfig';
+import { ReadingModeParser } from './readingModeParser';
+import { ReadingModeRenderer, RenderContext } from '../renderers/readingModeRenderer';
+import { pluginStateManager } from '../state/pluginStateManager';
+import { ProcessorConfig } from '../types/processorConfig';
 import { processSuperSub } from './superSubParser';
 import { processCustomLabelLists } from './customLabelListParser';
 import { isStrictPandocFormatting, ValidationContext } from '../pandocValidator';

@@ -9,7 +9,7 @@ interface ExampleSuggestion {
     previewText: string;
 }
 
-export class ExampleReferenceSuggestFixed extends EditorSuggest<ExampleSuggestion> {
+export class ExampleReferenceSuggest extends EditorSuggest<ExampleSuggestion> {
     plugin: PandocExtendedMarkdownPlugin;
 
     constructor(plugin: PandocExtendedMarkdownPlugin) {

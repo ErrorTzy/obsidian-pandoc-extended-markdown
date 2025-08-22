@@ -66,7 +66,7 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian.PluginSetti
   }
 };
 
-// src/types/ProcessorConfig.ts
+// src/types/processorConfig.ts
 function createProcessorConfig(vaultConfig, pluginSettings) {
   var _a, _b, _c;
   const moreExtendedSyntax = (_a = pluginSettings.moreExtendedSyntax) != null ? _a : false;
@@ -739,7 +739,7 @@ function validateCustomLabelBlocks(doc, settings) {
   return invalidLines;
 }
 
-// src/state/PluginStateManager.ts
+// src/state/pluginStateManager.ts
 var PluginStateManager = class {
   constructor() {
     // Document-specific counters
@@ -2246,7 +2246,7 @@ function parseDefinitionListMarker(line) {
   return null;
 }
 
-// src/parsers/ReadingModeParser.ts
+// src/parsers/readingModeParser.ts
 var ReadingModeParser = class {
   /**
    * Parse a single line and identify its type and data
@@ -2365,7 +2365,7 @@ var ReadingModeParser = class {
   }
 };
 
-// src/renderers/ReadingModeRenderer.ts
+// src/renderers/readingModeRenderer.ts
 var import_obsidian6 = require("obsidian");
 var ReadingModeRenderer = class {
   /**
@@ -2917,9 +2917,9 @@ function validateListInStrictMode(line, documentLines, config) {
   return true;
 }
 
-// src/ExampleReferenceSuggestFixed.ts
+// src/exampleReferenceSuggest.ts
 var import_obsidian7 = require("obsidian");
-var ExampleReferenceSuggestFixed = class extends import_obsidian7.EditorSuggest {
+var ExampleReferenceSuggest = class extends import_obsidian7.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -3105,6 +3105,8 @@ var CustomLabelReferenceSuggest = class extends import_obsidian8.EditorSuggest {
 
 // src/listAutocompletion.ts
 var import_state2 = require("@codemirror/state");
+
+// src/utils/listHelpers.ts
 function getNextLetter(letter) {
   if (letter === "Z" || letter === "z") {
     return null;
@@ -3204,6 +3206,15 @@ function getNextRoman(roman) {
   const isUpperCase = roman[0] === roman[0].toUpperCase();
   return intToRoman(value + 1, isUpperCase);
 }
+function isEmptyListItem(line) {
+  if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
+  if (line.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)) return true;
+  if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
+  return false;
+}
+
+// src/utils/listMarkerDetector.ts
 function getNextListMarker(currentLine, allLines, currentLineIndex) {
   const hashMatch = ListPatterns.isHashList(currentLine);
   if (hashMatch) {
@@ -3302,6 +3313,8 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
   }
   return null;
 }
+
+// src/utils/listRenumbering.ts
 function renumberListItems(view, insertedLineNum) {
   const state = view.state;
   const doc = state.doc;
@@ -3421,13 +3434,8 @@ function renumberListItems(view, insertedLineNum) {
     }
   }
 }
-function isEmptyListItem(line) {
-  if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
-  if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
-  if (line.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)) return true;
-  if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
-  return false;
-}
+
+// src/listAutocompletion.ts
 function createListAutocompletionKeymap(settings) {
   const handleListEnter = {
     key: "Enter",
@@ -3661,7 +3669,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian9.Plugin {
     this.registerExtensions();
     this.registerPostProcessor();
     this.setupModeChangeDetection();
-    this.suggester = new ExampleReferenceSuggestFixed(this);
+    this.suggester = new ExampleReferenceSuggest(this);
     this.registerEditorSuggest(this.suggester);
     this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
     this.registerEditorSuggest(this.customLabelSuggester);

@@ -21,13 +21,13 @@ pandoc-lists-plugin/
 │   ├── main.ts                           # Plugin entry point, manages mode detection and state
 │   ├── settings.ts                       # Settings interface and settings tab implementation
 │   ├── pandocValidator.ts                # Validates and formats lists to Pandoc standards
-│   ├── listAutocompletion.ts             # Handles Enter key for list continuation
-│   ├── ExampleReferenceSuggestFixed.ts   # Autocomplete suggestion system for (@references)
+│   ├── listAutocompletion.ts             # Handles Enter/Tab/Shift-Tab key bindings for lists
+│   ├── exampleReferenceSuggest.ts       # Autocomplete suggestion system for (@references)
 │   ├── customLabelReferenceSuggest.ts    # Autocomplete suggestion system for {::references}
 │   ├── constants.ts                      # Centralized constants for magic values and CSS classes
 │   ├── patterns.ts                       # Optimized regex patterns with caching
 │   ├── state/                            # State management architecture
-│   │   └── PluginStateManager.ts        # Unified state manager for all plugin state
+│   │   └── pluginStateManager.ts        # Unified state manager for all plugin state
 │   ├── decorations/                      # CodeMirror decorations for live preview
 │   │   ├── pandocExtendedMarkdownExtension.ts # Main orchestrator for live preview rendering
 │   │   ├── widgets/                      # CodeMirror widget implementations
@@ -49,7 +49,7 @@ pandoc-lists-plugin/
 │   │       ├── exampleScanner.ts        # Scans for example labels and duplicates
 │   │       └── customLabelScanner.ts    # Scans for custom labels and validates blocks
 │   ├── parsers/                          # Parsing and processing logic
-│   │   ├── ReadingModeParser.ts         # Parses markdown text, identifies Pandoc syntax
+│   │   ├── readingModeParser.ts         # Parses markdown text, identifies Pandoc syntax
 │   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
 │   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
 │   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
@@ -57,17 +57,18 @@ pandoc-lists-plugin/
 │   │   ├── customLabelListParser.ts     # Parses custom label lists with {::LABEL} syntax
 │   │   └── readingModeProcessor.ts      # Thin orchestration layer for reading mode
 │   ├── renderers/                        # Rendering logic (DOM creation)
-│   │   └── ReadingModeRenderer.ts       # Creates DOM elements from parsed markdown
+│   │   └── readingModeRenderer.ts       # Creates DOM elements from parsed markdown
 │   ├── types/                            # TypeScript type definitions
-│   │   ├── ProcessorConfig.ts           # Configuration injection interface
+│   │   ├── processorConfig.ts           # Configuration injection interface
 │   │   ├── listTypes.ts                 # List-related interfaces and types
 │   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
 │   │   └── settingsTypes.ts             # Settings interface and default settings
 │   ├── utils/                            # Utility functions
 │   │   ├── errorHandler.ts              # Error handling utilities with error boundaries
-│   │   └── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
-│   └── styles/                           # Component-specific styles
-│       └── suggestions.css              # Styles for autocomplete dropdown (not used in build)
+│   │   ├── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
+│   │   ├── listHelpers.ts               # List conversion utilities (roman numerals, letters)
+│   │   ├── listMarkerDetector.ts        # Detects list types and determines next markers
+│   │   └── listRenumbering.ts           # Handles automatic list renumbering
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
@@ -301,7 +302,7 @@ sequenceDiagram
   4. Manages render context creation
 
 #### 2. ReadingModeParser
-- **Location**: `src/parsers/ReadingModeParser.ts`
+- **Location**: `src/parsers/readingModeParser.ts`
 - **Purpose**: Identifies and parses Pandoc syntax
 - **Capabilities**:
   - Line-by-line parsing with context awareness
@@ -317,7 +318,7 @@ Each parser handles specific syntax patterns:
 - **customLabelListParser**: Custom label lists with {::LABEL} syntax
 
 #### 4. ReadingModeRenderer
-- **Location**: `src/renderers/ReadingModeRenderer.ts`
+- **Location**: `src/renderers/readingModeRenderer.ts`
 - **Purpose**: Creates DOM elements from parsed data
 - **Features**:
   - Maintains line breaks and formatting
@@ -481,10 +482,10 @@ flowchart LR
 | Component | Primary Responsibility | Key Interfaces |
 |-----------|----------------------|----------------|
 | `main.ts` | Plugin lifecycle management | `onload()`, `onunload()`, event registration |
-| `PluginStateManager` | Centralized state coordination | Counter management, mode tracking, event dispatch |
+| `pluginStateManager` | Centralized state coordination | Counter management, mode tracking, event dispatch |
 | `settings.ts` | User configuration | Settings UI, preference persistence |
 | `pandocValidator.ts` | Pandoc compliance validation | Format checking, auto-formatting |
-| `listAutocompletion.ts` | Smart list continuation | Enter key handling, marker detection |
+| `listAutocompletion.ts` | Smart list continuation | Enter/Tab/Shift-Tab key handling, uses utility modules |
 
 ### Live Preview Components
 
