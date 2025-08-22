@@ -54,8 +54,7 @@ export function isValidCustomLabel(label: string): boolean {
     // For non-placeholder labels, maintain backward compatibility
     // Allow: letters, numbers, underscores, primes (')
     // Disallow: spaces, angle brackets, pipes, backslashes, forward slashes, and other special chars
-    const validLabelPattern = /^[a-zA-Z][a-zA-Z0-9_']*$/;
-    return validLabelPattern.test(label);
+    return ListPatterns.VALID_CUSTOM_LABEL_SIMPLE.test(label);
 }
 
 /**
@@ -68,7 +67,27 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
         return;
     }
     
-    // Process paragraphs
+    // First pass: Scan all custom label list markers to build the context
+    // This ensures the placeholder context knows about all labels before processing references
+    if (placeholderContext) {
+        const allElements = element.querySelectorAll('p, li');
+        allElements.forEach(elem => {
+            const text = elem.textContent || '';
+            // Split into lines to check each line
+            const lines = text.split('\n');
+            for (const line of lines) {
+                // Check if this line starts with a custom label list marker
+                const listMatch = ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT.exec(line);
+                if (listMatch) {
+                    const labelPart = listMatch[3];
+                    // This is a list marker, process it to register in context
+                    placeholderContext.processLabel(labelPart);
+                }
+            }
+        });
+    }
+    
+    // Second pass: Process paragraphs and list items with the complete context
     const paragraphs = element.querySelectorAll('p');
     paragraphs.forEach(p => {
         processElement(p, placeholderContext);

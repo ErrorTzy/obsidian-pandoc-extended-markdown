@@ -5,14 +5,14 @@
  * @param label - The label containing placeholders
  * @returns The label with placeholders replaced by numbers
  */
+// Patterns
+import { ListPatterns } from '../patterns';
+
 export function processPlaceholders(label: string): string {
     const placeholderMap = new Map<string, number>();
     let nextNumber = 1;
     
-    // Pattern to match placeholders: (#name) where name can contain any characters except )
-    const placeholderPattern = /\(#([^)]+)\)/g;
-    
-    return label.replace(placeholderPattern, (match, name) => {
+    return label.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
         if (!placeholderMap.has(name)) {
             placeholderMap.set(name, nextNumber++);
         }
@@ -42,9 +42,7 @@ export class PlaceholderContext {
             return this.processedLabels.get(rawLabel)!;
         }
         
-        const placeholderPattern = /\(#([^)]+)\)/g;
-        
-        const processedLabel = rawLabel.replace(placeholderPattern, (match, name) => {
+        const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
             if (!this.placeholderMap.has(name)) {
                 this.placeholderMap.set(name, this.nextNumber++);
             }
@@ -84,11 +82,10 @@ export class PlaceholderContext {
         }
         
         // For references, only process if the placeholders have been seen before
-        const placeholderPattern = /\(#([^)]+)\)/g;
         let allPlaceholdersKnown = true;
         
         // First check if all placeholders in this label are known
-        const matches = [...rawLabel.matchAll(placeholderPattern)];
+        const matches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
         for (const match of matches) {
             if (!this.placeholderMap.has(match[1])) {
                 allPlaceholdersKnown = false;
@@ -102,7 +99,7 @@ export class PlaceholderContext {
         }
         
         // Process the label with known placeholders
-        const processedLabel = rawLabel.replace(placeholderPattern, (match, name) => {
+        const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
             return this.placeholderMap.get(name)?.toString() || match;
         });
         
@@ -132,16 +129,17 @@ export class PlaceholderContext {
     
     /**
      * Check if a label is a pure expression (contains only placeholders and operators).
-     * Pure expressions like "(#a)+(#b)" are valid references without needing to be defined.
+     * Pure expressions like "(#a)+(#b)" or "P(#a),(#b)" are valid references without needing to be defined.
      * 
      * @param label - The label to check
      * @returns true if the label is a pure expression
      */
     private isPureExpression(label: string): boolean {
         // Remove all placeholders and see if we're left with only operators and spaces
-        const withoutPlaceholders = label.replace(/\(#[^)]+\)/g, '');
-        // Check if remaining characters are only operators, spaces, primes, and parentheses
-        return /^[\s+\-*/()'\d]*$/.test(withoutPlaceholders);
+        const withoutPlaceholders = label.replace(ListPatterns.PLACEHOLDER_PATTERN, '');
+        // Check if remaining characters are only operators, spaces, primes, parentheses, commas, and simple prefixes
+        // Allow single letter prefixes like "P" in "P(#a),(#b)"
+        return ListPatterns.PURE_EXPRESSION_PATTERN.test(withoutPlaceholders);
     }
     
     /**

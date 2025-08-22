@@ -104,8 +104,12 @@ export class ListPatterns {
     static readonly CUSTOM_LABEL_REFERENCE = /\{::([^}]+)\}/g;
     // Valid label pattern (for validation) - now accepts any non-empty content
     static readonly VALID_CUSTOM_LABEL = /^[^}]+$/;
+    // Simple valid label pattern for validation
+    static readonly VALID_CUSTOM_LABEL_SIMPLE = /^[a-zA-Z][a-zA-Z0-9_']*$/;
     // Placeholder pattern for auto-numbering
     static readonly PLACEHOLDER_PATTERN = /\(#([^)]+)\)/g;
+    // Pure expression pattern for validation
+    static readonly PURE_EXPRESSION_PATTERN = /^[A-Za-z]?[\s+\-*/,()'\d]*$/;
     
     // Note: Patterns are already compiled as static readonly RegExp objects,
     // providing optimal performance without needing additional caching.

@@ -112,6 +112,7 @@ export const SETTINGS = {
 
 export const UI_CONSTANTS = {
     NOTICE_DURATION_MS: 10000,
+    STATE_TRANSITION_DELAY_MS: 100,
 } as const;
 
 // Helper function to create fancy list type class names

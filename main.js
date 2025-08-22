@@ -168,7 +168,8 @@ var COMMANDS = {
   TOGGLE_DEFINITION_UNDERLINE: "toggle-definition-underline-style"
 };
 var UI_CONSTANTS = {
-  NOTICE_DURATION_MS: 1e4
+  NOTICE_DURATION_MS: 1e4,
+  STATE_TRANSITION_DELAY_MS: 100
 };
 
 // src/patterns.ts
@@ -429,8 +430,12 @@ ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT = /^(\s*)(\{::([^}]+)\})(\s+)(.*)$/;
 ListPatterns.CUSTOM_LABEL_REFERENCE = /\{::([^}]+)\}/g;
 // Valid label pattern (for validation) - now accepts any non-empty content
 ListPatterns.VALID_CUSTOM_LABEL = /^[^}]+$/;
+// Simple valid label pattern for validation
+ListPatterns.VALID_CUSTOM_LABEL_SIMPLE = /^[a-zA-Z][a-zA-Z0-9_']*$/;
 // Placeholder pattern for auto-numbering
 ListPatterns.PLACEHOLDER_PATTERN = /\(#([^)]+)\)/g;
+// Pure expression pattern for validation
+ListPatterns.PURE_EXPRESSION_PATTERN = /^[A-Za-z]?[\s+\-*/,()'\d]*$/;
 
 // src/decorations/pandocExtendedMarkdownExtension.ts
 var import_state = require("@codemirror/state");
@@ -551,8 +556,7 @@ var PlaceholderContext = class {
     if (this.processedLabels.has(rawLabel)) {
       return this.processedLabels.get(rawLabel);
     }
-    const placeholderPattern = /\(#([^)]+)\)/g;
-    const processedLabel = rawLabel.replace(placeholderPattern, (match, name) => {
+    const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
       if (!this.placeholderMap.has(name)) {
         this.placeholderMap.set(name, this.nextNumber++);
       }
@@ -586,9 +590,8 @@ var PlaceholderContext = class {
     if (this.processedLabels.has(rawLabel)) {
       return this.processedLabels.get(rawLabel);
     }
-    const placeholderPattern = /\(#([^)]+)\)/g;
     let allPlaceholdersKnown = true;
-    const matches = [...rawLabel.matchAll(placeholderPattern)];
+    const matches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
     for (const match of matches) {
       if (!this.placeholderMap.has(match[1])) {
         allPlaceholdersKnown = false;
@@ -598,7 +601,7 @@ var PlaceholderContext = class {
     if (!allPlaceholdersKnown && matches.length > 0) {
       return null;
     }
-    const processedLabel = rawLabel.replace(placeholderPattern, (match, name) => {
+    const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
       var _a;
       return ((_a = this.placeholderMap.get(name)) == null ? void 0 : _a.toString()) || match;
     });
@@ -618,14 +621,14 @@ var PlaceholderContext = class {
   }
   /**
    * Check if a label is a pure expression (contains only placeholders and operators).
-   * Pure expressions like "(#a)+(#b)" are valid references without needing to be defined.
+   * Pure expressions like "(#a)+(#b)" or "P(#a),(#b)" are valid references without needing to be defined.
    * 
    * @param label - The label to check
    * @returns true if the label is a pure expression
    */
   isPureExpression(label) {
-    const withoutPlaceholders = label.replace(/\(#[^)]+\)/g, "");
-    return /^[\s+\-*/()'\d]*$/.test(withoutPlaceholders);
+    const withoutPlaceholders = label.replace(ListPatterns.PLACEHOLDER_PATTERN, "");
+    return ListPatterns.PURE_EXPRESSION_PATTERN.test(withoutPlaceholders);
   }
   /**
    * Get the base label without trailing primes or other modifiers.
@@ -669,6 +672,42 @@ function scanCustomLabels(doc, settings, placeholderContext) {
   const context = placeholderContext || new PlaceholderContext();
   if (!settings.moreExtendedSyntax) {
     return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
+  }
+  const placeholdersInOrder = [];
+  const seenPlaceholders = /* @__PURE__ */ new Set();
+  for (let i = 1; i <= doc.lines; i++) {
+    const line = doc.line(i);
+    const lineText = line.text;
+    const match = ListPatterns.isCustomLabelList(lineText);
+    if (match) {
+      const rawLabel = match[3];
+      const matches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
+      for (const m of matches) {
+        const placeholder = m[1];
+        if (!seenPlaceholders.has(placeholder)) {
+          placeholdersInOrder.push(placeholder);
+          seenPlaceholders.add(placeholder);
+        }
+      }
+    }
+  }
+  const existingMappings = context.getPlaceholderMappings();
+  let needsReset = false;
+  if (placeholdersInOrder.length !== existingMappings.size) {
+    needsReset = true;
+  } else {
+    for (let i = 0; i < placeholdersInOrder.length; i++) {
+      const placeholder = placeholdersInOrder[i];
+      const expectedNumber = i + 1;
+      const actualNumber = existingMappings.get(placeholder);
+      if (actualNumber !== expectedNumber) {
+        needsReset = true;
+        break;
+      }
+    }
+  }
+  if (needsReset) {
+    context.reset();
   }
   for (let i = 1; i <= doc.lines; i++) {
     const line = doc.line(i);
@@ -821,16 +860,23 @@ var PluginStateManager = class {
   handleStateTransition(event) {
     if (event.previousMode === "reading" && event.currentMode !== "reading") {
       if (event.previousPath) {
-        this.resetDocumentCounters(event.previousPath);
+        if (this.documentCounters.has(event.previousPath)) {
+          const counters = this.documentCounters.get(event.previousPath);
+          counters.exampleCounter = 0;
+          counters.exampleMap.clear();
+          counters.exampleContent.clear();
+          counters.hashCounter = 0;
+        }
+        this.documentsNeedingReprocess.add(event.previousPath);
       }
     }
-    if (event.currentMode === "reading" && event.previousPath && event.currentPath && event.previousPath !== event.currentPath) {
+    if (event.previousPath && event.currentPath && event.previousPath !== event.currentPath) {
       this.resetDocumentCounters(event.currentPath);
     }
     if (event.currentMode === "reading" && event.currentPath) {
       setTimeout(() => {
         this.clearReprocessFlag(event.currentPath);
-      }, 100);
+      }, UI_CONSTANTS.STATE_TRANSITION_DELAY_MS);
     }
   }
   /**
@@ -2529,6 +2575,20 @@ var ReadingModeRenderer = class {
 function processCustomLabelLists(element, context, placeholderContext) {
   if (!element.textContent || !element.textContent.includes("{::")) {
     return;
+  }
+  if (placeholderContext) {
+    const allElements = element.querySelectorAll("p, li");
+    allElements.forEach((elem) => {
+      const text = elem.textContent || "";
+      const lines = text.split("\n");
+      for (const line of lines) {
+        const listMatch = ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT.exec(line);
+        if (listMatch) {
+          const labelPart = listMatch[3];
+          placeholderContext.processLabel(labelPart);
+        }
+      }
+    });
   }
   const paragraphs = element.querySelectorAll("p");
   paragraphs.forEach((p) => {

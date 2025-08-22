@@ -26,7 +26,56 @@ export function scanCustomLabels(
         return { customLabels, rawToProcessed, duplicateLabels, placeholderContext: context };
     }
     
-    // Process each line in the document
+    // First pass: collect all placeholders in document order
+    const placeholdersInOrder: string[] = [];
+    const seenPlaceholders = new Set<string>();
+    
+    for (let i = 1; i <= doc.lines; i++) {
+        const line = doc.line(i);
+        const lineText = line.text;
+        
+        const match = ListPatterns.isCustomLabelList(lineText);
+        if (match) {
+            const rawLabel = match[3];
+            // Extract placeholders from this label
+            const matches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
+            for (const m of matches) {
+                const placeholder = m[1];
+                if (!seenPlaceholders.has(placeholder)) {
+                    placeholdersInOrder.push(placeholder);
+                    seenPlaceholders.add(placeholder);
+                }
+            }
+        }
+    }
+    
+    // Check if we need to reset based on placeholder order change
+    const existingMappings = context.getPlaceholderMappings();
+    let needsReset = false;
+    
+    // If the number of placeholders changed, we need to reset
+    if (placeholdersInOrder.length !== existingMappings.size) {
+        needsReset = true;
+    } else {
+        // Check if the order matches what we expect
+        // The placeholders should get numbers 1, 2, 3, etc. in order
+        for (let i = 0; i < placeholdersInOrder.length; i++) {
+            const placeholder = placeholdersInOrder[i];
+            const expectedNumber = i + 1;
+            const actualNumber = existingMappings.get(placeholder);
+            if (actualNumber !== expectedNumber) {
+                needsReset = true;
+                break;
+            }
+        }
+    }
+    
+    // Reset if needed
+    if (needsReset) {
+        context.reset();
+    }
+    
+    // Process all labels (this will assign numbers to placeholders in order)
     for (let i = 1; i <= doc.lines; i++) {
         const line = doc.line(i);
         const lineText = line.text;

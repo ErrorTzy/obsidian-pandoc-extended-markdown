@@ -10,6 +10,9 @@
 // External libraries
 import { WorkspaceLeaf, MarkdownView } from 'obsidian';
 
+// Constants
+import { UI_CONSTANTS } from '../constants';
+
 // Utils
 import { PlaceholderContext } from '../utils/placeholderProcessor';
 
@@ -138,18 +141,31 @@ class PluginStateManager {
      * Handle state transitions (e.g., reset counters)
      */
     private handleStateTransition(event: ModeChangeEvent): void {
-        // Reset counters when exiting reading mode
+        // Don't reset placeholder context on mode transitions
+        // Let the scanner handle resets based on actual content changes
+        
+        // Reset OTHER counters (not placeholder) when exiting reading mode
         if (event.previousMode === "reading" && event.currentMode !== "reading") {
             if (event.previousPath) {
-                this.resetDocumentCounters(event.previousPath);
+                // Only reset non-placeholder counters
+                if (this.documentCounters.has(event.previousPath)) {
+                    const counters = this.documentCounters.get(event.previousPath)!;
+                    counters.exampleCounter = 0;
+                    counters.exampleMap.clear();
+                    counters.exampleContent.clear();
+                    counters.hashCounter = 0;
+                    // DON'T reset placeholderContext
+                }
+                // Mark that this document needs reprocessing
+                this.documentsNeedingReprocess.add(event.previousPath);
             }
         }
         
-        // Reset counters when switching documents in reading mode
-        if (event.currentMode === "reading" && 
-            event.previousPath && 
+        // Reset counters when switching documents
+        if (event.previousPath && 
             event.currentPath && 
             event.previousPath !== event.currentPath) {
+            // When switching documents, reset the new document's counters
             this.resetDocumentCounters(event.currentPath);
         }
         
@@ -158,7 +174,7 @@ class PluginStateManager {
             // Give a small delay to ensure all elements are ready
             setTimeout(() => {
                 this.clearReprocessFlag(event.currentPath!);
-            }, 100);
+            }, UI_CONSTANTS.STATE_TRANSITION_DELAY_MS);
         }
     }
 
