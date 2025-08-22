@@ -73,10 +73,20 @@ pandoc-lists-plugin/
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
 ├── tests/                                # Test files
+│   ├── customLabelAutocompletion.spec.ts # Tests for custom label auto-completion
+│   ├── customLabelAutoNumbering.spec.ts  # Tests for custom label auto-numbering
+│   ├── customLabelList.spec.ts          # Tests for custom label list functionality
+│   ├── customLabelMultiLine.spec.ts     # Tests for multi-line custom label blocks
+│   ├── customLabelNestedWidget.spec.ts  # Tests for nested custom label widgets
+│   ├── customLabelPlaceholder.spec.ts   # Tests for placeholder numbering and context
+│   ├── customLabelReadingMode.spec.ts   # Tests for custom labels in reading mode
+│   ├── customLabelSuggestion.spec.ts    # Tests for custom label reference suggestions
 │   ├── definitionListParser.spec.ts     # Tests for definition list parsing
 │   ├── exampleListParser.spec.ts        # Tests for example list parsing
-│   └── fancyListParser.spec.ts          # Tests for fancy list parsing
-│   └── listAutocompletion.spec.ts       # # Tests for auto-completion
+│   ├── fancyListParser.spec.ts          # Tests for fancy list parsing
+│   ├── listAutocompletion.spec.ts       # Tests for list auto-completion
+│   ├── listIndentation.spec.ts          # Tests for list indentation handling
+│   └── toggleDefinitionStyles.spec.ts   # Tests for definition style toggling
 ├── .github/                              # GitHub specific files
 │   └── workflows/
 │       └── release.yml                  # GitHub Actions workflow for automated releases
@@ -200,7 +210,11 @@ sequenceDiagram
 
 #### 2. Document Scanners
 - **exampleScanner** (`src/decorations/scanners/exampleScanner.ts`): Pre-processes example labels for consistent numbering
-- **customLabelScanner** (`src/decorations/scanners/customLabelScanner.ts`): Scans custom labels with placeholder support and validates block structure in strict mode
+- **customLabelScanner** (`src/decorations/scanners/customLabelScanner.ts`): 
+  - Scans custom labels with placeholder support
+  - Validates block structure in strict mode
+  - Smart reset detection: only resets PlaceholderContext when placeholder order changes
+  - Two-pass scanning: detects placeholders first, then processes labels
 - **Output**:
   ```typescript
   interface ExampleScanResult {
@@ -315,7 +329,10 @@ Each parser handles specific syntax patterns:
 - **exampleListParser**: Example lists with labels
 - **definitionListParser**: Definition terms and items
 - **superSubParser**: Superscript and subscript formatting
-- **customLabelListParser**: Custom label lists with {::LABEL} syntax
+- **customLabelListParser**: 
+  - Custom label lists with {::LABEL} syntax
+  - Two-pass processing: scans all labels first to build context, then processes elements
+  - Handles multi-placeholder references like P(#a),(#b)
 
 #### 4. ReadingModeRenderer
 - **Location**: `src/renderers/readingModeRenderer.ts`
@@ -410,6 +427,7 @@ classDiagram
 - Label-to-number mappings for cross-references
 - Content caching for tooltips
 - Reprocessing flags for efficient updates
+- PlaceholderContext persistence across mode switches
 
 #### View Mode Tracking
 - Per-leaf mode detection (reading/live/source)
