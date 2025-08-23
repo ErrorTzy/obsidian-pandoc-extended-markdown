@@ -13,7 +13,7 @@ import { ListPatterns } from '../patterns';
 export interface ParsedLine {
     type: 'hash' | 'fancy' | 'example' | 'definition-term' | 'definition-item' | 'plain' | 'reference';
     content: string;
-    metadata?: any;
+    metadata?: HashListData | FancyListData | ExampleListData | DefinitionData | ReferenceData;
 }
 
 export interface HashListData {

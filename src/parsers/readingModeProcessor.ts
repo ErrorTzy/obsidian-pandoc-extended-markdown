@@ -6,7 +6,7 @@
  */
 
 import { MarkdownPostProcessorContext } from 'obsidian';
-import { ReadingModeParser } from './readingModeParser';
+import { ReadingModeParser, ExampleListData } from './readingModeParser';
 import { ReadingModeRenderer, RenderContext } from '../renderers/readingModeRenderer';
 import { pluginStateManager } from '../state/pluginStateManager';
 import { ProcessorConfig } from '../types/processorConfig';
@@ -142,7 +142,7 @@ function processElementTextNodes(
             }
             
             if (type === 'example' && parsedLine.type === 'example') {
-                const metadata = parsedLine.metadata as any;
+                const metadata = parsedLine.metadata as ExampleListData;
                 const number = pluginStateManager.incrementExampleCounter(docPath);
                 
                 // Store labeled examples
