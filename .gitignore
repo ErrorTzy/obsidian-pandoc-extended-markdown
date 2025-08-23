@@ -30,7 +30,6 @@ coverage/
 # Test files (not needed for plugin)
 test-example.md
 tests/
-/tests
 
 # Development notes
 *.txt
