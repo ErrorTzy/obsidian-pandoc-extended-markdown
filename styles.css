@@ -254,66 +254,47 @@ sub.pandoc-subscript {
 }
 
 /* Custom Label View Styles */
-.custom-label-view-container {
-    padding: 8px;
-    overflow-y: auto;
-    height: 100%;
+table.custom-label-view-container {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
 }
 
-.custom-label-view-header {
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    gap: 12px;
-    padding: 8px 4px;
-    border-bottom: 1px solid var(--background-modifier-border);
-    font-weight: 600;
-    font-size: 0.9em;
-    color: var(--text-muted);
-}
+/* Header styles removed - no longer using header */
 
-.custom-label-view-header-label {
-    text-align: left;
-}
-
-.custom-label-view-header-content {
-    text-align: left;
-}
-
-.custom-label-view-row {
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    gap: 12px;
-    padding: 6px 4px;
+tr.custom-label-view-row {
     border-bottom: 1px solid var(--background-modifier-border-hover);
     transition: background-color 0.15s ease;
 }
 
-.custom-label-view-row:hover {
+tr.custom-label-view-row:hover {
     background-color: var(--background-modifier-hover);
 }
 
-.custom-label-view-label {
+td.custom-label-view-label {
     font-family: var(--font-monospace);
     font-size: 0.9em;
     color: var(--text-accent);
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 6px 8px;
     border-radius: 3px;
     transition: background-color 0.15s ease;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 1%;
+    min-width: fit-content;
 }
 
-.custom-label-view-label:hover {
+td.custom-label-view-label:hover {
     background-color: var(--background-modifier-hover);
 }
 
-.custom-label-view-content {
+td.custom-label-view-content {
     font-size: 0.9em;
     color: var(--text-normal);
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 6px 8px;
     border-radius: 3px;
     transition: background-color 0.15s ease;
     white-space: pre-wrap;
@@ -325,7 +306,7 @@ sub.pandoc-subscript {
     -webkit-box-orient: vertical;
 }
 
-.custom-label-view-content:hover {
+td.custom-label-view-content:hover {
     background-color: var(--background-modifier-hover);
     color: var(--text-accent);
 }

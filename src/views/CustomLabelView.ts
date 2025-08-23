@@ -180,36 +180,27 @@ export class CustomLabelView extends ItemView {
             return;
         }
         
-        const container = this.contentEl.createEl('div', {
+        // Create table container
+        const container = this.contentEl.createEl('table', {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTAINER
         });
         
-        // Create header
-        const header = container.createEl('div', {
-            cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_HEADER
-        });
-        header.createEl('span', { 
-            text: 'Label', 
-            cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_HEADER_LABEL 
-        });
-        header.createEl('span', { 
-            text: 'Content', 
-            cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_HEADER_CONTENT 
-        });
+        // Create tbody
+        const tbody = container.createEl('tbody');
         
         // Create label rows
         for (const label of this.labels) {
-            this.renderLabelRow(container, label, activeView);
+            this.renderLabelRow(tbody, label, activeView);
         }
     }
 
-    private renderLabelRow(container: HTMLElement, label: CustomLabel, activeView: MarkdownView) {
-        const row = container.createEl('div', {
+    private renderLabelRow(tbody: HTMLElement, label: CustomLabel, activeView: MarkdownView) {
+        const row = tbody.createEl('tr', {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_ROW
         });
         
         // Label column
-        const labelEl = row.createEl('div', {
+        const labelEl = row.createEl('td', {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_LABEL
         });
         
@@ -226,7 +217,7 @@ export class CustomLabelView extends ItemView {
         setupLabelClickHandler(labelEl, label.rawLabel);
         
         // Content column
-        const contentEl = row.createEl('div', {
+        const contentEl = row.createEl('td', {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
         });
         

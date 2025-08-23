@@ -4324,27 +4324,54 @@ var import_obsidian11 = require("obsidian");
 function highlightLine(view, lineNumber) {
   try {
     const editor = view.editor;
-    const lineContent = editor.getLine(lineNumber);
     const lineStart = { line: lineNumber, ch: 0 };
-    const lineEnd = { line: lineNumber, ch: lineContent.length };
-    editor.setSelection(lineStart, lineEnd);
+    editor.setCursor(lineStart);
+    editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
     const cm = editor.cm;
-    if (cm && cm.dom) {
-      const selections = cm.dom.querySelectorAll(".cm-selectionBackground");
-      selections.forEach((sel) => {
-        sel.style.transition = "opacity 2s ease-out";
-        sel.style.opacity = "0.3";
+    if (cm) {
+      const viewport = cm.viewportLines || cm.visibleRanges;
+      const editorDom = cm.dom || cm.contentDOM;
+      if (editorDom) {
+        const lineElements = editorDom.querySelectorAll(".cm-line");
         setTimeout(() => {
-          sel.style.opacity = "0";
-        }, UI_CONSTANTS.SELECTION_FADE_DELAY_MS);
-      });
+          const activeLine = editorDom.querySelector(".cm-line.cm-active");
+          if (!activeLine) {
+            const allLines = editorDom.querySelectorAll(".cm-line");
+            const coords = editor.cursorCoords(true, "local");
+            if (coords && allLines.length > 0) {
+              let targetLine = null;
+              let minDistance = Infinity;
+              allLines.forEach((line) => {
+                const rect = line.getBoundingClientRect();
+                const editorRect = editorDom.getBoundingClientRect();
+                const relativeTop = rect.top - editorRect.top;
+                const distance = Math.abs(relativeTop - coords.top);
+                if (distance < minDistance) {
+                  minDistance = distance;
+                  targetLine = line;
+                }
+              });
+              if (targetLine) {
+                applyHighlight(targetLine);
+              }
+            }
+          } else {
+            applyHighlight(activeLine);
+          }
+        }, 50);
+      }
     }
-    setTimeout(() => {
-      editor.setCursor(lineStart);
-    }, UI_CONSTANTS.SELECTION_CLEAR_DELAY_MS);
   } catch (error) {
     console.error("Error highlighting line:", error);
   }
+}
+function applyHighlight(lineElement) {
+  lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
+  void lineElement.offsetWidth;
+  lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
+  setTimeout(() => {
+    lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
+  }, 2e3);
 }
 function setupLabelClickHandler(element, rawLabel) {
   element.addEventListener("click", () => {
@@ -4573,29 +4600,19 @@ var CustomLabelView = class extends import_obsidian12.ItemView {
       });
       return;
     }
-    const container = this.contentEl.createEl("div", {
+    const container = this.contentEl.createEl("table", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTAINER
     });
-    const header = container.createEl("div", {
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_HEADER
-    });
-    header.createEl("span", {
-      text: "Label",
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_HEADER_LABEL
-    });
-    header.createEl("span", {
-      text: "Content",
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_HEADER_CONTENT
-    });
+    const tbody = container.createEl("tbody");
     for (const label of this.labels) {
-      this.renderLabelRow(container, label, activeView);
+      this.renderLabelRow(tbody, label, activeView);
     }
   }
-  renderLabelRow(container, label, activeView) {
-    const row = container.createEl("div", {
+  renderLabelRow(tbody, label, activeView) {
+    const row = tbody.createEl("tr", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_ROW
     });
-    const labelEl = row.createEl("div", {
+    const labelEl = row.createEl("td", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_LABEL
     });
     const displayLabel = truncateLabel(label.label);
@@ -4604,7 +4621,7 @@ var CustomLabelView = class extends import_obsidian12.ItemView {
       setupLabelHoverPreview(labelEl, label.label);
     }
     setupLabelClickHandler(labelEl, label.rawLabel);
-    const contentEl = row.createEl("div", {
+    const contentEl = row.createEl("td", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
     });
     const contentToShow = label.renderedContent || label.content;
