@@ -217,7 +217,24 @@ export const ICONS = {
             {::}
         </text>
     </svg>`,
-    CUSTOM_LABEL_ID: 'custom-label-list'
+    LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <g fill="currentColor" font-family="monospace" font-weight="bold">
+            <!-- 2x2 grid of Pandoc list markers for better visibility -->
+            <!-- Top left: Roman numeral -->
+            <text x="25" y="35" font-size="48" text-anchor="middle">i.</text>
+            
+            <!-- Top right: Letter with parenthesis -->
+            <text x="75" y="35" font-size="48" text-anchor="middle">a)</text>
+            
+            <!-- Bottom left: Hash number -->
+            <text x="25" y="75" font-size="48" text-anchor="middle">#.</text>
+            
+            <!-- Bottom right: Definition marker -->
+            <text x="75" y="75" font-size="52" text-anchor="middle">~</text>
+        </g>
+    </svg>`,
+    CUSTOM_LABEL_ID: 'custom-label-list',
+    LIST_PANEL_ID: 'list-panel-view'
 } as const;
 
 // Helper function to create fancy list type class names

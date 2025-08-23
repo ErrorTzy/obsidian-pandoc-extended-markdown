@@ -253,6 +253,65 @@ sub.pandoc-subscript {
     line-height: 0;
 }
 
+/* List Panel View Styles */
+.pandoc-list-panel-view-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 8px;
+}
+
+.pandoc-list-panel-icon-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding: 4px 0;
+    margin-bottom: 4px;
+}
+
+.pandoc-list-panel-icon-button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    transition: all 0.2s ease;
+}
+
+.pandoc-list-panel-icon-button:hover {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--text-accent);
+}
+
+.pandoc-list-panel-icon-button.is-active {
+    background-color: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+}
+
+.pandoc-list-panel-icon-button.is-active svg {
+    color: var(--text-on-accent);
+}
+
+.pandoc-list-panel-icon-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+.pandoc-list-panel-separator {
+    margin: 8px 0;
+    border: none;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.pandoc-list-panel-content-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
 /* Custom Label View Styles */
 table.custom-label-view-container {
     width: 100%;

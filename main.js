@@ -270,7 +270,24 @@ var ICONS = {
             {::}
         </text>
     </svg>`,
-  CUSTOM_LABEL_ID: "custom-label-list"
+  LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <g fill="currentColor" font-family="monospace" font-weight="bold">
+            <!-- 2x2 grid of Pandoc list markers for better visibility -->
+            <!-- Top left: Roman numeral -->
+            <text x="25" y="35" font-size="48" text-anchor="middle">i.</text>
+            
+            <!-- Top right: Letter with parenthesis -->
+            <text x="75" y="35" font-size="48" text-anchor="middle">a)</text>
+            
+            <!-- Bottom left: Hash number -->
+            <text x="25" y="75" font-size="48" text-anchor="middle">#.</text>
+            
+            <!-- Bottom right: Definition marker -->
+            <text x="75" y="75" font-size="52" text-anchor="middle">~</text>
+        </g>
+    </svg>`,
+  CUSTOM_LABEL_ID: "custom-label-list",
+  LIST_PANEL_ID: "list-panel-view"
 };
 
 // src/patterns.ts
@@ -4036,7 +4053,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
   ];
 }
 
-// src/views/CustomLabelView.ts
+// src/views/ListPanelView.ts
 var import_obsidian12 = require("obsidian");
 
 // src/utils/customLabelExtractor.ts
@@ -4248,11 +4265,12 @@ function handleUnclosedMathWrapper(state) {
 }
 function processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) {
   if (inMath) {
-    const renderedMath = renderMathToText(mathBuffer);
+    const trimmedBuffer = mathBuffer.trimEnd();
+    const renderedMath = renderMathToText(trimmedBuffer);
     const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
     if (renderedMath.length <= remainingSpace) {
       return {
-        result: currentResult + mathBuffer.trimEnd() + "$",
+        result: currentResult + trimmedBuffer + "$",
         renderedLength: currentLength + renderedMath.length,
         mathBuffer: "",
         inMath: false,
@@ -4483,124 +4501,81 @@ function setupContentHoverPreview(element, label, app, component) {
   element.addEventListener("click", removePopover);
 }
 
-// src/views/CustomLabelView.ts
-var VIEW_TYPE_CUSTOM_LABEL = "custom-label-view";
-var CustomLabelView = class extends import_obsidian12.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
+// src/views/panels/CustomLabelPanelModule.ts
+var CustomLabelPanelModule = class {
+  constructor(plugin) {
+    this.id = "custom-labels";
+    this.displayName = "Custom Labels";
+    this.icon = ICONS.CUSTOM_LABEL_SVG;
+    this.isActive = false;
     this.labels = [];
-    this.updateTimer = null;
+    this.containerEl = null;
     this.lastActiveMarkdownView = null;
     this.plugin = plugin;
-    this.hoverLinkSource = {
-      display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
-      defaultMod: true
-    };
   }
-  getViewType() {
-    return VIEW_TYPE_CUSTOM_LABEL;
+  onActivate(containerEl, activeView) {
+    this.isActive = true;
+    this.containerEl = containerEl;
+    this.lastActiveMarkdownView = activeView;
+    this.updateContent(activeView);
   }
-  getDisplayText() {
-    return MESSAGES.CUSTOM_LABELS_VIEW_TITLE;
-  }
-  getIcon() {
-    return ICONS.CUSTOM_LABEL_ID;
-  }
-  async onOpen() {
-    await this.updateView();
-    this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => {
-        this.scheduleUpdate();
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("editor-change", () => {
-        this.scheduleUpdate();
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("file-open", () => {
-        this.scheduleUpdate();
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("layout-change", () => {
-        this.scheduleUpdate();
-      })
-    );
-    this.plugin.registerHoverLinkSource(VIEW_TYPE_CUSTOM_LABEL, this.hoverLinkSource);
-  }
-  async onClose() {
-    if (this.updateTimer) {
-      clearTimeout(this.updateTimer);
-    }
-    while (this.contentEl.firstChild) {
-      this.contentEl.removeChild(this.contentEl.firstChild);
+  onDeactivate() {
+    this.isActive = false;
+    if (this.containerEl) {
+      this.containerEl.empty();
+      this.containerEl = null;
     }
   }
-  scheduleUpdate() {
-    if (this.updateTimer) {
-      clearTimeout(this.updateTimer);
+  onUpdate(activeView) {
+    if (!this.isActive || !this.containerEl) return;
+    if (activeView && activeView.file) {
+      this.lastActiveMarkdownView = activeView;
+    } else if (!activeView) {
+      activeView = this.lastActiveMarkdownView;
     }
-    this.updateTimer = setTimeout(() => {
-      this.updateView();
-    }, UI_CONSTANTS.UPDATE_DEBOUNCE_MS);
+    this.updateContent(activeView);
   }
-  async updateView() {
-    try {
-      const activeLeaf = this.app.workspace.activeLeaf;
-      let markdownView = null;
-      if (activeLeaf && activeLeaf.view instanceof import_obsidian12.MarkdownView) {
-        markdownView = activeLeaf.view;
-        if (markdownView.file) {
-          this.lastActiveMarkdownView = markdownView;
-        }
-      }
-      if (!markdownView || !markdownView.file) {
-        markdownView = this.lastActiveMarkdownView;
-      }
-      if (!markdownView || !markdownView.file) {
-        this.showNoFileMessage();
-        return;
-      }
-      const content = markdownView.editor.getValue();
-      this.labels = this.extractCustomLabels(content);
-      this.renderLabels(markdownView);
-    } catch (error) {
-      console.error("Error updating CustomLabelView:", error);
+  shouldUpdate() {
+    return this.isActive;
+  }
+  destroy() {
+    this.onDeactivate();
+    this.labels = [];
+    this.lastActiveMarkdownView = null;
+  }
+  updateContent(activeView) {
+    if (!this.containerEl) return;
+    this.containerEl.empty();
+    if (!activeView || !activeView.file) {
       this.showNoFileMessage();
+      return;
     }
+    const content = activeView.editor.getValue();
+    this.labels = this.extractCustomLabels(content);
+    this.renderLabels(activeView);
   }
   showNoFileMessage() {
-    while (this.contentEl.firstChild) {
-      this.contentEl.removeChild(this.contentEl.firstChild);
-    }
-    this.contentEl.createEl("div", {
+    if (!this.containerEl) return;
+    this.containerEl.createEl("div", {
       text: MESSAGES.NO_ACTIVE_FILE,
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
     });
     this.labels = [];
   }
-  /**
-   * Extracts custom labels from markdown content.
-   * Delegates to the customLabelExtractor utility.
-   */
   extractCustomLabels(content) {
     var _a;
     return extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
   }
   renderLabels(activeView) {
-    while (this.contentEl.firstChild) {
-      this.contentEl.removeChild(this.contentEl.firstChild);
-    }
+    if (!this.containerEl) return;
     if (this.labels.length === 0) {
-      this.contentEl.createEl("div", {
+      this.containerEl.createEl("div", {
         text: MESSAGES.NO_CUSTOM_LABELS,
         cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
       });
       return;
     }
-    const container = this.contentEl.createEl("table", {
+    const container = this.containerEl.createEl("table", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTAINER
     });
     const tbody = container.createEl("tbody");
@@ -4627,13 +4602,25 @@ var CustomLabelView = class extends import_obsidian12.ItemView {
     const contentToShow = label.renderedContent || label.content;
     const truncatedContent = truncateContentWithRendering(contentToShow);
     if (truncatedContent.includes("$")) {
-      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this);
+      const hoverSource = {
+        hoverLinkSource: {
+          display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
+          defaultMod: true
+        }
+      };
+      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, hoverSource);
     } else {
       contentEl.textContent = truncatedContent;
     }
-    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.app);
+    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app);
     if (truncatedContent !== contentToShow) {
-      setupContentHoverPreview(contentEl, label, this.plugin.app, this);
+      const hoverSource = {
+        hoverLinkSource: {
+          display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
+          defaultMod: true
+        }
+      };
+      setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource);
     }
   }
   getCustomLabels() {
@@ -4641,11 +4628,163 @@ var CustomLabelView = class extends import_obsidian12.ItemView {
   }
 };
 
+// src/views/ListPanelView.ts
+var VIEW_TYPE_LIST_PANEL = "list-panel-view";
+var ListPanelView = class extends import_obsidian12.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.panels = [];
+    this.activePanel = null;
+    this.updateTimer = null;
+    this.lastActiveMarkdownView = null;
+    this.iconRowEl = null;
+    this.contentContainerEl = null;
+    this.plugin = plugin;
+    this.hoverLinkSource = {
+      display: "List Panel",
+      defaultMod: true
+    };
+    this.initializePanels();
+  }
+  initializePanels() {
+    const customLabelModule = new CustomLabelPanelModule(this.plugin);
+    this.panels.push({
+      id: customLabelModule.id,
+      displayName: customLabelModule.displayName,
+      icon: customLabelModule.icon,
+      module: customLabelModule
+    });
+  }
+  getViewType() {
+    return VIEW_TYPE_LIST_PANEL;
+  }
+  getDisplayText() {
+    return "List Panel";
+  }
+  getIcon() {
+    return ICONS.LIST_PANEL_ID;
+  }
+  async onOpen() {
+    this.renderView();
+    await this.updateView();
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", () => {
+        this.scheduleUpdate();
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on("editor-change", () => {
+        this.scheduleUpdate();
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on("file-open", () => {
+        this.scheduleUpdate();
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on("layout-change", () => {
+        this.scheduleUpdate();
+      })
+    );
+    this.plugin.registerHoverLinkSource(VIEW_TYPE_LIST_PANEL, this.hoverLinkSource);
+  }
+  async onClose() {
+    if (this.updateTimer) {
+      clearTimeout(this.updateTimer);
+    }
+    for (const panel of this.panels) {
+      panel.module.destroy();
+    }
+    this.contentEl.empty();
+  }
+  renderView() {
+    this.contentEl.empty();
+    const viewContainer = this.contentEl.createDiv({
+      cls: "pandoc-list-panel-view-container"
+    });
+    this.iconRowEl = viewContainer.createDiv({
+      cls: "pandoc-list-panel-icon-row"
+    });
+    for (const panel of this.panels) {
+      const iconButton = this.iconRowEl.createDiv({
+        cls: "pandoc-list-panel-icon-button",
+        attr: {
+          "aria-label": panel.displayName,
+          "data-panel-id": panel.id
+        }
+      });
+      const iconContainer = iconButton.createDiv();
+      iconContainer.innerHTML = panel.icon;
+      iconButton.addEventListener("click", () => {
+        this.switchToPanel(panel);
+      });
+    }
+    const separator = viewContainer.createEl("hr", {
+      cls: "pandoc-list-panel-separator"
+    });
+    this.contentContainerEl = viewContainer.createDiv({
+      cls: "pandoc-list-panel-content-container"
+    });
+    if (this.panels.length > 0) {
+      this.switchToPanel(this.panels[0]);
+    }
+  }
+  switchToPanel(panelInfo) {
+    var _a, _b;
+    if (this.activePanel === panelInfo.module) {
+      return;
+    }
+    if (this.activePanel) {
+      this.activePanel.onDeactivate();
+    }
+    const allButtons = (_a = this.iconRowEl) == null ? void 0 : _a.querySelectorAll(".pandoc-list-panel-icon-button");
+    allButtons == null ? void 0 : allButtons.forEach((btn) => btn.removeClass("is-active"));
+    const activeButton = (_b = this.iconRowEl) == null ? void 0 : _b.querySelector(`[data-panel-id="${panelInfo.id}"]`);
+    activeButton == null ? void 0 : activeButton.addClass("is-active");
+    this.activePanel = panelInfo.module;
+    if (this.contentContainerEl) {
+      this.contentContainerEl.empty();
+      this.activePanel.onActivate(this.contentContainerEl, this.lastActiveMarkdownView);
+    }
+  }
+  scheduleUpdate() {
+    if (this.updateTimer) {
+      clearTimeout(this.updateTimer);
+    }
+    this.updateTimer = setTimeout(() => {
+      this.updateView();
+    }, UI_CONSTANTS.UPDATE_DEBOUNCE_MS);
+  }
+  async updateView() {
+    try {
+      let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
+      if (markdownView && markdownView.file) {
+        this.lastActiveMarkdownView = markdownView;
+      }
+      if (!markdownView || !markdownView.file) {
+        markdownView = this.lastActiveMarkdownView;
+      }
+      if (this.activePanel && this.activePanel.shouldUpdate()) {
+        this.activePanel.onUpdate(markdownView);
+      }
+    } catch (error) {
+    }
+  }
+  getCustomLabels() {
+    const customLabelPanel = this.panels.find((p) => p.id === "custom-labels");
+    if (customLabelPanel && customLabelPanel.module instanceof CustomLabelPanelModule) {
+      return customLabelPanel.module.getCustomLabels();
+    }
+    return [];
+  }
+};
+
 // src/main.ts
 var PandocExtendedMarkdownPlugin = class extends import_obsidian13.Plugin {
   async onload() {
     await this.loadSettings();
-    this.registerCustomLabelIcon();
+    this.registerViewIcons();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
     this.registerExtensions();
     this.registerPostProcessor();
@@ -4655,16 +4794,17 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian13.Plugin {
     this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
     this.registerEditorSuggest(this.customLabelSuggester);
     this.registerView(
-      VIEW_TYPE_CUSTOM_LABEL,
-      (leaf) => new CustomLabelView(leaf, this)
+      VIEW_TYPE_LIST_PANEL,
+      (leaf) => new ListPanelView(leaf, this)
     );
-    this.addRibbonIcon(ICONS.CUSTOM_LABEL_ID, "Open custom labels view", () => {
-      this.activateCustomLabelView();
+    this.addRibbonIcon(ICONS.LIST_PANEL_ID, "Open list panel", () => {
+      this.activateListPanelView();
     });
     this.registerCommands();
   }
-  registerCustomLabelIcon() {
+  registerViewIcons() {
     (0, import_obsidian13.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
+    (0, import_obsidian13.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
   }
   registerExtensions() {
     this.registerEditorExtension(pandocExtendedMarkdownExtension(
@@ -4767,26 +4907,26 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
     });
     this.addCommand({
       id: COMMANDS.OPEN_CUSTOM_LABEL_VIEW,
-      name: "Open custom labels view",
+      name: "Open list panel",
       callback: () => {
-        this.activateCustomLabelView();
+        this.activateListPanelView();
       }
     });
   }
   onunload() {
     pluginStateManager.clearAllStates();
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_CUSTOM_LABEL);
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_LIST_PANEL);
   }
-  async activateCustomLabelView() {
+  async activateListPanelView() {
     const { workspace } = this.app;
     let leaf = null;
-    const leaves = workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_LABEL);
+    const leaves = workspace.getLeavesOfType(VIEW_TYPE_LIST_PANEL);
     if (leaves.length > 0) {
       leaf = leaves[0];
     } else {
       leaf = workspace.getRightLeaf(false);
       if (leaf) {
-        await leaf.setViewState({ type: VIEW_TYPE_CUSTOM_LABEL, active: true });
+        await leaf.setViewState({ type: VIEW_TYPE_LIST_PANEL, active: true });
       }
     }
     if (leaf) {

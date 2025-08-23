@@ -198,22 +198,26 @@ Which renders as:
 - (2) A conclusion
 - (1+2) Combined expression
 
-##### Custom Label View
+##### List Panel View
 
-A dedicated sidebar view displays all custom label lists from the active document:
+A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types:
 
-**Features:**
-- **Quick Overview**: See all custom labels at a glance in a two-column layout
-- **Navigation**: Click on content to jump to that label in the editor
-- **Copy Labels**: Click on a label to copy its raw syntax (e.g., `{::P(#first)}`) to clipboard
-- **Hover Previews**: Hover to see full content, especially useful for math environments
-- **Auto-refresh**: Updates automatically when switching files or editing
+**Current Panels:**
+- **Custom Labels Panel** (`{::}` icon): Displays all custom label lists from the document
+  - **Quick Overview**: See all custom labels at a glance in a two-column layout
+  - **Navigation**: Click on content to jump to that label in the editor
+  - **Copy Labels**: Click on a label to copy its raw syntax (e.g., `{::P(#first)}`) to clipboard
+  - **Hover Previews**: Hover to see full content, especially useful for math environments
+  - **Auto-refresh**: Updates automatically when switching files or editing
 
 **How to use:**
-1. Click the list icon in the ribbon, or
-2. Use the command "Open custom labels view"
-3. The view will show all custom labels from your current document
+1. Click the list panel icon in the ribbon (shows `i.`, `a)`, `#.`, `~` symbols), or
+2. Use the command "Open list panel"
+3. Click icons in the toolbar to switch between different list views
 4. Click on any item to interact with it
+
+**Extensibility:**
+The List Panel is designed to be modular and can be extended with additional panels for other list types (e.g., example lists, definition lists) in future updates.
 
 ##### Features
 

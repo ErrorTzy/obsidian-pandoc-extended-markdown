@@ -64,7 +64,11 @@ pandoc-lists-plugin/
 │   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
 │   │   └── settingsTypes.ts             # Settings interface and default settings
 │   ├── views/                            # Custom Obsidian views
-│   │   └── CustomLabelView.ts           # Sidebar view for displaying custom label lists
+│   │   ├── ListPanelView.ts             # Main modular panel view with icon toolbar
+│   │   ├── CustomLabelView.ts           # Legacy view (deprecated, kept for compatibility)
+│   │   └── panels/                      # Modular panel implementations
+│   │       ├── PanelTypes.ts            # Interfaces for panel module system
+│   │       └── CustomLabelPanelModule.ts # Custom label list panel implementation
 │   ├── utils/                            # Utility functions
 │   │   ├── errorHandler.ts              # Error handling utilities with error boundaries
 │   │   ├── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
@@ -121,7 +125,8 @@ The plugin operates in two distinct rendering modes, each with its own pipeline:
 
 Both modes share a common state management system through `PluginStateManager`.
 
-Additionally, the plugin provides a **Custom Label View** - a sidebar panel that displays all custom label lists from the current document in an organized, interactive format.
+Additionally, the plugin provides a **List Panel View** - a modular sidebar panel with an icon toolbar that can display different types of list-related content. Currently supports:
+- **Custom Label Panel**: Displays all custom label lists from the current document in an organized, interactive format
 
 ```mermaid
 graph TB
@@ -147,13 +152,16 @@ graph TB
     end
     
     subgraph "Custom Views"
-        CLView[CustomLabelView<br/>Sidebar Panel]
+        LPView[ListPanelView<br/>Modular Panel]
+        CLPanel[CustomLabelPanel<br/>Label Display]
     end
     
     Main --> CMExt
     Main --> PostProc
-    Main --> CLView
+    Main --> LPView
+    LPView --> CLPanel
     Main --> SM
+    Settings --> LPView
     
     CMExt --> Scanner
     Scanner --> Validator
@@ -167,7 +175,8 @@ graph TB
     
     SM -.-> CMExt
     SM -.-> RMProc
-    SM -.-> CLView
+    SM -.-> LPView
+    
 ```
 
 ## Live Preview Rendering Pipeline
@@ -362,10 +371,90 @@ Each parser handles specific syntax patterns:
   - Adds tooltips for references
   - Handles nested markdown in definitions
 
-## Custom Label View
+## List Panel View
 
 ### Overview
-The Custom Label View provides an interactive sidebar panel that displays all custom label lists (`{::LABEL}` syntax) from the active markdown document. It offers quick navigation and reference capabilities for documents with extensive custom labeling.
+The List Panel View provides a modular, extensible sidebar panel system for displaying various list-related content. It features an icon toolbar for switching between different panel modules and is designed to accommodate future expansion with additional list types.
+
+### Architecture
+
+#### Modular Design
+The view follows a plugin architecture pattern:
+
+```typescript
+interface PanelModule {
+    id: string;
+    displayName: string;
+    icon: string;  // SVG icon content
+    isActive: boolean;
+    
+    onActivate(containerEl: HTMLElement, activeView: MarkdownView | null): void;
+    onDeactivate(): void;
+    onUpdate(activeView: MarkdownView | null): void;
+    shouldUpdate(): boolean;
+    destroy(): void;
+}
+```
+
+#### Component Structure
+
+```mermaid
+graph TB
+    subgraph "List Panel View"
+        LPV[ListPanelView<br/>Main Container]
+        IconRow[Icon Toolbar]
+        Content[Content Container]
+    end
+    
+    subgraph "Panel Modules"
+        CLM[CustomLabelPanelModule]
+        FLM[Future: ExampleListModule]
+        DLM[Future: DefinitionListModule]
+    end
+    
+    LPV --> IconRow
+    LPV --> Content
+    IconRow --> CLM
+    IconRow -.-> FLM
+    IconRow -.-> DLM
+    Content --> CLM
+```
+
+### Adding New Panel Modules
+
+To add a new panel module:
+
+1. **Create Module Class**: Implement `PanelModule` interface
+   ```typescript
+   export class ExampleListPanelModule implements PanelModule {
+       id = 'example-lists';
+       displayName = 'Example Lists';
+       icon = ICONS.EXAMPLE_LIST_SVG;
+       // ... implement required methods
+   }
+   ```
+
+2. **Register in ListPanelView**: Add to `initializePanels()`
+   ```typescript
+   private initializePanels(): void {
+       this.panels.push({
+           id: module.id,
+           displayName: module.displayName,
+           icon: module.icon,
+           module: new ExampleListPanelModule(this.plugin)
+       });
+   }
+   ```
+
+3. **Module Lifecycle**:
+   - `onActivate()`: Called when user clicks the module's icon
+   - `onUpdate()`: Called when document changes or view updates
+   - `onDeactivate()`: Called when switching to another module
+   - `destroy()`: Cleanup when view closes
+
+### Current Implementation: Custom Label Panel
+
+The Custom Label Panel displays all custom label lists (`{::LABEL}` syntax) from the active markdown document.
 
 ### Features
 - **Two-column layout**: Displays processed labels and their rendered content
@@ -383,49 +472,65 @@ The Custom Label View provides an interactive sidebar panel that displays all cu
 - **Auto-refresh**: Updates when switching files or editing content
 - **Error boundaries**: Safe operation with fallback for errors
 
-### Implementation Details
+### View Interaction Flow
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant View as CustomLabelView
+    participant LPV as ListPanelView
+    participant Panel as PanelModule
     participant Editor as MarkdownView
     participant SM as StateManager
-    participant Clip as Clipboard
     
-    User->>View: Open View
-    View->>Editor: Get Active File
-    Editor-->>View: File Content
-    View->>View: Extract Custom Labels
-    View->>SM: Get Placeholder Context
-    SM-->>View: Processed Labels
-    View->>View: Render Labels
+    User->>LPV: Open View
+    LPV->>LPV: Initialize Panels
+    LPV->>Panel: Activate Default Panel
+    Panel->>Editor: Get Active File
+    Editor-->>Panel: File Content
+    Panel->>Panel: Process Content
+    Panel->>SM: Get State/Context
+    SM-->>Panel: Processed Data
+    Panel->>Panel: Render Content
     
-    alt Label Click
-        User->>View: Click Label
-        View->>Clip: Copy Raw Label
-        View->>User: Show Notice
+    alt Switch Panel
+        User->>LPV: Click Icon
+        LPV->>Panel: Deactivate Current
+        LPV->>Panel: Activate New Panel
+        Panel->>Panel: Initialize Content
     end
     
-    alt Content Click
-        User->>View: Click Content
-        View->>Editor: Scroll to Line
-        View->>Editor: Highlight Line
-        Editor->>User: Show Highlighted
-    end
-    
-    alt Hover
-        User->>View: Hover Element
-        View->>View: Create Popover
-        View->>User: Show Preview
+    alt Content Update
+        Editor->>LPV: Content Changed
+        LPV->>Panel: shouldUpdate()
+        Panel-->>LPV: true/false
+        alt Should Update
+            LPV->>Panel: onUpdate()
+            Panel->>Panel: Refresh Content
+        end
     end
 ```
 
-### Key Methods
-- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (in `customLabelExtractor.ts`)
+### Key Implementation Details
+
+#### ListPanelView Architecture
+- **`initializePanels()`**: Registers all available panel modules
+- **`renderView()`**: Creates icon toolbar and content container
+- **`switchToPanel()`**: Handles panel switching with proper lifecycle management
+- **`updateView()`**: Propagates updates to active panel
+- **Icon Toolbar**: Clickable SVG icons with active state highlighting
+- **Content Container**: Dynamic content area managed by active panel
+
+#### Panel Module Lifecycle
+1. **Initialization**: Module created with plugin reference
+2. **Activation**: `onActivate()` called with container element
+3. **Updates**: `onUpdate()` called on document changes
+4. **Deactivation**: `onDeactivate()` for cleanup when switching
+5. **Destruction**: `destroy()` for final cleanup
+
+#### CustomLabelPanelModule Implementation
+- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (uses `customLabelExtractor.ts`)
 - **`renderLabels()`**: Creates DOM structure with interactive elements
-- **`updateView()`**: Updates the view when active file changes
-- **`highlightLine()`**: Applies visual highlight using editor selection (in `viewInteractions.ts`)
+- **`updateContent()`**: Updates panel when active file changes
 - **Truncation utilities** (in `contentTruncator.ts`):
   - `truncateLabel()`: Truncates labels to 6 characters
   - `truncateContent()`: Simple truncation to 51 characters
@@ -438,6 +543,33 @@ sequenceDiagram
   - `setupLabelClickHandler()`: Handles label copying
   - `setupContentClickHandler()`: Handles navigation
   - `setupHoverPreview()`: Shows popover for truncated content
+
+### Extension Guide
+
+To extend the List Panel with new list types:
+
+1. **Create New Panel Module**
+   ```typescript
+   // src/views/panels/ExampleListPanelModule.ts
+   export class ExampleListPanelModule implements PanelModule {
+       // Implement all required methods
+   }
+   ```
+
+2. **Design Icon**
+   - Add SVG icon to `constants.ts`
+   - Keep icons simple and recognizable at 20x20px
+
+3. **Register Module**
+   - Add to `ListPanelView.initializePanels()`
+   - Module automatically appears in icon toolbar
+
+4. **Best Practices**
+   - Use `containerEl.empty()` for DOM cleanup
+   - Avoid direct `workspace.activeLeaf` access
+   - Follow `pandoc-` CSS naming convention
+   - Implement proper error boundaries
+   - Cache expensive computations
 
 ## Plugin Lifecycle & State Management
 
@@ -601,7 +733,9 @@ flowchart LR
 | `settings.ts` | User configuration | Settings UI, preference persistence |
 | `pandocValidator.ts` | Pandoc compliance validation | Format checking, auto-formatting |
 | `listAutocompletion.ts` | Smart list continuation | Enter/Tab/Shift-Tab key handling, uses utility modules |
-| `CustomLabelView.ts` | Custom label sidebar view | Label display, navigation, clipboard operations |
+| `ListPanelView.ts` | Modular sidebar panel system | Panel management, icon toolbar, content switching |
+| `panels/PanelTypes.ts` | Panel module interfaces | Type definitions for extensible panel system |
+| `panels/CustomLabelPanelModule.ts` | Custom label panel implementation | Label display, navigation, clipboard operations |
 
 ### Live Preview Components
 

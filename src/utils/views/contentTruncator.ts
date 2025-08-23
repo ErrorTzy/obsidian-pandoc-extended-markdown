@@ -133,14 +133,15 @@ function processMathDelimiter(
     currentLength: number
 ): MathDelimiterResult {
     if (inMath) {
-        // End of math block
-        const renderedMath = renderMathToText(mathBuffer);
+        // End of math block - trim trailing spaces from math buffer
+        const trimmedBuffer = mathBuffer.trimEnd();
+        const renderedMath = renderMathToText(trimmedBuffer);
         const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
         
         if (renderedMath.length <= remainingSpace) {
             // Entire math fits
             return {
-                result: currentResult + mathBuffer.trimEnd() + '$',
+                result: currentResult + trimmedBuffer + '$',
                 renderedLength: currentLength + renderedMath.length,
                 mathBuffer: '',
                 inMath: false,

@@ -21,7 +21,7 @@ import { CustomLabelReferenceSuggest } from './customLabelReferenceSuggest';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
 import { pluginStateManager } from './state/pluginStateManager';
-import { CustomLabelView, VIEW_TYPE_CUSTOM_LABEL } from './views/CustomLabelView';
+import { ListPanelView, VIEW_TYPE_LIST_PANEL } from './views/ListPanelView';
 
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;
@@ -31,8 +31,8 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
         
-        // Register custom icon for CustomLabelView
-        this.registerCustomLabelIcon();
+        // Register custom icons for views
+        this.registerViewIcons();
         
         // Add settings tab
         this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -52,23 +52,24 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
         this.registerEditorSuggest(this.customLabelSuggester);
         
-        // Register custom label view
+        // Register list panel view
         this.registerView(
-            VIEW_TYPE_CUSTOM_LABEL,
-            (leaf) => new CustomLabelView(leaf, this)
+            VIEW_TYPE_LIST_PANEL,
+            (leaf) => new ListPanelView(leaf, this)
         );
         
-        // Add ribbon icon for custom label view
-        this.addRibbonIcon(ICONS.CUSTOM_LABEL_ID, 'Open custom labels view', () => {
-            this.activateCustomLabelView();
+        // Add ribbon icon for list panel view
+        this.addRibbonIcon(ICONS.LIST_PANEL_ID, 'Open list panel', () => {
+            this.activateListPanelView();
         });
         
         // Register all commands
         this.registerCommands();
     }
 
-    private registerCustomLabelIcon(): void {
+    private registerViewIcons(): void {
         addIcon(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
+        addIcon(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
     }
 
     private registerExtensions(): void {
@@ -196,12 +197,12 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             }
         });
         
-        // Add command to open custom label view
+        // Add command to open list panel view
         this.addCommand({
             id: COMMANDS.OPEN_CUSTOM_LABEL_VIEW,
-            name: 'Open custom labels view',
+            name: 'Open list panel',
             callback: () => {
-                this.activateCustomLabelView();
+                this.activateListPanelView();
             }
         });
     }
@@ -210,17 +211,17 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         // Clear all states on unload
         pluginStateManager.clearAllStates();
         
-        // Close custom label views
-        this.app.workspace.detachLeavesOfType(VIEW_TYPE_CUSTOM_LABEL);
+        // Close list panel views
+        this.app.workspace.detachLeavesOfType(VIEW_TYPE_LIST_PANEL);
         
         // Other cleanup is handled automatically by Obsidian
     }
     
-    async activateCustomLabelView() {
+    async activateListPanelView() {
         const { workspace } = this.app;
         
         let leaf: WorkspaceLeaf | null = null;
-        const leaves = workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_LABEL);
+        const leaves = workspace.getLeavesOfType(VIEW_TYPE_LIST_PANEL);
         
         if (leaves.length > 0) {
             // A leaf with our view already exists, use that
@@ -230,7 +231,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             // in the right sidebar for it
             leaf = workspace.getRightLeaf(false);
             if (leaf) {
-                await leaf.setViewState({ type: VIEW_TYPE_CUSTOM_LABEL, active: true });
+                await leaf.setViewState({ type: VIEW_TYPE_LIST_PANEL, active: true });
             }
         }
         
