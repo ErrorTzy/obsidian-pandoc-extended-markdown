@@ -86,6 +86,11 @@ export const CSS_CLASSES = {
     CUSTOM_LABEL_VIEW_EMPTY: 'custom-label-view-empty',
     CUSTOM_LABEL_HOVER_PREVIEW: 'custom-label-hover-preview',
     CUSTOM_LABEL_HIGHLIGHT: 'custom-label-highlight',
+    
+    // Hover popover styles
+    HOVER_POPOVER: 'pandoc-hover-popover',
+    HOVER_POPOVER_LABEL: 'pandoc-hover-popover-label',
+    HOVER_POPOVER_CONTENT: 'pandoc-hover-popover-content',
 } as const;
 
 export const DECORATION_STYLES = {
@@ -152,6 +157,67 @@ export const UI_CONSTANTS = {
 
 export const DOM_ATTRIBUTES = {
     CONTENT_EDITABLE_FALSE: 'false',
+} as const;
+
+export const MATH_SYMBOLS = {
+    // LaTeX to Unicode mappings for math rendering
+    LATEX_TO_UNICODE: {
+        '\\therefore': '∴',
+        '\\because': '∵',
+        '\\alpha': 'α',
+        '\\beta': 'β',
+        '\\gamma': 'γ',
+        '\\delta': 'δ',
+        '\\epsilon': 'ε',
+        '\\theta': 'θ',
+        '\\lambda': 'λ',
+        '\\mu': 'μ',
+        '\\pi': 'π',
+        '\\sigma': 'σ',
+        '\\phi': 'φ',
+        '\\psi': 'ψ',
+        '\\omega': 'ω',
+        '\\infty': '∞',
+        '\\pm': '±',
+        '\\times': '×',
+        '\\div': '÷',
+        '\\neq': '≠',
+        '\\leq': '≤',
+        '\\geq': '≥',
+        '\\approx': '≈',
+        '\\subset': '⊂',
+        '\\supset': '⊃',
+        '\\cup': '∪',
+        '\\cap': '∩',
+        '\\in': '∈',
+        '\\notin': '∉',
+        '\\exists': '∃',
+        '\\forall': '∀',
+        '\\land': '∧',
+        '\\lor': '∨',
+        '\\neg': '¬',
+        '\\rightarrow': '→',
+        '\\leftarrow': '←',
+        '\\leftrightarrow': '↔',
+        '\\Rightarrow': '⇒',
+        '\\Leftarrow': '⇐',
+        '\\Leftrightarrow': '⇔'
+    } as const
+} as const;
+
+export const ICONS = {
+    CUSTOM_LABEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <text x="50" y="50" 
+              text-anchor="middle" 
+              dominant-baseline="central" 
+              font-family="monospace" 
+              font-size="36" 
+              font-weight="bold" 
+              fill="currentColor">
+            {::}
+        </text>
+    </svg>`,
+    CUSTOM_LABEL_ID: 'custom-label-list'
 } as const;
 
 // Helper function to create fancy list type class names

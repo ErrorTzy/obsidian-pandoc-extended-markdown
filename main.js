@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view11 = require("@codemirror/view");
 
@@ -151,7 +151,11 @@ var CSS_CLASSES = {
   CUSTOM_LABEL_VIEW_CONTENT: "custom-label-view-content",
   CUSTOM_LABEL_VIEW_EMPTY: "custom-label-view-empty",
   CUSTOM_LABEL_HOVER_PREVIEW: "custom-label-hover-preview",
-  CUSTOM_LABEL_HIGHLIGHT: "custom-label-highlight"
+  CUSTOM_LABEL_HIGHLIGHT: "custom-label-highlight",
+  // Hover popover styles
+  HOVER_POPOVER: "pandoc-hover-popover",
+  HOVER_POPOVER_LABEL: "pandoc-hover-popover-label",
+  HOVER_POPOVER_CONTENT: "pandoc-hover-popover-content"
 };
 var DECORATION_STYLES = {
   HASH_LIST_INDENT: 29,
@@ -208,6 +212,65 @@ var UI_CONSTANTS = {
 };
 var DOM_ATTRIBUTES = {
   CONTENT_EDITABLE_FALSE: "false"
+};
+var MATH_SYMBOLS = {
+  // LaTeX to Unicode mappings for math rendering
+  LATEX_TO_UNICODE: {
+    "\\therefore": "\u2234",
+    "\\because": "\u2235",
+    "\\alpha": "\u03B1",
+    "\\beta": "\u03B2",
+    "\\gamma": "\u03B3",
+    "\\delta": "\u03B4",
+    "\\epsilon": "\u03B5",
+    "\\theta": "\u03B8",
+    "\\lambda": "\u03BB",
+    "\\mu": "\u03BC",
+    "\\pi": "\u03C0",
+    "\\sigma": "\u03C3",
+    "\\phi": "\u03C6",
+    "\\psi": "\u03C8",
+    "\\omega": "\u03C9",
+    "\\infty": "\u221E",
+    "\\pm": "\xB1",
+    "\\times": "\xD7",
+    "\\div": "\xF7",
+    "\\neq": "\u2260",
+    "\\leq": "\u2264",
+    "\\geq": "\u2265",
+    "\\approx": "\u2248",
+    "\\subset": "\u2282",
+    "\\supset": "\u2283",
+    "\\cup": "\u222A",
+    "\\cap": "\u2229",
+    "\\in": "\u2208",
+    "\\notin": "\u2209",
+    "\\exists": "\u2203",
+    "\\forall": "\u2200",
+    "\\land": "\u2227",
+    "\\lor": "\u2228",
+    "\\neg": "\xAC",
+    "\\rightarrow": "\u2192",
+    "\\leftarrow": "\u2190",
+    "\\leftrightarrow": "\u2194",
+    "\\Rightarrow": "\u21D2",
+    "\\Leftarrow": "\u21D0",
+    "\\Leftrightarrow": "\u21D4"
+  }
+};
+var ICONS = {
+  CUSTOM_LABEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <text x="50" y="50" 
+              text-anchor="middle" 
+              dominant-baseline="central" 
+              font-family="monospace" 
+              font-size="36" 
+              font-weight="bold" 
+              fill="currentColor">
+            {::}
+        </text>
+    </svg>`,
+  CUSTOM_LABEL_ID: "custom-label-list"
 };
 
 // src/patterns.ts
@@ -3974,9 +4037,428 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/views/CustomLabelView.ts
+var import_obsidian12 = require("obsidian");
+
+// src/utils/customLabelExtractor.ts
+function extractCustomLabels(content, moreExtendedSyntax) {
+  return withErrorBoundary(() => {
+    const lines = content.split("\n");
+    const labels = [];
+    if (!moreExtendedSyntax) {
+      return labels;
+    }
+    const { processedLabels, rawToProcessed } = processLabels(lines);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = ListPatterns.isCustomLabelList(line);
+      if (match) {
+        const fullMarker = match[2];
+        const rawLabel = match[3];
+        const restOfLine = line.substring(match[0].length);
+        const processedLabel = rawToProcessed.get(rawLabel) || rawLabel;
+        const renderedLabel = processedLabel;
+        let renderedContent = restOfLine.trim();
+        renderedContent = renderedContent.replace(ListPatterns.CUSTOM_LABEL_REFERENCE, (match2, ref) => {
+          const processedRef = rawToProcessed.get(ref) || ref;
+          return processedRef;
+        });
+        labels.push({
+          label: renderedLabel,
+          rawLabel: fullMarker,
+          content: restOfLine.trim(),
+          renderedContent,
+          lineNumber: i,
+          position: { line: i, ch: 0 }
+        });
+      }
+    }
+    return labels;
+  }, [], "CustomLabelExtractor.extractCustomLabels");
+}
+function processLabels(lines) {
+  const placeholderContext = new PlaceholderContext();
+  const processedLabels = /* @__PURE__ */ new Map();
+  const rawToProcessed = /* @__PURE__ */ new Map();
+  for (const line of lines) {
+    const match = ListPatterns.isCustomLabelList(line);
+    if (match) {
+      const rawLabel = match[3];
+      const fullMatch = match[0];
+      const restOfLine = line.substring(fullMatch.length);
+      const processedLabel = placeholderContext.processLabel(rawLabel);
+      processedLabels.set(processedLabel, restOfLine.trim());
+      rawToProcessed.set(rawLabel, processedLabel);
+    }
+  }
+  return { processedLabels, rawToProcessed };
+}
+
+// src/utils/mathRenderer.ts
+function renderMathToText(mathContent) {
+  let rendered = mathContent;
+  for (const [latex, unicode] of Object.entries(MATH_SYMBOLS.LATEX_TO_UNICODE)) {
+    rendered = rendered.replace(new RegExp(latex.replace(/\\/g, "\\\\"), "g"), unicode);
+  }
+  rendered = rendered.replace(/\\/g, "").replace(/\s+/g, " ").trim();
+  return rendered;
+}
+function tokenizeMath(mathContent) {
+  const tokens = [];
+  let current = "";
+  let i = 0;
+  while (i < mathContent.length) {
+    if (mathContent[i] === "\\") {
+      if (current) {
+        tokens.push(current);
+        current = "";
+      }
+      let command = "\\";
+      i++;
+      while (i < mathContent.length && /[a-zA-Z]/.test(mathContent[i])) {
+        command += mathContent[i];
+        i++;
+      }
+      if (i < mathContent.length && mathContent[i] === " ") {
+        if (command.length > 1) {
+          command += " ";
+          i++;
+        }
+      }
+      tokens.push(command);
+    } else {
+      current += mathContent[i];
+      i++;
+    }
+  }
+  if (current) {
+    tokens.push(current);
+  }
+  return tokens;
+}
+function truncateMathContent(mathContent, maxRenderedLength) {
+  const tokens = tokenizeMath(mathContent);
+  let result = "$";
+  let tokenCount = 0;
+  let accumulatedTokens = [];
+  for (const token of tokens) {
+    const testTokens = [...accumulatedTokens, token];
+    const testLatex = testTokens.join("");
+    const testRendered = renderMathToText(testLatex);
+    if (testRendered.length <= maxRenderedLength) {
+      accumulatedTokens.push(token);
+      tokenCount++;
+    } else {
+      break;
+    }
+  }
+  let latexContent = accumulatedTokens.join("");
+  latexContent = latexContent.trimEnd();
+  result += latexContent;
+  if (!result.endsWith("$")) {
+    result += "$";
+  }
+  return result;
+}
+function truncateMathAtLimit(mathBuffer, currentResult, remainingSpace) {
+  if (remainingSpace > 1) {
+    const truncatedMath = truncateMathContent(mathBuffer, remainingSpace - 1);
+    return currentResult + truncatedMath.slice(1) + "\u2026";
+  } else if (currentResult.endsWith("$")) {
+    return currentResult.slice(0, -1) + "\u2026";
+  } else {
+    return currentResult + "\u2026";
+  }
+}
+
+// src/utils/views/contentTruncator.ts
+function truncateLabel(label) {
+  if (label.length > UI_CONSTANTS.LABEL_MAX_LENGTH) {
+    return label.slice(0, UI_CONSTANTS.LABEL_TRUNCATION_LENGTH) + "\u2026";
+  }
+  return label;
+}
+function truncateContent(content) {
+  if (content.length > UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+    return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATION_LENGTH) + "\u2026";
+  }
+  return content;
+}
+function truncateContentWithRendering(content) {
+  if (!content.includes("$")) {
+    return truncateContent(content);
+  }
+  const parseResult = parseContentWithMath(content);
+  return parseResult.truncated ? parseResult.result : content;
+}
+function parseContentWithMath(content) {
+  const normalizedContent = normalizeMathSpaces(content);
+  const state = initializeParsingState();
+  for (let i = 0; i < normalizedContent.length; i++) {
+    const char = normalizedContent[i];
+    const parseResult = processCharacter(char, state);
+    if (parseResult.shouldBreak) {
+      return { result: parseResult.result, truncated: true };
+    }
+  }
+  if (state.inMath) {
+    return handleUnclosedMathWrapper(state);
+  }
+  return { result: state.result, truncated: false };
+}
+function normalizeMathSpaces(content) {
+  if (content.includes("$")) {
+    return content.replace(/\s+\$/g, "$");
+  }
+  return content;
+}
+function initializeParsingState() {
+  return {
+    renderedLength: 0,
+    result: "",
+    inMath: false,
+    mathBuffer: ""
+  };
+}
+function processCharacter(char, state) {
+  if (char === "$") {
+    const mathResult = processMathDelimiter(
+      state.inMath,
+      state.mathBuffer,
+      state.result,
+      state.renderedLength
+    );
+    state.result = mathResult.result;
+    state.renderedLength = mathResult.renderedLength;
+    state.mathBuffer = mathResult.mathBuffer;
+    state.inMath = mathResult.inMath;
+    return { result: mathResult.result, shouldBreak: mathResult.shouldBreak };
+  } else if (state.inMath) {
+    state.mathBuffer += char;
+    return { result: state.result, shouldBreak: false };
+  } else {
+    const textResult = processRegularCharacter(char, state.result, state.renderedLength);
+    state.result = textResult.result;
+    state.renderedLength = textResult.renderedLength;
+    return { result: textResult.result, shouldBreak: textResult.shouldBreak };
+  }
+}
+function handleUnclosedMathWrapper(state) {
+  const finalResult = handleUnclosedMath(state.mathBuffer, state.result, state.renderedLength);
+  return { result: finalResult.result, truncated: finalResult.truncated };
+}
+function processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) {
+  if (inMath) {
+    const renderedMath = renderMathToText(mathBuffer);
+    const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+    if (renderedMath.length <= remainingSpace) {
+      return {
+        result: currentResult + mathBuffer.trimEnd() + "$",
+        renderedLength: currentLength + renderedMath.length,
+        mathBuffer: "",
+        inMath: false,
+        shouldBreak: false
+      };
+    } else {
+      const truncatedResult = truncateMathAtLimit(
+        mathBuffer,
+        currentResult,
+        remainingSpace
+      );
+      return {
+        result: truncatedResult,
+        renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+        mathBuffer: "",
+        inMath: false,
+        shouldBreak: true
+      };
+    }
+  } else {
+    return {
+      result: currentResult + "$",
+      renderedLength: currentLength,
+      mathBuffer: "",
+      inMath: true,
+      shouldBreak: false
+    };
+  }
+}
+function processRegularCharacter(char, currentResult, currentLength) {
+  if (currentLength < UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+    return {
+      result: currentResult + char,
+      renderedLength: currentLength + 1,
+      shouldBreak: false
+    };
+  } else {
+    const truncated = currentResult.length > 0 && !currentResult.endsWith("\u2026") ? currentResult.slice(0, -1) + "\u2026" : currentResult + "\u2026";
+    return {
+      result: truncated,
+      renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+      shouldBreak: true
+    };
+  }
+}
+function handleUnclosedMath(mathBuffer, currentResult, currentLength) {
+  const renderedMath = renderMathToText(mathBuffer);
+  const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+  if (renderedMath.length <= remainingSpace) {
+    return {
+      result: currentResult + mathBuffer.trimEnd() + "$",
+      truncated: false
+    };
+  } else {
+    const truncatedResult = truncateMathAtLimit(
+      mathBuffer,
+      currentResult,
+      remainingSpace
+    );
+    return {
+      result: truncatedResult,
+      truncated: true
+    };
+  }
+}
+
+// src/utils/views/viewInteractions.ts
 var import_obsidian11 = require("obsidian");
+function highlightLine(view, lineNumber) {
+  try {
+    const editor = view.editor;
+    const lineContent = editor.getLine(lineNumber);
+    const lineStart = { line: lineNumber, ch: 0 };
+    const lineEnd = { line: lineNumber, ch: lineContent.length };
+    editor.setSelection(lineStart, lineEnd);
+    const cm = editor.cm;
+    if (cm && cm.dom) {
+      const selections = cm.dom.querySelectorAll(".cm-selectionBackground");
+      selections.forEach((sel) => {
+        sel.style.transition = "opacity 2s ease-out";
+        sel.style.opacity = "0.3";
+        setTimeout(() => {
+          sel.style.opacity = "0";
+        }, UI_CONSTANTS.SELECTION_FADE_DELAY_MS);
+      });
+    }
+    setTimeout(() => {
+      editor.setCursor(lineStart);
+    }, UI_CONSTANTS.SELECTION_CLEAR_DELAY_MS);
+  } catch (error) {
+    console.error("Error highlighting line:", error);
+  }
+}
+function setupLabelClickHandler(element, rawLabel) {
+  element.addEventListener("click", () => {
+    try {
+      navigator.clipboard.writeText(rawLabel).then(() => {
+        new import_obsidian11.Notice(MESSAGES.LABEL_COPIED);
+      }).catch((error) => {
+        console.error("Failed to copy label:", error);
+      });
+    } catch (error) {
+      console.error("Error in label click handler:", error);
+    }
+  });
+}
+function setupContentClickHandler(element, label, lastActiveMarkdownView, app) {
+  element.addEventListener("click", () => {
+    try {
+      const targetView = lastActiveMarkdownView;
+      if (targetView && targetView.editor) {
+        const editor = targetView.editor;
+        const leaves = app.workspace.getLeavesOfType("markdown");
+        const targetLeaf = leaves.find((leaf) => leaf.view === targetView);
+        if (targetLeaf) {
+          app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+        }
+        editor.setCursor(label.position);
+        editor.scrollIntoView({ from: label.position, to: label.position }, true);
+        highlightLine(targetView, label.lineNumber);
+      }
+    } catch (error) {
+      console.error("Error scrolling to label:", error);
+    }
+  });
+}
+function setupLabelHoverPreview(element, fullLabel) {
+  let hoverPopover = null;
+  const removePopover = () => {
+    if (hoverPopover) {
+      hoverPopover.remove();
+      hoverPopover = null;
+    }
+  };
+  element.addEventListener("mouseenter", () => {
+    const hoverEl = document.createElement("div");
+    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_LABEL);
+    hoverEl.textContent = fullLabel;
+    document.body.appendChild(hoverEl);
+    const rect = element.getBoundingClientRect();
+    hoverEl.style.left = `${rect.left}px`;
+    hoverEl.style.top = `${rect.bottom + 5}px`;
+    const hoverRect = hoverEl.getBoundingClientRect();
+    if (hoverRect.right > window.innerWidth) {
+      hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+    }
+    if (hoverRect.bottom > window.innerHeight) {
+      hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+    }
+    hoverPopover = hoverEl;
+  });
+  element.addEventListener("mouseleave", removePopover);
+  element.addEventListener("click", removePopover);
+}
+function renderContentWithMath(element, truncatedContent, app, component) {
+  import_obsidian11.MarkdownRenderer.render(
+    app,
+    truncatedContent,
+    element,
+    "",
+    component
+  );
+}
+function setupContentHoverPreview(element, label, app, component) {
+  let hoverPopover = null;
+  const removePopover = () => {
+    if (hoverPopover) {
+      hoverPopover.remove();
+      hoverPopover = null;
+    }
+  };
+  element.addEventListener("mouseenter", () => {
+    const hoverEl = document.createElement("div");
+    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_CONTENT);
+    const contentToShow = label.renderedContent || label.content;
+    if (contentToShow.includes("$")) {
+      import_obsidian11.MarkdownRenderer.render(
+        app,
+        contentToShow,
+        hoverEl,
+        "",
+        component
+      );
+    } else {
+      hoverEl.textContent = contentToShow;
+    }
+    document.body.appendChild(hoverEl);
+    const rect = element.getBoundingClientRect();
+    hoverEl.style.left = `${rect.left}px`;
+    hoverEl.style.top = `${rect.bottom + 5}px`;
+    const hoverRect = hoverEl.getBoundingClientRect();
+    if (hoverRect.right > window.innerWidth) {
+      hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+    }
+    if (hoverRect.bottom > window.innerHeight) {
+      hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+    }
+    hoverPopover = hoverEl;
+  });
+  element.addEventListener("mouseleave", removePopover);
+  element.addEventListener("click", removePopover);
+}
+
+// src/views/CustomLabelView.ts
 var VIEW_TYPE_CUSTOM_LABEL = "custom-label-view";
-var CustomLabelView = class extends import_obsidian11.ItemView {
+var CustomLabelView = class extends import_obsidian12.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.labels = [];
@@ -3995,7 +4477,7 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     return MESSAGES.CUSTOM_LABELS_VIEW_TITLE;
   }
   getIcon() {
-    return "list-ordered";
+    return ICONS.CUSTOM_LABEL_ID;
   }
   async onOpen() {
     await this.updateView();
@@ -4041,7 +4523,7 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     try {
       const activeLeaf = this.app.workspace.activeLeaf;
       let markdownView = null;
-      if (activeLeaf && activeLeaf.view instanceof import_obsidian11.MarkdownView) {
+      if (activeLeaf && activeLeaf.view instanceof import_obsidian12.MarkdownView) {
         markdownView = activeLeaf.view;
         if (markdownView.file) {
           this.lastActiveMarkdownView = markdownView;
@@ -4074,64 +4556,11 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
   }
   /**
    * Extracts custom labels from markdown content.
-   * Processes placeholders and builds label information.
+   * Delegates to the customLabelExtractor utility.
    */
   extractCustomLabels(content) {
-    return withErrorBoundary(() => {
-      var _a;
-      const lines = content.split("\n");
-      const labels = [];
-      if (!((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax)) {
-        return labels;
-      }
-      const { processedLabels, rawToProcessed } = this.processLabels(lines);
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const match = ListPatterns.isCustomLabelList(line);
-        if (match) {
-          const fullMarker = match[2];
-          const rawLabel = match[3];
-          const restOfLine = line.substring(match[0].length);
-          const processedLabel = rawToProcessed.get(rawLabel) || rawLabel;
-          const renderedLabel = processedLabel;
-          let renderedContent = restOfLine.trim();
-          const refPattern = /\{::([^}]+)\}/g;
-          renderedContent = renderedContent.replace(refPattern, (match2, ref) => {
-            const processedRef = rawToProcessed.get(ref) || ref;
-            return processedRef;
-          });
-          labels.push({
-            label: renderedLabel,
-            rawLabel: fullMarker,
-            content: restOfLine.trim(),
-            renderedContent,
-            lineNumber: i,
-            position: { line: i, ch: 0 }
-          });
-        }
-      }
-      return labels;
-    }, [], "CustomLabelView.extractCustomLabels");
-  }
-  /**
-   * Process labels with placeholders.
-   * Returns processed labels and raw-to-processed mapping.
-   */
-  processLabels(lines) {
-    const placeholderContext = new PlaceholderContext();
-    const processedLabels = /* @__PURE__ */ new Map();
-    const rawToProcessed = /* @__PURE__ */ new Map();
-    for (const line of lines) {
-      const match = ListPatterns.isCustomLabelList(line);
-      if (match) {
-        const rawLabel = match[3];
-        const restOfLine = line.substring(match[0].length);
-        const processedLabel = placeholderContext.processLabel(rawLabel);
-        processedLabels.set(processedLabel, restOfLine.trim());
-        rawToProcessed.set(rawLabel, processedLabel);
-      }
-    }
-    return { processedLabels, rawToProcessed };
+    var _a;
+    return extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
   }
   renderLabels(activeView) {
     while (this.contentEl.firstChild) {
@@ -4169,469 +4598,26 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     const labelEl = row.createEl("div", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_LABEL
     });
-    const displayLabel = this.truncateLabel(label.label);
+    const displayLabel = truncateLabel(label.label);
     labelEl.textContent = displayLabel;
     if (displayLabel !== label.label) {
-      this.setupLabelHoverPreview(labelEl, label.label);
+      setupLabelHoverPreview(labelEl, label.label);
     }
-    labelEl.addEventListener("click", () => {
-      try {
-        navigator.clipboard.writeText(label.rawLabel).then(() => {
-          new import_obsidian11.Notice(MESSAGES.LABEL_COPIED);
-        }).catch((error) => {
-          console.error("Failed to copy label:", error);
-        });
-      } catch (error) {
-        console.error("Error in label click handler:", error);
-      }
-    });
+    setupLabelClickHandler(labelEl, label.rawLabel);
     const contentEl = row.createEl("div", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
     });
     const contentToShow = label.renderedContent || label.content;
-    const truncatedContent = this.truncateContentWithRendering(contentToShow);
+    const truncatedContent = truncateContentWithRendering(contentToShow);
     if (truncatedContent.includes("$")) {
-      this.renderContentWithMath(contentEl, truncatedContent, contentToShow);
+      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this);
     } else {
       contentEl.textContent = truncatedContent;
     }
-    contentEl.addEventListener("click", () => {
-      try {
-        const targetView = this.lastActiveMarkdownView;
-        if (targetView && targetView.editor) {
-          const editor = targetView.editor;
-          const leaves = this.app.workspace.getLeavesOfType("markdown");
-          const targetLeaf = leaves.find((leaf) => leaf.view === targetView);
-          if (targetLeaf) {
-            this.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
-          }
-          editor.setCursor(label.position);
-          editor.scrollIntoView({ from: label.position, to: label.position }, true);
-          this.highlightLine(targetView, label.lineNumber);
-        }
-      } catch (error) {
-        console.error("Error scrolling to label:", error);
-      }
-    });
+    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.app);
     if (truncatedContent !== contentToShow) {
-      this.setupHoverPreview(contentEl, label, activeView);
+      setupContentHoverPreview(contentEl, label, this.plugin.app, this);
     }
-  }
-  /**
-   * Truncates label text to the maximum allowed length.
-   * @param label - The label text to truncate
-   * @returns Truncated label with ellipsis if needed
-   */
-  truncateLabel(label) {
-    if (label.length > UI_CONSTANTS.LABEL_MAX_LENGTH) {
-      return label.slice(0, UI_CONSTANTS.LABEL_TRUNCATION_LENGTH) + "\u2026";
-    }
-    return label;
-  }
-  /**
-   * Simple truncation for content without math formatting.
-   * @param content - The content to truncate
-   * @returns Truncated content with ellipsis if needed
-   */
-  truncateContent(content) {
-    if (content.length > UI_CONSTANTS.CONTENT_MAX_LENGTH) {
-      return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATION_LENGTH) + "\u2026";
-    }
-    return content;
-  }
-  /**
-   * Truncates content based on rendered length, handling math content specially.
-   * This ensures math formulas are properly considered for their rendered length,
-   * not their raw LaTeX length.
-   */
-  truncateContentWithRendering(content) {
-    if (!content.includes("$")) {
-      return this.truncateContent(content);
-    }
-    const parseResult = this.parseContentWithMath(content);
-    return parseResult.truncated ? parseResult.result : content;
-  }
-  /**
-   * Parses content containing math and applies truncation logic.
-   * @returns Object with parsed result and truncation status
-   */
-  parseContentWithMath(content) {
-    let renderedLength = 0;
-    let result = "";
-    let inMath = false;
-    let mathBuffer = "";
-    let i = 0;
-    while (i < content.length) {
-      const char = content[i];
-      if (char === "$") {
-        const mathResult = this.processMathDelimiter(
-          inMath,
-          mathBuffer,
-          result,
-          renderedLength
-        );
-        if (mathResult.shouldBreak) {
-          return { result: mathResult.result, truncated: true };
-        }
-        result = mathResult.result;
-        renderedLength = mathResult.renderedLength;
-        mathBuffer = mathResult.mathBuffer;
-        inMath = mathResult.inMath;
-      } else if (inMath) {
-        mathBuffer += char;
-      } else {
-        const textResult = this.processRegularCharacter(char, result, renderedLength);
-        if (textResult.shouldBreak) {
-          return { result: textResult.result, truncated: true };
-        }
-        result = textResult.result;
-        renderedLength = textResult.renderedLength;
-      }
-      i++;
-    }
-    if (inMath) {
-      const finalResult = this.handleUnclosedMath(mathBuffer, result, renderedLength);
-      return { result: finalResult.result, truncated: finalResult.truncated };
-    }
-    return { result, truncated: false };
-  }
-  /**
-   * Processes a math delimiter ($) in the content.
-   */
-  processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) {
-    if (inMath) {
-      const renderedMath = this.renderMathToText(mathBuffer);
-      const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
-      if (renderedMath.length <= remainingSpace) {
-        return {
-          result: currentResult + mathBuffer.trimEnd() + "$",
-          renderedLength: currentLength + renderedMath.length,
-          mathBuffer: "",
-          inMath: false,
-          shouldBreak: false
-        };
-      } else {
-        const truncatedResult = this.truncateMathAtLimit(
-          mathBuffer,
-          currentResult,
-          remainingSpace
-        );
-        return {
-          result: truncatedResult,
-          renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
-          mathBuffer: "",
-          inMath: false,
-          shouldBreak: true
-        };
-      }
-    } else {
-      return {
-        result: currentResult + "$",
-        renderedLength: currentLength,
-        mathBuffer: "",
-        inMath: true,
-        shouldBreak: false
-      };
-    }
-  }
-  /**
-   * Processes a regular (non-math) character.
-   */
-  processRegularCharacter(char, currentResult, currentLength) {
-    if (currentLength < UI_CONSTANTS.CONTENT_MAX_LENGTH) {
-      return {
-        result: currentResult + char,
-        renderedLength: currentLength + 1,
-        shouldBreak: false
-      };
-    } else {
-      const truncated = currentResult.length > 0 && !currentResult.endsWith("\u2026") ? currentResult.slice(0, -1) + "\u2026" : currentResult + "\u2026";
-      return {
-        result: truncated,
-        renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
-        shouldBreak: true
-      };
-    }
-  }
-  /**
-   * Handles unclosed math content at the end of the string.
-   */
-  handleUnclosedMath(mathBuffer, currentResult, currentLength) {
-    const renderedMath = this.renderMathToText(mathBuffer);
-    const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
-    if (renderedMath.length <= remainingSpace) {
-      return {
-        result: currentResult + mathBuffer.trimEnd() + "$",
-        truncated: false
-      };
-    } else {
-      const truncatedResult = this.truncateMathAtLimit(
-        mathBuffer,
-        currentResult,
-        remainingSpace
-      );
-      return {
-        result: truncatedResult,
-        truncated: true
-      };
-    }
-  }
-  /**
-   * Truncates math content when it exceeds the remaining space.
-   */
-  truncateMathAtLimit(mathBuffer, currentResult, remainingSpace) {
-    if (remainingSpace > 1) {
-      const truncatedMath = this.truncateMathContent(mathBuffer, remainingSpace - 1);
-      return currentResult + truncatedMath.slice(1) + "\u2026";
-    } else if (currentResult.endsWith("$")) {
-      return currentResult.slice(0, -1) + "\u2026";
-    } else {
-      return currentResult + "\u2026";
-    }
-  }
-  /**
-   * Renders math LaTeX to plain text representation.
-   * Converts common LaTeX symbols to their Unicode equivalents.
-   */
-  renderMathToText(mathContent) {
-    const replacements = {
-      "\\therefore": "\u2234",
-      "\\because": "\u2235",
-      "\\alpha": "\u03B1",
-      "\\beta": "\u03B2",
-      "\\gamma": "\u03B3",
-      "\\delta": "\u03B4",
-      "\\epsilon": "\u03B5",
-      "\\theta": "\u03B8",
-      "\\lambda": "\u03BB",
-      "\\mu": "\u03BC",
-      "\\pi": "\u03C0",
-      "\\sigma": "\u03C3",
-      "\\phi": "\u03C6",
-      "\\psi": "\u03C8",
-      "\\omega": "\u03C9",
-      "\\infty": "\u221E",
-      "\\pm": "\xB1",
-      "\\times": "\xD7",
-      "\\div": "\xF7",
-      "\\neq": "\u2260",
-      "\\leq": "\u2264",
-      "\\geq": "\u2265",
-      "\\approx": "\u2248",
-      "\\subset": "\u2282",
-      "\\supset": "\u2283",
-      "\\cup": "\u222A",
-      "\\cap": "\u2229",
-      "\\in": "\u2208",
-      "\\notin": "\u2209",
-      "\\exists": "\u2203",
-      "\\forall": "\u2200",
-      "\\land": "\u2227",
-      "\\lor": "\u2228",
-      "\\neg": "\xAC",
-      "\\rightarrow": "\u2192",
-      "\\leftarrow": "\u2190",
-      "\\leftrightarrow": "\u2194",
-      "\\Rightarrow": "\u21D2",
-      "\\Leftarrow": "\u21D0",
-      "\\Leftrightarrow": "\u21D4"
-    };
-    let rendered = mathContent;
-    for (const [latex, unicode] of Object.entries(replacements)) {
-      rendered = rendered.replace(new RegExp(latex.replace(/\\/g, "\\\\"), "g"), unicode);
-    }
-    rendered = rendered.replace(/\\/g, "").replace(/\s+/g, " ").trim();
-    return rendered;
-  }
-  /**
-   * Truncates math content intelligently, preserving complete LaTeX commands.
-   * Returns the truncated LaTeX with proper closing.
-   */
-  truncateMathContent(mathContent, maxRenderedLength) {
-    const tokens = this.tokenizeMath(mathContent);
-    let result = "$";
-    let tokenCount = 0;
-    let accumulatedTokens = [];
-    for (const token of tokens) {
-      const testTokens = [...accumulatedTokens, token];
-      const testLatex = testTokens.join("");
-      const testRendered = this.renderMathToText(testLatex);
-      if (testRendered.length <= maxRenderedLength) {
-        accumulatedTokens.push(token);
-        tokenCount++;
-      } else {
-        break;
-      }
-    }
-    let latexContent = accumulatedTokens.join("");
-    latexContent = latexContent.trimEnd();
-    result += latexContent;
-    if (!result.endsWith("$")) {
-      result += "$";
-    }
-    return result;
-  }
-  /**
-   * Tokenizes math content into individual commands and text.
-   */
-  tokenizeMath(mathContent) {
-    const tokens = [];
-    let current = "";
-    let i = 0;
-    while (i < mathContent.length) {
-      if (mathContent[i] === "\\") {
-        if (current) {
-          tokens.push(current);
-          current = "";
-        }
-        let command = "\\";
-        i++;
-        while (i < mathContent.length && /[a-zA-Z]/.test(mathContent[i])) {
-          command += mathContent[i];
-          i++;
-        }
-        if (i < mathContent.length && mathContent[i] === " ") {
-          command += " ";
-          i++;
-        }
-        tokens.push(command);
-      } else {
-        current += mathContent[i];
-        i++;
-      }
-    }
-    if (current) {
-      tokens.push(current);
-    }
-    return tokens;
-  }
-  highlightLine(view, lineNumber) {
-    try {
-      const editor = view.editor;
-      const lineContent = editor.getLine(lineNumber);
-      const lineStart = { line: lineNumber, ch: 0 };
-      const lineEnd = { line: lineNumber, ch: lineContent.length };
-      editor.setSelection(lineStart, lineEnd);
-      const cm = editor.cm;
-      if (cm && cm.dom) {
-        const selections = cm.dom.querySelectorAll(".cm-selectionBackground");
-        selections.forEach((sel) => {
-          sel.style.transition = "opacity 2s ease-out";
-          sel.style.opacity = "0.3";
-          setTimeout(() => {
-            sel.style.opacity = "0";
-          }, UI_CONSTANTS.SELECTION_FADE_DELAY_MS);
-        });
-      }
-      setTimeout(() => {
-        editor.setCursor(lineStart);
-      }, UI_CONSTANTS.SELECTION_CLEAR_DELAY_MS);
-    } catch (error) {
-      console.error("Error highlighting line:", error);
-    }
-  }
-  setupLabelHoverPreview(element, fullLabel) {
-    let hoverPopover = null;
-    const removePopover = () => {
-      if (hoverPopover) {
-        hoverPopover.remove();
-        hoverPopover = null;
-      }
-    };
-    element.addEventListener("mouseenter", () => {
-      const hoverEl = document.createElement("div");
-      hoverEl.classList.add(CSS_CLASSES.CUSTOM_LABEL_HOVER_PREVIEW);
-      Object.assign(hoverEl.style, {
-        position: "absolute",
-        zIndex: UI_CONSTANTS.HOVER_Z_INDEX,
-        padding: UI_CONSTANTS.HOVER_PADDING,
-        backgroundColor: "var(--background-primary)",
-        border: "1px solid var(--background-modifier-border)",
-        borderRadius: "4px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        fontSize: "0.9em",
-        fontFamily: "var(--font-monospace)",
-        whiteSpace: "nowrap"
-      });
-      hoverEl.textContent = fullLabel;
-      document.body.appendChild(hoverEl);
-      const rect = element.getBoundingClientRect();
-      hoverEl.style.left = `${rect.left}px`;
-      hoverEl.style.top = `${rect.bottom + 5}px`;
-      const hoverRect = hoverEl.getBoundingClientRect();
-      if (hoverRect.right > window.innerWidth) {
-        hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-      }
-      if (hoverRect.bottom > window.innerHeight) {
-        hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-      }
-      hoverPopover = hoverEl;
-    });
-    element.addEventListener("mouseleave", removePopover);
-    element.addEventListener("click", removePopover);
-  }
-  renderContentWithMath(element, truncatedContent, fullContent) {
-    import_obsidian11.MarkdownRenderer.render(
-      this.plugin.app,
-      truncatedContent,
-      element,
-      "",
-      this
-    );
-  }
-  setupHoverPreview(element, label, view) {
-    let hoverPopover = null;
-    const removePopover = () => {
-      if (hoverPopover) {
-        hoverPopover.remove();
-        hoverPopover = null;
-      }
-    };
-    element.addEventListener("mouseenter", () => {
-      const hoverEl = document.createElement("div");
-      hoverEl.classList.add(CSS_CLASSES.CUSTOM_LABEL_HOVER_PREVIEW);
-      Object.assign(hoverEl.style, {
-        position: "absolute",
-        zIndex: UI_CONSTANTS.HOVER_Z_INDEX,
-        padding: UI_CONSTANTS.HOVER_PADDING,
-        backgroundColor: "var(--background-primary)",
-        border: "1px solid var(--background-modifier-border)",
-        borderRadius: "4px",
-        maxWidth: UI_CONSTANTS.MAX_HOVER_WIDTH,
-        maxHeight: UI_CONSTANTS.MAX_HOVER_HEIGHT,
-        overflow: "auto",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        fontSize: "0.9em",
-        whiteSpace: "pre-wrap",
-        wordBreak: "break-word"
-      });
-      const contentToShow = label.renderedContent || label.content;
-      if (contentToShow.includes("$")) {
-        import_obsidian11.MarkdownRenderer.render(
-          this.plugin.app,
-          contentToShow,
-          hoverEl,
-          "",
-          this
-        );
-      } else {
-        hoverEl.textContent = contentToShow;
-      }
-      document.body.appendChild(hoverEl);
-      const rect = element.getBoundingClientRect();
-      hoverEl.style.left = `${rect.left}px`;
-      hoverEl.style.top = `${rect.bottom + 5}px`;
-      const hoverRect = hoverEl.getBoundingClientRect();
-      if (hoverRect.right > window.innerWidth) {
-        hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-      }
-      if (hoverRect.bottom > window.innerHeight) {
-        hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-      }
-      hoverPopover = hoverEl;
-    });
-    element.addEventListener("mouseleave", removePopover);
-    element.addEventListener("click", removePopover);
   }
   getCustomLabels() {
     return this.labels;
@@ -4639,9 +4625,10 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
 };
 
 // src/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian12.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian13.Plugin {
   async onload() {
     await this.loadSettings();
+    this.registerCustomLabelIcon();
     this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
     this.registerExtensions();
     this.registerPostProcessor();
@@ -4654,17 +4641,20 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian12.Plugin {
       VIEW_TYPE_CUSTOM_LABEL,
       (leaf) => new CustomLabelView(leaf, this)
     );
-    this.addRibbonIcon("list-ordered", "Open custom labels view", () => {
+    this.addRibbonIcon(ICONS.CUSTOM_LABEL_ID, "Open custom labels view", () => {
       this.activateCustomLabelView();
     });
     this.registerCommands();
+  }
+  registerCustomLabelIcon() {
+    (0, import_obsidian13.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
   }
   registerExtensions() {
     this.registerEditorExtension(pandocExtendedMarkdownExtension(
       () => this.settings,
       () => {
         var _a;
-        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
+        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian13.MarkdownView);
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       }
     ));
@@ -4706,12 +4696,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian12.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian12.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian13.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian12.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian13.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -4724,9 +4714,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian12.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian13.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian12.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian13.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -4738,9 +4728,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian12.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian13.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian12.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian13.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -4752,9 +4742,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian12.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian13.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian12.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian13.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

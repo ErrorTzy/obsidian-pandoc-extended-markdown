@@ -1,5 +1,5 @@
 // External libraries
-import { Plugin, MarkdownPostProcessorContext, Notice, Editor, MarkdownView, WorkspaceLeaf } from 'obsidian';
+import { Plugin, MarkdownPostProcessorContext, Notice, Editor, MarkdownView, WorkspaceLeaf, addIcon } from 'obsidian';
 import { Extension, Prec } from '@codemirror/state';
 import { keymap, EditorView } from '@codemirror/view';
 
@@ -8,7 +8,7 @@ import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdow
 import { ProcessorConfig, createProcessorConfig } from './types/processorConfig';
 
 // Constants
-import { MESSAGES, COMMANDS, UI_CONSTANTS } from './constants';
+import { MESSAGES, COMMANDS, UI_CONSTANTS, ICONS } from './constants';
 
 // Patterns
 import { ListPatterns } from './patterns';
@@ -30,6 +30,9 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        
+        // Register custom icon for CustomLabelView
+        this.registerCustomLabelIcon();
         
         // Add settings tab
         this.addSettingTab(new PandocExtendedMarkdownSettingTab(this.app, this));
@@ -56,12 +59,16 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         );
         
         // Add ribbon icon for custom label view
-        this.addRibbonIcon('list-ordered', 'Open custom labels view', () => {
+        this.addRibbonIcon(ICONS.CUSTOM_LABEL_ID, 'Open custom labels view', () => {
             this.activateCustomLabelView();
         });
         
         // Register all commands
         this.registerCommands();
+    }
+
+    private registerCustomLabelIcon(): void {
+        addIcon(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
     }
 
     private registerExtensions(): void {

@@ -339,6 +339,31 @@ sub.pandoc-subscript {
     font-style: italic;
 }
 
+/* Hover popover styles */
+.pandoc-hover-popover {
+    position: absolute;
+    z-index: 1000;
+    padding: 8px 12px;
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 0.9em;
+}
+
+.pandoc-hover-popover-label {
+    font-family: var(--font-monospace);
+    white-space: nowrap;
+}
+
+.pandoc-hover-popover-content {
+    max-width: 400px;
+    max-height: 300px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* Highlight animation for scrolled-to lines */
 @keyframes custom-label-highlight-fade {
     0% {

@@ -70,7 +70,12 @@ pandoc-lists-plugin/
 │   │   ├── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
 │   │   ├── listHelpers.ts               # List conversion utilities (roman numerals, letters)
 │   │   ├── listMarkerDetector.ts        # Detects list types and determines next markers
-│   │   └── listRenumbering.ts           # Handles automatic list renumbering
+│   │   ├── listRenumbering.ts           # Handles automatic list renumbering
+│   │   ├── mathRenderer.ts              # Math LaTeX to Unicode rendering utilities
+│   │   ├── customLabelExtractor.ts      # Extracts and processes custom labels from markdown
+│   │   └── views/                       # View-specific utilities
+│   │       ├── contentTruncator.ts      # Content truncation with math awareness
+│   │       └── viewInteractions.ts      # UI interaction handlers for CustomLabelView
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
@@ -417,23 +422,22 @@ sequenceDiagram
 ```
 
 ### Key Methods
-- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders
-- **`processLabels()`**: Uses PlaceholderContext to replace (#a) with numbers
+- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (in `customLabelExtractor.ts`)
 - **`renderLabels()`**: Creates DOM structure with interactive elements
-- **`renderContentWithMath()`**: Uses MarkdownRenderer for proper math rendering
-- **`truncateLabel()`**: Truncates labels to 6 characters with ellipsis
-- **`truncateContent()`**: Simple truncation for content to 51 characters with ellipsis
-- **`truncateContentWithRendering()`**: Smart truncation that considers rendered length of math content
-- **`parseContentWithMath()`**: Parses content containing math formulas for proper truncation
-- **`processMathDelimiter()`**: Handles math delimiter processing during truncation
-- **`processRegularCharacter()`**: Processes non-math characters during truncation
-- **`handleUnclosedMath()`**: Handles math content at end of string during truncation
-- **`truncateMathAtLimit()`**: Truncates math content when exceeding space limits
-- **`truncateMathContent()`**: Intelligently truncates LaTeX preserving complete commands
-- **`renderMathToText()`**: Converts LaTeX symbols to Unicode for length calculation
-- **`tokenizeMath()`**: Tokenizes LaTeX content into individual commands
-- **`highlightLine()`**: Applies visual highlight using editor selection
-- **`setupHoverPreview()`**: Shows popover only for truncated content
+- **`updateView()`**: Updates the view when active file changes
+- **`highlightLine()`**: Applies visual highlight using editor selection (in `viewInteractions.ts`)
+- **Truncation utilities** (in `contentTruncator.ts`):
+  - `truncateLabel()`: Truncates labels to 6 characters
+  - `truncateContent()`: Simple truncation to 51 characters
+  - `truncateContentWithRendering()`: Smart truncation considering rendered math length
+- **Math rendering utilities** (in `mathRenderer.ts`):
+  - `renderMathToText()`: Converts LaTeX to Unicode
+  - `tokenizeMath()`: Tokenizes LaTeX content
+  - `truncateMathContent()`: Intelligently truncates LaTeX
+- **Interaction handlers** (in `viewInteractions.ts`):
+  - `setupLabelClickHandler()`: Handles label copying
+  - `setupContentClickHandler()`: Handles navigation
+  - `setupHoverPreview()`: Shows popover for truncated content
 
 ## Plugin Lifecycle & State Management
 
