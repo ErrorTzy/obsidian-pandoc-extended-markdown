@@ -190,9 +190,13 @@ var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4,
   STATE_TRANSITION_DELAY_MS: 100,
   // Custom Label View
-  LABEL_TRUNCATE_LENGTH: 6,
+  LABEL_MAX_LENGTH: 6,
+  LABEL_TRUNCATION_LENGTH: 5,
+  // Length before adding ellipsis
+  CONTENT_MAX_LENGTH: 51,
+  CONTENT_TRUNCATION_LENGTH: 50,
+  // Length before adding ellipsis
   CONTENT_TRUNCATE_LINES: 3,
-  CONTENT_TRUNCATE_LENGTH: 51,
   UPDATE_DEBOUNCE_MS: 300,
   SELECTION_CLEAR_DELAY_MS: 300,
   SELECTION_FADE_DELAY_MS: 100,
@@ -4034,7 +4038,7 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     }, UI_CONSTANTS.UPDATE_DEBOUNCE_MS);
   }
   async updateView() {
-    withErrorBoundary(() => {
+    try {
       const activeLeaf = this.app.workspace.activeLeaf;
       let markdownView = null;
       if (activeLeaf && activeLeaf.view instanceof import_obsidian11.MarkdownView) {
@@ -4053,7 +4057,10 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
       const content = markdownView.editor.getValue();
       this.labels = this.extractCustomLabels(content);
       this.renderLabels(markdownView);
-    }, void 0, "CustomLabelView.updateView");
+    } catch (error) {
+      console.error("Error updating CustomLabelView:", error);
+      this.showNoFileMessage();
+    }
   }
   showNoFileMessage() {
     while (this.contentEl.firstChild) {
@@ -4167,24 +4174,29 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     if (displayLabel !== label.label) {
       this.setupLabelHoverPreview(labelEl, label.label);
     }
-    labelEl.addEventListener("click", async () => {
-      await withErrorBoundary(async () => {
-        await navigator.clipboard.writeText(label.rawLabel);
-        new import_obsidian11.Notice(MESSAGES.LABEL_COPIED);
-      }, void 0, "CustomLabelView.copyLabel");
+    labelEl.addEventListener("click", () => {
+      try {
+        navigator.clipboard.writeText(label.rawLabel).then(() => {
+          new import_obsidian11.Notice(MESSAGES.LABEL_COPIED);
+        }).catch((error) => {
+          console.error("Failed to copy label:", error);
+        });
+      } catch (error) {
+        console.error("Error in label click handler:", error);
+      }
     });
     const contentEl = row.createEl("div", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
     });
     const contentToShow = label.renderedContent || label.content;
-    const truncatedContent = this.truncateContent(contentToShow);
-    if (contentToShow.includes("$")) {
+    const truncatedContent = this.truncateContentWithRendering(contentToShow);
+    if (truncatedContent.includes("$")) {
       this.renderContentWithMath(contentEl, truncatedContent, contentToShow);
     } else {
       contentEl.textContent = truncatedContent;
     }
     contentEl.addEventListener("click", () => {
-      withErrorBoundary(() => {
+      try {
         const targetView = this.lastActiveMarkdownView;
         if (targetView && targetView.editor) {
           const editor = targetView.editor;
@@ -4197,26 +4209,304 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
           editor.scrollIntoView({ from: label.position, to: label.position }, true);
           this.highlightLine(targetView, label.lineNumber);
         }
-      }, void 0, "CustomLabelView.scrollToLabel");
+      } catch (error) {
+        console.error("Error scrolling to label:", error);
+      }
     });
     if (truncatedContent !== contentToShow) {
       this.setupHoverPreview(contentEl, label, activeView);
     }
   }
+  /**
+   * Truncates label text to the maximum allowed length.
+   * @param label - The label text to truncate
+   * @returns Truncated label with ellipsis if needed
+   */
   truncateLabel(label) {
-    if (label.length > 6) {
-      return label.slice(0, 5) + "\u2026";
+    if (label.length > UI_CONSTANTS.LABEL_MAX_LENGTH) {
+      return label.slice(0, UI_CONSTANTS.LABEL_TRUNCATION_LENGTH) + "\u2026";
     }
     return label;
   }
+  /**
+   * Simple truncation for content without math formatting.
+   * @param content - The content to truncate
+   * @returns Truncated content with ellipsis if needed
+   */
   truncateContent(content) {
-    if (content.length > 51) {
-      return content.slice(0, 50) + "\u2026";
+    if (content.length > UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+      return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATION_LENGTH) + "\u2026";
     }
     return content;
   }
+  /**
+   * Truncates content based on rendered length, handling math content specially.
+   * This ensures math formulas are properly considered for their rendered length,
+   * not their raw LaTeX length.
+   */
+  truncateContentWithRendering(content) {
+    if (!content.includes("$")) {
+      return this.truncateContent(content);
+    }
+    const parseResult = this.parseContentWithMath(content);
+    return parseResult.truncated ? parseResult.result : content;
+  }
+  /**
+   * Parses content containing math and applies truncation logic.
+   * @returns Object with parsed result and truncation status
+   */
+  parseContentWithMath(content) {
+    let renderedLength = 0;
+    let result = "";
+    let inMath = false;
+    let mathBuffer = "";
+    let i = 0;
+    while (i < content.length) {
+      const char = content[i];
+      if (char === "$") {
+        const mathResult = this.processMathDelimiter(
+          inMath,
+          mathBuffer,
+          result,
+          renderedLength
+        );
+        if (mathResult.shouldBreak) {
+          return { result: mathResult.result, truncated: true };
+        }
+        result = mathResult.result;
+        renderedLength = mathResult.renderedLength;
+        mathBuffer = mathResult.mathBuffer;
+        inMath = mathResult.inMath;
+      } else if (inMath) {
+        mathBuffer += char;
+      } else {
+        const textResult = this.processRegularCharacter(char, result, renderedLength);
+        if (textResult.shouldBreak) {
+          return { result: textResult.result, truncated: true };
+        }
+        result = textResult.result;
+        renderedLength = textResult.renderedLength;
+      }
+      i++;
+    }
+    if (inMath) {
+      const finalResult = this.handleUnclosedMath(mathBuffer, result, renderedLength);
+      return { result: finalResult.result, truncated: finalResult.truncated };
+    }
+    return { result, truncated: false };
+  }
+  /**
+   * Processes a math delimiter ($) in the content.
+   */
+  processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) {
+    if (inMath) {
+      const renderedMath = this.renderMathToText(mathBuffer);
+      const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+      if (renderedMath.length <= remainingSpace) {
+        return {
+          result: currentResult + mathBuffer.trimEnd() + "$",
+          renderedLength: currentLength + renderedMath.length,
+          mathBuffer: "",
+          inMath: false,
+          shouldBreak: false
+        };
+      } else {
+        const truncatedResult = this.truncateMathAtLimit(
+          mathBuffer,
+          currentResult,
+          remainingSpace
+        );
+        return {
+          result: truncatedResult,
+          renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+          mathBuffer: "",
+          inMath: false,
+          shouldBreak: true
+        };
+      }
+    } else {
+      return {
+        result: currentResult + "$",
+        renderedLength: currentLength,
+        mathBuffer: "",
+        inMath: true,
+        shouldBreak: false
+      };
+    }
+  }
+  /**
+   * Processes a regular (non-math) character.
+   */
+  processRegularCharacter(char, currentResult, currentLength) {
+    if (currentLength < UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+      return {
+        result: currentResult + char,
+        renderedLength: currentLength + 1,
+        shouldBreak: false
+      };
+    } else {
+      const truncated = currentResult.length > 0 && !currentResult.endsWith("\u2026") ? currentResult.slice(0, -1) + "\u2026" : currentResult + "\u2026";
+      return {
+        result: truncated,
+        renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+        shouldBreak: true
+      };
+    }
+  }
+  /**
+   * Handles unclosed math content at the end of the string.
+   */
+  handleUnclosedMath(mathBuffer, currentResult, currentLength) {
+    const renderedMath = this.renderMathToText(mathBuffer);
+    const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+    if (renderedMath.length <= remainingSpace) {
+      return {
+        result: currentResult + mathBuffer.trimEnd() + "$",
+        truncated: false
+      };
+    } else {
+      const truncatedResult = this.truncateMathAtLimit(
+        mathBuffer,
+        currentResult,
+        remainingSpace
+      );
+      return {
+        result: truncatedResult,
+        truncated: true
+      };
+    }
+  }
+  /**
+   * Truncates math content when it exceeds the remaining space.
+   */
+  truncateMathAtLimit(mathBuffer, currentResult, remainingSpace) {
+    if (remainingSpace > 1) {
+      const truncatedMath = this.truncateMathContent(mathBuffer, remainingSpace - 1);
+      return currentResult + truncatedMath.slice(1) + "\u2026";
+    } else if (currentResult.endsWith("$")) {
+      return currentResult.slice(0, -1) + "\u2026";
+    } else {
+      return currentResult + "\u2026";
+    }
+  }
+  /**
+   * Renders math LaTeX to plain text representation.
+   * Converts common LaTeX symbols to their Unicode equivalents.
+   */
+  renderMathToText(mathContent) {
+    const replacements = {
+      "\\therefore": "\u2234",
+      "\\because": "\u2235",
+      "\\alpha": "\u03B1",
+      "\\beta": "\u03B2",
+      "\\gamma": "\u03B3",
+      "\\delta": "\u03B4",
+      "\\epsilon": "\u03B5",
+      "\\theta": "\u03B8",
+      "\\lambda": "\u03BB",
+      "\\mu": "\u03BC",
+      "\\pi": "\u03C0",
+      "\\sigma": "\u03C3",
+      "\\phi": "\u03C6",
+      "\\psi": "\u03C8",
+      "\\omega": "\u03C9",
+      "\\infty": "\u221E",
+      "\\pm": "\xB1",
+      "\\times": "\xD7",
+      "\\div": "\xF7",
+      "\\neq": "\u2260",
+      "\\leq": "\u2264",
+      "\\geq": "\u2265",
+      "\\approx": "\u2248",
+      "\\subset": "\u2282",
+      "\\supset": "\u2283",
+      "\\cup": "\u222A",
+      "\\cap": "\u2229",
+      "\\in": "\u2208",
+      "\\notin": "\u2209",
+      "\\exists": "\u2203",
+      "\\forall": "\u2200",
+      "\\land": "\u2227",
+      "\\lor": "\u2228",
+      "\\neg": "\xAC",
+      "\\rightarrow": "\u2192",
+      "\\leftarrow": "\u2190",
+      "\\leftrightarrow": "\u2194",
+      "\\Rightarrow": "\u21D2",
+      "\\Leftarrow": "\u21D0",
+      "\\Leftrightarrow": "\u21D4"
+    };
+    let rendered = mathContent;
+    for (const [latex, unicode] of Object.entries(replacements)) {
+      rendered = rendered.replace(new RegExp(latex.replace(/\\/g, "\\\\"), "g"), unicode);
+    }
+    rendered = rendered.replace(/\\/g, "").replace(/\s+/g, " ").trim();
+    return rendered;
+  }
+  /**
+   * Truncates math content intelligently, preserving complete LaTeX commands.
+   * Returns the truncated LaTeX with proper closing.
+   */
+  truncateMathContent(mathContent, maxRenderedLength) {
+    const tokens = this.tokenizeMath(mathContent);
+    let result = "$";
+    let tokenCount = 0;
+    let accumulatedTokens = [];
+    for (const token of tokens) {
+      const testTokens = [...accumulatedTokens, token];
+      const testLatex = testTokens.join("");
+      const testRendered = this.renderMathToText(testLatex);
+      if (testRendered.length <= maxRenderedLength) {
+        accumulatedTokens.push(token);
+        tokenCount++;
+      } else {
+        break;
+      }
+    }
+    let latexContent = accumulatedTokens.join("");
+    latexContent = latexContent.trimEnd();
+    result += latexContent;
+    if (!result.endsWith("$")) {
+      result += "$";
+    }
+    return result;
+  }
+  /**
+   * Tokenizes math content into individual commands and text.
+   */
+  tokenizeMath(mathContent) {
+    const tokens = [];
+    let current = "";
+    let i = 0;
+    while (i < mathContent.length) {
+      if (mathContent[i] === "\\") {
+        if (current) {
+          tokens.push(current);
+          current = "";
+        }
+        let command = "\\";
+        i++;
+        while (i < mathContent.length && /[a-zA-Z]/.test(mathContent[i])) {
+          command += mathContent[i];
+          i++;
+        }
+        if (i < mathContent.length && mathContent[i] === " ") {
+          command += " ";
+          i++;
+        }
+        tokens.push(command);
+      } else {
+        current += mathContent[i];
+        i++;
+      }
+    }
+    if (current) {
+      tokens.push(current);
+    }
+    return tokens;
+  }
   highlightLine(view, lineNumber) {
-    withErrorBoundary(() => {
+    try {
       const editor = view.editor;
       const lineContent = editor.getLine(lineNumber);
       const lineStart = { line: lineNumber, ch: 0 };
@@ -4236,7 +4526,9 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
       setTimeout(() => {
         editor.setCursor(lineStart);
       }, UI_CONSTANTS.SELECTION_CLEAR_DELAY_MS);
-    }, void 0, "CustomLabelView.highlightLine");
+    } catch (error) {
+      console.error("Error highlighting line:", error);
+    }
   }
   setupLabelHoverPreview(element, fullLabel) {
     let hoverPopover = null;

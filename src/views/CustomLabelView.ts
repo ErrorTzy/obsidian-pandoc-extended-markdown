@@ -115,7 +115,7 @@ export class CustomLabelView extends ItemView {
     }
 
     async updateView() {
-        withErrorBoundary(() => {
+        try {
             // Try to get the active markdown view
             const activeLeaf = this.app.workspace.activeLeaf;
             let markdownView: MarkdownView | null = null;
@@ -143,7 +143,10 @@ export class CustomLabelView extends ItemView {
             const content = markdownView.editor.getValue();
             this.labels = this.extractCustomLabels(content);
             this.renderLabels(markdownView);
-        }, undefined, 'CustomLabelView.updateView');
+        } catch (error) {
+            console.error('Error updating CustomLabelView:', error);
+            this.showNoFileMessage();
+        }
     }
 
     private showNoFileMessage() {
@@ -303,11 +306,16 @@ export class CustomLabelView extends ItemView {
         }
         
         // Label click handler - copy raw label
-        labelEl.addEventListener('click', async () => {
-            await withErrorBoundary(async () => {
-                await navigator.clipboard.writeText(label.rawLabel);
-                new Notice(MESSAGES.LABEL_COPIED);
-            }, undefined, 'CustomLabelView.copyLabel');
+        labelEl.addEventListener('click', () => {
+            try {
+                navigator.clipboard.writeText(label.rawLabel).then(() => {
+                    new Notice(MESSAGES.LABEL_COPIED);
+                }).catch((error) => {
+                    console.error('Failed to copy label:', error);
+                });
+            } catch (error) {
+                console.error('Error in label click handler:', error);
+            }
         });
         
         // Content column
@@ -315,12 +323,12 @@ export class CustomLabelView extends ItemView {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
         });
         
-        // Use rendered content if available, truncate to max 51 chars
+        // Use rendered content if available, truncate based on rendered length
         const contentToShow = label.renderedContent || label.content;
-        const truncatedContent = this.truncateContent(contentToShow);
+        const truncatedContent = this.truncateContentWithRendering(contentToShow);
         
         // Check if content has math to render
-        if (contentToShow.includes('$')) {
+        if (truncatedContent.includes('$')) {
             // Render content with math support
             this.renderContentWithMath(contentEl, truncatedContent, contentToShow);
         } else {
@@ -329,7 +337,7 @@ export class CustomLabelView extends ItemView {
         
         // Content click handler - scroll to position
         contentEl.addEventListener('click', () => {
-            withErrorBoundary(() => {
+            try {
                 // Use the last active markdown view
                 const targetView = this.lastActiveMarkdownView;
                 if (targetView && targetView.editor) {
@@ -349,7 +357,9 @@ export class CustomLabelView extends ItemView {
                     // Add highlight effect
                     this.highlightLine(targetView, label.lineNumber);
                 }
-            }, undefined, 'CustomLabelView.scrollToLabel');
+            } catch (error) {
+                console.error('Error scrolling to label:', error);
+            }
         });
         
         // Content hover handler - only show tooltip if content is truncated
@@ -358,24 +368,394 @@ export class CustomLabelView extends ItemView {
         }
     }
 
+    /**
+     * Truncates label text to the maximum allowed length.
+     * @param label - The label text to truncate
+     * @returns Truncated label with ellipsis if needed
+     */
     private truncateLabel(label: string): string {
-        // Truncate at 6 characters, replace 6th with ellipsis if longer
-        if (label.length > 6) {
-            return label.slice(0, 5) + '…';
+        // Truncate at max length, replace last character with ellipsis if longer
+        if (label.length > UI_CONSTANTS.LABEL_MAX_LENGTH) {
+            return label.slice(0, UI_CONSTANTS.LABEL_TRUNCATION_LENGTH) + '…';
         }
         return label;
     }
 
+    /**
+     * Simple truncation for content without math formatting.
+     * @param content - The content to truncate
+     * @returns Truncated content with ellipsis if needed
+     */
     private truncateContent(content: string): string {
-        // Truncate at 51 characters, replace 51st with ellipsis if longer
-        if (content.length > 51) {
-            return content.slice(0, 50) + '…';
+        // Truncate at max length, replace last character with ellipsis if longer
+        if (content.length > UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+            return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATION_LENGTH) + '…';
         }
         return content;
     }
 
+    /**
+     * Truncates content based on rendered length, handling math content specially.
+     * This ensures math formulas are properly considered for their rendered length,
+     * not their raw LaTeX length.
+     */
+    private truncateContentWithRendering(content: string): string {
+        // If no math content, use simple truncation
+        if (!content.includes('$')) {
+            return this.truncateContent(content);
+        }
+
+        const parseResult = this.parseContentWithMath(content);
+        return parseResult.truncated ? parseResult.result : content;
+    }
+    
+    /**
+     * Parses content containing math and applies truncation logic.
+     * @returns Object with parsed result and truncation status
+     */
+    private parseContentWithMath(content: string): { result: string; truncated: boolean } {
+        let renderedLength = 0;
+        let result = '';
+        let inMath = false;
+        let mathBuffer = '';
+        let i = 0;
+        
+        while (i < content.length) {
+            const char = content[i];
+            
+            if (char === '$') {
+                const mathResult = this.processMathDelimiter(
+                    inMath, 
+                    mathBuffer, 
+                    result, 
+                    renderedLength
+                );
+                
+                if (mathResult.shouldBreak) {
+                    return { result: mathResult.result, truncated: true };
+                }
+                
+                result = mathResult.result;
+                renderedLength = mathResult.renderedLength;
+                mathBuffer = mathResult.mathBuffer;
+                inMath = mathResult.inMath;
+            } else if (inMath) {
+                mathBuffer += char;
+            } else {
+                const textResult = this.processRegularCharacter(char, result, renderedLength);
+                if (textResult.shouldBreak) {
+                    return { result: textResult.result, truncated: true };
+                }
+                result = textResult.result;
+                renderedLength = textResult.renderedLength;
+            }
+            
+            i++;
+        }
+        
+        // Handle unclosed math at end of string
+        if (inMath) {
+            const finalResult = this.handleUnclosedMath(mathBuffer, result, renderedLength);
+            return { result: finalResult.result, truncated: finalResult.truncated };
+        }
+        
+        return { result, truncated: false };
+    }
+    
+    /**
+     * Processes a math delimiter ($) in the content.
+     */
+    private processMathDelimiter(
+        inMath: boolean,
+        mathBuffer: string,
+        currentResult: string,
+        currentLength: number
+    ): {
+        result: string;
+        renderedLength: number;
+        mathBuffer: string;
+        inMath: boolean;
+        shouldBreak: boolean;
+    } {
+        if (inMath) {
+            // End of math block
+            const renderedMath = this.renderMathToText(mathBuffer);
+            const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+            
+            if (renderedMath.length <= remainingSpace) {
+                // Entire math fits
+                return {
+                    result: currentResult + mathBuffer.trimEnd() + '$',
+                    renderedLength: currentLength + renderedMath.length,
+                    mathBuffer: '',
+                    inMath: false,
+                    shouldBreak: false
+                };
+            } else {
+                // Math doesn't fit, truncate
+                const truncatedResult = this.truncateMathAtLimit(
+                    mathBuffer, 
+                    currentResult, 
+                    remainingSpace
+                );
+                return {
+                    result: truncatedResult,
+                    renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+                    mathBuffer: '',
+                    inMath: false,
+                    shouldBreak: true
+                };
+            }
+        } else {
+            // Start of math block
+            return {
+                result: currentResult + '$',
+                renderedLength: currentLength,
+                mathBuffer: '',
+                inMath: true,
+                shouldBreak: false
+            };
+        }
+    }
+    
+    /**
+     * Processes a regular (non-math) character.
+     */
+    private processRegularCharacter(
+        char: string,
+        currentResult: string,
+        currentLength: number
+    ): {
+        result: string;
+        renderedLength: number;
+        shouldBreak: boolean;
+    } {
+        if (currentLength < UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+            return {
+                result: currentResult + char,
+                renderedLength: currentLength + 1,
+                shouldBreak: false
+            };
+        } else {
+            // We've reached the limit
+            const truncated = currentResult.length > 0 && !currentResult.endsWith('…') 
+                ? currentResult.slice(0, -1) + '…' 
+                : currentResult + '…';
+            return {
+                result: truncated,
+                renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+                shouldBreak: true
+            };
+        }
+    }
+    
+    /**
+     * Handles unclosed math content at the end of the string.
+     */
+    private handleUnclosedMath(
+        mathBuffer: string,
+        currentResult: string,
+        currentLength: number
+    ): {
+        result: string;
+        truncated: boolean;
+    } {
+        const renderedMath = this.renderMathToText(mathBuffer);
+        const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+        
+        if (renderedMath.length <= remainingSpace) {
+            // Math fits
+            return {
+                result: currentResult + mathBuffer.trimEnd() + '$',
+                truncated: false
+            };
+        } else {
+            // Math doesn't fit, truncate it
+            const truncatedResult = this.truncateMathAtLimit(
+                mathBuffer,
+                currentResult,
+                remainingSpace
+            );
+            return {
+                result: truncatedResult,
+                truncated: true
+            };
+        }
+    }
+    
+    /**
+     * Truncates math content when it exceeds the remaining space.
+     */
+    private truncateMathAtLimit(
+        mathBuffer: string,
+        currentResult: string,
+        remainingSpace: number
+    ): string {
+        if (remainingSpace > 1) {
+            const truncatedMath = this.truncateMathContent(mathBuffer, remainingSpace - 1);
+            return currentResult + truncatedMath.slice(1) + '…';
+        } else if (currentResult.endsWith('$')) {
+            return currentResult.slice(0, -1) + '…';
+        } else {
+            return currentResult + '…';
+        }
+    }
+    
+    /**
+     * Renders math LaTeX to plain text representation.
+     * Converts common LaTeX symbols to their Unicode equivalents.
+     */
+    private renderMathToText(mathContent: string): string {
+        // Map common LaTeX commands to their rendered characters
+        const replacements: Record<string, string> = {
+            '\\therefore': '∴',
+            '\\because': '∵',
+            '\\alpha': 'α',
+            '\\beta': 'β',
+            '\\gamma': 'γ',
+            '\\delta': 'δ',
+            '\\epsilon': 'ε',
+            '\\theta': 'θ',
+            '\\lambda': 'λ',
+            '\\mu': 'μ',
+            '\\pi': 'π',
+            '\\sigma': 'σ',
+            '\\phi': 'φ',
+            '\\psi': 'ψ',
+            '\\omega': 'ω',
+            '\\infty': '∞',
+            '\\pm': '±',
+            '\\times': '×',
+            '\\div': '÷',
+            '\\neq': '≠',
+            '\\leq': '≤',
+            '\\geq': '≥',
+            '\\approx': '≈',
+            '\\subset': '⊂',
+            '\\supset': '⊃',
+            '\\cup': '∪',
+            '\\cap': '∩',
+            '\\in': '∈',
+            '\\notin': '∉',
+            '\\exists': '∃',
+            '\\forall': '∀',
+            '\\land': '∧',
+            '\\lor': '∨',
+            '\\neg': '¬',
+            '\\rightarrow': '→',
+            '\\leftarrow': '←',
+            '\\leftrightarrow': '↔',
+            '\\Rightarrow': '⇒',
+            '\\Leftarrow': '⇐',
+            '\\Leftrightarrow': '⇔'
+        };
+        
+        let rendered = mathContent;
+        
+        // Replace LaTeX commands with their Unicode equivalents
+        for (const [latex, unicode] of Object.entries(replacements)) {
+            rendered = rendered.replace(new RegExp(latex.replace(/\\/g, '\\\\'), 'g'), unicode);
+        }
+        
+        // Remove remaining backslashes and spaces that were part of commands
+        rendered = rendered.replace(/\\/g, '').replace(/\s+/g, ' ').trim();
+        
+        return rendered;
+    }
+    
+    /**
+     * Truncates math content intelligently, preserving complete LaTeX commands.
+     * Returns the truncated LaTeX with proper closing.
+     */
+    private truncateMathContent(mathContent: string, maxRenderedLength: number): string {
+        // For complex math truncation, we'll render progressively and stop when we exceed the limit
+        const tokens = this.tokenizeMath(mathContent);
+        let result = '$';
+        let tokenCount = 0;
+        
+        // Render all tokens together to get the actual formatted output
+        let accumulatedTokens: string[] = [];
+        
+        for (const token of tokens) {
+            // Test if adding this token would exceed the limit
+            const testTokens = [...accumulatedTokens, token];
+            const testLatex = testTokens.join('');
+            const testRendered = this.renderMathToText(testLatex);
+            
+            if (testRendered.length <= maxRenderedLength) {
+                accumulatedTokens.push(token);
+                tokenCount++;
+            } else {
+                // We've reached the limit
+                break;
+            }
+        }
+        
+        // Build the result from accumulated tokens
+        let latexContent = accumulatedTokens.join('');
+        
+        // Remove trailing spaces before closing the math expression
+        // This is crucial for valid LaTeX syntax
+        latexContent = latexContent.trimEnd();
+        
+        result += latexContent;
+        
+        // Close the math expression
+        if (!result.endsWith('$')) {
+            result += '$';
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Tokenizes math content into individual commands and text.
+     */
+    private tokenizeMath(mathContent: string): string[] {
+        const tokens: string[] = [];
+        let current = '';
+        let i = 0;
+        
+        while (i < mathContent.length) {
+            if (mathContent[i] === '\\') {
+                // Start of a LaTeX command
+                if (current) {
+                    tokens.push(current);
+                    current = '';
+                }
+                
+                // Read the full command
+                let command = '\\';
+                i++;
+                
+                // Read command name (letters)
+                while (i < mathContent.length && /[a-zA-Z]/.test(mathContent[i])) {
+                    command += mathContent[i];
+                    i++;
+                }
+                
+                // Include trailing space if it's part of the command
+                if (i < mathContent.length && mathContent[i] === ' ') {
+                    command += ' ';
+                    i++;
+                }
+                
+                tokens.push(command);
+            } else {
+                current += mathContent[i];
+                i++;
+            }
+        }
+        
+        if (current) {
+            tokens.push(current);
+        }
+        
+        return tokens;
+    }
+
     private highlightLine(view: MarkdownView, lineNumber: number) {
-        withErrorBoundary(() => {
+        try {
             const editor = view.editor;
             
             // Use selection approach for visual feedback
@@ -404,7 +784,9 @@ export class CustomLabelView extends ItemView {
             setTimeout(() => {
                 editor.setCursor(lineStart);
             }, UI_CONSTANTS.SELECTION_CLEAR_DELAY_MS);
-        }, undefined, 'CustomLabelView.highlightLine');
+        } catch (error) {
+            console.error('Error highlighting line:', error);
+        }
     }
 
     private setupLabelHoverPreview(element: HTMLElement, fullLabel: string) {

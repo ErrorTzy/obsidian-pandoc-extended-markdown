@@ -364,7 +364,11 @@ The Custom Label View provides an interactive sidebar panel that displays all cu
 
 ### Features
 - **Two-column layout**: Displays processed labels and their rendered content
-- **Smart truncation**: Labels limited to 6 characters, content to 51 characters
+- **Smart truncation**: 
+  - Labels limited to 6 characters
+  - Content limited to 51 rendered characters (math-aware)
+  - Math formulas are truncated based on their rendered length, not raw LaTeX length
+  - Preserves valid LaTeX syntax when truncating (no trailing spaces before $)
 - **Interactive elements**:
   - Label click: Copies raw label syntax to clipboard
   - Content click: Navigates to label position in editor with visual highlight
@@ -418,10 +422,18 @@ sequenceDiagram
 - **`renderLabels()`**: Creates DOM structure with interactive elements
 - **`renderContentWithMath()`**: Uses MarkdownRenderer for proper math rendering
 - **`truncateLabel()`**: Truncates labels to 6 characters with ellipsis
-- **`truncateContent()`**: Truncates content to 51 characters with ellipsis
+- **`truncateContent()`**: Simple truncation for content to 51 characters with ellipsis
+- **`truncateContentWithRendering()`**: Smart truncation that considers rendered length of math content
+- **`parseContentWithMath()`**: Parses content containing math formulas for proper truncation
+- **`processMathDelimiter()`**: Handles math delimiter processing during truncation
+- **`processRegularCharacter()`**: Processes non-math characters during truncation
+- **`handleUnclosedMath()`**: Handles math content at end of string during truncation
+- **`truncateMathAtLimit()`**: Truncates math content when exceeding space limits
+- **`truncateMathContent()`**: Intelligently truncates LaTeX preserving complete commands
+- **`renderMathToText()`**: Converts LaTeX symbols to Unicode for length calculation
+- **`tokenizeMath()`**: Tokenizes LaTeX content into individual commands
 - **`highlightLine()`**: Applies visual highlight using editor selection
 - **`setupHoverPreview()`**: Shows popover only for truncated content
-- **`withErrorBoundary()`**: Wraps operations for safe execution
 
 ## Plugin Lifecycle & State Management
 
