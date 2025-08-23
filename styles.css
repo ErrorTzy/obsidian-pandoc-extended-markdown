@@ -262,7 +262,7 @@ sub.pandoc-subscript {
 
 .custom-label-view-header {
     display: grid;
-    grid-template-columns: minmax(80px, 120px) 1fr;
+    grid-template-columns: 60px 1fr;
     gap: 12px;
     padding: 8px 4px;
     border-bottom: 1px solid var(--background-modifier-border);
@@ -281,7 +281,7 @@ sub.pandoc-subscript {
 
 .custom-label-view-row {
     display: grid;
-    grid-template-columns: minmax(80px, 120px) 1fr;
+    grid-template-columns: 60px 1fr;
     gap: 12px;
     padding: 6px 4px;
     border-bottom: 1px solid var(--background-modifier-border-hover);

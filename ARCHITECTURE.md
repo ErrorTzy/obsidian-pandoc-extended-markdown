@@ -363,12 +363,14 @@ Each parser handles specific syntax patterns:
 The Custom Label View provides an interactive sidebar panel that displays all custom label lists (`{::LABEL}` syntax) from the active markdown document. It offers quick navigation and reference capabilities for documents with extensive custom labeling.
 
 ### Features
-- **Two-column layout**: Displays labels and their associated content
-- **Smart truncation**: Labels limited to 5 characters, content to 3 lines
+- **Two-column layout**: Displays processed labels and their rendered content
+- **Smart truncation**: Labels limited to 6 characters, content to 51 characters
 - **Interactive elements**:
   - Label click: Copies raw label syntax to clipboard
   - Content click: Navigates to label position in editor with visual highlight
-  - Hover previews: Shows full content with rendered math
+  - Hover previews: Shows full content with rendered math (only when truncated)
+- **Label processing**: Replaces placeholders (#a) with numbers, shows processed form
+- **Content rendering**: Displays fully rendered text with processed references and math
 - **Auto-refresh**: Updates when switching files or editing content
 - **Error boundaries**: Safe operation with fallback for errors
 
@@ -411,10 +413,14 @@ sequenceDiagram
 ```
 
 ### Key Methods
-- **`extractCustomLabels()`**: Parses document for custom label syntax
+- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders
+- **`processLabels()`**: Uses PlaceholderContext to replace (#a) with numbers
 - **`renderLabels()`**: Creates DOM structure with interactive elements
+- **`renderContentWithMath()`**: Uses MarkdownRenderer for proper math rendering
+- **`truncateLabel()`**: Truncates labels to 6 characters with ellipsis
+- **`truncateContent()`**: Truncates content to 51 characters with ellipsis
 - **`highlightLine()`**: Applies visual highlight using editor selection
-- **`setupHoverPreview()`**: Manages popover lifecycle for previews
+- **`setupHoverPreview()`**: Shows popover only for truncated content
 - **`withErrorBoundary()`**: Wraps operations for safe execution
 
 ## Plugin Lifecycle & State Management

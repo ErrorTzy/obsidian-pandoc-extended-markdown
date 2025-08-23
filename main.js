@@ -190,9 +190,9 @@ var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4,
   STATE_TRANSITION_DELAY_MS: 100,
   // Custom Label View
-  LABEL_TRUNCATE_LENGTH: 5,
+  LABEL_TRUNCATE_LENGTH: 6,
   CONTENT_TRUNCATE_LINES: 3,
-  CONTENT_TRUNCATE_LENGTH: 150,
+  CONTENT_TRUNCATE_LENGTH: 51,
   UPDATE_DEBOUNCE_MS: 300,
   SELECTION_CLEAR_DELAY_MS: 300,
   SELECTION_FADE_DELAY_MS: 100,
@@ -4086,12 +4086,18 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
           const rawLabel = match[3];
           const restOfLine = line.substring(match[0].length);
           const processedLabel = rawToProcessed.get(rawLabel) || rawLabel;
-          const labelBase = fullMarker.replace("{::", "").replace(rawLabel, processedLabel).replace("}", "");
-          const renderedLabel = `(${labelBase})`;
+          const renderedLabel = processedLabel;
+          let renderedContent = restOfLine.trim();
+          const refPattern = /\{::([^}]+)\}/g;
+          renderedContent = renderedContent.replace(refPattern, (match2, ref) => {
+            const processedRef = rawToProcessed.get(ref) || ref;
+            return processedRef;
+          });
           labels.push({
             label: renderedLabel,
             rawLabel: fullMarker,
             content: restOfLine.trim(),
+            renderedContent,
             lineNumber: i,
             position: { line: i, ch: 0 }
           });
@@ -4112,26 +4118,8 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
       const match = ListPatterns.isCustomLabelList(line);
       if (match) {
         const rawLabel = match[3];
-        const placeholderMatches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
-        for (const m of placeholderMatches) {
-          placeholderContext.processLabel(m[1]);
-        }
-      }
-    }
-    for (const line of lines) {
-      const match = ListPatterns.isCustomLabelList(line);
-      if (match) {
-        const rawLabel = match[3];
         const restOfLine = line.substring(match[0].length);
-        let processedLabel = rawLabel;
-        const placeholderMatches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
-        for (const m of placeholderMatches) {
-          const placeholder = m[1];
-          const number = placeholderContext.getPlaceholderNumber(placeholder);
-          if (number !== null) {
-            processedLabel = processedLabel.replace(m[0], number.toString());
-          }
-        }
+        const processedLabel = placeholderContext.processLabel(rawLabel);
         processedLabels.set(processedLabel, restOfLine.trim());
         rawToProcessed.set(rawLabel, processedLabel);
       }
@@ -4188,8 +4176,13 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     const contentEl = row.createEl("div", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
     });
-    const truncatedContent = this.truncateContent(label.content);
-    contentEl.textContent = truncatedContent;
+    const contentToShow = label.renderedContent || label.content;
+    const truncatedContent = this.truncateContent(contentToShow);
+    if (contentToShow.includes("$")) {
+      this.renderContentWithMath(contentEl, truncatedContent, contentToShow);
+    } else {
+      contentEl.textContent = truncatedContent;
+    }
     contentEl.addEventListener("click", () => {
       withErrorBoundary(() => {
         const targetView = this.lastActiveMarkdownView;
@@ -4206,22 +4199,19 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
         }
       }, void 0, "CustomLabelView.scrollToLabel");
     });
-    this.setupHoverPreview(contentEl, label, activeView);
+    if (truncatedContent !== contentToShow) {
+      this.setupHoverPreview(contentEl, label, activeView);
+    }
   }
   truncateLabel(label) {
-    const innerLabel = label.slice(1, -1);
-    if (innerLabel.length > UI_CONSTANTS.LABEL_TRUNCATE_LENGTH) {
-      return `(${innerLabel.slice(0, 3)}\u2026`;
+    if (label.length > 6) {
+      return label.slice(0, 5) + "\u2026";
     }
     return label;
   }
   truncateContent(content) {
-    const lines = content.split("\n");
-    if (lines.length > UI_CONSTANTS.CONTENT_TRUNCATE_LINES) {
-      return lines.slice(0, UI_CONSTANTS.CONTENT_TRUNCATE_LINES).join("\n") + "\u2026";
-    }
-    if (content.length > UI_CONSTANTS.CONTENT_TRUNCATE_LENGTH) {
-      return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATE_LENGTH) + "\u2026";
+    if (content.length > 51) {
+      return content.slice(0, 50) + "\u2026";
     }
     return content;
   }
@@ -4288,6 +4278,15 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
     element.addEventListener("mouseleave", removePopover);
     element.addEventListener("click", removePopover);
   }
+  renderContentWithMath(element, truncatedContent, fullContent) {
+    import_obsidian11.MarkdownRenderer.render(
+      this.plugin.app,
+      truncatedContent,
+      element,
+      "",
+      this
+    );
+  }
   setupHoverPreview(element, label, view) {
     let hoverPopover = null;
     const removePopover = () => {
@@ -4314,18 +4313,17 @@ var CustomLabelView = class extends import_obsidian11.ItemView {
         whiteSpace: "pre-wrap",
         wordBreak: "break-word"
       });
-      if (label.content.includes("$")) {
-        const tempDiv = document.createElement("div");
-        tempDiv.textContent = label.content;
-        let safeContent = tempDiv.innerHTML;
-        safeContent = safeContent.replace(/\$\$(.+?)\$\$/g, '<span class="math math-block">$1</span>');
-        safeContent = safeContent.replace(/\$(.+?)\$/g, '<span class="math math-inline">$1</span>');
-        hoverEl.innerHTML = safeContent;
-        if (window.renderMath) {
-          window.renderMath(hoverEl);
-        }
+      const contentToShow = label.renderedContent || label.content;
+      if (contentToShow.includes("$")) {
+        import_obsidian11.MarkdownRenderer.render(
+          this.plugin.app,
+          contentToShow,
+          hoverEl,
+          "",
+          this
+        );
       } else {
-        hoverEl.textContent = label.content;
+        hoverEl.textContent = contentToShow;
       }
       document.body.appendChild(hoverEl);
       const rect = element.getBoundingClientRect();

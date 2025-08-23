@@ -1,5 +1,5 @@
 // External libraries
-import { ItemView, WorkspaceLeaf, MarkdownView, Notice, HoverLinkSource, EditorPosition } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, Notice, HoverLinkSource, EditorPosition, MarkdownRenderer } from 'obsidian';
 
 // Types
 import { PandocExtendedMarkdownPlugin } from '../main';
@@ -19,7 +19,8 @@ export const VIEW_TYPE_CUSTOM_LABEL = 'custom-label-view';
 interface CustomLabel {
     label: string;          // Rendered label (e.g., "(P1)")
     rawLabel: string;       // Raw label text (e.g., "{::P(#a)}")
-    content: string;        // List content
+    content: string;        // List content (raw markdown)
+    renderedContent?: string; // Rendered content (with processed references)
     lineNumber: number;     // 0-indexed line number
     position: EditorPosition; // Position in editor
 }
@@ -188,14 +189,23 @@ export class CustomLabelView extends ItemView {
                     // Get processed label
                     const processedLabel = rawToProcessed.get(rawLabel) || rawLabel;
                     
-                    // Build the rendered label
-                    const labelBase = fullMarker.replace('{::', '').replace(rawLabel, processedLabel).replace('}', '');
-                    const renderedLabel = `(${labelBase})`;
+                    // Build the rendered label - just show the processed label without wrapper syntax
+                    const renderedLabel = processedLabel;
+                    
+                    // Process content to replace references with rendered forms
+                    let renderedContent = restOfLine.trim();
+                    // Replace custom label references in content
+                    const refPattern = /\{::([^}]+)\}/g;
+                    renderedContent = renderedContent.replace(refPattern, (match, ref) => {
+                        const processedRef = rawToProcessed.get(ref) || ref;
+                        return processedRef;
+                    });
                     
                     labels.push({
                         label: renderedLabel,
                         rawLabel: fullMarker,
                         content: restOfLine.trim(),
+                        renderedContent: renderedContent,
                         lineNumber: i,
                         position: { line: i, ch: 0 }
                     });
@@ -218,35 +228,15 @@ export class CustomLabelView extends ItemView {
         const processedLabels = new Map<string, string>();
         const rawToProcessed = new Map<string, string>();
         
-        // First pass: collect all placeholders
-        for (const line of lines) {
-            const match = ListPatterns.isCustomLabelList(line);
-            if (match) {
-                const rawLabel = match[3];
-                const placeholderMatches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
-                for (const m of placeholderMatches) {
-                    placeholderContext.processLabel(m[1]);
-                }
-            }
-        }
-        
-        // Second pass: process labels
+        // Process all labels using PlaceholderContext
         for (const line of lines) {
             const match = ListPatterns.isCustomLabelList(line);
             if (match) {
                 const rawLabel = match[3];
                 const restOfLine = line.substring(match[0].length);
                 
-                // Process the label (replace placeholders)
-                let processedLabel = rawLabel;
-                const placeholderMatches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
-                for (const m of placeholderMatches) {
-                    const placeholder = m[1];
-                    const number = placeholderContext.getPlaceholderNumber(placeholder);
-                    if (number !== null) {
-                        processedLabel = processedLabel.replace(m[0], number.toString());
-                    }
-                }
+                // Use PlaceholderContext to process the label
+                const processedLabel = placeholderContext.processLabel(rawLabel);
                 
                 processedLabels.set(processedLabel, restOfLine.trim());
                 rawToProcessed.set(rawLabel, processedLabel);
@@ -303,7 +293,7 @@ export class CustomLabelView extends ItemView {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_LABEL
         });
         
-        // Truncate label if needed
+        // Truncate label if needed and display it
         const displayLabel = this.truncateLabel(label.label);
         labelEl.textContent = displayLabel;
         
@@ -325,9 +315,17 @@ export class CustomLabelView extends ItemView {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
         });
         
-        // Truncate content to max 3 lines
-        const truncatedContent = this.truncateContent(label.content);
-        contentEl.textContent = truncatedContent;
+        // Use rendered content if available, truncate to max 51 chars
+        const contentToShow = label.renderedContent || label.content;
+        const truncatedContent = this.truncateContent(contentToShow);
+        
+        // Check if content has math to render
+        if (contentToShow.includes('$')) {
+            // Render content with math support
+            this.renderContentWithMath(contentEl, truncatedContent, contentToShow);
+        } else {
+            contentEl.textContent = truncatedContent;
+        }
         
         // Content click handler - scroll to position
         contentEl.addEventListener('click', () => {
@@ -354,30 +352,25 @@ export class CustomLabelView extends ItemView {
             }, undefined, 'CustomLabelView.scrollToLabel');
         });
         
-        // Content hover handler - show full content in tooltip
-        this.setupHoverPreview(contentEl, label, activeView);
+        // Content hover handler - only show tooltip if content is truncated
+        if (truncatedContent !== contentToShow) {
+            this.setupHoverPreview(contentEl, label, activeView);
+        }
     }
 
     private truncateLabel(label: string): string {
-        // Remove parentheses for length calculation
-        const innerLabel = label.slice(1, -1);
-        if (innerLabel.length > UI_CONSTANTS.LABEL_TRUNCATE_LENGTH) {
-            return `(${innerLabel.slice(0, 3)}…`;
+        // Truncate at 6 characters, replace 6th with ellipsis if longer
+        if (label.length > 6) {
+            return label.slice(0, 5) + '…';
         }
         return label;
     }
 
     private truncateContent(content: string): string {
-        const lines = content.split('\n');
-        if (lines.length > UI_CONSTANTS.CONTENT_TRUNCATE_LINES) {
-            return lines.slice(0, UI_CONSTANTS.CONTENT_TRUNCATE_LINES).join('\n') + '…';
+        // Truncate at 51 characters, replace 51st with ellipsis if longer
+        if (content.length > 51) {
+            return content.slice(0, 50) + '…';
         }
-        
-        // Also check total length
-        if (content.length > UI_CONSTANTS.CONTENT_TRUNCATE_LENGTH) {
-            return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATE_LENGTH) + '…';
-        }
-        
         return content;
     }
 
@@ -468,8 +461,19 @@ export class CustomLabelView extends ItemView {
         element.addEventListener('click', removePopover);
     }
     
+    private renderContentWithMath(element: HTMLElement, truncatedContent: string, fullContent: string) {
+        // Use MarkdownRenderer for proper math rendering
+        MarkdownRenderer.render(
+            this.plugin.app,
+            truncatedContent,
+            element,
+            '',
+            this
+        );
+    }
+    
     private setupHoverPreview(element: HTMLElement, label: CustomLabel, view: MarkdownView) {
-        // Always show full content preview on hover (important for math rendering)
+        // Show full content preview on hover when content is truncated
         let hoverPopover: HTMLElement | null = null;
         
         const removePopover = () => {
@@ -480,7 +484,7 @@ export class CustomLabelView extends ItemView {
         };
         
         element.addEventListener('mouseenter', () => {
-            // Always create a popover to show full content with proper rendering
+            // Create a popover to show full content with proper rendering
             const hoverEl = document.createElement('div');
             hoverEl.classList.add(CSS_CLASSES.CUSTOM_LABEL_HOVER_PREVIEW);
             
@@ -500,27 +504,22 @@ export class CustomLabelView extends ItemView {
                 wordBreak: 'break-word'
             });
             
+            // Use rendered content for display
+            const contentToShow = label.renderedContent || label.content;
+            
             // For math rendering, check if content contains math delimiters
-            if (label.content.includes('$')) {
-                // Create safe HTML for math rendering
-                const tempDiv = document.createElement('div');
-                tempDiv.textContent = label.content;
-                let safeContent = tempDiv.innerHTML;
-                
-                // Replace math delimiters with spans for styling
-                safeContent = safeContent.replace(/\$\$(.+?)\$\$/g, '<span class="math math-block">$1</span>');
-                safeContent = safeContent.replace(/\$(.+?)\$/g, '<span class="math math-inline">$1</span>');
-                
-                // Use safe HTML
-                hoverEl.innerHTML = safeContent;
-                
-                // Try to use Obsidian's math renderer if available
-                if ((window as any).renderMath) {
-                    (window as any).renderMath(hoverEl);
-                }
+            if (contentToShow.includes('$')) {
+                // Use MarkdownRenderer for proper math rendering
+                MarkdownRenderer.render(
+                    this.plugin.app,
+                    contentToShow,
+                    hoverEl,
+                    '',
+                    this
+                );
             } else {
                 // Plain text content
-                hoverEl.textContent = label.content;
+                hoverEl.textContent = contentToShow;
             }
             
             // Position near the element
