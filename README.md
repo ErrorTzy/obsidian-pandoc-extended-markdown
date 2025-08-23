@@ -198,52 +198,9 @@ Which renders as:
 - (2) A conclusion
 - (1+2) Combined expression
 
-##### List Panel View
+### List Panel View on siderbar
 
-A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types:
-
-**Current Panels:**
-- **Custom Labels Panel** (`{::}` icon): Displays all custom label lists from the document
-  - **Quick Overview**: See all custom labels at a glance in a two-column layout
-  - **Navigation**: Click on content to jump to that label in the editor
-  - **Copy Labels**: Click on a label to copy its raw syntax (e.g., `{::P(#first)}`) to clipboard
-  - **Hover Previews**: Hover to see full content, especially useful for math environments
-  - **Auto-refresh**: Updates automatically when switching files or editing
-
-**How to use:**
-1. Click the list panel icon in the ribbon (shows `i.`, `a)`, `#.`, `~` symbols), or
-2. Use the command "Open list panel"
-3. Click icons in the toolbar to switch between different list views
-4. Click on any item to interact with it
-
-**Extensibility:**
-The List Panel is designed to be modular and can be extended with additional panels for other list types (e.g., example lists, definition lists) in future updates.
-
-##### Features
-
-- **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
-- **Cross-References**: Reference labels elsewhere in your document (e.g., `From {::P} and {::Q}, we get {::R}`)
-- **Autocompletion**: Press Enter after a custom label list item to create a new `{::}` marker with cursor positioned for label entry
-- **Autocomplete for References**: When typing `{::` in your document, an autocomplete dropdown will appear showing all available custom labels with:
-  - **Rendered Preview**: Placeholders are shown with their assigned numbers (e.g., `P(#a)` shows as `P1(#a)` where `1` is underlined)
-  - **Smart Matching**: Type either the raw label (`P(#a)`) or rendered form (`P1`) to find matches
-  - **Visual Hints**: Numbers replacing placeholders have dotted underlines, original placeholders shown in grey
-- **Duplicate Detection**: Duplicate custom labels are highlighted with error styling:
-  - First occurrence renders normally (e.g., `(P1)`)
-  - Subsequent duplicates show the raw syntax in red with underline (e.g., `{::P(#a)}`)
-  - Hover over duplicates to see a tooltip showing the location and content of the first occurrence
-- **Strict Mode Support**: When strict Pandoc mode is enabled, custom label blocks must be preceded and followed by blank lines
-- **Auto-Formatting**: The format command recognizes and properly formats custom label lists
-- **Reading Mode**: Full support in both live preview and reading modes
-
-##### Example Usage
-```markdown
-{::Axiom1} Every set is a subset of itself.
-{::Axiom2} The empty set is a subset of every set.
-
-From axioms {::Axiom1} and {::Axiom2}, we can derive...
-```
-
+A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types.
 
 ## Installation
 
