@@ -21,6 +21,7 @@ import { CustomLabelReferenceSuggest } from './customLabelReferenceSuggest';
 import { formatToPandocStandard, checkPandocFormatting } from './pandocValidator';
 import { createListAutocompletionKeymap } from './listAutocompletion';
 import { pluginStateManager } from './state/pluginStateManager';
+import { CustomLabelView, VIEW_TYPE_CUSTOM_LABEL } from './views/CustomLabelView';
 
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;
@@ -47,6 +48,17 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         // Register custom label reference suggester
         this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
         this.registerEditorSuggest(this.customLabelSuggester);
+        
+        // Register custom label view
+        this.registerView(
+            VIEW_TYPE_CUSTOM_LABEL,
+            (leaf) => new CustomLabelView(leaf, this)
+        );
+        
+        // Add ribbon icon for custom label view
+        this.addRibbonIcon('list-ordered', 'Open custom labels view', () => {
+            this.activateCustomLabelView();
+        });
         
         // Register all commands
         this.registerCommands();
@@ -176,12 +188,49 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
                 }
             }
         });
+        
+        // Add command to open custom label view
+        this.addCommand({
+            id: COMMANDS.OPEN_CUSTOM_LABEL_VIEW,
+            name: 'Open custom labels view',
+            callback: () => {
+                this.activateCustomLabelView();
+            }
+        });
     }
 
     onunload() {
         // Clear all states on unload
         pluginStateManager.clearAllStates();
+        
+        // Close custom label views
+        this.app.workspace.detachLeavesOfType(VIEW_TYPE_CUSTOM_LABEL);
+        
         // Other cleanup is handled automatically by Obsidian
+    }
+    
+    async activateCustomLabelView() {
+        const { workspace } = this.app;
+        
+        let leaf: WorkspaceLeaf | null = null;
+        const leaves = workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_LABEL);
+        
+        if (leaves.length > 0) {
+            // A leaf with our view already exists, use that
+            leaf = leaves[0];
+        } else {
+            // Our view could not be found in the workspace, create a new leaf
+            // in the right sidebar for it
+            leaf = workspace.getRightLeaf(false);
+            if (leaf) {
+                await leaf.setViewState({ type: VIEW_TYPE_CUSTOM_LABEL, active: true });
+            }
+        }
+        
+        // "Reveal" the leaf in case it is in a collapsed sidebar
+        if (leaf) {
+            workspace.revealLeaf(leaf);
+        }
     }
     
     async loadSettings() {

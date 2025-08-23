@@ -252,3 +252,111 @@ sub.pandoc-subscript {
     font-size: 0.85em;
     line-height: 0;
 }
+
+/* Custom Label View Styles */
+.custom-label-view-container {
+    padding: 8px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.custom-label-view-header {
+    display: grid;
+    grid-template-columns: minmax(80px, 120px) 1fr;
+    gap: 12px;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+.custom-label-view-header-label {
+    text-align: left;
+}
+
+.custom-label-view-header-content {
+    text-align: left;
+}
+
+.custom-label-view-row {
+    display: grid;
+    grid-template-columns: minmax(80px, 120px) 1fr;
+    gap: 12px;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--background-modifier-border-hover);
+    transition: background-color 0.15s ease;
+}
+
+.custom-label-view-row:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.custom-label-view-label {
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+    color: var(--text-accent);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.custom-label-view-label:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.custom-label-view-content {
+    font-size: 0.9em;
+    color: var(--text-normal);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 4.5em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.custom-label-view-content:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-accent);
+}
+
+.custom-label-view-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Highlight animation for scrolled-to lines */
+@keyframes custom-label-highlight-fade {
+    0% {
+        background-color: rgba(255, 213, 0, 0.4);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+.cm-line.custom-label-highlight {
+    animation: custom-label-highlight-fade 2s ease-out !important;
+    position: relative;
+}
+
+/* Custom label hover preview */
+.custom-label-hover-preview {
+    font-family: var(--font-text);
+    line-height: 1.5;
+    color: var(--text-normal);
+}

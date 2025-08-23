@@ -63,6 +63,8 @@ pandoc-lists-plugin/
 │   │   ├── listTypes.ts                 # List-related interfaces and types
 │   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
 │   │   └── settingsTypes.ts             # Settings interface and default settings
+│   ├── views/                            # Custom Obsidian views
+│   │   └── CustomLabelView.ts           # Sidebar view for displaying custom label lists
 │   ├── utils/                            # Utility functions
 │   │   ├── errorHandler.ts              # Error handling utilities with error boundaries
 │   │   ├── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
@@ -81,6 +83,7 @@ pandoc-lists-plugin/
 │   ├── customLabelPlaceholder.spec.ts   # Tests for placeholder numbering and context
 │   ├── customLabelReadingMode.spec.ts   # Tests for custom labels in reading mode
 │   ├── customLabelSuggestion.spec.ts    # Tests for custom label reference suggestions
+│   ├── customLabelView.spec.ts          # Tests for custom label sidebar view
 │   ├── definitionListParser.spec.ts     # Tests for definition list parsing
 │   ├── exampleListParser.spec.ts        # Tests for example list parsing
 │   ├── fancyListParser.spec.ts          # Tests for fancy list parsing
@@ -113,6 +116,8 @@ The plugin operates in two distinct rendering modes, each with its own pipeline:
 
 Both modes share a common state management system through `PluginStateManager`.
 
+Additionally, the plugin provides a **Custom Label View** - a sidebar panel that displays all custom label lists from the current document in an organized, interactive format.
+
 ```mermaid
 graph TB
     subgraph "Plugin Core"
@@ -136,8 +141,13 @@ graph TB
         Renderer[ReadingModeRenderer<br/>DOM Creator]
     end
     
+    subgraph "Custom Views"
+        CLView[CustomLabelView<br/>Sidebar Panel]
+    end
+    
     Main --> CMExt
     Main --> PostProc
+    Main --> CLView
     Main --> SM
     
     CMExt --> Scanner
@@ -152,6 +162,7 @@ graph TB
     
     SM -.-> CMExt
     SM -.-> RMProc
+    SM -.-> CLView
 ```
 
 ## Live Preview Rendering Pipeline
@@ -346,6 +357,66 @@ Each parser handles specific syntax patterns:
   - Adds tooltips for references
   - Handles nested markdown in definitions
 
+## Custom Label View
+
+### Overview
+The Custom Label View provides an interactive sidebar panel that displays all custom label lists (`{::LABEL}` syntax) from the active markdown document. It offers quick navigation and reference capabilities for documents with extensive custom labeling.
+
+### Features
+- **Two-column layout**: Displays labels and their associated content
+- **Smart truncation**: Labels limited to 5 characters, content to 3 lines
+- **Interactive elements**:
+  - Label click: Copies raw label syntax to clipboard
+  - Content click: Navigates to label position in editor with visual highlight
+  - Hover previews: Shows full content with rendered math
+- **Auto-refresh**: Updates when switching files or editing content
+- **Error boundaries**: Safe operation with fallback for errors
+
+### Implementation Details
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant View as CustomLabelView
+    participant Editor as MarkdownView
+    participant SM as StateManager
+    participant Clip as Clipboard
+    
+    User->>View: Open View
+    View->>Editor: Get Active File
+    Editor-->>View: File Content
+    View->>View: Extract Custom Labels
+    View->>SM: Get Placeholder Context
+    SM-->>View: Processed Labels
+    View->>View: Render Labels
+    
+    alt Label Click
+        User->>View: Click Label
+        View->>Clip: Copy Raw Label
+        View->>User: Show Notice
+    end
+    
+    alt Content Click
+        User->>View: Click Content
+        View->>Editor: Scroll to Line
+        View->>Editor: Highlight Line
+        Editor->>User: Show Highlighted
+    end
+    
+    alt Hover
+        User->>View: Hover Element
+        View->>View: Create Popover
+        View->>User: Show Preview
+    end
+```
+
+### Key Methods
+- **`extractCustomLabels()`**: Parses document for custom label syntax
+- **`renderLabels()`**: Creates DOM structure with interactive elements
+- **`highlightLine()`**: Applies visual highlight using editor selection
+- **`setupHoverPreview()`**: Manages popover lifecycle for previews
+- **`withErrorBoundary()`**: Wraps operations for safe execution
+
 ## Plugin Lifecycle & State Management
 
 ### Lifecycle Sequence
@@ -508,6 +579,7 @@ flowchart LR
 | `settings.ts` | User configuration | Settings UI, preference persistence |
 | `pandocValidator.ts` | Pandoc compliance validation | Format checking, auto-formatting |
 | `listAutocompletion.ts` | Smart list continuation | Enter/Tab/Shift-Tab key handling, uses utility modules |
+| `CustomLabelView.ts` | Custom label sidebar view | Label display, navigation, clipboard operations |
 
 ### Live Preview Components
 

@@ -74,6 +74,18 @@ export const CSS_CLASSES = {
     CUSTOM_LABEL_REF_CLICKABLE: 'pandoc-custom-label-ref-clickable',
     CUSTOM_LABEL_PLACEHOLDER: 'pandoc-custom-label-placeholder',
     INLINE_PLACEHOLDER_NUMBER: 'pandoc-inline-placeholder-number',
+    
+    // Custom Label View Classes
+    CUSTOM_LABEL_VIEW_CONTAINER: 'custom-label-view-container',
+    CUSTOM_LABEL_VIEW_HEADER: 'custom-label-view-header',
+    CUSTOM_LABEL_VIEW_HEADER_LABEL: 'custom-label-view-header-label',
+    CUSTOM_LABEL_VIEW_HEADER_CONTENT: 'custom-label-view-header-content',
+    CUSTOM_LABEL_VIEW_ROW: 'custom-label-view-row',
+    CUSTOM_LABEL_VIEW_LABEL: 'custom-label-view-label',
+    CUSTOM_LABEL_VIEW_CONTENT: 'custom-label-view-content',
+    CUSTOM_LABEL_VIEW_EMPTY: 'custom-label-view-empty',
+    CUSTOM_LABEL_HOVER_PREVIEW: 'custom-label-hover-preview',
+    CUSTOM_LABEL_HIGHLIGHT: 'custom-label-highlight',
 } as const;
 
 export const DECORATION_STYLES = {
@@ -92,9 +104,15 @@ export const MESSAGES = {
     PANDOC_COMPLIANT: 'Document follows pandoc formatting standards',
     TOGGLE_BOLD_SUCCESS: 'Definition terms bold style toggled',
     TOGGLE_UNDERLINE_SUCCESS: 'Definition terms underline style toggled',
+    LABEL_COPIED: 'Label copied to clipboard',
     
     // Error messages
     NO_DEFINITION_TERMS: 'No definition terms found to toggle',
+    
+    // View messages
+    NO_ACTIVE_FILE: 'No active file',
+    NO_CUSTOM_LABELS: 'No custom labels found',
+    CUSTOM_LABELS_VIEW_TITLE: 'Custom Labels',
     
     // Formatting issue messages
     FORMATTING_ISSUES: (count: number) => `Found ${count} formatting issues`,
@@ -105,6 +123,7 @@ export const COMMANDS = {
     FORMAT_PANDOC: 'format-to-pandoc-standard',
     TOGGLE_DEFINITION_BOLD: 'toggle-definition-bold-style',
     TOGGLE_DEFINITION_UNDERLINE: 'toggle-definition-underline-style',
+    OPEN_CUSTOM_LABEL_VIEW: 'open-custom-label-view',
 } as const;
 
 export const SETTINGS = {
@@ -115,6 +134,18 @@ export const SETTINGS = {
 export const UI_CONSTANTS = {
     NOTICE_DURATION_MS: 10000,
     STATE_TRANSITION_DELAY_MS: 100,
+    // Custom Label View
+    LABEL_TRUNCATE_LENGTH: 5,
+    CONTENT_TRUNCATE_LINES: 3,
+    CONTENT_TRUNCATE_LENGTH: 150,
+    UPDATE_DEBOUNCE_MS: 300,
+    SELECTION_CLEAR_DELAY_MS: 300,
+    SELECTION_FADE_DELAY_MS: 100,
+    HIGHLIGHT_DURATION_MS: 2000,
+    MAX_HOVER_WIDTH: '400px',
+    MAX_HOVER_HEIGHT: '300px',
+    HOVER_PADDING: '8px 12px',
+    HOVER_Z_INDEX: '1000',
 } as const;
 
 export const DOM_ATTRIBUTES = {

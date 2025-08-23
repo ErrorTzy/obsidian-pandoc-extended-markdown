@@ -198,6 +198,23 @@ Which renders as:
 - (2) A conclusion
 - (1+2) Combined expression
 
+##### Custom Label View
+
+A dedicated sidebar view displays all custom label lists from the active document:
+
+**Features:**
+- **Quick Overview**: See all custom labels at a glance in a two-column layout
+- **Navigation**: Click on content to jump to that label in the editor
+- **Copy Labels**: Click on a label to copy its raw syntax (e.g., `{::P(#first)}`) to clipboard
+- **Hover Previews**: Hover to see full content, especially useful for math environments
+- **Auto-refresh**: Updates automatically when switching files or editing
+
+**How to use:**
+1. Click the list icon in the ribbon, or
+2. Use the command "Open custom labels view"
+3. The view will show all custom labels from your current document
+4. Click on any item to interact with it
+
 ##### Features
 
 - **Custom Labels**: Use any combination of letters, numbers, underscores, and apostrophes (e.g., `{::Theorem1}`, `{::Lemma_2'}`)
