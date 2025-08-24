@@ -13,6 +13,9 @@ import { ListPatterns } from '../../patterns';
 // Utils
 import { PlaceholderContext } from '../../utils/placeholderProcessor';
 
+// Import inline processors for example references
+import { processExampleReferences, processSuperscripts, processSubscripts, InlineFormatContext } from './inlineFormatProcessor';
+
 // Internal modules
 import { 
     CustomLabelMarkerWidget, 
@@ -37,6 +40,8 @@ export interface CustomLabelProcessorContext {
     duplicateLabels?: Set<string>; // labels that appear more than once
     duplicateLineInfo?: Map<string, { firstLine: number; firstContent: string }>; // duplicate label -> first occurrence info
     placeholderContext?: PlaceholderContext; // context for processing placeholders
+    exampleLabels?: Map<string, number>; // for example references
+    exampleContent?: Map<string, string>; // for example reference tooltips
 }
 
 /**
@@ -205,6 +210,7 @@ export function processCustomLabelList(
     // Process references in the content part of the custom label list
     const contentText = lineText.substring(indent.length + fullMarker.length + space.length);
     if (contentText) {
+        // Process custom label references
         const contentRefs = processCustomLabelReferences(
             contentText,
             contentStart,
@@ -217,6 +223,26 @@ export function processCustomLabelList(
             placeholderContext
         );
         decorations.push(...contentRefs);
+        
+        // Process example references
+        if (context.exampleLabels) {
+            const inlineContext: InlineFormatContext = {
+                line: { from: contentStart, to: line.to },
+                lineText: contentText,
+                cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+                exampleLabels: context.exampleLabels,
+                exampleContent: context.exampleContent
+            };
+            
+            const exampleRefs = processExampleReferences(inlineContext);
+            decorations.push(...exampleRefs);
+            
+            const superscripts = processSuperscripts(inlineContext);
+            decorations.push(...superscripts);
+            
+            const subscripts = processSubscripts(inlineContext);
+            decorations.push(...subscripts);
+        }
     }
     
     return decorations;

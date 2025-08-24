@@ -478,6 +478,7 @@ end
 -- MAIN FILTER PIPELINE
 -- ============================================================================
 
+-- First pass: scan the document and collect all label definitions
 function Pandoc(doc)
     -- Reset all managers
     PlaceholderManager:reset()
@@ -492,5 +493,14 @@ function Pandoc(doc)
     return doc
 end
 
--- Return the filter
-return {{Pandoc = Pandoc}}
+-- Third pass: process all inline content throughout the document
+function Inlines(inlines)
+    -- Process references in all inline content
+    return InlineProcessor.process(inlines, false)
+end
+
+-- Return the filter with two passes
+return {
+    {Pandoc = Pandoc},
+    {Inlines = Inlines}
+}

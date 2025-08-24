@@ -9,6 +9,9 @@ import {
     ExampleListMarkerWidget, 
     DuplicateExampleLabelWidget 
 } from '../widgets';
+import { processExampleReferences, processSuperscripts, processSubscripts, InlineFormatContext } from './inlineFormatProcessor';
+import { processCustomLabelReferences } from './customLabelProcessor';
+import { PlaceholderContext } from '../../utils/placeholderProcessor';
 
 export interface ProcessorContext {
     line: any;
@@ -22,6 +25,10 @@ export interface ProcessorContext {
     exampleLineNumbers?: Map<number, number>;
     duplicateLabels?: Map<string, number>;
     duplicateLabelContent?: Map<string, string>;
+    exampleContent?: Map<string, string>;
+    customLabels?: Map<string, string>;
+    rawToProcessed?: Map<string, string>;
+    placeholderContext?: PlaceholderContext;
 }
 
 export function processHashList(
@@ -70,13 +77,64 @@ export function processHashList(
     }
     
     // Wrap the rest of the line
+    const contentStart = line.from + indent.length + marker.length + space.length;
     decorations.push({
-        from: line.from + indent.length + marker.length + space.length,
+        from: contentStart,
         to: line.to,
         decoration: Decoration.mark({
             class: 'cm-list-1'
         })
     });
+    
+    // Process inline formats in the content part
+    const contentText = lineText.substring(indent.length + marker.length + space.length);
+    if (contentText) {
+        // Process example references
+        const inlineContext: InlineFormatContext = {
+            line: { from: contentStart, to: line.to },
+            lineText: contentText,
+            cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+            exampleLabels: context.exampleLabels,
+            exampleContent: context.exampleContent
+        };
+        
+        const exampleRefs = processExampleReferences(inlineContext);
+        decorations.push(...exampleRefs.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        const superscripts = processSuperscripts(inlineContext);
+        decorations.push(...superscripts.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        const subscripts = processSubscripts(inlineContext);
+        decorations.push(...subscripts.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        // Process custom label references if enabled
+        if (settings.moreExtendedSyntax && context.customLabels) {
+            const customLabelRefs = processCustomLabelReferences(
+                contentText,
+                contentStart,
+                context.customLabels,
+                view,
+                cursorPos,
+                settings,
+                true,
+                context.rawToProcessed,
+                context.placeholderContext
+            );
+            decorations.push(...customLabelRefs);
+        }
+    }
     
     hashCounter.value++;
     return decorations;
@@ -146,13 +204,64 @@ export function processFancyList(
     }
     
     // Wrap the rest of the line
+    const contentStart = line.from + indent.length + marker.length + space.length;
     decorations.push({
-        from: line.from + indent.length + marker.length + space.length,
+        from: contentStart,
         to: line.to,
         decoration: Decoration.mark({
             class: 'cm-list-1'
         })
     });
+    
+    // Process inline formats in the content part
+    const contentText = lineText.substring(indent.length + marker.length + space.length);
+    if (contentText) {
+        // Process example references
+        const inlineContext: InlineFormatContext = {
+            line: { from: contentStart, to: line.to },
+            lineText: contentText,
+            cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+            exampleLabels: context.exampleLabels,
+            exampleContent: context.exampleContent
+        };
+        
+        const exampleRefs = processExampleReferences(inlineContext);
+        decorations.push(...exampleRefs.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        const superscripts = processSuperscripts(inlineContext);
+        decorations.push(...superscripts.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        const subscripts = processSubscripts(inlineContext);
+        decorations.push(...subscripts.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        // Process custom label references if enabled
+        if (settings.moreExtendedSyntax && context.customLabels) {
+            const customLabelRefs = processCustomLabelReferences(
+                contentText,
+                contentStart,
+                context.customLabels,
+                view,
+                cursorPos,
+                settings,
+                true,
+                context.rawToProcessed,
+                context.placeholderContext
+            );
+            decorations.push(...customLabelRefs);
+        }
+    }
     
     return decorations;
 }
@@ -227,13 +336,64 @@ export function processExampleList(
     }
     
     // Wrap the rest of the line
+    const contentStart = line.from + indent.length + fullMarker.length + space.length;
     decorations.push({
-        from: line.from + indent.length + fullMarker.length + space.length,
+        from: contentStart,
         to: line.to,
         decoration: Decoration.mark({
             class: CSS_CLASSES.EXAMPLE_ITEM
         })
     });
+    
+    // Process inline formats in the content part
+    const contentText = lineText.substring(indent.length + fullMarker.length + space.length);
+    if (contentText) {
+        // Process example references
+        const inlineContext: InlineFormatContext = {
+            line: { from: contentStart, to: line.to },
+            lineText: contentText,
+            cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+            exampleLabels: context.exampleLabels,
+            exampleContent: context.exampleContent
+        };
+        
+        const exampleRefs = processExampleReferences(inlineContext);
+        decorations.push(...exampleRefs.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        const superscripts = processSuperscripts(inlineContext);
+        decorations.push(...superscripts.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        const subscripts = processSubscripts(inlineContext);
+        decorations.push(...subscripts.map(d => ({
+            from: d.from,
+            to: d.to,
+            decoration: d.decoration
+        })));
+        
+        // Process custom label references if enabled
+        if (settings.moreExtendedSyntax && context.customLabels) {
+            const customLabelRefs = processCustomLabelReferences(
+                contentText,
+                contentStart,
+                context.customLabels,
+                view,
+                cursorPos,
+                settings,
+                true,
+                context.rawToProcessed,
+                context.placeholderContext
+            );
+            decorations.push(...customLabelRefs);
+        }
+    }
     
     return decorations;
 }

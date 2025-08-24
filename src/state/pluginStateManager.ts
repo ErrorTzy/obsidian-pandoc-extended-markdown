@@ -24,6 +24,8 @@ export interface DocumentCounters {
     exampleContent: Map<string, string>;   // Maps example labels to content
     hashCounter: number;                   // Counter for hash auto-numbering lists
     placeholderContext: PlaceholderContext; // Context for placeholder auto-numbering
+    customLabels?: Map<string, string>;   // Maps processed custom labels to content
+    rawToProcessed?: Map<string, string>; // Maps raw labels to processed labels
 }
 
 export interface ViewState {
@@ -41,7 +43,7 @@ export interface ModeChangeEvent {
 
 type ModeChangeCallback = (event: ModeChangeEvent) => void;
 
-class PluginStateManager {
+export class PluginStateManager {
     // Document-specific counters
     private documentCounters = new Map<string, DocumentCounters>();
     
@@ -298,6 +300,22 @@ class PluginStateManager {
     }
 
     /**
+     * Get placeholder context for a document (for testing compatibility)
+     */
+    getPlaceholderContext(docPath: string): PlaceholderContext {
+        return this.getDocumentCounters(docPath).placeholderContext;
+    }
+
+    /**
+     * Set custom labels for a document (for testing compatibility)
+     */
+    setCustomLabels(docPath: string, customLabels: Map<string, string>, rawToProcessed: Map<string, string>): void {
+        const counters = this.getDocumentCounters(docPath);
+        counters.customLabels = customLabels;
+        counters.rawToProcessed = rawToProcessed;
+    }
+
+    /**
      * Clear all states (for plugin unload)
      */
     clearAllStates(): void {
@@ -315,7 +333,9 @@ class PluginStateManager {
             exampleMap: new Map(),
             exampleContent: new Map(),
             hashCounter: 0,
-            placeholderContext: new PlaceholderContext()
+            placeholderContext: new PlaceholderContext(),
+            customLabels: new Map(),
+            rawToProcessed: new Map()
         };
     }
 

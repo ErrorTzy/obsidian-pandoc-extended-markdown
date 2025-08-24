@@ -312,6 +312,61 @@ sub.pandoc-subscript {
     overflow-y: auto;
 }
 
+/* Panel Order Settings Styles */
+.pandoc-panel-order-info {
+    flex: 0 0 auto;
+    max-width: 200px;
+}
+
+.pandoc-panel-order-container {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.pandoc-panel-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 300px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.pandoc-panel-order-item {
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pandoc-panel-order-item.is-selected {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.pandoc-panel-order-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.pandoc-panel-order-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 140px;
+}
+
+.pandoc-panel-order-button {
+    width: 100%;
+}
+
 /* Custom Label View Styles */
 table.custom-label-view-container {
     width: 100%;

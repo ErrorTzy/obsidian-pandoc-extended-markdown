@@ -141,14 +141,8 @@ export class CustomLabelPanelModule implements PanelModule {
         const truncatedContent = truncateContentWithRendering(contentToShow);
         
         if (truncatedContent.includes('$')) {
-            // Create a proper HoverLinkSource-compatible object
-            const hoverSource = {
-                hoverLinkSource: {
-                    display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
-                    defaultMod: true
-                }
-            };
-            renderContentWithMath(contentEl, truncatedContent, this.plugin.app, hoverSource);
+            // Pass the plugin as the Component to avoid memory leaks
+            renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
         } else {
             contentEl.textContent = truncatedContent;
         }

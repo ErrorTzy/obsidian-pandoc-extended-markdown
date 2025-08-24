@@ -4,7 +4,7 @@ import { CSS_CLASSES, DECORATION_STYLES } from '../../constants';
 
 // Widget for example references
 export class ExampleReferenceWidget extends WidgetType {
-    constructor(private number: number, private tooltipText?: string) {
+    constructor(public number: number, public tooltipText?: string) {
         super();
     }
 

@@ -163,14 +163,8 @@ export class ExampleListPanelModule implements PanelModule {
         const truncatedContent = truncateContentWithRendering(item.content);
         
         if (truncatedContent.includes('$')) {
-            // Create a proper HoverLinkSource-compatible object
-            const hoverSource = {
-                hoverLinkSource: {
-                    display: MESSAGES.EXAMPLE_LISTS_VIEW_TITLE,
-                    defaultMod: true
-                }
-            };
-            renderContentWithMath(contentEl, truncatedContent, this.plugin.app, hoverSource);
+            // Pass the plugin as the Component to avoid memory leaks
+            renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
         } else {
             contentEl.textContent = truncatedContent;
         }
@@ -280,18 +274,13 @@ export class ExampleListPanelModule implements PanelModule {
     
     private renderHoverContent(hoverEl: HTMLElement, item: ExampleListItem): void {
         if (item.content.includes('$')) {
-            const component = {
-                hoverLinkSource: {
-                    display: MESSAGES.EXAMPLE_LISTS_VIEW_TITLE,
-                    defaultMod: true
-                }
-            };
+            // Pass the plugin as the Component to avoid memory leaks
             MarkdownRenderer.render(
                 this.plugin.app,
                 item.content,
                 hoverEl,
                 '',
-                component as Component
+                this.plugin
             );
         } else {
             hoverEl.textContent = item.content;

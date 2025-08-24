@@ -1,5 +1,6 @@
 import { ListPatterns } from '../../patterns';
 import { PandocExtendedMarkdownSettings } from '../../settings';
+import { Text } from '@codemirror/state';
 
 export class ListBlockValidator {
     static isListItemForValidation(line: string): boolean {
@@ -70,4 +71,10 @@ export class ListBlockValidator {
         }
         return invalidListBlocks;
     }
+}
+
+// Helper function for use with Text objects
+export function validateListBlocks(doc: Text): Set<number> {
+    const lines = doc.toString().split('\n');
+    return ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true } as PandocExtendedMarkdownSettings);
 }

@@ -34,6 +34,7 @@ tests/
 # Development notes
 *.txt
 AUTOCOMPLETE_FEATURE.md
+WARP.md
 
 # Package lock (keep package.json)
 package-lock.json

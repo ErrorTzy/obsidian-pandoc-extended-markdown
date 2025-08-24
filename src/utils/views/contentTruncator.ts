@@ -24,7 +24,8 @@ export function truncateContentWithRendering(content: string): string {
     }
 
     const parseResult = parseContentWithMath(content);
-    return parseResult.truncated ? parseResult.result : content;
+    // Always return the normalized result to ensure math spaces are cleaned up
+    return parseResult.result;
 }
 
 interface ParseResult {

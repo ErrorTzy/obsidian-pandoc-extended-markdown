@@ -14,5 +14,6 @@ export {
     CustomLabelPartialWidget,
     CustomLabelPlaceholderWidget,
     CustomLabelProcessedWidget,
-    CustomLabelInlineNumberWidget
+    CustomLabelInlineNumberWidget,
+    DuplicateCustomLabelWidget
 } from './customLabelWidget';

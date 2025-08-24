@@ -23,12 +23,18 @@ import {
 } from './processors';
 import { processCustomLabelList, processCustomLabelReferences, CustomLabelProcessorContext } from './processors/customLabelProcessor';
 
+// New pipeline imports
+import { ProcessingPipeline } from './pipeline/ProcessingPipeline';
+import { HashListProcessor, FancyListProcessor, ExampleListProcessor } from './pipeline/structural';
+import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor } from './pipeline/inline';
+
 // Main view plugin for rendering Pandoc extended markdown
 const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownSettings, getDocPath: () => string | null) => ViewPlugin.fromClass(
     class PandocExtendedMarkdownView {
         decorations: DecorationSet;
         private scanResult: ExampleScanResult;
         private customLabelScanResult: CustomLabelScanResult;
+        private pipeline: ProcessingPipeline | null = null;
 
         constructor(view: EditorView) {
             const settings = getSettings();
@@ -36,7 +42,29 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
             const placeholderContext = docPath ? pluginStateManager.getDocumentCounters(docPath).placeholderContext : undefined;
             this.scanResult = scanExampleLabels(view, settings);
             this.customLabelScanResult = scanCustomLabels(view.state.doc, settings, placeholderContext);
+            
+            // Initialize pipeline if using new system
+            if (settings.useNewPipeline) {
+                this.initializePipeline();
+            }
+            
             this.decorations = this.buildDecorations(view);
+        }
+        
+        private initializePipeline(): void {
+            this.pipeline = new ProcessingPipeline(pluginStateManager);
+            
+            // Register structural processors
+            this.pipeline.registerStructuralProcessor(new HashListProcessor());
+            this.pipeline.registerStructuralProcessor(new FancyListProcessor());
+            this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
+            // TODO: Add CustomLabelProcessor and DefinitionProcessor
+            
+            // Register inline processors
+            this.pipeline.registerInlineProcessor(new ExampleReferenceProcessor());
+            this.pipeline.registerInlineProcessor(new SuperscriptProcessor());
+            this.pipeline.registerInlineProcessor(new SubscriptProcessor());
+            this.pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
         }
 
         update(update: ViewUpdate) {
@@ -52,12 +80,42 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
                     const placeholderContext = docPath ? pluginStateManager.getDocumentCounters(docPath).placeholderContext : undefined;
                     this.scanResult = scanExampleLabels(update.view, settings);
                     this.customLabelScanResult = scanCustomLabels(update.view.state.doc, settings, placeholderContext);
+                    
+                    // Reinitialize pipeline if setting changed
+                    if (settings.useNewPipeline && !this.pipeline) {
+                        this.initializePipeline();
+                    } else if (!settings.useNewPipeline && this.pipeline) {
+                        this.pipeline = null;
+                    }
                 }
                 this.decorations = this.buildDecorations(update.view);
             }
         }
 
         buildDecorations(view: EditorView): DecorationSet {
+            const settings = getSettings();
+            
+            // Use new pipeline if enabled
+            if (settings.useNewPipeline && this.pipeline) {
+                return this.buildDecorationsWithPipeline(view);
+            }
+            
+            // Use legacy implementation
+            return this.buildDecorationsLegacy(view);
+        }
+        
+        buildDecorationsWithPipeline(view: EditorView): DecorationSet {
+            // Check if we're in live preview mode
+            const isLivePreview = view.state.field(editorLivePreviewField);
+            if (!isLivePreview || !this.pipeline) {
+                return new RangeSetBuilder<Decoration>().finish();
+            }
+            
+            const settings = getSettings();
+            return this.pipeline.process(view, settings);
+        }
+
+        buildDecorationsLegacy(view: EditorView): DecorationSet {
             const builder = new RangeSetBuilder<Decoration>();
             
             // Check if we're in live preview mode - if not, return empty decorations
@@ -103,7 +161,11 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
                     exampleLabels: this.scanResult.exampleLabels,
                     exampleLineNumbers: this.scanResult.exampleLineNumbers,
                     duplicateLabels: this.scanResult.duplicateLabels,
-                    duplicateLabelContent: this.scanResult.duplicateLabelContent
+                    duplicateLabelContent: this.scanResult.duplicateLabelContent,
+                    exampleContent: this.scanResult.exampleContent,
+                    customLabels: this.customLabelScanResult.customLabels,
+                    rawToProcessed: this.customLabelScanResult.rawToProcessed,
+                    placeholderContext: this.customLabelScanResult.placeholderContext
                 };
                 
                 // Process hash lists
@@ -141,7 +203,9 @@ const pandocExtendedMarkdownPlugin = (getSettings: () => PandocExtendedMarkdownS
                         rawToProcessed: this.customLabelScanResult.rawToProcessed,
                         duplicateLabels: this.customLabelScanResult.duplicateLabels,
                         duplicateLineInfo: this.customLabelScanResult.duplicateLineInfo,
-                        placeholderContext: this.customLabelScanResult.placeholderContext
+                        placeholderContext: this.customLabelScanResult.placeholderContext,
+                        exampleLabels: this.scanResult.exampleLabels,
+                        exampleContent: this.scanResult.exampleContent
                     };
                     
                     const customLabelDecorations = processCustomLabelList(customLabelContext);

@@ -232,7 +232,7 @@ export const ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="48" 
+              font-size="58" 
               font-weight="bold" 
               fill="currentColor">
             (@)
@@ -256,6 +256,30 @@ export const ICONS = {
     </svg>`,
     CUSTOM_LABEL_ID: 'custom-label-list',
     LIST_PANEL_ID: 'list-panel-view'
+} as const;
+
+export const PANEL_SETTINGS = {
+    AVAILABLE_PANELS: [
+        {
+            id: 'custom-labels',
+            displayName: 'Custom Label List Panel',
+            icon: ICONS.CUSTOM_LABEL_SVG
+        },
+        {
+            id: 'example-lists',
+            displayName: 'Example List Panel',
+            icon: ICONS.EXAMPLE_LIST_SVG
+        }
+    ],
+    UI_TEXT: {
+        PANEL_ORDER_HEADING: 'Panel Order',
+        PANEL_ORDER_DESC: 'Select a panel and use the buttons to change its order in the sidebar',
+        BTN_MOVE_UP: 'Move up',
+        BTN_MOVE_DOWN: 'Move down',
+        BTN_MOVE_TOP: 'Move to top',
+        BTN_MOVE_BOTTOM: 'Move to bottom',
+        BTN_RESTORE_DEFAULT: 'Restore to Default'
+    }
 } as const;
 
 // Helper function to create fancy list type class names

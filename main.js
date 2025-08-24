@@ -29,8 +29,8 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian14 = require("obsidian");
-var import_state3 = require("@codemirror/state");
-var import_view11 = require("@codemirror/view");
+var import_state4 = require("@codemirror/state");
+var import_view20 = require("@codemirror/view");
 
 // src/settings.ts
 var import_obsidian5 = require("obsidian");
@@ -39,11 +39,11 @@ var import_obsidian5 = require("obsidian");
 var DEFAULT_SETTINGS = {
   strictPandocMode: false,
   autoRenumberLists: false,
-  moreExtendedSyntax: false
+  moreExtendedSyntax: false,
+  panelOrder: ["custom-labels", "example-lists"],
+  useNewPipeline: false
+  // Default to old implementation for now
 };
-
-// src/views/ListPanelView.ts
-var import_obsidian4 = require("obsidian");
 
 // src/constants.ts
 var INDENTATION = {
@@ -235,7 +235,7 @@ var ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="36" 
+              font-size="48" 
               font-weight="bold" 
               fill="currentColor">
             {::}
@@ -246,7 +246,7 @@ var ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="36" 
+              font-size="58" 
               font-weight="bold" 
               fill="currentColor">
             (@)
@@ -265,12 +265,38 @@ var ICONS = {
             <text x="25" y="75" font-size="48" text-anchor="middle">#.</text>
             
             <!-- Bottom right: Definition marker -->
-            <text x="75" y="75" font-size="52" text-anchor="middle">~</text>
+            <text x="75" y="75" font-size="48" text-anchor="middle">~</text>
         </g>
     </svg>`,
   CUSTOM_LABEL_ID: "custom-label-list",
   LIST_PANEL_ID: "list-panel-view"
 };
+var PANEL_SETTINGS = {
+  AVAILABLE_PANELS: [
+    {
+      id: "custom-labels",
+      displayName: "Custom Label List Panel",
+      icon: ICONS.CUSTOM_LABEL_SVG
+    },
+    {
+      id: "example-lists",
+      displayName: "Example List Panel",
+      icon: ICONS.EXAMPLE_LIST_SVG
+    }
+  ],
+  UI_TEXT: {
+    PANEL_ORDER_HEADING: "Panel Order",
+    PANEL_ORDER_DESC: "Select a panel and use the buttons to change its order in the sidebar",
+    BTN_MOVE_UP: "Move up",
+    BTN_MOVE_DOWN: "Move down",
+    BTN_MOVE_TOP: "Move to top",
+    BTN_MOVE_BOTTOM: "Move to bottom",
+    BTN_RESTORE_DEFAULT: "Restore to Default"
+  }
+};
+
+// src/views/ListPanelView.ts
+var import_obsidian4 = require("obsidian");
 
 // src/utils/errorHandler.ts
 var import_obsidian = require("obsidian");
@@ -849,7 +875,7 @@ function truncateContentWithRendering(content) {
     return truncateContent(content);
   }
   const parseResult = parseContentWithMath(content);
-  return parseResult.truncated ? parseResult.result : content;
+  return parseResult.result;
 }
 function parseContentWithMath(content) {
   const normalizedContent = normalizeMathSpaces(content);
@@ -1246,13 +1272,7 @@ var CustomLabelPanelModule = class {
     const contentToShow = label.renderedContent || label.content;
     const truncatedContent = truncateContentWithRendering(contentToShow);
     if (truncatedContent.includes("$")) {
-      const hoverSource = {
-        hoverLinkSource: {
-          display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
-          defaultMod: true
-        }
-      };
-      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, hoverSource);
+      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
     } else {
       contentEl.textContent = truncatedContent;
     }
@@ -1532,13 +1552,7 @@ var ExampleListPanelModule = class {
     });
     const truncatedContent = truncateContentWithRendering(item.content);
     if (truncatedContent.includes("$")) {
-      const hoverSource = {
-        hoverLinkSource: {
-          display: MESSAGES.EXAMPLE_LISTS_VIEW_TITLE,
-          defaultMod: true
-        }
-      };
-      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, hoverSource);
+      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
     } else {
       contentEl.textContent = truncatedContent;
     }
@@ -1622,18 +1636,12 @@ var ExampleListPanelModule = class {
   }
   renderHoverContent(hoverEl, item) {
     if (item.content.includes("$")) {
-      const component = {
-        hoverLinkSource: {
-          display: MESSAGES.EXAMPLE_LISTS_VIEW_TITLE,
-          defaultMod: true
-        }
-      };
       import_obsidian3.MarkdownRenderer.render(
         this.plugin.app,
         item.content,
         hoverEl,
         "",
-        component
+        this.plugin
       );
     } else {
       hoverEl.textContent = item.content;
@@ -1663,9 +1671,10 @@ var ListPanelView = class extends import_obsidian4.ItemView {
     this.initializePanels();
   }
   initializePanels() {
+    const availablePanels = [];
     if (this.plugin.settings.moreExtendedSyntax) {
       const customLabelModule = new CustomLabelPanelModule(this.plugin);
-      this.panels.push({
+      availablePanels.push({
         id: customLabelModule.id,
         displayName: customLabelModule.displayName,
         icon: customLabelModule.icon,
@@ -1673,12 +1682,25 @@ var ListPanelView = class extends import_obsidian4.ItemView {
       });
     }
     const exampleListModule = new ExampleListPanelModule(this.plugin);
-    this.panels.push({
+    availablePanels.push({
       id: exampleListModule.id,
       displayName: exampleListModule.displayName,
       icon: exampleListModule.icon,
       module: exampleListModule
     });
+    const panelOrder = this.plugin.settings.panelOrder || ["custom-labels", "example-lists"];
+    this.panels = [];
+    for (const panelId of panelOrder) {
+      const panel = availablePanels.find((p) => p.id === panelId);
+      if (panel) {
+        this.panels.push(panel);
+      }
+    }
+    for (const panel of availablePanels) {
+      if (!this.panels.some((p) => p.id === panel.id)) {
+        this.panels.push(panel);
+      }
+    }
   }
   getViewType() {
     return VIEW_TYPE_LIST_PANEL;
@@ -1840,6 +1862,10 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian5.PluginSett
   display() {
     const { containerEl } = this;
     containerEl.empty();
+    this.renderGeneralSettings(containerEl);
+    this.renderPanelOrderSettings(containerEl);
+  }
+  renderGeneralSettings(containerEl) {
     new import_obsidian5.Setting(containerEl).setName("Strict Pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
@@ -1851,14 +1877,227 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian5.PluginSett
     new import_obsidian5.Setting(containerEl).setName("Custom Label List").setDesc("Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.").addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
       this.plugin.settings.moreExtendedSyntax = value;
       await this.plugin.saveSettings();
-      const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIST_PANEL);
-      for (const leaf of leaves) {
-        const view = leaf.view;
-        if (view && view.refreshPanels) {
-          view.refreshPanels();
-        }
-      }
+      this.refreshListPanels();
     }));
+    new import_obsidian5.Setting(containerEl).setName("Use new processing pipeline (Experimental)").setDesc("Enable the new two-phase processing pipeline that provides better extensibility and performance. This is an experimental feature - please report any issues.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useNewPipeline).onChange(async (value) => {
+      this.plugin.settings.useNewPipeline = value;
+      await this.plugin.saveSettings();
+    }));
+  }
+  renderPanelOrderSettings(containerEl) {
+    containerEl.createEl("h2", { text: PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_HEADING });
+    const panelOrderSetting = new import_obsidian5.Setting(containerEl).setName("").setDesc(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_DESC);
+    const infoEl = panelOrderSetting.infoEl;
+    if (infoEl) {
+      infoEl.addClass("pandoc-panel-order-info");
+    }
+    const flexContainer = panelOrderSetting.controlEl.createDiv({
+      cls: "pandoc-panel-order-container"
+    });
+    const listEl = flexContainer.createDiv({
+      cls: "pandoc-panel-order-list"
+    });
+    listEl.setAttribute("role", "listbox");
+    listEl.tabIndex = 0;
+    this.syncPanelOrder();
+    this.renderPanelList(listEl);
+    const buttons = this.createPanelOrderButtons(flexContainer);
+    this.updateButtonStates(buttons);
+    this.setupPanelOrderEventHandlers(listEl, buttons);
+  }
+  syncPanelOrder() {
+    const currentOrder = [...this.plugin.settings.panelOrder];
+    for (const panel of PANEL_SETTINGS.AVAILABLE_PANELS) {
+      if (!currentOrder.includes(panel.id)) {
+        currentOrder.push(panel.id);
+      }
+    }
+    this.plugin.settings.panelOrder = currentOrder.filter(
+      (id) => PANEL_SETTINGS.AVAILABLE_PANELS.some((panel) => panel.id === id)
+    );
+  }
+  renderPanelList(listEl) {
+    for (const panelId of this.plugin.settings.panelOrder) {
+      const panelInfo = PANEL_SETTINGS.AVAILABLE_PANELS.find((p) => p.id === panelId);
+      if (!panelInfo) continue;
+      if (panelId === "custom-labels" && !this.plugin.settings.moreExtendedSyntax) {
+        continue;
+      }
+      const itemEl = listEl.createDiv({
+        cls: "pandoc-panel-order-item"
+      });
+      itemEl.setAttribute("role", "option");
+      itemEl.dataset.id = panelId;
+      itemEl.tabIndex = 0;
+      const iconContainer = itemEl.createDiv({
+        cls: "pandoc-panel-order-icon"
+      });
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(panelInfo.icon, "image/svg+xml");
+      const svgElement = svgDoc.documentElement;
+      if (svgElement && svgElement.nodeName === "svg") {
+        const clonedSvg = svgElement.cloneNode(true);
+        clonedSvg.setAttribute("width", "20");
+        clonedSvg.setAttribute("height", "20");
+        iconContainer.appendChild(clonedSvg);
+      }
+      itemEl.createSpan({ text: panelInfo.displayName });
+      if (panelId === this.selectedPanelId) {
+        itemEl.classList.add("is-selected");
+        itemEl.setAttribute("aria-selected", "true");
+      } else {
+        itemEl.setAttribute("aria-selected", "false");
+      }
+      itemEl.addEventListener("click", () => {
+        this.selectedPanelId = panelId;
+        this.display();
+      });
+      itemEl.addEventListener("keydown", (evt) => {
+        if (evt.key === "Enter" || evt.key === " ") {
+          evt.preventDefault();
+          this.selectedPanelId = panelId;
+          this.display();
+        }
+      });
+    }
+  }
+  createPanelOrderButtons(container) {
+    const btnWrap = container.createDiv({
+      cls: "pandoc-panel-order-buttons"
+    });
+    const btnMoveUp = btnWrap.createEl("button", {
+      text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_UP,
+      cls: "pandoc-panel-order-button"
+    });
+    const btnMoveDown = btnWrap.createEl("button", {
+      text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_DOWN,
+      cls: "pandoc-panel-order-button"
+    });
+    const btnTop = btnWrap.createEl("button", {
+      text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_TOP,
+      cls: "pandoc-panel-order-button"
+    });
+    const btnBottom = btnWrap.createEl("button", {
+      text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_BOTTOM,
+      cls: "pandoc-panel-order-button"
+    });
+    const btnReset = btnWrap.createEl("button", {
+      text: PANEL_SETTINGS.UI_TEXT.BTN_RESTORE_DEFAULT,
+      cls: "pandoc-panel-order-button"
+    });
+    return {
+      moveUp: btnMoveUp,
+      moveDown: btnMoveDown,
+      moveTop: btnTop,
+      moveBottom: btnBottom,
+      reset: btnReset
+    };
+  }
+  updateButtonStates(buttons) {
+    const visiblePanels = this.getVisiblePanels();
+    const idx = this.getCurrentPanelIndex();
+    buttons.moveUp.disabled = idx <= 0;
+    buttons.moveDown.disabled = idx < 0 || idx >= visiblePanels.length - 1;
+    buttons.moveTop.disabled = idx <= 0;
+    buttons.moveBottom.disabled = idx < 0 || idx >= visiblePanels.length - 1;
+  }
+  setupPanelOrderEventHandlers(listEl, buttons) {
+    buttons.moveUp.addEventListener("click", async () => {
+      await this.movePanelUp();
+    });
+    buttons.moveDown.addEventListener("click", async () => {
+      await this.movePanelDown();
+    });
+    buttons.moveTop.addEventListener("click", async () => {
+      await this.movePanelToTop();
+    });
+    buttons.moveBottom.addEventListener("click", async () => {
+      await this.movePanelToBottom();
+    });
+    buttons.reset.addEventListener("click", async () => {
+      await this.resetPanelOrder();
+    });
+    listEl.addEventListener("keydown", (evt) => {
+      if (!this.selectedPanelId) return;
+      if (evt.key === "ArrowUp") {
+        evt.preventDefault();
+        buttons.moveUp.click();
+      } else if (evt.key === "ArrowDown") {
+        evt.preventDefault();
+        buttons.moveDown.click();
+      }
+    });
+  }
+  async movePanelUp() {
+    const i = this.plugin.settings.panelOrder.indexOf(this.selectedPanelId);
+    if (i > 0) {
+      const arr = this.plugin.settings.panelOrder;
+      [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+      await this.plugin.saveSettings();
+      this.refreshListPanels();
+      this.display();
+    }
+  }
+  async movePanelDown() {
+    const i = this.plugin.settings.panelOrder.indexOf(this.selectedPanelId);
+    const arr = this.plugin.settings.panelOrder;
+    if (i >= 0 && i < arr.length - 1) {
+      [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
+      await this.plugin.saveSettings();
+      this.refreshListPanels();
+      this.display();
+    }
+  }
+  async movePanelToTop() {
+    const i = this.plugin.settings.panelOrder.indexOf(this.selectedPanelId);
+    if (i > 0) {
+      const arr = this.plugin.settings.panelOrder;
+      const [item] = arr.splice(i, 1);
+      arr.unshift(item);
+      await this.plugin.saveSettings();
+      this.refreshListPanels();
+      this.display();
+    }
+  }
+  async movePanelToBottom() {
+    const i = this.plugin.settings.panelOrder.indexOf(this.selectedPanelId);
+    const arr = this.plugin.settings.panelOrder;
+    if (i >= 0 && i < arr.length - 1) {
+      const [item] = arr.splice(i, 1);
+      arr.push(item);
+      await this.plugin.saveSettings();
+      this.refreshListPanels();
+      this.display();
+    }
+  }
+  async resetPanelOrder() {
+    this.plugin.settings.panelOrder = [...DEFAULT_SETTINGS.panelOrder];
+    await this.plugin.saveSettings();
+    this.selectedPanelId = void 0;
+    this.refreshListPanels();
+    this.display();
+  }
+  getVisiblePanels() {
+    return this.plugin.settings.panelOrder.filter((id) => {
+      if (id === "custom-labels" && !this.plugin.settings.moreExtendedSyntax) {
+        return false;
+      }
+      return PANEL_SETTINGS.AVAILABLE_PANELS.some((panel) => panel.id === id);
+    });
+  }
+  getCurrentPanelIndex() {
+    if (!this.selectedPanelId) return -1;
+    const visiblePanels = this.getVisiblePanels();
+    return visiblePanels.indexOf(this.selectedPanelId);
+  }
+  refreshListPanels() {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIST_PANEL);
+    for (const leaf of leaves) {
+      const view = leaf.view;
+      if (view && view.refreshPanels) {
+        view.refreshPanels();
+      }
+    }
   }
 };
 
@@ -1880,8 +2119,8 @@ function createProcessorConfig(vaultConfig, pluginSettings) {
 }
 
 // src/decorations/pandocExtendedMarkdownExtension.ts
-var import_state = require("@codemirror/state");
-var import_view10 = require("@codemirror/view");
+var import_state2 = require("@codemirror/state");
+var import_view19 = require("@codemirror/view");
 var import_obsidian9 = require("obsidian");
 
 // src/decorations/validators/listBlockValidator.ts
@@ -1935,6 +2174,10 @@ var ListBlockValidator = class {
     return invalidListBlocks;
   }
 };
+function validateListBlocks(doc) {
+  const lines = doc.toString().split("\n");
+  return ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true });
+}
 
 // src/decorations/scanners/exampleScanner.ts
 function scanExampleLabels(view, settings) {
@@ -2317,6 +2560,20 @@ var PluginStateManager = class {
     return anyChanges;
   }
   /**
+   * Get placeholder context for a document (for testing compatibility)
+   */
+  getPlaceholderContext(docPath) {
+    return this.getDocumentCounters(docPath).placeholderContext;
+  }
+  /**
+   * Set custom labels for a document (for testing compatibility)
+   */
+  setCustomLabels(docPath, customLabels, rawToProcessed) {
+    const counters = this.getDocumentCounters(docPath);
+    counters.customLabels = customLabels;
+    counters.rawToProcessed = rawToProcessed;
+  }
+  /**
    * Clear all states (for plugin unload)
    */
   clearAllStates() {
@@ -2333,7 +2590,9 @@ var PluginStateManager = class {
       exampleMap: /* @__PURE__ */ new Map(),
       exampleContent: /* @__PURE__ */ new Map(),
       hashCounter: 0,
-      placeholderContext: new PlaceholderContext()
+      placeholderContext: new PlaceholderContext(),
+      customLabels: /* @__PURE__ */ new Map(),
+      rawToProcessed: /* @__PURE__ */ new Map()
     };
   }
   /**
@@ -2362,7 +2621,7 @@ var PluginStateManager = class {
 var pluginStateManager = new PluginStateManager();
 
 // src/decorations/processors/listProcessors.ts
-var import_view6 = require("@codemirror/view");
+var import_view8 = require("@codemirror/view");
 
 // src/decorations/widgets/listWidgets.ts
 var import_view = require("@codemirror/view");
@@ -2775,270 +3034,8 @@ var DuplicateCustomLabelWidget = class extends import_view5.WidgetType {
   }
 };
 
-// src/decorations/processors/listProcessors.ts
-function processHashList(context, hashCounter) {
-  const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
-  const decorations = [];
-  const hashMatch = ListPatterns.isHashList(lineText);
-  if (!hashMatch) return null;
-  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-    return null;
-  }
-  const indent = hashMatch[1];
-  const marker = hashMatch[2];
-  const space = hashMatch[3];
-  const markerStart = line.from + indent.length;
-  const markerEnd = line.from + indent.length + marker.length + space.length;
-  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-  decorations.push({
-    from: line.from,
-    to: line.from,
-    decoration: import_view6.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
-    })
-  });
-  if (!cursorInMarker) {
-    decorations.push({
-      from: markerStart,
-      to: markerEnd,
-      decoration: import_view6.Decoration.replace({
-        widget: new HashListMarkerWidget(hashCounter.value, view, markerStart)
-      })
-    });
-  }
-  decorations.push({
-    from: line.from + indent.length + marker.length + space.length,
-    to: line.to,
-    decoration: import_view6.Decoration.mark({
-      class: "cm-list-1"
-    })
-  });
-  hashCounter.value++;
-  return decorations;
-}
-function processFancyList(context) {
-  const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
-  const decorations = [];
-  const fancyMatch = ListPatterns.isFancyList(lineText);
-  if (!fancyMatch) return null;
-  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-    return null;
-  }
-  const indent = fancyMatch[1];
-  const marker = fancyMatch[2];
-  const space = fancyMatch[5];
-  const markerStart = line.from + indent.length;
-  const markerEnd = line.from + indent.length + marker.length + space.length;
-  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-  let listClass = CSS_CLASSES.FANCY_LIST_UPPER_ALPHA;
-  const letterMatch = ListPatterns.extractLetterMarker(marker);
-  const romanMatch = ListPatterns.extractRomanMarker(marker);
-  if (letterMatch) {
-    const letter = letterMatch[1];
-    if (letter[0] === letter[0].toLowerCase()) {
-      listClass = CSS_CLASSES.FANCY_LIST_LOWER_ALPHA;
-    }
-  } else if (romanMatch) {
-    const roman = romanMatch[1];
-    if (roman[0] === roman[0].toLowerCase()) {
-      listClass = CSS_CLASSES.FANCY_LIST_LOWER_ROMAN;
-    } else {
-      listClass = CSS_CLASSES.FANCY_LIST_UPPER_ROMAN;
-    }
-  }
-  decorations.push({
-    from: line.from,
-    to: line.from,
-    decoration: import_view6.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
-    })
-  });
-  if (!cursorInMarker) {
-    decorations.push({
-      from: markerStart,
-      to: markerEnd,
-      decoration: import_view6.Decoration.replace({
-        widget: new FancyListMarkerWidget(marker, listClass, view, markerStart)
-      })
-    });
-  }
-  decorations.push({
-    from: line.from + indent.length + marker.length + space.length,
-    to: line.to,
-    decoration: import_view6.Decoration.mark({
-      class: "cm-list-1"
-    })
-  });
-  return decorations;
-}
-function processExampleList(context) {
-  const {
-    line,
-    lineNum,
-    lineText,
-    cursorPos,
-    view,
-    invalidListBlocks,
-    settings,
-    exampleLabels,
-    exampleLineNumbers,
-    duplicateLabels,
-    duplicateLabelContent
-  } = context;
-  const decorations = [];
-  const exampleMatch = ListPatterns.isExampleList(lineText);
-  if (!exampleMatch) return null;
-  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-    return null;
-  }
-  const indent = exampleMatch[1];
-  const fullMarker = exampleMatch[2];
-  const label = exampleMatch[3] || "";
-  const space = exampleMatch[4];
-  const markerStart = line.from + indent.length;
-  const markerEnd = line.from + indent.length + fullMarker.length + space.length;
-  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-  const exampleNumber = (exampleLineNumbers == null ? void 0 : exampleLineNumbers.get(lineNum)) || 1;
-  decorations.push({
-    from: line.from,
-    to: line.from,
-    decoration: import_view6.Decoration.line({
-      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
-    })
-  });
-  const isDuplicate = label && (duplicateLabels == null ? void 0 : duplicateLabels.has(label)) && duplicateLabels.get(label) !== lineNum;
-  if (!cursorInMarker) {
-    if (isDuplicate && duplicateLabels && duplicateLabelContent) {
-      const originalLine = duplicateLabels.get(label);
-      const originalContent = duplicateLabelContent.get(label);
-      decorations.push({
-        from: markerStart,
-        to: markerEnd,
-        decoration: import_view6.Decoration.replace({
-          widget: new DuplicateExampleLabelWidget(label, originalLine, originalContent, view, markerStart)
-        })
-      });
-    } else {
-      decorations.push({
-        from: markerStart,
-        to: markerEnd,
-        decoration: import_view6.Decoration.replace({
-          widget: new ExampleListMarkerWidget(exampleNumber, label || void 0, view, markerStart)
-        })
-      });
-    }
-  }
-  decorations.push({
-    from: line.from + indent.length + fullMarker.length + space.length,
-    to: line.to,
-    decoration: import_view6.Decoration.mark({
-      class: CSS_CLASSES.EXAMPLE_ITEM
-    })
-  });
-  return decorations;
-}
-
-// src/decorations/processors/definitionProcessor.ts
-var import_view7 = require("@codemirror/view");
-function processDefinitionItem(context) {
-  const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
-  const decorations = [];
-  const defItemMatch = ListPatterns.isDefinitionMarker(lineText);
-  if (!defItemMatch) return null;
-  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
-    return null;
-  }
-  const indent = defItemMatch[1];
-  const marker = defItemMatch[2];
-  const space = defItemMatch[3];
-  const markerStart = line.from + indent.length;
-  const markerEnd = line.from + indent.length + marker.length + space.length;
-  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
-  if (!cursorInMarker) {
-    decorations.push({
-      from: markerStart,
-      to: markerEnd,
-      decoration: import_view7.Decoration.replace({
-        widget: new DefinitionBulletWidget(view, markerStart)
-      })
-    });
-  }
-  return decorations;
-}
-function processDefinitionTerm(context) {
-  const { line, lineText, view } = context;
-  const decorations = [];
-  if (!lineText.trim() || ListPatterns.isDefinitionMarker(lineText) || ListPatterns.isIndentedContent(lineText)) {
-    return null;
-  }
-  let isDefinitionTerm = false;
-  if (line.number < view.state.doc.lines) {
-    const nextLine = view.state.doc.line(line.number + 1);
-    const nextText = nextLine.text;
-    if (ListPatterns.isDefinitionMarker(nextText)) {
-      isDefinitionTerm = true;
-    } else if (nextText.trim() === "" && line.number + 1 < view.state.doc.lines) {
-      const lineAfterEmpty = view.state.doc.line(line.number + 2);
-      if (ListPatterns.isDefinitionMarker(lineAfterEmpty.text)) {
-        isDefinitionTerm = true;
-      }
-    }
-  }
-  if (isDefinitionTerm) {
-    decorations.push({
-      from: line.from,
-      to: line.to,
-      decoration: import_view7.Decoration.mark({
-        class: "cm-strong cm-pandoc-definition-term"
-      })
-    });
-    return decorations;
-  }
-  return null;
-}
-function processDefinitionParagraph(context) {
-  const { line, lineNum, lineText, view } = context;
-  const decorations = [];
-  const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(ListPatterns.DEFINITION_INDENTED_WITH_CONTENT) : null;
-  if (!indentMatch) return null;
-  let inDefinitionContext = false;
-  for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
-    const prevLine = view.state.doc.line(checkLine);
-    const prevText = prevLine.text;
-    if (ListPatterns.isDefinitionMarker(prevText)) {
-      inDefinitionContext = true;
-      break;
-    }
-    if (prevText.trim() && !ListPatterns.isIndentedContent(prevText) && !ListPatterns.isDefinitionMarker(prevText)) {
-      break;
-    }
-  }
-  if (!inDefinitionContext) return null;
-  const content = indentMatch[2];
-  if (content && content.trim()) {
-    decorations.push({
-      from: line.from,
-      to: line.from,
-      decoration: import_view7.Decoration.line({
-        class: "cm-pandoc-definition-paragraph",
-        attributes: {
-          "data-definition-content": "true"
-        }
-      })
-    });
-    decorations.push({
-      from: line.from,
-      to: line.to,
-      decoration: import_view7.Decoration.mark({
-        class: CSS_CLASSES.DEFINITION_CONTENT_TEXT
-      })
-    });
-  }
-  return decorations;
-}
-
 // src/decorations/processors/inlineFormatProcessor.ts
-var import_view8 = require("@codemirror/view");
+var import_view6 = require("@codemirror/view");
 function processExampleReferences(context) {
   const { line, lineText, cursorPos, exampleLabels, exampleContent } = context;
   const decorations = [];
@@ -3057,7 +3054,7 @@ function processExampleReferences(context) {
         decorations.push({
           from: refStart,
           to: refEnd,
-          decoration: import_view8.Decoration.replace({
+          decoration: import_view6.Decoration.replace({
             widget: new ExampleReferenceWidget(number, tooltipText),
             inclusive: false
           })
@@ -3080,7 +3077,7 @@ function processSuperscripts(context) {
       decorations.push({
         from: supStart,
         to: supEnd,
-        decoration: import_view8.Decoration.replace({
+        decoration: import_view6.Decoration.replace({
           widget: new SuperscriptWidget(content)
         })
       });
@@ -3101,7 +3098,7 @@ function processSubscripts(context) {
       decorations.push({
         from: subStart,
         to: subEnd,
-        decoration: import_view8.Decoration.replace({
+        decoration: import_view6.Decoration.replace({
           widget: new SubscriptWidget(content)
         })
       });
@@ -3111,7 +3108,7 @@ function processSubscripts(context) {
 }
 
 // src/decorations/processors/customLabelProcessor.ts
-var import_view9 = require("@codemirror/view");
+var import_view7 = require("@codemirror/view");
 function processCustomLabelList(context) {
   const {
     line,
@@ -3168,7 +3165,7 @@ function processCustomLabelList(context) {
   decorations.push({
     from: line.from,
     to: line.from,
-    decoration: import_view9.Decoration.line({
+    decoration: import_view7.Decoration.line({
       class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE_INDENT}`
     })
   });
@@ -3180,7 +3177,7 @@ function processCustomLabelList(context) {
       decorations.push({
         from: markerStart,
         to: markerEnd,
-        decoration: import_view9.Decoration.replace({
+        decoration: import_view7.Decoration.replace({
           widget: new DuplicateCustomLabelWidget(
             rawLabel,
             duplicateInfo.firstLine,
@@ -3195,7 +3192,7 @@ function processCustomLabelList(context) {
       decorations.push({
         from: markerStart,
         to: markerEnd,
-        decoration: import_view9.Decoration.replace({
+        decoration: import_view7.Decoration.replace({
           widget: new CustomLabelMarkerWidget(processedLabel, view, markerStart),
           inclusive: false
         })
@@ -3210,7 +3207,7 @@ function processCustomLabelList(context) {
           decorations.push({
             from: range.start,
             to: range.end,
-            decoration: import_view9.Decoration.replace({
+            decoration: import_view7.Decoration.replace({
               widget: new CustomLabelInlineNumberWidget(placeholderNumber.toString(), view),
               inclusive: false,
               block: false
@@ -3222,7 +3219,7 @@ function processCustomLabelList(context) {
     decorations.push({
       from: markerStart,
       to: markerEnd,
-      decoration: import_view9.Decoration.mark({
+      decoration: import_view7.Decoration.mark({
         class: `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CUSTOM_LABEL_PROCESSED}`
       })
     });
@@ -3231,7 +3228,7 @@ function processCustomLabelList(context) {
   decorations.push({
     from: contentStart,
     to: line.to,
-    decoration: import_view9.Decoration.mark({
+    decoration: import_view7.Decoration.mark({
       class: `${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.CUSTOM_LABEL_ITEM}`
     })
   });
@@ -3249,6 +3246,21 @@ function processCustomLabelList(context) {
       placeholderContext
     );
     decorations.push(...contentRefs);
+    if (context.exampleLabels) {
+      const inlineContext = {
+        line: { from: contentStart, to: line.to },
+        lineText: contentText,
+        cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+        exampleLabels: context.exampleLabels,
+        exampleContent: context.exampleContent
+      };
+      const exampleRefs = processExampleReferences(inlineContext);
+      decorations.push(...exampleRefs);
+      const superscripts = processSuperscripts(inlineContext);
+      decorations.push(...superscripts);
+      const subscripts = processSubscripts(inlineContext);
+      decorations.push(...subscripts);
+    }
   }
   return decorations;
 }
@@ -3322,7 +3334,7 @@ function processCustomLabelReferences(text, from, customLabels, view, cursorPos,
         decorations.push({
           from: matchStart,
           to: matchEnd,
-          decoration: import_view9.Decoration.replace({
+          decoration: import_view7.Decoration.replace({
             widget: new CustomLabelReferenceWidget(processedLabel, content, view, matchStart),
             inclusive: false
           })
@@ -3336,7 +3348,7 @@ function processCustomLabelReferences(text, from, customLabels, view, cursorPos,
               decorations.push({
                 from: range.start,
                 to: range.end,
-                decoration: import_view9.Decoration.replace({
+                decoration: import_view7.Decoration.replace({
                   widget: new CustomLabelInlineNumberWidget(placeholderNumber.toString(), view),
                   inclusive: false,
                   block: false
@@ -3348,7 +3360,7 @@ function processCustomLabelReferences(text, from, customLabels, view, cursorPos,
         decorations.push({
           from: matchStart,
           to: matchEnd,
-          decoration: import_view9.Decoration.mark({
+          decoration: import_view7.Decoration.mark({
             class: CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED
           })
         });
@@ -3358,16 +3370,1059 @@ function processCustomLabelReferences(text, from, customLabels, view, cursorPos,
   return decorations;
 }
 
+// src/decorations/processors/listProcessors.ts
+function processHashList(context, hashCounter) {
+  const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
+  const decorations = [];
+  const hashMatch = ListPatterns.isHashList(lineText);
+  if (!hashMatch) return null;
+  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+    return null;
+  }
+  const indent = hashMatch[1];
+  const marker = hashMatch[2];
+  const space = hashMatch[3];
+  const markerStart = line.from + indent.length;
+  const markerEnd = line.from + indent.length + marker.length + space.length;
+  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+  decorations.push({
+    from: line.from,
+    to: line.from,
+    decoration: import_view8.Decoration.line({
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
+    })
+  });
+  if (!cursorInMarker) {
+    decorations.push({
+      from: markerStart,
+      to: markerEnd,
+      decoration: import_view8.Decoration.replace({
+        widget: new HashListMarkerWidget(hashCounter.value, view, markerStart)
+      })
+    });
+  }
+  const contentStart = line.from + indent.length + marker.length + space.length;
+  decorations.push({
+    from: contentStart,
+    to: line.to,
+    decoration: import_view8.Decoration.mark({
+      class: "cm-list-1"
+    })
+  });
+  const contentText = lineText.substring(indent.length + marker.length + space.length);
+  if (contentText) {
+    const inlineContext = {
+      line: { from: contentStart, to: line.to },
+      lineText: contentText,
+      cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+      exampleLabels: context.exampleLabels,
+      exampleContent: context.exampleContent
+    };
+    const exampleRefs = processExampleReferences(inlineContext);
+    decorations.push(...exampleRefs.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    const superscripts = processSuperscripts(inlineContext);
+    decorations.push(...superscripts.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    const subscripts = processSubscripts(inlineContext);
+    decorations.push(...subscripts.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    if (settings.moreExtendedSyntax && context.customLabels) {
+      const customLabelRefs = processCustomLabelReferences(
+        contentText,
+        contentStart,
+        context.customLabels,
+        view,
+        cursorPos,
+        settings,
+        true,
+        context.rawToProcessed,
+        context.placeholderContext
+      );
+      decorations.push(...customLabelRefs);
+    }
+  }
+  hashCounter.value++;
+  return decorations;
+}
+function processFancyList(context) {
+  const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
+  const decorations = [];
+  const fancyMatch = ListPatterns.isFancyList(lineText);
+  if (!fancyMatch) return null;
+  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+    return null;
+  }
+  const indent = fancyMatch[1];
+  const marker = fancyMatch[2];
+  const space = fancyMatch[5];
+  const markerStart = line.from + indent.length;
+  const markerEnd = line.from + indent.length + marker.length + space.length;
+  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+  let listClass = CSS_CLASSES.FANCY_LIST_UPPER_ALPHA;
+  const letterMatch = ListPatterns.extractLetterMarker(marker);
+  const romanMatch = ListPatterns.extractRomanMarker(marker);
+  if (letterMatch) {
+    const letter = letterMatch[1];
+    if (letter[0] === letter[0].toLowerCase()) {
+      listClass = CSS_CLASSES.FANCY_LIST_LOWER_ALPHA;
+    }
+  } else if (romanMatch) {
+    const roman = romanMatch[1];
+    if (roman[0] === roman[0].toLowerCase()) {
+      listClass = CSS_CLASSES.FANCY_LIST_LOWER_ROMAN;
+    } else {
+      listClass = CSS_CLASSES.FANCY_LIST_UPPER_ROMAN;
+    }
+  }
+  decorations.push({
+    from: line.from,
+    to: line.from,
+    decoration: import_view8.Decoration.line({
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
+    })
+  });
+  if (!cursorInMarker) {
+    decorations.push({
+      from: markerStart,
+      to: markerEnd,
+      decoration: import_view8.Decoration.replace({
+        widget: new FancyListMarkerWidget(marker, listClass, view, markerStart)
+      })
+    });
+  }
+  const contentStart = line.from + indent.length + marker.length + space.length;
+  decorations.push({
+    from: contentStart,
+    to: line.to,
+    decoration: import_view8.Decoration.mark({
+      class: "cm-list-1"
+    })
+  });
+  const contentText = lineText.substring(indent.length + marker.length + space.length);
+  if (contentText) {
+    const inlineContext = {
+      line: { from: contentStart, to: line.to },
+      lineText: contentText,
+      cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+      exampleLabels: context.exampleLabels,
+      exampleContent: context.exampleContent
+    };
+    const exampleRefs = processExampleReferences(inlineContext);
+    decorations.push(...exampleRefs.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    const superscripts = processSuperscripts(inlineContext);
+    decorations.push(...superscripts.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    const subscripts = processSubscripts(inlineContext);
+    decorations.push(...subscripts.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    if (settings.moreExtendedSyntax && context.customLabels) {
+      const customLabelRefs = processCustomLabelReferences(
+        contentText,
+        contentStart,
+        context.customLabels,
+        view,
+        cursorPos,
+        settings,
+        true,
+        context.rawToProcessed,
+        context.placeholderContext
+      );
+      decorations.push(...customLabelRefs);
+    }
+  }
+  return decorations;
+}
+function processExampleList(context) {
+  const {
+    line,
+    lineNum,
+    lineText,
+    cursorPos,
+    view,
+    invalidListBlocks,
+    settings,
+    exampleLabels,
+    exampleLineNumbers,
+    duplicateLabels,
+    duplicateLabelContent
+  } = context;
+  const decorations = [];
+  const exampleMatch = ListPatterns.isExampleList(lineText);
+  if (!exampleMatch) return null;
+  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+    return null;
+  }
+  const indent = exampleMatch[1];
+  const fullMarker = exampleMatch[2];
+  const label = exampleMatch[3] || "";
+  const space = exampleMatch[4];
+  const markerStart = line.from + indent.length;
+  const markerEnd = line.from + indent.length + fullMarker.length + space.length;
+  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+  const exampleNumber = (exampleLineNumbers == null ? void 0 : exampleLineNumbers.get(lineNum)) || 1;
+  decorations.push({
+    from: line.from,
+    to: line.from,
+    decoration: import_view8.Decoration.line({
+      class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
+    })
+  });
+  const isDuplicate = label && (duplicateLabels == null ? void 0 : duplicateLabels.has(label)) && duplicateLabels.get(label) !== lineNum;
+  if (!cursorInMarker) {
+    if (isDuplicate && duplicateLabels && duplicateLabelContent) {
+      const originalLine = duplicateLabels.get(label);
+      const originalContent = duplicateLabelContent.get(label);
+      decorations.push({
+        from: markerStart,
+        to: markerEnd,
+        decoration: import_view8.Decoration.replace({
+          widget: new DuplicateExampleLabelWidget(label, originalLine, originalContent, view, markerStart)
+        })
+      });
+    } else {
+      decorations.push({
+        from: markerStart,
+        to: markerEnd,
+        decoration: import_view8.Decoration.replace({
+          widget: new ExampleListMarkerWidget(exampleNumber, label || void 0, view, markerStart)
+        })
+      });
+    }
+  }
+  const contentStart = line.from + indent.length + fullMarker.length + space.length;
+  decorations.push({
+    from: contentStart,
+    to: line.to,
+    decoration: import_view8.Decoration.mark({
+      class: CSS_CLASSES.EXAMPLE_ITEM
+    })
+  });
+  const contentText = lineText.substring(indent.length + fullMarker.length + space.length);
+  if (contentText) {
+    const inlineContext = {
+      line: { from: contentStart, to: line.to },
+      lineText: contentText,
+      cursorPos: cursorPos > contentStart ? cursorPos - contentStart : -1,
+      exampleLabels: context.exampleLabels,
+      exampleContent: context.exampleContent
+    };
+    const exampleRefs = processExampleReferences(inlineContext);
+    decorations.push(...exampleRefs.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    const superscripts = processSuperscripts(inlineContext);
+    decorations.push(...superscripts.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    const subscripts = processSubscripts(inlineContext);
+    decorations.push(...subscripts.map((d) => ({
+      from: d.from,
+      to: d.to,
+      decoration: d.decoration
+    })));
+    if (settings.moreExtendedSyntax && context.customLabels) {
+      const customLabelRefs = processCustomLabelReferences(
+        contentText,
+        contentStart,
+        context.customLabels,
+        view,
+        cursorPos,
+        settings,
+        true,
+        context.rawToProcessed,
+        context.placeholderContext
+      );
+      decorations.push(...customLabelRefs);
+    }
+  }
+  return decorations;
+}
+
+// src/decorations/processors/definitionProcessor.ts
+var import_view9 = require("@codemirror/view");
+function processDefinitionItem(context) {
+  const { line, lineNum, lineText, cursorPos, view, invalidListBlocks, settings } = context;
+  const decorations = [];
+  const defItemMatch = ListPatterns.isDefinitionMarker(lineText);
+  if (!defItemMatch) return null;
+  if (settings.strictPandocMode && invalidListBlocks.has(lineNum - 1)) {
+    return null;
+  }
+  const indent = defItemMatch[1];
+  const marker = defItemMatch[2];
+  const space = defItemMatch[3];
+  const markerStart = line.from + indent.length;
+  const markerEnd = line.from + indent.length + marker.length + space.length;
+  const cursorInMarker = cursorPos >= markerStart && cursorPos < markerEnd;
+  if (!cursorInMarker) {
+    decorations.push({
+      from: markerStart,
+      to: markerEnd,
+      decoration: import_view9.Decoration.replace({
+        widget: new DefinitionBulletWidget(view, markerStart)
+      })
+    });
+  }
+  return decorations;
+}
+function processDefinitionTerm(context) {
+  const { line, lineText, view } = context;
+  const decorations = [];
+  if (!lineText.trim() || ListPatterns.isDefinitionMarker(lineText) || ListPatterns.isIndentedContent(lineText)) {
+    return null;
+  }
+  let isDefinitionTerm = false;
+  if (line.number < view.state.doc.lines) {
+    const nextLine = view.state.doc.line(line.number + 1);
+    const nextText = nextLine.text;
+    if (ListPatterns.isDefinitionMarker(nextText)) {
+      isDefinitionTerm = true;
+    } else if (nextText.trim() === "" && line.number + 1 < view.state.doc.lines) {
+      const lineAfterEmpty = view.state.doc.line(line.number + 2);
+      if (ListPatterns.isDefinitionMarker(lineAfterEmpty.text)) {
+        isDefinitionTerm = true;
+      }
+    }
+  }
+  if (isDefinitionTerm) {
+    decorations.push({
+      from: line.from,
+      to: line.to,
+      decoration: import_view9.Decoration.mark({
+        class: "cm-strong cm-pandoc-definition-term"
+      })
+    });
+    return decorations;
+  }
+  return null;
+}
+function processDefinitionParagraph(context) {
+  const { line, lineNum, lineText, view } = context;
+  const decorations = [];
+  const indentMatch = ListPatterns.isIndentedContent(lineText) ? lineText.match(ListPatterns.DEFINITION_INDENTED_WITH_CONTENT) : null;
+  if (!indentMatch) return null;
+  let inDefinitionContext = false;
+  for (let checkLine = lineNum - 1; checkLine >= 1; checkLine--) {
+    const prevLine = view.state.doc.line(checkLine);
+    const prevText = prevLine.text;
+    if (ListPatterns.isDefinitionMarker(prevText)) {
+      inDefinitionContext = true;
+      break;
+    }
+    if (prevText.trim() && !ListPatterns.isIndentedContent(prevText) && !ListPatterns.isDefinitionMarker(prevText)) {
+      break;
+    }
+  }
+  if (!inDefinitionContext) return null;
+  const content = indentMatch[2];
+  if (content && content.trim()) {
+    decorations.push({
+      from: line.from,
+      to: line.from,
+      decoration: import_view9.Decoration.line({
+        class: "cm-pandoc-definition-paragraph",
+        attributes: {
+          "data-definition-content": "true"
+        }
+      })
+    });
+    decorations.push({
+      from: line.from,
+      to: line.to,
+      decoration: import_view9.Decoration.mark({
+        class: CSS_CLASSES.DEFINITION_CONTENT_TEXT
+      })
+    });
+  }
+  return decorations;
+}
+
+// src/decorations/pipeline/ProcessingPipeline.ts
+var import_state = require("@codemirror/state");
+function scanExampleLabelsFromDoc(doc, settings) {
+  var _a;
+  const result = {
+    exampleLabels: /* @__PURE__ */ new Map(),
+    exampleContent: /* @__PURE__ */ new Map(),
+    exampleLineNumbers: /* @__PURE__ */ new Map(),
+    duplicateLabels: /* @__PURE__ */ new Map(),
+    duplicateLabelContent: /* @__PURE__ */ new Map()
+  };
+  let counter = 1;
+  const docText = doc.toString();
+  const lines = docText.split("\n");
+  const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : /* @__PURE__ */ new Set();
+  for (let i = 0; i < lines.length; i++) {
+    const lineNum = i + 1;
+    if (invalidLines.has(i)) continue;
+    const line = lines[i];
+    const exampleMatch = ListPatterns.isExampleList(line);
+    if (exampleMatch && exampleMatch.length >= 5) {
+      const indent = exampleMatch[1] || "";
+      const fullMarker = exampleMatch[2] || "";
+      const label = exampleMatch[3] || "";
+      const space = exampleMatch[4] || "";
+      const content = line.substring(
+        indent.length + fullMarker.length + space.length
+      );
+      if (result.exampleLabels.has(label)) {
+        if (!result.duplicateLabels.has(label)) {
+          const firstLine = ((_a = Array.from(result.exampleLineNumbers.entries()).find(([, num]) => num === result.exampleLabels.get(label))) == null ? void 0 : _a[0]) || 0;
+          result.duplicateLabels.set(label, firstLine);
+          result.duplicateLabelContent.set(label, result.exampleContent.get(label) || "");
+        }
+      } else {
+        result.exampleLabels.set(label, counter);
+        result.exampleContent.set(label, content);
+        result.exampleLineNumbers.set(lineNum, counter);
+        counter++;
+      }
+    }
+  }
+  return result;
+}
+var ProcessingPipeline = class {
+  constructor(stateManager) {
+    this.structuralProcessors = [];
+    this.inlineProcessors = [];
+    this.stateManager = stateManager;
+  }
+  /**
+   * Register a structural processor
+   */
+  registerStructuralProcessor(processor) {
+    this.structuralProcessors.push(processor);
+    this.structuralProcessors.sort((a, b) => a.priority - b.priority);
+  }
+  /**
+   * Register an inline processor
+   */
+  registerInlineProcessor(processor) {
+    this.inlineProcessors.push(processor);
+    this.inlineProcessors.sort((a, b) => a.priority - b.priority);
+  }
+  /**
+   * Process the document through both phases
+   */
+  process(view, settings) {
+    const context = this.createContext(view, settings);
+    this.processStructural(context);
+    this.processInline(context);
+    return this.buildDecorationSet(context);
+  }
+  /**
+   * Create the processing context with pre-scanned data
+   */
+  createContext(view, settings) {
+    var _a;
+    const doc = view.state.doc;
+    const workspace = (_a = window.app) == null ? void 0 : _a.workspace;
+    const activeFile = workspace == null ? void 0 : workspace.getActiveFile();
+    const docPath = (activeFile == null ? void 0 : activeFile.path) || null;
+    const exampleScanResult = scanExampleLabelsFromDoc(doc, settings);
+    const placeholderContext = docPath ? this.stateManager.getDocumentCounters(docPath).placeholderContext : new PlaceholderContext();
+    const customScanResult = settings.moreExtendedSyntax ? scanCustomLabels(doc, settings, placeholderContext) : {
+      customLabels: /* @__PURE__ */ new Map(),
+      rawToProcessed: /* @__PURE__ */ new Map(),
+      duplicateLabels: /* @__PURE__ */ new Set(),
+      placeholderContext
+    };
+    const invalidLines = settings.strictLineBreaks ? validateListBlocks(doc) : /* @__PURE__ */ new Set();
+    if (docPath && customScanResult.placeholderContext) {
+      const counters = this.stateManager.getDocumentCounters(docPath);
+      counters.placeholderContext = customScanResult.placeholderContext;
+    }
+    return {
+      // Document data
+      document: doc,
+      view,
+      settings,
+      // Scanned data
+      exampleLabels: exampleScanResult.exampleLabels,
+      exampleContent: exampleScanResult.exampleContent,
+      exampleLineNumbers: exampleScanResult.exampleLineNumbers,
+      duplicateExampleLabels: exampleScanResult.duplicateLabels,
+      duplicateExampleContent: exampleScanResult.duplicateLabelContent,
+      customLabels: customScanResult.customLabels,
+      rawToProcessed: customScanResult.rawToProcessed,
+      duplicateCustomLabels: customScanResult.duplicateLabels,
+      duplicateCustomLineInfo: customScanResult.duplicateLineInfo,
+      placeholderContext: customScanResult.placeholderContext,
+      invalidLines,
+      // Processing metadata
+      contentRegions: [],
+      structuralDecorations: [],
+      inlineDecorations: [],
+      // State tracking
+      hashCounter: { value: 1 },
+      definitionState: {
+        lastWasItem: false,
+        pendingBlankLine: false
+      }
+    };
+  }
+  /**
+   * Phase 1: Process structural elements
+   */
+  processStructural(context) {
+    const doc = context.document;
+    const numLines = doc.lines;
+    for (let lineNum = 1; lineNum <= numLines; lineNum++) {
+      const line = doc.line(lineNum);
+      if (context.invalidLines.has(lineNum)) {
+        continue;
+      }
+      let processed = false;
+      for (const processor of this.structuralProcessors) {
+        if (processor.canProcess(line, context)) {
+          const result = processor.process(line, context);
+          context.structuralDecorations.push(...result.decorations);
+          if (result.contentRegion) {
+            context.contentRegions.push(result.contentRegion);
+          }
+          if (result.skipFurtherProcessing) {
+            processed = true;
+            break;
+          }
+        }
+      }
+      if (!processed) {
+        context.contentRegions.push({
+          from: line.from,
+          to: line.to,
+          type: "normal"
+        });
+      }
+    }
+  }
+  /**
+   * Phase 2: Process inline content within marked regions
+   */
+  processInline(context) {
+    for (const region of context.contentRegions) {
+      if (region.from >= region.to) continue;
+      const text = context.document.sliceString(region.from, region.to);
+      const allMatches = [];
+      for (const processor of this.inlineProcessors) {
+        if (processor.supportedRegions.has(region.type)) {
+          const matches = processor.findMatches(text, region, context);
+          for (const match of matches) {
+            allMatches.push({ match, processor });
+          }
+        }
+      }
+      allMatches.sort((a, b) => a.match.from - b.match.from);
+      let lastEnd = 0;
+      for (const { match, processor } of allMatches) {
+        if (match.from < lastEnd) continue;
+        const decoration = processor.createDecoration(match, context);
+        context.inlineDecorations.push({
+          from: region.from + match.from,
+          to: region.from + match.to,
+          decoration
+        });
+        lastEnd = match.to;
+      }
+    }
+  }
+  /**
+   * Build the final decoration set from both phases
+   */
+  buildDecorationSet(context) {
+    const builder = new import_state.RangeSetBuilder();
+    const allDecorations = [
+      ...context.structuralDecorations,
+      ...context.inlineDecorations
+    ].sort((a, b) => a.from - b.from || a.to - b.to);
+    for (const { from, to, decoration } of allDecorations) {
+      builder.add(from, to, decoration);
+    }
+    return builder.finish();
+  }
+  /**
+   * Clear all registered processors
+   */
+  clear() {
+    this.structuralProcessors = [];
+    this.inlineProcessors = [];
+  }
+  /**
+   * Get registered processor counts for debugging
+   */
+  getProcessorCounts() {
+    return {
+      structural: this.structuralProcessors.length,
+      inline: this.inlineProcessors.length
+    };
+  }
+};
+
+// src/decorations/pipeline/structural/HashListProcessor.ts
+var import_view10 = require("@codemirror/view");
+var HashListProcessor = class {
+  constructor() {
+    this.name = "hash-list";
+    this.priority = 10;
+  }
+  canProcess(line, context) {
+    const lineText = line.text;
+    return ListPatterns.isHashList(lineText) !== null;
+  }
+  process(line, context) {
+    var _a, _b;
+    const lineText = line.text;
+    const hashMatch = ListPatterns.isHashList(lineText);
+    if (!hashMatch) {
+      return { decorations: [] };
+    }
+    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+      return { decorations: [] };
+    }
+    const indent = hashMatch[1];
+    const marker = hashMatch[2];
+    const space = hashMatch[3];
+    const markerStart = line.from + indent.length;
+    const markerEnd = line.from + indent.length + marker.length + space.length;
+    const contentStart = markerEnd;
+    const cursorPos = (_b = (_a = context.view.state.selection) == null ? void 0 : _a.main) == null ? void 0 : _b.head;
+    const cursorInMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
+    const decorations = [];
+    decorations.push({
+      from: line.from,
+      to: line.from,
+      decoration: import_view10.Decoration.line({
+        class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
+      })
+    });
+    if (!cursorInMarker) {
+      decorations.push({
+        from: markerStart,
+        to: markerEnd,
+        decoration: import_view10.Decoration.replace({
+          widget: new HashListMarkerWidget(context.hashCounter.value, context.view, markerStart)
+        })
+      });
+    }
+    context.hashCounter.value++;
+    decorations.push({
+      from: contentStart,
+      to: line.to,
+      decoration: import_view10.Decoration.mark({
+        class: "cm-list-1"
+      })
+    });
+    const contentRegion = {
+      from: contentStart,
+      to: line.to,
+      type: "list-content",
+      parentStructure: "hash-list"
+    };
+    return {
+      decorations,
+      contentRegion,
+      skipFurtherProcessing: true
+    };
+  }
+};
+
+// src/decorations/pipeline/structural/FancyListProcessor.ts
+var import_view11 = require("@codemirror/view");
+var FancyListProcessor = class {
+  constructor() {
+    this.name = "fancy-list";
+    this.priority = 20;
+  }
+  canProcess(line, context) {
+    const lineText = line.text;
+    return ListPatterns.isFancyList(lineText) !== null;
+  }
+  process(line, context) {
+    var _a, _b;
+    const lineText = line.text;
+    const fancyMatch = ListPatterns.isFancyList(lineText);
+    if (!fancyMatch) {
+      return { decorations: [] };
+    }
+    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+      return { decorations: [] };
+    }
+    const indent = fancyMatch[1];
+    const markerWithDelimiter = fancyMatch[2];
+    const marker = fancyMatch[3];
+    const delimiter = fancyMatch[4];
+    const space = fancyMatch[5];
+    const markerStart = line.from + indent.length;
+    const markerEnd = line.from + indent.length + marker.length + delimiter.length + space.length;
+    const contentStart = markerEnd;
+    const cursorPos = (_b = (_a = context.view.state.selection) == null ? void 0 : _a.main) == null ? void 0 : _b.head;
+    const cursorInMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
+    const decorations = [];
+    decorations.push({
+      from: line.from,
+      to: line.from,
+      decoration: import_view11.Decoration.line({
+        class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
+      })
+    });
+    if (!cursorInMarker) {
+      decorations.push({
+        from: markerStart,
+        to: markerEnd,
+        decoration: import_view11.Decoration.replace({
+          widget: new FancyListMarkerWidget(marker, delimiter, context.view, markerStart)
+        })
+      });
+    }
+    decorations.push({
+      from: contentStart,
+      to: line.to,
+      decoration: import_view11.Decoration.mark({
+        class: "cm-list-1"
+      })
+    });
+    const contentRegion = {
+      from: contentStart,
+      to: line.to,
+      type: "list-content",
+      parentStructure: "fancy-list"
+    };
+    return {
+      decorations,
+      contentRegion,
+      skipFurtherProcessing: true
+    };
+  }
+};
+
+// src/decorations/pipeline/structural/ExampleListProcessor.ts
+var import_view12 = require("@codemirror/view");
+var ExampleListProcessor = class {
+  constructor() {
+    this.name = "example-list";
+    this.priority = 30;
+  }
+  canProcess(line, context) {
+    const lineText = line.text;
+    return ListPatterns.isExampleList(lineText) !== null;
+  }
+  process(line, context) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    const lineText = line.text;
+    const exampleMatch = ListPatterns.isExampleList(lineText);
+    if (!exampleMatch) {
+      return { decorations: [] };
+    }
+    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+      return { decorations: [] };
+    }
+    const indent = exampleMatch[1] || "";
+    const fullMarker = exampleMatch[2];
+    const label = exampleMatch[3] || "";
+    const space = exampleMatch[4] || "";
+    const markerStart = line.from + indent.length;
+    const markerEnd = line.from + indent.length + fullMarker.length + space.length;
+    const contentStart = markerEnd;
+    const cursorPos = (_b = (_a = context.view.state.selection) == null ? void 0 : _a.main) == null ? void 0 : _b.head;
+    const cursorInMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
+    const decorations = [];
+    decorations.push({
+      from: line.from,
+      to: line.from,
+      decoration: import_view12.Decoration.line({
+        class: "HyperMD-list-line HyperMD-list-line-1 pandoc-list-line"
+      })
+    });
+    const isDuplicate = (_c = context.duplicateExampleLabels) == null ? void 0 : _c.has(label);
+    if (!cursorInMarker) {
+      if (isDuplicate) {
+        const firstLine = ((_d = context.duplicateExampleLabels) == null ? void 0 : _d.get(label)) || 0;
+        const firstContent = ((_e = context.duplicateExampleContent) == null ? void 0 : _e.get(label)) || "";
+        decorations.push({
+          from: markerStart,
+          to: markerEnd,
+          decoration: import_view12.Decoration.replace({
+            widget: new DuplicateExampleLabelWidget(
+              label,
+              firstLine,
+              firstContent,
+              context.view,
+              markerStart
+            )
+          })
+        });
+      } else {
+        const exampleNumber = ((_f = context.exampleLineNumbers) == null ? void 0 : _f.get(line.number)) || ((_g = context.exampleLabels) == null ? void 0 : _g.get(label)) || 0;
+        const exampleContent = lineText.substring(indent.length + fullMarker.length + space.length);
+        decorations.push({
+          from: markerStart,
+          to: markerEnd,
+          decoration: import_view12.Decoration.replace({
+            widget: new ExampleListMarkerWidget(
+              exampleNumber,
+              label,
+              exampleContent,
+              context.view,
+              markerStart
+            )
+          })
+        });
+      }
+    }
+    decorations.push({
+      from: contentStart,
+      to: line.to,
+      decoration: import_view12.Decoration.mark({
+        class: "cm-list-1"
+      })
+    });
+    const contentRegion = {
+      from: contentStart,
+      to: line.to,
+      type: "list-content",
+      parentStructure: "example-list",
+      metadata: { label, isDuplicate }
+    };
+    return {
+      decorations,
+      contentRegion,
+      skipFurtherProcessing: true
+    };
+  }
+};
+
+// src/decorations/pipeline/structural/CustomLabelProcessor.ts
+var import_view13 = require("@codemirror/view");
+
+// src/decorations/pipeline/structural/DefinitionProcessor.ts
+var import_view14 = require("@codemirror/view");
+
+// src/decorations/pipeline/inline/ExampleReferenceProcessor.ts
+var import_view15 = require("@codemirror/view");
+var ExampleReferenceProcessor = class {
+  constructor() {
+    this.name = "example-reference";
+    this.priority = 10;
+    this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
+  }
+  findMatches(text, region, context) {
+    const matches = [];
+    const pattern = /\(@([a-zA-Z][a-zA-Z0-9_-]*)\)/g;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const label = match[1];
+      if (context.exampleLabels.has(label)) {
+        matches.push({
+          from: match.index,
+          to: match.index + match[0].length,
+          type: "example-ref",
+          data: {
+            label,
+            rawText: match[0]
+          }
+        });
+      }
+    }
+    return matches;
+  }
+  createDecoration(match, context) {
+    const { label } = match.data;
+    const number = context.exampleLabels.get(label) || 0;
+    const content = context.exampleContent.get(label) || "";
+    return import_view15.Decoration.replace({
+      widget: new ExampleReferenceWidget(number, content),
+      inclusive: false
+    });
+  }
+};
+
+// src/decorations/pipeline/inline/SuperscriptProcessor.ts
+var import_view16 = require("@codemirror/view");
+var SuperscriptProcessor = class {
+  constructor() {
+    this.name = "superscript";
+    this.priority = 20;
+    this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
+  }
+  findMatches(text, region, context) {
+    const matches = [];
+    const pattern = /\^([^^~\s]+(?:\s+[^^~\s]+)*)\^/g;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index === 0 || text[match.index - 1] !== "~") {
+        matches.push({
+          from: match.index,
+          to: match.index + match[0].length,
+          type: "superscript",
+          data: {
+            content: match[1],
+            rawText: match[0]
+          }
+        });
+      }
+    }
+    return matches;
+  }
+  createDecoration(match, context) {
+    const { content } = match.data;
+    return import_view16.Decoration.replace({
+      widget: new SuperscriptWidget(content),
+      inclusive: false
+    });
+  }
+};
+
+// src/decorations/pipeline/inline/SubscriptProcessor.ts
+var import_view17 = require("@codemirror/view");
+var SubscriptProcessor = class {
+  constructor() {
+    this.name = "subscript";
+    this.priority = 30;
+    this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
+  }
+  findMatches(text, region, context) {
+    const matches = [];
+    const pattern = /~([^~^\s]+(?:\s+[^~^\s]+)*)~/g;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      matches.push({
+        from: match.index,
+        to: match.index + match[0].length,
+        type: "subscript",
+        data: {
+          content: match[1],
+          rawText: match[0]
+        }
+      });
+    }
+    return matches;
+  }
+  createDecoration(match, context) {
+    const { content } = match.data;
+    return import_view17.Decoration.replace({
+      widget: new SubscriptWidget(content),
+      inclusive: false
+    });
+  }
+};
+
+// src/decorations/pipeline/inline/CustomLabelReferenceProcessor.ts
+var import_view18 = require("@codemirror/view");
+var CustomLabelReferenceProcessor = class {
+  constructor() {
+    this.name = "custom-label-reference";
+    this.priority = 40;
+    this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
+  }
+  findMatches(text, region, context) {
+    const matches = [];
+    if (!context.settings.moreExtendedSyntax) {
+      return matches;
+    }
+    const pattern = ListPatterns.findCustomLabelReferences(text);
+    pattern.forEach((match) => {
+      const fullMatch = match[0];
+      const rawLabel = match[1];
+      matches.push({
+        from: match.index,
+        to: match.index + fullMatch.length,
+        type: "custom-label-ref",
+        data: {
+          rawLabel,
+          fullMatch,
+          region
+        }
+      });
+    });
+    return matches;
+  }
+  createDecoration(match, context) {
+    var _a, _b, _c, _d;
+    const { rawLabel, region } = match.data;
+    let processedLabel = (_a = context.rawToProcessed) == null ? void 0 : _a.get(rawLabel);
+    if (!processedLabel && rawLabel.includes("#")) {
+      processedLabel = this.processPlaceholders(rawLabel, context.placeholderContext);
+    }
+    if (!processedLabel) {
+      processedLabel = rawLabel;
+    }
+    const isDuplicate = (_b = context.duplicateCustomLabels) == null ? void 0 : _b.has(processedLabel);
+    if (isDuplicate) {
+      const duplicateInfo = (_c = context.duplicateCustomLineInfo) == null ? void 0 : _c.get(processedLabel);
+      return import_view18.Decoration.replace({
+        widget: new DuplicateCustomLabelWidget(
+          processedLabel,
+          (duplicateInfo == null ? void 0 : duplicateInfo.firstLine) || 0,
+          (duplicateInfo == null ? void 0 : duplicateInfo.firstContent) || "",
+          context.view
+        ),
+        inclusive: false
+      });
+    }
+    const labelContent = ((_d = context.customLabels) == null ? void 0 : _d.get(processedLabel)) || "";
+    const absolutePosition = ((region == null ? void 0 : region.from) || 0) + match.from;
+    return import_view18.Decoration.replace({
+      widget: new CustomLabelReferenceWidget(processedLabel, labelContent, context.view, absolutePosition),
+      inclusive: false
+    });
+  }
+  processPlaceholders(label, placeholderContext) {
+    if (!placeholderContext) return label;
+    return label.replace(/\(#([a-z])\)/g, (match, letter) => {
+      var _a;
+      const value = (_a = placeholderContext.getPlaceholderValue) == null ? void 0 : _a.call(placeholderContext, letter);
+      return value !== void 0 ? `(${value})` : match;
+    });
+  }
+};
+
 // src/decorations/pandocExtendedMarkdownExtension.ts
-var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.ViewPlugin.fromClass(
+var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view19.ViewPlugin.fromClass(
   class PandocExtendedMarkdownView {
     constructor(view) {
+      this.pipeline = null;
       const settings = getSettings();
       const docPath = getDocPath();
       const placeholderContext = docPath ? pluginStateManager.getDocumentCounters(docPath).placeholderContext : void 0;
       this.scanResult = scanExampleLabels(view, settings);
       this.customLabelScanResult = scanCustomLabels(view.state.doc, settings, placeholderContext);
+      if (settings.useNewPipeline) {
+        this.initializePipeline();
+      }
       this.decorations = this.buildDecorations(view);
+    }
+    initializePipeline() {
+      this.pipeline = new ProcessingPipeline(pluginStateManager);
+      this.pipeline.registerStructuralProcessor(new HashListProcessor());
+      this.pipeline.registerStructuralProcessor(new FancyListProcessor());
+      this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
+      this.pipeline.registerInlineProcessor(new ExampleReferenceProcessor());
+      this.pipeline.registerInlineProcessor(new SuperscriptProcessor());
+      this.pipeline.registerInlineProcessor(new SubscriptProcessor());
+      this.pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
     }
     update(update) {
       const prevLivePreview = update.startState.field(import_obsidian9.editorLivePreviewField);
@@ -3380,12 +4435,32 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.Vi
           const placeholderContext = docPath ? pluginStateManager.getDocumentCounters(docPath).placeholderContext : void 0;
           this.scanResult = scanExampleLabels(update.view, settings);
           this.customLabelScanResult = scanCustomLabels(update.view.state.doc, settings, placeholderContext);
+          if (settings.useNewPipeline && !this.pipeline) {
+            this.initializePipeline();
+          } else if (!settings.useNewPipeline && this.pipeline) {
+            this.pipeline = null;
+          }
         }
         this.decorations = this.buildDecorations(update.view);
       }
     }
     buildDecorations(view) {
-      const builder = new import_state.RangeSetBuilder();
+      const settings = getSettings();
+      if (settings.useNewPipeline && this.pipeline) {
+        return this.buildDecorationsWithPipeline(view);
+      }
+      return this.buildDecorationsLegacy(view);
+    }
+    buildDecorationsWithPipeline(view) {
+      const isLivePreview = view.state.field(import_obsidian9.editorLivePreviewField);
+      if (!isLivePreview || !this.pipeline) {
+        return new import_state2.RangeSetBuilder().finish();
+      }
+      const settings = getSettings();
+      return this.pipeline.process(view, settings);
+    }
+    buildDecorationsLegacy(view) {
+      const builder = new import_state2.RangeSetBuilder();
       const isLivePreview = view.state.field(import_obsidian9.editorLivePreviewField);
       if (!isLivePreview) {
         return builder.finish();
@@ -3412,7 +4487,11 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.Vi
           exampleLabels: this.scanResult.exampleLabels,
           exampleLineNumbers: this.scanResult.exampleLineNumbers,
           duplicateLabels: this.scanResult.duplicateLabels,
-          duplicateLabelContent: this.scanResult.duplicateLabelContent
+          duplicateLabelContent: this.scanResult.duplicateLabelContent,
+          exampleContent: this.scanResult.exampleContent,
+          customLabels: this.customLabelScanResult.customLabels,
+          rawToProcessed: this.customLabelScanResult.rawToProcessed,
+          placeholderContext: this.customLabelScanResult.placeholderContext
         };
         const hashDecorations = processHashList(processorContext, hashCounter);
         if (hashDecorations) {
@@ -3442,7 +4521,9 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath) => import_view10.Vi
             rawToProcessed: this.customLabelScanResult.rawToProcessed,
             duplicateLabels: this.customLabelScanResult.duplicateLabels,
             duplicateLineInfo: this.customLabelScanResult.duplicateLineInfo,
-            placeholderContext: this.customLabelScanResult.placeholderContext
+            placeholderContext: this.customLabelScanResult.placeholderContext,
+            exampleLabels: this.scanResult.exampleLabels,
+            exampleContent: this.scanResult.exampleContent
           };
           const customLabelDecorations = processCustomLabelList(customLabelContext);
           if (customLabelDecorations) {
@@ -4655,7 +5736,7 @@ var CustomLabelReferenceSuggest = class extends import_obsidian13.EditorSuggest 
 };
 
 // src/listAutocompletion.ts
-var import_state2 = require("@codemirror/state");
+var import_state3 = require("@codemirror/state");
 
 // src/utils/listHelpers.ts
 function getNextLetter(letter) {
@@ -5009,7 +6090,7 @@ function createListAutocompletionKeymap(settings) {
           };
           const transaction = state.update({
             changes,
-            selection: import_state2.EditorSelection.cursor(line.from + indent.length)
+            selection: import_state3.EditorSelection.cursor(line.from + indent.length)
           });
           view.dispatch(transaction);
           return true;
@@ -5029,7 +6110,7 @@ function createListAutocompletionKeymap(settings) {
           };
           const transaction = state.update({
             changes,
-            selection: import_state2.EditorSelection.cursor(line.from + indent.length)
+            selection: import_state3.EditorSelection.cursor(line.from + indent.length)
           });
           view.dispatch(transaction);
           return true;
@@ -5085,7 +6166,7 @@ function createListAutocompletionKeymap(settings) {
             };
             const transaction2 = state.update({
               changes: changes2,
-              selection: import_state2.EditorSelection.cursor(line.from + newLine.length)
+              selection: import_state3.EditorSelection.cursor(line.from + newLine.length)
             });
             view.dispatch(transaction2);
             return true;
@@ -5098,7 +6179,7 @@ function createListAutocompletionKeymap(settings) {
         };
         const transaction = state.update({
           changes,
-          selection: import_state2.EditorSelection.cursor(line.from)
+          selection: import_state3.EditorSelection.cursor(line.from)
         });
         view.dispatch(transaction);
         return true;
@@ -5119,7 +6200,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
         const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
         const transaction = state.update({
           changes,
-          selection: import_state2.EditorSelection.cursor(insertPos + cursorOffset)
+          selection: import_state3.EditorSelection.cursor(insertPos + cursorOffset)
         });
         view.dispatch(transaction);
         if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
@@ -5156,7 +6237,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
           };
           const transaction = state.update({
             changes,
-            selection: import_state2.EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
+            selection: import_state3.EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
           });
           view.dispatch(transaction);
           return true;
@@ -5197,7 +6278,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
         const newCursorOffset = Math.max(newIndent.length + marker.length + space.length, oldCursorOffset - indentDiff);
         const transaction = state.update({
           changes,
-          selection: import_state2.EditorSelection.cursor(line.from + newCursorOffset)
+          selection: import_state3.EditorSelection.cursor(line.from + newCursorOffset)
         });
         view.dispatch(transaction);
         return true;
@@ -5247,7 +6328,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian14.Plugin {
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       }
     ));
-    this.registerEditorExtension(import_state3.Prec.highest(import_view11.keymap.of(createListAutocompletionKeymap(this.settings))));
+    this.registerEditorExtension(import_state4.Prec.highest(import_view20.keymap.of(createListAutocompletionKeymap(this.settings))));
   }
   registerPostProcessor() {
     this.registerMarkdownPostProcessor((element, context) => {

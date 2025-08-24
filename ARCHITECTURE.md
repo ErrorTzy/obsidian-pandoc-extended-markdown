@@ -24,12 +24,28 @@ pandoc-lists-plugin/
 │   ├── listAutocompletion.ts             # Handles Enter/Tab/Shift-Tab key bindings for lists
 │   ├── exampleReferenceSuggest.ts       # Autocomplete suggestion system for (@references)
 │   ├── customLabelReferenceSuggest.ts    # Autocomplete suggestions for {::references} with rendered preview
-│   ├── constants.ts                      # Centralized constants for magic values and CSS classes
+│   ├── constants.ts                      # Centralized constants (includes PANEL_SETTINGS)
 │   ├── patterns.ts                       # Optimized regex patterns with caching
 │   ├── state/                            # State management architecture
 │   │   └── pluginStateManager.ts        # Unified state manager for all plugin state
 │   ├── decorations/                      # CodeMirror decorations for live preview
 │   │   ├── pandocExtendedMarkdownExtension.ts # Main orchestrator for live preview rendering
+│   │   ├── pipeline/                     # Two-phase processing pipeline (NEW)
+│   │   │   ├── ProcessingPipeline.ts    # Main pipeline orchestrator
+│   │   │   ├── types.ts                 # Pipeline interfaces and types
+│   │   │   ├── structural/              # Phase 1: Structural processors
+│   │   │   │   ├── HashListProcessor.ts # Hash list (#.) processor
+│   │   │   │   ├── FancyListProcessor.ts # Fancy list (A., i., etc.) processor
+│   │   │   │   ├── ExampleListProcessor.ts # Example list ((@)) processor
+│   │   │   │   ├── CustomLabelProcessor.ts # Custom label list ({::}) processor
+│   │   │   │   ├── DefinitionProcessor.ts # Definition list (:, ~) processor
+│   │   │   │   └── index.ts             # Re-exports structural processors
+│   │   │   └── inline/                   # Phase 2: Inline processors
+│   │   │       ├── ExampleReferenceProcessor.ts # Process (@references)
+│   │   │       ├── CustomLabelReferenceProcessor.ts # Process {::references}
+│   │   │       ├── SuperscriptProcessor.ts # Process superscripts (^)
+│   │   │       ├── SubscriptProcessor.ts # Process subscripts (~)
+│   │   │       └── index.ts             # Re-exports inline processors
 │   │   ├── widgets/                      # CodeMirror widget implementations
 │   │   │   ├── listWidgets.ts           # Widgets for list markers (fancy, hash, example)
 │   │   │   ├── definitionWidget.ts      # Widget for definition list bullets
@@ -37,7 +53,7 @@ pandoc-lists-plugin/
 │   │   │   ├── formatWidgets.ts         # Widgets for super/subscripts
 │   │   │   ├── customLabelWidget.ts     # Widget for custom label lists and references
 │   │   │   └── index.ts                 # Re-exports all widgets
-│   │   ├── processors/                   # Decoration processing logic
+│   │   ├── processors/                   # Legacy decoration processing (being phased out)
 │   │   │   ├── listProcessors.ts        # Process hash, fancy, and example lists
 │   │   │   ├── definitionProcessor.ts   # Process definition lists, terms, and paragraphs
 │   │   │   ├── inlineFormatProcessor.ts # Process inline formats (references, super/subscripts)
@@ -62,7 +78,7 @@ pandoc-lists-plugin/
 │   │   ├── processorConfig.ts           # Configuration injection interface
 │   │   ├── listTypes.ts                 # List-related interfaces and types
 │   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
-│   │   └── settingsTypes.ts             # Settings interface and default settings
+│   │   └── settingsTypes.ts             # Settings interface (includes panelOrder) and default settings
 │   ├── views/                            # Custom Obsidian views
 │   │   ├── ListPanelView.ts             # Main modular panel view with icon toolbar
 │   │   └── panels/                      # Modular panel implementations
@@ -87,6 +103,20 @@ pandoc-lists-plugin/
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
 ├── tests/                                # Test files
+│   ├── pipeline/                         # Tests for new pipeline architecture (NEW)
+│   │   ├── ProcessingPipeline.spec.ts   # Tests for main pipeline orchestrator
+│   │   ├── crossReferenceIntegration.spec.ts # Integration tests for cross-references
+│   │   ├── structural/                  # Tests for structural processors
+│   │   │   ├── HashListProcessor.spec.ts
+│   │   │   ├── FancyListProcessor.spec.ts
+│   │   │   ├── ExampleListProcessor.spec.ts
+│   │   │   ├── CustomLabelProcessor.spec.ts
+│   │   │   └── DefinitionProcessor.spec.ts
+│   │   └── inline/                       # Tests for inline processors
+│   │       ├── ExampleReferenceProcessor.spec.ts
+│   │       ├── CustomLabelReferenceProcessor.spec.ts
+│   │       ├── SuperscriptProcessor.spec.ts
+│   │       └── SubscriptProcessor.spec.ts
 │   ├── customLabelAutocompletion.spec.ts # Tests for custom label auto-completion
 │   ├── customLabelAutoNumbering.spec.ts  # Tests for custom label auto-numbering
 │   ├── customLabelList.spec.ts          # Tests for custom label list functionality
@@ -189,6 +219,8 @@ graph TB
 
 ### Overview
 The live preview system transforms markdown syntax in real-time as users type, using CodeMirror 6's decoration system to overlay visual elements without modifying the underlying text.
+
+**Note: As of v1.4.0, the plugin is transitioning to a new two-phase processing pipeline architecture that separates structural and inline processing for better maintainability and extensibility.**
 
 ### Detailed Flow
 
@@ -298,6 +330,120 @@ Visual representations that replace markdown syntax:
 - Selection changes (cursor movement)
 - Live preview mode toggle
 
+## Two-Phase Processing Pipeline (NEW)
+
+### Overview
+Starting in v1.4.0, the plugin implements a new two-phase processing pipeline that cleanly separates structural (block-level) processing from inline content processing. This architecture eliminates code duplication and makes the plugin more maintainable and extensible.
+
+### Architecture Benefits
+
+1. **Clean Separation of Concerns**: Structural processors handle list markers and block structures, while inline processors handle references and formatting
+2. **No Code Duplication**: Inline processors automatically work across all list types
+3. **Easy Extensibility**: New syntax types can be added by creating and registering new processors
+4. **Consistent Processing**: All content regions are processed by the same inline processors
+5. **Better Testing**: Each processor can be tested independently
+
+### Pipeline Phases
+
+#### Phase 1: Structural Processing
+Identifies and decorates block-level structures (list markers, definition terms, etc.)
+
+```typescript
+interface StructuralProcessor {
+    name: string;
+    priority: number; // Lower numbers process first
+    canProcess(line: Line, context: ProcessingContext): boolean;
+    process(line: Line, context: ProcessingContext): StructuralResult;
+}
+```
+
+**Registered Structural Processors:**
+- `HashListProcessor` (priority: 10) - Handles `#.` auto-numbered lists
+- `FancyListProcessor` (priority: 20) - Handles `A.`, `i.`, `(a)` style lists
+- `ExampleListProcessor` (priority: 30) - Handles `(@label)` example lists
+- `CustomLabelProcessor` (priority: 15) - Handles `{::LABEL}` custom label lists
+- `DefinitionProcessor` (priority: 20) - Handles `:` and `~` definition lists
+
+#### Phase 2: Inline Processing
+Processes content within marked regions for references and inline formatting
+
+```typescript
+interface InlineProcessor {
+    name: string;
+    priority: number;
+    supportedRegions: Set<string>; // Which content types to process
+    findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[];
+    createDecoration(match: InlineMatch, context: ProcessingContext): Decoration;
+}
+```
+
+**Registered Inline Processors:**
+- `ExampleReferenceProcessor` (priority: 10) - Processes `(@references)`
+- `CustomLabelReferenceProcessor` (priority: 10) - Processes `{::references}`
+- `SuperscriptProcessor` (priority: 20) - Processes `^superscripts^`
+- `SubscriptProcessor` (priority: 20) - Processes `~subscripts~`
+
+### Processing Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Pipeline as ProcessingPipeline
+    participant Scanner as Document Scanner
+    participant Phase1 as Structural Processors
+    participant Phase2 as Inline Processors
+    participant Output as DecorationSet
+    
+    User->>Pipeline: Document Change
+    Pipeline->>Scanner: Scan for labels/references
+    Scanner-->>Pipeline: Pre-computed context
+    
+    Pipeline->>Phase1: Process each line
+    loop For each line
+        Phase1->>Phase1: Find matching processor
+        Phase1->>Phase1: Create structural decorations
+        Phase1->>Pipeline: Mark content regions
+    end
+    
+    Pipeline->>Phase2: Process content regions
+    loop For each region
+        Phase2->>Phase2: Find all inline matches
+        Phase2->>Phase2: Create inline decorations
+        Phase2->>Pipeline: Add decorations
+    end
+    
+    Pipeline->>Output: Build final DecorationSet
+    Output-->>User: Rendered display
+```
+
+### Adding New Syntax Support
+
+To add a new cross-reference or inline format:
+
+1. **Create the processor**:
+```typescript
+class NewReferenceProcessor implements InlineProcessor {
+    name = 'new-reference';
+    priority = 15;
+    supportedRegions = new Set(['list-content', 'definition-content']);
+    
+    findMatches(text: string, region: ContentRegion, context: ProcessingContext) {
+        // Find your syntax pattern
+    }
+    
+    createDecoration(match: InlineMatch, context: ProcessingContext) {
+        // Create widget or mark decoration
+    }
+}
+```
+
+2. **Register it**:
+```typescript
+pipeline.registerInlineProcessor(new NewReferenceProcessor());
+```
+
+That's it! The new syntax will automatically work in all list types and content regions.
+
 ## Reading Mode Rendering Pipeline
 
 ### Overview
@@ -380,7 +526,7 @@ Each parser handles specific syntax patterns:
 ## List Panel View
 
 ### Overview
-The List Panel View provides a modular, extensible sidebar panel system for displaying various list-related content. It features an icon toolbar for switching between different panel modules and is designed to accommodate future expansion with additional list types. Panels can be conditionally registered based on plugin settings.
+The List Panel View provides a modular, extensible sidebar panel system for displaying various list-related content. It features an icon toolbar for switching between different panel modules and is designed to accommodate future expansion with additional list types. Panels can be conditionally registered based on plugin settings. The order of panels in the icon toolbar can be customized through the plugin settings.
 
 ### Architecture
 
@@ -443,12 +589,16 @@ To add a new panel module:
 2. **Register in ListPanelView**: Add to `initializePanels()`
    ```typescript
    private initializePanels(): void {
-       this.panels.push({
-           id: module.id,
-           displayName: module.displayName,
-           icon: module.icon,
-           module: new ExampleListPanelModule(this.plugin)
+       // Register panel conditionally if needed
+       const exampleListModule = new ExampleListPanelModule(this.plugin);
+       availablePanels.push({
+           id: exampleListModule.id,
+           displayName: exampleListModule.displayName,
+           icon: exampleListModule.icon,
+           module: exampleListModule
        });
+       
+       // Panels are sorted according to user-configured order
    }
    ```
 
@@ -694,7 +844,7 @@ flowchart LR
 |-----------|----------------------|----------------|
 | `main.ts` | Plugin lifecycle management | `onload()`, `onunload()`, event registration |
 | `pluginStateManager` | Centralized state coordination | Counter management, mode tracking, event dispatch |
-| `settings.ts` | User configuration | Settings UI, preference persistence |
+| `settings.ts` | User configuration | Settings UI, panel order configuration, preference persistence |
 | `pandocValidator.ts` | Pandoc compliance validation | Format checking, auto-formatting |
 | `listAutocompletion.ts` | Smart list continuation | Enter/Tab/Shift-Tab key handling, uses utility modules |
 | `ListPanelView.ts` | Modular sidebar panel system | Panel management, icon toolbar, content switching |
@@ -717,9 +867,12 @@ flowchart LR
 | Component | Responsibility | Input | Output |
 |-----------|---------------|-------|--------|
 | `pandocExtendedMarkdownExtension` | Orchestration | ViewUpdate events | Decorations |
+| `ProcessingPipeline` | Two-phase processing coordination | View, settings | DecorationSet |
+| `structural/*` | Phase 1: Block-level processing | Line, context | Structural decorations |
+| `inline/*` | Phase 2: Inline content processing | Content regions | Inline decorations |
 | `exampleScanner` | Label preprocessing | Document text | Label mappings |
 | `listBlockValidator` | Strict mode validation | Document lines | Invalid line set |
-| `processors/*` | Syntax processing | Line text, context | Decoration specs |
+| `processors/*` (legacy) | Syntax processing | Line text, context | Decoration specs |
 | `widgets/*` | Visual rendering | Widget data | DOM elements |
 
 ### Reading Mode Components

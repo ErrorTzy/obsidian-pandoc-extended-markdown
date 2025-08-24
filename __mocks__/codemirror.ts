@@ -3,15 +3,16 @@ export class EditorState {
   selection: any;
   
   constructor(doc?: string, selection?: any) {
-    const lines = (doc || '').split('\n');
+    const docText = doc || '';
+    const lines = docText.split('\n');
     this.doc = {
-      length: doc ? doc.length : 100,
+      length: docText.length,
       lines: lines.length,
-      toString: () => doc || '',
-      sliceString: (from: number, to: number) => (doc || '').slice(from, to),
-      sliceDoc: (from: number, to: number) => (doc || '').slice(from, to),
+      toString: () => docText,
+      sliceString: (from: number, to: number) => docText.slice(from, to),
+      sliceDoc: (from: number, to: number) => docText.slice(from, to),
       lineAt: (pos: number) => {
-        const text = doc || '';
+        const text = docText;
         const lines = text.split('\n');
         let currentPos = 0;
         for (let i = 0; i < lines.length; i++) {
@@ -29,27 +30,24 @@ export class EditorState {
         return { from: 0, to: text.length, text: text, number: 1 };
       },
       line: (num: number) => {
-        const text = doc || '';
-        const lines = text.split('\n');
-        if (num < 1 || num > lines.length) {
+        const text = docText;
+        const textLines = text.split('\n');
+        if (num < 1 || num > textLines.length) {
           return { from: 0, to: 0, text: '', number: num };
         }
         let currentPos = 0;
         for (let i = 0; i < num - 1; i++) {
-          currentPos += lines[i].length + 1;
+          currentPos += textLines[i].length + 1;
         }
         return {
           from: currentPos,
-          to: currentPos + lines[num - 1].length,
-          text: lines[num - 1],
+          to: currentPos + textLines[num - 1].length,
+          text: textLines[num - 1],
           number: num
         };
       }
     };
-    this.selection = selection || {
-      main: { head: 0, from: 0, to: 0 },
-      ranges: []
-    };
+    this.selection = selection || null;
   }
   
   static create(config: any) {
@@ -94,8 +92,36 @@ export class EditorView {
   static decorations = {
     from: (field: any, fn: any) => ({})
   };
-  state = new EditorState();
+  state: EditorState;
   viewport = { from: 0, to: 100 };
+  dom: any;
+  
+  constructor(config?: any) {
+    if (config?.state) {
+      this.state = config.state;
+    } else {
+      this.state = new EditorState();
+    }
+    if (config?.parent) {
+      this.dom = document.createElement('div');
+      config.parent.appendChild(this.dom);
+    }
+  }
+  
+  dispatch(spec: any) {
+    const newState = this.state.update(spec);
+    // Update state if changes were applied
+    if (spec.changes) {
+      const newDoc = this.state.applyChanges(spec.changes);
+      this.state = EditorState.create({ 
+        doc: newDoc, 
+        selection: spec.selection || this.state.selection 
+      });
+    }
+    if (spec.selection) {
+      this.state.selection = spec.selection;
+    }
+  }
 }
 
 export const StateField = {
@@ -131,6 +157,32 @@ export class Decoration {
 
 export class DecorationSet {
   static empty = new DecorationSet();
+  
+  size: number = 0;
+  decorations: any[] = [];
+  
+  constructor(decorations?: any[]) {
+    if (decorations) {
+      this.decorations = decorations;
+      this.size = decorations.length;
+    }
+  }
+  
+  iter() {
+    let index = 0;
+    const decorations = this.decorations;
+    return {
+      value: decorations[index] || null,
+      from: decorations[index]?.from || 0,
+      to: decorations[index]?.to || 0,
+      next() {
+        index++;
+        this.value = decorations[index] || null;
+        this.from = decorations[index]?.from || 0;
+        this.to = decorations[index]?.to || 0;
+      }
+    };
+  }
 }
 
 export class WidgetType {
@@ -143,9 +195,14 @@ export class WidgetType {
 }
 
 export class RangeSetBuilder {
-  add(from: number, to: number, decoration: any) {}
+  private decorations: any[] = [];
+  
+  add(from: number, to: number, decoration: any) {
+    this.decorations.push({ from, to, decoration });
+  }
+  
   finish() {
-    return DecorationSet.empty;
+    return new DecorationSet(this.decorations);
   }
 }
 
