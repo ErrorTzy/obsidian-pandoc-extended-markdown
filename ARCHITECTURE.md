@@ -414,14 +414,14 @@ graph TB
     
     subgraph "Panel Modules"
         CLM[CustomLabelPanelModule]
-        FLM[Future: ExampleListModule]
+        FLM[ExampleListModule]
         DLM[Future: DefinitionListModule]
     end
     
     LPV --> IconRow
     LPV --> Content
     IconRow --> CLM
-    IconRow -.-> FLM
+    IconRow --> FLM
     IconRow -.-> DLM
     Content --> CLM
 ```
@@ -458,7 +458,7 @@ To add a new panel module:
    - `onDeactivate()`: Called when switching to another module
    - `destroy()`: Cleanup when view closes
 
-### Current Implementation: Custom Label Panel
+### Implementation Example: Custom Label Panel
 
 The Custom Label Panel displays all custom label lists (`{::LABEL}` syntax) from the active markdown document.
 
@@ -518,23 +518,6 @@ sequenceDiagram
 
 ### Key Implementation Details
 
-#### ListPanelView Architecture
-- **`initializePanels()`**: Registers panel modules based on plugin settings
-- **`renderView()`**: Creates icon toolbar and content container
-- **`switchToPanel()`**: Handles panel switching with proper lifecycle management
-- **`updateView()`**: Propagates updates to active panel
-- **`refreshPanels()`**: Dynamically updates available panels when settings change
-- **Icon Toolbar**: Clickable SVG icons with active state highlighting
-- **Content Container**: Dynamic content area managed by active panel
-
-#### Panel Module Lifecycle
-1. **Initialization**: Module created with plugin reference
-2. **Activation**: `onActivate()` called with container element
-3. **Updates**: `onUpdate()` called on document changes
-4. **Deactivation**: `onDeactivate()` for cleanup when switching
-5. **Destruction**: `destroy()` for final cleanup
-
-#### CustomLabelPanelModule Implementation
 - **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (uses `customLabelExtractor.ts`)
 - **`renderLabels()`**: Creates DOM structure with interactive elements
 - **`updateContent()`**: Updates panel when active file changes
@@ -551,36 +534,6 @@ sequenceDiagram
   - `setupLabelClickHandler()`: Handles label copying
   - `setupContentClickHandler()`: Handles navigation
   - `setupHoverPreview()`: Shows popover for truncated content
-
-### Extension Guide
-
-To extend the List Panel with new list types:
-
-1. **Create New Panel Module**
-   ```typescript
-   // src/views/panels/ExampleListPanelModule.ts
-   export class ExampleListPanelModule implements PanelModule {
-       // Implement all required methods
-   }
-   ```
-
-2. **Design Icon**
-   - Add SVG icon to `constants.ts`
-   - Keep icons simple and recognizable at 20x20px
-
-3. **Register Module**
-   - Add to `ListPanelView.initializePanels()`
-   - Module automatically appears in icon toolbar
-   - Can be conditionally registered based on settings
-
-4. **Best Practices**
-   - Use `containerEl.empty()` for DOM cleanup
-   - Avoid direct `workspace.activeLeaf` access
-   - Follow `pandoc-` CSS naming convention
-   - Implement proper error boundaries
-   - Cache expensive computations
-   - Extract reusable utilities to shared modules
-   - Use conditional registration for settings-dependent features
 
 ## Plugin Lifecycle & State Management
 
