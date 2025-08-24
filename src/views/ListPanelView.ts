@@ -40,10 +40,13 @@ export class ListPanelView extends ItemView {
     }
     
     private initializePanels(): void {
+        const availablePanels: PanelTabInfo[] = [];
+        
+        // Register all available panels
         // Only register custom label panel if More Extended Syntax is enabled
         if (this.plugin.settings.moreExtendedSyntax) {
             const customLabelModule = new CustomLabelPanelModule(this.plugin);
-            this.panels.push({
+            availablePanels.push({
                 id: customLabelModule.id,
                 displayName: customLabelModule.displayName,
                 icon: customLabelModule.icon,
@@ -52,12 +55,31 @@ export class ListPanelView extends ItemView {
         }
         
         const exampleListModule = new ExampleListPanelModule(this.plugin);
-        this.panels.push({
+        availablePanels.push({
             id: exampleListModule.id,
             displayName: exampleListModule.displayName,
             icon: exampleListModule.icon,
             module: exampleListModule
         });
+        
+        // Sort panels according to settings order
+        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists'];
+        this.panels = [];
+        
+        // First, add panels in the specified order
+        for (const panelId of panelOrder) {
+            const panel = availablePanels.find(p => p.id === panelId);
+            if (panel) {
+                this.panels.push(panel);
+            }
+        }
+        
+        // Then, add any panels that weren't in the order (for extensibility)
+        for (const panel of availablePanels) {
+            if (!this.panels.some(p => p.id === panel.id)) {
+                this.panels.push(panel);
+            }
+        }
     }
     
     getViewType(): string {

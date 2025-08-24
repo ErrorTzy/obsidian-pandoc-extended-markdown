@@ -221,7 +221,7 @@ export const ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="36" 
+              font-size="48" 
               font-weight="bold" 
               fill="currentColor">
             {::}
@@ -232,7 +232,7 @@ export const ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="36" 
+              font-size="48" 
               font-weight="bold" 
               fill="currentColor">
             (@)
@@ -251,7 +251,7 @@ export const ICONS = {
             <text x="25" y="75" font-size="48" text-anchor="middle">#.</text>
             
             <!-- Bottom right: Definition marker -->
-            <text x="75" y="75" font-size="52" text-anchor="middle">~</text>
+            <text x="75" y="75" font-size="48" text-anchor="middle">~</text>
         </g>
     </svg>`,
     CUSTOM_LABEL_ID: 'custom-label-list',
