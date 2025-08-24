@@ -91,6 +91,14 @@ export const CSS_CLASSES = {
     HOVER_POPOVER: 'pandoc-hover-popover',
     HOVER_POPOVER_LABEL: 'pandoc-hover-popover-label',
     HOVER_POPOVER_CONTENT: 'pandoc-hover-popover-content',
+    
+    // Example List View Classes
+    EXAMPLE_LIST_VIEW_CONTAINER: 'pandoc-example-list-view-container',
+    EXAMPLE_LIST_VIEW_ROW: 'pandoc-example-list-view-row',
+    EXAMPLE_LIST_VIEW_NUMBER: 'pandoc-example-list-view-number',
+    EXAMPLE_LIST_VIEW_LABEL: 'pandoc-example-list-view-label',
+    EXAMPLE_LIST_VIEW_CONTENT: 'pandoc-example-list-view-content',
+    EXAMPLE_LIST_VIEW_EMPTY: 'pandoc-example-list-view-empty',
 } as const;
 
 export const DECORATION_STYLES = {
@@ -117,7 +125,9 @@ export const MESSAGES = {
     // View messages
     NO_ACTIVE_FILE: 'No active file',
     NO_CUSTOM_LABELS: 'No custom labels found',
+    NO_EXAMPLE_LISTS: 'No example lists found',
     CUSTOM_LABELS_VIEW_TITLE: 'Custom Labels',
+    EXAMPLE_LISTS_VIEW_TITLE: 'Example Lists',
     
     // Formatting issue messages
     FORMATTING_ISSUES: (count: number) => `Found ${count} formatting issues`,
@@ -128,7 +138,7 @@ export const COMMANDS = {
     FORMAT_PANDOC: 'format-to-pandoc-standard',
     TOGGLE_DEFINITION_BOLD: 'toggle-definition-bold-style',
     TOGGLE_DEFINITION_UNDERLINE: 'toggle-definition-underline-style',
-    OPEN_CUSTOM_LABEL_VIEW: 'open-custom-label-view',
+    OPEN_LIST_PANEL: 'open-list-panel',
 } as const;
 
 export const SETTINGS = {
@@ -215,6 +225,17 @@ export const ICONS = {
               font-weight="bold" 
               fill="currentColor">
             {::}
+        </text>
+    </svg>`,
+    EXAMPLE_LIST_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <text x="50" y="50" 
+              text-anchor="middle" 
+              dominant-baseline="central" 
+              font-family="monospace" 
+              font-size="36" 
+              font-weight="bold" 
+              fill="currentColor">
+            (@)
         </text>
     </svg>`,
     LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">

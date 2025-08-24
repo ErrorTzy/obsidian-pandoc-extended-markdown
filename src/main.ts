@@ -199,7 +199,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         
         // Add command to open list panel view
         this.addCommand({
-            id: COMMANDS.OPEN_CUSTOM_LABEL_VIEW,
+            id: COMMANDS.OPEN_LIST_PANEL,
             name: 'Open list panel',
             callback: () => {
                 this.activateListPanelView();

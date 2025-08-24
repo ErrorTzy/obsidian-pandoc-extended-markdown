@@ -379,6 +379,85 @@ td.custom-label-view-content:hover {
     font-style: italic;
 }
 
+/* Example List View Styles */
+table.pandoc-example-list-view-container {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+tr.pandoc-example-list-view-row {
+    border-bottom: 1px solid var(--background-modifier-border-hover);
+    transition: background-color 0.15s ease;
+}
+
+tr.pandoc-example-list-view-row:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+td.pandoc-example-list-view-number {
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+    color: var(--text-muted);
+    cursor: default;
+    padding: 6px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 1%;
+    min-width: fit-content;
+}
+
+td.pandoc-example-list-view-label {
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+    color: var(--text-accent);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 1%;
+    min-width: fit-content;
+}
+
+td.pandoc-example-list-view-label:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+td.pandoc-example-list-view-content {
+    font-size: 0.9em;
+    color: var(--text-normal);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 4.5em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+td.pandoc-example-list-view-content:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-accent);
+}
+
+.pandoc-example-list-view-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* Hover popover styles */
 .pandoc-hover-popover {
     position: absolute;

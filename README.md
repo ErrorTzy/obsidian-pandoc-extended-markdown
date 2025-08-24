@@ -198,9 +198,27 @@ Which renders as:
 - (2) A conclusion
 - (1+2) Combined expression
 
-### List Panel View on siderbar
+### List Panel View
 
 A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types.
+
+#### Available Panels
+
+**Custom Label Lists Panel** `{::}`
+- Displays all custom label lists from the current document
+- Two-column layout: processed labels and their content
+- Click labels to copy raw syntax to clipboard
+- Click content to navigate to the label in the editor
+- Hover previews for truncated content with rendered math
+
+**Example Lists Panel** `(@)`
+- Displays all example lists from the current document
+- Three-column layout: rendered numbers, raw labels, and content
+- Rendered numbers show sequential numbering (truncated at 3rd digit)
+- Click labels to copy raw syntax (e.g., `(@a)`) to clipboard
+- Click content to navigate to the example in the editor
+- Hover previews for truncated items with full content
+- Math rendering support in content column
 
 ## Installation
 

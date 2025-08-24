@@ -1,8 +1,19 @@
+// External libraries
 import { ItemView, WorkspaceLeaf, MarkdownView, HoverLinkSource, setIcon } from 'obsidian';
-import { PandocExtendedMarkdownPlugin } from '../main';
+
+// Types
 import { PanelModule, PanelTabInfo } from './panels/PanelTypes';
-import { CustomLabelPanelModule } from './panels/CustomLabelPanelModule';
+
+// Constants
 import { UI_CONSTANTS, ICONS, MESSAGES } from '../constants';
+
+// Utils
+import { handleError } from '../utils/errorHandler';
+
+// Internal modules
+import { CustomLabelPanelModule } from './panels/CustomLabelPanelModule';
+import { ExampleListPanelModule } from './panels/ExampleListPanelModule';
+import { PandocExtendedMarkdownPlugin } from '../main';
 
 export const VIEW_TYPE_LIST_PANEL = 'list-panel-view';
 
@@ -35,6 +46,14 @@ export class ListPanelView extends ItemView {
             displayName: customLabelModule.displayName,
             icon: customLabelModule.icon,
             module: customLabelModule
+        });
+        
+        const exampleListModule = new ExampleListPanelModule(this.plugin);
+        this.panels.push({
+            id: exampleListModule.id,
+            displayName: exampleListModule.displayName,
+            icon: exampleListModule.icon,
+            module: exampleListModule
         });
     }
     
@@ -113,9 +132,14 @@ export class ListPanelView extends ItemView {
                 }
             });
             
-            // Safely set icon using Obsidian's setIcon or create SVG element
+            // Create SVG element safely without innerHTML
             const iconContainer = iconButton.createDiv();
-            iconContainer.innerHTML = panel.icon;
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(panel.icon, 'image/svg+xml');
+            const svgElement = svgDoc.documentElement;
+            if (svgElement && svgElement.nodeName === 'svg') {
+                iconContainer.appendChild(svgElement.cloneNode(true));
+            }
             
             iconButton.addEventListener('click', () => {
                 this.switchToPanel(panel);
@@ -186,8 +210,7 @@ export class ListPanelView extends ItemView {
                 this.activePanel.onUpdate(markdownView);
             }
         } catch (error) {
-            // Use centralized error handling if available, otherwise fail silently
-            // to avoid console pollution
+            handleError(error, 'Update list panel view');
         }
     }
     

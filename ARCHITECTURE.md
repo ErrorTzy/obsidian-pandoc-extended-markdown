@@ -65,10 +65,10 @@ pandoc-lists-plugin/
 │   │   └── settingsTypes.ts             # Settings interface and default settings
 │   ├── views/                            # Custom Obsidian views
 │   │   ├── ListPanelView.ts             # Main modular panel view with icon toolbar
-│   │   ├── CustomLabelView.ts           # Legacy view (deprecated, kept for compatibility)
 │   │   └── panels/                      # Modular panel implementations
 │   │       ├── PanelTypes.ts            # Interfaces for panel module system
-│   │       └── CustomLabelPanelModule.ts # Custom label list panel implementation
+│   │       ├── CustomLabelPanelModule.ts # Custom label list panel implementation
+│   │       └── ExampleListPanelModule.ts # Example list panel implementation
 │   ├── utils/                            # Utility functions
 │   │   ├── errorHandler.ts              # Error handling utilities with error boundaries
 │   │   ├── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
@@ -79,7 +79,7 @@ pandoc-lists-plugin/
 │   │   ├── customLabelExtractor.ts      # Extracts and processes custom labels from markdown
 │   │   └── views/                       # View-specific utilities
 │   │       ├── contentTruncator.ts      # Content truncation with math awareness
-│   │       └── viewInteractions.ts      # UI interaction handlers for CustomLabelView
+│   │       └── viewInteractions.ts      # UI interaction handlers for panel views
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
@@ -127,6 +127,7 @@ Both modes share a common state management system through `PluginStateManager`.
 
 Additionally, the plugin provides a **List Panel View** - a modular sidebar panel with an icon toolbar that can display different types of list-related content. Currently supports:
 - **Custom Label Panel**: Displays all custom label lists from the current document in an organized, interactive format
+- **Example List Panel**: Displays all example lists with their numbers, labels, and content in a three-column layout
 
 ```mermaid
 graph TB
@@ -154,12 +155,14 @@ graph TB
     subgraph "Custom Views"
         LPView[ListPanelView<br/>Modular Panel]
         CLPanel[CustomLabelPanel<br/>Label Display]
+        ELPanel[ExampleListPanel<br/>Example Display]
     end
     
     Main --> CMExt
     Main --> PostProc
     Main --> LPView
     LPView --> CLPanel
+    LPView --> ELPanel
     Main --> SM
     Settings --> LPView
     
@@ -736,6 +739,7 @@ flowchart LR
 | `ListPanelView.ts` | Modular sidebar panel system | Panel management, icon toolbar, content switching |
 | `panels/PanelTypes.ts` | Panel module interfaces | Type definitions for extensible panel system |
 | `panels/CustomLabelPanelModule.ts` | Custom label panel implementation | Label display, navigation, clipboard operations |
+| `panels/ExampleListPanelModule.ts` | Example list panel implementation | Three-column display with numbers, labels, and content |
 
 ### Live Preview Components
 

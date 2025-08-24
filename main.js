@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 var import_state3 = require("@codemirror/state");
 var import_view11 = require("@codemirror/view");
 
@@ -155,7 +155,14 @@ var CSS_CLASSES = {
   // Hover popover styles
   HOVER_POPOVER: "pandoc-hover-popover",
   HOVER_POPOVER_LABEL: "pandoc-hover-popover-label",
-  HOVER_POPOVER_CONTENT: "pandoc-hover-popover-content"
+  HOVER_POPOVER_CONTENT: "pandoc-hover-popover-content",
+  // Example List View Classes
+  EXAMPLE_LIST_VIEW_CONTAINER: "pandoc-example-list-view-container",
+  EXAMPLE_LIST_VIEW_ROW: "pandoc-example-list-view-row",
+  EXAMPLE_LIST_VIEW_NUMBER: "pandoc-example-list-view-number",
+  EXAMPLE_LIST_VIEW_LABEL: "pandoc-example-list-view-label",
+  EXAMPLE_LIST_VIEW_CONTENT: "pandoc-example-list-view-content",
+  EXAMPLE_LIST_VIEW_EMPTY: "pandoc-example-list-view-empty"
 };
 var DECORATION_STYLES = {
   HASH_LIST_INDENT: 29,
@@ -179,7 +186,9 @@ var MESSAGES = {
   // View messages
   NO_ACTIVE_FILE: "No active file",
   NO_CUSTOM_LABELS: "No custom labels found",
+  NO_EXAMPLE_LISTS: "No example lists found",
   CUSTOM_LABELS_VIEW_TITLE: "Custom Labels",
+  EXAMPLE_LISTS_VIEW_TITLE: "Example Lists",
   // Formatting issue messages
   FORMATTING_ISSUES: (count) => `Found ${count} formatting issues`
 };
@@ -188,7 +197,7 @@ var COMMANDS = {
   FORMAT_PANDOC: "format-to-pandoc-standard",
   TOGGLE_DEFINITION_BOLD: "toggle-definition-bold-style",
   TOGGLE_DEFINITION_UNDERLINE: "toggle-definition-underline-style",
-  OPEN_CUSTOM_LABEL_VIEW: "open-custom-label-view"
+  OPEN_LIST_PANEL: "open-list-panel"
 };
 var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4,
@@ -268,6 +277,17 @@ var ICONS = {
               font-weight="bold" 
               fill="currentColor">
             {::}
+        </text>
+    </svg>`,
+  EXAMPLE_LIST_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <text x="50" y="50" 
+              text-anchor="middle" 
+              dominant-baseline="central" 
+              font-family="monospace" 
+              font-size="36" 
+              font-weight="bold" 
+              fill="currentColor">
+            (@)
         </text>
     </svg>`,
   LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
@@ -4054,7 +4074,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
 }
 
 // src/views/ListPanelView.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 
 // src/utils/customLabelExtractor.ts
 function extractCustomLabels(content, moreExtendedSyntax) {
@@ -4628,9 +4648,383 @@ var CustomLabelPanelModule = class {
   }
 };
 
+// src/views/panels/ExampleListPanelModule.ts
+var import_obsidian12 = require("obsidian");
+var ExampleListPanelModule = class {
+  constructor(plugin) {
+    this.id = "example-lists";
+    this.displayName = "Example Lists";
+    this.icon = ICONS.EXAMPLE_LIST_SVG;
+    this.isActive = false;
+    this.exampleItems = [];
+    this.containerEl = null;
+    this.lastActiveMarkdownView = null;
+    this.plugin = plugin;
+  }
+  onActivate(containerEl, activeView) {
+    this.isActive = true;
+    this.containerEl = containerEl;
+    this.lastActiveMarkdownView = activeView;
+    this.updateContent(activeView);
+  }
+  onDeactivate() {
+    this.isActive = false;
+    if (this.containerEl) {
+      this.containerEl.empty();
+      this.containerEl = null;
+    }
+  }
+  onUpdate(activeView) {
+    if (!this.isActive || !this.containerEl) return;
+    if (activeView && activeView.file) {
+      this.lastActiveMarkdownView = activeView;
+    } else if (!activeView) {
+      activeView = this.lastActiveMarkdownView;
+    }
+    this.updateContent(activeView);
+  }
+  shouldUpdate() {
+    return this.isActive;
+  }
+  destroy() {
+    this.onDeactivate();
+    this.exampleItems = [];
+    this.lastActiveMarkdownView = null;
+  }
+  updateContent(activeView) {
+    if (!this.containerEl) return;
+    this.containerEl.empty();
+    if (!activeView || !activeView.file) {
+      this.showNoFileMessage();
+      return;
+    }
+    const content = activeView.editor.getValue();
+    this.exampleItems = this.extractExampleLists(content);
+    this.renderExampleItems(activeView);
+  }
+  showNoFileMessage() {
+    if (!this.containerEl) return;
+    this.containerEl.createEl("div", {
+      text: MESSAGES.NO_ACTIVE_FILE,
+      cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_EMPTY
+    });
+    this.exampleItems = [];
+  }
+  extractExampleLists(content) {
+    const items = [];
+    const lines = content.split("\n");
+    let exampleCounter = 1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
+      if (match) {
+        const rawLabel = `@${match[2]}`;
+        const listContent = match[3].trim();
+        items.push({
+          renderedNumber: exampleCounter,
+          rawLabel,
+          content: listContent,
+          lineNumber: i,
+          position: { line: i, ch: 0 }
+        });
+        exampleCounter++;
+      } else {
+        const unlabeledMatch = line.match(ListPatterns.UNLABELED_EXAMPLE_LIST);
+        if (unlabeledMatch) {
+          const contentStart = line.indexOf("(@)") + 3;
+          const listContent = line.substring(contentStart).trim();
+          items.push({
+            renderedNumber: exampleCounter,
+            rawLabel: "@",
+            content: listContent,
+            lineNumber: i,
+            position: { line: i, ch: 0 }
+          });
+          exampleCounter++;
+        }
+      }
+    }
+    return items;
+  }
+  renderExampleItems(activeView) {
+    if (!this.containerEl) return;
+    if (this.exampleItems.length === 0) {
+      this.containerEl.createEl("div", {
+        text: MESSAGES.NO_EXAMPLE_LISTS,
+        cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_EMPTY
+      });
+      return;
+    }
+    const container = this.containerEl.createEl("table", {
+      cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_CONTAINER
+    });
+    const tbody = container.createEl("tbody");
+    for (const item of this.exampleItems) {
+      this.renderExampleRow(tbody, item, activeView);
+    }
+  }
+  renderExampleRow(tbody, item, activeView) {
+    const row = tbody.createEl("tr", {
+      cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_ROW
+    });
+    const numberEl = row.createEl("td", {
+      cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_NUMBER
+    });
+    const displayNumber = this.truncateNumber(item.renderedNumber);
+    numberEl.textContent = displayNumber;
+    if (displayNumber !== String(item.renderedNumber)) {
+      this.setupNumberHoverPreview(numberEl, String(item.renderedNumber));
+    }
+    const labelEl = row.createEl("td", {
+      cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_LABEL
+    });
+    const displayLabel = this.truncateRawLabel(item.rawLabel);
+    labelEl.textContent = displayLabel;
+    if (displayLabel !== item.rawLabel) {
+      this.setupLabelHoverPreview(labelEl, item.rawLabel);
+    }
+    this.setupLabelClickHandler(labelEl, `(@${item.rawLabel.substring(1)})`);
+    const contentEl = row.createEl("td", {
+      cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_CONTENT
+    });
+    const truncatedContent = truncateContentWithRendering(item.content);
+    if (truncatedContent.includes("$")) {
+      const hoverSource = {
+        hoverLinkSource: {
+          display: MESSAGES.EXAMPLE_LISTS_VIEW_TITLE,
+          defaultMod: true
+        }
+      };
+      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, hoverSource);
+    } else {
+      contentEl.textContent = truncatedContent;
+    }
+    this.setupContentClickHandler(contentEl, item, activeView);
+    if (truncatedContent !== item.content) {
+      this.setupContentHoverPreview(contentEl, item);
+    }
+  }
+  truncateNumber(number) {
+    const str = String(number);
+    if (str.length > 2) {
+      return str.substring(0, 2) + "\u2026";
+    }
+    return str;
+  }
+  truncateRawLabel(label) {
+    if (label.length > UI_CONSTANTS.LABEL_MAX_LENGTH) {
+      return label.slice(0, UI_CONSTANTS.LABEL_TRUNCATION_LENGTH) + "\u2026";
+    }
+    return label;
+  }
+  setupNumberHoverPreview(element, fullNumber) {
+    let hoverPopover = null;
+    const removePopover = () => {
+      if (hoverPopover) {
+        hoverPopover.remove();
+        hoverPopover = null;
+      }
+    };
+    element.addEventListener("mouseenter", () => {
+      const hoverEl = document.createElement("div");
+      hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_LABEL);
+      hoverEl.textContent = fullNumber;
+      document.body.appendChild(hoverEl);
+      const rect = element.getBoundingClientRect();
+      hoverEl.style.left = `${rect.left}px`;
+      hoverEl.style.top = `${rect.bottom + 5}px`;
+      const hoverRect = hoverEl.getBoundingClientRect();
+      if (hoverRect.right > window.innerWidth) {
+        hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+      }
+      if (hoverRect.bottom > window.innerHeight) {
+        hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+      }
+      hoverPopover = hoverEl;
+    });
+    element.addEventListener("mouseleave", removePopover);
+    element.addEventListener("click", removePopover);
+  }
+  setupLabelHoverPreview(element, fullLabel) {
+    let hoverPopover = null;
+    const removePopover = () => {
+      if (hoverPopover) {
+        hoverPopover.remove();
+        hoverPopover = null;
+      }
+    };
+    element.addEventListener("mouseenter", () => {
+      const hoverEl = document.createElement("div");
+      hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_LABEL);
+      hoverEl.textContent = fullLabel;
+      document.body.appendChild(hoverEl);
+      const rect = element.getBoundingClientRect();
+      hoverEl.style.left = `${rect.left}px`;
+      hoverEl.style.top = `${rect.bottom + 5}px`;
+      const hoverRect = hoverEl.getBoundingClientRect();
+      if (hoverRect.right > window.innerWidth) {
+        hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+      }
+      if (hoverRect.bottom > window.innerHeight) {
+        hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+      }
+      hoverPopover = hoverEl;
+    });
+    element.addEventListener("mouseleave", removePopover);
+    element.addEventListener("click", removePopover);
+  }
+  setupLabelClickHandler(element, rawLabelSyntax) {
+    element.addEventListener("click", () => {
+      try {
+        navigator.clipboard.writeText(rawLabelSyntax).then(() => {
+          new import_obsidian12.Notice(MESSAGES.LABEL_COPIED);
+        }).catch((error) => {
+          handleError(error, "Copy label to clipboard");
+        });
+      } catch (error) {
+        handleError(error, "Label click handler");
+      }
+    });
+  }
+  setupContentClickHandler(element, item, activeView) {
+    element.addEventListener("click", () => {
+      try {
+        if (activeView && activeView.editor) {
+          const editor = activeView.editor;
+          const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
+          const targetLeaf = leaves.find((leaf) => leaf.view === activeView);
+          if (targetLeaf) {
+            this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+          }
+          editor.setCursor(item.position);
+          editor.scrollIntoView({ from: item.position, to: item.position }, true);
+          this.highlightLine(activeView, item.lineNumber);
+        }
+      } catch (error) {
+        handleError(error, "Scroll to example list");
+      }
+    });
+  }
+  setupContentHoverPreview(element, item) {
+    let hoverPopover = null;
+    const removePopover = () => {
+      if (hoverPopover) {
+        hoverPopover.remove();
+        hoverPopover = null;
+      }
+    };
+    element.addEventListener("mouseenter", () => {
+      hoverPopover = this.createContentHoverElement(item, element);
+    });
+    element.addEventListener("mouseleave", removePopover);
+    element.addEventListener("click", removePopover);
+  }
+  createContentHoverElement(item, element) {
+    const hoverEl = document.createElement("div");
+    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_CONTENT);
+    this.renderHoverContent(hoverEl, item);
+    document.body.appendChild(hoverEl);
+    this.positionHoverElement(hoverEl, element);
+    return hoverEl;
+  }
+  renderHoverContent(hoverEl, item) {
+    if (item.content.includes("$")) {
+      const component = {
+        hoverLinkSource: {
+          display: MESSAGES.EXAMPLE_LISTS_VIEW_TITLE,
+          defaultMod: true
+        }
+      };
+      import_obsidian12.MarkdownRenderer.render(
+        this.plugin.app,
+        item.content,
+        hoverEl,
+        "",
+        component
+      );
+    } else {
+      hoverEl.textContent = item.content;
+    }
+  }
+  positionHoverElement(hoverEl, referenceEl) {
+    const rect = referenceEl.getBoundingClientRect();
+    hoverEl.style.left = `${rect.left}px`;
+    hoverEl.style.top = `${rect.bottom + 5}px`;
+    hoverEl.style.maxWidth = UI_CONSTANTS.MAX_HOVER_WIDTH;
+    hoverEl.style.maxHeight = UI_CONSTANTS.MAX_HOVER_HEIGHT;
+    hoverEl.style.overflow = "auto";
+    const hoverRect = hoverEl.getBoundingClientRect();
+    if (hoverRect.right > window.innerWidth) {
+      hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+    }
+    if (hoverRect.bottom > window.innerHeight) {
+      hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+    }
+  }
+  highlightLine(view, lineNumber) {
+    try {
+      const editor = view.editor;
+      this.moveCursorToLine(editor, lineNumber);
+      const cm = editor.cm;
+      if (cm) {
+        const editorDom = cm.dom || cm.contentDOM;
+        if (editorDom) {
+          setTimeout(() => {
+            this.highlightTargetLine(editorDom, editor);
+          }, 50);
+        }
+      }
+    } catch (error) {
+      handleError(error, "Highlight line");
+    }
+  }
+  moveCursorToLine(editor, lineNumber) {
+    const lineStart = { line: lineNumber, ch: 0 };
+    editor.setCursor(lineStart);
+    editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
+  }
+  highlightTargetLine(editorDom, editor) {
+    const activeLine = editorDom.querySelector(".cm-line.cm-active");
+    if (activeLine) {
+      this.applyHighlight(activeLine);
+    } else {
+      const targetLine = this.findClosestLine(editorDom, editor);
+      if (targetLine) {
+        this.applyHighlight(targetLine);
+      }
+    }
+  }
+  findClosestLine(editorDom, editor) {
+    const allLines = editorDom.querySelectorAll(".cm-line");
+    const coords = editor.cursorCoords(true, "local");
+    if (!coords || allLines.length === 0) return null;
+    let targetLine = null;
+    let minDistance = Infinity;
+    allLines.forEach((line) => {
+      const rect = line.getBoundingClientRect();
+      const editorRect = editorDom.getBoundingClientRect();
+      const relativeTop = rect.top - editorRect.top;
+      const distance = Math.abs(relativeTop - coords.top);
+      if (distance < minDistance) {
+        minDistance = distance;
+        targetLine = line;
+      }
+    });
+    return targetLine;
+  }
+  applyHighlight(lineElement) {
+    lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
+    void lineElement.offsetWidth;
+    lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
+    setTimeout(() => {
+      lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
+    }, UI_CONSTANTS.HIGHLIGHT_DURATION_MS);
+  }
+};
+
 // src/views/ListPanelView.ts
 var VIEW_TYPE_LIST_PANEL = "list-panel-view";
-var ListPanelView = class extends import_obsidian12.ItemView {
+var ListPanelView = class extends import_obsidian13.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.panels = [];
@@ -4653,6 +5047,13 @@ var ListPanelView = class extends import_obsidian12.ItemView {
       displayName: customLabelModule.displayName,
       icon: customLabelModule.icon,
       module: customLabelModule
+    });
+    const exampleListModule = new ExampleListPanelModule(this.plugin);
+    this.panels.push({
+      id: exampleListModule.id,
+      displayName: exampleListModule.displayName,
+      icon: exampleListModule.icon,
+      module: exampleListModule
     });
   }
   getViewType() {
@@ -4715,7 +5116,12 @@ var ListPanelView = class extends import_obsidian12.ItemView {
         }
       });
       const iconContainer = iconButton.createDiv();
-      iconContainer.innerHTML = panel.icon;
+      const parser = new DOMParser();
+      const svgDoc = parser.parseFromString(panel.icon, "image/svg+xml");
+      const svgElement = svgDoc.documentElement;
+      if (svgElement && svgElement.nodeName === "svg") {
+        iconContainer.appendChild(svgElement.cloneNode(true));
+      }
       iconButton.addEventListener("click", () => {
         this.switchToPanel(panel);
       });
@@ -4758,7 +5164,7 @@ var ListPanelView = class extends import_obsidian12.ItemView {
   }
   async updateView() {
     try {
-      let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
+      let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian13.MarkdownView);
       if (markdownView && markdownView.file) {
         this.lastActiveMarkdownView = markdownView;
       }
@@ -4769,6 +5175,7 @@ var ListPanelView = class extends import_obsidian12.ItemView {
         this.activePanel.onUpdate(markdownView);
       }
     } catch (error) {
+      handleError(error, "Update list panel view");
     }
   }
   getCustomLabels() {
@@ -4781,7 +5188,7 @@ var ListPanelView = class extends import_obsidian12.ItemView {
 };
 
 // src/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian13.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian14.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerViewIcons();
@@ -4803,15 +5210,15 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian13.Plugin {
     this.registerCommands();
   }
   registerViewIcons() {
-    (0, import_obsidian13.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
-    (0, import_obsidian13.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
+    (0, import_obsidian14.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
+    (0, import_obsidian14.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
   }
   registerExtensions() {
     this.registerEditorExtension(pandocExtendedMarkdownExtension(
       () => this.settings,
       () => {
         var _a;
-        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian13.MarkdownView);
+        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian14.MarkdownView);
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       }
     ));
@@ -4853,12 +5260,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian13.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian13.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian14.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian13.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian14.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -4871,9 +5278,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian13.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian14.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian13.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian14.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -4885,9 +5292,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian13.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian14.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian13.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian14.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -4899,14 +5306,14 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian13.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian14.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian13.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian14.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
     this.addCommand({
-      id: COMMANDS.OPEN_CUSTOM_LABEL_VIEW,
+      id: COMMANDS.OPEN_LIST_PANEL,
       name: "Open list panel",
       callback: () => {
         this.activateListPanelView();
