@@ -1,5 +1,7 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS } from './types/settingsTypes';
+import { VIEW_TYPE_LIST_PANEL } from './views/ListPanelView';
+import type { ListPanelView } from './views/ListPanelView';
 
 export { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS };
 
@@ -43,6 +45,15 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.moreExtendedSyntax = value;
                     await this.plugin.saveSettings();
+                    
+                    // Refresh list panel views if they exist
+                    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIST_PANEL);
+                    for (const leaf of leaves) {
+                        const view = leaf.view as ListPanelView;
+                        if (view && view.refreshPanels) {
+                            view.refreshPanels();
+                        }
+                    }
                 }));
     }
 }

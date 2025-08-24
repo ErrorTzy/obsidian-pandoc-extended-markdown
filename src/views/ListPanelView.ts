@@ -40,13 +40,16 @@ export class ListPanelView extends ItemView {
     }
     
     private initializePanels(): void {
-        const customLabelModule = new CustomLabelPanelModule(this.plugin);
-        this.panels.push({
-            id: customLabelModule.id,
-            displayName: customLabelModule.displayName,
-            icon: customLabelModule.icon,
-            module: customLabelModule
-        });
+        // Only register custom label panel if More Extended Syntax is enabled
+        if (this.plugin.settings.moreExtendedSyntax) {
+            const customLabelModule = new CustomLabelPanelModule(this.plugin);
+            this.panels.push({
+                id: customLabelModule.id,
+                displayName: customLabelModule.displayName,
+                icon: customLabelModule.icon,
+                module: customLabelModule
+            });
+        }
         
         const exampleListModule = new ExampleListPanelModule(this.plugin);
         this.panels.push({
@@ -220,5 +223,36 @@ export class ListPanelView extends ItemView {
             return customLabelPanel.module.getCustomLabels();
         }
         return [];
+    }
+    
+    refreshPanels(): void {
+        // Store current active panel id
+        const activePanelId = this.activePanel?.id;
+        
+        // Destroy all current panels
+        for (const panel of this.panels) {
+            if (panel.module === this.activePanel) {
+                panel.module.onDeactivate();
+            }
+            panel.module.destroy();
+        }
+        
+        // Clear panels array
+        this.panels = [];
+        this.activePanel = null;
+        
+        // Re-initialize panels with current settings
+        this.initializePanels();
+        
+        // Re-render the view
+        this.renderView();
+        
+        // Try to restore previously active panel if it still exists
+        if (activePanelId) {
+            const panelToRestore = this.panels.find(p => p.id === activePanelId);
+            if (panelToRestore) {
+                this.switchToPanel(panelToRestore);
+            }
+        }
     }
 }

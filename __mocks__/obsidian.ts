@@ -30,12 +30,14 @@ export class ItemView {
   contentEl: HTMLElement & {
     empty: () => void;
     createEl: (tag: string, opts?: any) => HTMLElement;
+    createDiv: (opts?: any) => HTMLElement;
   };
   app: App;
   constructor(leaf: WorkspaceLeaf) {
     const el = document.createElement('div') as HTMLElement & {
       empty: () => void;
       createEl: (tag: string, opts?: any) => HTMLElement;
+      createDiv: (opts?: any) => HTMLElement;
     };
     el.empty = function() {
       this.innerHTML = '';
@@ -48,9 +50,13 @@ export class ItemView {
       // Add the same methods to the new element
       (newEl as any).empty = el.empty.bind(newEl);
       (newEl as any).createEl = el.createEl.bind(newEl);
+      (newEl as any).createDiv = el.createDiv.bind(newEl);
       (newEl as any).addClass = function(cls: string) { this.classList.add(cls); };
       (newEl as any).removeClass = function(cls: string) { this.classList.remove(cls); };
       return newEl as HTMLElement;
+    };
+    el.createDiv = function(opts?: any) {
+      return el.createEl('div', opts);
     };
     this.contentEl = el;
     this.app = new App();

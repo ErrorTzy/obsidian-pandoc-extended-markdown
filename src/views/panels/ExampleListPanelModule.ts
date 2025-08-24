@@ -7,26 +7,16 @@ import { PanelModule } from './PanelTypes';
 // Constants
 import { CSS_CLASSES, MESSAGES, ICONS, UI_CONSTANTS } from '../../constants';
 
-// Patterns
-import { ListPatterns } from '../../patterns';
-
 // Utils
 import { truncateContentWithRendering } from '../../utils/views/contentTruncator';
 import { renderContentWithMath } from '../../utils/views/viewInteractions';
-
-// Utils
 import { handleError } from '../../utils/errorHandler';
+import { ExampleListItem, extractExampleLists } from '../../utils/exampleListExtractor';
+import { setupSimpleHoverPreview, positionHoverElement } from '../../utils/views/hoverPopovers';
+import { highlightLine } from '../../utils/views/highlightUtils';
 
 // Internal modules
 import { PandocExtendedMarkdownPlugin } from '../../main';
-
-interface ExampleListItem {
-    renderedNumber: number;
-    rawLabel: string;  // e.g., "@a", "@", "@b"
-    content: string;
-    lineNumber: number;
-    position: { line: number; ch: number };
-}
 
 export class ExampleListPanelModule implements PanelModule {
     id = 'example-lists';
@@ -91,7 +81,7 @@ export class ExampleListPanelModule implements PanelModule {
         }
         
         const content = activeView.editor.getValue();
-        this.exampleItems = this.extractExampleLists(content);
+        this.exampleItems = extractExampleLists(content);
         this.renderExampleItems(activeView);
     }
     
@@ -106,48 +96,7 @@ export class ExampleListPanelModule implements PanelModule {
     }
     
     private extractExampleLists(content: string): ExampleListItem[] {
-        const items: ExampleListItem[] = [];
-        const lines = content.split('\n');
-        let exampleCounter = 1;
-        
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
-            if (match) {
-                const rawLabel = `@${match[2]}`;
-                const listContent = match[3].trim();
-                
-                items.push({
-                    renderedNumber: exampleCounter,
-                    rawLabel: rawLabel,
-                    content: listContent,
-                    lineNumber: i,
-                    position: { line: i, ch: 0 }
-                });
-                
-                exampleCounter++;
-            } else {
-                // Check for unlabeled example list
-                const unlabeledMatch = line.match(ListPatterns.UNLABELED_EXAMPLE_LIST);
-                if (unlabeledMatch) {
-                    // Extract content after the (@) marker
-                    const contentStart = line.indexOf('(@)') + 3;
-                    const listContent = line.substring(contentStart).trim();
-                    
-                    items.push({
-                        renderedNumber: exampleCounter,
-                        rawLabel: '@',
-                        content: listContent,
-                        lineNumber: i,
-                        position: { line: i, ch: 0 }
-                    });
-                    
-                    exampleCounter++;
-                }
-            }
-        }
-        
-        return items;
+        return extractExampleLists(content);
     }
     
     private renderExampleItems(activeView: MarkdownView): void {
@@ -253,75 +202,11 @@ export class ExampleListPanelModule implements PanelModule {
     }
     
     private setupNumberHoverPreview(element: HTMLElement, fullNumber: string): void {
-        let hoverPopover: HTMLElement | null = null;
-        
-        const removePopover = () => {
-            if (hoverPopover) {
-                hoverPopover.remove();
-                hoverPopover = null;
-            }
-        };
-        
-        element.addEventListener('mouseenter', () => {
-            const hoverEl = document.createElement('div');
-            hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_LABEL);
-            hoverEl.textContent = fullNumber;
-            
-            document.body.appendChild(hoverEl);
-            const rect = element.getBoundingClientRect();
-            hoverEl.style.left = `${rect.left}px`;
-            hoverEl.style.top = `${rect.bottom + 5}px`;
-            
-            // Adjust if goes off screen
-            const hoverRect = hoverEl.getBoundingClientRect();
-            if (hoverRect.right > window.innerWidth) {
-                hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-            }
-            if (hoverRect.bottom > window.innerHeight) {
-                hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-            }
-            
-            hoverPopover = hoverEl;
-        });
-        
-        element.addEventListener('mouseleave', removePopover);
-        element.addEventListener('click', removePopover);
+        setupSimpleHoverPreview(element, fullNumber, CSS_CLASSES.HOVER_POPOVER_LABEL);
     }
     
     private setupLabelHoverPreview(element: HTMLElement, fullLabel: string): void {
-        let hoverPopover: HTMLElement | null = null;
-        
-        const removePopover = () => {
-            if (hoverPopover) {
-                hoverPopover.remove();
-                hoverPopover = null;
-            }
-        };
-        
-        element.addEventListener('mouseenter', () => {
-            const hoverEl = document.createElement('div');
-            hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_LABEL);
-            hoverEl.textContent = fullLabel;
-            
-            document.body.appendChild(hoverEl);
-            const rect = element.getBoundingClientRect();
-            hoverEl.style.left = `${rect.left}px`;
-            hoverEl.style.top = `${rect.bottom + 5}px`;
-            
-            // Adjust if goes off screen
-            const hoverRect = hoverEl.getBoundingClientRect();
-            if (hoverRect.right > window.innerWidth) {
-                hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-            }
-            if (hoverRect.bottom > window.innerHeight) {
-                hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-            }
-            
-            hoverPopover = hoverEl;
-        });
-        
-        element.addEventListener('mouseleave', removePopover);
-        element.addEventListener('click', removePopover);
+        setupSimpleHoverPreview(element, fullLabel, CSS_CLASSES.HOVER_POPOVER_LABEL);
     }
     
     private setupLabelClickHandler(element: HTMLElement, rawLabelSyntax: string): void {
@@ -356,7 +241,7 @@ export class ExampleListPanelModule implements PanelModule {
                     editor.scrollIntoView({ from: item.position, to: item.position }, true);
                     
                     // Add highlight effect
-                    this.highlightLine(activeView, item.lineNumber);
+                    highlightLine(activeView, item.lineNumber);
                 }
             } catch (error) {
                 handleError(error, 'Scroll to example list');
@@ -414,97 +299,6 @@ export class ExampleListPanelModule implements PanelModule {
     }
     
     private positionHoverElement(hoverEl: HTMLElement, referenceEl: HTMLElement): void {
-        const rect = referenceEl.getBoundingClientRect();
-        hoverEl.style.left = `${rect.left}px`;
-        hoverEl.style.top = `${rect.bottom + 5}px`;
-        hoverEl.style.maxWidth = UI_CONSTANTS.MAX_HOVER_WIDTH;
-        hoverEl.style.maxHeight = UI_CONSTANTS.MAX_HOVER_HEIGHT;
-        hoverEl.style.overflow = 'auto';
-        
-        // Adjust if goes off screen
-        const hoverRect = hoverEl.getBoundingClientRect();
-        if (hoverRect.right > window.innerWidth) {
-            hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-        }
-        if (hoverRect.bottom > window.innerHeight) {
-            hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-        }
-    }
-    
-    private highlightLine(view: MarkdownView, lineNumber: number): void {
-        try {
-            const editor = view.editor;
-            this.moveCursorToLine(editor, lineNumber);
-            
-            const cm = (editor as any).cm;
-            if (cm) {
-                const editorDom = cm.dom || cm.contentDOM;
-                if (editorDom) {
-                    setTimeout(() => {
-                        this.highlightTargetLine(editorDom, editor);
-                    }, 50);
-                }
-            }
-        } catch (error) {
-            handleError(error, 'Highlight line');
-        }
-    }
-    
-    private moveCursorToLine(editor: any, lineNumber: number): void {
-        const lineStart = { line: lineNumber, ch: 0 };
-        editor.setCursor(lineStart);
-        editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
-    }
-    
-    private highlightTargetLine(editorDom: HTMLElement, editor: any): void {
-        const activeLine = editorDom.querySelector('.cm-line.cm-active');
-        if (activeLine) {
-            this.applyHighlight(activeLine as HTMLElement);
-        } else {
-            const targetLine = this.findClosestLine(editorDom, editor);
-            if (targetLine) {
-                this.applyHighlight(targetLine);
-            }
-        }
-    }
-    
-    private findClosestLine(editorDom: HTMLElement, editor: any): HTMLElement | null {
-        const allLines = editorDom.querySelectorAll('.cm-line');
-        const coords = editor.cursorCoords(true, 'local');
-        
-        if (!coords || allLines.length === 0) return null;
-        
-        let targetLine: HTMLElement | null = null;
-        let minDistance = Infinity;
-        
-        allLines.forEach((line: Element) => {
-            const rect = line.getBoundingClientRect();
-            const editorRect = editorDom.getBoundingClientRect();
-            const relativeTop = rect.top - editorRect.top;
-            const distance = Math.abs(relativeTop - coords.top);
-            
-            if (distance < minDistance) {
-                minDistance = distance;
-                targetLine = line as HTMLElement;
-            }
-        });
-        
-        return targetLine;
-    }
-    
-    private applyHighlight(lineElement: HTMLElement): void {
-        // Remove any existing highlight class first
-        lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
-        
-        // Force a reflow to restart the animation
-        void lineElement.offsetWidth;
-        
-        // Add the highlight class to trigger the animation
-        lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
-        
-        // Remove the class after animation completes (2s duration)
-        setTimeout(() => {
-            lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
-        }, UI_CONSTANTS.HIGHLIGHT_DURATION_MS);
+        positionHoverElement(hoverEl, referenceEl, UI_CONSTANTS.MAX_HOVER_WIDTH, UI_CONSTANTS.MAX_HOVER_HEIGHT);
     }
 }

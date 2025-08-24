@@ -77,9 +77,12 @@ pandoc-lists-plugin/
 │   │   ├── listRenumbering.ts           # Handles automatic list renumbering
 │   │   ├── mathRenderer.ts              # Math LaTeX to Unicode rendering utilities
 │   │   ├── customLabelExtractor.ts      # Extracts and processes custom labels from markdown
+│   │   ├── exampleListExtractor.ts      # Extracts example lists from markdown content
 │   │   └── views/                       # View-specific utilities
 │   │       ├── contentTruncator.ts      # Content truncation with math awareness
-│   │       └── viewInteractions.ts      # UI interaction handlers for panel views
+│   │       ├── viewInteractions.ts      # UI interaction handlers for panel views
+│   │       ├── hoverPopovers.ts         # Reusable hover popover utilities
+│   │       └── highlightUtils.ts        # Editor line highlighting functionality
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
@@ -126,8 +129,8 @@ The plugin operates in two distinct rendering modes, each with its own pipeline:
 Both modes share a common state management system through `PluginStateManager`.
 
 Additionally, the plugin provides a **List Panel View** - a modular sidebar panel with an icon toolbar that can display different types of list-related content. Currently supports:
-- **Custom Label Panel**: Displays all custom label lists from the current document in an organized, interactive format
-- **Example List Panel**: Displays all example lists with their numbers, labels, and content in a three-column layout
+- **Custom Label Panel**: Displays all custom label lists from the current document in an organized, interactive format (only available when "Custom Label List" setting is enabled)
+- **Example List Panel**: Displays all example lists with their numbers, labels, and content in a three-column layout (always available)
 
 ```mermaid
 graph TB
@@ -377,7 +380,7 @@ Each parser handles specific syntax patterns:
 ## List Panel View
 
 ### Overview
-The List Panel View provides a modular, extensible sidebar panel system for displaying various list-related content. It features an icon toolbar for switching between different panel modules and is designed to accommodate future expansion with additional list types.
+The List Panel View provides a modular, extensible sidebar panel system for displaying various list-related content. It features an icon toolbar for switching between different panel modules and is designed to accommodate future expansion with additional list types. Panels can be conditionally registered based on plugin settings.
 
 ### Architecture
 
@@ -516,10 +519,11 @@ sequenceDiagram
 ### Key Implementation Details
 
 #### ListPanelView Architecture
-- **`initializePanels()`**: Registers all available panel modules
+- **`initializePanels()`**: Registers panel modules based on plugin settings
 - **`renderView()`**: Creates icon toolbar and content container
 - **`switchToPanel()`**: Handles panel switching with proper lifecycle management
 - **`updateView()`**: Propagates updates to active panel
+- **`refreshPanels()`**: Dynamically updates available panels when settings change
 - **Icon Toolbar**: Clickable SVG icons with active state highlighting
 - **Content Container**: Dynamic content area managed by active panel
 
@@ -534,6 +538,7 @@ sequenceDiagram
 - **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (uses `customLabelExtractor.ts`)
 - **`renderLabels()`**: Creates DOM structure with interactive elements
 - **`updateContent()`**: Updates panel when active file changes
+- **Availability**: Only registered when `moreExtendedSyntax` setting is enabled
 - **Truncation utilities** (in `contentTruncator.ts`):
   - `truncateLabel()`: Truncates labels to 6 characters
   - `truncateContent()`: Simple truncation to 51 characters
@@ -566,6 +571,7 @@ To extend the List Panel with new list types:
 3. **Register Module**
    - Add to `ListPanelView.initializePanels()`
    - Module automatically appears in icon toolbar
+   - Can be conditionally registered based on settings
 
 4. **Best Practices**
    - Use `containerEl.empty()` for DOM cleanup
@@ -573,6 +579,8 @@ To extend the List Panel with new list types:
    - Follow `pandoc-` CSS naming convention
    - Implement proper error boundaries
    - Cache expensive computations
+   - Extract reusable utilities to shared modules
+   - Use conditional registration for settings-dependent features
 
 ## Plugin Lifecycle & State Management
 
@@ -740,6 +748,16 @@ flowchart LR
 | `panels/PanelTypes.ts` | Panel module interfaces | Type definitions for extensible panel system |
 | `panels/CustomLabelPanelModule.ts` | Custom label panel implementation | Label display, navigation, clipboard operations |
 | `panels/ExampleListPanelModule.ts` | Example list panel implementation | Three-column display with numbers, labels, and content |
+
+#### ExampleListPanelModule Implementation
+- **`extractExampleLists()`**: Uses `exampleListExtractor.ts` utility for parsing
+- **`renderExampleItems()`**: Creates three-column table layout
+- **`truncateNumber()`**: Limits display to 2 digits with ellipsis
+- **`truncateRawLabel()`**: Limits label display length
+- **Shared utilities**:
+  - Uses `hoverPopovers.ts` for hover preview functionality
+  - Uses `highlightUtils.ts` for editor line highlighting
+  - Uses `viewInteractions.ts` for content rendering with math
 
 ### Live Preview Components
 
