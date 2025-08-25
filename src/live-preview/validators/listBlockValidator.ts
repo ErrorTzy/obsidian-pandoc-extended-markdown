@@ -76,5 +76,12 @@ export class ListBlockValidator {
 // Helper function for use with Text objects
 export function validateListBlocks(doc: Text): Set<number> {
     const lines = doc.toString().split('\n');
-    return ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true } as PandocExtendedMarkdownSettings);
+    const zeroBasedIndices = ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true } as PandocExtendedMarkdownSettings);
+    
+    // Convert to 1-based line numbers for CodeMirror
+    const oneBasedLineNumbers = new Set<number>();
+    for (const index of zeroBasedIndices) {
+        oneBasedLineNumbers.add(index + 1);
+    }
+    return oneBasedLineNumbers;
 }

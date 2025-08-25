@@ -84,7 +84,7 @@ function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSet
     const duplicateLineNumbers = new Set<number>();
     
     for (let i = 0; i < lines.length; i++) {
-        if (!invalidLines.has(i)) {
+        if (!invalidLines.has(i + 1)) { // invalidLines now contains 1-based line numbers
             processExampleLine(lines[i], i + 1, counter, result, duplicateLineNumbers);
         }
     }

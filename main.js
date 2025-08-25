@@ -2877,7 +2877,12 @@ var ListBlockValidator = class {
 };
 function validateListBlocks(doc) {
   const lines = doc.toString().split("\n");
-  return ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true });
+  const zeroBasedIndices = ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true });
+  const oneBasedLineNumbers = /* @__PURE__ */ new Set();
+  for (const index of zeroBasedIndices) {
+    oneBasedLineNumbers.add(index + 1);
+  }
+  return oneBasedLineNumbers;
 }
 
 // src/live-preview/pipeline/ProcessingPipeline.ts
@@ -2924,7 +2929,7 @@ function scanExampleLabelsFromDoc(doc, settings) {
   const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : /* @__PURE__ */ new Set();
   const duplicateLineNumbers = /* @__PURE__ */ new Set();
   for (let i = 0; i < lines.length; i++) {
-    if (!invalidLines.has(i)) {
+    if (!invalidLines.has(i + 1)) {
       processExampleLine(lines[i], i + 1, counter, result, duplicateLineNumbers);
     }
   }
