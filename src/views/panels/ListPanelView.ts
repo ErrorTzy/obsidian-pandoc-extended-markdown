@@ -91,8 +91,8 @@ export class ListPanelView extends ItemView {
     }
     
     getIcon(): string {
-        // Return a built-in Obsidian icon name for the view
-        return 'list';
+        // Return the custom icon ID that was registered in main.ts
+        return ICONS.LIST_PANEL_ID;
     }
     
     async onOpen() {

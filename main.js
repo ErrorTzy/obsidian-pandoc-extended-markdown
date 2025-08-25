@@ -182,7 +182,7 @@ var UI_CONSTANTS = {
   LABEL_TRUNCATION_LENGTH: 5,
   // Length before adding ellipsis
   // Icon dimensions
-  PANEL_ICON_SIZE: 20,
+  PANEL_ICON_SIZE: 15,
   CONTENT_MAX_LENGTH: 51,
   CONTENT_TRUNCATION_LENGTH: 50,
   // Length before adding ellipsis
@@ -247,7 +247,7 @@ var ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="48" 
+              font-size="42" 
               font-weight="bold" 
               fill="currentColor">
             {::}
@@ -1374,6 +1374,14 @@ function scheduleRemoval(state) {
     }
   }, 100);
 }
+function scheduleAsyncRemoval(state) {
+  clearCleanupTimeout(state);
+  state.cleanupTimeout = setTimeout(() => {
+    if (!state.isMouseOverElement && !state.isMouseOverPopover) {
+      removeAsyncPopover(state);
+    }
+  }, 100);
+}
 function positionPopover(popoverElement, referenceElement) {
   const elementRect = referenceElement.getBoundingClientRect();
   popoverElement.style.left = `${elementRect.left}px`;
@@ -1395,6 +1403,17 @@ function attachPopoverListeners(popoverElement, state) {
   popoverElement.addEventListener("mouseleave", () => {
     state.isMouseOverPopover = false;
     scheduleRemoval(state);
+  }, { signal: state.popoverController.signal });
+}
+function attachAsyncPopoverListeners(popoverElement, state) {
+  state.popoverController = new AbortController();
+  popoverElement.addEventListener("mouseenter", () => {
+    clearCleanupTimeout(state);
+    state.isMouseOverPopover = true;
+  }, { signal: state.popoverController.signal });
+  popoverElement.addEventListener("mouseleave", () => {
+    state.isMouseOverPopover = false;
+    scheduleAsyncRemoval(state);
   }, { signal: state.popoverController.signal });
 }
 function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.HOVER_POPOVER_LABEL, abortSignal) {
@@ -1493,7 +1512,7 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
     positionPopover(hoverElement, element);
     if (currentGeneration === state.renderingGeneration && state.isMouseOverElement) {
       state.hoverPopover = hoverElement;
-      attachPopoverListeners(hoverElement, state);
+      attachAsyncPopoverListeners(hoverElement, state);
       if (abortSignal) {
         abortSignal.addEventListener("abort", () => removeAsyncPopover(state), { once: true });
       }
@@ -1503,7 +1522,7 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
   };
   const mouseLeaveHandler = () => {
     state.isMouseOverElement = false;
-    scheduleRemoval(state);
+    scheduleAsyncRemoval(state);
   };
   const clickHandler = () => {
     state.isMouseOverElement = false;
@@ -2050,7 +2069,7 @@ var ListPanelView = class extends import_obsidian5.ItemView {
     return "List Panel";
   }
   getIcon() {
-    return "list";
+    return ICONS.LIST_PANEL_ID;
   }
   async onOpen() {
     this.renderView();
@@ -3383,7 +3402,7 @@ var ExampleReferenceWidget = class extends import_view3.WidgetType {
     span.textContent = `(${this.number})`;
     if (this.tooltipText) {
       if (this.app && this.component) {
-        setupRenderedHoverPreview(span, this.tooltipText, this.app, this.component, this.context);
+        setupRenderedHoverPreview(span, this.tooltipText, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
       } else {
         (0, import_obsidian8.setTooltip)(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
       }
@@ -3640,7 +3659,7 @@ var CustomLabelReferenceWidget = class extends import_view5.WidgetType {
     span.textContent = `(${this.label})`;
     if (this.content) {
       if (this.app && this.component) {
-        setupRenderedHoverPreview(span, this.content, this.app, this.component, this.context);
+        setupRenderedHoverPreview(span, this.content, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
       } else {
         span.setAttribute("title", this.content);
       }

@@ -169,7 +169,7 @@ export const UI_CONSTANTS = {
     LABEL_MAX_LENGTH: 6,
     LABEL_TRUNCATION_LENGTH: 5,  // Length before adding ellipsis
     // Icon dimensions
-    PANEL_ICON_SIZE: 20,
+    PANEL_ICON_SIZE: 15,
     CONTENT_MAX_LENGTH: 51,
     CONTENT_TRUNCATION_LENGTH: 50,  // Length before adding ellipsis
     CONTENT_TRUNCATE_LINES: 3,
@@ -239,7 +239,7 @@ export const ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="48" 
+              font-size="42" 
               font-weight="bold" 
               fill="currentColor">
             {::}
