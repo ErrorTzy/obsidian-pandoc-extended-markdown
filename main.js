@@ -1124,19 +1124,24 @@ var ContentProcessorRegistry = class _ContentProcessorRegistry {
     return _ContentProcessorRegistry.instance;
   }
   /**
-   * Register a content processor
+   * Register a content processor with the registry
+   * @param processor The processor to register
    */
   registerProcessor(processor) {
     this.processors.set(processor.id, processor);
   }
   /**
-   * Unregister a content processor
+   * Unregister a content processor from the registry
+   * @param id The unique identifier of the processor to remove
    */
   unregisterProcessor(id) {
     this.processors.delete(id);
   }
   /**
-   * Process content through all registered processors
+   * Process content through all registered processors in sequence
+   * @param content The content to process
+   * @param context The processing context containing data for processors
+   * @returns The processed content with all transformations applied
    */
   processContent(content, context) {
     let processedContent = content;
@@ -1166,9 +1171,8 @@ var ContentProcessorRegistry = class _ContentProcessorRegistry {
       id: "custom-label-references",
       process: (content, context) => {
         if (!context.rawToProcessed) return content;
-        const customLabelPattern = /\{::([^}]+)\}/g;
         return content.replace(
-          customLabelPattern,
+          ListPatterns.CUSTOM_LABEL_REFERENCE,
           (match, label) => {
             const processed = context.rawToProcessed.get(label);
             return processed !== void 0 ? processed : match;
@@ -1199,45 +1203,49 @@ function processContent(content, context) {
 function highlightLine(view, lineNumber) {
   try {
     const editor = view.editor;
-    const lineStart = { line: lineNumber, ch: 0 };
-    editor.setCursor(lineStart);
-    editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
-    const cm = editor.cm;
-    if (cm) {
-      const viewport = cm.viewportLines || cm.visibleRanges;
-      const editorDom = cm.dom || cm.contentDOM;
-      if (editorDom) {
-        const lineElements = editorDom.querySelectorAll(".cm-line");
-        setTimeout(() => {
-          const activeLine = editorDom.querySelector(".cm-line.cm-active");
-          if (!activeLine) {
-            const allLines = editorDom.querySelectorAll(".cm-line");
-            const coords = editor.cursorCoords(true, "local");
-            if (coords && allLines.length > 0) {
-              let targetLine = null;
-              let minDistance = Infinity;
-              allLines.forEach((line) => {
-                const rect = line.getBoundingClientRect();
-                const editorRect = editorDom.getBoundingClientRect();
-                const relativeTop = rect.top - editorRect.top;
-                const distance = Math.abs(relativeTop - coords.top);
-                if (distance < minDistance) {
-                  minDistance = distance;
-                  targetLine = line;
-                }
-              });
-              if (targetLine) {
-                applyHighlight(targetLine);
-              }
-            }
-          } else {
-            applyHighlight(activeLine);
-          }
-        }, 50);
-      }
-    }
+    setCursorAndScroll(editor, lineNumber);
+    applyLineHighlight(editor, lineNumber);
   } catch (error) {
     handleError(error, "error");
+  }
+}
+function setCursorAndScroll(editor, lineNumber) {
+  const lineStart = { line: lineNumber, ch: 0 };
+  editor.setCursor(lineStart);
+  editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
+}
+function applyLineHighlight(editor, lineNumber) {
+  const cm = editor.cm;
+  if (!cm) return;
+  const editorDom = cm.dom || cm.contentDOM;
+  if (!editorDom) return;
+  setTimeout(() => {
+    findAndHighlightLine(editorDom, editor);
+  }, 50);
+}
+function findAndHighlightLine(editorDom, editor) {
+  const activeLine = editorDom.querySelector(".cm-line.cm-active");
+  if (activeLine) {
+    applyHighlight(activeLine);
+    return;
+  }
+  const allLines = editorDom.querySelectorAll(".cm-line");
+  const coords = editor.cursorCoords(true, "local");
+  if (!coords || allLines.length === 0) return;
+  let targetLine = null;
+  let minDistance = Infinity;
+  allLines.forEach((line) => {
+    const rect = line.getBoundingClientRect();
+    const editorRect = editorDom.getBoundingClientRect();
+    const relativeTop = rect.top - editorRect.top;
+    const distance = Math.abs(relativeTop - coords.top);
+    if (distance < minDistance) {
+      minDistance = distance;
+      targetLine = line;
+    }
+  });
+  if (targetLine) {
+    applyHighlight(targetLine);
   }
 }
 function applyHighlight(lineElement) {
@@ -1285,7 +1293,7 @@ function setupContentClickHandler(element, label, lastActiveMarkdownView, app, a
 }
 function setupLabelHoverPreview(element, fullLabel, abortSignal) {
   let hoverPopover = null;
-  const removePopover = () => {
+  const removePopover2 = () => {
     if (hoverPopover) {
       hoverPopover.remove();
       hoverPopover = null;
@@ -1309,8 +1317,8 @@ function setupLabelHoverPreview(element, fullLabel, abortSignal) {
     hoverPopover = hoverEl;
   };
   element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
-  element.addEventListener("mouseleave", removePopover, { signal: abortSignal });
-  element.addEventListener("click", removePopover, { signal: abortSignal });
+  element.addEventListener("mouseleave", removePopover2, { signal: abortSignal });
+  element.addEventListener("click", removePopover2, { signal: abortSignal });
 }
 function renderContentWithMath(element, truncatedContent, app, component, context) {
   let contentToRender = truncatedContent;
@@ -1332,135 +1340,179 @@ function processPopoverContent(content, context) {
   if (!context) return content;
   return processContent(content, context);
 }
-function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.HOVER_POPOVER_LABEL, abortSignal) {
-  let hoverPopover = null;
-  let isMouseOver = false;
-  const removePopover = () => {
-    if (hoverPopover) {
-      hoverPopover.remove();
-      hoverPopover = null;
-    }
+function createHoverState() {
+  return {
+    hoverPopover: null,
+    isMouseOverElement: false,
+    isMouseOverPopover: false,
+    cleanupTimeout: null,
+    popoverController: null
   };
+}
+function clearCleanupTimeout(state) {
+  if (state.cleanupTimeout) {
+    clearTimeout(state.cleanupTimeout);
+    state.cleanupTimeout = null;
+  }
+}
+function removePopover(state) {
+  clearCleanupTimeout(state);
+  if (state.popoverController) {
+    state.popoverController.abort();
+    state.popoverController = null;
+  }
+  if (state.hoverPopover) {
+    state.hoverPopover.remove();
+    state.hoverPopover = null;
+  }
+}
+function scheduleRemoval(state) {
+  clearCleanupTimeout(state);
+  state.cleanupTimeout = setTimeout(() => {
+    if (!state.isMouseOverElement && !state.isMouseOverPopover) {
+      removePopover(state);
+    }
+  }, 100);
+}
+function positionPopover(popoverElement, referenceElement) {
+  const elementRect = referenceElement.getBoundingClientRect();
+  popoverElement.style.left = `${elementRect.left}px`;
+  popoverElement.style.top = `${elementRect.bottom + 5}px`;
+  const popoverRect = popoverElement.getBoundingClientRect();
+  if (popoverRect.right > window.innerWidth) {
+    popoverElement.style.left = `${window.innerWidth - popoverRect.width - 10}px`;
+  }
+  if (popoverRect.bottom > window.innerHeight) {
+    popoverElement.style.top = `${elementRect.top - popoverRect.height - 5}px`;
+  }
+}
+function attachPopoverListeners(popoverElement, state) {
+  state.popoverController = new AbortController();
+  popoverElement.addEventListener("mouseenter", () => {
+    clearCleanupTimeout(state);
+    state.isMouseOverPopover = true;
+  }, { signal: state.popoverController.signal });
+  popoverElement.addEventListener("mouseleave", () => {
+    state.isMouseOverPopover = false;
+    scheduleRemoval(state);
+  }, { signal: state.popoverController.signal });
+}
+function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.HOVER_POPOVER_LABEL, abortSignal) {
+  const state = createHoverState();
   const mouseEnterHandler = () => {
-    isMouseOver = true;
-    const hoverEl = document.createElement("div");
-    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
-    hoverEl.textContent = fullText;
-    document.body.appendChild(hoverEl);
-    const rect = element.getBoundingClientRect();
-    hoverEl.style.left = `${rect.left}px`;
-    hoverEl.style.top = `${rect.bottom + 5}px`;
-    const hoverRect = hoverEl.getBoundingClientRect();
-    if (hoverRect.right > window.innerWidth) {
-      hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-    }
-    if (hoverRect.bottom > window.innerHeight) {
-      hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-    }
-    hoverPopover = hoverEl;
-    const popoverController = new AbortController();
+    clearCleanupTimeout(state);
+    state.isMouseOverElement = true;
+    removePopover(state);
+    const hoverElement = document.createElement("div");
+    hoverElement.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
+    hoverElement.textContent = fullText;
+    document.body.appendChild(hoverElement);
+    positionPopover(hoverElement, element);
+    state.hoverPopover = hoverElement;
+    attachPopoverListeners(hoverElement, state);
     if (abortSignal) {
-      abortSignal.addEventListener("abort", () => {
-        popoverController.abort();
-      });
+      abortSignal.addEventListener("abort", () => removePopover(state), { once: true });
     }
-    hoverEl.addEventListener("mouseenter", () => {
-      isMouseOver = true;
-    }, { signal: popoverController.signal });
-    hoverEl.addEventListener("mouseleave", () => {
-      isMouseOver = false;
-      removePopover();
-      popoverController.abort();
-    }, { signal: popoverController.signal });
   };
   const mouseLeaveHandler = () => {
-    isMouseOver = false;
-    setTimeout(() => {
-      if (!isMouseOver) {
-        removePopover();
-      }
-    }, 50);
+    state.isMouseOverElement = false;
+    scheduleRemoval(state);
   };
   const clickHandler = () => {
-    isMouseOver = false;
-    removePopover();
+    state.isMouseOverElement = false;
+    state.isMouseOverPopover = false;
+    removePopover(state);
   };
+  if (abortSignal) {
+    abortSignal.addEventListener("abort", () => removePopover(state), { once: true });
+  }
   element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
   element.addEventListener("mouseleave", mouseLeaveHandler, { signal: abortSignal });
   element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
-function setupRenderedHoverPreview(element, content, app, component, context, popoverClass = CSS_CLASSES.HOVER_POPOVER_CONTENT, abortSignal) {
-  let hoverPopover = null;
-  let isMouseOver = false;
-  let isCreatingPopover = false;
-  const removePopover = () => {
-    if (hoverPopover) {
-      hoverPopover.remove();
-      hoverPopover = null;
-    }
-    isCreatingPopover = false;
+function createAsyncHoverState() {
+  return {
+    ...createHoverState(),
+    renderAbortController: null,
+    renderingGeneration: 0
   };
-  const mouseEnterHandler = async () => {
-    isMouseOver = true;
-    isCreatingPopover = true;
-    const hoverEl = document.createElement("div");
-    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
-    const processedContent = processPopoverContent(content, context);
+}
+function removeAsyncPopover(state) {
+  clearCleanupTimeout(state);
+  if (state.renderAbortController) {
+    state.renderAbortController.abort();
+    state.renderAbortController = null;
+  }
+  if (state.popoverController) {
+    state.popoverController.abort();
+    state.popoverController = null;
+  }
+  if (state.hoverPopover) {
+    state.hoverPopover.remove();
+    state.hoverPopover = null;
+  }
+}
+async function renderPopoverContent(popoverElement, content, app, component, context) {
+  const processedContent = processPopoverContent(content, context);
+  try {
     await import_obsidian3.MarkdownRenderer.render(
       app,
       processedContent,
-      hoverEl,
+      popoverElement,
       "",
       component
     );
-    if (!isMouseOver) {
-      isCreatingPopover = false;
+  } catch (error) {
+    handleError(error, "Hover preview rendering");
+    throw error;
+  }
+}
+function setupRenderedHoverPreview(element, content, app, component, context, popoverClass = CSS_CLASSES.HOVER_POPOVER_CONTENT, abortSignal) {
+  const state = createAsyncHoverState();
+  const mouseEnterHandler = async () => {
+    var _a;
+    clearCleanupTimeout(state);
+    state.isMouseOverElement = true;
+    const currentGeneration = ++state.renderingGeneration;
+    removeAsyncPopover(state);
+    state.renderAbortController = new AbortController();
+    const hoverElement = document.createElement("div");
+    hoverElement.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
+    try {
+      await renderPopoverContent(hoverElement, content, app, component, context);
+    } catch (error) {
+      if ((_a = state.renderAbortController) == null ? void 0 : _a.signal.aborted) {
+        return;
+      }
       return;
     }
-    document.body.appendChild(hoverEl);
-    const rect = element.getBoundingClientRect();
-    hoverEl.style.left = `${rect.left}px`;
-    hoverEl.style.top = `${rect.bottom + 5}px`;
-    const hoverRect = hoverEl.getBoundingClientRect();
-    if (hoverRect.right > window.innerWidth) {
-      hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+    if (currentGeneration !== state.renderingGeneration || !state.isMouseOverElement) {
+      return;
     }
-    if (hoverRect.bottom > window.innerHeight) {
-      hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-    }
-    if (isMouseOver) {
-      hoverPopover = hoverEl;
-      const popoverController = new AbortController();
+    document.body.appendChild(hoverElement);
+    positionPopover(hoverElement, element);
+    if (currentGeneration === state.renderingGeneration && state.isMouseOverElement) {
+      state.hoverPopover = hoverElement;
+      attachPopoverListeners(hoverElement, state);
       if (abortSignal) {
-        abortSignal.addEventListener("abort", () => {
-          popoverController.abort();
-        });
+        abortSignal.addEventListener("abort", () => removeAsyncPopover(state), { once: true });
       }
-      hoverEl.addEventListener("mouseenter", () => {
-        isMouseOver = true;
-      }, { signal: popoverController.signal });
-      hoverEl.addEventListener("mouseleave", () => {
-        isMouseOver = false;
-        removePopover();
-        popoverController.abort();
-      }, { signal: popoverController.signal });
     } else {
-      hoverEl.remove();
+      hoverElement.remove();
     }
-    isCreatingPopover = false;
   };
   const mouseLeaveHandler = () => {
-    isMouseOver = false;
-    setTimeout(() => {
-      if (!isMouseOver && !isCreatingPopover) {
-        removePopover();
-      }
-    }, 50);
+    state.isMouseOverElement = false;
+    scheduleRemoval(state);
   };
   const clickHandler = () => {
-    isMouseOver = false;
-    removePopover();
+    state.isMouseOverElement = false;
+    state.isMouseOverPopover = false;
+    removeAsyncPopover(state);
   };
+  if (abortSignal) {
+    abortSignal.addEventListener("abort", () => removeAsyncPopover(state), { once: true });
+  }
   element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
   element.addEventListener("mouseleave", mouseLeaveHandler, { signal: abortSignal });
   element.addEventListener("click", clickHandler, { signal: abortSignal });
@@ -1579,6 +1631,10 @@ var CustomLabelPanelModule = class {
     var _a;
     return extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
   }
+  /**
+   * Build the rendering context for processing content references
+   * @param content The document content to extract context from
+   */
   buildRenderingContext(content) {
     const exampleItems = extractExampleLists(content);
     const exampleLabels = /* @__PURE__ */ new Map();
@@ -1791,6 +1847,10 @@ var ExampleListPanelModule = class {
   extractExampleLists(content) {
     return extractExampleLists(content);
   }
+  /**
+   * Build the rendering context for processing content references
+   * @param content The document content to extract context from
+   */
   buildRenderingContext(content) {
     var _a;
     const exampleLabels = /* @__PURE__ */ new Map();
