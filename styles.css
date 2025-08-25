@@ -315,7 +315,7 @@ sub.pandoc-subscript {
 .pandoc-icon-example-list {
     font-family: var(--font-monospace);
     font-weight: bold;
-    font-size: 14px;
+    font-size: 10px;
     line-height: 20px;
     color: var(--text-muted);
 }

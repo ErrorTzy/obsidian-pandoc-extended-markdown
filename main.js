@@ -30,7 +30,7 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian15 = require("obsidian");
 var import_state4 = require("@codemirror/state");
-var import_view16 = require("@codemirror/view");
+var import_view17 = require("@codemirror/view");
 
 // src/core/settings.ts
 var import_obsidian6 = require("obsidian");
@@ -84,6 +84,9 @@ var CSS_CLASSES = {
   // CodeMirror Classes
   LIST_LINE: "HyperMD-list-line",
   LIST_LINE_1: "HyperMD-list-line-1",
+  LIST_LINE_2: "HyperMD-list-line-2",
+  LIST_LINE_3: "HyperMD-list-line-3",
+  LIST_LINE_4: "HyperMD-list-line-4",
   CM_LIST_1: "cm-list-1",
   CM_FORMATTING: "cm-formatting",
   CM_FORMATTING_LIST: "cm-formatting-list",
@@ -182,7 +185,7 @@ var UI_CONSTANTS = {
   LABEL_TRUNCATION_LENGTH: 5,
   // Length before adding ellipsis
   // Icon dimensions
-  PANEL_ICON_SIZE: 15,
+  PANEL_ICON_SIZE: 20,
   CONTENT_MAX_LENGTH: 51,
   CONTENT_TRUNCATION_LENGTH: 50,
   // Length before adding ellipsis
@@ -247,7 +250,7 @@ var ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="42" 
+              font-size="48" 
               font-weight="bold" 
               fill="currentColor">
             {::}
@@ -2485,7 +2488,7 @@ function createProcessorConfig(vaultConfig, pluginSettings) {
 
 // src/live-preview/extension.ts
 var import_state2 = require("@codemirror/state");
-var import_view15 = require("@codemirror/view");
+var import_view16 = require("@codemirror/view");
 var import_obsidian10 = require("obsidian");
 
 // src/core/state/pluginStateManager.ts
@@ -4458,8 +4461,78 @@ var DefinitionProcessor = class {
   }
 };
 
-// src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
+// src/live-preview/pipeline/structural/StandardListProcessor.ts
 var import_view11 = require("@codemirror/view");
+var StandardListProcessor = class {
+  constructor() {
+    this.name = "standard-list";
+    this.priority = 25;
+  }
+  // Process after fancy lists but before definition lists
+  canProcess(line, context) {
+    return false;
+  }
+  process(line, context) {
+    const lineText = line.text;
+    const match = lineText.match(ListPatterns.UNORDERED_LIST);
+    if (!match) {
+      return { decorations: [] };
+    }
+    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+      return { decorations: [] };
+    }
+    const indent = match[1];
+    const markerMatch = lineText.match(/^(\s*)([-*+])(\s+)/);
+    if (!markerMatch) {
+      return { decorations: [] };
+    }
+    const marker = markerMatch[2];
+    const space = markerMatch[3];
+    const markerStart = line.from + indent.length;
+    const markerEnd = line.from + indent.length + marker.length + space.length;
+    const contentStart = markerEnd;
+    const decorations = [];
+    const indentLevel = Math.floor(indent.replace(/\t/g, "    ").length / 4) + 1;
+    const listClass = indentLevel === 1 ? CSS_CLASSES.LIST_LINE_1 : indentLevel === 2 ? CSS_CLASSES.LIST_LINE_2 : indentLevel === 3 ? CSS_CLASSES.LIST_LINE_3 : CSS_CLASSES.LIST_LINE_4;
+    decorations.push({
+      from: line.from,
+      to: line.from,
+      decoration: import_view11.Decoration.line({
+        class: `${CSS_CLASSES.LIST_LINE} ${listClass} HyperMD-list-line HyperMD-list-line-${indentLevel}`
+      })
+    });
+    decorations.push({
+      from: markerStart,
+      to: markerEnd - space.length,
+      decoration: import_view11.Decoration.mark({
+        class: "cm-formatting-list cm-formatting-list-ul"
+      })
+    });
+    if (contentStart < line.to) {
+      decorations.push({
+        from: contentStart,
+        to: line.to,
+        decoration: import_view11.Decoration.mark({
+          class: `cm-list-${indentLevel}`
+        })
+      });
+    }
+    const contentRegion = {
+      from: contentStart,
+      to: line.to,
+      type: "list-content",
+      parentStructure: "standard-list"
+    };
+    return {
+      decorations,
+      contentRegion,
+      skipFurtherProcessing: true
+    };
+  }
+};
+
+// src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
+var import_view12 = require("@codemirror/view");
 var ExampleReferenceProcessor = class {
   constructor() {
     this.name = "example-reference";
@@ -4504,7 +4577,7 @@ var ExampleReferenceProcessor = class {
       customLabels: context.customLabels,
       rawToProcessed: context.rawToProcessed
     };
-    return import_view11.Decoration.replace({
+    return import_view12.Decoration.replace({
       widget: new ExampleReferenceWidget(
         number,
         content,
@@ -4520,7 +4593,7 @@ var ExampleReferenceProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SuperscriptProcessor.ts
-var import_view12 = require("@codemirror/view");
+var import_view13 = require("@codemirror/view");
 var SuperscriptProcessor = class {
   constructor() {
     this.name = "superscript";
@@ -4555,7 +4628,7 @@ var SuperscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view12.Decoration.replace({
+    return import_view13.Decoration.replace({
       widget: new SuperscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -4563,7 +4636,7 @@ var SuperscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SubscriptProcessor.ts
-var import_view13 = require("@codemirror/view");
+var import_view14 = require("@codemirror/view");
 var SubscriptProcessor = class {
   constructor() {
     this.name = "subscript";
@@ -4598,7 +4671,7 @@ var SubscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view13.Decoration.replace({
+    return import_view14.Decoration.replace({
       widget: new SubscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -4606,7 +4679,7 @@ var SubscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/CustomLabelReferenceProcessor.ts
-var import_view14 = require("@codemirror/view");
+var import_view15 = require("@codemirror/view");
 var CustomLabelReferenceProcessor = class {
   constructor() {
     this.name = "custom-label-reference";
@@ -4674,7 +4747,7 @@ var CustomLabelReferenceProcessor = class {
     const isDuplicate = (_d = context.duplicateCustomLabels) == null ? void 0 : _d.has(processedLabel);
     if (isDuplicate) {
       const duplicateInfo = (_e = context.duplicateCustomLineInfo) == null ? void 0 : _e.get(processedLabel);
-      return import_view14.Decoration.replace({
+      return import_view15.Decoration.replace({
         widget: new DuplicateCustomLabelWidget(
           processedLabel,
           (duplicateInfo == null ? void 0 : duplicateInfo.firstLine) || 0,
@@ -4691,7 +4764,7 @@ var CustomLabelReferenceProcessor = class {
       customLabels: context.customLabels,
       rawToProcessed: context.rawToProcessed
     };
-    return import_view14.Decoration.replace({
+    return import_view15.Decoration.replace({
       widget: new CustomLabelReferenceWidget(
         processedLabel,
         labelContent,
@@ -4715,7 +4788,7 @@ var CustomLabelReferenceProcessor = class {
 };
 
 // src/live-preview/extension.ts
-var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view15.ViewPlugin.fromClass(
+var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view16.ViewPlugin.fromClass(
   class PandocExtendedMarkdownView {
     constructor(view) {
       this.initializePipeline(getApp, getComponent);
@@ -4727,6 +4800,7 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponen
       this.pipeline = new ProcessingPipeline(pluginStateManager, app, component);
       this.pipeline.registerStructuralProcessor(new HashListProcessor());
       this.pipeline.registerStructuralProcessor(new FancyListProcessor());
+      this.pipeline.registerStructuralProcessor(new StandardListProcessor());
       this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
       this.pipeline.registerStructuralProcessor(new CustomLabelProcessor());
       this.pipeline.registerStructuralProcessor(new DefinitionProcessor());
@@ -6731,7 +6805,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
       () => this.app,
       () => this
     ));
-    this.registerEditorExtension(import_state4.Prec.highest(import_view16.keymap.of(createListAutocompletionKeymap(this.settings))));
+    this.registerEditorExtension(import_state4.Prec.highest(import_view17.keymap.of(createListAutocompletionKeymap(this.settings))));
   }
   registerPostProcessor() {
     this.registerMarkdownPostProcessor((element, context) => {

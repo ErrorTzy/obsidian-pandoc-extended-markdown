@@ -19,7 +19,6 @@ Render Pandoc-style superscripts and subscripts:
 - **Uppercase Letters**: `A.` `B.` `C.` (In strict mode, there must be two spaces after `A.`)
 - **Lowercase Letters**: `a)` `b)` `c)`  
 - **Roman Numerals**: `I.` `II.` `III.` or `i)` `ii)` `iii)`
-- **More bullets**: `+` `*`
 - **Hash Auto-numbering**: `#.` automatically numbers items sequentially
 - **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
 - **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
@@ -151,7 +150,7 @@ This feature:
 
 #### Custom Label Lists
 
-*Warning: This is a plugin-specific markdown flavor. It only works with pandoc convertion by applying lua filter in /lua_filter/CustomLabelList.lua*
+*Warning: This is a plugin-specific markdown flavor. Within obsidian, it works out of the box with this plugin. But if you want to you pandoc to do conversion, you need to pass lua filter to pandoc. The lua filter is in /lua_filter/CustomLabelList.lua*
 
 When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
 

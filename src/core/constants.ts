@@ -55,6 +55,9 @@ export const CSS_CLASSES = {
     // CodeMirror Classes
     LIST_LINE: 'HyperMD-list-line',
     LIST_LINE_1: 'HyperMD-list-line-1',
+    LIST_LINE_2: 'HyperMD-list-line-2',
+    LIST_LINE_3: 'HyperMD-list-line-3',
+    LIST_LINE_4: 'HyperMD-list-line-4',
     CM_LIST_1: 'cm-list-1',
     CM_FORMATTING: 'cm-formatting',
     CM_FORMATTING_LIST: 'cm-formatting-list',
@@ -169,7 +172,7 @@ export const UI_CONSTANTS = {
     LABEL_MAX_LENGTH: 6,
     LABEL_TRUNCATION_LENGTH: 5,  // Length before adding ellipsis
     // Icon dimensions
-    PANEL_ICON_SIZE: 15,
+    PANEL_ICON_SIZE: 20,
     CONTENT_MAX_LENGTH: 51,
     CONTENT_TRUNCATION_LENGTH: 50,  // Length before adding ellipsis
     CONTENT_TRUNCATE_LINES: 3,
@@ -239,7 +242,7 @@ export const ICONS = {
               text-anchor="middle" 
               dominant-baseline="central" 
               font-family="monospace" 
-              font-size="42" 
+              font-size="48" 
               font-weight="bold" 
               fill="currentColor">
             {::}

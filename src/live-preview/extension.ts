@@ -6,7 +6,7 @@ import { pluginStateManager } from '../core/state/pluginStateManager';
 
 // Pipeline imports
 import { ProcessingPipeline } from './pipeline/ProcessingPipeline';
-import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor } from './pipeline/structural';
+import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor, StandardListProcessor } from './pipeline/structural';
 import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor } from './pipeline/inline';
 
 // Main view plugin for rendering Pandoc extended markdown
@@ -33,6 +33,9 @@ const pandocExtendedMarkdownPlugin = (
             // Register structural processors
             this.pipeline.registerStructuralProcessor(new HashListProcessor());
             this.pipeline.registerStructuralProcessor(new FancyListProcessor());
+            // StandardListProcessor is registered but disabled (always returns false in canProcess)
+            // to preserve Obsidian's default rendering for *, +, - lists
+            this.pipeline.registerStructuralProcessor(new StandardListProcessor());
             this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
             this.pipeline.registerStructuralProcessor(new CustomLabelProcessor());
             this.pipeline.registerStructuralProcessor(new DefinitionProcessor());
