@@ -1,5 +1,5 @@
 // External libraries
-import { MarkdownView, Notice, MarkdownRenderer, Component } from 'obsidian';
+import { MarkdownView, Notice } from 'obsidian';
 
 // Types
 import { PanelModule } from './PanelTypes';
@@ -12,8 +12,10 @@ import { truncateContentWithRendering } from '../utils/contentTruncator';
 import { renderContentWithMath } from '../utils/viewInteractions';
 import { handleError } from '../../../shared/utils/errorHandler';
 import { ExampleListItem, extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
-import { setupSimpleHoverPreview, positionHoverElement } from '../../../shared/utils/hoverPopovers';
+import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 import { highlightLine } from '../../editor/highlightUtils';
+import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
+import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
 // Internal modules
 import { PandocExtendedMarkdownPlugin } from '../../../core/main';
@@ -29,6 +31,7 @@ export class ExampleListPanelModule implements PanelModule {
     private containerEl: HTMLElement | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null;
     private abortController: AbortController | null = null;
+    private currentContext: ProcessingContext = {};
     
     constructor(plugin: PandocExtendedMarkdownPlugin) {
         this.plugin = plugin;
@@ -90,6 +93,10 @@ export class ExampleListPanelModule implements PanelModule {
         
         const content = activeView.editor.getValue();
         this.exampleItems = extractExampleLists(content);
+        
+        // Build context for reference processing
+        this.buildRenderingContext(content);
+        
         this.renderExampleItems(activeView);
     }
     
@@ -105,6 +112,40 @@ export class ExampleListPanelModule implements PanelModule {
     
     private extractExampleLists(content: string): ExampleListItem[] {
         return extractExampleLists(content);
+    }
+    
+    /**
+     * Build the rendering context for processing content references
+     * @param content The document content to extract context from
+     */
+    private buildRenderingContext(content: string): void {
+        // Build example labels map from current items
+        const exampleLabels = new Map<string, number>();
+        this.exampleItems.forEach(item => {
+            // Extract label from rawLabel (e.g., "@a" -> "a")
+            const label = item.rawLabel.substring(1);
+            if (label) {
+                exampleLabels.set(label, item.renderedNumber);
+            }
+        });
+        
+        // Extract custom labels for reference processing if enabled
+        const rawToProcessed = new Map<string, string>();
+        if (this.plugin.settings?.moreExtendedSyntax) {
+            const customLabels = extractCustomLabels(content, true);
+            customLabels.forEach(label => {
+                // Extract the raw label without the {::} wrapper
+                const match = label.rawLabel.match(/\{::([^}]+)\}/);
+                if (match) {
+                    rawToProcessed.set(match[1], label.label);
+                }
+            });
+        }
+        
+        this.currentContext = {
+            exampleLabels,
+            rawToProcessed
+        };
     }
     
     private renderExampleItems(activeView: MarkdownView): void {
@@ -170,12 +211,8 @@ export class ExampleListPanelModule implements PanelModule {
         
         const truncatedContent = truncateContentWithRendering(item.content);
         
-        if (truncatedContent.includes('$')) {
-            // Pass the plugin as the Component to avoid memory leaks
-            renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
-        } else {
-            contentEl.textContent = truncatedContent;
-        }
+        // Always use renderContentWithMath to handle all markdown, math, and references
+        renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin, this.currentContext);
         
         // Click to jump to line
         this.setupContentClickHandler(contentEl, item, activeView);
@@ -256,51 +293,15 @@ export class ExampleListPanelModule implements PanelModule {
     }
     
     private setupContentHoverPreview(element: HTMLElement, item: ExampleListItem): void {
-        let hoverPopover: HTMLElement | null = null;
-        
-        const removePopover = () => {
-            if (hoverPopover) {
-                hoverPopover.remove();
-                hoverPopover = null;
-            }
-        };
-        
-        const mouseEnterHandler = () => {
-            hoverPopover = this.createContentHoverElement(item, element);
-        };
-        
-        element.addEventListener('mouseenter', mouseEnterHandler, { signal: this.abortController?.signal });
-        element.addEventListener('mouseleave', removePopover, { signal: this.abortController?.signal });
-        element.addEventListener('click', removePopover, { signal: this.abortController?.signal });
-    }
-    
-    private createContentHoverElement(item: ExampleListItem, element: HTMLElement): HTMLElement {
-        const hoverEl = document.createElement('div');
-        hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_CONTENT);
-        
-        this.renderHoverContent(hoverEl, item);
-        document.body.appendChild(hoverEl);
-        this.positionHoverElement(hoverEl, element);
-        
-        return hoverEl;
-    }
-    
-    private renderHoverContent(hoverEl: HTMLElement, item: ExampleListItem): void {
-        if (item.content.includes('$')) {
-            // Pass the plugin as the Component to avoid memory leaks
-            MarkdownRenderer.render(
-                this.plugin.app,
-                item.content,
-                hoverEl,
-                '',
-                this.plugin
-            );
-        } else {
-            hoverEl.textContent = item.content;
-        }
-    }
-    
-    private positionHoverElement(hoverEl: HTMLElement, referenceEl: HTMLElement): void {
-        positionHoverElement(hoverEl, referenceEl, UI_CONSTANTS.MAX_HOVER_WIDTH, UI_CONSTANTS.MAX_HOVER_HEIGHT);
+        // Use the more powerful setupRenderedHoverPreview that handles all references
+        setupRenderedHoverPreview(
+            element,
+            item.content,
+            this.plugin.app,
+            this.plugin,
+            this.currentContext,
+            CSS_CLASSES.HOVER_POPOVER_CONTENT,
+            this.abortController?.signal
+        );
     }
 }

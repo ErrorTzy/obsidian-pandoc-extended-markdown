@@ -16,16 +16,6 @@ Thumbs.db
 # npm debug logs
 npm-debug.log*
 
-# Test coverage
-coverage/
-
-# E2E Testing
-.obsidian-cache/
-wdio-logs/
-allure-report/
-allure-results/
-tests/e2e/screenshots/
-
 # Environment variables
 .env
 .env.local
@@ -34,9 +24,6 @@ tests/e2e/screenshots/
 *.tmp
 *.temp
 
-# Test files (not needed for plugin)
-test-example.md
-# tests/ # Commented out - contains e2e tests
 
 # Development notes
 *.txt
@@ -45,3 +32,6 @@ WARP.md
 
 # Package lock (keep package.json)
 package-lock.json
+
+
+.obsidian-cache/

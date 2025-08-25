@@ -8,9 +8,11 @@ import {
     setupLabelClickHandler,
     setupContentClickHandler,
     setupLabelHoverPreview,
-    renderContentWithMath,
-    setupContentHoverPreview
+    renderContentWithMath
 } from '../utils/viewInteractions';
+import { setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
+import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
+import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
 export class CustomLabelPanelModule implements PanelModule {
     id = 'custom-labels';
@@ -23,6 +25,7 @@ export class CustomLabelPanelModule implements PanelModule {
     private containerEl: HTMLElement | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null;
     private abortController: AbortController | null = null;
+    private currentContext: ProcessingContext = {};
     
     constructor(plugin: PandocExtendedMarkdownPlugin) {
         this.plugin = plugin;
@@ -84,6 +87,10 @@ export class CustomLabelPanelModule implements PanelModule {
         
         const content = activeView.editor.getValue();
         this.labels = this.extractCustomLabels(content);
+        
+        // Build context for reference processing
+        this.buildRenderingContext(content);
+        
         this.renderLabels(activeView);
     }
     
@@ -99,6 +106,38 @@ export class CustomLabelPanelModule implements PanelModule {
     
     private extractCustomLabels(content: string): CustomLabel[] {
         return extractCustomLabels(content, this.plugin.settings?.moreExtendedSyntax || false);
+    }
+    
+    /**
+     * Build the rendering context for processing content references
+     * @param content The document content to extract context from
+     */
+    private buildRenderingContext(content: string): void {
+        // Extract example labels for reference processing
+        const exampleItems = extractExampleLists(content);
+        const exampleLabels = new Map<string, number>();
+        exampleItems.forEach(item => {
+            // Extract label from rawLabel (e.g., "@a" -> "a")
+            const label = item.rawLabel.substring(1);
+            if (label) {
+                exampleLabels.set(label, item.renderedNumber);
+            }
+        });
+        
+        // Build rawToProcessed map for custom labels
+        const rawToProcessed = new Map<string, string>();
+        this.labels.forEach(label => {
+            // Extract the raw label without the {::} wrapper
+            const match = label.rawLabel.match(/\{::([^}]+)\}/);
+            if (match) {
+                rawToProcessed.set(match[1], label.label);
+            }
+        });
+        
+        this.currentContext = {
+            exampleLabels,
+            rawToProcessed
+        };
     }
     
     private renderLabels(activeView: MarkdownView): void {
@@ -148,24 +187,22 @@ export class CustomLabelPanelModule implements PanelModule {
         const contentToShow = label.renderedContent || label.content;
         const truncatedContent = truncateContentWithRendering(contentToShow);
         
-        if (truncatedContent.includes('$')) {
-            // Pass the plugin as the Component to avoid memory leaks
-            renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
-        } else {
-            contentEl.textContent = truncatedContent;
-        }
+        // Always use renderContentWithMath to handle all markdown, math, and references
+        renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin, this.currentContext);
         
         setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app, this.abortController?.signal);
         
         if (truncatedContent !== contentToShow) {
-            // Create a proper HoverLinkSource-compatible object
-            const hoverSource = {
-                hoverLinkSource: {
-                    display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
-                    defaultMod: true
-                }
-            };
-            setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource, this.abortController?.signal);
+            // Use the more powerful setupRenderedHoverPreview that handles all references
+            setupRenderedHoverPreview(
+                contentEl,
+                contentToShow,
+                this.plugin.app,
+                this.plugin,
+                this.currentContext,
+                CSS_CLASSES.HOVER_POPOVER_CONTENT,
+                this.abortController?.signal
+            );
         }
     }
     

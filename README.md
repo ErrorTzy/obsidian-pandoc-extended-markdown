@@ -4,7 +4,9 @@ This plugin enables Obsidian to render [Pandoc extended markdown syntax](https:/
 
 ## Current Features
 
-Pandoc extended markdown syntax is a huge superset of obsidian markdown. Therefore I cannot implement every single one of them. For now I have implement the ones I found the most useful. Mainly, it's lists and super/subscripts. I am not planning to implement pandoc markdown extended table feature because I think using tables in markdown is painful anyway.
+Pandoc extended markdown syntax is a huge superset of obsidian markdown. Therefore I cannot implement every single one of them. For now I have implement the ones I found the most useful. Mainly, it's lists and super/subscripts. I am not planning to implement pandoc markdown extended table feature because I think using tables in markdown is painful anyway. 
+
+In addition, live preview mode is the first class citizen. The current reading mode support might need a complete rewrite.
 
 ### Superscripts and Subscripts
 Render Pandoc-style superscripts and subscripts:

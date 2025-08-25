@@ -1107,6 +1107,95 @@ function handleUnclosedMath(mathBuffer, currentResult, currentLength) {
 
 // src/views/panels/utils/viewInteractions.ts
 var import_obsidian2 = require("obsidian");
+
+// src/shared/rendering/ContentProcessorRegistry.ts
+var ContentProcessorRegistry = class _ContentProcessorRegistry {
+  constructor() {
+    this.processors = /* @__PURE__ */ new Map();
+    this.registerDefaultProcessors();
+  }
+  /**
+   * Get the singleton instance
+   */
+  static getInstance() {
+    if (!_ContentProcessorRegistry.instance) {
+      _ContentProcessorRegistry.instance = new _ContentProcessorRegistry();
+    }
+    return _ContentProcessorRegistry.instance;
+  }
+  /**
+   * Register a content processor
+   */
+  registerProcessor(processor) {
+    this.processors.set(processor.id, processor);
+  }
+  /**
+   * Unregister a content processor
+   */
+  unregisterProcessor(id) {
+    this.processors.delete(id);
+  }
+  /**
+   * Process content through all registered processors
+   */
+  processContent(content, context) {
+    let processedContent = content;
+    for (const processor of this.processors.values()) {
+      processedContent = processor.process(processedContent, context);
+    }
+    return processedContent;
+  }
+  /**
+   * Register the default built-in processors
+   */
+  registerDefaultProcessors() {
+    this.registerProcessor({
+      id: "example-references",
+      process: (content, context) => {
+        if (!context.exampleLabels) return content;
+        return content.replace(
+          ListPatterns.EXAMPLE_REFERENCE,
+          (match, label) => {
+            const number = context.exampleLabels.get(label);
+            return number !== void 0 ? `(${number})` : match;
+          }
+        );
+      }
+    });
+    this.registerProcessor({
+      id: "custom-label-references",
+      process: (content, context) => {
+        if (!context.rawToProcessed) return content;
+        const customLabelPattern = /\{::([^}]+)\}/g;
+        return content.replace(
+          customLabelPattern,
+          (match, label) => {
+            const processed = context.rawToProcessed.get(label);
+            return processed !== void 0 ? processed : match;
+          }
+        );
+      }
+    });
+  }
+  /**
+   * Clear all processors (useful for testing)
+   */
+  clearProcessors() {
+    this.processors.clear();
+  }
+  /**
+   * Reset to default processors
+   */
+  reset() {
+    this.clearProcessors();
+    this.registerDefaultProcessors();
+  }
+};
+function processContent(content, context) {
+  return ContentProcessorRegistry.getInstance().processContent(content, context);
+}
+
+// src/views/panels/utils/viewInteractions.ts
 function highlightLine(view, lineNumber) {
   try {
     const editor = view.editor;
@@ -1223,252 +1312,25 @@ function setupLabelHoverPreview(element, fullLabel, abortSignal) {
   element.addEventListener("mouseleave", removePopover, { signal: abortSignal });
   element.addEventListener("click", removePopover, { signal: abortSignal });
 }
-function renderContentWithMath(element, truncatedContent, app, component) {
+function renderContentWithMath(element, truncatedContent, app, component, context) {
+  let contentToRender = truncatedContent;
+  if (context) {
+    contentToRender = processContent(truncatedContent, context);
+  }
   import_obsidian2.MarkdownRenderer.render(
     app,
-    truncatedContent,
+    contentToRender,
     element,
     "",
     component
   );
-}
-function setupContentHoverPreview(element, label, app, component, abortSignal) {
-  let hoverPopover = null;
-  const removePopover = () => {
-    if (hoverPopover) {
-      hoverPopover.remove();
-      hoverPopover = null;
-    }
-  };
-  const mouseEnterHandler = () => {
-    const hoverEl = document.createElement("div");
-    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_CONTENT);
-    const contentToShow = label.renderedContent || label.content;
-    if (contentToShow.includes("$")) {
-      import_obsidian2.MarkdownRenderer.render(
-        app,
-        contentToShow,
-        hoverEl,
-        "",
-        component
-      );
-    } else {
-      hoverEl.textContent = contentToShow;
-    }
-    document.body.appendChild(hoverEl);
-    const rect = element.getBoundingClientRect();
-    hoverEl.style.left = `${rect.left}px`;
-    hoverEl.style.top = `${rect.bottom + 5}px`;
-    const hoverRect = hoverEl.getBoundingClientRect();
-    if (hoverRect.right > window.innerWidth) {
-      hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-    }
-    if (hoverRect.bottom > window.innerHeight) {
-      hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-    }
-    hoverPopover = hoverEl;
-  };
-  element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
-  element.addEventListener("mouseleave", removePopover, { signal: abortSignal });
-  element.addEventListener("click", removePopover, { signal: abortSignal });
-}
-
-// src/views/panels/modules/CustomLabelPanelModule.ts
-var CustomLabelPanelModule = class {
-  constructor(plugin) {
-    this.id = "custom-labels";
-    this.displayName = "Custom Labels";
-    this.icon = ICONS.CUSTOM_LABEL_SVG;
-    this.isActive = false;
-    this.labels = [];
-    this.containerEl = null;
-    this.lastActiveMarkdownView = null;
-    this.abortController = null;
-    this.plugin = plugin;
-  }
-  onActivate(containerEl, activeView) {
-    this.isActive = true;
-    this.containerEl = containerEl;
-    this.lastActiveMarkdownView = activeView;
-    this.abortController = new AbortController();
-    this.updateContent(activeView);
-  }
-  onDeactivate() {
-    this.isActive = false;
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
-    }
-    if (this.containerEl) {
-      this.containerEl.empty();
-      this.containerEl = null;
-    }
-  }
-  onUpdate(activeView) {
-    if (!this.isActive || !this.containerEl) return;
-    if (activeView && activeView.file) {
-      this.lastActiveMarkdownView = activeView;
-    } else if (!activeView) {
-      activeView = this.lastActiveMarkdownView;
-    }
-    this.updateContent(activeView);
-  }
-  shouldUpdate() {
-    return this.isActive;
-  }
-  destroy() {
-    this.onDeactivate();
-    this.labels = [];
-    this.lastActiveMarkdownView = null;
-  }
-  updateContent(activeView) {
-    if (!this.containerEl) return;
-    this.containerEl.empty();
-    if (!activeView || !activeView.file) {
-      this.showNoFileMessage();
-      return;
-    }
-    const content = activeView.editor.getValue();
-    this.labels = this.extractCustomLabels(content);
-    this.renderLabels(activeView);
-  }
-  showNoFileMessage() {
-    if (!this.containerEl) return;
-    this.containerEl.createEl("div", {
-      text: MESSAGES.NO_ACTIVE_FILE,
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
-    });
-    this.labels = [];
-  }
-  extractCustomLabels(content) {
-    var _a;
-    return extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
-  }
-  renderLabels(activeView) {
-    if (!this.containerEl) return;
-    if (this.labels.length === 0) {
-      this.containerEl.createEl("div", {
-        text: MESSAGES.NO_CUSTOM_LABELS,
-        cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
-      });
-      return;
-    }
-    const container = this.containerEl.createEl("table", {
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTAINER
-    });
-    const tbody = container.createEl("tbody");
-    for (const label of this.labels) {
-      this.renderLabelRow(tbody, label, activeView);
-    }
-  }
-  renderLabelRow(tbody, label, activeView) {
-    var _a, _b, _c, _d;
-    const row = tbody.createEl("tr", {
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_ROW
-    });
-    const labelEl = row.createEl("td", {
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_LABEL
-    });
-    const displayLabel = truncateLabel(label.label);
-    labelEl.textContent = displayLabel;
-    if (displayLabel !== label.label) {
-      setupLabelHoverPreview(labelEl, label.label, (_a = this.abortController) == null ? void 0 : _a.signal);
-    }
-    setupLabelClickHandler(labelEl, label.rawLabel, (_b = this.abortController) == null ? void 0 : _b.signal);
-    const contentEl = row.createEl("td", {
-      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
-    });
-    const contentToShow = label.renderedContent || label.content;
-    const truncatedContent = truncateContentWithRendering(contentToShow);
-    if (truncatedContent.includes("$")) {
-      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
-    } else {
-      contentEl.textContent = truncatedContent;
-    }
-    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app, (_c = this.abortController) == null ? void 0 : _c.signal);
-    if (truncatedContent !== contentToShow) {
-      const hoverSource = {
-        hoverLinkSource: {
-          display: MESSAGES.CUSTOM_LABELS_VIEW_TITLE,
-          defaultMod: true
-        }
-      };
-      setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource, (_d = this.abortController) == null ? void 0 : _d.signal);
-    }
-  }
-  getCustomLabels() {
-    return this.labels;
-  }
-};
-
-// src/views/panels/modules/ExampleListPanelModule.ts
-var import_obsidian4 = require("obsidian");
-
-// src/shared/extractors/exampleListExtractor.ts
-function extractExampleLists(content) {
-  return withErrorBoundary(() => {
-    const items = [];
-    const lines = content.split("\n");
-    let exampleCounter = 1;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
-      if (match) {
-        const rawLabel = `@${match[2]}`;
-        const listContent = match[3].trim();
-        items.push({
-          renderedNumber: exampleCounter,
-          rawLabel,
-          content: listContent,
-          lineNumber: i,
-          position: { line: i, ch: 0 }
-        });
-        exampleCounter++;
-      } else {
-        const unlabeledMatch = line.match(ListPatterns.UNLABELED_EXAMPLE_LIST);
-        if (unlabeledMatch) {
-          const contentStart = line.indexOf("(@)") + 3;
-          const listContent = line.substring(contentStart).trim();
-          items.push({
-            renderedNumber: exampleCounter,
-            rawLabel: "@",
-            content: listContent,
-            lineNumber: i,
-            position: { line: i, ch: 0 }
-          });
-          exampleCounter++;
-        }
-      }
-    }
-    return items;
-  }, "Extract example lists", []);
 }
 
 // src/shared/utils/hoverPopovers.ts
 var import_obsidian3 = require("obsidian");
 function processPopoverContent(content, context) {
   if (!context) return content;
-  let processedContent = content;
-  if (context.exampleLabels) {
-    processedContent = processedContent.replace(
-      ListPatterns.EXAMPLE_REFERENCE,
-      (match, label) => {
-        const number = context.exampleLabels.get(label);
-        return number !== void 0 ? `(${number})` : match;
-      }
-    );
-  }
-  if (context.rawToProcessed) {
-    const customLabelPattern = /\{::([^}]+)\}/g;
-    processedContent = processedContent.replace(
-      customLabelPattern,
-      (match, label) => {
-        const processed = context.rawToProcessed.get(label);
-        return processed !== void 0 ? processed : match;
-      }
-    );
-  }
-  return processedContent;
+  return processContent(content, context);
 }
 function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.HOVER_POPOVER_LABEL, abortSignal) {
   let hoverPopover = null;
@@ -1603,25 +1465,198 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
   element.addEventListener("mouseleave", mouseLeaveHandler, { signal: abortSignal });
   element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
-function positionHoverElement(hoverEl, referenceEl, maxWidth, maxHeight) {
-  const rect = referenceEl.getBoundingClientRect();
-  hoverEl.style.left = `${rect.left}px`;
-  hoverEl.style.top = `${rect.bottom + 5}px`;
-  if (maxWidth) {
-    hoverEl.style.maxWidth = maxWidth;
-  }
-  if (maxHeight) {
-    hoverEl.style.maxHeight = maxHeight;
-  }
-  hoverEl.style.overflow = "auto";
-  const hoverRect = hoverEl.getBoundingClientRect();
-  if (hoverRect.right > window.innerWidth) {
-    hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
-  }
-  if (hoverRect.bottom > window.innerHeight) {
-    hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
-  }
+
+// src/shared/extractors/exampleListExtractor.ts
+function extractExampleLists(content) {
+  return withErrorBoundary(() => {
+    const items = [];
+    const lines = content.split("\n");
+    let exampleCounter = 1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
+      if (match) {
+        const rawLabel = `@${match[2]}`;
+        const listContent = match[3].trim();
+        items.push({
+          renderedNumber: exampleCounter,
+          rawLabel,
+          content: listContent,
+          lineNumber: i,
+          position: { line: i, ch: 0 }
+        });
+        exampleCounter++;
+      } else {
+        const unlabeledMatch = line.match(ListPatterns.UNLABELED_EXAMPLE_LIST);
+        if (unlabeledMatch) {
+          const contentStart = line.indexOf("(@)") + 3;
+          const listContent = line.substring(contentStart).trim();
+          items.push({
+            renderedNumber: exampleCounter,
+            rawLabel: "@",
+            content: listContent,
+            lineNumber: i,
+            position: { line: i, ch: 0 }
+          });
+          exampleCounter++;
+        }
+      }
+    }
+    return items;
+  }, "Extract example lists", []);
 }
+
+// src/views/panels/modules/CustomLabelPanelModule.ts
+var CustomLabelPanelModule = class {
+  constructor(plugin) {
+    this.id = "custom-labels";
+    this.displayName = "Custom Labels";
+    this.icon = ICONS.CUSTOM_LABEL_SVG;
+    this.isActive = false;
+    this.labels = [];
+    this.containerEl = null;
+    this.lastActiveMarkdownView = null;
+    this.abortController = null;
+    this.currentContext = {};
+    this.plugin = plugin;
+  }
+  onActivate(containerEl, activeView) {
+    this.isActive = true;
+    this.containerEl = containerEl;
+    this.lastActiveMarkdownView = activeView;
+    this.abortController = new AbortController();
+    this.updateContent(activeView);
+  }
+  onDeactivate() {
+    this.isActive = false;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    if (this.containerEl) {
+      this.containerEl.empty();
+      this.containerEl = null;
+    }
+  }
+  onUpdate(activeView) {
+    if (!this.isActive || !this.containerEl) return;
+    if (activeView && activeView.file) {
+      this.lastActiveMarkdownView = activeView;
+    } else if (!activeView) {
+      activeView = this.lastActiveMarkdownView;
+    }
+    this.updateContent(activeView);
+  }
+  shouldUpdate() {
+    return this.isActive;
+  }
+  destroy() {
+    this.onDeactivate();
+    this.labels = [];
+    this.lastActiveMarkdownView = null;
+  }
+  updateContent(activeView) {
+    if (!this.containerEl) return;
+    this.containerEl.empty();
+    if (!activeView || !activeView.file) {
+      this.showNoFileMessage();
+      return;
+    }
+    const content = activeView.editor.getValue();
+    this.labels = this.extractCustomLabels(content);
+    this.buildRenderingContext(content);
+    this.renderLabels(activeView);
+  }
+  showNoFileMessage() {
+    if (!this.containerEl) return;
+    this.containerEl.createEl("div", {
+      text: MESSAGES.NO_ACTIVE_FILE,
+      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
+    });
+    this.labels = [];
+  }
+  extractCustomLabels(content) {
+    var _a;
+    return extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
+  }
+  buildRenderingContext(content) {
+    const exampleItems = extractExampleLists(content);
+    const exampleLabels = /* @__PURE__ */ new Map();
+    exampleItems.forEach((item) => {
+      const label = item.rawLabel.substring(1);
+      if (label) {
+        exampleLabels.set(label, item.renderedNumber);
+      }
+    });
+    const rawToProcessed = /* @__PURE__ */ new Map();
+    this.labels.forEach((label) => {
+      const match = label.rawLabel.match(/\{::([^}]+)\}/);
+      if (match) {
+        rawToProcessed.set(match[1], label.label);
+      }
+    });
+    this.currentContext = {
+      exampleLabels,
+      rawToProcessed
+    };
+  }
+  renderLabels(activeView) {
+    if (!this.containerEl) return;
+    if (this.labels.length === 0) {
+      this.containerEl.createEl("div", {
+        text: MESSAGES.NO_CUSTOM_LABELS,
+        cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
+      });
+      return;
+    }
+    const container = this.containerEl.createEl("table", {
+      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTAINER
+    });
+    const tbody = container.createEl("tbody");
+    for (const label of this.labels) {
+      this.renderLabelRow(tbody, label, activeView);
+    }
+  }
+  renderLabelRow(tbody, label, activeView) {
+    var _a, _b, _c, _d;
+    const row = tbody.createEl("tr", {
+      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_ROW
+    });
+    const labelEl = row.createEl("td", {
+      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_LABEL
+    });
+    const displayLabel = truncateLabel(label.label);
+    labelEl.textContent = displayLabel;
+    if (displayLabel !== label.label) {
+      setupLabelHoverPreview(labelEl, label.label, (_a = this.abortController) == null ? void 0 : _a.signal);
+    }
+    setupLabelClickHandler(labelEl, label.rawLabel, (_b = this.abortController) == null ? void 0 : _b.signal);
+    const contentEl = row.createEl("td", {
+      cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
+    });
+    const contentToShow = label.renderedContent || label.content;
+    const truncatedContent = truncateContentWithRendering(contentToShow);
+    renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin, this.currentContext);
+    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app, (_c = this.abortController) == null ? void 0 : _c.signal);
+    if (truncatedContent !== contentToShow) {
+      setupRenderedHoverPreview(
+        contentEl,
+        contentToShow,
+        this.plugin.app,
+        this.plugin,
+        this.currentContext,
+        CSS_CLASSES.HOVER_POPOVER_CONTENT,
+        (_d = this.abortController) == null ? void 0 : _d.signal
+      );
+    }
+  }
+  getCustomLabels() {
+    return this.labels;
+  }
+};
+
+// src/views/panels/modules/ExampleListPanelModule.ts
+var import_obsidian4 = require("obsidian");
 
 // src/views/editor/highlightUtils.ts
 function highlightLine2(view, lineNumber) {
@@ -1695,6 +1730,7 @@ var ExampleListPanelModule = class {
     this.containerEl = null;
     this.lastActiveMarkdownView = null;
     this.abortController = null;
+    this.currentContext = {};
     this.plugin = plugin;
   }
   onActivate(containerEl, activeView) {
@@ -1741,6 +1777,7 @@ var ExampleListPanelModule = class {
     }
     const content = activeView.editor.getValue();
     this.exampleItems = extractExampleLists(content);
+    this.buildRenderingContext(content);
     this.renderExampleItems(activeView);
   }
   showNoFileMessage() {
@@ -1753,6 +1790,30 @@ var ExampleListPanelModule = class {
   }
   extractExampleLists(content) {
     return extractExampleLists(content);
+  }
+  buildRenderingContext(content) {
+    var _a;
+    const exampleLabels = /* @__PURE__ */ new Map();
+    this.exampleItems.forEach((item) => {
+      const label = item.rawLabel.substring(1);
+      if (label) {
+        exampleLabels.set(label, item.renderedNumber);
+      }
+    });
+    const rawToProcessed = /* @__PURE__ */ new Map();
+    if ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) {
+      const customLabels = extractCustomLabels(content, true);
+      customLabels.forEach((label) => {
+        const match = label.rawLabel.match(/\{::([^}]+)\}/);
+        if (match) {
+          rawToProcessed.set(match[1], label.label);
+        }
+      });
+    }
+    this.currentContext = {
+      exampleLabels,
+      rawToProcessed
+    };
   }
   renderExampleItems(activeView) {
     if (!this.containerEl) return;
@@ -1796,11 +1857,7 @@ var ExampleListPanelModule = class {
       cls: CSS_CLASSES.EXAMPLE_LIST_VIEW_CONTENT
     });
     const truncatedContent = truncateContentWithRendering(item.content);
-    if (truncatedContent.includes("$")) {
-      renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin);
-    } else {
-      contentEl.textContent = truncatedContent;
-    }
+    renderContentWithMath(contentEl, truncatedContent, this.plugin.app, this.plugin, this.currentContext);
     this.setupContentClickHandler(contentEl, item, activeView);
     if (truncatedContent !== item.content) {
       this.setupContentHoverPreview(contentEl, item);
@@ -1863,44 +1920,16 @@ var ExampleListPanelModule = class {
     element.addEventListener("click", clickHandler, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
   }
   setupContentHoverPreview(element, item) {
-    var _a, _b, _c;
-    let hoverPopover = null;
-    const removePopover = () => {
-      if (hoverPopover) {
-        hoverPopover.remove();
-        hoverPopover = null;
-      }
-    };
-    const mouseEnterHandler = () => {
-      hoverPopover = this.createContentHoverElement(item, element);
-    };
-    element.addEventListener("mouseenter", mouseEnterHandler, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
-    element.addEventListener("mouseleave", removePopover, { signal: (_b = this.abortController) == null ? void 0 : _b.signal });
-    element.addEventListener("click", removePopover, { signal: (_c = this.abortController) == null ? void 0 : _c.signal });
-  }
-  createContentHoverElement(item, element) {
-    const hoverEl = document.createElement("div");
-    hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_CONTENT);
-    this.renderHoverContent(hoverEl, item);
-    document.body.appendChild(hoverEl);
-    this.positionHoverElement(hoverEl, element);
-    return hoverEl;
-  }
-  renderHoverContent(hoverEl, item) {
-    if (item.content.includes("$")) {
-      import_obsidian4.MarkdownRenderer.render(
-        this.plugin.app,
-        item.content,
-        hoverEl,
-        "",
-        this.plugin
-      );
-    } else {
-      hoverEl.textContent = item.content;
-    }
-  }
-  positionHoverElement(hoverEl, referenceEl) {
-    positionHoverElement(hoverEl, referenceEl, UI_CONSTANTS.MAX_HOVER_WIDTH, UI_CONSTANTS.MAX_HOVER_HEIGHT);
+    var _a;
+    setupRenderedHoverPreview(
+      element,
+      item.content,
+      this.plugin.app,
+      this.plugin,
+      this.currentContext,
+      CSS_CLASSES.HOVER_POPOVER_CONTENT,
+      (_a = this.abortController) == null ? void 0 : _a.signal
+    );
   }
 };
 

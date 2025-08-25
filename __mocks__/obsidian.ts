@@ -51,12 +51,16 @@ export class ItemView {
       (newEl as any).empty = el.empty.bind(newEl);
       (newEl as any).createEl = el.createEl.bind(newEl);
       (newEl as any).createDiv = el.createDiv.bind(newEl);
+      (newEl as any).createSpan = el.createSpan.bind(newEl);
       (newEl as any).addClass = function(cls: string) { this.classList.add(cls); };
       (newEl as any).removeClass = function(cls: string) { this.classList.remove(cls); };
       return newEl as HTMLElement;
     };
     el.createDiv = function(opts?: any) {
       return el.createEl('div', opts);
+    };
+    el.createSpan = function(opts?: any) {
+      return el.createEl('span', opts);
     };
     this.contentEl = el;
     this.app = new App();

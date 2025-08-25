@@ -68,36 +68,7 @@ pandoc-lists-plugin/
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
-├── tests/                                # Test files
-│   ├── pipeline/                         # Tests for new pipeline architecture (NEW)
-│   │   ├── ProcessingPipeline.spec.ts   # Tests for main pipeline orchestrator
-│   │   ├── crossReferenceIntegration.spec.ts # Integration tests for cross-references
-│   │   ├── structural/                  # Tests for structural processors
-│   │   │   ├── HashListProcessor.spec.ts
-│   │   │   ├── FancyListProcessor.spec.ts
-│   │   │   ├── ExampleListProcessor.spec.ts
-│   │   │   ├── CustomLabelProcessor.spec.ts
-│   │   │   └── DefinitionProcessor.spec.ts
-│   │   └── inline/                       # Tests for inline processors
-│   │       ├── ExampleReferenceProcessor.spec.ts
-│   │       ├── CustomLabelReferenceProcessor.spec.ts
-│   │       ├── SuperscriptProcessor.spec.ts
-│   │       └── SubscriptProcessor.spec.ts
-│   ├── customLabelAutocompletion.spec.ts # Tests for custom label auto-completion
-│   ├── customLabelAutoNumbering.spec.ts  # Tests for custom label auto-numbering
-│   ├── customLabelList.spec.ts          # Tests for custom label list functionality
-│   ├── customLabelMultiLine.spec.ts     # Tests for multi-line custom label blocks
-│   ├── customLabelNestedWidget.spec.ts  # Tests for nested custom label widgets
-│   ├── customLabelPlaceholder.spec.ts   # Tests for placeholder numbering and context
-│   ├── customLabelReadingMode.spec.ts   # Tests for custom labels in reading mode
-│   ├── customLabelSuggestion.spec.ts    # Tests for custom label reference suggestions
-│   ├── customLabelView.spec.ts          # Tests for custom label sidebar view
-│   ├── definitionListParser.spec.ts     # Tests for definition list parsing
-│   ├── exampleListParser.spec.ts        # Tests for example list parsing
-│   ├── fancyListParser.spec.ts          # Tests for fancy list parsing
-│   ├── listAutocompletion.spec.ts       # Tests for list auto-completion
-│   ├── listIndentation.spec.ts          # Tests for list indentation handling
-│   └── toggleDefinitionStyles.spec.ts   # Tests for definition style toggling
+├── tests/                                # Test files -- see tests/README.md for further details
 ├── .github/                              # GitHub specific files
 │   └── workflows/
 │       └── release.yml                  # GitHub Actions workflow for automated releases
@@ -378,6 +349,153 @@ private initializePipeline(getApp?: () => any, getComponent?: () => any): void {
 }
 ```
 
+### Content Processing for Panels and Hover Previews
+
+The plugin uses an extensible content processing system for rendering references in panels and hover previews:
+
+#### ContentProcessorRegistry
+Located in `src/shared/rendering/ContentProcessorRegistry.ts`, this singleton registry manages content processors that transform text containing references.
+
+**Adding a new inline syntax processor:**
+```typescript
+// Define your processor
+const myProcessor: ContentProcessor = {
+    id: 'my-syntax',
+    process: (content: string, context: ProcessingContext): string => {
+        // Transform content
+        return content.replace(/pattern/, 'replacement');
+    }
+};
+
+// Register it
+ContentProcessorRegistry.getInstance().registerProcessor(myProcessor);
+```
+
+**Built-in processors:**
+- `example-references`: Transforms `(@label)` to `(number)`
+- `custom-label-references`: Transforms `{::label}` to processed label
+
+See `src/shared/rendering/processors/WikiLinkProcessor.example.ts` for a complete example.
+
+### Future Migration Path to Unified Rendering Pipeline
+
+To achieve maximum extensibility and code reuse, the codebase could be migrated to use the `ContentProcessorRegistry` across all rendering contexts (Live Preview, Reading Mode, and Panels). Here's the proposed migration path:
+
+#### Phase 1: Extract Inline Processors (Current State)
+- ✅ Panel content processing uses `ContentProcessorRegistry`
+- ✅ Hover previews use `ContentProcessorRegistry`
+- Live Preview and Reading Mode still use separate implementations
+
+#### Phase 2: Unify Inline Processing Logic
+1. **Extract processing logic from Live Preview processors**:
+   ```typescript
+   // Current: src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
+   class ExampleReferenceProcessor implements InlineProcessor {
+       // CodeMirror-specific implementation
+   }
+   
+   // Future: Create shared processor
+   class SharedExampleReferenceProcessor implements ContentProcessor {
+       id = 'example-references';
+       process(content: string, context: ProcessingContext): string {
+           // Pure transformation logic
+       }
+   }
+   ```
+
+2. **Adapter pattern for CodeMirror**:
+   ```typescript
+   class CodeMirrorProcessorAdapter implements InlineProcessor {
+       constructor(private contentProcessor: ContentProcessor) {}
+       
+       findMatches(text: string, region: ContentRegion, context: ProcessingContext) {
+           // Use contentProcessor.process() to identify matches
+           // Convert to CodeMirror decorations
+       }
+   }
+   ```
+
+3. **Register shared processors**:
+   ```typescript
+   // In plugin onload()
+   const sharedProcessor = new SharedExampleReferenceProcessor();
+   
+   // Register for panels/hovers
+   ContentProcessorRegistry.getInstance().registerProcessor(sharedProcessor);
+   
+   // Adapt for Live Preview
+   pipeline.registerInlineProcessor(new CodeMirrorProcessorAdapter(sharedProcessor));
+   ```
+
+#### Phase 3: Unify Reading Mode Processing
+1. **Migrate Reading Mode parsers** to use `ContentProcessorRegistry`:
+   ```typescript
+   // Instead of separate parsers, use registry
+   class ReadingModeProcessor {
+       processElement(el: HTMLElement) {
+           const text = el.textContent;
+           const processed = ContentProcessorRegistry.getInstance()
+               .processContent(text, this.buildContext());
+           // Update DOM with processed content
+       }
+   }
+   ```
+
+2. **Benefits**:
+   - Single source of truth for processing logic
+   - New syntax automatically works in all contexts
+   - Easier testing (test the processor once)
+   - Better separation of concerns
+
+#### Phase 4: Advanced Features
+1. **Processor priorities** for ordering:
+   ```typescript
+   interface ContentProcessor {
+       id: string;
+       priority?: number; // Process in priority order
+       process(content: string, context: ProcessingContext): string;
+   }
+   ```
+
+2. **Processor dependencies**:
+   ```typescript
+   interface ContentProcessor {
+       id: string;
+       dependencies?: string[]; // Must run after these processors
+       process(content: string, context: ProcessingContext): string;
+   }
+   ```
+
+3. **Two-phase processing** (structural + inline):
+   ```typescript
+   class UnifiedPipeline {
+       structuralProcessors: ContentProcessor[];
+       inlineProcessors: ContentProcessor[];
+       
+       process(content: string): string {
+           // Phase 1: Structural
+           let result = this.processStructural(content);
+           // Phase 2: Inline
+           return this.processInline(result);
+       }
+   }
+   ```
+
+#### Migration Benefits
+- **Code Reuse**: Write once, use everywhere
+- **Consistency**: Same processing logic across all views
+- **Extensibility**: Add new syntax in one place
+- **Maintainability**: Single codebase to maintain
+- **Testing**: Test processors in isolation
+
+#### Implementation Order
+1. Start with new syntax (easiest)
+2. Migrate simple inline processors (medium)
+3. Migrate complex structural processors (harder)
+4. Unify Reading Mode (most complex)
+
+This migration can be done incrementally without breaking existing functionality, allowing for gradual improvement of the architecture.
+
 ## Reading Mode Rendering Pipeline
 
 ### Overview
@@ -620,6 +738,11 @@ sequenceDiagram
 - **Hover Previews** (in `src/shared/utils/hoverPopovers.ts`):
   - `setupRenderedHoverPreview()`: Renders markdown content in a hover preview.
   - `setupSimpleHoverPreview()`: Shows a simple text hover preview.
+- **Content Processing** (in `src/shared/rendering/ContentProcessorRegistry.ts`):
+  - `ContentProcessorRegistry`: Singleton registry for extensible content processors
+  - `processContent()`: Processes content through all registered processors
+  - Built-in processors for example references and custom label references
+  - Extensible architecture allows adding new inline syntax processors
 
 ## Plugin Lifecycle & State Management
 

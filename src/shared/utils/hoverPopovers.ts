@@ -1,51 +1,23 @@
 import { MarkdownRenderer, Component, App } from 'obsidian';
 import { CSS_CLASSES } from '../../core/constants';
-import { ListPatterns } from '../patterns';
+import { processContent as processContentWithRegistry, ProcessingContext } from '../rendering/ContentProcessorRegistry';
 
 /**
  * Process popover content to replace inline references with their resolved values
  * @param content The raw markdown content
  * @param context The processing context containing label mappings
  * @returns The processed content with references replaced
+ * 
+ * @deprecated Use ContentProcessorRegistry for extensibility
  */
 export function processPopoverContent(
     content: string,
-    context?: {
-        exampleLabels?: Map<string, number>;
-        exampleContent?: Map<string, string>;
-        customLabels?: Map<string, string>;
-        rawToProcessed?: Map<string, string>;
-    }
+    context?: ProcessingContext
 ): string {
     if (!context) return content;
     
-    let processedContent = content;
-    
-    // Process example references (@label) -> (number)
-    if (context.exampleLabels) {
-        processedContent = processedContent.replace(
-            ListPatterns.EXAMPLE_REFERENCE,
-            (match, label) => {
-                const number = context.exampleLabels!.get(label);
-                return number !== undefined ? `(${number})` : match;
-            }
-        );
-    }
-    
-    // Process custom label references {::label} -> processed label
-    if (context.rawToProcessed) {
-        // Match {::LABEL} pattern
-        const customLabelPattern = /\{::([^}]+)\}/g;
-        processedContent = processedContent.replace(
-            customLabelPattern,
-            (match, label) => {
-                const processed = context.rawToProcessed!.get(label);
-                return processed !== undefined ? processed : match;
-            }
-        );
-    }
-    
-    return processedContent;
+    // Use the centralized registry for processing
+    return processContentWithRegistry(content, context);
 }
 
 /**
@@ -152,12 +124,7 @@ export function setupRenderedHoverPreview(
     content: string,
     app: App,
     component: Component,
-    context?: {
-        exampleLabels?: Map<string, number>;
-        exampleContent?: Map<string, string>;
-        customLabels?: Map<string, string>;
-        rawToProcessed?: Map<string, string>;
-    },
+    context?: ProcessingContext,
     popoverClass: string = CSS_CLASSES.HOVER_POPOVER_CONTENT,
     abortSignal?: AbortSignal
 ): void {
