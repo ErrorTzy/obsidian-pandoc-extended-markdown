@@ -72,7 +72,7 @@ Therefore, from {::P(#a)} and {::P(#b)}, we conclude our conclusion.`),
         });
 
         it('should have correct icon', () => {
-            expect(view.getIcon()).toBe('list');
+            expect(view.getIcon()).toBe('list-panel-view');
         });
     });
 

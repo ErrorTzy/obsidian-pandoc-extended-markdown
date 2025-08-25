@@ -447,6 +447,35 @@ td.custom-label-view-content {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+    line-height: 1.3;
+}
+
+/* Normalize paragraph spacing in custom label panel content */
+td.custom-label-view-content p {
+    margin: 0;
+    line-height: 1.3;
+}
+
+td.custom-label-view-content p:not(:last-child) {
+    margin-bottom: 0.3em;
+}
+
+/* Also normalize lists in custom label panel */
+td.custom-label-view-content ul,
+td.custom-label-view-content ol {
+    margin: 0;
+    padding-left: 1.2em;
+    line-height: 1.3;
+}
+
+td.custom-label-view-content ul:not(:last-child),
+td.custom-label-view-content ol:not(:last-child) {
+    margin-bottom: 0.3em;
+}
+
+td.custom-label-view-content li {
+    margin: 0;
+    line-height: 1.3;
 }
 
 td.custom-label-view-content:hover {
@@ -526,6 +555,35 @@ td.pandoc-example-list-view-content {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+    line-height: 1.3;
+}
+
+/* Normalize paragraph spacing in example list panel content */
+td.pandoc-example-list-view-content p {
+    margin: 0;
+    line-height: 1.3;
+}
+
+td.pandoc-example-list-view-content p:not(:last-child) {
+    margin-bottom: 0.3em;
+}
+
+/* Also normalize lists in example list panel */
+td.pandoc-example-list-view-content ul,
+td.pandoc-example-list-view-content ol {
+    margin: 0;
+    padding-left: 1.2em;
+    line-height: 1.3;
+}
+
+td.pandoc-example-list-view-content ul:not(:last-child),
+td.pandoc-example-list-view-content ol:not(:last-child) {
+    margin-bottom: 0.3em;
+}
+
+td.pandoc-example-list-view-content li {
+    margin: 0;
+    line-height: 1.3;
 }
 
 td.pandoc-example-list-view-content:hover {
@@ -565,6 +623,34 @@ td.pandoc-example-list-view-content:hover {
     overflow: auto;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+/* Fix excessive line height in popover paragraphs */
+.pandoc-hover-popover p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.pandoc-hover-popover p:not(:last-child) {
+    margin-bottom: 0.5em;
+}
+
+/* Also normalize other block elements that might appear in popovers */
+.pandoc-hover-popover ul,
+.pandoc-hover-popover ol {
+    margin: 0;
+    padding-left: 1.5em;
+    line-height: 1.5;
+}
+
+.pandoc-hover-popover ul:not(:last-child),
+.pandoc-hover-popover ol:not(:last-child) {
+    margin-bottom: 0.5em;
+}
+
+.pandoc-hover-popover li {
+    margin: 0;
+    line-height: 1.5;
 }
 
 /* Highlight animation for scrolled-to lines */
