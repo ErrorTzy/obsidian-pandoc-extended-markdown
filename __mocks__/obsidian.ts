@@ -113,3 +113,10 @@ export interface EditorPosition {
 export interface TFile {
   path: string;
 }
+
+// Mock editorLivePreviewField
+export const editorLivePreviewField = {
+  init: jest.fn(() => ({
+    provide: () => true
+  }))
+};

@@ -2,103 +2,69 @@
 
 This document provides a comprehensive technical overview of the pandoc-extended-markdown-plugin architecture. It details the rendering pipelines, state management, and component interactions to facilitate debugging and feature development.
 
+
 ## Table of Contents
 
-1. [Project Structure](#project-structure)
-2. [Architecture Overview](#architecture-overview)
-3. [Live Preview Rendering Pipeline](#live-preview-rendering-pipeline)
-4. [Reading Mode Rendering Pipeline](#reading-mode-rendering-pipeline)
-5. [Plugin Lifecycle & State Management](#plugin-lifecycle--state-management)
-6. [Data Flow Diagrams](#data-flow-diagrams)
-7. [Component Responsibilities](#component-responsibilities)
-8. [Architectural Protocols](#development-guidelines)
+1. [Current Implementation Status](#current-implementation-status-v140)
+2. [Project Structure](#project-structure)
+3. [Architecture Overview](#architecture-overview)
+4. [Two-Phase Processing Pipeline](#two-phase-processing-pipeline-active-default)
+5. [Live Preview Rendering Pipeline](#live-preview-rendering-pipeline)
+6. [Reading Mode Rendering Pipeline](#reading-mode-rendering-pipeline)
+7. [List Panel View](#list-panel-view)
+8. [Plugin Lifecycle & State Management](#plugin-lifecycle--state-management)
+9. [Data Flow Diagrams](#data-flow-diagrams)
+10. [Component Responsibilities](#component-responsibilities)
+11. [Development Guidelines](#development-guidelines)
 
 ## Project Structure
 
 ```
 pandoc-lists-plugin/
-├── src/                                   # Source code directory
-│   ├── main.ts                           # Plugin entry point, manages mode detection and state
-│   ├── settings.ts                       # Settings interface and settings tab implementation
-│   ├── pandocValidator.ts                # Validates and formats lists to Pandoc standards
-│   ├── listAutocompletion.ts             # Handles Enter/Tab/Shift-Tab key bindings for lists
-│   ├── exampleReferenceSuggest.ts       # Autocomplete suggestion system for (@references)
-│   ├── customLabelReferenceSuggest.ts    # Autocomplete suggestions for {::references} with rendered preview
-│   ├── constants.ts                      # Centralized constants (includes PANEL_SETTINGS)
-│   ├── patterns.ts                       # Optimized regex patterns with caching
-│   ├── state/                            # State management architecture
-│   │   └── pluginStateManager.ts        # Unified state manager for all plugin state
-│   ├── decorations/                      # CodeMirror decorations for live preview
-│   │   ├── pandocExtendedMarkdownExtension.ts # Main orchestrator for live preview rendering
-│   │   ├── pipeline/                     # Two-phase processing pipeline (NEW)
-│   │   │   ├── ProcessingPipeline.ts    # Main pipeline orchestrator
-│   │   │   ├── types.ts                 # Pipeline interfaces and types
-│   │   │   ├── structural/              # Phase 1: Structural processors
-│   │   │   │   ├── HashListProcessor.ts # Hash list (#.) processor
-│   │   │   │   ├── FancyListProcessor.ts # Fancy list (A., i., etc.) processor
-│   │   │   │   ├── ExampleListProcessor.ts # Example list ((@)) processor
-│   │   │   │   ├── CustomLabelProcessor.ts # Custom label list ({::}) processor
-│   │   │   │   ├── DefinitionProcessor.ts # Definition list (:, ~) processor
-│   │   │   │   └── index.ts             # Re-exports structural processors
-│   │   │   └── inline/                   # Phase 2: Inline processors
-│   │   │       ├── ExampleReferenceProcessor.ts # Process (@references)
-│   │   │       ├── CustomLabelReferenceProcessor.ts # Process {::references}
-│   │   │       ├── SuperscriptProcessor.ts # Process superscripts (^)
-│   │   │       ├── SubscriptProcessor.ts # Process subscripts (~)
-│   │   │       └── index.ts             # Re-exports inline processors
-│   │   ├── widgets/                      # CodeMirror widget implementations
-│   │   │   ├── listWidgets.ts           # Widgets for list markers (fancy, hash, example)
-│   │   │   ├── definitionWidget.ts      # Widget for definition list bullets
-│   │   │   ├── referenceWidget.ts       # Widget for example references
-│   │   │   ├── formatWidgets.ts         # Widgets for super/subscripts
-│   │   │   ├── customLabelWidget.ts     # Widget for custom label lists and references
-│   │   │   └── index.ts                 # Re-exports all widgets
-│   │   ├── processors/                   # Legacy decoration processing (being phased out)
-│   │   │   ├── listProcessors.ts        # Process hash, fancy, and example lists
-│   │   │   ├── definitionProcessor.ts   # Process definition lists, terms, and paragraphs
-│   │   │   ├── inlineFormatProcessor.ts # Process inline formats (references, super/subscripts)
-│   │   │   ├── customLabelProcessor.ts  # Process custom label lists and references
-│   │   │   └── index.ts                 # Re-exports all processors
-│   │   ├── validators/                   # Validation utilities
-│   │   │   └── listBlockValidator.ts    # Validates list blocks for strict Pandoc mode
-│   │   └── scanners/                     # Document scanning utilities
-│   │       ├── exampleScanner.ts        # Scans for example labels and duplicates
-│   │       └── customLabelScanner.ts    # Scans for custom labels and validates blocks
-│   ├── parsers/                          # Parsing and processing logic
-│   │   ├── readingModeParser.ts         # Parses markdown text, identifies Pandoc syntax
-│   │   ├── fancyListParser.ts           # Parses fancy lists (A., B., i., ii., #.)
-│   │   ├── exampleListParser.ts         # Parses example lists with (@label) syntax
-│   │   ├── definitionListParser.ts      # Parses definition lists (: and ~ markers)
-│   │   ├── superSubParser.ts            # Parses superscripts (^) and subscripts (~)
-│   │   ├── customLabelListParser.ts     # Parses custom label lists with {::LABEL} syntax
-│   │   └── readingModeProcessor.ts      # Thin orchestration layer for reading mode
-│   ├── renderers/                        # Rendering logic (DOM creation)
-│   │   └── readingModeRenderer.ts       # Creates DOM elements from parsed markdown
-│   ├── types/                            # TypeScript type definitions
-│   │   ├── processorConfig.ts           # Configuration injection interface
-│   │   ├── listTypes.ts                 # List-related interfaces and types
-│   │   ├── obsidian-extended.ts         # Type definitions for Obsidian's internal APIs
-│   │   └── settingsTypes.ts             # Settings interface (includes panelOrder) and default settings
-│   ├── views/                            # Custom Obsidian views
-│   │   ├── ListPanelView.ts             # Main modular panel view with icon toolbar
-│   │   └── panels/                      # Modular panel implementations
-│   │       ├── PanelTypes.ts            # Interfaces for panel module system
-│   │       ├── CustomLabelPanelModule.ts # Custom label list panel implementation
-│   │       └── ExampleListPanelModule.ts # Example list panel implementation
-│   ├── utils/                            # Utility functions
-│   │   ├── errorHandler.ts              # Error handling utilities with error boundaries
-│   │   ├── placeholderProcessor.ts      # Auto-numbering processor for (#placeholder) syntax
-│   │   ├── listHelpers.ts               # List conversion utilities (roman numerals, letters)
-│   │   ├── listMarkerDetector.ts        # Detects list types and determines next markers
-│   │   ├── listRenumbering.ts           # Handles automatic list renumbering
-│   │   ├── mathRenderer.ts              # Math LaTeX to Unicode rendering utilities
-│   │   ├── customLabelExtractor.ts      # Extracts and processes custom labels from markdown
-│   │   ├── exampleListExtractor.ts      # Extracts example lists from markdown content
-│   │   └── views/                       # View-specific utilities
-│   │       ├── contentTruncator.ts      # Content truncation with math awareness
-│   │       ├── viewInteractions.ts      # UI interaction handlers for panel views
-│   │       ├── hoverPopovers.ts         # Reusable hover popover utilities
-│   │       └── highlightUtils.ts        # Editor line highlighting functionality
+├── src/
+│   ├── core/                         # Core plugin functionality
+│   │   ├── main.ts                  # Plugin entry point
+│   │   ├── settings.ts              # Settings management
+│   │   ├── constants.ts             # Shared constants
+│   │   └── state/                   # State management
+│   │       └── pluginStateManager.ts
+│   │
+│   ├── live-preview/                # Live Preview Mode (CodeMirror)
+│   │   ├── extension.ts             # Main CodeMirror extension
+│   │   ├── pipeline/                # Two-phase processing pipeline
+│   │   │   ├── ProcessingPipeline.ts
+│   │   │   ├── types.ts
+│   │   │   ├── structural/          # Phase 1: Block-level processors
+│   │   │   └── inline/              # Phase 2: Inline processors
+│   │   ├── widgets/                 # CodeMirror widgets
+│   │   ├── scanners/                # Document scanners
+│   │   └── validators/              # Block validators
+│   │
+│   ├── reading-mode/                # Reading Mode (Post-processing)
+│   │   ├── processor.ts             # Main processor
+│   │   ├── renderer.ts              # DOM renderer
+│   │   └── parsers/                 # Syntax parsers
+│   │       ├── parser.ts            # Main parser
+│   │       └── [specific parsers]
+│   │
+│   ├── editor-extensions/           # Editor enhancements
+│   │   ├── listAutocompletion.ts   # Key bindings
+│   │   ├── pandocValidator.ts      # Format validation
+│   │   └── suggestions/             # Autocomplete
+│   │
+│   ├── views/                       # UI Components
+│   │   ├── panels/                  # Panel system
+│   │   │   ├── ListPanelView.ts
+│   │   │   ├── modules/             # Panel modules
+│   │   │   └── utils/               # Panel utilities
+│   │   └── editor/                  # Editor utilities
+│   │
+│   └── shared/                      # Shared across modes
+│       ├── patterns.ts              # Regex patterns
+│       ├── types/                   # Type definitions
+│       ├── extractors/              # Content extractors
+│       └── utils/                   # General utilities
+│
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
 │   └── codemirror.ts                    # Mocks CodeMirror modules for testing
@@ -151,10 +117,12 @@ pandoc-lists-plugin/
 
 ## Architecture Overview
 
-The plugin operates in two distinct rendering modes, each with its own pipeline:
+The plugin operates in two distinct rendering modes:
 
 1. **Live Preview Mode**: Real-time syntax transformation using CodeMirror 6 decorations
+   - Uses Two-Phase Pipeline by default (structural → inline processing)
 2. **Reading Mode**: Post-processing of rendered HTML using DOM manipulation
+   - Unchanged, uses specialized parsers and renderers
 
 Both modes share a common state management system through `PluginStateManager`.
 
@@ -165,30 +133,30 @@ Additionally, the plugin provides a **List Panel View** - a modular sidebar pane
 ```mermaid
 graph TB
     subgraph "Plugin Core"
-        Main[main.ts<br/>Plugin Entry]
-        SM[PluginStateManager<br/>Central State]
-        Settings[settings.ts<br/>Configuration]
+        Main[core/main.ts<br/>Plugin Entry]
+        SM[core/state/pluginStateManager.ts<br/>Central State]
+        Settings[core/settings.ts<br/>Configuration]
     end
     
     subgraph "Live Preview Pipeline"
-        CMExt[pandocExtendedMarkdownExtension<br/>CodeMirror Extension]
-        Scanner[exampleScanner<br/>Document Scanner]
-        Validator[listBlockValidator<br/>Pandoc Validator]
-        Processors[Processors<br/>List/Definition/Inline]
-        Widgets[Widgets<br/>Visual Elements]
+        CMExt[live-preview/extension.ts<br/>CodeMirror Extension]
+        Scanner[live-preview/scanners/exampleScanner.ts<br/>Document Scanner]
+        Validator[live-preview/validators/listBlockValidator.ts<br/>Pandoc Validator]
+        Processors[live-preview/pipeline/structural/*<br/>List/Definition/Inline]
+        Widgets[live-preview/widgets/*<br/>Visual Elements]
     end
     
     subgraph "Reading Mode Pipeline"
-        PostProc[Post Processor<br/>HTML Handler]
-        RMProc[readingModeProcessor<br/>Orchestrator]
-        Parser[ReadingModeParser<br/>Syntax Parser]
-        Renderer[ReadingModeRenderer<br/>DOM Creator]
+        PostProc[reading-mode/processor.ts<br/>HTML Handler]
+        RMProc[reading-mode/processor.ts<br/>Orchestrator]
+        Parser[reading-mode/parsers/parser.ts<br/>Syntax Parser]
+        Renderer[reading-mode/renderer.ts<br/>DOM Creator]
     end
     
     subgraph "Custom Views"
-        LPView[ListPanelView<br/>Modular Panel]
-        CLPanel[CustomLabelPanel<br/>Label Display]
-        ELPanel[ExampleListPanel<br/>Example Display]
+        LPView[views/panels/ListPanelView.ts<br/>Modular Panel]
+        CLPanel[views/panels/modules/CustomLabelPanelModule.ts<br/>Label Display]
+        ELPanel[views/panels/modules/ExampleListPanelModule.ts<br/>Example Display]
     end
     
     Main --> CMExt
@@ -215,125 +183,10 @@ graph TB
     
 ```
 
-## Live Preview Rendering Pipeline
+## Two-Phase Processing Pipeline (Active Default)
 
 ### Overview
-The live preview system transforms markdown syntax in real-time as users type, using CodeMirror 6's decoration system to overlay visual elements without modifying the underlying text.
-
-**Note: As of v1.4.0, the plugin is transitioning to a new two-phase processing pipeline architecture that separates structural and inline processing for better maintainability and extensibility.**
-
-### Detailed Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant CM as CodeMirror
-    participant Ext as pandocExtendedMarkdownExtension
-    participant Scan as exampleScanner
-    participant Val as listBlockValidator
-    participant Proc as Processors
-    participant Widget as Widgets
-    participant DOM as DOM Elements
-    
-    User->>CM: Type/Edit
-    CM->>Ext: ViewUpdate Event
-    Ext->>Ext: Check Live Preview Mode
-    
-    alt Document Changed
-        Ext->>Scan: Scan Example Labels
-        Scan-->>Ext: Label Mappings
-    end
-    
-    alt Strict Mode Enabled
-        Ext->>Val: Validate List Blocks
-        Val-->>Ext: Invalid Lines Set
-    end
-    
-    loop For Each Line
-        Ext->>Proc: Process Line
-        Proc->>Proc: Detect Syntax Type
-        Proc->>Widget: Create Widget
-        Widget->>DOM: Render Element
-    end
-    
-    Ext->>CM: Apply Decorations
-    CM->>User: Display Result
-```
-
-### Key Components
-
-#### 1. pandocExtendedMarkdownExtension (Orchestrator)
-- **Location**: `src/decorations/pandocExtendedMarkdownExtension.ts`
-- **Role**: Main coordinator for live preview rendering
-- **Responsibilities**:
-  - Detects live preview mode state
-  - Triggers document scanning when content changes
-  - Manages decoration building and application
-  - Handles cursor-aware rendering (hides widgets when cursor is inside)
-
-#### 2. Document Scanners
-- **exampleScanner** (`src/decorations/scanners/exampleScanner.ts`): Pre-processes example labels for consistent numbering
-- **customLabelScanner** (`src/decorations/scanners/customLabelScanner.ts`): 
-  - Scans custom labels with placeholder support
-  - Validates block structure in strict mode
-  - Smart reset detection: only resets PlaceholderContext when placeholder order changes
-  - Two-pass scanning: detects placeholders first, then processes labels
-  - Duplicate detection: tracks duplicate labels and their first occurrence
-- **Output**:
-  ```typescript
-  interface ExampleScanResult {
-    exampleLabels: Map<string, number>        // label -> number
-    exampleContent: Map<string, string>       // label -> content
-    exampleLineNumbers: Map<number, number>   // line -> example number
-    duplicateLabels: Map<string, number>      // duplicate -> first line
-    duplicateLabelContent: Map<string, string> // duplicate -> original content
-  }
-  
-  interface CustomLabelScanResult {
-    customLabels: Map<string, string>         // processed label -> content
-    rawToProcessed: Map<string, string>       // raw label -> processed label
-    duplicateLabels: Set<string>              // labels that appear more than once
-    duplicateLineInfo?: Map<string, { firstLine: number; firstContent: string }> // duplicate label -> first occurrence info
-    placeholderContext: PlaceholderContext    // context for auto-numbering
-  }
-  ```
-
-#### 3. Processors
-Transform markdown syntax into decorations:
-- **List Processors**: Hash lists (#.), fancy lists (A., i.), example lists ((@))
-- **Definition Processors**: Terms, items (~/:), indented paragraphs
-- **Inline Processors**: References, superscripts, subscripts
-- **Custom Label Processor**: Custom label lists ({::LABEL}) with:
-  - Auto-numbering support for (#placeholder) syntax
-  - Three-level display system based on cursor position
-  - Selective placeholder expansion (only expands placeholder under cursor)
-
-#### 4. Widgets
-Visual representations that replace markdown syntax:
-- **HashListMarkerWidget**: Auto-numbered list items
-- **FancyListMarkerWidget**: Styled alphabetic/roman markers
-- **ExampleListMarkerWidget**: Numbered examples with tooltips
-- **DefinitionBulletWidget**: Bullet points for definitions
-- **SuperscriptWidget/SubscriptWidget**: Formatted text elements
-- **CustomLabelMarkerWidget**: Custom label list markers
-- **CustomLabelReferenceWidget**: Custom label references with tooltips
-- **CustomLabelPartialWidget**: Partial rendering for bracket/parenthesis parts
-- **CustomLabelPlaceholderWidget**: Styled placeholder numbers with dotted underline
-- **CustomLabelProcessedWidget**: Processed form display for semi-expanded state
-- **CustomLabelInlineNumberWidget**: Atomic inline number replacements for selective expansion
-- **DuplicateCustomLabelWidget**: Duplicate custom label warning with error styling
-- **DuplicateExampleLabelWidget**: Duplicate example label warning with error styling
-
-### Trigger Events
-- Document changes
-- Viewport changes (scrolling)
-- Selection changes (cursor movement)
-- Live preview mode toggle
-
-## Two-Phase Processing Pipeline (NEW)
-
-### Overview
-Starting in v1.4.0, the plugin implements a new two-phase processing pipeline that cleanly separates structural (block-level) processing from inline content processing. This architecture eliminates code duplication and makes the plugin more maintainable and extensible.
+The new two-phase processing pipeline is the default rendering system as of v1.4.0. It cleanly separates structural (block-level) processing from inline content processing. The pipeline is orchestrated by `src/live-preview/pipeline/ProcessingPipeline.ts` and processes documents in two distinct phases.
 
 ### Architecture Benefits
 
@@ -342,6 +195,8 @@ Starting in v1.4.0, the plugin implements a new two-phase processing pipeline th
 3. **Easy Extensibility**: New syntax types can be added by creating and registering new processors
 4. **Consistent Processing**: All content regions are processed by the same inline processors
 5. **Better Testing**: Each processor can be tested independently
+6. **Cursor-Aware Rendering**: Processors can adapt their output based on cursor position
+7. **Unified Context**: Single context object flows through entire pipeline with all necessary data
 
 ### Pipeline Phases
 
@@ -357,12 +212,12 @@ interface StructuralProcessor {
 }
 ```
 
-**Registered Structural Processors:**
+**Registered Structural Processors (in `initializePipeline()`):**
 - `HashListProcessor` (priority: 10) - Handles `#.` auto-numbered lists
-- `FancyListProcessor` (priority: 20) - Handles `A.`, `i.`, `(a)` style lists
-- `ExampleListProcessor` (priority: 30) - Handles `(@label)` example lists
-- `CustomLabelProcessor` (priority: 15) - Handles `{::LABEL}` custom label lists
-- `DefinitionProcessor` (priority: 20) - Handles `:` and `~` definition lists
+- `FancyListProcessor` (priority: 20) - Handles `A.`, `i.`, `(a)` style lists  
+- `ExampleListProcessor` (priority: 30) - Handles `(@label)` example lists with duplicate detection
+- `CustomLabelProcessor` (priority: 15) - Handles `{::LABEL}` custom label lists with three-level display
+- `DefinitionProcessor` (priority: 20) - Handles `:` and `~` definition lists with state tracking
 
 #### Phase 2: Inline Processing
 Processes content within marked regions for references and inline formatting
@@ -377,13 +232,35 @@ interface InlineProcessor {
 }
 ```
 
-**Registered Inline Processors:**
-- `ExampleReferenceProcessor` (priority: 10) - Processes `(@references)`
-- `CustomLabelReferenceProcessor` (priority: 10) - Processes `{::references}`
-- `SuperscriptProcessor` (priority: 20) - Processes `^superscripts^`
-- `SubscriptProcessor` (priority: 20) - Processes `~subscripts~`
+**Registered Inline Processors (in `initializePipeline()`):**
+- `ExampleReferenceProcessor` (priority: 10) - Processes `(@references)` with tooltips
+- `CustomLabelReferenceProcessor` (priority: 40) - Processes `{::references}` with validation
+- `SuperscriptProcessor` (priority: 20) - Processes `^superscripts^` with escaped space support
+- `SubscriptProcessor` (priority: 20) - Processes `~subscripts~` with escaped space support
 
-### Processing Flow
+### Detailed Processing Flow
+
+#### Context Creation
+1. **Document Scanning**: Pre-scan for example labels and custom labels
+2. **Validation**: Check strict mode constraints and invalid blocks
+3. **State Management**: Retrieve placeholder context from state manager
+4. **Context Building**: Assemble unified `ProcessingContext` with all data
+
+#### Phase 1: Structural Processing
+1. **Line Iteration**: Process each line sequentially
+2. **Processor Matching**: Find first processor that can handle the line
+3. **Decoration Creation**: Generate structural decorations (markers, brackets)
+4. **Region Marking**: Mark content regions for phase 2 processing
+5. **State Updates**: Update counters and definition state
+
+#### Phase 2: Inline Processing  
+1. **Region Iteration**: Process each marked content region
+2. **Match Collection**: All processors find matches in parallel
+3. **Overlap Resolution**: Sort and filter overlapping matches
+4. **Decoration Creation**: Generate inline decorations (references, formatting)
+5. **Position Validation**: Ensure decorations are within document bounds
+
+### Processing Flow Diagram
 
 ```mermaid
 sequenceDiagram
@@ -416,11 +293,65 @@ sequenceDiagram
     Output-->>User: Rendered display
 ```
 
+### Implementation Details
+
+#### Key Classes and Files
+
+1. **ProcessingPipeline** (`src/live-preview/pipeline/ProcessingPipeline.ts`)
+   - Main orchestrator for two-phase processing
+   - Manages processor registration and execution order
+   - Handles context creation with document scanning
+   - Builds final decoration set with bounds checking
+   - Contains embedded example scanning logic (lines 19-90)
+
+2. **Structural Processors** (`src/live-preview/pipeline/structural/`)
+   - Each implements `StructuralProcessor` interface
+   - Return `StructuralResult` with decorations and content regions
+   - Can request to skip further processing with `skipFurtherProcessing`
+   - CustomLabelProcessor has complex three-level display logic
+
+3. **Inline Processors** (`src/live-preview/pipeline/inline/`)
+   - Each implements `InlineProcessor` interface
+   - Specify supported region types via `supportedRegions`
+   - Return arrays of `InlineMatch` objects
+   - Handle cursor awareness to avoid replacing text being edited
+
+#### Context Data Flow
+
+The `ProcessingContext` carries:
+- **Document data**: Text, view, settings
+- **Scan results**: Example labels, custom labels, duplicates
+- **Validation data**: Invalid lines from strict mode
+- **State tracking**: Hash counter, definition state
+- **Processing artifacts**: Content regions, decorations
+- **External references**: App instance, component for lifecycle
+
 ### Adding New Syntax Support
 
-To add a new cross-reference or inline format:
+To add a new syntax type:
 
-1. **Create the processor**:
+1. **For Structural Syntax** (list markers, block structures):
+```typescript
+class NewListProcessor implements StructuralProcessor {
+    name = 'new-list';
+    priority = 25; // Determines processing order
+    
+    canProcess(line: Line, context: ProcessingContext): boolean {
+        // Check if this line matches your syntax
+    }
+    
+    process(line: Line, context: ProcessingContext): StructuralResult {
+        // Create decorations and mark content region
+        return {
+            decorations: [...],
+            contentRegion: { from, to, type: 'list-content' },
+            skipFurtherProcessing: true
+        };
+    }
+}
+```
+
+2. **For Inline Syntax** (references, formatting):
 ```typescript
 class NewReferenceProcessor implements InlineProcessor {
     name = 'new-reference';
@@ -429,6 +360,7 @@ class NewReferenceProcessor implements InlineProcessor {
     
     findMatches(text: string, region: ContentRegion, context: ProcessingContext) {
         // Find your syntax pattern
+        // Check cursor position to avoid replacing during editing
     }
     
     createDecoration(match: InlineMatch, context: ProcessingContext) {
@@ -437,12 +369,14 @@ class NewReferenceProcessor implements InlineProcessor {
 }
 ```
 
-2. **Register it**:
+3. **Register in** `src/live-preview/extension.ts`:
 ```typescript
-pipeline.registerInlineProcessor(new NewReferenceProcessor());
+private initializePipeline(getApp?: () => any, getComponent?: () => any): void {
+    // ... existing processors ...
+    this.pipeline.registerStructuralProcessor(new NewListProcessor());
+    this.pipeline.registerInlineProcessor(new NewReferenceProcessor());
+}
 ```
-
-That's it! The new syntax will automatically work in all list types and content regions.
 
 ## Reading Mode Rendering Pipeline
 
@@ -488,7 +422,7 @@ sequenceDiagram
 ### Key Components
 
 #### 1. readingModeProcessor (Orchestrator)
-- **Location**: `src/parsers/readingModeProcessor.ts`
+- **Location**: `src/reading-mode/processor.ts`
 - **Role**: Coordinates parsing, state management, and rendering
 - **Process**:
   1. Selects paragraph and list item elements
@@ -497,7 +431,7 @@ sequenceDiagram
   4. Manages render context creation
 
 #### 2. ReadingModeParser
-- **Location**: `src/parsers/readingModeParser.ts`
+- **Location**: `src/reading-mode/parsers/parser.ts`
 - **Purpose**: Identifies and parses Pandoc syntax
 - **Capabilities**:
   - Line-by-line parsing with context awareness
@@ -516,7 +450,7 @@ Each parser handles specific syntax patterns:
   - Handles multi-placeholder references like P(#a),(#b)
 
 #### 4. ReadingModeRenderer
-- **Location**: `src/renderers/readingModeRenderer.ts`
+- **Location**: `src/reading-mode/renderer.ts`
 - **Purpose**: Creates DOM elements from parsed data
 - **Features**:
   - Maintains line breaks and formatting
@@ -668,24 +602,30 @@ sequenceDiagram
 
 ### Key Implementation Details
 
-- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (uses `customLabelExtractor.ts`)
+- **`extractCustomLabels()`**: Parses document for custom label syntax and processes placeholders (uses `src/shared/extractors/customLabelExtractor.ts`)
 - **`renderLabels()`**: Creates DOM structure with interactive elements
 - **`updateContent()`**: Updates panel when active file changes
 - **Availability**: Only registered when `moreExtendedSyntax` setting is enabled
-- **Truncation utilities** (in `contentTruncator.ts`):
+- **Truncation utilities** (in `src/views/panels/utils/contentTruncator.ts`):
   - `truncateLabel()`: Truncates labels to 6 characters
   - `truncateContent()`: Simple truncation to 51 characters
   - `truncateContentWithRendering()`: Smart truncation considering rendered math length
-- **Math rendering utilities** (in `mathRenderer.ts`):
+- **Math rendering utilities** (in `src/shared/utils/mathRenderer.ts`):
   - `renderMathToText()`: Converts LaTeX to Unicode
   - `tokenizeMath()`: Tokenizes LaTeX content
   - `truncateMathContent()`: Intelligently truncates LaTeX
-- **Interaction handlers** (in `viewInteractions.ts`):
+- **Interaction handlers** (in `src/views/panels/utils/viewInteractions.ts`):
   - `setupLabelClickHandler()`: Handles label copying
   - `setupContentClickHandler()`: Handles navigation
   - `setupHoverPreview()`: Shows popover for truncated content
 
 ## Plugin Lifecycle & State Management
+
+### Current Known Issues
+
+1. **Duplicate Scanning**: Example labels are scanned twice (in scanner and pipeline)
+2. **Context Size**: ProcessingContext has grown large with many optional fields
+3. **Helper Methods**: ProcessingPipeline contains many helper methods that could be extracted
 
 ### Lifecycle Sequence
 
@@ -848,38 +788,29 @@ flowchart LR
 | `pandocValidator.ts` | Pandoc compliance validation | Format checking, auto-formatting |
 | `listAutocompletion.ts` | Smart list continuation | Enter/Tab/Shift-Tab key handling, uses utility modules |
 | `ListPanelView.ts` | Modular sidebar panel system | Panel management, icon toolbar, content switching |
-| `panels/PanelTypes.ts` | Panel module interfaces | Type definitions for extensible panel system |
-| `panels/CustomLabelPanelModule.ts` | Custom label panel implementation | Label display, navigation, clipboard operations |
-| `panels/ExampleListPanelModule.ts` | Example list panel implementation | Three-column display with numbers, labels, and content |
+| `PanelTypes.ts` | Panel module interfaces | Type definitions for extensible panel system |
+| `CustomLabelPanelModule.ts` | Custom label panel implementation | Label display, navigation, clipboard operations |
+| `ExampleListPanelModule.ts` | Example list panel implementation | Three-column display with numbers, labels, and content |
 
-#### ExampleListPanelModule Implementation
-- **`extractExampleLists()`**: Uses `exampleListExtractor.ts` utility for parsing
-- **`renderExampleItems()`**: Creates three-column table layout
-- **`truncateNumber()`**: Limits display to 2 digits with ellipsis
-- **`truncateRawLabel()`**: Limits label display length
-- **Shared utilities**:
-  - Uses `hoverPopovers.ts` for hover preview functionality
-  - Uses `highlightUtils.ts` for editor line highlighting
-  - Uses `viewInteractions.ts` for content rendering with math
 
 ### Live Preview Components
 
-| Component | Responsibility | Input | Output |
-|-----------|---------------|-------|--------|
-| `pandocExtendedMarkdownExtension` | Orchestration | ViewUpdate events | Decorations |
-| `ProcessingPipeline` | Two-phase processing coordination | View, settings | DecorationSet |
-| `structural/*` | Phase 1: Block-level processing | Line, context | Structural decorations |
-| `inline/*` | Phase 2: Inline content processing | Content regions | Inline decorations |
-| `exampleScanner` | Label preprocessing | Document text | Label mappings |
-| `listBlockValidator` | Strict mode validation | Document lines | Invalid line set |
-| `processors/*` (legacy) | Syntax processing | Line text, context | Decoration specs |
-| `widgets/*` | Visual rendering | Widget data | DOM elements |
+| Component | Responsibility | Status | Input | Output |
+|-----------|---------------|--------|-------|--------|
+| `extension.ts` | Pipeline selection & orchestration | Active | ViewUpdate events | Decorations |
+| `ProcessingPipeline.ts` | Two-phase processing coordination | Active | View, settings | DecorationSet |
+| `structural/*` | Phase 1: Block-level processing | Active | Line, context | Structural decorations |
+| `inline/*` | Phase 2: Inline content processing | Active | Content regions | Inline decorations |
+| `scanners/exampleScanner.ts` | Example label preprocessing | Active | Document text | Label mappings |
+| `scanners/customLabelScanner.ts` | Custom label preprocessing | Active | Document text | Label mappings |
+| `validators/listBlockValidator.ts` | Strict mode validation | Active | Document lines | Invalid line set |
+| `widgets/*` | Visual rendering | Active | Widget data | DOM elements |
 
 ### Reading Mode Components
 
 | Component | Responsibility | Input | Output |
 |-----------|---------------|-------|--------|
-| `readingModeProcessor` | Orchestration | HTML elements | Modified DOM |
-| `ReadingModeParser` | Syntax identification | Text content | Parsed lines |
+| `processor.ts` | Orchestration | HTML elements | Modified DOM |
+| `parser.ts` | Syntax identification | Text content | Parsed lines |
 | `*Parser` (specialized) | Pattern matching | Line text | Structured data |
-| `ReadingModeRenderer` | DOM generation | Parsed data | HTML elements |
+| `renderer.ts` | DOM generation | Parsed data | HTML elements |
