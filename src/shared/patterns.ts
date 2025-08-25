@@ -36,6 +36,9 @@ export class ListPatterns {
     static readonly ALPHA_LOWER = /^[a-z]+$/;
     static readonly DECIMAL = /^[0-9]+$/;
     
+    // Code block detection patterns
+    static readonly CODE_BLOCK_FENCE = /^(```|~~~).*$/gm;
+    
     // Autocompletion patterns
     static readonly LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
     static readonly LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;

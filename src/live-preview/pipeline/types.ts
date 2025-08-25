@@ -52,6 +52,9 @@ export interface ProcessingContext {
         lastWasItem: boolean;
         pendingBlankLine: boolean;
     };
+    
+    // Code regions to skip
+    codeRegions?: Array<{from: number, to: number, type: string}>;
 }
 
 /**

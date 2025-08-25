@@ -35,7 +35,9 @@ pandoc-lists-plugin/
 │   │   │   ├── ProcessingPipeline.ts
 │   │   │   ├── types.ts
 │   │   │   ├── structural/          # Phase 1: Block-level processors
-│   │   │   └── inline/              # Phase 2: Inline processors
+│   │   │   ├── inline/              # Phase 2: Inline processors
+│   │   │   └── utils/               # Pipeline utilities
+│   │   │       └── codeDetection.ts # Code block/inline detection
 │   │   ├── widgets/                 # CodeMirror widgets
 │   │   ├── scanners/                # Document scanners
 │   │   └── validators/              # Block validators
@@ -62,6 +64,7 @@ pandoc-lists-plugin/
 │   └── shared/                      # Shared across modes
 │       ├── patterns.ts              # Regex patterns
 │       ├── types/                   # Type definitions
+│       │   ├── codeTypes.ts        # Code region types
 │       ├── extractors/              # Content extractors
 │       └── utils/                   # General utilities
 │
@@ -212,24 +215,27 @@ interface InlineProcessor {
 ### Detailed Processing Flow
 
 #### Context Creation
-1. **Document Scanning**: Pre-scan for example labels and custom labels
-2. **Validation**: Check strict mode constraints and invalid blocks
-3. **State Management**: Retrieve placeholder context from state manager
-4. **Context Building**: Assemble unified `ProcessingContext` with all data
+1. **Code Region Detection**: Identify code blocks and inline code regions to skip
+2. **Document Scanning**: Pre-scan for example labels and custom labels (skipping code regions)
+3. **Validation**: Check strict mode constraints and invalid blocks
+4. **State Management**: Retrieve placeholder context from state manager
+5. **Context Building**: Assemble unified `ProcessingContext` with all data including code regions
 
 #### Phase 1: Structural Processing
 1. **Line Iteration**: Process each line sequentially
-2. **Processor Matching**: Find first processor that can handle the line
-3. **Decoration Creation**: Generate structural decorations (markers, brackets)
-4. **Region Marking**: Mark content regions for phase 2 processing
-5. **State Updates**: Update counters and definition state
+2. **Code Region Check**: Skip lines entirely within code blocks
+3. **Processor Matching**: Find first processor that can handle the line
+4. **Decoration Creation**: Generate structural decorations (markers, brackets)
+5. **Region Marking**: Mark content regions for phase 2 processing
+6. **State Updates**: Update counters and definition state
 
 #### Phase 2: Inline Processing  
 1. **Region Iteration**: Process each marked content region
 2. **Match Collection**: All processors find matches in parallel
-3. **Overlap Resolution**: Sort and filter overlapping matches
-4. **Decoration Creation**: Generate inline decorations (references, formatting)
-5. **Position Validation**: Ensure decorations are within document bounds
+3. **Code Region Filtering**: Exclude matches that overlap with code regions
+4. **Overlap Resolution**: Sort and filter overlapping matches
+5. **Decoration Creation**: Generate inline decorations (references, formatting)
+6. **Position Validation**: Ensure decorations are within document bounds
 
 ### Processing Flow Diagram
 

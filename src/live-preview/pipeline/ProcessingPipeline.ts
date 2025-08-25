@@ -1,7 +1,9 @@
+// External libraries
 import { EditorView, DecorationSet, Decoration } from '@codemirror/view';
 import { RangeSetBuilder, Text } from '@codemirror/state';
 import { App, Component } from 'obsidian';
 
+// Types
 import { 
     ProcessingContext, 
     StructuralProcessor, 
@@ -9,16 +11,21 @@ import {
     ContentRegion,
     InlineMatch 
 } from './types';
+import { CodeRegion } from '../../shared/types/codeTypes';
+import { PandocExtendedMarkdownSettings } from '../../core/settings';
 
+// Patterns
 import { ListPatterns } from '../../shared/patterns';
 
+// Utils
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+import { handleError } from '../../shared/utils/errorHandler';
+import { detectCodeRegions, isLineInCodeRegion, isRangeInCodeRegion } from './utils/codeDetection';
 
-import { PandocExtendedMarkdownSettings } from '../../core/settings';
+// Internal modules
 import { PluginStateManager } from '../../core/state/pluginStateManager';
 import { scanCustomLabels } from '../scanners/customLabelScanner';
 import { validateListBlocks } from '../validators/listBlockValidator';
-import { handleError } from '../../shared/utils/errorHandler';
 
 // Helper: Process a single example list line
 function processExampleLine(
@@ -76,7 +83,7 @@ function createExampleScanResult() {
 }
 
 // Scan example labels from document
-function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSettings) {
+function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSettings, codeRegions?: CodeRegion[]) {
     const result = createExampleScanResult();
     const counter = { value: 1 };
     const lines = doc.toString().split('\n');
@@ -84,6 +91,11 @@ function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSet
     const duplicateLineNumbers = new Set<number>();
     
     for (let i = 0; i < lines.length; i++) {
+        // Skip lines in code regions
+        if (codeRegions && isLineInCodeRegion(i + 1, doc, codeRegions)) {
+            continue;
+        }
+        
         if (!invalidLines.has(i + 1)) { // invalidLines now contains 1-based line numbers
             processExampleLine(lines[i], i + 1, counter, result, duplicateLineNumbers);
         }
@@ -162,10 +174,11 @@ export class ProcessingPipeline {
     private getCustomScanResult(
         doc: Text,
         settings: PandocExtendedMarkdownSettings,
-        placeholderContext: PlaceholderContext
+        placeholderContext: PlaceholderContext,
+        codeRegions?: CodeRegion[]
     ) {
         return settings.moreExtendedSyntax 
-            ? scanCustomLabels(doc, settings, placeholderContext)
+            ? scanCustomLabels(doc, settings, placeholderContext, codeRegions)
             : {
                 customLabels: new Map<string, string>(),
                 rawToProcessed: new Map<string, string>(),
@@ -221,10 +234,13 @@ export class ProcessingPipeline {
         const doc = view.state.doc;
         const docPath = this.getDocumentPath();
         
-        // Pre-scan and validate
-        const exampleScanResult = scanExampleLabelsFromDoc(doc, settings);
+        // Detect code regions that should be skipped
+        const codeRegions = detectCodeRegions(doc);
+        
+        // Pre-scan and validate (pass codeRegions to skip scanning inside them)
+        const exampleScanResult = scanExampleLabelsFromDoc(doc, settings, codeRegions);
         const placeholderContext = this.getPlaceholderContext(docPath);
-        const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext);
+        const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext, codeRegions);
         const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : new Set<number>();
         
         // Update state manager
@@ -233,7 +249,9 @@ export class ProcessingPipeline {
             counters.placeholderContext = customScanResult.placeholderContext;
         }
         
-        return this.buildContext(view, settings, exampleScanResult, customScanResult, invalidLines);
+        const context = this.buildContext(view, settings, exampleScanResult, customScanResult, invalidLines);
+        context.codeRegions = codeRegions;
+        return context;
     }
     
     /**
@@ -242,12 +260,18 @@ export class ProcessingPipeline {
     private processStructural(context: ProcessingContext): void {
         const doc = context.document;
         const numLines = doc.lines;
+        const codeRegions = context.codeRegions || [];
         
         for (let lineNum = 1; lineNum <= numLines; lineNum++) {
             const line = doc.line(lineNum);
             
             // Skip invalid lines in strict mode
             if (context.invalidLines.has(lineNum)) {
+                continue;
+            }
+            
+            // Skip lines that are inside code regions
+            if (isLineInCodeRegion(lineNum, doc, codeRegions as CodeRegion[])) {
                 continue;
             }
             
@@ -289,57 +313,119 @@ export class ProcessingPipeline {
      */
     private processInline(context: ProcessingContext): void {
         const docLength = context.document.length;
+        const codeRegions = context.codeRegions || [];
         
         for (const region of context.contentRegions) {
-            // Skip regions with no content or invalid bounds
-            if (region.from >= region.to || region.from < 0 || region.to > docLength) {
+            // Skip invalid regions
+            if (!this.isValidRegion(region, docLength)) {
                 continue;
             }
             
-            const text = context.document.sliceString(region.from, region.to);
+            // Process this region
+            this.processRegion(region, context, docLength, codeRegions as CodeRegion[]);
+        }
+    }
+    
+    /**
+     * Check if a content region is valid for processing
+     */
+    private isValidRegion(region: ContentRegion, docLength: number): boolean {
+        return region.from < region.to && region.from >= 0 && region.to <= docLength;
+    }
+    
+    /**
+     * Process a single content region for inline matches
+     */
+    private processRegion(
+        region: ContentRegion, 
+        context: ProcessingContext, 
+        docLength: number,
+        codeRegions: CodeRegion[]
+    ): void {
+        const text = context.document.sliceString(region.from, region.to);
+        const allMatches = this.collectMatches(region, text, context, codeRegions);
+        
+        // Sort matches by position to handle overlaps
+        allMatches.sort((a, b) => a.match.from - b.match.from);
+        
+        // Process non-overlapping matches
+        this.processMatches(allMatches, region, context, docLength);
+    }
+    
+    /**
+     * Collect all inline matches from all processors for a region
+     */
+    private collectMatches(
+        region: ContentRegion,
+        text: string,
+        context: ProcessingContext,
+        codeRegions: CodeRegion[]
+    ): Array<{match: InlineMatch; processor: InlineProcessor}> {
+        const allMatches: Array<{match: InlineMatch; processor: InlineProcessor}> = [];
+        
+        for (const processor of this.inlineProcessors) {
+            if (!processor.supportedRegions.has(region.type)) continue;
             
-            // Collect all matches from all processors
-            const allMatches: Array<{
-                match: InlineMatch;
-                processor: InlineProcessor;
-            }> = [];
-            
-            for (const processor of this.inlineProcessors) {
-                if (processor.supportedRegions.has(region.type)) {
-                    const matches = processor.findMatches(text, region, context);
-                    for (const match of matches) {
-                        // Validate match positions
-                        if (match.from >= 0 && match.to <= text.length && match.from <= match.to) {
-                            allMatches.push({ match, processor });
-                        }
-                    }
+            const matches = processor.findMatches(text, region, context);
+            for (const match of matches) {
+                if (this.isValidMatch(match, text, region, codeRegions)) {
+                    allMatches.push({ match, processor });
                 }
             }
+        }
+        
+        return allMatches;
+    }
+    
+    /**
+     * Check if a match is valid and not in a code region
+     */
+    private isValidMatch(
+        match: InlineMatch, 
+        text: string, 
+        region: ContentRegion,
+        codeRegions: CodeRegion[]
+    ): boolean {
+        // Validate match positions
+        if (match.from < 0 || match.to > text.length || match.from > match.to) {
+            return false;
+        }
+        
+        // Check if this specific match is in a code region
+        const absoluteFrom = region.from + match.from;
+        const absoluteTo = region.from + match.to;
+        return !isRangeInCodeRegion(absoluteFrom, absoluteTo, codeRegions);
+    }
+    
+    /**
+     * Process matched inline patterns and create decorations
+     */
+    private processMatches(
+        allMatches: Array<{match: InlineMatch; processor: InlineProcessor}>,
+        region: ContentRegion,
+        context: ProcessingContext,
+        docLength: number
+    ): void {
+        let lastEnd = 0;
+        
+        for (const { match, processor } of allMatches) {
+            // Skip overlapping matches
+            if (match.from < lastEnd) continue;
             
-            // Sort matches by position to handle overlaps
-            allMatches.sort((a, b) => a.match.from - b.match.from);
+            const decoration = processor.createDecoration(match, context);
+            const absoluteFrom = region.from + match.from;
+            const absoluteTo = region.from + match.to;
             
-            // Process non-overlapping matches
-            let lastEnd = 0;
-            for (const { match, processor } of allMatches) {
-                // Skip overlapping matches
-                if (match.from < lastEnd) continue;
-                
-                const decoration = processor.createDecoration(match, context);
-                const absoluteFrom = region.from + match.from;
-                const absoluteTo = region.from + match.to;
-                
-                // Final bounds check before adding decoration
-                if (absoluteFrom >= 0 && absoluteTo <= docLength && absoluteFrom <= absoluteTo) {
-                    context.inlineDecorations.push({
-                        from: absoluteFrom,
-                        to: absoluteTo,
-                        decoration
-                    });
-                }
-                
-                lastEnd = match.to;
+            // Final bounds check before adding decoration
+            if (absoluteFrom >= 0 && absoluteTo <= docLength && absoluteFrom <= absoluteTo) {
+                context.inlineDecorations.push({
+                    from: absoluteFrom,
+                    to: absoluteTo,
+                    decoration
+                });
             }
+            
+            lastEnd = match.to;
         }
     }
     
@@ -360,7 +446,7 @@ export class ProcessingPipeline {
         for (const { from, to, decoration } of allDecorations) {
             // Validate positions are within document bounds
             if (from < 0 || to > docLength || from > to) {
-                handleError(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`, 'warning');
+                handleError(new Error(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`), 'ProcessingPipeline.buildDecorationSet');
                 continue;
             }
             
@@ -371,7 +457,7 @@ export class ProcessingPipeline {
             try {
                 builder.add(safeFrom, safeTo, decoration);
             } catch (e) {
-                handleError(e, 'error');
+                handleError(e, 'ProcessingPipeline.buildDecorationSet');
             }
         }
         

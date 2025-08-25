@@ -1,10 +1,16 @@
+// External libraries
 import { Text } from '@codemirror/state';
 
+// Types
+import { CodeRegion } from '../../shared/types/codeTypes';
+import { PandocExtendedMarkdownSettings } from '../../core/settings';
+
+// Patterns
 import { ListPatterns } from '../../shared/patterns';
 
+// Utils
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
-
-import { PandocExtendedMarkdownSettings } from '../../core/settings';
+import { isLineInCodeRegion } from '../pipeline/utils/codeDetection';
 
 export interface CustomLabelScanResult {
     customLabels: Map<string, string>;        // processed label -> content
@@ -17,11 +23,16 @@ export interface CustomLabelScanResult {
 /**
  * Collects all placeholders from the document in order.
  */
-function collectPlaceholders(doc: Text): string[] {
+function collectPlaceholders(doc: Text, codeRegions?: CodeRegion[]): string[] {
     const placeholdersInOrder: string[] = [];
     const seenPlaceholders = new Set<string>();
     
     for (let i = 1; i <= doc.lines; i++) {
+        // Skip lines in code regions
+        if (codeRegions && isLineInCodeRegion(i, doc, codeRegions)) {
+            continue;
+        }
+        
         const line = doc.line(i);
         const lineText = line.text;
         const match = ListPatterns.isCustomLabelList(lineText);
@@ -71,7 +82,8 @@ function shouldResetContext(
 export function scanCustomLabels(
     doc: Text,
     settings: PandocExtendedMarkdownSettings,
-    placeholderContext?: PlaceholderContext
+    placeholderContext?: PlaceholderContext,
+    codeRegions?: CodeRegion[]
 ): CustomLabelScanResult {
     const customLabels = new Map<string, string>();
     const rawToProcessed = new Map<string, string>();
@@ -86,7 +98,7 @@ export function scanCustomLabels(
     }
     
     // First pass: collect all placeholders in document order
-    const placeholdersInOrder = collectPlaceholders(doc);
+    const placeholdersInOrder = collectPlaceholders(doc, codeRegions);
     
     // Check if we need to reset based on placeholder order change
     const existingMappings = context.getPlaceholderMappings();
@@ -96,6 +108,11 @@ export function scanCustomLabels(
     
     // Process all labels (this will assign numbers to placeholders in order)
     for (let i = 1; i <= doc.lines; i++) {
+        // Skip lines in code regions
+        if (codeRegions && isLineInCodeRegion(i, doc, codeRegions)) {
+            continue;
+        }
+        
         const line = doc.line(i);
         const lineText = line.text;
         

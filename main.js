@@ -611,6 +611,8 @@ ListPatterns.ROMAN_LOWER = /^[ivxlcdm]+$/;
 ListPatterns.ALPHA_UPPER = /^[A-Z]+$/;
 ListPatterns.ALPHA_LOWER = /^[a-z]+$/;
 ListPatterns.DECIMAL = /^[0-9]+$/;
+// Code block detection patterns
+ListPatterns.CODE_BLOCK_FENCE = /^(```|~~~).*$/gm;
 // Autocompletion patterns
 ListPatterns.LETTER_OR_ROMAN_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)/;
 ListPatterns.LETTER_OR_ROMAN_LIST_WITH_CONTENT = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s+)(.*)$/;
@@ -2761,11 +2763,120 @@ var pluginStateManager = new PluginStateManager();
 // src/live-preview/pipeline/ProcessingPipeline.ts
 var import_state = require("@codemirror/state");
 
+// src/live-preview/pipeline/utils/codeDetection.ts
+function detectCodeRegions(doc) {
+  const regions = [];
+  const text = doc.toString();
+  detectCodeBlocks(text, regions);
+  detectInlineCode(text, regions);
+  return regions;
+}
+function detectCodeBlocks(text, regions) {
+  const codeBlockRegex = ListPatterns.CODE_BLOCK_FENCE;
+  let match;
+  let inCodeBlock = false;
+  let codeBlockStart = -1;
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    if (!inCodeBlock) {
+      inCodeBlock = true;
+      codeBlockStart = match.index;
+    } else {
+      regions.push({
+        from: codeBlockStart,
+        to: match.index + match[0].length,
+        type: "codeblock"
+      });
+      inCodeBlock = false;
+      codeBlockStart = -1;
+    }
+  }
+  if (inCodeBlock && codeBlockStart !== -1) {
+    regions.push({
+      from: codeBlockStart,
+      to: text.length,
+      type: "codeblock"
+    });
+  }
+}
+function detectInlineCode(text, regions) {
+  let i = 0;
+  while (i < text.length) {
+    if (isInCodeBlock(i, regions)) {
+      i++;
+      continue;
+    }
+    if (text[i] === "`") {
+      if (i > 0 && text[i - 1] === "\\") {
+        i++;
+        continue;
+      }
+      let j = i + 1;
+      while (j < text.length) {
+        if (text[j] === "`") {
+          if (j > 0 && text[j - 1] === "\\") {
+            j++;
+            continue;
+          }
+          regions.push({
+            from: i,
+            to: j + 1,
+            type: "inline-code"
+          });
+          i = j + 1;
+          break;
+        }
+        j++;
+      }
+      if (j >= text.length) {
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+}
+function isInCodeBlock(pos, regions) {
+  for (const region of regions) {
+    if (region.type === "codeblock" && pos >= region.from && pos < region.to) {
+      return true;
+    }
+  }
+  return false;
+}
+function isLineInCodeBlock(lineNumber, doc, codeRegions) {
+  const line = doc.line(lineNumber);
+  for (const region of codeRegions) {
+    if (region.type === "codeblock") {
+      if (line.from >= region.from && line.to <= region.to) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+function isLineInCodeRegion(lineNumber, doc, codeRegions) {
+  return isLineInCodeBlock(lineNumber, doc, codeRegions);
+}
+function isRangeCompletelyInCodeRegion(from, to, codeRegions) {
+  for (const region of codeRegions) {
+    if (from >= region.from && to <= region.to) {
+      return true;
+    }
+  }
+  return false;
+}
+function isRangeInCodeRegion(from, to, codeRegions) {
+  return isRangeCompletelyInCodeRegion(from, to, codeRegions);
+}
+
 // src/live-preview/scanners/customLabelScanner.ts
-function collectPlaceholders(doc) {
+function collectPlaceholders(doc, codeRegions) {
   const placeholdersInOrder = [];
   const seenPlaceholders = /* @__PURE__ */ new Set();
   for (let i = 1; i <= doc.lines; i++) {
+    if (codeRegions && isLineInCodeRegion(i, doc, codeRegions)) {
+      continue;
+    }
     const line = doc.line(i);
     const lineText = line.text;
     const match = ListPatterns.isCustomLabelList(lineText);
@@ -2797,7 +2908,7 @@ function shouldResetContext(placeholdersInOrder, existingMappings) {
   }
   return false;
 }
-function scanCustomLabels(doc, settings, placeholderContext) {
+function scanCustomLabels(doc, settings, placeholderContext, codeRegions) {
   const customLabels = /* @__PURE__ */ new Map();
   const rawToProcessed = /* @__PURE__ */ new Map();
   const duplicateLabels = /* @__PURE__ */ new Set();
@@ -2807,12 +2918,15 @@ function scanCustomLabels(doc, settings, placeholderContext) {
   if (!settings.moreExtendedSyntax) {
     return { customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext: context };
   }
-  const placeholdersInOrder = collectPlaceholders(doc);
+  const placeholdersInOrder = collectPlaceholders(doc, codeRegions);
   const existingMappings = context.getPlaceholderMappings();
   if (shouldResetContext(placeholdersInOrder, existingMappings)) {
     context.reset();
   }
   for (let i = 1; i <= doc.lines; i++) {
+    if (codeRegions && isLineInCodeRegion(i, doc, codeRegions)) {
+      continue;
+    }
     const line = doc.line(i);
     const lineText = line.text;
     const match = ListPatterns.isCustomLabelList(lineText);
@@ -2944,13 +3058,16 @@ function createExampleScanResult() {
     duplicateLabelContent: /* @__PURE__ */ new Map()
   };
 }
-function scanExampleLabelsFromDoc(doc, settings) {
+function scanExampleLabelsFromDoc(doc, settings, codeRegions) {
   const result = createExampleScanResult();
   const counter = { value: 1 };
   const lines = doc.toString().split("\n");
   const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : /* @__PURE__ */ new Set();
   const duplicateLineNumbers = /* @__PURE__ */ new Set();
   for (let i = 0; i < lines.length; i++) {
+    if (codeRegions && isLineInCodeRegion(i + 1, doc, codeRegions)) {
+      continue;
+    }
     if (!invalidLines.has(i + 1)) {
       processExampleLine(lines[i], i + 1, counter, result, duplicateLineNumbers);
     }
@@ -3004,8 +3121,8 @@ var ProcessingPipeline = class {
     return docPath ? this.stateManager.getDocumentCounters(docPath).placeholderContext : new PlaceholderContext();
   }
   // Helper: Get custom scan result
-  getCustomScanResult(doc, settings, placeholderContext) {
-    return settings.moreExtendedSyntax ? scanCustomLabels(doc, settings, placeholderContext) : {
+  getCustomScanResult(doc, settings, placeholderContext, codeRegions) {
+    return settings.moreExtendedSyntax ? scanCustomLabels(doc, settings, placeholderContext, codeRegions) : {
       customLabels: /* @__PURE__ */ new Map(),
       rawToProcessed: /* @__PURE__ */ new Map(),
       duplicateLabels: /* @__PURE__ */ new Set(),
@@ -3048,15 +3165,18 @@ var ProcessingPipeline = class {
   createContext(view, settings) {
     const doc = view.state.doc;
     const docPath = this.getDocumentPath();
-    const exampleScanResult = scanExampleLabelsFromDoc(doc, settings);
+    const codeRegions = detectCodeRegions(doc);
+    const exampleScanResult = scanExampleLabelsFromDoc(doc, settings, codeRegions);
     const placeholderContext = this.getPlaceholderContext(docPath);
-    const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext);
+    const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext, codeRegions);
     const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : /* @__PURE__ */ new Set();
     if (docPath && customScanResult.placeholderContext) {
       const counters = this.stateManager.getDocumentCounters(docPath);
       counters.placeholderContext = customScanResult.placeholderContext;
     }
-    return this.buildContext(view, settings, exampleScanResult, customScanResult, invalidLines);
+    const context = this.buildContext(view, settings, exampleScanResult, customScanResult, invalidLines);
+    context.codeRegions = codeRegions;
+    return context;
   }
   /**
    * Phase 1: Process structural elements
@@ -3064,9 +3184,13 @@ var ProcessingPipeline = class {
   processStructural(context) {
     const doc = context.document;
     const numLines = doc.lines;
+    const codeRegions = context.codeRegions || [];
     for (let lineNum = 1; lineNum <= numLines; lineNum++) {
       const line = doc.line(lineNum);
       if (context.invalidLines.has(lineNum)) {
+        continue;
+      }
+      if (isLineInCodeRegion(lineNum, doc, codeRegions)) {
         continue;
       }
       let processed = false;
@@ -3097,38 +3221,74 @@ var ProcessingPipeline = class {
    */
   processInline(context) {
     const docLength = context.document.length;
+    const codeRegions = context.codeRegions || [];
     for (const region of context.contentRegions) {
-      if (region.from >= region.to || region.from < 0 || region.to > docLength) {
+      if (!this.isValidRegion(region, docLength)) {
         continue;
       }
-      const text = context.document.sliceString(region.from, region.to);
-      const allMatches = [];
-      for (const processor of this.inlineProcessors) {
-        if (processor.supportedRegions.has(region.type)) {
-          const matches = processor.findMatches(text, region, context);
-          for (const match of matches) {
-            if (match.from >= 0 && match.to <= text.length && match.from <= match.to) {
-              allMatches.push({ match, processor });
-            }
-          }
+      this.processRegion(region, context, docLength, codeRegions);
+    }
+  }
+  /**
+   * Check if a content region is valid for processing
+   */
+  isValidRegion(region, docLength) {
+    return region.from < region.to && region.from >= 0 && region.to <= docLength;
+  }
+  /**
+   * Process a single content region for inline matches
+   */
+  processRegion(region, context, docLength, codeRegions) {
+    const text = context.document.sliceString(region.from, region.to);
+    const allMatches = this.collectMatches(region, text, context, codeRegions);
+    allMatches.sort((a, b) => a.match.from - b.match.from);
+    this.processMatches(allMatches, region, context, docLength);
+  }
+  /**
+   * Collect all inline matches from all processors for a region
+   */
+  collectMatches(region, text, context, codeRegions) {
+    const allMatches = [];
+    for (const processor of this.inlineProcessors) {
+      if (!processor.supportedRegions.has(region.type)) continue;
+      const matches = processor.findMatches(text, region, context);
+      for (const match of matches) {
+        if (this.isValidMatch(match, text, region, codeRegions)) {
+          allMatches.push({ match, processor });
         }
       }
-      allMatches.sort((a, b) => a.match.from - b.match.from);
-      let lastEnd = 0;
-      for (const { match, processor } of allMatches) {
-        if (match.from < lastEnd) continue;
-        const decoration = processor.createDecoration(match, context);
-        const absoluteFrom = region.from + match.from;
-        const absoluteTo = region.from + match.to;
-        if (absoluteFrom >= 0 && absoluteTo <= docLength && absoluteFrom <= absoluteTo) {
-          context.inlineDecorations.push({
-            from: absoluteFrom,
-            to: absoluteTo,
-            decoration
-          });
-        }
-        lastEnd = match.to;
+    }
+    return allMatches;
+  }
+  /**
+   * Check if a match is valid and not in a code region
+   */
+  isValidMatch(match, text, region, codeRegions) {
+    if (match.from < 0 || match.to > text.length || match.from > match.to) {
+      return false;
+    }
+    const absoluteFrom = region.from + match.from;
+    const absoluteTo = region.from + match.to;
+    return !isRangeInCodeRegion(absoluteFrom, absoluteTo, codeRegions);
+  }
+  /**
+   * Process matched inline patterns and create decorations
+   */
+  processMatches(allMatches, region, context, docLength) {
+    let lastEnd = 0;
+    for (const { match, processor } of allMatches) {
+      if (match.from < lastEnd) continue;
+      const decoration = processor.createDecoration(match, context);
+      const absoluteFrom = region.from + match.from;
+      const absoluteTo = region.from + match.to;
+      if (absoluteFrom >= 0 && absoluteTo <= docLength && absoluteFrom <= absoluteTo) {
+        context.inlineDecorations.push({
+          from: absoluteFrom,
+          to: absoluteTo,
+          decoration
+        });
       }
+      lastEnd = match.to;
     }
   }
   /**
@@ -3143,7 +3303,7 @@ var ProcessingPipeline = class {
     ].sort((a, b) => a.from - b.from || a.to - b.to);
     for (const { from, to, decoration } of allDecorations) {
       if (from < 0 || to > docLength || from > to) {
-        handleError(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`, "warning");
+        handleError(new Error(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`), "ProcessingPipeline.buildDecorationSet");
         continue;
       }
       const safeFrom = Math.floor(from);
@@ -3151,7 +3311,7 @@ var ProcessingPipeline = class {
       try {
         builder.add(safeFrom, safeTo, decoration);
       } catch (e) {
-        handleError(e, "error");
+        handleError(e, "ProcessingPipeline.buildDecorationSet");
       }
     }
     return builder.finish();
