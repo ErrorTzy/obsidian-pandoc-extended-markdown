@@ -55,7 +55,7 @@ export class ReadingModeParser {
     /**
      * Parse a single line and identify its type and data
      */
-    parseLine(line: string, context?: { nextLine?: string, isInParagraph?: boolean }): ParsedLine {
+    parseLine(line: string, context?: { nextLine?: string, isInParagraph?: boolean, isAtParagraphStart?: boolean }): ParsedLine {
         // Check for hash auto-numbering list
         const hashMatch = ListPatterns.isHashList(line);
         if (hashMatch) {
@@ -87,7 +87,9 @@ export class ReadingModeParser {
         }
 
         // Check for example list markers (only in paragraphs)
-        if (context?.isInParagraph) {
+        // Example lists should only be recognized at the start of a paragraph,
+        // not after inline elements like <strong> tags
+        if (context?.isInParagraph && context?.isAtParagraphStart !== false) {
             const exampleMarker = parseExampleListMarker(line);
             if (exampleMarker) {
                 const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
@@ -148,10 +150,12 @@ export class ReadingModeParser {
     /**
      * Parse multiple lines with context
      */
-    parseLines(lines: string[], isInParagraph: boolean = false): ParsedLine[] {
+    parseLines(lines: string[], isInParagraph: boolean = false, isAtParagraphStart: boolean = true): ParsedLine[] {
         return lines.map((line, index) => {
             const nextLine = index < lines.length - 1 ? lines[index + 1] : undefined;
-            return this.parseLine(line, { nextLine, isInParagraph });
+            // Only the first line is at paragraph start, unless there are explicit line breaks
+            const isLineAtStart = index === 0 ? isAtParagraphStart : true;
+            return this.parseLine(line, { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart });
         });
     }
 

@@ -125,10 +125,16 @@ function processElementTextNodes(
         }
         
         const isInParagraph = parent.nodeName === 'P';
+        
+        // Check if this text node is at the beginning of the paragraph
+        // If it's not the first child, it's likely after an inline element like <strong>
+        // In that case, (@a) should be treated as a reference, not an example list
+        const isAtParagraphStart = parent.firstChild === node;
+        
         const lines = text.split('\n');
         
-        // Parse all lines
-        const parsedLines = parser.parseLines(lines, isInParagraph);
+        // Parse all lines with additional context
+        const parsedLines = parser.parseLines(lines, isInParagraph, isAtParagraphStart);
         
         // Validate if needed
         if (config.strictPandocMode) {

@@ -49,7 +49,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     processCustomLabelLists(element, context);
     
     const markers = element.querySelectorAll('span.pandoc-list-marker');
-    const refs = element.querySelectorAll('span.pandoc-example-reference');
+    const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
     
     expect(markers).toHaveLength(2); // P and Q are list markers
     expect(refs).toHaveLength(2); // A and B are references

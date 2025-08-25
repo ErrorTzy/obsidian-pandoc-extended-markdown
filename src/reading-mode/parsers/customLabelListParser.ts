@@ -178,7 +178,7 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
             container.appendChild(document.createTextNode(match[0]));
         } else {
             const refSpan = document.createElement('span');
-            refSpan.className = CSS_CLASSES.EXAMPLE_REF;
+            refSpan.className = CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED;
             refSpan.setAttribute('data-custom-label-ref', processedLabel);
             refSpan.textContent = `(${processedLabel})`;
             container.appendChild(refSpan);
@@ -206,6 +206,73 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
  * // Into: <span class="pandoc-list-marker">(1)</span> E = mc^2
  * processElement(paragraphElement, placeholderContext);
  */
+/**
+ * Process an element for custom labels while preserving existing processed spans.
+ * This is used when an element already contains processed example references.
+ */
+function processElementPreservingSpans(elem: Element, placeholderContext?: PlaceholderContext): void {
+    // Walk through text nodes only and process custom label references
+    const walker = document.createTreeWalker(
+        elem,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: (node) => {
+                // Skip text nodes inside already-processed spans
+                const parent = node.parentElement;
+                if (parent && (
+                    parent.className === CSS_CLASSES.EXAMPLE_REF ||
+                    parent.className === CSS_CLASSES.PANDOC_LIST_MARKER ||
+                    parent.className.includes('pandoc-list-fancy') ||
+                    parent.className === CSS_CLASSES.EXAMPLE_LIST ||
+                    parent.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED ||
+                    parent.tagName === 'STRONG' ||  // Skip text inside strong tags that might contain processed content
+                    parent.tagName === 'EM'          // Skip text inside em tags that might contain processed content
+                )) {
+                    return NodeFilter.FILTER_SKIP;
+                }
+                // Also check if the parent's parent contains processed spans (for nested elements)
+                const grandParent = parent?.parentElement;
+                if (grandParent && (
+                    grandParent.className === CSS_CLASSES.EXAMPLE_REF ||
+                    grandParent.className === CSS_CLASSES.EXAMPLE_LIST
+                )) {
+                    return NodeFilter.FILTER_SKIP;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }
+    );
+    
+    const nodesToProcess: Text[] = [];
+    let node;
+    while (node = walker.nextNode()) {
+        if (node.textContent && node.textContent.includes('{::')) {
+            nodesToProcess.push(node as Text);
+        }
+    }
+    
+    // Process each text node for custom label references only
+    // Do NOT process other syntax like (@a) - those should already be handled
+    nodesToProcess.forEach(textNode => {
+        const text = textNode.textContent || '';
+        const parent = textNode.parentNode;
+        if (!parent) return;
+        
+        // Only process custom label references, not example references
+        if (!text.includes('{::')) return;
+        
+        // Create a temporary container for processed content
+        const tempContainer = document.createElement('span');
+        processReferencesInText(text, tempContainer, placeholderContext);
+        
+        // Replace the text node with the processed content
+        while (tempContainer.firstChild) {
+            parent.insertBefore(tempContainer.firstChild, textNode);
+        }
+        parent.removeChild(textNode);
+    });
+}
+
 function processElement(elem: Element, placeholderContext?: PlaceholderContext) {
     // Skip code blocks and pre elements
     if (elem.querySelector('code, pre') || elem.closest('code, pre')) {
@@ -215,6 +282,18 @@ function processElement(elem: Element, placeholderContext?: PlaceholderContext) 
     // Skip if no custom labels in text content
     if (!elem.textContent || !elem.textContent.includes('{::')) {
         return;
+    }
+    
+    // ALWAYS use the preserving method if the element has any processed content
+    // This prevents destroying existing spans like example references
+    const hasAnyProcessedContent = 
+        elem.querySelector('span') || // Any span element
+        elem.querySelector('strong') || // Any strong element
+        elem.querySelector('em'); // Any em element
+    
+    if (hasAnyProcessedContent) {
+        // Element has some processed content, preserve it
+        return processElementPreservingSpans(elem, placeholderContext);
     }
     
     // Create a new container to build the processed content
@@ -243,9 +322,19 @@ function processElement(elem: Element, placeholderContext?: PlaceholderContext) 
             // Preserve BR elements
             newContainer.appendChild(document.createElement('br'));
         } else if (node.nodeType === Node.ELEMENT_NODE) {
-            // For other elements, recursively process if they contain custom labels
+            // For other elements, check if they're already processed elements we should preserve
             const elemNode = node as Element;
-            if (elemNode.textContent && elemNode.textContent.includes('{::')) {
+            
+            // Preserve already-processed example reference spans
+            if (elemNode.tagName === 'SPAN' && 
+                (elemNode.className === CSS_CLASSES.EXAMPLE_REF || 
+                 elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER ||
+                 elemNode.className.includes('pandoc-list-fancy') ||
+                 elemNode.className === CSS_CLASSES.EXAMPLE_LIST ||
+                 elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED)) {
+                // This is an already-processed element, preserve it as-is
+                newContainer.appendChild(node.cloneNode(true));
+            } else if (elemNode.textContent && elemNode.textContent.includes('{::')) {
                 // Clone the element and process its content
                 const clonedElem = elemNode.cloneNode(false) as Element;
                 

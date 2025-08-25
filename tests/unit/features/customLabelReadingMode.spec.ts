@@ -114,7 +114,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-example-reference');
+      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
       expect(refs).toHaveLength(2);
       expect(refs[0].textContent).toBe('(P)');
       expect(refs[1].textContent).toBe('(Q)');
@@ -128,7 +128,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-example-reference');
+      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
       expect(refs).toHaveLength(3);
     });
 
@@ -138,7 +138,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-example-reference');
+      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
       expect(refs).toHaveLength(2);
       expect(refs[0].textContent).toBe("(P')");
       expect(refs[1].textContent).toBe('(X_0)');
@@ -159,7 +159,7 @@ describe('Custom Label Reading Mode', () => {
       const markers = element.querySelectorAll('span.pandoc-list-marker');
       expect(markers).toHaveLength(2);
       
-      const refs = element.querySelectorAll('span.pandoc-example-reference');
+      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
       expect(refs).toHaveLength(2);
     });
 
@@ -186,7 +186,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-example-reference');
+      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
       expect(refs).toHaveLength(0);
       
       const code = element.querySelector('code');

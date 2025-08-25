@@ -101,10 +101,10 @@ describe('ProcessingPipeline', () => {
             updateView(doc);
             
             const decorations = pipeline.process(view, settings);
-            console.log('Decorations:', decorations);
-            console.log('Decorations type:', typeof decorations);
-            console.log('Has iter?', decorations?.iter);
-            console.log('Has size?', decorations?.size);
+            // console.log('Decorations:', decorations);
+            // console.log('Decorations type:', typeof decorations);
+            // console.log('Has iter?', decorations?.iter);
+            // console.log('Has size?', decorations?.size);
             
             expect(decorations).toBeDefined();
             expect(hasDecorations(decorations)).toBe(true);

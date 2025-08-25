@@ -16,6 +16,11 @@ export class Plugin {
   registerHoverLinkSource() {}
 }
 
+export function setTooltip(element: HTMLElement, text: string, options?: any) {
+  // Mock implementation - just set a data attribute for testing
+  element.setAttribute('data-tooltip', text);
+}
+
 export class MarkdownPostProcessorContext {
   getSectionInfo() {
     return {

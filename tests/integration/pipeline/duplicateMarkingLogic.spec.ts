@@ -70,9 +70,9 @@ describe('Duplicate Marking Logic - Only mark 2nd+ occurrences', () => {
         
         const result = scanExampleLabelsFixed(content);
         
-        console.log('Duplicate line numbers:', Array.from(result.duplicateLineNumbers));
-        console.log('Labels:', Array.from(result.exampleLabels.entries()));
-        console.log('Duplicate label info:', Array.from(result.duplicateLabels.entries()));
+        // console.log('Duplicate line numbers:', Array.from(result.duplicateLineNumbers));
+        // console.log('Labels:', Array.from(result.exampleLabels.entries()));
+        // console.log('Duplicate label info:', Array.from(result.duplicateLabels.entries()));
         
         // First line should NOT be marked as duplicate
         expect(result.duplicateLineNumbers.has(1)).toBe(false);
@@ -97,7 +97,7 @@ describe('Duplicate Marking Logic - Only mark 2nd+ occurrences', () => {
         
         const result = scanExampleLabelsFixed(content);
         
-        console.log('Duplicate line numbers:', Array.from(result.duplicateLineNumbers));
+        // console.log('Duplicate line numbers:', Array.from(result.duplicateLineNumbers));
         
         // First occurrences should NOT be duplicates
         expect(result.duplicateLineNumbers.has(1)).toBe(false); // First alpha
@@ -123,7 +123,7 @@ describe('Duplicate Marking Logic - Only mark 2nd+ occurrences', () => {
         
         const result = scanExampleLabelsFixed(content);
         
-        console.log('Duplicate line numbers:', Array.from(result.duplicateLineNumbers));
+        // console.log('Duplicate line numbers:', Array.from(result.duplicateLineNumbers));
         
         // No unlabeled examples should be marked as duplicates
         expect(result.duplicateLineNumbers.has(1)).toBe(false); // First (@)

@@ -8,6 +8,7 @@
 import { setTooltip } from 'obsidian';
 import { ParsedLine, HashListData, FancyListData, ExampleListData, DefinitionData, ReferenceData } from './parsers/parser';
 import { CSS_CLASSES, DECORATION_STYLES } from '../core/constants';
+import { ListPatterns } from '../shared/patterns';
 
 export interface RenderContext {
     strictLineBreaks: boolean;
@@ -26,19 +27,19 @@ export class ReadingModeRenderer {
     ): (HTMLElement | Text)[] {
         switch (parsedLine.type) {
             case 'hash':
-                return this.renderHashList(parsedLine.metadata as HashListData, lineNumber);
+                return this.renderHashList(parsedLine.metadata as HashListData, lineNumber, context);
             
             case 'fancy':
-                return this.renderFancyList(parsedLine.metadata as FancyListData);
+                return this.renderFancyList(parsedLine.metadata as FancyListData, context);
             
             case 'example':
-                return this.renderExampleList(parsedLine.metadata as ExampleListData, lineNumber);
+                return this.renderExampleList(parsedLine.metadata as ExampleListData, lineNumber, context);
             
             case 'definition-term':
                 return this.renderDefinitionTerm(parsedLine.metadata as DefinitionData);
             
             case 'definition-item':
-                return this.renderDefinitionItem(parsedLine.metadata as DefinitionData);
+                return this.renderDefinitionItem(parsedLine.metadata as DefinitionData, context);
             
             case 'reference':
                 return this.renderWithReferences(parsedLine.content, parsedLine.metadata as ReferenceData, context);
@@ -87,7 +88,7 @@ export class ReadingModeRenderer {
     /**
      * Render hash auto-numbering list
      */
-    private renderHashList(data: HashListData, number?: number): (HTMLElement | Text)[] {
+    private renderHashList(data: HashListData, number?: number, context?: RenderContext): (HTMLElement | Text)[] {
         const elements: (HTMLElement | Text)[] = [];
         
         const span = document.createElement('span');
@@ -96,7 +97,9 @@ export class ReadingModeRenderer {
         elements.push(span);
         
         if (data.content) {
-            elements.push(document.createTextNode(data.content));
+            // Process content for references
+            const contentElements = this.processContentForReferences(data.content, context);
+            elements.push(...contentElements);
         }
         
         return elements;
@@ -105,7 +108,7 @@ export class ReadingModeRenderer {
     /**
      * Render fancy list marker
      */
-    private renderFancyList(data: FancyListData): (HTMLElement | Text)[] {
+    private renderFancyList(data: FancyListData, context?: RenderContext): (HTMLElement | Text)[] {
         const elements: (HTMLElement | Text)[] = [];
         
         const span = document.createElement('span');
@@ -114,7 +117,9 @@ export class ReadingModeRenderer {
         elements.push(span);
         
         if (data.content) {
-            elements.push(document.createTextNode(data.content));
+            // Process content for references
+            const contentElements = this.processContentForReferences(data.content, context);
+            elements.push(...contentElements);
         }
         
         return elements;
@@ -123,7 +128,7 @@ export class ReadingModeRenderer {
     /**
      * Render example list
      */
-    private renderExampleList(data: ExampleListData, number?: number): (HTMLElement | Text)[] {
+    private renderExampleList(data: ExampleListData, number?: number, context?: RenderContext): (HTMLElement | Text)[] {
         const elements: (HTMLElement | Text)[] = [];
         
         const span = document.createElement('span');
@@ -135,7 +140,9 @@ export class ReadingModeRenderer {
         elements.push(span);
         
         if (data.content) {
-            elements.push(document.createTextNode(data.content));
+            // Process content for references
+            const contentElements = this.processContentForReferences(data.content, context);
+            elements.push(...contentElements);
         }
         
         return elements;
@@ -155,14 +162,16 @@ export class ReadingModeRenderer {
     /**
      * Render definition item
      */
-    private renderDefinitionItem(data: DefinitionData): (HTMLElement | Text)[] {
+    private renderDefinitionItem(data: DefinitionData, context?: RenderContext): (HTMLElement | Text)[] {
         const elements: (HTMLElement | Text)[] = [];
         
         const span = document.createElement('span');
         span.textContent = '• ';
         elements.push(span);
         
-        elements.push(document.createTextNode(data.content));
+        // Process content for references
+        const contentElements = this.processContentForReferences(data.content, context);
+        elements.push(...contentElements);
         
         return elements;
     }
@@ -227,5 +236,75 @@ export class ReadingModeRenderer {
      */
     createNewline(): Text {
         return document.createTextNode('\n');
+    }
+
+    /**
+     * Process content text for references and return appropriate elements
+     */
+    private processContentForReferences(
+        content: string,
+        context?: RenderContext
+    ): (HTMLElement | Text)[] {
+        if (!context) {
+            return [document.createTextNode(content)];
+        }
+
+        // Check for example references
+        const references = ListPatterns.findExampleReferences(content);
+        
+        if (references.length === 0) {
+            // Check for custom label references if needed
+            const customRefs = ListPatterns.findCustomLabelReferences(content);
+            if (customRefs.length === 0) {
+                return [document.createTextNode(content)];
+            }
+            // For now, we'll just return the text as-is for custom label refs
+            // since they need special processing in a separate pass
+            return [document.createTextNode(content)];
+        }
+
+        // Process example references
+        const elements: (HTMLElement | Text)[] = [];
+        let lastIndex = 0;
+
+        references.forEach(match => {
+            const startIndex = match.index!;
+            const endIndex = startIndex + match[0].length;
+            const label = match[1];
+
+            // Add text before reference
+            if (startIndex > lastIndex) {
+                elements.push(document.createTextNode(content.substring(lastIndex, startIndex)));
+            }
+
+            // Get the example number if available
+            const exampleNumber = context.getExampleNumber?.(label);
+            
+            if (exampleNumber !== undefined) {
+                const span = document.createElement('span');
+                span.className = CSS_CLASSES.EXAMPLE_REF;
+                span.textContent = `(${exampleNumber})`;
+                
+                // Add tooltip if content is available
+                const tooltipText = context.getExampleContent?.(label);
+                if (tooltipText) {
+                    setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+                }
+                
+                elements.push(span);
+            } else {
+                // Render as plain text if reference not found
+                elements.push(document.createTextNode(match[0]));
+            }
+
+            lastIndex = endIndex;
+        });
+
+        // Add remaining text
+        if (lastIndex < content.length) {
+            elements.push(document.createTextNode(content.substring(lastIndex)));
+        }
+
+        return elements;
     }
 }

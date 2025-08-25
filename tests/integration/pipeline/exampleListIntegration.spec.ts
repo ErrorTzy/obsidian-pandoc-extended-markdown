@@ -63,9 +63,9 @@ describe('Example List Integration - ProcessingPipeline scanning', () => {
             }
         }
         
-        console.log('Example labels:', Array.from(result.exampleLabels.entries()));
-        console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
-        console.log('Line numbers:', Array.from(result.exampleLineNumbers.entries()));
+        // console.log('Example labels:', Array.from(result.exampleLabels.entries()));
+        // console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
+        // console.log('Line numbers:', Array.from(result.exampleLineNumbers.entries()));
         
         // Assertions
         expect(result.exampleLabels.size).toBe(1); // Only 'label' should be in the map

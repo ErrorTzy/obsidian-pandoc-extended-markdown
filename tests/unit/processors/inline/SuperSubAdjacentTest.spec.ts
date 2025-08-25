@@ -110,26 +110,26 @@ describe('Adjacent Superscript and Subscript Processing', () => {
     
     function getWidgetTexts(view: EditorView, pipeline: ProcessingPipeline, settings: PandocExtendedMarkdownSettings): string[] {
         const decorations = pipeline.process(view, settings);
-        console.log('decorations', decorations);
+        // console.log('decorations', decorations);
         const widgets: string[] = [];
         
         // DecorationSet uses iter method
         const iter = decorations.iter();
-        console.log('iter', iter);
+        // console.log('iter', iter);
         let count = 0;
         while (iter.value) {
             count++;
-            console.log('Decoration', count, ':', {
-                value: iter.value,
-                spec: (iter.value as any).decoration?.spec,
-                widget: (iter.value as any).decoration?.spec?.widget
-            });
+            // console.log('Decoration', count, ':', {
+            //    value: iter.value,
+            //    spec: (iter.value as any).decoration?.spec,
+            //    widget: (iter.value as any).decoration?.spec?.widget
+            //});
             const widget = (iter.value as any).decoration?.spec?.widget;
-            console.log('widget', widget);
+            // console.log('widget', widget);
             if (widget) {
                 // Access the private content field
                 const content = (widget as any).content;
-                console.log('Widget content:', content);
+                // console.log('Widget content:', content);
                 if (content) {
                     widgets.push(content);
                 }
@@ -137,14 +137,14 @@ describe('Adjacent Superscript and Subscript Processing', () => {
             iter.next();
         }
         
-        console.log('Total decorations:', count, 'Widgets extracted:', widgets.length);
+        // console.log('Total decorations:', count, 'Widgets extracted:', widgets.length);
         return widgets;
     }
     
     test('processors should find adjacent subscript and superscript', () => {
         const result = testProcessors('P~a~^b^');
         
-        console.log('Debug info for P~a~^b^:', JSON.stringify(result.debug, null, 2));
+        // console.log('Debug info for P~a~^b^:', JSON.stringify(result.debug, null, 2));
         
         expect(result.subscripts).toEqual(['a']);
         expect(result.superscripts).toEqual(['b']);

@@ -5052,7 +5052,7 @@ var ReadingModeParser = class {
         }
       };
     }
-    if (context == null ? void 0 : context.isInParagraph) {
+    if ((context == null ? void 0 : context.isInParagraph) && (context == null ? void 0 : context.isAtParagraphStart) !== false) {
       const exampleMarker = parseExampleListMarker(line);
       if (exampleMarker) {
         const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
@@ -5105,10 +5105,11 @@ var ReadingModeParser = class {
   /**
    * Parse multiple lines with context
    */
-  parseLines(lines, isInParagraph = false) {
+  parseLines(lines, isInParagraph = false, isAtParagraphStart = true) {
     return lines.map((line, index) => {
       const nextLine = index < lines.length - 1 ? lines[index + 1] : void 0;
-      return this.parseLine(line, { nextLine, isInParagraph });
+      const isLineAtStart = index === 0 ? isAtParagraphStart : true;
+      return this.parseLine(line, { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart });
     });
   }
   /**
@@ -5148,15 +5149,15 @@ var ReadingModeRenderer = class {
   renderLine(parsedLine, context, lineNumber) {
     switch (parsedLine.type) {
       case "hash":
-        return this.renderHashList(parsedLine.metadata, lineNumber);
+        return this.renderHashList(parsedLine.metadata, lineNumber, context);
       case "fancy":
-        return this.renderFancyList(parsedLine.metadata);
+        return this.renderFancyList(parsedLine.metadata, context);
       case "example":
-        return this.renderExampleList(parsedLine.metadata, lineNumber);
+        return this.renderExampleList(parsedLine.metadata, lineNumber, context);
       case "definition-term":
         return this.renderDefinitionTerm(parsedLine.metadata);
       case "definition-item":
-        return this.renderDefinitionItem(parsedLine.metadata);
+        return this.renderDefinitionItem(parsedLine.metadata, context);
       case "reference":
         return this.renderWithReferences(parsedLine.content, parsedLine.metadata, context);
       default:
@@ -5191,35 +5192,37 @@ var ReadingModeRenderer = class {
   /**
    * Render hash auto-numbering list
    */
-  renderHashList(data, number) {
+  renderHashList(data, number, context) {
     const elements = [];
     const span = document.createElement("span");
     span.className = `${CSS_CLASSES.FANCY_LIST}-hash`;
     span.textContent = `${number || "#"}. `;
     elements.push(span);
     if (data.content) {
-      elements.push(document.createTextNode(data.content));
+      const contentElements = this.processContentForReferences(data.content, context);
+      elements.push(...contentElements);
     }
     return elements;
   }
   /**
    * Render fancy list marker
    */
-  renderFancyList(data) {
+  renderFancyList(data, context) {
     const elements = [];
     const span = document.createElement("span");
     span.className = `${CSS_CLASSES.FANCY_LIST}-${data.type}`;
     span.textContent = data.marker + " ";
     elements.push(span);
     if (data.content) {
-      elements.push(document.createTextNode(data.content));
+      const contentElements = this.processContentForReferences(data.content, context);
+      elements.push(...contentElements);
     }
     return elements;
   }
   /**
    * Render example list
    */
-  renderExampleList(data, number) {
+  renderExampleList(data, number, context) {
     const elements = [];
     const span = document.createElement("span");
     span.className = CSS_CLASSES.EXAMPLE_LIST;
@@ -5229,7 +5232,8 @@ var ReadingModeRenderer = class {
     }
     elements.push(span);
     if (data.content) {
-      elements.push(document.createTextNode(data.content));
+      const contentElements = this.processContentForReferences(data.content, context);
+      elements.push(...contentElements);
     }
     return elements;
   }
@@ -5246,12 +5250,13 @@ var ReadingModeRenderer = class {
   /**
    * Render definition item
    */
-  renderDefinitionItem(data) {
+  renderDefinitionItem(data, context) {
     const elements = [];
     const span = document.createElement("span");
     span.textContent = "\u2022 ";
     elements.push(span);
-    elements.push(document.createTextNode(data.content));
+    const contentElements = this.processContentForReferences(data.content, context);
+    elements.push(...contentElements);
     return elements;
   }
   /**
@@ -5296,6 +5301,51 @@ var ReadingModeRenderer = class {
    */
   createNewline() {
     return document.createTextNode("\n");
+  }
+  /**
+   * Process content text for references and return appropriate elements
+   */
+  processContentForReferences(content, context) {
+    if (!context) {
+      return [document.createTextNode(content)];
+    }
+    const references = ListPatterns.findExampleReferences(content);
+    if (references.length === 0) {
+      const customRefs = ListPatterns.findCustomLabelReferences(content);
+      if (customRefs.length === 0) {
+        return [document.createTextNode(content)];
+      }
+      return [document.createTextNode(content)];
+    }
+    const elements = [];
+    let lastIndex = 0;
+    references.forEach((match) => {
+      var _a, _b;
+      const startIndex = match.index;
+      const endIndex = startIndex + match[0].length;
+      const label = match[1];
+      if (startIndex > lastIndex) {
+        elements.push(document.createTextNode(content.substring(lastIndex, startIndex)));
+      }
+      const exampleNumber = (_a = context.getExampleNumber) == null ? void 0 : _a.call(context, label);
+      if (exampleNumber !== void 0) {
+        const span = document.createElement("span");
+        span.className = CSS_CLASSES.EXAMPLE_REF;
+        span.textContent = `(${exampleNumber})`;
+        const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, label);
+        if (tooltipText) {
+          (0, import_obsidian12.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+        }
+        elements.push(span);
+      } else {
+        elements.push(document.createTextNode(match[0]));
+      }
+      lastIndex = endIndex;
+    });
+    if (lastIndex < content.length) {
+      elements.push(document.createTextNode(content.substring(lastIndex)));
+    }
+    return elements;
   }
 };
 
@@ -5366,7 +5416,7 @@ function processReferencesInText(text, container, placeholderContext) {
       container.appendChild(document.createTextNode(match[0]));
     } else {
       const refSpan = document.createElement("span");
-      refSpan.className = CSS_CLASSES.EXAMPLE_REF;
+      refSpan.className = CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED;
       refSpan.setAttribute("data-custom-label-ref", processedLabel);
       refSpan.textContent = `(${processedLabel})`;
       container.appendChild(refSpan);
@@ -5377,12 +5427,57 @@ function processReferencesInText(text, container, placeholderContext) {
     container.appendChild(document.createTextNode(text.substring(lastIndex)));
   }
 }
+function processElementPreservingSpans(elem, placeholderContext) {
+  const walker = document.createTreeWalker(
+    elem,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node2) => {
+        const parent = node2.parentElement;
+        if (parent && (parent.className === CSS_CLASSES.EXAMPLE_REF || parent.className === CSS_CLASSES.PANDOC_LIST_MARKER || parent.className.includes("pandoc-list-fancy") || parent.className === CSS_CLASSES.EXAMPLE_LIST || parent.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED || parent.tagName === "STRONG" || // Skip text inside strong tags that might contain processed content
+        parent.tagName === "EM")) {
+          return NodeFilter.FILTER_SKIP;
+        }
+        const grandParent = parent == null ? void 0 : parent.parentElement;
+        if (grandParent && (grandParent.className === CSS_CLASSES.EXAMPLE_REF || grandParent.className === CSS_CLASSES.EXAMPLE_LIST)) {
+          return NodeFilter.FILTER_SKIP;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+  const nodesToProcess = [];
+  let node;
+  while (node = walker.nextNode()) {
+    if (node.textContent && node.textContent.includes("{::")) {
+      nodesToProcess.push(node);
+    }
+  }
+  nodesToProcess.forEach((textNode) => {
+    const text = textNode.textContent || "";
+    const parent = textNode.parentNode;
+    if (!parent) return;
+    if (!text.includes("{::")) return;
+    const tempContainer = document.createElement("span");
+    processReferencesInText(text, tempContainer, placeholderContext);
+    while (tempContainer.firstChild) {
+      parent.insertBefore(tempContainer.firstChild, textNode);
+    }
+    parent.removeChild(textNode);
+  });
+}
 function processElement(elem, placeholderContext) {
   if (elem.querySelector("code, pre") || elem.closest("code, pre")) {
     return;
   }
   if (!elem.textContent || !elem.textContent.includes("{::")) {
     return;
+  }
+  const hasAnyProcessedContent = elem.querySelector("span") || // Any span element
+  elem.querySelector("strong") || // Any strong element
+  elem.querySelector("em");
+  if (hasAnyProcessedContent) {
+    return processElementPreservingSpans(elem, placeholderContext);
   }
   const newContainer = document.createElement("div");
   const childNodes = Array.from(elem.childNodes);
@@ -5402,7 +5497,9 @@ function processElement(elem, placeholderContext) {
       newContainer.appendChild(document.createElement("br"));
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const elemNode = node;
-      if (elemNode.textContent && elemNode.textContent.includes("{::")) {
+      if (elemNode.tagName === "SPAN" && (elemNode.className === CSS_CLASSES.EXAMPLE_REF || elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER || elemNode.className.includes("pandoc-list-fancy") || elemNode.className === CSS_CLASSES.EXAMPLE_LIST || elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED)) {
+        newContainer.appendChild(node.cloneNode(true));
+      } else if (elemNode.textContent && elemNode.textContent.includes("{::")) {
         const clonedElem = elemNode.cloneNode(false);
         const tempContainer = createDiv();
         Array.from(elemNode.childNodes).forEach((child) => {
@@ -5636,8 +5733,9 @@ function processElementTextNodes(elem, parser, renderer, config, docPath, valida
       return;
     }
     const isInParagraph = parent.nodeName === "P";
+    const isAtParagraphStart = parent.firstChild === node;
     const lines = text.split("\n");
-    const parsedLines = parser.parseLines(lines, isInParagraph);
+    const parsedLines = parser.parseLines(lines, isInParagraph, isAtParagraphStart);
     if (config.strictPandocMode) {
       parsedLines.forEach((parsedLine, index) => {
         if (parsedLine.type === "fancy" && validationLines.length > 0) {

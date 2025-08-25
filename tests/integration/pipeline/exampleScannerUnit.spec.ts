@@ -70,8 +70,8 @@ describe('Example List Scanning Logic', () => {
         const result = scanExampleLabels(content);
         
         // The bug: all three (@) share empty label "", so they're incorrectly marked as duplicates
-        console.log('Labels map:', Array.from(result.exampleLabels.entries()));
-        console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
+        // console.log('Labels map:', Array.from(result.exampleLabels.entries()));
+        // console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
         
         // Currently fails because empty labels are treated as duplicates
         expect(result.duplicateLabels.size).toBe(0);  // Should have no duplicates
@@ -87,8 +87,8 @@ describe('Example List Scanning Logic', () => {
         
         const result = scanExampleLabels(content);
         
-        console.log('Labels map:', Array.from(result.exampleLabels.entries()));
-        console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
+        // console.log('Labels map:', Array.from(result.exampleLabels.entries()));
+        // console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
         
         expect(result.duplicateLabels.has('good')).toBe(true);  // 'good' is duplicate
         expect(result.duplicateLabels.has('bad')).toBe(false);   // 'bad' is not duplicate
@@ -106,9 +106,9 @@ describe('Example List Scanning Logic', () => {
         
         const result = scanExampleLabels(content);
         
-        console.log('Labels map:', Array.from(result.exampleLabels.entries()));
-        console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
-        console.log('Line numbers:', Array.from(result.exampleLineNumbers.entries()));
+        // console.log('Labels map:', Array.from(result.exampleLabels.entries()));
+        // console.log('Duplicate labels:', Array.from(result.duplicateLabels.entries()));
+        // console.log('Line numbers:', Array.from(result.exampleLineNumbers.entries()));
         
         // The bug: empty label "" from all (@) items is incorrectly flagged as duplicate
         expect(result.duplicateLabels.has('')).toBe(false);     // Empty labels should NOT be duplicates

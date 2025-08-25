@@ -49,7 +49,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         
         // Find inline example references
         const references = await $$('.pandoc-example-reference');
-        console.log(`Found ${references.length} total example references`);
+        // console.log(`Found ${references.length} total example references`);
         
         // Find only the inline references (numbered ones)
         let targetRef = null;
@@ -58,7 +58,7 @@ describe('Popover Bug Fix - Simple Test', () => {
                 const text = await ref.getText();
                 if (text === '(1)' || text === '(2)') {
                     targetRef = ref;
-                    console.log(`Found inline reference with text: ${text}`);
+                    // console.log(`Found inline reference with text: ${text}`);
                     break;
                 }
             } catch (e) {
@@ -67,7 +67,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         }
         
         if (!targetRef) {
-            console.log('No inline references found, skipping test');
+            // console.log('No inline references found, skipping test');
             return;
         }
         
@@ -78,7 +78,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         
         // Check popover exists
         let popovers = await $$('.pandoc-hover-popover');
-        console.log(`After hover: ${popovers.length} popovers found`);
+        // console.log(`After hover: ${popovers.length} popovers found`);
         expect(popovers.length).toBeGreaterThan(0);
         
         // 2. Click on the reference (this should dismiss the popover)
@@ -87,7 +87,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         
         // Check popover is gone
         popovers = await $$('.pandoc-hover-popover');
-        console.log(`After click: ${popovers.length} popovers found`);
+        // console.log(`After click: ${popovers.length} popovers found`);
         
         // 3. Move mouse away completely
         const editor = await $('.cm-content');
@@ -116,7 +116,7 @@ describe('Popover Bug Fix - Simple Test', () => {
             
             // Popover should appear again (not stuck from before)
             popovers = await $$('.pandoc-hover-popover');
-            console.log(`After re-hover: ${popovers.length} popovers found`);
+            // console.log(`After re-hover: ${popovers.length} popovers found`);
             
             // Move away again
             await editor.click({ x: 10, y: 10 });
@@ -124,7 +124,7 @@ describe('Popover Bug Fix - Simple Test', () => {
             
             // Final check - no popovers should remain
             popovers = await $$('.pandoc-hover-popover');
-            console.log(`Final check: ${popovers.length} popovers found`);
+            // console.log(`Final check: ${popovers.length} popovers found`);
             
             // Check if any are actually visible
             let visibleCount = 0;
@@ -137,7 +137,7 @@ describe('Popover Bug Fix - Simple Test', () => {
                     // Element might be stale or removed
                 }
             }
-            console.log(`Final visible popovers: ${visibleCount}`);
+            // console.log(`Final visible popovers: ${visibleCount}`);
             
             // THE KEY ASSERTION: No visible popovers should remain
             expect(visibleCount).toBe(0);

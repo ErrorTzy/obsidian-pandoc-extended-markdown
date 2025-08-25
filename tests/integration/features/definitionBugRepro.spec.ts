@@ -62,9 +62,9 @@ describe('Definition List Bug Reproduction', () => {
             let decorationCount = 0;
             decorations.between(0, doc.length, (from: number, to: number, decoration: any) => {
                 decorationCount++;
-                console.log(`Decoration at ${from}-${to}:`, decoration);
+                // console.log(`Decoration at ${from}-${to}:`, decoration);
             });
-            console.log(`Total decorations: ${decorationCount}`);
+            // console.log(`Total decorations: ${decorationCount}`);
         }
 
         expect(hasDecorations).toBe(true);
@@ -137,9 +137,9 @@ describe('Definition List Bug Reproduction', () => {
             let decorationCount = 0;
             decorations.between(0, doc.length, (from: number, to: number, decoration: any) => {
                 decorationCount++;
-                console.log(`Decoration at ${from}-${to}:`, decoration);
+                // console.log(`Decoration at ${from}-${to}:`, decoration);
             });
-            console.log(`Total decorations: ${decorationCount}`);
+            // console.log(`Total decorations: ${decorationCount}`);
         }
 
         expect(hasDecorations).toBe(true);
