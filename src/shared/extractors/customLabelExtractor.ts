@@ -1,5 +1,7 @@
 import { EditorPosition } from 'obsidian';
+
 import { ListPatterns } from '../patterns';
+
 import { PlaceholderContext } from '../utils/placeholderProcessor';
 import { withErrorBoundary } from '../utils/errorHandler';
 

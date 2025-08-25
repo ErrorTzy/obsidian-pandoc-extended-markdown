@@ -5,10 +5,11 @@
  * This module only identifies and parses - it does not modify DOM or manage state.
  */
 
+import { ListPatterns } from '../../shared/patterns';
+
 import { parseFancyListMarker } from './fancyListParser';
 import { parseExampleListMarker } from './exampleListParser';
 import { parseDefinitionListMarker } from './definitionListParser';
-import { ListPatterns } from '../../shared/patterns';
 
 export interface ParsedLine {
     type: 'hash' | 'fancy' | 'example' | 'definition-term' | 'definition-item' | 'plain' | 'reference';

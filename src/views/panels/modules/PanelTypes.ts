@@ -1,4 +1,5 @@
 import { MarkdownView } from 'obsidian';
+
 import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 
 export interface PanelModule {

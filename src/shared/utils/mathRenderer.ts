@@ -1,15 +1,16 @@
 import { UI_CONSTANTS, MATH_SYMBOLS } from '../../core/constants';
+import { ListPatterns } from '../patterns';
 
 export function renderMathToText(mathContent: string): string {
     let rendered = mathContent;
     
     // Replace LaTeX commands with their Unicode equivalents
     for (const [latex, unicode] of Object.entries(MATH_SYMBOLS.LATEX_TO_UNICODE)) {
-        rendered = rendered.replace(new RegExp(latex.replace(/\\/g, '\\\\'), 'g'), unicode);
+        rendered = rendered.replace(new RegExp(latex.replace(ListPatterns.BACKSLASH_ESCAPE, '\\\\'), 'g'), unicode);
     }
     
     // Remove remaining backslashes and spaces that were part of commands
-    rendered = rendered.replace(/\\/g, '').replace(/\s+/g, ' ').trim();
+    rendered = ListPatterns.cleanMathExpression(rendered);
     
     return rendered;
 }

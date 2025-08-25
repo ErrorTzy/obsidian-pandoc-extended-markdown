@@ -1,7 +1,10 @@
 import { Text } from '@codemirror/state';
+
 import { ListPatterns } from '../../shared/patterns';
-import { PandocExtendedMarkdownSettings } from '../../core/settings';
+
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+
+import { PandocExtendedMarkdownSettings } from '../../core/settings';
 
 export interface CustomLabelScanResult {
     customLabels: Map<string, string>;        // processed label -> content

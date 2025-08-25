@@ -1,11 +1,22 @@
+import { ValidationContext, LintingIssue } from '../shared/types/listTypes';
+
 import { INDENTATION } from '../core/constants';
+
 import { ListPatterns } from '../shared/patterns';
 
-export interface ValidationContext {
-    lines: string[];
-    currentLine: number;
-}
-
+/**
+ * Validates whether the current line conforms to strict Pandoc formatting rules.
+ * In strict mode, lists must be surrounded by empty lines and capital letter lists
+ * with periods require double spacing.
+ * 
+ * @param context - The validation context containing lines and current position
+ * @param strictMode - Whether to enforce strict Pandoc formatting rules
+ * @returns True if formatting is valid or strict mode is disabled, false otherwise
+ * @throws Does not throw exceptions - returns false for validation failures
+ * @example
+ * const context = { lines: ['', 'A. First item', ''], currentLine: 1 };
+ * const isValid = isStrictPandocFormatting(context, true); // returns true
+ */
 export function isStrictPandocFormatting(context: ValidationContext, strictMode: boolean): boolean {
     if (!strictMode) {
         return true;
@@ -103,6 +114,20 @@ export function isStrictPandocHeading(context: ValidationContext, strictMode: bo
     return true;
 }
 
+/**
+ * Formats markdown content to comply with Pandoc standard formatting rules.
+ * Automatically adds empty lines before and after lists and headings, and ensures
+ * proper spacing for capital letter lists with periods.
+ * 
+ * @param content - The raw markdown content to format
+ * @param moreExtendedSyntax - Whether to include custom label lists in formatting
+ * @returns The formatted markdown content with proper Pandoc spacing
+ * @throws Does not throw exceptions - handles malformed input gracefully
+ * @example
+ * const content = 'Some text\nA.First item\nNext paragraph';
+ * const formatted = formatToPandocStandard(content);
+ * // Returns: 'Some text\n\nA.  First item\n\nNext paragraph'
+ */
 export function formatToPandocStandard(content: string, moreExtendedSyntax: boolean = false): string {
     const lines = content.split('\n');
     const result: string[] = [];
@@ -185,11 +210,20 @@ export function formatToPandocStandard(content: string, moreExtendedSyntax: bool
     return cleanedResult.join('\n');
 }
 
-export interface LintingIssue {
-    line: number;
-    message: string;
-}
-
+/**
+ * Analyzes markdown content and returns a list of Pandoc formatting violations.
+ * Checks for missing empty lines around lists and headings, and validates
+ * spacing requirements for capital letter lists.
+ * 
+ * @param content - The markdown content to analyze for formatting issues
+ * @param moreExtendedSyntax - Whether to include custom label lists in validation
+ * @returns Array of LintingIssue objects describing formatting problems with line numbers
+ * @throws Does not throw exceptions - returns empty array for valid content
+ * @example
+ * const content = 'Text\nA.Item\nMore text';
+ * const issues = checkPandocFormatting(content);
+ * // Returns issues for missing empty lines and insufficient spacing
+ */
 export function checkPandocFormatting(content: string, moreExtendedSyntax: boolean = false): LintingIssue[] {
     const lines = content.split('\n');
     const issues: LintingIssue[] = [];

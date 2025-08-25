@@ -3,7 +3,7 @@ import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 // Types
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS } from '../shared/types/settingsTypes';
-import type { ListPanelView } from './views/ListPanelView';
+import type { ListPanelView } from '../views/panels/ListPanelView';
 
 // Constants
 import { PANEL_SETTINGS } from './constants';

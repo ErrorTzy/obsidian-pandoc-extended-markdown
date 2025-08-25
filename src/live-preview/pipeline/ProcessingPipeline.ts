@@ -1,7 +1,7 @@
 import { EditorView, DecorationSet, Decoration } from '@codemirror/view';
-import { RangeSetBuilder } from '@codemirror/state';
-import { PandocExtendedMarkdownSettings } from '../../core/settings';
-import { PluginStateManager } from '../../core/state/pluginStateManager';
+import { RangeSetBuilder, Text } from '@codemirror/state';
+import { App, Component } from 'obsidian';
+
 import { 
     ProcessingContext, 
     StructuralProcessor, 
@@ -9,12 +9,16 @@ import {
     ContentRegion,
     InlineMatch 
 } from './types';
-// scanExampleLabels import removed - we'll create our own version
+
+import { ListPatterns } from '../../shared/patterns';
+
+import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+
+import { PandocExtendedMarkdownSettings } from '../../core/settings';
+import { PluginStateManager } from '../../core/state/pluginStateManager';
 import { scanCustomLabels } from '../scanners/customLabelScanner';
 import { validateListBlocks } from '../validators/listBlockValidator';
-import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
-import { ListPatterns } from '../../shared/patterns';
-import { Text } from '@codemirror/state';
+import { handleError } from '../../shared/utils/errorHandler';
 
 // Helper: Process a single example list line
 function processExampleLine(
@@ -96,10 +100,10 @@ export class ProcessingPipeline {
     private structuralProcessors: StructuralProcessor[] = [];
     private inlineProcessors: InlineProcessor[] = [];
     private stateManager: PluginStateManager;
-    private app: any; // Will be passed from plugin to avoid global app access
-    private component: any; // Component for lifecycle management
+    private app: App | undefined; // Will be passed from plugin to avoid global app access
+    private component: Component | undefined; // Component for lifecycle management
     
-    constructor(stateManager: PluginStateManager, app?: any, component?: any) {
+    constructor(stateManager: PluginStateManager, app?: App, component?: Component) {
         this.stateManager = stateManager;
         this.app = app;
         this.component = component;
@@ -356,7 +360,7 @@ export class ProcessingPipeline {
         for (const { from, to, decoration } of allDecorations) {
             // Validate positions are within document bounds
             if (from < 0 || to > docLength || from > to) {
-                console.warn(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`);
+                handleError(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`, 'warning');
                 continue;
             }
             
@@ -367,7 +371,7 @@ export class ProcessingPipeline {
             try {
                 builder.add(safeFrom, safeTo, decoration);
             } catch (e) {
-                console.error(`Failed to add decoration at ${safeFrom}-${safeTo}:`, e);
+                handleError(e, 'error');
             }
         }
         

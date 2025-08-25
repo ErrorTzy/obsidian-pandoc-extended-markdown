@@ -1,7 +1,10 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
+
 import { getSectionInfo } from '../../shared/types/obsidian-extended';
 import { FancyListType, FancyListMarker } from '../../shared/types/listTypes';
+
 import { CSS_CLASSES, getFancyListClass } from '../../core/constants';
+
 import { ListPatterns } from '../../shared/patterns';
 
 export function parseFancyListMarker(line: string): FancyListMarker | null {

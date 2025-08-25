@@ -5,7 +5,7 @@ import { ItemView, WorkspaceLeaf, MarkdownView, HoverLinkSource, setIcon } from 
 import { PanelModule, PanelTabInfo } from './modules/PanelTypes';
 
 // Constants
-import { UI_CONSTANTS, ICONS, MESSAGES } from '../../core/constants';
+import { UI_CONSTANTS, ICONS, MESSAGES, CSS_CLASSES } from '../../core/constants';
 
 // Utils
 import { handleError } from '../../shared/utils/errorHandler';
@@ -21,7 +21,7 @@ export class ListPanelView extends ItemView {
     private plugin: PandocExtendedMarkdownPlugin;
     private panels: PanelTabInfo[] = [];
     private activePanel: PanelModule | null = null;
-    private updateTimer: NodeJS.Timeout | null = null;
+    private updateTimer: number | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null;
     private iconRowEl: HTMLElement | null = null;
     private contentContainerEl: HTMLElement | null = null;
@@ -91,7 +91,8 @@ export class ListPanelView extends ItemView {
     }
     
     getIcon(): string {
-        return ICONS.LIST_PANEL_ID;
+        // Return a built-in Obsidian icon name for the view
+        return 'list';
     }
     
     async onOpen() {
@@ -141,29 +142,44 @@ export class ListPanelView extends ItemView {
         this.contentEl.empty();
         
         const viewContainer = this.contentEl.createDiv({
-            cls: 'pandoc-list-panel-view-container'
+            cls: CSS_CLASSES.LIST_PANEL_VIEW_CONTAINER
         });
         
         this.iconRowEl = viewContainer.createDiv({
-            cls: 'pandoc-list-panel-icon-row'
+            cls: CSS_CLASSES.LIST_PANEL_ICON_ROW
         });
         
         for (const panel of this.panels) {
             const iconButton = this.iconRowEl.createDiv({
-                cls: 'pandoc-list-panel-icon-button',
+                cls: CSS_CLASSES.LIST_PANEL_ICON_BUTTON,
                 attr: {
                     'aria-label': panel.displayName,
                     'data-panel-id': panel.id
                 }
             });
             
-            // Create SVG element safely without innerHTML
-            const iconContainer = iconButton.createDiv();
-            const parser = new DOMParser();
-            const svgDoc = parser.parseFromString(panel.icon, 'image/svg+xml');
-            const svgElement = svgDoc.documentElement;
-            if (svgElement && svgElement.nodeName === 'svg') {
-                iconContainer.appendChild(svgElement.cloneNode(true));
+            // Create icon container
+            const iconContainer = iconButton.createDiv({
+                cls: CSS_CLASSES.LIST_PANEL_ICON_CONTAINER
+            });
+            
+            // Create icon based on panel ID using CSS classes
+            // This avoids innerHTML and allows theme customization
+            if (panel.id === 'custom-labels') {
+                // Create custom label icon using text element
+                const iconText = iconContainer.createSpan({
+                    cls: CSS_CLASSES.LIST_PANEL_ICON_CUSTOM_LABEL,
+                    text: '{::}'
+                });
+            } else if (panel.id === 'example-lists') {
+                // Create example list icon using text element
+                const iconText = iconContainer.createSpan({
+                    cls: CSS_CLASSES.LIST_PANEL_ICON_EXAMPLE_LIST,
+                    text: '(@)'
+                });
+            } else {
+                // For future panels, add a generic icon class
+                iconContainer.addClass(`pandoc-icon-${panel.id}`);
             }
             
             iconButton.addEventListener('click', () => {
@@ -172,11 +188,11 @@ export class ListPanelView extends ItemView {
         }
         
         const separator = viewContainer.createEl('hr', {
-            cls: 'pandoc-list-panel-separator'
+            cls: CSS_CLASSES.LIST_PANEL_SEPARATOR
         });
         
         this.contentContainerEl = viewContainer.createDiv({
-            cls: 'pandoc-list-panel-content-container'
+            cls: CSS_CLASSES.LIST_PANEL_CONTENT_CONTAINER
         });
         
         if (this.panels.length > 0) {
@@ -193,11 +209,11 @@ export class ListPanelView extends ItemView {
             this.activePanel.onDeactivate();
         }
         
-        const allButtons = this.iconRowEl?.querySelectorAll('.pandoc-list-panel-icon-button');
-        allButtons?.forEach(btn => btn.removeClass('is-active'));
+        const allButtons = this.iconRowEl?.querySelectorAll(`.${CSS_CLASSES.LIST_PANEL_ICON_BUTTON}`);
+        allButtons?.forEach(btn => btn.removeClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE));
         
         const activeButton = this.iconRowEl?.querySelector(`[data-panel-id="${panelInfo.id}"]`);
-        activeButton?.addClass('is-active');
+        activeButton?.addClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE);
         
         this.activePanel = panelInfo.module;
         

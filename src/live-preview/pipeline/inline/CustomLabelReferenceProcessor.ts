@@ -148,7 +148,7 @@ export class CustomLabelReferenceProcessor implements InlineProcessor {
         if (!placeholderContext) return label;
         
         // Simple placeholder processing - replace (#a), (#b), etc. with numbers
-        return label.replace(/\(#([a-z])\)/g, (match, letter) => {
+        return ListPatterns.replacePlaceholderLetters(label, (match, letter) => {
             const value = placeholderContext.getPlaceholderValue?.(letter);
             return value !== undefined ? `(${value})` : match;
         });

@@ -1,4 +1,5 @@
 import { Notice } from 'obsidian';
+import { ERROR_CODES, ERROR_MESSAGES } from '../../core/constants';
 
 /**
  * Custom error class for the Pandoc Extended Markdown plugin.
@@ -14,17 +15,7 @@ export class PluginError extends Error {
     }
 }
 
-/**
- * Error codes for different types of errors.
- */
-export const ERROR_CODES = {
-    PARSE_ERROR: 'PARSE_ERROR',
-    RENDER_ERROR: 'RENDER_ERROR',
-    VALIDATION_ERROR: 'VALIDATION_ERROR',
-    API_ERROR: 'API_ERROR',
-    SETTINGS_ERROR: 'SETTINGS_ERROR',
-    UNKNOWN_ERROR: 'UNKNOWN_ERROR',
-} as const;
+// ERROR_CODES moved to core/constants.ts
 
 /**
  * Wraps a function with error handling.
@@ -64,7 +55,7 @@ export async function withAsyncErrorBoundary<T>(
  */
 export function handleError(error: unknown, context: string): void {
     // Determine error type and message
-    let message = 'An unexpected error occurred';
+    let message = ERROR_MESSAGES.UNEXPECTED_ERROR;
     let showNotice = true;
     
     if (error instanceof PluginError) {
@@ -83,7 +74,7 @@ export function handleError(error: unknown, context: string): void {
     
     // Show user-friendly notice for recoverable errors
     if (showNotice) {
-        new Notice(`Pandoc Extended Markdown: ${context} failed. ${message}`);
+        new Notice(`${ERROR_MESSAGES.PLUGIN_PREFIX}: ${context} ${ERROR_MESSAGES.PARSE_FAILED}. ${message}`);
     }
 }
 

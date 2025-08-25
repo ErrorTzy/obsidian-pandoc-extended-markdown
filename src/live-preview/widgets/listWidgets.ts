@@ -1,6 +1,6 @@
-import { WidgetType } from '@codemirror/view';
-import { EditorView } from '@codemirror/view';
+import { WidgetType, EditorView } from '@codemirror/view';
 import { setTooltip } from 'obsidian';
+
 import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
 
 // Widget for rendering fancy list markers

@@ -6,15 +6,18 @@
  */
 
 import { MarkdownPostProcessorContext } from 'obsidian';
+
+import { getSectionInfo } from '../shared/types/obsidian-extended';
+import { ProcessorConfig } from '../shared/types/processorConfig';
+
+import { ListPatterns } from '../shared/patterns';
+
 import { ReadingModeParser, ExampleListData } from './parsers/parser';
 import { ReadingModeRenderer, RenderContext } from './renderer';
-import { pluginStateManager } from '../core/state/pluginStateManager';
-import { ProcessorConfig } from '../shared/types/processorConfig';
 import { processSuperSub } from './parsers/superSubParser';
 import { processCustomLabelLists } from './parsers/customLabelListParser';
+import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting, ValidationContext } from '../editor-extensions/pandocValidator';
-import { getSectionInfo } from '../shared/types/obsidian-extended';
-import { ListPatterns } from '../shared/patterns';
 
 export function processReadingMode(
     element: HTMLElement, 
@@ -69,6 +72,21 @@ export function processReadingMode(
     }
 }
 
+/**
+ * Processes all text nodes within a DOM element to transform Pandoc syntax into rendered HTML.
+ * Uses a tree walker to find text nodes, parses them for Pandoc patterns, validates in strict mode,
+ * and replaces the nodes with rendered elements while maintaining document structure.
+ * 
+ * @param elem - The DOM element containing text nodes to process
+ * @param parser - ReadingModeParser instance for syntax parsing
+ * @param renderer - ReadingModeRenderer instance for DOM generation
+ * @param config - Processor configuration including strict mode settings
+ * @param docPath - Document path for state management and counter tracking
+ * @param validationLines - Array of document lines for strict mode validation
+ * @throws Does not throw exceptions - handles malformed nodes gracefully
+ * @example
+ * processElementTextNodes(paragraphEl, parser, renderer, config, '/path/doc.md', lines);
+ */
 function processElementTextNodes(
     elem: Element,
     parser: ReadingModeParser,
@@ -189,6 +207,20 @@ function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {
     return hasBasicSyntax || hasCustomLabelSyntax;
 }
 
+/**
+ * Validates whether a list line complies with strict Pandoc formatting rules.
+ * Searches for the line within the document context and applies validation
+ * rules for proper spacing and formatting around lists and headings.
+ * 
+ * @param line - The individual line to validate for Pandoc compliance
+ * @param documentLines - Complete array of document lines for context analysis
+ * @param config - Processor configuration containing strict mode settings
+ * @returns True if the line passes strict validation or if line cannot be found
+ * @throws Does not throw exceptions - returns true for unfindable lines
+ * @example
+ * const isValid = validateListInStrictMode('A. First item', docLines, config);
+ * // Returns false if missing required empty lines around the list
+ */
 function validateListInStrictMode(
     line: string,
     documentLines: string[],

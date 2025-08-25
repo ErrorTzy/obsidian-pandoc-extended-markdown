@@ -2,14 +2,20 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 import { CSS_CLASSES } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+import { CustomLabelInfo } from '../../shared/types/listTypes';
 
-export interface CustomLabelInfo {
-    indent: string;
-    originalMarker: string;
-    label: string;
-    processedLabel?: string;  // Label after placeholder processing
-}
-
+/**
+ * Parses a custom label list marker from a line of text and extracts label information.
+ * Custom labels use the syntax {::LABEL} and can contain placeholders like {::P(#a)}.
+ * 
+ * @param line - The text line to parse for custom label markers
+ * @param placeholderContext - Optional context for processing placeholder syntax in labels
+ * @returns CustomLabelInfo object with parsed label data, or null if no valid marker found
+ * @throws Does not throw exceptions - returns null for invalid input
+ * @example
+ * const info = parseCustomLabelMarker('  {::example} Some content');
+ * // Returns: { indent: '  ', originalMarker: '{::example}', label: 'example' }
+ */
 export function parseCustomLabelMarker(line: string, placeholderContext?: PlaceholderContext): CustomLabelInfo | null {
     const match = ListPatterns.isCustomLabelList(line);
     
@@ -58,8 +64,18 @@ export function isValidCustomLabel(label: string): boolean {
 }
 
 /**
- * Process custom label lists in reading mode.
- * Handles both single-line and multi-line custom label blocks
+ * Process custom label lists in reading mode using a two-pass algorithm.
+ * First pass scans all labels to build complete context, second pass processes
+ * the elements with full reference resolution. Handles both single-line and multi-line blocks.
+ * 
+ * @param element - The HTML element containing custom label lists to process
+ * @param context - Markdown post-processor context from Obsidian
+ * @param placeholderContext - Optional context for processing placeholders and maintaining label state
+ * @throws Does not throw exceptions - skips invalid elements gracefully
+ * @example
+ * // Processes elements like: {::theorem} This is a theorem
+ * // And references like: See {::theorem} for details
+ * processCustomLabelLists(paragraphElement, context, placeholderContext);
  */
 export function processCustomLabelLists(element: HTMLElement, context: MarkdownPostProcessorContext, placeholderContext?: PlaceholderContext) {
     // Skip if element has no text content with custom labels
@@ -120,18 +136,18 @@ function processTextNode(node: Node, container: HTMLElement, placeholderContext?
         // Process placeholders in the label
         const processedLabel = placeholderContext ? placeholderContext.processLabel(rawLabel) : rawLabel;
         
-        // Add indent text if present
+        // Add indent text if present using safe methods
         if (indent) {
             container.appendChild(document.createTextNode(indent));
         }
         
-        // Create marker span
+        // Create marker span using safe methods
         const markerSpan = document.createElement('span');
         markerSpan.className = CSS_CLASSES.PANDOC_LIST_MARKER;
         markerSpan.textContent = `(${processedLabel})`;
         container.appendChild(markerSpan);
         
-        // Add space
+        // Add space using safe methods
         container.appendChild(document.createTextNode(space));
         
         // Process remaining text for references
@@ -148,7 +164,7 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
     let match;
     
     while ((match = refPattern.exec(text)) !== null) {
-        // Add text before the match
+        // Add text before the match using safe methods
         if (match.index > lastIndex) {
             container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
         }
@@ -171,12 +187,25 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
         lastIndex = refPattern.lastIndex;
     }
     
-    // Add remaining text
+    // Add remaining text using safe methods
     if (lastIndex < text.length) {
         container.appendChild(document.createTextNode(text.substring(lastIndex)));
     }
 }
 
+/**
+ * Recursively processes a DOM element to transform custom label syntax into rendered HTML.
+ * Transforms {::LABEL} markers into styled spans and {::reference} into clickable references.
+ * Preserves line breaks and handles nested elements correctly.
+ * 
+ * @param elem - The DOM element to process for custom label transformations
+ * @param placeholderContext - Optional context for resolving label placeholders and references
+ * @throws Does not throw exceptions - skips processing for invalid elements
+ * @example
+ * // Transforms: {::eq1} E = mc^2
+ * // Into: <span class="pandoc-list-marker">(1)</span> E = mc^2
+ * processElement(paragraphElement, placeholderContext);
+ */
 function processElement(elem: Element, placeholderContext?: PlaceholderContext) {
     // Skip code blocks and pre elements
     if (elem.querySelector('code, pre') || elem.closest('code, pre')) {
@@ -212,7 +241,7 @@ function processElement(elem: Element, placeholderContext?: PlaceholderContext) 
             }
         } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'BR') {
             // Preserve BR elements
-            newContainer.appendChild(node.cloneNode(true));
+            newContainer.appendChild(document.createElement('br'));
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             // For other elements, recursively process if they contain custom labels
             const elemNode = node as Element;
@@ -221,7 +250,7 @@ function processElement(elem: Element, placeholderContext?: PlaceholderContext) 
                 const clonedElem = elemNode.cloneNode(false) as Element;
                 
                 // Process the element's children
-                const tempContainer = document.createElement('div');
+                const tempContainer = createDiv();
                 Array.from(elemNode.childNodes).forEach(child => {
                     tempContainer.appendChild(child.cloneNode(true));
                 });

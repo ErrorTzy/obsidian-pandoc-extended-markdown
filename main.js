@@ -121,6 +121,16 @@ var CSS_CLASSES = {
   HOVER_POPOVER: "pandoc-hover-popover",
   HOVER_POPOVER_LABEL: "pandoc-hover-popover-label",
   HOVER_POPOVER_CONTENT: "pandoc-hover-popover-content",
+  // List Panel View Classes
+  LIST_PANEL_VIEW_CONTAINER: "pandoc-list-panel-view-container",
+  LIST_PANEL_ICON_ROW: "pandoc-list-panel-icon-row",
+  LIST_PANEL_ICON_BUTTON: "pandoc-list-panel-icon-button",
+  LIST_PANEL_ICON_CONTAINER: "pandoc-panel-icon-container",
+  LIST_PANEL_ICON_CUSTOM_LABEL: "pandoc-icon-custom-label",
+  LIST_PANEL_ICON_EXAMPLE_LIST: "pandoc-icon-example-list",
+  LIST_PANEL_SEPARATOR: "pandoc-list-panel-separator",
+  LIST_PANEL_CONTENT_CONTAINER: "pandoc-list-panel-content-container",
+  LIST_PANEL_ICON_ACTIVE: "is-active",
   // Example List View Classes
   EXAMPLE_LIST_VIEW_CONTAINER: "pandoc-example-list-view-container",
   EXAMPLE_LIST_VIEW_ROW: "pandoc-example-list-view-row",
@@ -171,6 +181,8 @@ var UI_CONSTANTS = {
   LABEL_MAX_LENGTH: 6,
   LABEL_TRUNCATION_LENGTH: 5,
   // Length before adding ellipsis
+  // Icon dimensions
+  PANEL_ICON_SIZE: 20,
   CONTENT_MAX_LENGTH: 51,
   CONTENT_TRUNCATION_LENGTH: 50,
   // Length before adding ellipsis
@@ -294,6 +306,42 @@ var PANEL_SETTINGS = {
     BTN_RESTORE_DEFAULT: "Restore to Default"
   }
 };
+var ERROR_MESSAGES = {
+  PLUGIN_PREFIX: "Pandoc Extended Markdown",
+  UNEXPECTED_ERROR: "An unexpected error occurred",
+  PARSE_FAILED: "failed",
+  COPY_FAILED: "Failed to copy label",
+  HIGHLIGHT_ERROR: "Error highlighting line",
+  SCROLL_ERROR: "Error scrolling to label",
+  WIDGET_CREATION_ERROR: "Failed to create definition widget",
+  DECORATION_ERROR: "Failed to add decoration",
+  INVALID_POSITION: "Invalid decoration position",
+  INVALID_MARKER_POSITION: "Invalid marker positions for definition"
+};
+var NUMERIC_CONSTANTS = {
+  // Document validation
+  MIN_DOC_POSITION: 0,
+  // Position validation
+  POSITION_TOLERANCE: 0,
+  // Line processing
+  LINE_PROCESSING_BATCH_SIZE: 100,
+  // Content limits
+  MAX_CONTENT_LENGTH: 1e3,
+  MAX_LABEL_LENGTH: 100,
+  // Timer intervals
+  DEBOUNCE_INTERVAL_MS: 100,
+  SELECTION_TIMEOUT_MS: 50,
+  // Character limits
+  SINGLE_CHARACTER: 1,
+  EMPTY_LENGTH: 0,
+  // Array indices
+  FIRST_INDEX: 0,
+  SECOND_INDEX: 1,
+  THIRD_INDEX: 2,
+  // List processing
+  LIST_NESTING_LEVEL: 1,
+  MAX_NESTING_DEPTH: 10
+};
 
 // src/views/panels/ListPanelView.ts
 var import_obsidian5 = require("obsidian");
@@ -317,7 +365,7 @@ function withErrorBoundary(fn, fallback, context) {
   }
 }
 function handleError(error, context) {
-  let message = "An unexpected error occurred";
+  let message = ERROR_MESSAGES.UNEXPECTED_ERROR;
   let showNotice = true;
   if (error instanceof PluginError) {
     message = error.message;
@@ -331,7 +379,7 @@ function handleError(error, context) {
     message = error;
   }
   if (showNotice) {
-    new import_obsidian.Notice(`Pandoc Extended Markdown: ${context} failed. ${message}`);
+    new import_obsidian.Notice(`${ERROR_MESSAGES.PLUGIN_PREFIX}: ${context} ${ERROR_MESSAGES.PARSE_FAILED}. ${message}`);
   }
 }
 
@@ -462,19 +510,43 @@ var ListPatterns = class {
    * Extract letter and delimiter from a fancy list marker.
    */
   static extractLetterMarker(marker) {
-    return marker.match(/^([A-Za-z]+)([.)])$/);
+    return marker.match(this.LETTER_MARKER_PATTERN);
   }
   /**
    * Extract roman numeral and delimiter from a fancy list marker.
    */
   static extractRomanMarker(marker) {
-    return marker.match(/^([ivxlcdmIVXLCDM]+)([.)])$/);
+    return marker.match(this.ROMAN_MARKER_PATTERN);
   }
   /**
    * Check if text starts with a formatting marker.
    */
   static startsWithFormatting(text) {
-    return /^(\*\*|__|\*|_|`)/.test(text);
+    return this.FORMATTING_MARKER_START.test(text);
+  }
+  /**
+   * Remove trailing quotes from text.
+   */
+  static removeTrailingQuotes(text) {
+    return text.replace(this.TRAILING_QUOTES, "");
+  }
+  /**
+   * Clean up whitespace and formatting in mathematical expressions.
+   */
+  static cleanMathExpression(text) {
+    return text.replace(this.BACKSLASH_ESCAPE, "").replace(this.WHITESPACE_CLEANUP, " ").trim();
+  }
+  /**
+   * Clean up whitespace before dollar signs in LaTeX.
+   */
+  static cleanWhitespaceBeforeDollar(content) {
+    return content.replace(this.WHITESPACE_DOLLAR_CLEANUP, "$");
+  }
+  /**
+   * Replace placeholder letters with values.
+   */
+  static replacePlaceholderLetters(label, replaceFn) {
+    return label.replace(this.PLACEHOLDER_LETTER_PATTERN, replaceFn);
   }
   /**
    * Get indent from a line.
@@ -606,6 +678,15 @@ ListPatterns.PURE_EXPRESSION_PATTERN = /^[A-Za-z]?[\s+\-*/,()'\d]*$/;
 ListPatterns.TRAILING_DIGITS = /\d+$/;
 // Custom label placeholder pattern for inline matching
 ListPatterns.CUSTOM_LABEL_PLACEHOLDER = /\(#([^)]+)\)/g;
+// Additional inline patterns
+ListPatterns.TRAILING_QUOTES = /'+$/;
+ListPatterns.BACKSLASH_ESCAPE = /\\/g;
+ListPatterns.WHITESPACE_CLEANUP = /\s+/g;
+ListPatterns.LETTER_MARKER_PATTERN = /^([A-Za-z]+)([.)])$/;
+ListPatterns.ROMAN_MARKER_PATTERN = /^([ivxlcdmIVXLCDM]+)([.)])$/;
+ListPatterns.PLACEHOLDER_LETTER_PATTERN = /\(#([a-z])\)/g;
+ListPatterns.WHITESPACE_DOLLAR_CLEANUP = /\s+\$/g;
+ListPatterns.FORMATTING_MARKER_START = /^(\*\*|__|\*|_|`)/;
 
 // src/shared/utils/placeholderProcessor.ts
 var PlaceholderContext = class {
@@ -692,9 +773,14 @@ var PlaceholderContext = class {
   /**
    * Check if a label is a pure expression (contains only placeholders and operators).
    * Pure expressions like "(#a)+(#b)" or "P(#a),(#b)" are valid references without needing to be defined.
+   * After removing placeholders, checks if remaining characters are only operators, spaces, and simple prefixes.
    * 
-   * @param label - The label to check
-   * @returns true if the label is a pure expression
+   * @param label - The label to check for pure expression pattern
+   * @returns true if the label is a pure expression that doesn't need prior definition
+   * @throws Does not throw exceptions - handles malformed input gracefully
+   * @example
+   * isPureExpression("P(#a),(#b)"); // returns true
+   * isPureExpression("theorem1");   // returns false (needs definition)
    */
   isPureExpression(label) {
     const withoutPlaceholders = label.replace(ListPatterns.PLACEHOLDER_PATTERN, "");
@@ -703,12 +789,17 @@ var PlaceholderContext = class {
   /**
    * Get the base label without trailing primes or other modifiers.
    * Used to match variations like "P1'" against defined labels like "P1'''".
+   * Enables partial matching of label references against their defined counterparts.
    * 
-   * @param label - The label to extract base from
-   * @returns The base label without trailing primes
+   * @param label - The label to extract base form from
+   * @returns The base label with trailing primes/quotes removed
+   * @throws Does not throw exceptions - handles all string input safely
+   * @example
+   * getBaseLabel("theorem1'''"); // returns "theorem1"
+   * getBaseLabel("P1'");        // returns "P1"
    */
   getBaseLabel(label) {
-    return label.replace(/'+$/, "");
+    return ListPatterns.removeTrailingQuotes(label);
   }
   /**
    * Reset the context for a new document.
@@ -791,9 +882,9 @@ function processLabels(lines) {
 function renderMathToText(mathContent) {
   let rendered = mathContent;
   for (const [latex, unicode] of Object.entries(MATH_SYMBOLS.LATEX_TO_UNICODE)) {
-    rendered = rendered.replace(new RegExp(latex.replace(/\\/g, "\\\\"), "g"), unicode);
+    rendered = rendered.replace(new RegExp(latex.replace(ListPatterns.BACKSLASH_ESCAPE, "\\\\"), "g"), unicode);
   }
-  rendered = rendered.replace(/\\/g, "").replace(/\s+/g, " ").trim();
+  rendered = ListPatterns.cleanMathExpression(rendered);
   return rendered;
 }
 function tokenizeMath(mathContent) {
@@ -901,7 +992,7 @@ function parseContentWithMath(content) {
 }
 function normalizeMathSpaces(content) {
   if (content.includes("$")) {
-    return content.replace(/\s+\$/g, "$");
+    return ListPatterns.cleanWhitespaceBeforeDollar(content);
   }
   return content;
 }
@@ -1057,7 +1148,7 @@ function highlightLine(view, lineNumber) {
       }
     }
   } catch (error) {
-    console.error("Error highlighting line:", error);
+    handleError(error, "error");
   }
 }
 function applyHighlight(lineElement) {
@@ -1068,21 +1159,22 @@ function applyHighlight(lineElement) {
     lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
   }, 2e3);
 }
-function setupLabelClickHandler(element, rawLabel) {
-  element.addEventListener("click", () => {
+function setupLabelClickHandler(element, rawLabel, abortSignal) {
+  const clickHandler = () => {
     try {
       navigator.clipboard.writeText(rawLabel).then(() => {
         new import_obsidian2.Notice(MESSAGES.LABEL_COPIED);
       }).catch((error) => {
-        console.error("Failed to copy label:", error);
+        handleError(error, "error");
       });
     } catch (error) {
-      console.error("Error in label click handler:", error);
+      handleError(error, "error");
     }
-  });
+  };
+  element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
-function setupContentClickHandler(element, label, lastActiveMarkdownView, app) {
-  element.addEventListener("click", () => {
+function setupContentClickHandler(element, label, lastActiveMarkdownView, app, abortSignal) {
+  const clickHandler = () => {
     try {
       const targetView = lastActiveMarkdownView;
       if (targetView && targetView.editor) {
@@ -1097,11 +1189,12 @@ function setupContentClickHandler(element, label, lastActiveMarkdownView, app) {
         highlightLine(targetView, label.lineNumber);
       }
     } catch (error) {
-      console.error("Error scrolling to label:", error);
+      handleError(error, "error");
     }
-  });
+  };
+  element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
-function setupLabelHoverPreview(element, fullLabel) {
+function setupLabelHoverPreview(element, fullLabel, abortSignal) {
   let hoverPopover = null;
   const removePopover = () => {
     if (hoverPopover) {
@@ -1109,7 +1202,7 @@ function setupLabelHoverPreview(element, fullLabel) {
       hoverPopover = null;
     }
   };
-  element.addEventListener("mouseenter", () => {
+  const mouseEnterHandler = () => {
     const hoverEl = document.createElement("div");
     hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_LABEL);
     hoverEl.textContent = fullLabel;
@@ -1125,9 +1218,10 @@ function setupLabelHoverPreview(element, fullLabel) {
       hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
     }
     hoverPopover = hoverEl;
-  });
-  element.addEventListener("mouseleave", removePopover);
-  element.addEventListener("click", removePopover);
+  };
+  element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
+  element.addEventListener("mouseleave", removePopover, { signal: abortSignal });
+  element.addEventListener("click", removePopover, { signal: abortSignal });
 }
 function renderContentWithMath(element, truncatedContent, app, component) {
   import_obsidian2.MarkdownRenderer.render(
@@ -1138,7 +1232,7 @@ function renderContentWithMath(element, truncatedContent, app, component) {
     component
   );
 }
-function setupContentHoverPreview(element, label, app, component) {
+function setupContentHoverPreview(element, label, app, component, abortSignal) {
   let hoverPopover = null;
   const removePopover = () => {
     if (hoverPopover) {
@@ -1146,7 +1240,7 @@ function setupContentHoverPreview(element, label, app, component) {
       hoverPopover = null;
     }
   };
-  element.addEventListener("mouseenter", () => {
+  const mouseEnterHandler = () => {
     const hoverEl = document.createElement("div");
     hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, CSS_CLASSES.HOVER_POPOVER_CONTENT);
     const contentToShow = label.renderedContent || label.content;
@@ -1173,9 +1267,10 @@ function setupContentHoverPreview(element, label, app, component) {
       hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
     }
     hoverPopover = hoverEl;
-  });
-  element.addEventListener("mouseleave", removePopover);
-  element.addEventListener("click", removePopover);
+  };
+  element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
+  element.addEventListener("mouseleave", removePopover, { signal: abortSignal });
+  element.addEventListener("click", removePopover, { signal: abortSignal });
 }
 
 // src/views/panels/modules/CustomLabelPanelModule.ts
@@ -1188,16 +1283,22 @@ var CustomLabelPanelModule = class {
     this.labels = [];
     this.containerEl = null;
     this.lastActiveMarkdownView = null;
+    this.abortController = null;
     this.plugin = plugin;
   }
   onActivate(containerEl, activeView) {
     this.isActive = true;
     this.containerEl = containerEl;
     this.lastActiveMarkdownView = activeView;
+    this.abortController = new AbortController();
     this.updateContent(activeView);
   }
   onDeactivate() {
     this.isActive = false;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
     if (this.containerEl) {
       this.containerEl.empty();
       this.containerEl = null;
@@ -1261,6 +1362,7 @@ var CustomLabelPanelModule = class {
     }
   }
   renderLabelRow(tbody, label, activeView) {
+    var _a, _b, _c, _d;
     const row = tbody.createEl("tr", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_ROW
     });
@@ -1270,9 +1372,9 @@ var CustomLabelPanelModule = class {
     const displayLabel = truncateLabel(label.label);
     labelEl.textContent = displayLabel;
     if (displayLabel !== label.label) {
-      setupLabelHoverPreview(labelEl, label.label);
+      setupLabelHoverPreview(labelEl, label.label, (_a = this.abortController) == null ? void 0 : _a.signal);
     }
-    setupLabelClickHandler(labelEl, label.rawLabel);
+    setupLabelClickHandler(labelEl, label.rawLabel, (_b = this.abortController) == null ? void 0 : _b.signal);
     const contentEl = row.createEl("td", {
       cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
     });
@@ -1283,7 +1385,7 @@ var CustomLabelPanelModule = class {
     } else {
       contentEl.textContent = truncatedContent;
     }
-    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app);
+    setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app, (_c = this.abortController) == null ? void 0 : _c.signal);
     if (truncatedContent !== contentToShow) {
       const hoverSource = {
         hoverLinkSource: {
@@ -1291,7 +1393,7 @@ var CustomLabelPanelModule = class {
           defaultMod: true
         }
       };
-      setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource);
+      setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource, (_d = this.abortController) == null ? void 0 : _d.signal);
     }
   }
   getCustomLabels() {
@@ -1342,7 +1444,7 @@ function extractExampleLists(content) {
   }, "Extract example lists", []);
 }
 
-// src/views/panels/utils/hoverPopovers.ts
+// src/shared/utils/hoverPopovers.ts
 var import_obsidian3 = require("obsidian");
 function processPopoverContent(content, context) {
   if (!context) return content;
@@ -1368,7 +1470,7 @@ function processPopoverContent(content, context) {
   }
   return processedContent;
 }
-function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.HOVER_POPOVER_LABEL) {
+function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.HOVER_POPOVER_LABEL, abortSignal) {
   let hoverPopover = null;
   let isMouseOver = false;
   const removePopover = () => {
@@ -1377,7 +1479,7 @@ function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.H
       hoverPopover = null;
     }
   };
-  element.addEventListener("mouseenter", () => {
+  const mouseEnterHandler = () => {
     isMouseOver = true;
     const hoverEl = document.createElement("div");
     hoverEl.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
@@ -1394,28 +1496,38 @@ function setupSimpleHoverPreview(element, fullText, popoverClass = CSS_CLASSES.H
       hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
     }
     hoverPopover = hoverEl;
+    const popoverController = new AbortController();
+    if (abortSignal) {
+      abortSignal.addEventListener("abort", () => {
+        popoverController.abort();
+      });
+    }
     hoverEl.addEventListener("mouseenter", () => {
       isMouseOver = true;
-    });
+    }, { signal: popoverController.signal });
     hoverEl.addEventListener("mouseleave", () => {
       isMouseOver = false;
       removePopover();
-    });
-  });
-  element.addEventListener("mouseleave", () => {
+      popoverController.abort();
+    }, { signal: popoverController.signal });
+  };
+  const mouseLeaveHandler = () => {
     isMouseOver = false;
     setTimeout(() => {
       if (!isMouseOver) {
         removePopover();
       }
     }, 50);
-  });
-  element.addEventListener("click", () => {
+  };
+  const clickHandler = () => {
     isMouseOver = false;
     removePopover();
-  });
+  };
+  element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
+  element.addEventListener("mouseleave", mouseLeaveHandler, { signal: abortSignal });
+  element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
-function setupRenderedHoverPreview(element, content, app, component, context, popoverClass = CSS_CLASSES.HOVER_POPOVER_CONTENT) {
+function setupRenderedHoverPreview(element, content, app, component, context, popoverClass = CSS_CLASSES.HOVER_POPOVER_CONTENT, abortSignal) {
   let hoverPopover = null;
   let isMouseOver = false;
   let isCreatingPopover = false;
@@ -1426,7 +1538,7 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
     }
     isCreatingPopover = false;
   };
-  element.addEventListener("mouseenter", async () => {
+  const mouseEnterHandler = async () => {
     isMouseOver = true;
     isCreatingPopover = true;
     const hoverEl = document.createElement("div");
@@ -1456,30 +1568,40 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
     }
     if (isMouseOver) {
       hoverPopover = hoverEl;
+      const popoverController = new AbortController();
+      if (abortSignal) {
+        abortSignal.addEventListener("abort", () => {
+          popoverController.abort();
+        });
+      }
       hoverEl.addEventListener("mouseenter", () => {
         isMouseOver = true;
-      });
+      }, { signal: popoverController.signal });
       hoverEl.addEventListener("mouseleave", () => {
         isMouseOver = false;
         removePopover();
-      });
+        popoverController.abort();
+      }, { signal: popoverController.signal });
     } else {
       hoverEl.remove();
     }
     isCreatingPopover = false;
-  });
-  element.addEventListener("mouseleave", () => {
+  };
+  const mouseLeaveHandler = () => {
     isMouseOver = false;
     setTimeout(() => {
       if (!isMouseOver && !isCreatingPopover) {
         removePopover();
       }
     }, 50);
-  });
-  element.addEventListener("click", () => {
+  };
+  const clickHandler = () => {
     isMouseOver = false;
     removePopover();
-  });
+  };
+  element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
+  element.addEventListener("mouseleave", mouseLeaveHandler, { signal: abortSignal });
+  element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
 function positionHoverElement(hoverEl, referenceEl, maxWidth, maxHeight) {
   const rect = referenceEl.getBoundingClientRect();
@@ -1572,16 +1694,22 @@ var ExampleListPanelModule = class {
     this.exampleItems = [];
     this.containerEl = null;
     this.lastActiveMarkdownView = null;
+    this.abortController = null;
     this.plugin = plugin;
   }
   onActivate(containerEl, activeView) {
     this.isActive = true;
     this.containerEl = containerEl;
     this.lastActiveMarkdownView = activeView;
+    this.abortController = new AbortController();
     this.updateContent(activeView);
   }
   onDeactivate() {
     this.isActive = false;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
     if (this.containerEl) {
       this.containerEl.empty();
       this.containerEl = null;
@@ -1695,10 +1823,12 @@ var ExampleListPanelModule = class {
     setupSimpleHoverPreview(element, fullNumber, CSS_CLASSES.HOVER_POPOVER_LABEL);
   }
   setupLabelHoverPreview(element, fullLabel) {
-    setupSimpleHoverPreview(element, fullLabel, CSS_CLASSES.HOVER_POPOVER_LABEL);
+    var _a;
+    setupSimpleHoverPreview(element, fullLabel, CSS_CLASSES.HOVER_POPOVER_LABEL, (_a = this.abortController) == null ? void 0 : _a.signal);
   }
   setupLabelClickHandler(element, rawLabelSyntax) {
-    element.addEventListener("click", () => {
+    var _a;
+    const clickHandler = () => {
       try {
         navigator.clipboard.writeText(rawLabelSyntax).then(() => {
           new import_obsidian4.Notice(MESSAGES.LABEL_COPIED);
@@ -1708,10 +1838,12 @@ var ExampleListPanelModule = class {
       } catch (error) {
         handleError(error, "Label click handler");
       }
-    });
+    };
+    element.addEventListener("click", clickHandler, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
   }
   setupContentClickHandler(element, item, activeView) {
-    element.addEventListener("click", () => {
+    var _a;
+    const clickHandler = () => {
       try {
         if (activeView && activeView.editor) {
           const editor = activeView.editor;
@@ -1727,9 +1859,11 @@ var ExampleListPanelModule = class {
       } catch (error) {
         handleError(error, "Scroll to example list");
       }
-    });
+    };
+    element.addEventListener("click", clickHandler, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
   }
   setupContentHoverPreview(element, item) {
+    var _a, _b, _c;
     let hoverPopover = null;
     const removePopover = () => {
       if (hoverPopover) {
@@ -1737,11 +1871,12 @@ var ExampleListPanelModule = class {
         hoverPopover = null;
       }
     };
-    element.addEventListener("mouseenter", () => {
+    const mouseEnterHandler = () => {
       hoverPopover = this.createContentHoverElement(item, element);
-    });
-    element.addEventListener("mouseleave", removePopover);
-    element.addEventListener("click", removePopover);
+    };
+    element.addEventListener("mouseenter", mouseEnterHandler, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
+    element.addEventListener("mouseleave", removePopover, { signal: (_b = this.abortController) == null ? void 0 : _b.signal });
+    element.addEventListener("click", removePopover, { signal: (_c = this.abortController) == null ? void 0 : _c.signal });
   }
   createContentHoverElement(item, element) {
     const hoverEl = document.createElement("div");
@@ -1826,7 +1961,7 @@ var ListPanelView = class extends import_obsidian5.ItemView {
     return "List Panel";
   }
   getIcon() {
-    return ICONS.LIST_PANEL_ID;
+    return "list";
   }
   async onOpen() {
     this.renderView();
@@ -1865,35 +2000,44 @@ var ListPanelView = class extends import_obsidian5.ItemView {
   renderView() {
     this.contentEl.empty();
     const viewContainer = this.contentEl.createDiv({
-      cls: "pandoc-list-panel-view-container"
+      cls: CSS_CLASSES.LIST_PANEL_VIEW_CONTAINER
     });
     this.iconRowEl = viewContainer.createDiv({
-      cls: "pandoc-list-panel-icon-row"
+      cls: CSS_CLASSES.LIST_PANEL_ICON_ROW
     });
     for (const panel of this.panels) {
       const iconButton = this.iconRowEl.createDiv({
-        cls: "pandoc-list-panel-icon-button",
+        cls: CSS_CLASSES.LIST_PANEL_ICON_BUTTON,
         attr: {
           "aria-label": panel.displayName,
           "data-panel-id": panel.id
         }
       });
-      const iconContainer = iconButton.createDiv();
-      const parser = new DOMParser();
-      const svgDoc = parser.parseFromString(panel.icon, "image/svg+xml");
-      const svgElement = svgDoc.documentElement;
-      if (svgElement && svgElement.nodeName === "svg") {
-        iconContainer.appendChild(svgElement.cloneNode(true));
+      const iconContainer = iconButton.createDiv({
+        cls: CSS_CLASSES.LIST_PANEL_ICON_CONTAINER
+      });
+      if (panel.id === "custom-labels") {
+        const iconText = iconContainer.createSpan({
+          cls: CSS_CLASSES.LIST_PANEL_ICON_CUSTOM_LABEL,
+          text: "{::}"
+        });
+      } else if (panel.id === "example-lists") {
+        const iconText = iconContainer.createSpan({
+          cls: CSS_CLASSES.LIST_PANEL_ICON_EXAMPLE_LIST,
+          text: "(@)"
+        });
+      } else {
+        iconContainer.addClass(`pandoc-icon-${panel.id}`);
       }
       iconButton.addEventListener("click", () => {
         this.switchToPanel(panel);
       });
     }
     const separator = viewContainer.createEl("hr", {
-      cls: "pandoc-list-panel-separator"
+      cls: CSS_CLASSES.LIST_PANEL_SEPARATOR
     });
     this.contentContainerEl = viewContainer.createDiv({
-      cls: "pandoc-list-panel-content-container"
+      cls: CSS_CLASSES.LIST_PANEL_CONTENT_CONTAINER
     });
     if (this.panels.length > 0) {
       this.switchToPanel(this.panels[0]);
@@ -1907,10 +2051,10 @@ var ListPanelView = class extends import_obsidian5.ItemView {
     if (this.activePanel) {
       this.activePanel.onDeactivate();
     }
-    const allButtons = (_a = this.iconRowEl) == null ? void 0 : _a.querySelectorAll(".pandoc-list-panel-icon-button");
-    allButtons == null ? void 0 : allButtons.forEach((btn) => btn.removeClass("is-active"));
+    const allButtons = (_a = this.iconRowEl) == null ? void 0 : _a.querySelectorAll(`.${CSS_CLASSES.LIST_PANEL_ICON_BUTTON}`);
+    allButtons == null ? void 0 : allButtons.forEach((btn) => btn.removeClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE));
     const activeButton = (_b = this.iconRowEl) == null ? void 0 : _b.querySelector(`[data-panel-id="${panelInfo.id}"]`);
-    activeButton == null ? void 0 : activeButton.addClass("is-active");
+    activeButton == null ? void 0 : activeButton.addClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE);
     this.activePanel = panelInfo.module;
     if (this.contentContainerEl) {
       this.contentContainerEl.empty();
@@ -2883,7 +3027,7 @@ var ProcessingPipeline = class {
     ].sort((a, b) => a.from - b.from || a.to - b.to);
     for (const { from, to, decoration } of allDecorations) {
       if (from < 0 || to > docLength || from > to) {
-        console.warn(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`);
+        handleError(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`, "warning");
         continue;
       }
       const safeFrom = Math.floor(from);
@@ -2891,7 +3035,7 @@ var ProcessingPipeline = class {
       try {
         builder.add(safeFrom, safeTo, decoration);
       } catch (e) {
-        console.error(`Failed to add decoration at ${safeFrom}-${safeTo}:`, e);
+        handleError(e, "error");
       }
     }
     return builder.finish();
@@ -3733,17 +3877,19 @@ var CustomLabelProcessor = class {
     const lineText = context.document.sliceString(line.from, line.to);
     return ListPatterns.isCustomLabelList(lineText) !== null;
   }
-  process(line, context) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+  /**
+   * Parse the custom label syntax from a line of text
+   */
+  parseCustomLabel(line, context) {
+    var _a, _b;
     const lineText = context.document.sliceString(line.from, line.to);
     const lineNum = context.document.lineAt(line.from).number;
-    const decorations = [];
     const customLabelMatch = ListPatterns.isCustomLabelList(lineText);
     if (!customLabelMatch) {
-      return { decorations };
+      return null;
     }
     if (context.settings.strictPandocMode && context.invalidLines.has(lineNum - 1)) {
-      return { decorations };
+      return null;
     }
     const indent = customLabelMatch[1];
     const fullMarker = customLabelMatch[2];
@@ -3752,11 +3898,27 @@ var CustomLabelProcessor = class {
     const processedLabel = ((_a = context.rawToProcessed) == null ? void 0 : _a.get(rawLabel)) || rawLabel;
     const markerStart = line.from + indent.length;
     const markerEnd = line.from + indent.length + fullMarker.length + space.length;
-    const placeholderMatches = [...rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN)];
+    const isDuplicate = ((_b = context.duplicateCustomLabels) == null ? void 0 : _b.has(processedLabel)) || false;
+    return {
+      indent,
+      fullMarker,
+      rawLabel,
+      space,
+      processedLabel,
+      markerStart,
+      markerEnd,
+      isDuplicate
+    };
+  }
+  /**
+   * Parse placeholder ranges within the custom label
+   */
+  parsePlaceholders(parsedLabel) {
+    const placeholderMatches = Array.from(parsedLabel.rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN));
     const placeholderRanges = [];
     for (const match of placeholderMatches) {
       if (match.index !== void 0) {
-        const placeholderStart = markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH + match.index;
+        const placeholderStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH + match.index;
         const placeholderEnd = placeholderStart + match[0].length;
         placeholderRanges.push({
           start: placeholderStart,
@@ -3765,13 +3927,27 @@ var CustomLabelProcessor = class {
         });
       }
     }
+    return placeholderRanges;
+  }
+  /**
+   * Analyze cursor position relative to the custom label
+   */
+  handleCursorPosition(parsedLabel, placeholderRanges, context) {
+    var _a;
     const selection = context.view.state.selection;
-    const cursorPos = (_b = selection == null ? void 0 : selection.main) == null ? void 0 : _b.from;
-    const isCursorInMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos <= markerEnd;
-    const isCursorAtListMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
-    const isDuplicate = ((_c = context.duplicateCustomLabels) == null ? void 0 : _c.has(processedLabel)) || false;
+    const cursorPos = (_a = selection == null ? void 0 : selection.main) == null ? void 0 : _a.from;
+    if (cursorPos === void 0) {
+      return {
+        pos: -1,
+        isInMarker: false,
+        isAtListMarker: false,
+        cursorPlaceholder: null
+      };
+    }
+    const isInMarker = cursorPos >= parsedLabel.markerStart && cursorPos <= parsedLabel.markerEnd;
+    const isAtListMarker = cursorPos >= parsedLabel.markerStart && cursorPos < parsedLabel.markerEnd;
     let cursorPlaceholder = null;
-    if (isCursorInMarker && cursorPos !== void 0) {
+    if (isInMarker) {
       for (const range of placeholderRanges) {
         if (cursorPos >= range.start && cursorPos <= range.end) {
           cursorPlaceholder = range;
@@ -3779,145 +3955,202 @@ var CustomLabelProcessor = class {
         }
       }
     }
-    let displayLevel;
-    if (isCursorAtListMarker) {
-      displayLevel = "full";
-    } else if (placeholderRanges.length > 0 && !isCursorInMarker) {
-      const isCursorInLine = cursorPos !== void 0 && cursorPos >= line.from && cursorPos <= line.to;
-      displayLevel = isCursorInLine ? "semi-expanded" : "collapsed";
-    } else {
-      displayLevel = "collapsed";
+    return {
+      pos: cursorPos,
+      isInMarker,
+      isAtListMarker,
+      cursorPlaceholder
+    };
+  }
+  /**
+   * Determine the display level based on cursor position and placeholder presence
+   */
+  determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo) {
+    if (cursorInfo.isAtListMarker) {
+      return "full";
     }
-    if (displayLevel === "collapsed" && !isDuplicate) {
-      const content = ((_d = context.customLabels) == null ? void 0 : _d.get(processedLabel)) || "";
+    if (placeholderRanges.length > 0 && !cursorInfo.isInMarker) {
+      const isCursorInLine = cursorInfo.pos !== -1 && cursorInfo.pos >= line.from && cursorInfo.pos <= line.to;
+      return isCursorInLine ? "semi-expanded" : "collapsed";
+    }
+    return "collapsed";
+  }
+  /**
+   * Create decorations for collapsed display mode (fully processed marker widget)
+   */
+  createCollapsedDecorations(parsedLabel, context) {
+    const decorations = [];
+    decorations.push({
+      from: parsedLabel.markerStart,
+      to: parsedLabel.markerEnd,
+      decoration: import_view9.Decoration.replace({
+        widget: new CustomLabelMarkerWidget(
+          parsedLabel.processedLabel,
+          context.view,
+          parsedLabel.markerStart
+        ),
+        inclusive: false
+      })
+    });
+    return decorations;
+  }
+  /**
+   * Create decorations for semi-expanded display mode (brackets and processed label)
+   */
+  createSemiExpandedDecorations(parsedLabel, context) {
+    const decorations = [];
+    decorations.push({
+      from: parsedLabel.markerStart,
+      to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
+      decoration: import_view9.Decoration.replace({
+        widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
+        inclusive: false
+      })
+    });
+    const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
+    const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
+    decorations.push({
+      from: labelStart,
+      to: labelEnd,
+      decoration: import_view9.Decoration.replace({
+        widget: new CustomLabelProcessedWidget(
+          parsedLabel.processedLabel,
+          context.view,
+          labelStart
+        ),
+        inclusive: false
+      })
+    });
+    decorations.push({
+      from: labelEnd,
+      to: labelEnd + 1,
+      decoration: import_view9.Decoration.replace({
+        widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
+        inclusive: false
+      })
+    });
+    return decorations;
+  }
+  /**
+   * Process placeholders within full display mode
+   */
+  processPlaceholders(line, parsedLabel, placeholderRanges, cursorInfo, context) {
+    var _a, _b, _c;
+    const decorations = [];
+    const lineText = context.document.sliceString(line.from, line.to);
+    const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
+    const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
+    let lastEnd = labelStart;
+    for (const range of placeholderRanges) {
+      if (range.start > lastEnd) {
+        decorations.push({
+          from: lastEnd,
+          to: range.start,
+          decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+        });
+      }
+      if (cursorInfo.cursorPlaceholder && cursorInfo.cursorPlaceholder === range) {
+        decorations.push({
+          from: range.start,
+          to: range.end,
+          decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER })
+        });
+      } else {
+        const placeholderKey = `${parsedLabel.rawLabel.substring(
+          0,
+          parsedLabel.rawLabel.indexOf("(")
+        )}(#${range.name})`;
+        const processedKey = (_a = context.rawToProcessed) == null ? void 0 : _a.get(placeholderKey);
+        const number = processedKey ? parseInt(((_b = processedKey.match(ListPatterns.TRAILING_DIGITS)) == null ? void 0 : _b[0]) || "0") : ((_c = context.placeholderContext) == null ? void 0 : _c.getPlaceholderNumber(range.name)) || 0;
+        decorations.push({
+          from: range.start,
+          to: range.end,
+          decoration: import_view9.Decoration.replace({
+            widget: new CustomLabelInlineNumberWidget(String(number), context.view),
+            inclusive: false
+          })
+        });
+      }
+      lastEnd = range.end;
+    }
+    if (lastEnd < labelEnd) {
       decorations.push({
-        from: markerStart,
-        to: markerEnd,
-        decoration: import_view9.Decoration.replace({
-          widget: new CustomLabelMarkerWidget(processedLabel, context.view, markerStart),
-          inclusive: false
-        })
+        from: lastEnd,
+        to: labelEnd,
+        decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
       });
-    } else if (displayLevel === "semi-expanded") {
-      decorations.push({
-        from: markerStart,
-        to: markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
-        decoration: import_view9.Decoration.replace({
-          widget: new CustomLabelPartialWidget("{::", context.view, markerStart),
-          inclusive: false
-        })
-      });
-      const labelStart = markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
-      const labelEnd = markerEnd - space.length - 1;
-      const content = ((_e = context.customLabels) == null ? void 0 : _e.get(processedLabel)) || "";
+    }
+    return decorations;
+  }
+  /**
+   * Create decorations for full display mode (complete syntax with selective placeholder expansion)
+   */
+  createFullDisplayDecorations(line, parsedLabel, placeholderRanges, cursorInfo, context) {
+    var _a, _b, _c;
+    const decorations = [];
+    const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
+    const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
+    decorations.push({
+      from: parsedLabel.markerStart,
+      to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
+      decoration: import_view9.Decoration.replace({
+        widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
+        inclusive: false
+      })
+    });
+    if (parsedLabel.isDuplicate) {
+      const firstOccurrence = (_a = context.duplicateCustomLineInfo) == null ? void 0 : _a.get(parsedLabel.processedLabel);
       decorations.push({
         from: labelStart,
         to: labelEnd,
         decoration: import_view9.Decoration.replace({
-          widget: new CustomLabelProcessedWidget(processedLabel, context.view, labelStart),
+          widget: new DuplicateCustomLabelWidget(
+            parsedLabel.rawLabel,
+            (_b = firstOccurrence == null ? void 0 : firstOccurrence.firstLine) != null ? _b : void 0,
+            (_c = firstOccurrence == null ? void 0 : firstOccurrence.firstContent) != null ? _c : void 0
+          ),
           inclusive: false
         })
       });
+    } else if (placeholderRanges.length > 0) {
+      const placeholderDecorations = this.processPlaceholders(
+        line,
+        parsedLabel,
+        placeholderRanges,
+        cursorInfo,
+        context
+      );
+      decorations.push(...placeholderDecorations);
+    } else {
       decorations.push({
-        from: labelEnd,
-        to: labelEnd + 1,
-        decoration: import_view9.Decoration.replace({
-          widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
-          inclusive: false
-        })
-      });
-    } else if (displayLevel === "full" || isDuplicate) {
-      decorations.push({
-        from: markerStart,
-        to: markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
-        decoration: import_view9.Decoration.replace({
-          widget: new CustomLabelPartialWidget("{::", context.view, markerStart),
-          inclusive: false
-        })
-      });
-      const labelStart = markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
-      const labelEnd = markerEnd - space.length - 1;
-      if (isDuplicate) {
-        const firstOccurrence = (_f = context.duplicateCustomLineInfo) == null ? void 0 : _f.get(processedLabel);
-        decorations.push({
-          from: labelStart,
-          to: labelEnd,
-          decoration: import_view9.Decoration.replace({
-            widget: new DuplicateCustomLabelWidget(
-              rawLabel,
-              firstOccurrence == null ? void 0 : firstOccurrence.firstLine,
-              firstOccurrence == null ? void 0 : firstOccurrence.firstContent
-            ),
-            inclusive: false
-          })
-        });
-      } else if (placeholderRanges.length > 0) {
-        let lastEnd = labelStart;
-        for (const range of placeholderRanges) {
-          if (range.start > lastEnd) {
-            const textBefore = lineText.substring(
-              lastEnd - line.from,
-              range.start - line.from
-            );
-            decorations.push({
-              from: lastEnd,
-              to: range.start,
-              decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
-            });
-          }
-          if (cursorPlaceholder && cursorPlaceholder === range) {
-            decorations.push({
-              from: range.start,
-              to: range.end,
-              decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER })
-            });
-          } else {
-            const placeholderKey = `${rawLabel.substring(0, rawLabel.indexOf("("))}(#${range.name})`;
-            const processedKey = (_g = context.rawToProcessed) == null ? void 0 : _g.get(placeholderKey);
-            const number = processedKey ? parseInt(((_h = processedKey.match(ListPatterns.TRAILING_DIGITS)) == null ? void 0 : _h[0]) || "0") : ((_i = context.placeholderContext) == null ? void 0 : _i.getPlaceholderNumber(range.name)) || 0;
-            decorations.push({
-              from: range.start,
-              to: range.end,
-              decoration: import_view9.Decoration.replace({
-                widget: new CustomLabelInlineNumberWidget(String(number), context.view),
-                inclusive: false
-              })
-            });
-          }
-          lastEnd = range.end;
-        }
-        if (lastEnd < labelEnd) {
-          decorations.push({
-            from: lastEnd,
-            to: labelEnd,
-            decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
-          });
-        }
-      } else {
-        decorations.push({
-          from: labelStart,
-          to: labelEnd,
-          decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
-        });
-      }
-      decorations.push({
-        from: labelEnd,
-        to: labelEnd + 1,
-        decoration: import_view9.Decoration.replace({
-          widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
-          inclusive: false
-        })
+        from: labelStart,
+        to: labelEnd,
+        decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
       });
     }
+    decorations.push({
+      from: labelEnd,
+      to: labelEnd + 1,
+      decoration: import_view9.Decoration.replace({
+        widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
+        inclusive: false
+      })
+    });
+    return decorations;
+  }
+  /**
+   * Build the content region for inline processing
+   */
+  buildStructuralResult(parsedLabel, line, decorations) {
     const contentRegion = {
-      from: markerEnd,
+      from: parsedLabel.markerEnd,
       to: line.to,
       type: "list-content",
       parentStructure: "custom-label-list",
       metadata: {
-        rawLabel,
-        processedLabel,
-        isDuplicate
+        rawLabel: parsedLabel.rawLabel,
+        processedLabel: parsedLabel.processedLabel,
+        isDuplicate: parsedLabel.isDuplicate
       }
     };
     return {
@@ -3925,6 +4158,30 @@ var CustomLabelProcessor = class {
       contentRegion,
       skipFurtherProcessing: true
     };
+  }
+  process(line, context) {
+    const parsedLabel = this.parseCustomLabel(line, context);
+    if (!parsedLabel) {
+      return { decorations: [] };
+    }
+    const placeholderRanges = this.parsePlaceholders(parsedLabel);
+    const cursorInfo = this.handleCursorPosition(parsedLabel, placeholderRanges, context);
+    const displayLevel = this.determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo);
+    let decorations;
+    if (displayLevel === "collapsed" && !parsedLabel.isDuplicate) {
+      decorations = this.createCollapsedDecorations(parsedLabel, context);
+    } else if (displayLevel === "semi-expanded") {
+      decorations = this.createSemiExpandedDecorations(parsedLabel, context);
+    } else {
+      decorations = this.createFullDisplayDecorations(
+        line,
+        parsedLabel,
+        placeholderRanges,
+        cursorInfo,
+        context
+      );
+    }
+    return this.buildStructuralResult(parsedLabel, line, decorations);
   }
 };
 
@@ -3980,7 +4237,7 @@ var DefinitionProcessor = class {
     const markerStart = line.from + indent.length;
     const markerEnd = line.from + indent.length + marker.length + space.length;
     if (markerStart < line.from || markerEnd > line.to || markerStart >= markerEnd) {
-      console.warn(`Invalid marker positions for definition: start=${markerStart}, end=${markerEnd}, line=${line.from}-${line.to}`);
+      handleError(`Invalid marker positions for definition: start=${markerStart}, end=${markerEnd}, line=${line.from}-${line.to}`, "warning");
       return { decorations };
     }
     const selection = context.view.state.selection;
@@ -3997,7 +4254,7 @@ var DefinitionProcessor = class {
           })
         });
       } catch (e) {
-        console.error("Failed to create definition widget:", e);
+        handleError(e, "error");
       }
     } else {
       decorations.push({
@@ -4336,7 +4593,7 @@ var CustomLabelReferenceProcessor = class {
   }
   processPlaceholders(label, placeholderContext) {
     if (!placeholderContext) return label;
-    return label.replace(/\(#([a-z])\)/g, (match, letter) => {
+    return ListPatterns.replacePlaceholderLetters(label, (match, letter) => {
       var _a;
       const value = (_a = placeholderContext.getPlaceholderValue) == null ? void 0 : _a.call(placeholderContext, letter);
       return value !== void 0 ? `(${value})` : match;
@@ -4955,12 +5212,12 @@ function processElement(elem, placeholderContext) {
         }
       }
     } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "BR") {
-      newContainer.appendChild(node.cloneNode(true));
+      newContainer.appendChild(document.createElement("br"));
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const elemNode = node;
       if (elemNode.textContent && elemNode.textContent.includes("{::")) {
         const clonedElem = elemNode.cloneNode(false);
-        const tempContainer = document.createElement("div");
+        const tempContainer = createDiv();
         Array.from(elemNode.childNodes).forEach((child) => {
           tempContainer.appendChild(child.cloneNode(true));
         });
@@ -5642,116 +5899,219 @@ function isEmptyListItem(line) {
 }
 
 // src/shared/utils/listMarkerDetector.ts
-function getNextListMarker(currentLine, allLines, currentLineIndex) {
-  const hashMatch = ListPatterns.isHashList(currentLine);
+function parseMarkerParts(line) {
+  const hashMatch = ListPatterns.isHashList(line);
   if (hashMatch) {
-    return { marker: "#.", indent: hashMatch[1], spaces: hashMatch[3] };
+    return {
+      type: "hash",
+      indent: hashMatch[1],
+      marker: "#.",
+      spaces: hashMatch[3]
+    };
   }
-  const customLabelMatch = ListPatterns.isCustomLabelList(currentLine);
+  const customLabelMatch = ListPatterns.isCustomLabelList(line);
   if (customLabelMatch) {
-    const indent = customLabelMatch[1];
-    const spaces = customLabelMatch[4];
-    return { marker: "{::}", indent, spaces };
+    return {
+      type: "custom-label",
+      indent: customLabelMatch[1],
+      marker: "{::}",
+      spaces: customLabelMatch[4]
+      // Group 4 is spaces in CUSTOM_LABEL_LIST pattern
+    };
   }
-  const listMatch = currentLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
+  const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_LIST);
   if (listMatch) {
-    const indent = listMatch[1];
-    const marker = listMatch[2];
-    const punctuation = listMatch[3];
-    const spaces = listMatch[4];
-    let isRoman = false;
-    if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
-      isRoman = true;
-    } else if (marker.length === 1 && allLines && currentLineIndex !== void 0) {
-      if (marker.match(ListPatterns.SINGLE_I)) {
-        isRoman = true;
-        for (let i = currentLineIndex - 1; i >= 0; i--) {
-          const prevLine = allLines[i];
-          if (!prevLine.trim()) continue;
-          if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
-          const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
-          if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
-            const prevMarker = prevMatch[2];
-            if (prevMarker.match(ListPatterns.SINGLE_H)) {
-              isRoman = false;
-              break;
-            } else if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
-              isRoman = true;
-              break;
-            } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
-              isRoman = false;
-              break;
-            }
-          }
-        }
-      } else {
-        for (let i = currentLineIndex - 1; i >= 0; i--) {
-          const prevLine = allLines[i];
-          if (!prevLine.trim()) continue;
-          if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
-          const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
-          if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
-            const prevMarker = prevMatch[2];
-            if (prevMarker.length > 1 && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
-              isRoman = true;
-              break;
-            } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
-              isRoman = false;
-              break;
-            } else if (prevMarker.match(ListPatterns.SINGLE_AB)) {
-              isRoman = false;
-              break;
-            }
-          }
-        }
-      }
-    }
-    if (isRoman) {
-      if (marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
-        const nextRoman = getNextRoman(marker);
-        return { marker: `${nextRoman}${punctuation}`, indent, spaces };
-      }
-    } else {
-      const nextLetter = getNextLetter(marker);
-      if (nextLetter) {
-        return { marker: `${nextLetter}${punctuation}`, indent, spaces };
-      }
-      return null;
-    }
+    return {
+      type: "unknown",
+      // Will be determined by detectListType
+      indent: listMatch[1],
+      marker: listMatch[2],
+      punctuation: listMatch[3],
+      spaces: listMatch[4]
+    };
   }
-  let exampleMatch = currentLine.match(ListPatterns.EXAMPLE_LIST);
+  const exampleMatch = line.match(ListPatterns.EXAMPLE_LIST);
   if (exampleMatch) {
-    const indent = exampleMatch[1];
-    const spaces = exampleMatch[4];
-    return { marker: "(@)", indent, spaces };
+    return {
+      type: "example",
+      indent: exampleMatch[1],
+      marker: "(@)",
+      spaces: exampleMatch[4]
+      // Group 4 is spaces in EXAMPLE_LIST pattern
+    };
   }
-  const altMatch = currentLine.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
-  if (altMatch && currentLine.length > altMatch[0].length) {
-    const indent = altMatch[1];
-    const spaces = altMatch[3] || " ";
-    return { marker: "(@)", indent, spaces };
+  const altMatch = line.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
+  if (altMatch && line.length > altMatch[0].length) {
+    return {
+      type: "example",
+      indent: altMatch[1],
+      marker: "(@)",
+      spaces: altMatch[3] || " "
+      // Group 3 is spaces in EXAMPLE_LIST_OPTIONAL_SPACE pattern
+    };
   }
-  const definitionMatch = currentLine.match(ListPatterns.DEFINITION_MARKER);
+  const definitionMatch = line.match(ListPatterns.DEFINITION_MARKER);
   if (definitionMatch) {
-    const indent = definitionMatch[1];
-    const marker = definitionMatch[2];
-    const spaces = definitionMatch[3];
-    return { marker, indent, spaces };
+    return {
+      type: "definition",
+      indent: definitionMatch[1],
+      marker: definitionMatch[2],
+      spaces: definitionMatch[3]
+    };
   }
   return null;
 }
+function detectListType(components, context) {
+  if (components.type !== "unknown") {
+    return components.type;
+  }
+  const { marker, indent, punctuation } = components;
+  const { allLines, currentLineIndex } = context;
+  if (marker.length > NUMERIC_CONSTANTS.SINGLE_CHARACTER && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
+    return "roman";
+  }
+  if (marker.length === NUMERIC_CONSTANTS.SINGLE_CHARACTER && allLines && currentLineIndex !== void 0) {
+    return detectSingleCharacterType(marker, indent, punctuation || "", allLines, currentLineIndex);
+  }
+  return "letter";
+}
+function detectSingleCharacterType(marker, indent, punctuation, allLines, currentLineIndex) {
+  if (marker.match(ListPatterns.SINGLE_I)) {
+    return detectIMarkerType(indent, punctuation, allLines, currentLineIndex);
+  }
+  return detectGeneralSingleCharType(indent, punctuation, allLines, currentLineIndex);
+}
+function detectIMarkerType(indent, punctuation, allLines, currentLineIndex) {
+  let isRoman = true;
+  for (let i = currentLineIndex - 1; i >= NUMERIC_CONSTANTS.FIRST_INDEX; i--) {
+    const prevLine = allLines[i];
+    if (!prevLine.trim()) continue;
+    if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
+    const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
+    if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
+      const prevMarker = prevMatch[2];
+      if (prevMarker.match(ListPatterns.SINGLE_H)) {
+        isRoman = false;
+        break;
+      } else if (prevMarker.length > NUMERIC_CONSTANTS.SINGLE_CHARACTER && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
+        isRoman = true;
+        break;
+      } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
+        isRoman = false;
+        break;
+      }
+    }
+  }
+  return isRoman ? "roman" : "letter";
+}
+function detectGeneralSingleCharType(indent, punctuation, allLines, currentLineIndex) {
+  for (let i = currentLineIndex - 1; i >= NUMERIC_CONSTANTS.FIRST_INDEX; i--) {
+    const prevLine = allLines[i];
+    if (!prevLine.trim()) continue;
+    if (!prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST)) break;
+    const prevMatch = prevLine.match(ListPatterns.LETTER_OR_ROMAN_LIST);
+    if (prevMatch && prevMatch[1] === indent && prevMatch[3] === punctuation) {
+      const prevMarker = prevMatch[2];
+      if (prevMarker.length > NUMERIC_CONSTANTS.SINGLE_CHARACTER && prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
+        return "roman";
+      } else if (!prevMarker.match(ListPatterns.ANY_ROMAN_CHARS)) {
+        return "letter";
+      } else if (prevMarker.match(ListPatterns.SINGLE_AB)) {
+        return "letter";
+      }
+    }
+  }
+  return "letter";
+}
+function incrementNumericMarker(components) {
+  return {
+    marker: components.marker,
+    // '#.' stays the same
+    indent: components.indent,
+    spaces: components.spaces
+  };
+}
+function incrementAlphabeticMarker(components) {
+  const nextLetter = getNextLetter(components.marker);
+  if (nextLetter) {
+    return {
+      marker: `${nextLetter}${components.punctuation}`,
+      indent: components.indent,
+      spaces: components.spaces
+    };
+  }
+  return null;
+}
+function incrementRomanMarker(components) {
+  if (components.marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
+    const nextRoman = getNextRoman(components.marker);
+    return {
+      marker: `${nextRoman}${components.punctuation}`,
+      indent: components.indent,
+      spaces: components.spaces
+    };
+  }
+  return null;
+}
+function handleSpecialCases(components) {
+  switch (components.type) {
+    case "example":
+      return {
+        marker: components.marker,
+        // '(@)' stays the same
+        indent: components.indent,
+        spaces: components.spaces
+      };
+    case "definition":
+      return {
+        marker: components.marker,
+        // ':' or '~' stays the same
+        indent: components.indent,
+        spaces: components.spaces
+      };
+    case "custom-label":
+      return {
+        marker: components.marker,
+        // '{::}' stays the same
+        indent: components.indent,
+        spaces: components.spaces
+      };
+    default:
+      return null;
+  }
+}
+function getNextListMarker(currentLine, allLines, currentLineIndex) {
+  const context = { currentLine, allLines, currentLineIndex };
+  const components = parseMarkerParts(currentLine);
+  if (!components) {
+    return null;
+  }
+  const listType = detectListType(components, context);
+  components.type = listType;
+  switch (listType) {
+    case "hash":
+      return incrementNumericMarker(components);
+    case "letter":
+      return incrementAlphabeticMarker(components);
+    case "roman":
+      return incrementRomanMarker(components);
+    case "example":
+    case "definition":
+    case "custom-label":
+      return handleSpecialCases(components);
+    default:
+      return null;
+  }
+}
 
 // src/shared/utils/listRenumbering.ts
-function renumberListItems(view, insertedLineNum) {
-  const state = view.state;
-  const doc = state.doc;
-  const allLines = doc.toString().split("\n");
+function findBlockBoundaries(allLines, insertedLineNum) {
   let blockStart = insertedLineNum;
   let blockEnd = insertedLineNum;
   const insertedLine = allLines[insertedLineNum];
   const insertedIndentMatch = insertedLine.match(ListPatterns.INDENT_ONLY);
   const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : "";
-  for (let i = insertedLineNum - 1; i >= 0; i--) {
+  for (let i = insertedLineNum - 1; i >= NUMERIC_CONSTANTS.MIN_DOC_POSITION; i--) {
     const line = allLines[i];
     if (!line.trim()) {
       continue;
@@ -5785,7 +6145,15 @@ function renumberListItems(view, insertedLineNum) {
       blockEnd = i;
     }
   }
+  return {
+    blockStart,
+    blockEnd,
+    insertedIndent
+  };
+}
+function collectListItems(allLines, boundaries) {
   const listItems = [];
+  const { blockStart, blockEnd, insertedIndent } = boundaries;
   for (let i = blockStart; i <= blockEnd; i++) {
     const line = allLines[i];
     const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST_WITH_CONTENT);
@@ -5794,219 +6162,344 @@ function renumberListItems(view, insertedLineNum) {
       const punctuation = listMatch[3];
       const spaces = listMatch[4];
       const content = listMatch[5];
-      let isRoman = false;
-      let isAlpha = false;
-      if (marker === "#") {
-      } else if (marker.match(ListPatterns.ALPHABETIC_CHARS)) {
-        if (marker.length > 1 && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
-          isRoman = true;
-        } else if (marker.length === 1 && marker.match(ListPatterns.SINGLE_ROMAN_CHAR)) {
-          if (i === blockStart) {
-            isRoman = marker.match(ListPatterns.SINGLE_I) !== null;
-            if (!isRoman) {
-              isAlpha = true;
-            }
-          } else {
-            isRoman = listItems.length > 0 && listItems[0].isRoman;
-            isAlpha = listItems.length > 0 && listItems[0].isAlpha;
-          }
-        } else {
-          isAlpha = true;
-        }
-      }
+      const typeInfo = determineListType(marker, i, blockStart, listItems);
       listItems.push({
         lineNum: i,
         marker,
         punctuation,
         spaces,
         content,
-        isRoman,
-        isAlpha
+        isRoman: typeInfo.isRoman,
+        isAlpha: typeInfo.isAlpha
       });
     }
   }
-  if (listItems.length > 1) {
-    const changes = [];
-    let currentValue = 1;
-    const firstItem = listItems[0];
-    for (let i = 0; i < listItems.length; i++) {
-      const item = listItems[i];
-      let newMarker;
-      if (item.marker === "#") {
-        newMarker = "#";
-      } else if (item.isRoman) {
-        const isUpperCase = item.marker[0] === item.marker[0].toUpperCase();
-        newMarker = intToRoman(i + 1, isUpperCase);
-      } else if (item.isAlpha) {
-        const isUpperCase = item.marker[0] === item.marker[0].toUpperCase();
-        newMarker = numberToLetter(i + 1, isUpperCase);
-      } else {
-        newMarker = item.marker;
+  return listItems;
+}
+function determineListType(marker, currentLineIndex, blockStartIndex, existingItems) {
+  let isRoman = false;
+  let isAlpha = false;
+  if (marker === "#") {
+    return { isRoman, isAlpha };
+  }
+  if (!marker.match(ListPatterns.ALPHABETIC_CHARS)) {
+    return { isRoman, isAlpha };
+  }
+  if (marker.length > NUMERIC_CONSTANTS.SINGLE_CHARACTER && marker.match(ListPatterns.VALID_ROMAN_NUMERAL)) {
+    isRoman = true;
+  } else if (marker.length === NUMERIC_CONSTANTS.SINGLE_CHARACTER && marker.match(ListPatterns.SINGLE_ROMAN_CHAR)) {
+    if (currentLineIndex === blockStartIndex) {
+      isRoman = marker.match(ListPatterns.SINGLE_I) !== null;
+      if (!isRoman) {
+        isAlpha = true;
       }
-      const newLine = `${insertedIndent}${newMarker}${item.punctuation}${item.spaces}${item.content}`;
-      const oldLine = allLines[item.lineNum];
-      if (newLine !== oldLine) {
-        const lineStartPos = doc.line(item.lineNum + 1).from;
-        const lineEndPos = doc.line(item.lineNum + 1).to;
-        changes.push({
-          from: lineStartPos,
-          to: lineEndPos,
-          insert: newLine
-        });
-      }
+    } else {
+      isRoman = existingItems.length > NUMERIC_CONSTANTS.EMPTY_LENGTH && existingItems[NUMERIC_CONSTANTS.FIRST_INDEX].isRoman;
+      isAlpha = existingItems.length > NUMERIC_CONSTANTS.EMPTY_LENGTH && existingItems[NUMERIC_CONSTANTS.FIRST_INDEX].isAlpha;
     }
-    if (changes.length > 0) {
-      const transaction = state.update({ changes });
-      view.dispatch(transaction);
+  } else {
+    isAlpha = true;
+  }
+  return { isRoman, isAlpha };
+}
+function calculateNewMarker(item, itemIndex) {
+  if (item.marker === "#") {
+    return "#";
+  }
+  if (item.isRoman) {
+    const isUpperCase = item.marker[NUMERIC_CONSTANTS.FIRST_INDEX] === item.marker[NUMERIC_CONSTANTS.FIRST_INDEX].toUpperCase();
+    return intToRoman(itemIndex + 1, isUpperCase);
+  }
+  if (item.isAlpha) {
+    const isUpperCase = item.marker[NUMERIC_CONSTANTS.FIRST_INDEX] === item.marker[NUMERIC_CONSTANTS.FIRST_INDEX].toUpperCase();
+    return numberToLetter(itemIndex + 1, isUpperCase);
+  }
+  return item.marker;
+}
+function validateListBlock(listItems) {
+  return listItems.length > NUMERIC_CONSTANTS.SINGLE_CHARACTER;
+}
+function applyNumberingChanges(view, listItems, insertedIndent) {
+  const state = view.state;
+  const doc = state.doc;
+  const allLines = doc.toString().split("\n");
+  const changes = [];
+  for (let i = NUMERIC_CONSTANTS.FIRST_INDEX; i < listItems.length; i++) {
+    const item = listItems[i];
+    const newMarker = calculateNewMarker(item, i);
+    const newLine = `${insertedIndent}${newMarker}${item.punctuation}${item.spaces}${item.content}`;
+    const oldLine = allLines[item.lineNum];
+    if (newLine !== oldLine) {
+      const lineStartPos = doc.line(item.lineNum + 1).from;
+      const lineEndPos = doc.line(item.lineNum + 1).to;
+      changes.push({
+        from: lineStartPos,
+        to: lineEndPos,
+        insert: newLine
+      });
     }
+  }
+  if (changes.length > NUMERIC_CONSTANTS.EMPTY_LENGTH) {
+    const transaction = state.update({ changes });
+    view.dispatch(transaction);
+  }
+}
+function renumberListItems(view, insertedLineNum) {
+  const state = view.state;
+  const doc = state.doc;
+  const allLines = doc.toString().split("\n");
+  const boundaries = findBlockBoundaries(allLines, insertedLineNum);
+  const listItems = collectListItems(allLines, boundaries);
+  if (validateListBlock(listItems)) {
+    applyNumberingChanges(view, listItems, boundaries.insertedIndent);
   }
 }
 
 // src/editor-extensions/listAutocompletion.ts
+function getCurrentLineInfo(view) {
+  const state = view.state;
+  const selection = state.selection.main;
+  const line = state.doc.lineAt(selection.from);
+  const lineText = line.text;
+  const isAtEndOfLine = selection.from === line.to;
+  const distanceFromEnd = line.to - selection.from;
+  return {
+    line,
+    lineText,
+    selection,
+    isAtEndOfLine,
+    distanceFromEnd
+  };
+}
+function detectListMarker(currentLine, view) {
+  const { lineText, selection, line, distanceFromEnd } = currentLine;
+  const state = view.state;
+  const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
+  if (isEmptyExampleList) {
+    const beforeCursor = state.doc.sliceString(line.from, selection.from);
+    const afterCursor = state.doc.sliceString(selection.from, line.to);
+    if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
+      return {
+        isListItem: true,
+        shouldHandleEnter: true,
+        isEmptyExampleListSpecial: true,
+        isEmptyCustomLabelSpecial: false
+      };
+    }
+  }
+  const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
+  if (isEmptyCustomLabelList) {
+    const beforeCursor = state.doc.sliceString(line.from, selection.from);
+    const afterCursor = state.doc.sliceString(selection.from, line.to);
+    if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
+      return {
+        isListItem: true,
+        shouldHandleEnter: true,
+        isEmptyExampleListSpecial: false,
+        isEmptyCustomLabelSpecial: true
+      };
+    }
+  }
+  const isListItem2 = lineText.match(ListPatterns.ANY_LIST_MARKER);
+  if (!isListItem2) {
+    const shouldHandle2 = selection.from === line.to && selection.from === selection.to;
+    return {
+      isListItem: false,
+      shouldHandleEnter: shouldHandle2,
+      isEmptyExampleListSpecial: false,
+      isEmptyCustomLabelSpecial: false
+    };
+  }
+  const shouldHandle = distanceFromEnd <= 2 && selection.from === selection.to;
+  return {
+    isListItem: true,
+    shouldHandleEnter: shouldHandle,
+    isEmptyExampleListSpecial: false,
+    isEmptyCustomLabelSpecial: false
+  };
+}
+function handleEmptyListSpecialCases(config) {
+  const { view, currentLine, beforeCursor, afterCursor } = config;
+  const { line, lineText } = currentLine;
+  const state = view.state;
+  if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
+    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+    const indent = indentMatch ? indentMatch[1] : "";
+    const changes = {
+      from: line.from,
+      to: line.to,
+      insert: indent
+    };
+    const transaction = state.update({
+      changes,
+      selection: import_state3.EditorSelection.cursor(line.from + indent.length)
+    });
+    view.dispatch(transaction);
+    return true;
+  }
+  if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
+    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+    const indent = indentMatch ? indentMatch[1] : "";
+    const changes = {
+      from: line.from,
+      to: line.to,
+      insert: indent
+    };
+    const transaction = state.update({
+      changes,
+      selection: import_state3.EditorSelection.cursor(line.from + indent.length)
+    });
+    view.dispatch(transaction);
+    return true;
+  }
+  return false;
+}
+function calculateIndentation(currentIndent) {
+  let newIndent = "";
+  if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
+    newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
+  } else if (currentIndent.startsWith(INDENTATION.TAB)) {
+    newIndent = currentIndent.substring(1);
+  } else {
+    newIndent = currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
+  }
+  return newIndent;
+}
+function handleEmptyListItem(config) {
+  const { view, currentLine } = config;
+  const { line, lineText } = currentLine;
+  const state = view.state;
+  if (!isEmptyListItem(lineText)) {
+    return false;
+  }
+  const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+  if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
+    const currentIndent = indentMatch[1];
+    const newIndent = calculateIndentation(currentIndent);
+    let previousMarker = null;
+    for (let i = line.number - 1; i >= 1; i--) {
+      const prevLine = state.doc.line(i);
+      const prevText = prevLine.text;
+      const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
+      if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
+        const allLines = state.doc.toString().split("\n");
+        const markerInfo = getNextListMarker(prevText, allLines, i - 1);
+        if (markerInfo) {
+          previousMarker = markerInfo;
+          break;
+        }
+      }
+    }
+    if (previousMarker && newIndent.length > 0) {
+      const spaces = previousMarker.spaces || " ";
+      const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
+      const changes2 = {
+        from: line.from,
+        to: line.to,
+        insert: newLine
+      };
+      const transaction2 = state.update({
+        changes: changes2,
+        selection: import_state3.EditorSelection.cursor(line.from + newLine.length)
+      });
+      view.dispatch(transaction2);
+      return true;
+    }
+  }
+  const changes = {
+    from: line.from,
+    to: line.to,
+    insert: ""
+  };
+  const transaction = state.update({
+    changes,
+    selection: import_state3.EditorSelection.cursor(line.from)
+  });
+  view.dispatch(transaction);
+  return true;
+}
+function insertNewListItem(config) {
+  const { view, currentLine, markerInfo, settings } = config;
+  const { line, selection } = currentLine;
+  const state = view.state;
+  const spaces = markerInfo.spaces || " ";
+  const newLine = `
+${markerInfo.indent}${markerInfo.marker}${spaces}`;
+  const insertPos = selection.from === line.to ? selection.from : line.to;
+  const changes = {
+    from: insertPos,
+    to: insertPos,
+    insert: newLine
+  };
+  const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
+  const transaction = state.update({
+    changes,
+    selection: import_state3.EditorSelection.cursor(insertPos + cursorOffset)
+  });
+  view.dispatch(transaction);
+  if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
+    const newLineNum = line.number;
+    setTimeout(() => {
+      renumberListItems(view, newLineNum);
+    }, 0);
+  }
+  return true;
+}
+function handleNonEmptyListItem(config) {
+  const { currentLine } = config;
+  const { lineText } = currentLine;
+  if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
+    return false;
+  }
+  const state = config.view.state;
+  const allLines = state.doc.toString().split("\n");
+  const currentLineIndex = currentLine.line.number - 1;
+  const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex);
+  if (markerInfo) {
+    const newConfig = { ...config, markerInfo };
+    return insertNewListItem(newConfig);
+  }
+  return false;
+}
 function createListAutocompletionKeymap(settings) {
   const handleListEnter = {
     key: "Enter",
     run: (view) => {
       const state = view.state;
-      const selection = state.selection.main;
-      const line = state.doc.lineAt(selection.from);
-      const lineText = line.text;
-      const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
-      if (isEmptyExampleList) {
-        const beforeCursor = state.doc.sliceString(line.from, selection.from);
-        const afterCursor = state.doc.sliceString(selection.from, line.to);
-        if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
-          const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-          const indent = indentMatch ? indentMatch[1] : "";
-          const changes = {
-            from: line.from,
-            to: line.to,
-            insert: indent
-          };
-          const transaction = state.update({
-            changes,
-            selection: import_state3.EditorSelection.cursor(line.from + indent.length)
-          });
-          view.dispatch(transaction);
-          return true;
-        }
-      }
-      const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
-      if (isEmptyCustomLabelList) {
-        const beforeCursor = state.doc.sliceString(line.from, selection.from);
-        const afterCursor = state.doc.sliceString(selection.from, line.to);
-        if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
-          const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-          const indent = indentMatch ? indentMatch[1] : "";
-          const changes = {
-            from: line.from,
-            to: line.to,
-            insert: indent
-          };
-          const transaction = state.update({
-            changes,
-            selection: import_state3.EditorSelection.cursor(line.from + indent.length)
-          });
-          view.dispatch(transaction);
-          return true;
-        }
-      }
-      const isListItem2 = lineText.match(ListPatterns.ANY_LIST_MARKER);
-      if (!isListItem2) {
-        if (selection.from !== line.to || selection.from !== selection.to) {
-          return false;
-        }
-      } else {
-        const distanceFromEnd = line.to - selection.from;
-        if (distanceFromEnd > 2 || selection.from !== selection.to) {
-          return false;
-        }
-      }
-      if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
+      const currentLine = getCurrentLineInfo(view);
+      const detection = detectListMarker(currentLine, view);
+      if (!detection.shouldHandleEnter) {
         return false;
       }
-      if (isEmptyListItem(lineText)) {
-        const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-        if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
-          const currentIndent = indentMatch[1];
-          let newIndent = "";
-          if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
-            newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
-          } else if (currentIndent.startsWith(INDENTATION.TAB)) {
-            newIndent = currentIndent.substring(1);
-          } else {
-            newIndent = currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
-          }
-          let previousMarker = null;
-          for (let i = line.number - 1; i >= 1; i--) {
-            const prevLine = state.doc.line(i);
-            const prevText = prevLine.text;
-            const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
-            if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
-              const allLines2 = state.doc.toString().split("\n");
-              const markerInfo2 = getNextListMarker(prevText, allLines2, i - 1);
-              if (markerInfo2) {
-                previousMarker = markerInfo2;
-                break;
-              }
-            }
-          }
-          if (previousMarker && newIndent.length > 0) {
-            const spaces = previousMarker.spaces || " ";
-            const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
-            const changes2 = {
-              from: line.from,
-              to: line.to,
-              insert: newLine
-            };
-            const transaction2 = state.update({
-              changes: changes2,
-              selection: import_state3.EditorSelection.cursor(line.from + newLine.length)
-            });
-            view.dispatch(transaction2);
-            return true;
-          }
-        }
-        const changes = {
-          from: line.from,
-          to: line.to,
-          insert: ""
+      if (detection.isEmptyExampleListSpecial || detection.isEmptyCustomLabelSpecial) {
+        const beforeCursor = state.doc.sliceString(currentLine.line.from, currentLine.selection.from);
+        const afterCursor = state.doc.sliceString(currentLine.selection.from, currentLine.line.to);
+        const specialConfig = {
+          view,
+          currentLine,
+          beforeCursor,
+          afterCursor
         };
-        const transaction = state.update({
-          changes,
-          selection: import_state3.EditorSelection.cursor(line.from)
-        });
-        view.dispatch(transaction);
+        return handleEmptyListSpecialCases(specialConfig);
+      }
+      if (currentLine.lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
+        return false;
+      }
+      const emptyListConfig = {
+        view,
+        currentLine,
+        beforeCursor: "",
+        afterCursor: ""
+      };
+      if (handleEmptyListItem(emptyListConfig)) {
         return true;
       }
-      const allLines = state.doc.toString().split("\n");
-      const currentLineIndex = line.number - 1;
-      const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex);
-      if (markerInfo) {
-        const spaces = markerInfo.spaces || " ";
-        const newLine = `
-${markerInfo.indent}${markerInfo.marker}${spaces}`;
-        const insertPos = selection.from === line.to ? selection.from : line.to;
-        const changes = {
-          from: insertPos,
-          to: insertPos,
-          insert: newLine
-        };
-        const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
-        const transaction = state.update({
-          changes,
-          selection: import_state3.EditorSelection.cursor(insertPos + cursorOffset)
-        });
-        view.dispatch(transaction);
-        if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
-          const newLineNum = line.number;
-          setTimeout(() => {
-            renumberListItems(view, newLineNum);
-          }, 0);
-        }
-        return true;
-      }
-      return false;
+      const nonEmptyConfig = {
+        view,
+        currentLine,
+        settings
+      };
+      return handleNonEmptyListItem(nonEmptyConfig);
     }
   };
   const handleListTab = {
@@ -6225,7 +6718,6 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
   }
   onunload() {
     pluginStateManager.clearAllStates();
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_LIST_PANEL);
   }
   async activateListPanelView() {
     const { workspace } = this.app;

@@ -1,9 +1,14 @@
 import { Line } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
+
 import { StructuralProcessor, StructuralResult, ProcessingContext, ContentRegion } from '../types';
-import { ListPatterns } from '../../../shared/patterns';
+
 import { CSS_CLASSES } from '../../../core/constants';
+
+import { ListPatterns } from '../../../shared/patterns';
+
 import { DefinitionBulletWidget } from '../../widgets';
+import { handleError } from '../../../shared/utils/errorHandler';
 
 /**
  * Processor for definition lists (: and ~ markers)
@@ -86,7 +91,7 @@ export class DefinitionProcessor implements StructuralProcessor {
         
         // Validate positions are within line bounds
         if (markerStart < line.from || markerEnd > line.to || markerStart >= markerEnd) {
-            console.warn(`Invalid marker positions for definition: start=${markerStart}, end=${markerEnd}, line=${line.from}-${line.to}`);
+            handleError(`Invalid marker positions for definition: start=${markerStart}, end=${markerEnd}, line=${line.from}-${line.to}`, 'warning');
             return { decorations };
         }
         
@@ -107,7 +112,7 @@ export class DefinitionProcessor implements StructuralProcessor {
                     })
                 });
             } catch (e) {
-                console.error('Failed to create definition widget:', e);
+                handleError(e, 'error');
             }
         } else {
             // When cursor is inside, still add decoration but as a mark (not replace)

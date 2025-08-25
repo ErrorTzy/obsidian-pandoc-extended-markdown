@@ -16,6 +16,17 @@ export interface ExampleListInfo {
     label?: string;
 }
 
+/**
+ * Parses a line to extract example list marker information.
+ * Example lists use the syntax (@label) or (@) for unlabeled examples.
+ * 
+ * @param line - The text line to parse for example list markers
+ * @returns ExampleListInfo object with parsed marker data, or null if no valid marker found
+ * @throws Does not throw exceptions - returns null for invalid input
+ * @example
+ * const info = parseExampleListMarker('  (@theorem) This is an example');
+ * // Returns: { indent: '  ', originalMarker: '(@theorem)', label: 'theorem' }
+ */
 export function parseExampleListMarker(line: string): ExampleListInfo | null {
     const match = ListPatterns.isExampleList(line);
     
@@ -30,6 +41,20 @@ export function parseExampleListMarker(line: string): ExampleListInfo | null {
     };
 }
 
+/**
+ * Processes HTML elements to identify and render Pandoc-style example lists.
+ * Uses a two-pass algorithm: first assigns sequential numbers to all examples,
+ * then processes references to maintain consistent numbering across the document.
+ * 
+ * @param element - The HTML element containing potential example lists
+ * @param context - Markdown post-processor context from Obsidian for accessing source text
+ * @throws Does not throw exceptions - handles malformed input gracefully
+ * @example
+ * // Processes markdown like:
+ * // (@theorem) E = mc^2
+ * // See (@theorem) for the mass-energy equivalence.
+ * processExampleLists(sectionElement, context);
+ */
 export function processExampleLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
     const exampleMap = new Map<string, number>();
     const exampleContent = new Map<string, string>();

@@ -213,9 +213,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         // Clear all states on unload
         pluginStateManager.clearAllStates();
         
-        // Close list panel views
-        this.app.workspace.detachLeavesOfType(VIEW_TYPE_LIST_PANEL);
-        
+        // List panel views will auto-reinitialize when plugin reloads
         // Other cleanup is handled automatically by Obsidian
     }
     

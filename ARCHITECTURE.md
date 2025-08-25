@@ -617,7 +617,9 @@ sequenceDiagram
 - **Interaction handlers** (in `src/views/panels/utils/viewInteractions.ts`):
   - `setupLabelClickHandler()`: Handles label copying
   - `setupContentClickHandler()`: Handles navigation
-  - `setupHoverPreview()`: Shows popover for truncated content
+- **Hover Previews** (in `src/shared/utils/hoverPopovers.ts`):
+  - `setupRenderedHoverPreview()`: Renders markdown content in a hover preview.
+  - `setupSimpleHoverPreview()`: Shows a simple text hover preview.
 
 ## Plugin Lifecycle & State Management
 

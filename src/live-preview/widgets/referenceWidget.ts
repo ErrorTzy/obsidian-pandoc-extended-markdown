@@ -1,7 +1,7 @@
 import { WidgetType, EditorView } from '@codemirror/view';
 import { setTooltip, App, Component } from 'obsidian';
 import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
-import { setupRenderedHoverPreview } from '../../views/panels/utils/hoverPopovers';
+import { setupRenderedHoverPreview } from '../../shared/utils/hoverPopovers';
 
 // Widget for example references
 export class ExampleReferenceWidget extends WidgetType {

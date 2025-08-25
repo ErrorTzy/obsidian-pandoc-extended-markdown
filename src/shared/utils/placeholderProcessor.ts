@@ -5,7 +5,6 @@
  * @param label - The label containing placeholders
  * @returns The label with placeholders replaced by numbers
  */
-// Patterns
 import { ListPatterns } from '../patterns';
 
 export function processPlaceholders(label: string): string {
@@ -131,9 +130,14 @@ export class PlaceholderContext {
     /**
      * Check if a label is a pure expression (contains only placeholders and operators).
      * Pure expressions like "(#a)+(#b)" or "P(#a),(#b)" are valid references without needing to be defined.
+     * After removing placeholders, checks if remaining characters are only operators, spaces, and simple prefixes.
      * 
-     * @param label - The label to check
-     * @returns true if the label is a pure expression
+     * @param label - The label to check for pure expression pattern
+     * @returns true if the label is a pure expression that doesn't need prior definition
+     * @throws Does not throw exceptions - handles malformed input gracefully
+     * @example
+     * isPureExpression("P(#a),(#b)"); // returns true
+     * isPureExpression("theorem1");   // returns false (needs definition)
      */
     private isPureExpression(label: string): boolean {
         // Remove all placeholders and see if we're left with only operators and spaces
@@ -146,13 +150,18 @@ export class PlaceholderContext {
     /**
      * Get the base label without trailing primes or other modifiers.
      * Used to match variations like "P1'" against defined labels like "P1'''".
+     * Enables partial matching of label references against their defined counterparts.
      * 
-     * @param label - The label to extract base from
-     * @returns The base label without trailing primes
+     * @param label - The label to extract base form from
+     * @returns The base label with trailing primes/quotes removed
+     * @throws Does not throw exceptions - handles all string input safely
+     * @example
+     * getBaseLabel("theorem1'''"); // returns "theorem1"
+     * getBaseLabel("P1'");        // returns "P1"
      */
     private getBaseLabel(label: string): string {
         // Remove trailing primes (', '', ''', etc.)
-        return label.replace(/'+$/, '');
+        return ListPatterns.removeTrailingQuotes(label);
     }
     
     /**

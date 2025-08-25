@@ -119,6 +119,16 @@ export class ListPatterns {
     // Custom label placeholder pattern for inline matching
     static readonly CUSTOM_LABEL_PLACEHOLDER = /\(#([^)]+)\)/g;
     
+    // Additional inline patterns
+    static readonly TRAILING_QUOTES = /'+$/;
+    static readonly BACKSLASH_ESCAPE = /\\/g;
+    static readonly WHITESPACE_CLEANUP = /\s+/g;
+    static readonly LETTER_MARKER_PATTERN = /^([A-Za-z]+)([.)])$/;
+    static readonly ROMAN_MARKER_PATTERN = /^([ivxlcdmIVXLCDM]+)([.)])$/;
+    static readonly PLACEHOLDER_LETTER_PATTERN = /\(#([a-z])\)/g;
+    static readonly WHITESPACE_DOLLAR_CLEANUP = /\s+\$/g;
+    static readonly FORMATTING_MARKER_START = /^(\*\*|__|\*|_|`)/;
+    
     // Note: Patterns are already compiled as static readonly RegExp objects,
     // providing optimal performance without needing additional caching.
     
@@ -270,21 +280,49 @@ export class ListPatterns {
      * Extract letter and delimiter from a fancy list marker.
      */
     static extractLetterMarker(marker: string): RegExpMatchArray | null {
-        return marker.match(/^([A-Za-z]+)([.)])$/);
+        return marker.match(this.LETTER_MARKER_PATTERN);
     }
     
     /**
      * Extract roman numeral and delimiter from a fancy list marker.
      */
     static extractRomanMarker(marker: string): RegExpMatchArray | null {
-        return marker.match(/^([ivxlcdmIVXLCDM]+)([.)])$/);
+        return marker.match(this.ROMAN_MARKER_PATTERN);
     }
     
     /**
      * Check if text starts with a formatting marker.
      */
     static startsWithFormatting(text: string): boolean {
-        return /^(\*\*|__|\*|_|`)/.test(text);
+        return this.FORMATTING_MARKER_START.test(text);
+    }
+    
+    /**
+     * Remove trailing quotes from text.
+     */
+    static removeTrailingQuotes(text: string): string {
+        return text.replace(this.TRAILING_QUOTES, '');
+    }
+    
+    /**
+     * Clean up whitespace and formatting in mathematical expressions.
+     */
+    static cleanMathExpression(text: string): string {
+        return text.replace(this.BACKSLASH_ESCAPE, '').replace(this.WHITESPACE_CLEANUP, ' ').trim();
+    }
+    
+    /**
+     * Clean up whitespace before dollar signs in LaTeX.
+     */
+    static cleanWhitespaceBeforeDollar(content: string): string {
+        return content.replace(this.WHITESPACE_DOLLAR_CLEANUP, '$');
+    }
+    
+    /**
+     * Replace placeholder letters with values.
+     */
+    static replacePlaceholderLetters(label: string, replaceFn: (match: string, letter: string) => string): string {
+        return label.replace(this.PLACEHOLDER_LETTER_PATTERN, replaceFn);
     }
     
     /**

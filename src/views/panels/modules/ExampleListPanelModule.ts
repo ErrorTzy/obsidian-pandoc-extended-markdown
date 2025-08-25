@@ -12,7 +12,7 @@ import { truncateContentWithRendering } from '../utils/contentTruncator';
 import { renderContentWithMath } from '../utils/viewInteractions';
 import { handleError } from '../../../shared/utils/errorHandler';
 import { ExampleListItem, extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
-import { setupSimpleHoverPreview, positionHoverElement } from '../utils/hoverPopovers';
+import { setupSimpleHoverPreview, positionHoverElement } from '../../../shared/utils/hoverPopovers';
 import { highlightLine } from '../../editor/highlightUtils';
 
 // Internal modules
@@ -28,6 +28,7 @@ export class ExampleListPanelModule implements PanelModule {
     private exampleItems: ExampleListItem[] = [];
     private containerEl: HTMLElement | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null;
+    private abortController: AbortController | null = null;
     
     constructor(plugin: PandocExtendedMarkdownPlugin) {
         this.plugin = plugin;
@@ -37,11 +38,18 @@ export class ExampleListPanelModule implements PanelModule {
         this.isActive = true;
         this.containerEl = containerEl;
         this.lastActiveMarkdownView = activeView;
+        // Create new abort controller for cleanup
+        this.abortController = new AbortController();
         this.updateContent(activeView);
     }
     
     onDeactivate(): void {
         this.isActive = false;
+        // Clean up all event listeners
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
         if (this.containerEl) {
             this.containerEl.empty();
             this.containerEl = null;
@@ -200,11 +208,11 @@ export class ExampleListPanelModule implements PanelModule {
     }
     
     private setupLabelHoverPreview(element: HTMLElement, fullLabel: string): void {
-        setupSimpleHoverPreview(element, fullLabel, CSS_CLASSES.HOVER_POPOVER_LABEL);
+        setupSimpleHoverPreview(element, fullLabel, CSS_CLASSES.HOVER_POPOVER_LABEL, this.abortController?.signal);
     }
     
     private setupLabelClickHandler(element: HTMLElement, rawLabelSyntax: string): void {
-        element.addEventListener('click', () => {
+        const clickHandler = () => {
             try {
                 navigator.clipboard.writeText(rawLabelSyntax).then(() => {
                     new Notice(MESSAGES.LABEL_COPIED);
@@ -214,11 +222,13 @@ export class ExampleListPanelModule implements PanelModule {
             } catch (error) {
                 handleError(error, 'Label click handler');
             }
-        });
+        };
+        
+        element.addEventListener('click', clickHandler, { signal: this.abortController?.signal });
     }
     
     private setupContentClickHandler(element: HTMLElement, item: ExampleListItem, activeView: MarkdownView): void {
-        element.addEventListener('click', () => {
+        const clickHandler = () => {
             try {
                 if (activeView && activeView.editor) {
                     const editor = activeView.editor;
@@ -240,7 +250,9 @@ export class ExampleListPanelModule implements PanelModule {
             } catch (error) {
                 handleError(error, 'Scroll to example list');
             }
-        });
+        };
+        
+        element.addEventListener('click', clickHandler, { signal: this.abortController?.signal });
     }
     
     private setupContentHoverPreview(element: HTMLElement, item: ExampleListItem): void {
@@ -253,12 +265,13 @@ export class ExampleListPanelModule implements PanelModule {
             }
         };
         
-        element.addEventListener('mouseenter', () => {
+        const mouseEnterHandler = () => {
             hoverPopover = this.createContentHoverElement(item, element);
-        });
+        };
         
-        element.addEventListener('mouseleave', removePopover);
-        element.addEventListener('click', removePopover);
+        element.addEventListener('mouseenter', mouseEnterHandler, { signal: this.abortController?.signal });
+        element.addEventListener('mouseleave', removePopover, { signal: this.abortController?.signal });
+        element.addEventListener('click', removePopover, { signal: this.abortController?.signal });
     }
     
     private createContentHoverElement(item: ExampleListItem, element: HTMLElement): HTMLElement {

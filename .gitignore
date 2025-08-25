@@ -19,6 +19,13 @@ npm-debug.log*
 # Test coverage
 coverage/
 
+# E2E Testing
+.obsidian-cache/
+wdio-logs/
+allure-report/
+allure-results/
+tests/e2e/screenshots/
+
 # Environment variables
 .env
 .env.local
@@ -29,11 +36,11 @@ coverage/
 
 # Test files (not needed for plugin)
 test-example.md
-tests/
+# tests/ # Commented out - contains e2e tests
 
 # Development notes
 *.txt
-AUTOCOMPLETE_FEATURE.md
+CLAUDE.md
 WARP.md
 
 # Package lock (keep package.json)

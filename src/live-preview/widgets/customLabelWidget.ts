@@ -4,7 +4,7 @@ import { setTooltip, App, Component } from 'obsidian';
 
 // Constants
 import { CSS_CLASSES, DECORATION_STYLES, DOM_ATTRIBUTES } from '../../core/constants';
-import { setupRenderedHoverPreview } from '../../views/panels/utils/hoverPopovers';
+import { setupRenderedHoverPreview } from '../../shared/utils/hoverPopovers';
 
 export class CustomLabelMarkerWidget extends WidgetType {
     private controller: AbortController;

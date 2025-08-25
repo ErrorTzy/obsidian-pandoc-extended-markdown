@@ -1,7 +1,12 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
+
 import { getSectionInfo } from '../../shared/types/obsidian-extended';
+import { DefinitionList, DefinitionTerm, DefinitionItem } from '../../shared/types/listTypes';
+
 import { CSS_CLASSES } from '../../core/constants';
+
 import { ListPatterns } from '../../shared/patterns';
+
 import { findSuperSubInText } from './superSubParser';
 
 export interface DefinitionListMarker {
@@ -11,6 +16,18 @@ export interface DefinitionListMarker {
     content: string;
 }
 
+/**
+ * Parses a line to identify definition list markers (terms or definition items).
+ * Definition terms are identified by lines that end without markers, while
+ * definition items are marked with ':' or '~' characters.
+ * 
+ * @param line - The text line to parse for definition list markers
+ * @returns DefinitionListMarker object with parsed data, or null if not a definition marker
+ * @throws Does not throw exceptions - returns null for invalid input
+ * @example
+ * const marker = parseDefinitionListMarker('  ~ This is a definition');
+ * // Returns: { type: 'definition', indent: '  ', marker: '~', content: ' This is a definition' }
+ */
 export function parseDefinitionListMarker(line: string): DefinitionListMarker | null {
     const termMatch = line.match(ListPatterns.DEFINITION_TERM_PATTERN);
     if (termMatch && !line.includes('*') && !line.includes('-') && !line.match(ListPatterns.NUMBERED_LIST)) {
@@ -41,6 +58,21 @@ export function parseDefinitionListMarker(line: string): DefinitionListMarker | 
     return null;
 }
 
+/**
+ * Processes HTML elements to identify and render Pandoc-style definition lists.
+ * Scans the markdown source for definition terms and items, then transforms them
+ * into proper HTML dl/dt/dd structure with appropriate CSS classes.
+ * 
+ * @param element - The HTML element containing potential definition lists
+ * @param context - Markdown post-processor context from Obsidian for accessing source text
+ * @throws Does not throw exceptions - handles malformed input gracefully
+ * @example
+ * // Processes markdown like:
+ * // Term 1
+ * // :   Definition for term 1
+ * // :   Another definition
+ * processDefinitionLists(sectionElement, context);
+ */
 export function processDefinitionLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
     const section = element.closest('.markdown-preview-section') as HTMLElement;
     if (!section) return;
@@ -101,21 +133,7 @@ export function processDefinitionLists(element: HTMLElement, context: MarkdownPo
     renderDefinitionLists(element, definitionLists);
 }
 
-interface DefinitionList {
-    terms: DefinitionTerm[];
-}
-
-interface DefinitionTerm {
-    text: string;
-    lineNumber: number;
-    definitions: DefinitionItem[];
-}
-
-interface DefinitionItem {
-    text: string;
-    lineNumber: number;
-    marker: string;
-}
+// Type definitions moved to shared/types/listTypes.ts
 
 function renderDefinitionLists(element: HTMLElement, definitionLists: DefinitionList[]) {
     definitionLists.forEach(list => {

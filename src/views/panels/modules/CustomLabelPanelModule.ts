@@ -22,6 +22,7 @@ export class CustomLabelPanelModule implements PanelModule {
     private labels: CustomLabel[] = [];
     private containerEl: HTMLElement | null = null;
     private lastActiveMarkdownView: MarkdownView | null = null;
+    private abortController: AbortController | null = null;
     
     constructor(plugin: PandocExtendedMarkdownPlugin) {
         this.plugin = plugin;
@@ -31,11 +32,18 @@ export class CustomLabelPanelModule implements PanelModule {
         this.isActive = true;
         this.containerEl = containerEl;
         this.lastActiveMarkdownView = activeView;
+        // Create new abort controller for cleanup
+        this.abortController = new AbortController();
         this.updateContent(activeView);
     }
     
     onDeactivate(): void {
         this.isActive = false;
+        // Clean up all event listeners
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
         if (this.containerEl) {
             this.containerEl.empty();
             this.containerEl = null;
@@ -128,10 +136,10 @@ export class CustomLabelPanelModule implements PanelModule {
         labelEl.textContent = displayLabel;
         
         if (displayLabel !== label.label) {
-            setupLabelHoverPreview(labelEl, label.label);
+            setupLabelHoverPreview(labelEl, label.label, this.abortController?.signal);
         }
         
-        setupLabelClickHandler(labelEl, label.rawLabel);
+        setupLabelClickHandler(labelEl, label.rawLabel, this.abortController?.signal);
         
         const contentEl = row.createEl('td', {
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_CONTENT
@@ -147,7 +155,7 @@ export class CustomLabelPanelModule implements PanelModule {
             contentEl.textContent = truncatedContent;
         }
         
-        setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app);
+        setupContentClickHandler(contentEl, label, this.lastActiveMarkdownView, this.plugin.app, this.abortController?.signal);
         
         if (truncatedContent !== contentToShow) {
             // Create a proper HoverLinkSource-compatible object
@@ -157,7 +165,7 @@ export class CustomLabelPanelModule implements PanelModule {
                     defaultMod: true
                 }
             };
-            setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource);
+            setupContentHoverPreview(contentEl, label, this.plugin.app, hoverSource, this.abortController?.signal);
         }
     }
     

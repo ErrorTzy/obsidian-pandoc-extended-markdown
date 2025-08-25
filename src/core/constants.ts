@@ -97,6 +97,17 @@ export const CSS_CLASSES = {
     HOVER_POPOVER_LABEL: 'pandoc-hover-popover-label',
     HOVER_POPOVER_CONTENT: 'pandoc-hover-popover-content',
     
+    // List Panel View Classes
+    LIST_PANEL_VIEW_CONTAINER: 'pandoc-list-panel-view-container',
+    LIST_PANEL_ICON_ROW: 'pandoc-list-panel-icon-row',
+    LIST_PANEL_ICON_BUTTON: 'pandoc-list-panel-icon-button',
+    LIST_PANEL_ICON_CONTAINER: 'pandoc-panel-icon-container',
+    LIST_PANEL_ICON_CUSTOM_LABEL: 'pandoc-icon-custom-label',
+    LIST_PANEL_ICON_EXAMPLE_LIST: 'pandoc-icon-example-list',
+    LIST_PANEL_SEPARATOR: 'pandoc-list-panel-separator',
+    LIST_PANEL_CONTENT_CONTAINER: 'pandoc-list-panel-content-container',
+    LIST_PANEL_ICON_ACTIVE: 'is-active',
+    
     // Example List View Classes
     EXAMPLE_LIST_VIEW_CONTAINER: 'pandoc-example-list-view-container',
     EXAMPLE_LIST_VIEW_ROW: 'pandoc-example-list-view-row',
@@ -157,6 +168,8 @@ export const UI_CONSTANTS = {
     // Custom Label View
     LABEL_MAX_LENGTH: 6,
     LABEL_TRUNCATION_LENGTH: 5,  // Length before adding ellipsis
+    // Icon dimensions
+    PANEL_ICON_SIZE: 20,
     CONTENT_MAX_LENGTH: 51,
     CONTENT_TRUNCATION_LENGTH: 50,  // Length before adding ellipsis
     CONTENT_TRUNCATE_LINES: 3,
@@ -285,6 +298,86 @@ export const PANEL_SETTINGS = {
         BTN_MOVE_BOTTOM: 'Move to bottom',
         BTN_RESTORE_DEFAULT: 'Restore to Default'
     }
+} as const;
+
+// Error codes moved from errorHandler.ts
+export const ERROR_CODES = {
+    PARSE_ERROR: 'PARSE_ERROR',
+    RENDER_ERROR: 'RENDER_ERROR',
+    VALIDATION_ERROR: 'VALIDATION_ERROR',
+    API_ERROR: 'API_ERROR',
+    SETTINGS_ERROR: 'SETTINGS_ERROR',
+    UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+} as const;
+
+// Error messages and contexts
+export const ERROR_MESSAGES = {
+    PLUGIN_PREFIX: 'Pandoc Extended Markdown',
+    UNEXPECTED_ERROR: 'An unexpected error occurred',
+    PARSE_FAILED: 'failed',
+    COPY_FAILED: 'Failed to copy label',
+    HIGHLIGHT_ERROR: 'Error highlighting line',
+    SCROLL_ERROR: 'Error scrolling to label',
+    WIDGET_CREATION_ERROR: 'Failed to create definition widget',
+    DECORATION_ERROR: 'Failed to add decoration',
+    INVALID_POSITION: 'Invalid decoration position',
+    INVALID_MARKER_POSITION: 'Invalid marker positions for definition',
+} as const;
+
+// Console log messages
+export const LOG_MESSAGES = {
+    COPY_FAILED: 'Failed to copy label:',
+    LABEL_CLICK_ERROR: 'Error in label click handler:',
+    SCROLL_ERROR: 'Error scrolling to label:',
+    HIGHLIGHT_ERROR: 'Error highlighting line:',
+    WIDGET_CREATION_ERROR: 'Failed to create definition widget:',
+    DECORATION_ERROR: 'Failed to add decoration at',
+    INVALID_DECORATION_WARN: 'Invalid decoration position:',
+    INVALID_MARKER_WARN: 'Invalid marker positions for definition:',
+} as const;
+
+// Magic numbers and thresholds
+export const NUMERIC_CONSTANTS = {
+    // Document validation
+    MIN_DOC_POSITION: 0,
+    
+    // Position validation
+    POSITION_TOLERANCE: 0,
+    
+    // Line processing
+    LINE_PROCESSING_BATCH_SIZE: 100,
+    
+    // Content limits
+    MAX_CONTENT_LENGTH: 1000,
+    MAX_LABEL_LENGTH: 100,
+    
+    // Timer intervals
+    DEBOUNCE_INTERVAL_MS: 100,
+    SELECTION_TIMEOUT_MS: 50,
+    
+    // Character limits
+    SINGLE_CHARACTER: 1,
+    EMPTY_LENGTH: 0,
+    
+    // Array indices
+    FIRST_INDEX: 0,
+    SECOND_INDEX: 1,
+    THIRD_INDEX: 2,
+    
+    // List processing
+    LIST_NESTING_LEVEL: 1,
+    MAX_NESTING_DEPTH: 10,
+} as const;
+
+// File and path constants
+export const FILE_CONSTANTS = {
+    EXTENSION_TS: '.ts',
+    EXTENSION_MD: '.md',
+    PATH_SEPARATOR: '/',
+    EMPTY_STRING: '',
+    SPACE: ' ',
+    NEWLINE: '\n',
+    TAB_CHARACTER: '\t',
 } as const;
 
 // Helper function to create fancy list type class names

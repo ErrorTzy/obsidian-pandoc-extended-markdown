@@ -10,36 +10,14 @@
 // External libraries
 import { WorkspaceLeaf, MarkdownView } from 'obsidian';
 
+// Types
+import { ViewMode, DocumentCounters, ViewState, ModeChangeEvent } from '../../shared/types/settingsTypes';
+
 // Constants
 import { UI_CONSTANTS } from '../constants';
 
 // Utils
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
-
-export type ViewMode = "reading" | "live" | "source";
-
-export interface DocumentCounters {
-    exampleCounter: number;
-    exampleMap: Map<string, number>;      // Maps example labels to numbers
-    exampleContent: Map<string, string>;   // Maps example labels to content
-    hashCounter: number;                   // Counter for hash auto-numbering lists
-    placeholderContext: PlaceholderContext; // Context for placeholder auto-numbering
-    customLabels?: Map<string, string>;   // Maps processed custom labels to content
-    rawToProcessed?: Map<string, string>; // Maps raw labels to processed labels
-}
-
-export interface ViewState {
-    mode: ViewMode;
-    filePath: string | null;
-}
-
-export interface ModeChangeEvent {
-    leafId: string;
-    previousMode: ViewMode | null;
-    currentMode: ViewMode;
-    previousPath: string | null;
-    currentPath: string | null;
-}
 
 type ModeChangeCallback = (event: ModeChangeEvent) => void;
 

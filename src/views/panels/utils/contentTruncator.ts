@@ -1,5 +1,6 @@
 import { UI_CONSTANTS } from '../../../core/constants';
 import { renderMathToText, truncateMathAtLimit } from '../../../shared/utils/mathRenderer';
+import { ListPatterns } from '../../../shared/patterns';
 
 export function truncateLabel(label: string): string {
     // Truncate at max length, replace last character with ellipsis if longer
@@ -47,6 +48,18 @@ interface CharacterResult {
     shouldBreak: boolean;
 }
 
+/**
+ * Parses content containing LaTeX math expressions and truncates it based on rendered length.
+ * Handles math delimiters ($...$) intelligently by calculating the actual rendered length
+ * of math expressions rather than their raw LaTeX character count.
+ * 
+ * @param content - The content string containing potential math expressions
+ * @returns ParseResult object with the processed result and truncation flag
+ * @throws Does not throw exceptions - handles malformed math gracefully
+ * @example
+ * const result = parseContentWithMath('Text with $E=mc^2$ formula');
+ * // Considers rendered length of math when truncating
+ */
 function parseContentWithMath(content: string): ParseResult {
     // First, normalize any math content with trailing spaces
     const normalizedContent = normalizeMathSpaces(content);
@@ -74,7 +87,7 @@ function parseContentWithMath(content: string): ParseResult {
 
 function normalizeMathSpaces(content: string): string {
     if (content.includes('$')) {
-        return content.replace(/\s+\$/g, '$');
+        return ListPatterns.cleanWhitespaceBeforeDollar(content);
     }
     return content;
 }
@@ -127,6 +140,21 @@ function handleUnclosedMathWrapper(state: ParsingState): ParseResult {
     return { result: finalResult.result, truncated: finalResult.truncated };
 }
 
+/**
+ * Processes a math delimiter character ($) to handle transitions into and out of math mode.
+ * When entering math mode, starts buffering LaTeX content. When exiting, renders the
+ * buffered math and checks if it fits within the remaining length limit.
+ * 
+ * @param inMath - Whether currently inside a math expression
+ * @param mathBuffer - Buffer containing accumulated LaTeX content
+ * @param currentResult - The result string built so far
+ * @param currentLength - Current rendered length of the result
+ * @returns MathDelimiterResult with updated state and potential truncation
+ * @throws Does not throw exceptions - handles invalid math expressions
+ * @example
+ * const result = processMathDelimiter(false, '', 'Text ', 5);
+ * // Starts math mode and begins buffering LaTeX content
+ */
 function processMathDelimiter(
     inMath: boolean,
     mathBuffer: string,
@@ -175,6 +203,20 @@ function processMathDelimiter(
     }
 }
 
+/**
+ * Processes a regular (non-math) character and adds it to the result if within limits.
+ * Appends the character if there's remaining space, otherwise truncates with ellipsis.
+ * Each regular character contributes 1 to the rendered length.
+ * 
+ * @param char - The character to process and potentially add
+ * @param currentResult - The result string built so far
+ * @param currentLength - Current rendered length of the result
+ * @returns CharacterResult with updated result and truncation decision
+ * @throws Does not throw exceptions - handles all character inputs safely
+ * @example
+ * const result = processRegularCharacter('a', 'Hello ', 6);
+ * // Adds 'a' if within limit, otherwise truncates with ellipsis
+ */
 function processRegularCharacter(
     char: string,
     currentResult: string,

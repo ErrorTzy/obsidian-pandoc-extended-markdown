@@ -15,7 +15,7 @@ export class SuperscriptProcessor implements InlineProcessor {
         const matches: InlineMatch[] = [];
         
         // Pattern for superscript: ^text^ but not ~text~
-        // Negative lookbehind to avoid matching subscripts
+        // Uses negative character classes for compatibility with older browsers
         const pattern = ListPatterns.SUPERSCRIPT_INLINE;
         
         // Get cursor position relative to region

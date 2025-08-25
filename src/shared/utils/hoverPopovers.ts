@@ -1,6 +1,6 @@
 import { MarkdownRenderer, Component, App } from 'obsidian';
-import { CSS_CLASSES } from '../../../core/constants';
-import { ListPatterns } from '../../../shared/patterns';
+import { CSS_CLASSES } from '../../core/constants';
+import { ListPatterns } from '../patterns';
 
 /**
  * Process popover content to replace inline references with their resolved values
@@ -48,10 +48,23 @@ export function processPopoverContent(
     return processedContent;
 }
 
+/**
+ * Sets up a simple hover preview that displays plain text content in a styled popover.
+ * The popover appears on mouseenter and disappears on mouseleave or click.
+ * Automatically positions itself to avoid going off-screen.
+ * 
+ * @param element - The HTML element to attach the hover preview to
+ * @param fullText - The plain text content to display in the hover popover
+ * @param popoverClass - Optional CSS class for styling the popover (defaults to label class)
+ * @throws Does not throw exceptions - handles DOM operations safely
+ * @example
+ * setupSimpleHoverPreview(labelElement, 'Full label text', 'custom-popover-class');
+ */
 export function setupSimpleHoverPreview(
     element: HTMLElement, 
     fullText: string, 
-    popoverClass: string = CSS_CLASSES.HOVER_POPOVER_LABEL
+    popoverClass: string = CSS_CLASSES.HOVER_POPOVER_LABEL,
+    abortSignal?: AbortSignal
 ): void {
     let hoverPopover: HTMLElement | null = null;
     let isMouseOver = false;
@@ -63,7 +76,7 @@ export function setupSimpleHoverPreview(
         }
     };
     
-    element.addEventListener('mouseenter', () => {
+    const mouseEnterHandler = () => {
         isMouseOver = true;
         
         const hoverEl = document.createElement('div');
@@ -86,18 +99,26 @@ export function setupSimpleHoverPreview(
         
         hoverPopover = hoverEl;
         
-        // Add event listeners to the popover itself
+        // Add event listeners to the popover itself with cleanup signal
+        const popoverController = new AbortController();
+        if (abortSignal) {
+            abortSignal.addEventListener('abort', () => {
+                popoverController.abort();
+            });
+        }
+        
         hoverEl.addEventListener('mouseenter', () => {
             isMouseOver = true;
-        });
+        }, { signal: popoverController.signal });
         
         hoverEl.addEventListener('mouseleave', () => {
             isMouseOver = false;
             removePopover();
-        });
-    });
+            popoverController.abort();
+        }, { signal: popoverController.signal });
+    };
     
-    element.addEventListener('mouseleave', () => {
+    const mouseLeaveHandler = () => {
         isMouseOver = false;
         // Add a small delay to allow mouse to move to the popover itself
         setTimeout(() => {
@@ -105,12 +126,16 @@ export function setupSimpleHoverPreview(
                 removePopover();
             }
         }, 50);
-    });
+    };
     
-    element.addEventListener('click', () => {
+    const clickHandler = () => {
         isMouseOver = false;
         removePopover();
-    });
+    };
+    
+    element.addEventListener('mouseenter', mouseEnterHandler, { signal: abortSignal });
+    element.addEventListener('mouseleave', mouseLeaveHandler, { signal: abortSignal });
+    element.addEventListener('click', clickHandler, { signal: abortSignal });
 }
 
 /**
@@ -133,7 +158,8 @@ export function setupRenderedHoverPreview(
         customLabels?: Map<string, string>;
         rawToProcessed?: Map<string, string>;
     },
-    popoverClass: string = CSS_CLASSES.HOVER_POPOVER_CONTENT
+    popoverClass: string = CSS_CLASSES.HOVER_POPOVER_CONTENT,
+    abortSignal?: AbortSignal
 ): void {
     let hoverPopover: HTMLElement | null = null;
     let isMouseOver = false;
@@ -147,7 +173,7 @@ export function setupRenderedHoverPreview(
         isCreatingPopover = false;
     };
     
-    element.addEventListener('mouseenter', async () => {
+    const mouseEnterHandler = async () => {
         isMouseOver = true;
         isCreatingPopover = true;
         
@@ -191,24 +217,32 @@ export function setupRenderedHoverPreview(
         if (isMouseOver) {
             hoverPopover = hoverEl;
             
-            // Add event listeners to the popover itself to handle mouse interactions
+            // Add event listeners to the popover itself with cleanup signal
+            const popoverController = new AbortController();
+            if (abortSignal) {
+                abortSignal.addEventListener('abort', () => {
+                    popoverController.abort();
+                });
+            }
+            
             hoverEl.addEventListener('mouseenter', () => {
                 isMouseOver = true;
-            });
+            }, { signal: popoverController.signal });
             
             hoverEl.addEventListener('mouseleave', () => {
                 isMouseOver = false;
                 removePopover();
-            });
+                popoverController.abort();
+            }, { signal: popoverController.signal });
         } else {
             // Mouse left while we were creating, clean up
             hoverEl.remove();
         }
         
         isCreatingPopover = false;
-    });
+    };
     
-    element.addEventListener('mouseleave', () => {
+    const mouseLeaveHandler = () => {
         isMouseOver = false;
         // Add a small delay to allow mouse to move to the popover itself
         setTimeout(() => {
@@ -216,14 +250,31 @@ export function setupRenderedHoverPreview(
                 removePopover();
             }
         }, 50);
-    });
+    };
     
-    element.addEventListener('click', () => {
+    const clickHandler = () => {
         isMouseOver = false;
         removePopover();
-    });
+    };
+    
+    element.addEventListener('mouseenter', mouseEnterHandler, { signal: abortSignal });
+    element.addEventListener('mouseleave', mouseLeaveHandler, { signal: abortSignal });
+    element.addEventListener('click', clickHandler, { signal: abortSignal });
 }
 
+/**
+ * Positions a hover element relative to a reference element with intelligent overflow handling.
+ * Places the hover element below the reference by default, but moves it above if it would
+ * overflow the bottom of the screen. Also handles horizontal overflow.
+ * 
+ * @param hoverEl - The hover element to position (popover, tooltip, etc.)
+ * @param referenceEl - The reference element to position relative to
+ * @param maxWidth - Optional maximum width constraint for the hover element
+ * @param maxHeight - Optional maximum height constraint for the hover element
+ * @throws Does not throw exceptions - handles positioning calculations safely
+ * @example
+ * positionHoverElement(popoverDiv, triggerButton, '300px', '200px');
+ */
 export function positionHoverElement(hoverEl: HTMLElement, referenceEl: HTMLElement, maxWidth?: string, maxHeight?: string): void {
     const rect = referenceEl.getBoundingClientRect();
     hoverEl.style.left = `${rect.left}px`;

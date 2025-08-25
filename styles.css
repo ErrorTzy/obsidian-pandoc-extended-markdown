@@ -301,6 +301,35 @@ sub.pandoc-subscript {
     height: 20px;
 }
 
+/* Panel icon container */
+.pandoc-panel-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+/* Text-based icons for panels */
+.pandoc-icon-custom-label,
+.pandoc-icon-example-list {
+    font-family: var(--font-monospace);
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-muted);
+}
+
+.pandoc-list-panel-icon-button.is-active .pandoc-icon-custom-label,
+.pandoc-list-panel-icon-button.is-active .pandoc-icon-example-list {
+    color: var(--text-on-accent);
+}
+
+.pandoc-list-panel-icon-button:hover .pandoc-icon-custom-label,
+.pandoc-list-panel-icon-button:hover .pandoc-icon-example-list {
+    color: var(--text-normal);
+}
+
 .pandoc-list-panel-separator {
     margin: 8px 0;
     border: none;

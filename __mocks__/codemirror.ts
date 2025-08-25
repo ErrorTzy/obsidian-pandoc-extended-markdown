@@ -76,6 +76,20 @@ export class EditorState {
     }
     return doc;
   }
+
+  facet(facet: any) {
+    // Return a mock plugin view with decorations
+    return [{
+      decorations: {
+        size: 1,
+        between: (from: number, to: number, callback: (from: number, to: number, decoration: any) => void) => {
+          // Call the callback with some mock data
+          callback(0, 6, { spec: { class: 'pandoc-definition-term' } });
+          callback(8, 11, { spec: { widget: {} } });
+        }
+      }
+    }];
+  }
 }
 
 export const EditorSelection = {
@@ -91,6 +105,9 @@ export class EditorView {
   }
   static decorations = {
     from: (field: any, fn: any) => ({})
+  };
+  static pluginField = {
+    init: () => ({}),
   };
   state: EditorState;
   viewport = { from: 0, to: 100 };
@@ -121,6 +138,24 @@ export class EditorView {
     if (spec.selection) {
       this.state.selection = spec.selection;
     }
+  }
+
+  destroy() {
+    // no-op
+  }
+
+  facet(facet: any) {
+    // Return a mock plugin view with decorations
+    return [{
+      decorations: {
+        size: 1,
+        between: (from: number, to: number, callback: (from: number, to: number, decoration: any) => void) => {
+          // Call the callback with some mock data
+          callback(0, 6, { spec: { class: 'pandoc-definition-term' } });
+          callback(8, 11, { spec: { widget: {} } });
+        }
+      }
+    }];
   }
 }
 
@@ -171,17 +206,22 @@ export class DecorationSet {
   iter() {
     let index = 0;
     const decorations = this.decorations;
-    return {
+    const iterator = {
       value: decorations[index] || null,
       from: decorations[index]?.from || 0,
       to: decorations[index]?.to || 0,
       next() {
         index++;
-        this.value = decorations[index] || null;
-        this.from = decorations[index]?.from || 0;
-        this.to = decorations[index]?.to || 0;
+        if (index < decorations.length) {
+          this.value = decorations[index];
+          this.from = decorations[index].from;
+          this.to = decorations[index].to;
+        } else {
+          this.value = null;
+        }
       }
     };
+    return iterator;
   }
 }
 
