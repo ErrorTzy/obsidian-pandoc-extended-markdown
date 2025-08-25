@@ -231,7 +231,7 @@ export class CustomLabelReferenceWidget extends WidgetType {
         if (this.content) {
             // If app and component are available, use rendered preview
             if (this.app && this.component) {
-                setupRenderedHoverPreview(span, this.content, this.app, this.component, this.context);
+                setupRenderedHoverPreview(span, this.content, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
             } else {
                 // Fallback to plain title attribute
                 span.setAttribute('title', this.content);

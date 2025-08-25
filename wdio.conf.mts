@@ -3,17 +3,15 @@ import { obsidianBetaAvailable } from "wdio-obsidian-service";
 
 const cacheDir = path.resolve(".obsidian-cache");
 
-// Test with Obsidian 1.3.7 specifically
+// Test with latest Obsidian version
 const versions: [string, string][] = [
-    ["1.3.7", "1.3.7"],  // It can only work with 1.3.7
+    ["latest", "latest"],  // Use the latest stable version
 ];
 
-// Optionally, you can also test against latest to ensure forward compatibility
-// Uncomment the following lines if you want to test multiple versions:
-// versions.push(["latest", "latest"]);
-// if (await obsidianBetaAvailable(cacheDir)) {
-//     versions.push(["latest-beta", "latest"]);
-// }
+// Optionally test with beta if available
+if (await obsidianBetaAvailable(cacheDir)) {
+    versions.push(["latest-beta", "latest"]);
+}
 
 export const config: WebdriverIO.Config = {
     runner: 'local',

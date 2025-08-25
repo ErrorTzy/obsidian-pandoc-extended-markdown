@@ -34,7 +34,7 @@ export class ExampleReferenceWidget extends WidgetType {
         if (this.tooltipText) {
             // If app and component are available, use rendered preview
             if (this.app && this.component) {
-                setupRenderedHoverPreview(span, this.tooltipText, this.app, this.component, this.context);
+                setupRenderedHoverPreview(span, this.tooltipText, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
             } else {
                 // Fallback to plain tooltip
                 setTooltip(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });

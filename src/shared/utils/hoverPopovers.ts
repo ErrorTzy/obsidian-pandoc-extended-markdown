@@ -85,6 +85,18 @@ function scheduleRemoval(state: HoverState): void {
 }
 
 /**
+ * Schedules async popover removal after a delay
+ */
+function scheduleAsyncRemoval(state: AsyncHoverState): void {
+    clearCleanupTimeout(state);
+    state.cleanupTimeout = setTimeout(() => {
+        if (!state.isMouseOverElement && !state.isMouseOverPopover) {
+            removeAsyncPopover(state);
+        }
+    }, 100);
+}
+
+/**
  * Positions a popover element relative to a reference element
  */
 function positionPopover(popoverElement: HTMLElement, referenceElement: HTMLElement): void {
@@ -119,6 +131,26 @@ function attachPopoverListeners(
     popoverElement.addEventListener('mouseleave', () => {
         state.isMouseOverPopover = false;
         scheduleRemoval(state);
+    }, { signal: state.popoverController.signal });
+}
+
+/**
+ * Attaches hover event listeners to the async popover element
+ */
+function attachAsyncPopoverListeners(
+    popoverElement: HTMLElement, 
+    state: AsyncHoverState
+): void {
+    state.popoverController = new AbortController();
+    
+    popoverElement.addEventListener('mouseenter', () => {
+        clearCleanupTimeout(state);
+        state.isMouseOverPopover = true;
+    }, { signal: state.popoverController.signal });
+    
+    popoverElement.addEventListener('mouseleave', () => {
+        state.isMouseOverPopover = false;
+        scheduleAsyncRemoval(state);
     }, { signal: state.popoverController.signal });
 }
 
@@ -312,7 +344,7 @@ export function setupRenderedHoverPreview(
         // Final check before setting the popover as active
         if (currentGeneration === state.renderingGeneration && state.isMouseOverElement) {
             state.hoverPopover = hoverElement;
-            attachPopoverListeners(hoverElement, state);
+            attachAsyncPopoverListeners(hoverElement, state);
             
             if (abortSignal) {
                 abortSignal.addEventListener('abort', () => removeAsyncPopover(state), { once: true });
@@ -324,7 +356,7 @@ export function setupRenderedHoverPreview(
     
     const mouseLeaveHandler = () => {
         state.isMouseOverElement = false;
-        scheduleRemoval(state);
+        scheduleAsyncRemoval(state);
     };
     
     const clickHandler = () => {

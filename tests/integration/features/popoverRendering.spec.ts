@@ -102,7 +102,9 @@ describe('Popover Rendering for References', () => {
                 tooltipText,
                 mockApp,
                 mockComponent,
-                undefined // context is optional
+                undefined, // context is optional
+                expect.any(String), // CSS_CLASSES.HOVER_POPOVER_CONTENT
+                expect.any(Object) // AbortSignal
             );
         });
 
