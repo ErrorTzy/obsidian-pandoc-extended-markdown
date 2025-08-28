@@ -4,3 +4,4 @@ export { ExampleListProcessor } from './ExampleListProcessor';
 export { CustomLabelProcessor } from './CustomLabelProcessor';
 export { DefinitionProcessor } from './DefinitionProcessor';
 export { StandardListProcessor } from './StandardListProcessor';
+export { ListContinuationProcessor } from './ListContinuationProcessor';

@@ -85,6 +85,14 @@ export class HashListProcessor implements StructuralProcessor {
             parentStructure: 'hash-list' as const
         };
         
+        // Set list context for continuation line detection
+        context.listContext = {
+            isInList: true,
+            contentStartColumn: indent.length + marker.length + space.length,
+            listLevel: 1,
+            parentStructure: 'hash-list'
+        };
+        
         return {
             decorations,
             contentRegion,

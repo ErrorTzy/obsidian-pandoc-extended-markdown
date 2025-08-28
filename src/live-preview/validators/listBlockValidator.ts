@@ -9,10 +9,30 @@ export class ListBlockValidator {
             ListPatterns.isHashList(line) || // Hash auto-numbering
             ListPatterns.isFancyList(line) || // Fancy lists
             ListPatterns.isExampleList(line) || // Example lists
+            ListPatterns.isCustomLabelList(line) || // Custom label lists
             ListPatterns.isDefinitionMarker(line) || // Definition lists
             line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
             line.match(ListPatterns.NUMBERED_LIST) // Regular numbered lists
         );
+    }
+    
+    static isListContinuation(line: string, prevWasListItem: boolean): boolean {
+        // A line is a continuation if:
+        // 1. Previous line was a list item or continuation
+        // 2. Current line is indented (at least 2 spaces or a tab)
+        // 3. Current line is not itself a list item
+        if (!prevWasListItem) return false;
+        if (this.isListItemForValidation(line)) return false;
+        
+        // Check if line is properly indented
+        const indentMatch = line.match(/^(\s+)/);
+        if (indentMatch) {
+            const indent = indentMatch[1];
+            // Need at least 2 spaces or a tab for continuation
+            return indent.length >= 2 || indent.includes('\t');
+        }
+        
+        return false;
     }
 
     static validateListBlocks(lines: string[], settings: PandocExtendedMarkdownSettings): Set<number> {
@@ -22,10 +42,17 @@ export class ListBlockValidator {
         }
 
         let listBlockStart = -1;
+        let inListBlock = false;
+        
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const isCurrentList = this.isListItemForValidation(line);
-            const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === '');
+            const prevWasListOrContinuation = i > 0 && (
+                this.isListItemForValidation(lines[i - 1]) || 
+                this.isListContinuation(lines[i - 1], inListBlock) ||
+                lines[i - 1].trim() === ''
+            );
+            const isContinuation = this.isListContinuation(line, inListBlock);
             
             // Check if previous line is a definition term (special case)
             const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && 
@@ -36,14 +63,15 @@ export class ListBlockValidator {
             if (isCurrentList && listBlockStart === -1) {
                 // Start of a new list block
                 listBlockStart = i;
+                inListBlock = true;
                 // Check if it has proper empty line before (unless first line or after a definition term)
                 if (i > 0 && lines[i - 1].trim() !== '' && !prevIsDefinitionTerm) {
                     // Mark entire block as invalid
-                    for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+                    for (let j = i; j < lines.length && (this.isListItemForValidation(lines[j]) || this.isListContinuation(lines[j], true)); j++) {
                         invalidListBlocks.add(j);
                     }
                 }
-            } else if (!isCurrentList && listBlockStart !== -1) {
+            } else if (!isCurrentList && !isContinuation && listBlockStart !== -1) {
                 // End of list block
                 // Check if there's proper empty line after (unless it's an empty line)
                 if (line.trim() !== '') {
@@ -53,6 +81,7 @@ export class ListBlockValidator {
                     }
                 }
                 listBlockStart = -1;
+                inListBlock = false;
             }
             
             // Check for capital letter spacing issue

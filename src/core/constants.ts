@@ -58,6 +58,7 @@ export const CSS_CLASSES = {
     LIST_LINE_2: 'HyperMD-list-line-2',
     LIST_LINE_3: 'HyperMD-list-line-3',
     LIST_LINE_4: 'HyperMD-list-line-4',
+    LIST_LINE_NOBULLET: 'HyperMD-list-line-nobullet',
     CM_LIST_1: 'cm-list-1',
     CM_FORMATTING: 'cm-formatting',
     CM_FORMATTING_LIST: 'cm-formatting-list',

@@ -30,7 +30,7 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian15 = require("obsidian");
 var import_state4 = require("@codemirror/state");
-var import_view17 = require("@codemirror/view");
+var import_view18 = require("@codemirror/view");
 
 // src/core/settings.ts
 var import_obsidian6 = require("obsidian");
@@ -87,6 +87,7 @@ var CSS_CLASSES = {
   LIST_LINE_2: "HyperMD-list-line-2",
   LIST_LINE_3: "HyperMD-list-line-3",
   LIST_LINE_4: "HyperMD-list-line-4",
+  LIST_LINE_NOBULLET: "HyperMD-list-line-nobullet",
   CM_LIST_1: "cm-list-1",
   CM_FORMATTING: "cm-formatting",
   CM_FORMATTING_LIST: "cm-formatting-list",
@@ -2490,7 +2491,7 @@ function createProcessorConfig(vaultConfig, pluginSettings) {
 
 // src/live-preview/extension.ts
 var import_state2 = require("@codemirror/state");
-var import_view16 = require("@codemirror/view");
+var import_view17 = require("@codemirror/view");
 var import_obsidian10 = require("obsidian");
 
 // src/core/state/pluginStateManager.ts
@@ -2966,9 +2967,20 @@ var ListBlockValidator = class {
     return !!(ListPatterns.isHashList(line) || // Hash auto-numbering
     ListPatterns.isFancyList(line) || // Fancy lists
     ListPatterns.isExampleList(line) || // Example lists
+    ListPatterns.isCustomLabelList(line) || // Custom label lists
     ListPatterns.isDefinitionMarker(line) || // Definition lists
     line.match(ListPatterns.UNORDERED_LIST) || // Unordered lists
     line.match(ListPatterns.NUMBERED_LIST));
+  }
+  static isListContinuation(line, prevWasListItem) {
+    if (!prevWasListItem) return false;
+    if (this.isListItemForValidation(line)) return false;
+    const indentMatch = line.match(/^(\s+)/);
+    if (indentMatch) {
+      const indent = indentMatch[1];
+      return indent.length >= 2 || indent.includes("	");
+    }
+    return false;
   }
   static validateListBlocks(lines, settings) {
     const invalidListBlocks = /* @__PURE__ */ new Set();
@@ -2976,25 +2988,29 @@ var ListBlockValidator = class {
       return invalidListBlocks;
     }
     let listBlockStart = -1;
+    let inListBlock = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const isCurrentList = this.isListItemForValidation(line);
-      const prevIsListOrEmpty = i > 0 && (this.isListItemForValidation(lines[i - 1]) || lines[i - 1].trim() === "");
+      const prevWasListOrContinuation = i > 0 && (this.isListItemForValidation(lines[i - 1]) || this.isListContinuation(lines[i - 1], inListBlock) || lines[i - 1].trim() === "");
+      const isContinuation = this.isListContinuation(line, inListBlock);
       const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !ListPatterns.isDefinitionMarker(lines[i - 1]) && !ListPatterns.isIndentedContent(lines[i - 1]) && ListPatterns.isDefinitionMarker(line);
       if (isCurrentList && listBlockStart === -1) {
         listBlockStart = i;
+        inListBlock = true;
         if (i > 0 && lines[i - 1].trim() !== "" && !prevIsDefinitionTerm) {
-          for (let j = i; j < lines.length && this.isListItemForValidation(lines[j]); j++) {
+          for (let j = i; j < lines.length && (this.isListItemForValidation(lines[j]) || this.isListContinuation(lines[j], true)); j++) {
             invalidListBlocks.add(j);
           }
         }
-      } else if (!isCurrentList && listBlockStart !== -1) {
+      } else if (!isCurrentList && !isContinuation && listBlockStart !== -1) {
         if (line.trim() !== "") {
           for (let j = listBlockStart; j < i; j++) {
             invalidListBlocks.add(j);
           }
         }
         listBlockStart = -1;
+        inListBlock = false;
       }
       if (isCurrentList) {
         const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
@@ -3192,6 +3208,9 @@ var ProcessingPipeline = class {
       }
       if (isLineInCodeRegion(lineNum, doc, codeRegions)) {
         continue;
+      }
+      if (line.text.trim() === "" && context.listContext) {
+        context.listContext = void 0;
       }
       let processed = false;
       for (const processor of this.structuralProcessors) {
@@ -3963,6 +3982,12 @@ var HashListProcessor = class {
       type: "list-content",
       parentStructure: "hash-list"
     };
+    context.listContext = {
+      isInList: true,
+      contentStartColumn: indent.length + marker.length + space.length,
+      listLevel: 1,
+      parentStructure: "hash-list"
+    };
     return {
       decorations,
       contentRegion,
@@ -4031,6 +4056,13 @@ var FancyListProcessor = class {
       from: contentStart,
       to: line.to,
       type: "list-content",
+      parentStructure: "fancy-list"
+    };
+    context.listContext = {
+      isInList: true,
+      contentStartColumn: indent.length + marker.length + delimiter.length + space.length,
+      listLevel: 1,
+      // Can be calculated based on indent depth
       parentStructure: "fancy-list"
     };
     return {
@@ -4129,6 +4161,12 @@ var ExampleListProcessor = class {
       type: "list-content",
       parentStructure: "example-list",
       metadata: { label, isDuplicate: isDuplicate || false }
+    };
+    context.listContext = {
+      isInList: true,
+      contentStartColumn: indent.length + fullMarker.length + space.length,
+      listLevel: 1,
+      parentStructure: "example-list"
     };
     return {
       decorations,
@@ -4417,7 +4455,7 @@ var CustomLabelProcessor = class {
   /**
    * Build the content region for inline processing
    */
-  buildStructuralResult(parsedLabel, line, decorations) {
+  buildStructuralResult(parsedLabel, line, decorations, context) {
     const contentRegion = {
       from: parsedLabel.markerEnd,
       to: line.to,
@@ -4428,6 +4466,12 @@ var CustomLabelProcessor = class {
         processedLabel: parsedLabel.processedLabel,
         isDuplicate: parsedLabel.isDuplicate
       }
+    };
+    context.listContext = {
+      isInList: true,
+      contentStartColumn: parsedLabel.markerEnd - line.from,
+      listLevel: 1,
+      parentStructure: "custom-label-list"
     };
     return {
       decorations,
@@ -4457,7 +4501,7 @@ var CustomLabelProcessor = class {
         context
       );
     }
-    return this.buildStructuralResult(parsedLabel, line, decorations);
+    return this.buildStructuralResult(parsedLabel, line, decorations, context);
   }
 };
 
@@ -4691,8 +4735,109 @@ var StandardListProcessor = class {
   }
 };
 
-// src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
+// src/live-preview/pipeline/structural/ListContinuationProcessor.ts
 var import_view12 = require("@codemirror/view");
+var ListContinuationProcessor = class {
+  constructor() {
+    this.name = "list-continuation";
+    this.priority = 100;
+  }
+  // Run after all list processors
+  canProcess(line, context) {
+    var _a;
+    if (!((_a = context.listContext) == null ? void 0 : _a.isInList)) {
+      return false;
+    }
+    const lineText = line.text;
+    const indentLength = this.getIndentLength(lineText);
+    return indentLength >= 3;
+  }
+  process(line, context) {
+    if (!context.listContext) {
+      return { decorations: [] };
+    }
+    const lineText = line.text;
+    const decorations = [];
+    const indentLength = this.getIndentLength(lineText);
+    const textIndent = "0px";
+    const paddingStart = context.listContext.contentStartColumn * 6 + "px";
+    decorations.push({
+      from: line.from,
+      to: line.from,
+      decoration: import_view12.Decoration.line({
+        class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`,
+        attributes: {
+          style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart};`
+        }
+      })
+    });
+    if (indentLength > 0) {
+      const indentText = lineText.substring(0, indentLength);
+      decorations.push({
+        from: line.from,
+        to: line.from + indentLength,
+        decoration: import_view12.Decoration.mark({
+          class: "cm-hmd-list-indent cm-hmd-list-indent-1",
+          tagName: "span"
+        })
+      });
+      decorations.push({
+        from: line.from,
+        to: line.from + indentLength,
+        decoration: import_view12.Decoration.mark({
+          class: "cm-indent-spacing",
+          tagName: "span",
+          inclusive: false
+        })
+      });
+    }
+    decorations.push({
+      from: line.from + indentLength,
+      to: line.to,
+      decoration: import_view12.Decoration.mark({
+        class: CSS_CLASSES.CM_LIST_1
+      })
+    });
+    const contentRegion = {
+      from: line.from + indentLength,
+      to: line.to,
+      type: "list-content",
+      parentStructure: context.listContext.parentStructure
+    };
+    const nextLineNum = line.number + 1;
+    if (nextLineNum <= context.document.lines) {
+      const nextLine = context.document.line(nextLineNum);
+      const nextLineText = nextLine.text.trim();
+      const nextIndentLength = this.getIndentLength(nextLine.text);
+      if (nextLineText === "" || nextIndentLength < 3) {
+        context.listContext = void 0;
+      }
+    } else {
+      context.listContext = void 0;
+    }
+    return {
+      decorations,
+      contentRegion,
+      skipFurtherProcessing: true
+    };
+  }
+  getIndentLength(text) {
+    let length = 0;
+    for (const char of text) {
+      if (char === " ") {
+        length++;
+      } else if (char === "	") {
+        length += INDENTATION.TAB_SIZE;
+      } else {
+        break;
+      }
+    }
+    return length;
+  }
+};
+
+// src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
+var import_view13 = require("@codemirror/view");
 var ExampleReferenceProcessor = class {
   constructor() {
     this.name = "example-reference";
@@ -4737,7 +4882,7 @@ var ExampleReferenceProcessor = class {
       customLabels: context.customLabels,
       rawToProcessed: context.rawToProcessed
     };
-    return import_view12.Decoration.replace({
+    return import_view13.Decoration.replace({
       widget: new ExampleReferenceWidget(
         number,
         content,
@@ -4753,7 +4898,7 @@ var ExampleReferenceProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SuperscriptProcessor.ts
-var import_view13 = require("@codemirror/view");
+var import_view14 = require("@codemirror/view");
 var SuperscriptProcessor = class {
   constructor() {
     this.name = "superscript";
@@ -4788,7 +4933,7 @@ var SuperscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view13.Decoration.replace({
+    return import_view14.Decoration.replace({
       widget: new SuperscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -4796,7 +4941,7 @@ var SuperscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SubscriptProcessor.ts
-var import_view14 = require("@codemirror/view");
+var import_view15 = require("@codemirror/view");
 var SubscriptProcessor = class {
   constructor() {
     this.name = "subscript";
@@ -4831,7 +4976,7 @@ var SubscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view14.Decoration.replace({
+    return import_view15.Decoration.replace({
       widget: new SubscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -4839,7 +4984,7 @@ var SubscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/CustomLabelReferenceProcessor.ts
-var import_view15 = require("@codemirror/view");
+var import_view16 = require("@codemirror/view");
 var CustomLabelReferenceProcessor = class {
   constructor() {
     this.name = "custom-label-reference";
@@ -4907,7 +5052,7 @@ var CustomLabelReferenceProcessor = class {
     const isDuplicate = (_d = context.duplicateCustomLabels) == null ? void 0 : _d.has(processedLabel);
     if (isDuplicate) {
       const duplicateInfo = (_e = context.duplicateCustomLineInfo) == null ? void 0 : _e.get(processedLabel);
-      return import_view15.Decoration.replace({
+      return import_view16.Decoration.replace({
         widget: new DuplicateCustomLabelWidget(
           processedLabel,
           (duplicateInfo == null ? void 0 : duplicateInfo.firstLine) || 0,
@@ -4924,7 +5069,7 @@ var CustomLabelReferenceProcessor = class {
       customLabels: context.customLabels,
       rawToProcessed: context.rawToProcessed
     };
-    return import_view15.Decoration.replace({
+    return import_view16.Decoration.replace({
       widget: new CustomLabelReferenceWidget(
         processedLabel,
         labelContent,
@@ -4948,7 +5093,7 @@ var CustomLabelReferenceProcessor = class {
 };
 
 // src/live-preview/extension.ts
-var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view16.ViewPlugin.fromClass(
+var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view17.ViewPlugin.fromClass(
   class PandocExtendedMarkdownView {
     constructor(view) {
       this.initializePipeline(getApp, getComponent);
@@ -4964,6 +5109,7 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponen
       this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
       this.pipeline.registerStructuralProcessor(new CustomLabelProcessor());
       this.pipeline.registerStructuralProcessor(new DefinitionProcessor());
+      this.pipeline.registerStructuralProcessor(new ListContinuationProcessor());
       this.pipeline.registerInlineProcessor(new ExampleReferenceProcessor());
       this.pipeline.registerInlineProcessor(new SuperscriptProcessor());
       this.pipeline.registerInlineProcessor(new SubscriptProcessor());
@@ -6912,6 +7058,65 @@ function createListAutocompletionKeymap(settings) {
     run: (view) => {
       const state = view.state;
       const currentLine = getCurrentLineInfo(view);
+      const lineText = currentLine.lineText;
+      const indentMatch = lineText.match(/^(\s+)/);
+      const isIndented = indentMatch && (indentMatch[1].length >= 2 || indentMatch[1].includes("	"));
+      if (isIndented && !lineText.match(ListPatterns.ANY_LIST_MARKER)) {
+        let lastListLine = null;
+        let lastListLineText = "";
+        let searchLineNum = currentLine.line.number - 1;
+        while (searchLineNum >= 1) {
+          const prevLine = state.doc.line(searchLineNum);
+          const prevText = prevLine.text;
+          if (ListPatterns.isFancyList(prevText) || ListPatterns.isExampleList(prevText) || ListPatterns.isCustomLabelList(prevText) || ListPatterns.isHashList(prevText)) {
+            lastListLine = prevLine;
+            lastListLineText = prevText;
+          }
+          const prevIndent = prevText.match(/^(\s*)/);
+          if (prevIndent && prevIndent[1].length === 0 && prevText.trim() !== "" && !ListPatterns.isFancyList(prevText) && !ListPatterns.isExampleList(prevText) && !ListPatterns.isCustomLabelList(prevText) && !ListPatterns.isHashList(prevText)) {
+            break;
+          }
+          searchLineNum--;
+        }
+        if (lastListLine) {
+          for (let lineNum = lastListLine.number; lineNum < currentLine.line.number; lineNum++) {
+            const line = state.doc.line(lineNum);
+            const text = line.text;
+            if (ListPatterns.isFancyList(text) || ListPatterns.isExampleList(text) || ListPatterns.isCustomLabelList(text) || ListPatterns.isHashList(text)) {
+              lastListLine = line;
+              lastListLineText = text;
+            }
+          }
+        }
+        if (lastListLine && lastListLineText) {
+          const allLines = state.doc.toString().split("\n");
+          const markerInfo = getNextListMarker(lastListLineText, allLines, lastListLine.number - 1);
+          if (markerInfo) {
+            const spaces = markerInfo.spaces || " ";
+            const newLine = `
+${markerInfo.indent}${markerInfo.marker}${spaces}`;
+            const insertPos = currentLine.line.to;
+            const changes = {
+              from: insertPos,
+              to: insertPos,
+              insert: newLine
+            };
+            const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
+            const transaction = state.update({
+              changes,
+              selection: import_state3.EditorSelection.cursor(insertPos + cursorOffset)
+            });
+            view.dispatch(transaction);
+            if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
+              const newLineNum = currentLine.line.number;
+              setTimeout(() => {
+                renumberListItems(view, newLineNum);
+              }, 0);
+            }
+            return true;
+          }
+        }
+      }
       const detection = detectListMarker(currentLine, view);
       if (!detection.shouldHandleEnter) {
         return false;
@@ -7019,8 +7224,63 @@ function createListAutocompletionKeymap(settings) {
       return false;
     }
   };
+  const handleListShiftEnter = {
+    key: "Shift-Enter",
+    run: (view) => {
+      const state = view.state;
+      const selection = state.selection.main;
+      const line = state.doc.lineAt(selection.from);
+      const lineText = line.text;
+      const isFancyList = ListPatterns.isFancyList(lineText);
+      const isExampleList = ListPatterns.isExampleList(lineText);
+      const isCustomLabelList = ListPatterns.isCustomLabelList(lineText);
+      const isHashList = ListPatterns.isHashList(lineText);
+      if (isFancyList || isExampleList || isCustomLabelList || isHashList) {
+        let contentStartCol = 0;
+        if (isFancyList) {
+          const indent = isFancyList[1] || "";
+          const markerWithDelim = isFancyList[2];
+          const delimiter = isFancyList[4];
+          const space = isFancyList[5] || " ";
+          contentStartCol = indent.length + markerWithDelim.length + space.length;
+        } else if (isExampleList) {
+          const indent = isExampleList[1] || "";
+          const fullMarker = isExampleList[2];
+          const space = isExampleList[4] || " ";
+          contentStartCol = indent.length + fullMarker.length + space.length;
+        } else if (isCustomLabelList) {
+          const indent = isCustomLabelList[1] || "";
+          const fullMarker = isCustomLabelList[2];
+          const space = isCustomLabelList[4] || " ";
+          contentStartCol = indent.length + fullMarker.length + space.length;
+        } else if (isHashList) {
+          const indent = isHashList[1] || "";
+          const marker = isHashList[2];
+          const space = isHashList[3] || " ";
+          contentStartCol = indent.length + marker.length + space.length;
+        }
+        const continuationIndent = "   ";
+        const insertPos = selection.from;
+        const changes = {
+          from: insertPos,
+          to: insertPos,
+          insert: "\n" + continuationIndent
+        };
+        const transaction = state.update({
+          changes,
+          selection: import_state3.EditorSelection.cursor(insertPos + 1 + 3)
+          // Cursor after 3 spaces
+        });
+        view.dispatch(transaction);
+        return true;
+      }
+      return false;
+    }
+  };
   return [
     handleListEnter,
+    handleListShiftEnter,
+    // Add the Shift+Enter handler
     handleListTab,
     handleListShiftTab
   ];
@@ -7063,7 +7323,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
       () => this.app,
       () => this
     ));
-    this.registerEditorExtension(import_state4.Prec.highest(import_view17.keymap.of(createListAutocompletionKeymap(this.settings))));
+    this.registerEditorExtension(import_state4.Prec.highest(import_view18.keymap.of(createListAutocompletionKeymap(this.settings))));
   }
   registerPostProcessor() {
     this.registerMarkdownPostProcessor((element, context) => {

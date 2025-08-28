@@ -84,6 +84,14 @@ export class FancyListProcessor implements StructuralProcessor {
             parentStructure: 'fancy-list' as const
         };
         
+        // Set list context for continuation line detection
+        context.listContext = {
+            isInList: true,
+            contentStartColumn: indent.length + marker.length + delimiter.length + space.length,
+            listLevel: 1, // Can be calculated based on indent depth
+            parentStructure: 'fancy-list'
+        };
+        
         return {
             decorations,
             contentRegion,

@@ -275,6 +275,11 @@ export class ProcessingPipeline {
                 continue;
             }
             
+            // Clear list context if we encounter a blank line
+            if (line.text.trim() === '' && context.listContext) {
+                context.listContext = undefined;
+            }
+            
             // Try each structural processor
             let processed = false;
             for (const processor of this.structuralProcessors) {

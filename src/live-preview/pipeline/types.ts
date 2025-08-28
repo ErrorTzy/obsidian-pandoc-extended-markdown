@@ -52,6 +52,12 @@ export interface ProcessingContext {
         lastWasItem: boolean;
         pendingBlankLine: boolean;
     };
+    listContext?: {
+        isInList: boolean;
+        contentStartColumn: number;
+        listLevel: number;
+        parentStructure?: string;
+    };
     
     // Code regions to skip
     codeRegions?: Array<{from: number, to: number, type: string}>;

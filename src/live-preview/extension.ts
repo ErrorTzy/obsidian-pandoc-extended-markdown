@@ -6,7 +6,7 @@ import { pluginStateManager } from '../core/state/pluginStateManager';
 
 // Pipeline imports
 import { ProcessingPipeline } from './pipeline/ProcessingPipeline';
-import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor, StandardListProcessor } from './pipeline/structural';
+import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor, StandardListProcessor, ListContinuationProcessor } from './pipeline/structural';
 import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor } from './pipeline/inline';
 
 // Main view plugin for rendering Pandoc extended markdown
@@ -39,6 +39,8 @@ const pandocExtendedMarkdownPlugin = (
             this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
             this.pipeline.registerStructuralProcessor(new CustomLabelProcessor());
             this.pipeline.registerStructuralProcessor(new DefinitionProcessor());
+            // ListContinuationProcessor must be registered last to run after all list processors
+            this.pipeline.registerStructuralProcessor(new ListContinuationProcessor());
             
             // Register inline processors
             this.pipeline.registerInlineProcessor(new ExampleReferenceProcessor());

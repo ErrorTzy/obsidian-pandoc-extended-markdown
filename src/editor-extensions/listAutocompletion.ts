@@ -387,7 +387,115 @@ const handleListEnter: KeyBinding = {
         // Get current line information
         const currentLine = getCurrentLineInfo(view);
         
-        // Detect list marker type and determine if we should handle Enter
+        // Check if we're in a continuation line (indented line within a list)
+        const lineText = currentLine.lineText;
+        const indentMatch = lineText.match(/^(\s+)/);
+        const isIndented = indentMatch && (indentMatch[1].length >= 2 || indentMatch[1].includes('\t'));
+        
+        if (isIndented && !lineText.match(ListPatterns.ANY_LIST_MARKER)) {
+            // We're in a continuation line - find the last list item in the current block
+            let lastListLine = null;
+            let lastListLineText = '';
+            let searchLineNum = currentLine.line.number - 1;
+            
+            // First, find any list item by searching backwards
+            while (searchLineNum >= 1) {
+                const prevLine = state.doc.line(searchLineNum);
+                const prevText = prevLine.text;
+                
+                // Check if this is a list item
+                if (ListPatterns.isFancyList(prevText) || 
+                    ListPatterns.isExampleList(prevText) || 
+                    ListPatterns.isCustomLabelList(prevText) || 
+                    ListPatterns.isHashList(prevText)) {
+                    lastListLine = prevLine;
+                    lastListLineText = prevText;
+                    // Don't break - keep searching to find all list items
+                }
+                
+                // If we hit a non-indented line that's not empty and not a list item, stop
+                const prevIndent = prevText.match(/^(\s*)/);
+                if (prevIndent && prevIndent[1].length === 0 && prevText.trim() !== '' && 
+                    !ListPatterns.isFancyList(prevText) && 
+                    !ListPatterns.isExampleList(prevText) && 
+                    !ListPatterns.isCustomLabelList(prevText) && 
+                    !ListPatterns.isHashList(prevText)) {
+                    break;
+                }
+                
+                searchLineNum--;
+            }
+            
+            // Now search forward from the last found list item to find the actual last list item
+            // before the current continuation block
+            if (lastListLine) {
+                for (let lineNum = lastListLine.number; lineNum < currentLine.line.number; lineNum++) {
+                    const line = state.doc.line(lineNum);
+                    const text = line.text;
+                    
+                    if (ListPatterns.isFancyList(text) || 
+                        ListPatterns.isExampleList(text) || 
+                        ListPatterns.isCustomLabelList(text) || 
+                        ListPatterns.isHashList(text)) {
+                        lastListLine = line;
+                        lastListLineText = text;
+                    }
+                }
+            }
+            
+            if (lastListLine && lastListLineText) {
+                // We found the last list item before the continuation - create the next list item
+                const allLines = state.doc.toString().split('\n');
+                const markerInfo = getNextListMarker(lastListLineText, allLines, lastListLine.number - 1);
+                
+                if (markerInfo) {
+                    // Insert new line with next marker at the original indentation
+                    const spaces = markerInfo.spaces || ' ';
+                    const newLine = `\n${markerInfo.indent}${markerInfo.marker}${spaces}`;
+                    
+                    // Insert at the end of current line
+                    const insertPos = currentLine.line.to;
+                    const changes = {
+                        from: insertPos,
+                        to: insertPos,
+                        insert: newLine
+                    };
+                    
+                    // Calculate cursor position based on marker type
+                    const cursorOffset = markerInfo.marker === '(@)' 
+                        ? newLine.length - spaces.length - 1  // Place cursor between @ and )
+                        : markerInfo.marker === '{::}'
+                        ? newLine.length - spaces.length - 1  // Place cursor between :: and }
+                        : newLine.length;                      // Place cursor after the spaces
+                    
+                    const transaction = state.update({
+                        changes,
+                        selection: EditorSelection.cursor(insertPos + cursorOffset)
+                    });
+                    
+                    view.dispatch(transaction);
+                    
+                    // Handle auto-renumbering if enabled
+                    if (settings.autoRenumberLists && 
+                        markerInfo.marker !== '(@)' && 
+                        markerInfo.marker !== '{::}' && 
+                        markerInfo.marker !== '#.' && 
+                        !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
+                        
+                        const newLineNum = currentLine.line.number;
+                        
+                        // Use setTimeout to ensure the insertion is complete before renumbering
+                        setTimeout(() => {
+                            renumberListItems(view, newLineNum);
+                        }, 0);
+                    }
+                    
+                    return true;
+                }
+            }
+        }
+        
+        // Original detection logic for when we're on a list item line
         const detection = detectListMarker(currentLine, view);
         
         if (!detection.shouldHandleEnter) {
@@ -538,9 +646,78 @@ const handleListShiftTab: KeyBinding = {
     }
 };
 
+// Handle Shift+Enter for list continuation
+const handleListShiftEnter: KeyBinding = {
+    key: 'Shift-Enter',
+    run: (view: EditorView): boolean => {
+        const state = view.state;
+        const selection = state.selection.main;
+        
+        // Get the current line
+        const line = state.doc.lineAt(selection.from);
+        const lineText = line.text;
+        
+        // Check if we're in any kind of extended list
+        const isFancyList = ListPatterns.isFancyList(lineText);
+        const isExampleList = ListPatterns.isExampleList(lineText);
+        const isCustomLabelList = ListPatterns.isCustomLabelList(lineText);
+        const isHashList = ListPatterns.isHashList(lineText);
+        
+        if (isFancyList || isExampleList || isCustomLabelList || isHashList) {
+            // Calculate the indentation needed for continuation
+            let contentStartCol = 0;
+            
+            if (isFancyList) {
+                const indent = isFancyList[1] || '';
+                const markerWithDelim = isFancyList[2]; // e.g., "A." or "i)"
+                const delimiter = isFancyList[4]; // "." or ")"
+                const space = isFancyList[5] || ' ';
+                contentStartCol = indent.length + markerWithDelim.length + space.length;
+            } else if (isExampleList) {
+                const indent = isExampleList[1] || '';
+                const fullMarker = isExampleList[2]; // e.g., "(@label)"
+                const space = isExampleList[4] || ' ';
+                contentStartCol = indent.length + fullMarker.length + space.length;
+            } else if (isCustomLabelList) {
+                const indent = isCustomLabelList[1] || '';
+                const fullMarker = isCustomLabelList[2]; // e.g., "{::LABEL}"
+                const space = isCustomLabelList[4] || ' ';
+                contentStartCol = indent.length + fullMarker.length + space.length;
+            } else if (isHashList) {
+                const indent = isHashList[1] || '';
+                const marker = isHashList[2]; // "#."
+                const space = isHashList[3] || ' ';
+                contentStartCol = indent.length + marker.length + space.length;
+            }
+            
+            // Insert newline with proper indentation
+            // Always use 3 spaces for continuation lines to ensure consistent alignment
+            const continuationIndent = '   '; // Exactly 3 spaces
+            const insertPos = selection.from;
+            
+            const changes = {
+                from: insertPos,
+                to: insertPos,
+                insert: '\n' + continuationIndent
+            };
+            
+            const transaction = state.update({
+                changes,
+                selection: EditorSelection.cursor(insertPos + 1 + 3) // Cursor after 3 spaces
+            });
+            
+            view.dispatch(transaction);
+            return true;
+        }
+        
+        return false; // Let default Shift+Enter handling take over for non-extended lists
+    }
+};
+
 // Return all keybindings as an array
 return [
     handleListEnter,
+    handleListShiftEnter,  // Add the Shift+Enter handler
     handleListTab,
     handleListShiftTab
 ];

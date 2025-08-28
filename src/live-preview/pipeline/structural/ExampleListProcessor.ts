@@ -118,6 +118,14 @@ export class ExampleListProcessor implements StructuralProcessor {
             metadata: { label, isDuplicate: isDuplicate || false }
         };
         
+        // Set list context for continuation line detection
+        context.listContext = {
+            isInList: true,
+            contentStartColumn: indent.length + fullMarker.length + space.length,
+            listLevel: 1,
+            parentStructure: 'example-list'
+        };
+        
         return {
             decorations,
             contentRegion,

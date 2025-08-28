@@ -444,7 +444,8 @@ export class CustomLabelProcessor implements StructuralProcessor {
     private buildStructuralResult(
         parsedLabel: ParsedCustomLabel,
         line: Line,
-        decorations: DecorationInfo[]
+        decorations: DecorationInfo[],
+        context: ProcessingContext
     ): StructuralResult {
         const contentRegion: ContentRegion = {
             from: parsedLabel.markerEnd,
@@ -456,6 +457,14 @@ export class CustomLabelProcessor implements StructuralProcessor {
                 processedLabel: parsedLabel.processedLabel,
                 isDuplicate: parsedLabel.isDuplicate
             }
+        };
+        
+        // Set list context for continuation line detection
+        context.listContext = {
+            isInList: true,
+            contentStartColumn: parsedLabel.markerEnd - line.from,
+            listLevel: 1,
+            parentStructure: 'custom-label-list'
         };
         
         return {
@@ -499,6 +508,6 @@ export class CustomLabelProcessor implements StructuralProcessor {
         }
         
         // Build and return the structural result
-        return this.buildStructuralResult(parsedLabel, line, decorations);
+        return this.buildStructuralResult(parsedLabel, line, decorations, context);
     }
 }

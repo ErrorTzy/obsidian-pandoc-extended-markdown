@@ -35,38 +35,89 @@ pandoc-lists-plugin/
 │   │   │   ├── ProcessingPipeline.ts
 │   │   │   ├── types.ts
 │   │   │   ├── structural/          # Phase 1: Block-level processors
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── StandardListProcessor.ts
+│   │   │   │   ├── HashListProcessor.ts
+│   │   │   │   ├── FancyListProcessor.ts
+│   │   │   │   ├── ExampleListProcessor.ts
+│   │   │   │   ├── CustomLabelProcessor.ts
+│   │   │   │   └── DefinitionProcessor.ts
 │   │   │   ├── inline/              # Phase 2: Inline processors
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── ExampleReferenceProcessor.ts
+│   │   │   │   ├── CustomLabelReferenceProcessor.ts
+│   │   │   │   ├── SuperscriptProcessor.ts
+│   │   │   │   └── SubscriptProcessor.ts
 │   │   │   └── utils/               # Pipeline utilities
 │   │   │       └── codeDetection.ts # Code block/inline detection
 │   │   ├── widgets/                 # CodeMirror widgets
+│   │   │   ├── index.ts
+│   │   │   ├── listWidgets.ts
+│   │   │   ├── definitionWidget.ts
+│   │   │   ├── customLabelWidget.ts
+│   │   │   ├── referenceWidget.ts
+│   │   │   └── formatWidgets.ts
 │   │   ├── scanners/                # Document scanners
+│   │   │   ├── exampleScanner.ts
+│   │   │   └── customLabelScanner.ts
 │   │   └── validators/              # Block validators
+│   │       └── listBlockValidator.ts
 │   │
 │   ├── reading-mode/                # Reading Mode (Post-processing)
 │   │   ├── processor.ts             # Main processor
 │   │   ├── renderer.ts              # DOM renderer
 │   │   └── parsers/                 # Syntax parsers
 │   │       ├── parser.ts            # Main parser
-│   │       └── [specific parsers]
+│   │       ├── fancyListParser.ts
+│   │       ├── exampleListParser.ts
+│   │       ├── definitionListParser.ts
+│   │       ├── customLabelListParser.ts
+│   │       └── superSubParser.ts
 │   │
 │   ├── editor-extensions/           # Editor enhancements
 │   │   ├── listAutocompletion.ts   # Key bindings
 │   │   ├── pandocValidator.ts      # Format validation
 │   │   └── suggestions/             # Autocomplete
+│   │       ├── exampleReferenceSuggest.ts
+│   │       └── customLabelReferenceSuggest.ts
 │   │
 │   ├── views/                       # UI Components
 │   │   ├── panels/                  # Panel system
 │   │   │   ├── ListPanelView.ts
 │   │   │   ├── modules/             # Panel modules
+│   │   │   │   ├── PanelTypes.ts
+│   │   │   │   ├── CustomLabelPanelModule.ts
+│   │   │   │   └── ExampleListPanelModule.ts
 │   │   │   └── utils/               # Panel utilities
+│   │   │       ├── contentTruncator.ts
+│   │   │       └── viewInteractions.ts
 │   │   └── editor/                  # Editor utilities
+│   │       └── highlightUtils.ts
 │   │
 │   └── shared/                      # Shared across modes
 │       ├── patterns.ts              # Regex patterns
 │       ├── types/                   # Type definitions
 │       │   ├── codeTypes.ts        # Code region types
+│       │   ├── decorationTypes.ts  # Decoration type definitions
+│       │   ├── listTypes.ts        # List-specific types
+│       │   ├── obsidian-extended.ts # Extended Obsidian types
+│       │   ├── processorConfig.ts  # Processor configuration types
+│       │   └── settingsTypes.ts    # Settings type definitions
 │       ├── extractors/              # Content extractors
+│       │   ├── customLabelExtractor.ts
+│       │   └── exampleListExtractor.ts
+│       ├── rendering/               # Content rendering utilities
+│       │   ├── ContentProcessorRegistry.ts
+│       │   └── processors/
+│       │       └── WikiLinkProcessor.example.ts
 │       └── utils/                   # General utilities
+│           ├── errorHandler.ts     # Centralized error handling
+│           ├── hoverPopovers.ts    # Hover preview functionality
+│           ├── listHelpers.ts      # List manipulation helpers
+│           ├── listMarkerDetector.ts # List marker detection
+│           ├── listRenumbering.ts  # List renumbering logic
+│           ├── mathRenderer.ts     # LaTeX to Unicode conversion
+│           └── placeholderProcessor.ts # Placeholder processing
 │
 ├── __mocks__/                            # Jest mock implementations
 │   ├── obsidian.ts                      # Mocks Obsidian API for testing
@@ -192,6 +243,7 @@ interface StructuralProcessor {
 - `ExampleListProcessor` (priority: 30) - Handles `(@label)` example lists with duplicate detection
 - `CustomLabelProcessor` (priority: 15) - Handles `{::LABEL}` custom label lists with three-level display
 - `DefinitionProcessor` (priority: 20) - Handles `:` and `~` definition lists with state tracking
+- `ListContinuationProcessor` (priority: 100) - Handles continuation lines within lists (indented content without markers)
 
 #### Phase 2: Inline Processing
 Processes content within marked regions for references and inline formatting
