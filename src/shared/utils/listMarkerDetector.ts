@@ -1,7 +1,7 @@
 import { ListMarkerInfo } from '../types/listTypes';
 
 import { ListPatterns } from '../patterns';
-import { NUMERIC_CONSTANTS } from '../../core/constants';
+import { NUMERIC_CONSTANTS, LIST_MARKERS, LIST_TYPES } from '../../core/constants';
 
 import { getNextLetter, getNextRoman } from './listHelpers';
 
@@ -87,9 +87,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     const exampleMatch = line.match(ListPatterns.EXAMPLE_LIST);
     if (exampleMatch) {
         return {
-            type: 'example',
+            type: LIST_TYPES.EXAMPLE,
             indent: exampleMatch[1],
-            marker: '(@)',
+            marker: LIST_MARKERS.EXAMPLE_FULL,
             spaces: exampleMatch[4] // Group 4 is spaces in EXAMPLE_LIST pattern
         };
     }
@@ -99,9 +99,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     if (altMatch && line.length > altMatch[0].length) {
         // There's content after the marker even without explicit spaces
         return {
-            type: 'example',
+            type: LIST_TYPES.EXAMPLE,
             indent: altMatch[1],
-            marker: '(@)',
+            marker: LIST_MARKERS.EXAMPLE_FULL,
             spaces: altMatch[3] || ' ' // Group 3 is spaces in EXAMPLE_LIST_OPTIONAL_SPACE pattern
         };
     }
@@ -110,7 +110,7 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     const definitionMatch = line.match(ListPatterns.DEFINITION_MARKER);
     if (definitionMatch) {
         return {
-            type: 'definition',
+            type: LIST_TYPES.DEFINITION,
             indent: definitionMatch[1],
             marker: definitionMatch[2],
             spaces: definitionMatch[3]

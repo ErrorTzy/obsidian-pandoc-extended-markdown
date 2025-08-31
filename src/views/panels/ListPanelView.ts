@@ -255,7 +255,7 @@ export class ListPanelView extends ItemView {
         }
     }
     
-    getCustomLabels(): any[] {
+    getCustomLabels(): Array<{ label: string; content: string; lineNumber: number }> {
         const customLabelPanel = this.panels.find(p => p.id === 'custom-labels');
         if (customLabelPanel && customLabelPanel.module instanceof CustomLabelPanelModule) {
             return customLabelPanel.module.getCustomLabels();

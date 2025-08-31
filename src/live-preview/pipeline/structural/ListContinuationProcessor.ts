@@ -33,11 +33,46 @@ export class ListContinuationProcessor implements StructuralProcessor {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
         const indentLength = this.getIndentLength(lineText);
         
-        // Calculate the proper indentation and padding for the continuation line
-        const textIndent = '0px'; // Override Obsidian's negative indent
-        const paddingStart = (context.listContext.contentStartColumn * 6) + 'px';
+        // Add line decoration
+        this.addLineDecoration(decorations, line, context.listContext.contentStartColumn);
         
-        // Add line decoration with CSS classes for proper styling
+        // Add indent decorations if present
+        if (indentLength > 0) {
+            this.addIndentDecorations(decorations, line, indentLength);
+        }
+        
+        // Add content decoration
+        this.addContentDecoration(decorations, line, indentLength);
+        
+        // Mark content region for inline processing
+        const contentRegion = {
+            from: line.from + indentLength,
+            to: line.to,
+            type: 'list-content' as const,
+            parentStructure: context.listContext.parentStructure
+        };
+        
+        // Update list context based on next line
+        this.updateListContext(line, context);
+        
+        return {
+            decorations,
+            contentRegion,
+            skipFurtherProcessing: true
+        };
+    }
+    
+    /**
+     * Adds line decoration with proper styling for continuation lines.
+     */
+    private addLineDecoration(
+        decorations: Array<{from: number, to: number, decoration: Decoration}>,
+        line: Line,
+        contentStartColumn: number
+    ): void {
+        const textIndent = '0px'; // Override Obsidian's negative indent
+        const paddingStart = (contentStartColumn * 6) + 'px';
+        
         decorations.push({
             from: line.from,
             to: line.from,
@@ -48,32 +83,45 @@ export class ListContinuationProcessor implements StructuralProcessor {
                 }
             })
         });
+    }
+    
+    /**
+     * Adds indent decorations for leading whitespace.
+     */
+    private addIndentDecorations(
+        decorations: Array<{from: number, to: number, decoration: Decoration}>,
+        line: Line,
+        indentLength: number
+    ): void {
+        decorations.push({
+            from: line.from,
+            to: line.from + indentLength,
+            decoration: Decoration.mark({
+                class: 'cm-hmd-list-indent cm-hmd-list-indent-1',
+                tagName: 'span'
+            })
+        });
         
-        // Add indent span if there is leading whitespace
-        if (indentLength > 0) {
-            const indentText = lineText.substring(0, indentLength);
-            decorations.push({
-                from: line.from,
-                to: line.from + indentLength,
-                decoration: Decoration.mark({
-                    class: 'cm-hmd-list-indent cm-hmd-list-indent-1',
-                    tagName: 'span'
-                })
-            });
-            
-            // Add the indent spacing span
-            decorations.push({
-                from: line.from,
-                to: line.from + indentLength,
-                decoration: Decoration.mark({
-                    class: 'cm-indent-spacing',
-                    tagName: 'span',
-                    inclusive: false
-                })
-            });
-        }
-        
-        // Wrap the content area with list class
+        // Add the indent spacing span
+        decorations.push({
+            from: line.from,
+            to: line.from + indentLength,
+            decoration: Decoration.mark({
+                class: 'cm-indent-spacing',
+                tagName: 'span',
+                inclusive: false
+            })
+        });
+    }
+    
+    /**
+     * Adds content area decoration.
+     */
+    private addContentDecoration(
+        decorations: Array<{from: number, to: number, decoration: Decoration}>,
+        line: Line,
+        indentLength: number
+    ): void {
         decorations.push({
             from: line.from + indentLength,
             to: line.to,
@@ -81,17 +129,12 @@ export class ListContinuationProcessor implements StructuralProcessor {
                 class: CSS_CLASSES.CM_LIST_1
             })
         });
-        
-        // Mark content region for inline processing
-        const contentRegion = {
-            from: line.from + indentLength,
-            to: line.to,
-            type: 'list-content' as const,
-            parentStructure: context.listContext.parentStructure
-        };
-        
-        // Check if the next line is blank or not a continuation
-        // to determine if we should clear the list context
+    }
+    
+    /**
+     * Updates list context based on the next line.
+     */
+    private updateListContext(line: Line, context: ProcessingContext): void {
         const nextLineNum = line.number + 1;
         if (nextLineNum <= context.document.lines) {
             const nextLine = context.document.line(nextLineNum);
@@ -99,7 +142,6 @@ export class ListContinuationProcessor implements StructuralProcessor {
             const nextIndentLength = this.getIndentLength(nextLine.text);
             
             // Clear list context if next line is blank or has less than 3 spaces
-            // (not a valid continuation line)
             if (nextLineText === '' || nextIndentLength < 3) {
                 context.listContext = undefined;
             }
@@ -108,12 +150,6 @@ export class ListContinuationProcessor implements StructuralProcessor {
             // End of document
             context.listContext = undefined;
         }
-        
-        return {
-            decorations,
-            contentRegion,
-            skipFurtherProcessing: true
-        };
     }
     
     private getIndentLength(text: string): number {

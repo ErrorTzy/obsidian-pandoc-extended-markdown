@@ -1,5 +1,5 @@
 import { MarkdownRenderer, Component, App } from 'obsidian';
-import { CSS_CLASSES } from '../../core/constants';
+import { CSS_CLASSES, UI_CONSTANTS, DOM_ATTRIBUTES, ERROR_MESSAGES, FILE_CONSTANTS } from '../../core/constants';
 import { processContent as processContentWithRegistry, ProcessingContext } from '../rendering/ContentProcessorRegistry';
 import { handleError } from './errorHandler';
 
@@ -81,7 +81,7 @@ function scheduleRemoval(state: HoverState): void {
         if (!state.isMouseOverElement && !state.isMouseOverPopover) {
             removePopover(state);
         }
-    }, 100);
+    }, UI_CONSTANTS.HOVER_CLEANUP_DELAY_MS);
 }
 
 /**
@@ -93,7 +93,7 @@ function scheduleAsyncRemoval(state: AsyncHoverState): void {
         if (!state.isMouseOverElement && !state.isMouseOverPopover) {
             removeAsyncPopover(state);
         }
-    }, 100);
+    }, UI_CONSTANTS.HOVER_CLEANUP_DELAY_MS);
 }
 
 /**
@@ -102,15 +102,15 @@ function scheduleAsyncRemoval(state: AsyncHoverState): void {
 function positionPopover(popoverElement: HTMLElement, referenceElement: HTMLElement): void {
     const elementRect = referenceElement.getBoundingClientRect();
     popoverElement.style.left = `${elementRect.left}px`;
-    popoverElement.style.top = `${elementRect.bottom + 5}px`;
+    popoverElement.style.top = `${elementRect.bottom + UI_CONSTANTS.HOVER_OFFSET_BOTTOM}px`;
     
     // Adjust if goes off screen
     const popoverRect = popoverElement.getBoundingClientRect();
     if (popoverRect.right > window.innerWidth) {
-        popoverElement.style.left = `${window.innerWidth - popoverRect.width - 10}px`;
+        popoverElement.style.left = `${window.innerWidth - popoverRect.width - UI_CONSTANTS.HOVER_OFFSET_HORIZONTAL}px`;
     }
     if (popoverRect.bottom > window.innerHeight) {
-        popoverElement.style.top = `${elementRect.top - popoverRect.height - 5}px`;
+        popoverElement.style.top = `${elementRect.top - popoverRect.height - UI_CONSTANTS.HOVER_OFFSET_TOP}px`;
     }
 }
 
@@ -181,7 +181,7 @@ export function setupSimpleHoverPreview(
         // Remove any existing popover first
         removePopover(state);
         
-        const hoverElement = document.createElement('div');
+        const hoverElement = document.createElement(DOM_ATTRIBUTES.ELEMENT_DIV);
         hoverElement.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
         hoverElement.textContent = fullText;
         
@@ -278,12 +278,12 @@ async function renderPopoverContent(
             app,
             processedContent,
             popoverElement,
-            '',
+            FILE_CONSTANTS.EMPTY_STRING,
             component
         );
     } catch (error) {
         // Use centralized error handling
-        handleError(error, 'Hover preview rendering');
+        handleError(error, ERROR_MESSAGES.PLUGIN_PREFIX + ': Hover preview rendering');
         throw error; // Re-throw to signal failure to caller
     }
 }
@@ -321,7 +321,7 @@ export function setupRenderedHoverPreview(
         // Create abort controller for this render operation
         state.renderAbortController = new AbortController();
         
-        const hoverElement = document.createElement('div');
+        const hoverElement = document.createElement(DOM_ATTRIBUTES.ELEMENT_DIV);
         hoverElement.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
         
         try {
@@ -396,7 +396,7 @@ export function positionHoverElement(
 ): void {
     const rect = referenceEl.getBoundingClientRect();
     hoverEl.style.left = `${rect.left}px`;
-    hoverEl.style.top = `${rect.bottom + 5}px`;
+    hoverEl.style.top = `${rect.bottom + UI_CONSTANTS.HOVER_OFFSET_BOTTOM}px`;
     
     if (maxWidth) {
         hoverEl.style.maxWidth = maxWidth;
@@ -404,14 +404,14 @@ export function positionHoverElement(
     if (maxHeight) {
         hoverEl.style.maxHeight = maxHeight;
     }
-    hoverEl.style.overflow = 'auto';
+    hoverEl.style.overflow = DOM_ATTRIBUTES.OVERFLOW_AUTO;
     
     // Adjust if goes off screen
     const hoverRect = hoverEl.getBoundingClientRect();
     if (hoverRect.right > window.innerWidth) {
-        hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+        hoverEl.style.left = `${window.innerWidth - hoverRect.width - UI_CONSTANTS.HOVER_OFFSET_HORIZONTAL}px`;
     }
     if (hoverRect.bottom > window.innerHeight) {
-        hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+        hoverEl.style.top = `${rect.top - hoverRect.height - UI_CONSTANTS.HOVER_OFFSET_TOP}px`;
     }
 }

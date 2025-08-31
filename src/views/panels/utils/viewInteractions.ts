@@ -208,15 +208,15 @@ export function setupLabelHoverPreview(
         document.body.appendChild(hoverEl);
         const rect = element.getBoundingClientRect();
         hoverEl.style.left = `${rect.left}px`;
-        hoverEl.style.top = `${rect.bottom + 5}px`;
+        hoverEl.style.top = `${rect.bottom + UI_CONSTANTS.HOVER_OFFSET_BOTTOM}px`;
         
         // Adjust if goes off screen
         const hoverRect = hoverEl.getBoundingClientRect();
         if (hoverRect.right > window.innerWidth) {
-            hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+            hoverEl.style.left = `${window.innerWidth - hoverRect.width - UI_CONSTANTS.HOVER_OFFSET_HORIZONTAL}px`;
         }
         if (hoverRect.bottom > window.innerHeight) {
-            hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+            hoverEl.style.top = `${rect.top - hoverRect.height - UI_CONSTANTS.HOVER_OFFSET_TOP}px`;
         }
         
         hoverPopover = hoverEl;
@@ -294,15 +294,15 @@ export function setupContentHoverPreview(
         document.body.appendChild(hoverEl);
         const rect = element.getBoundingClientRect();
         hoverEl.style.left = `${rect.left}px`;
-        hoverEl.style.top = `${rect.bottom + 5}px`;
+        hoverEl.style.top = `${rect.bottom + UI_CONSTANTS.HOVER_OFFSET_BOTTOM}px`;
         
         // Adjust if goes off screen
         const hoverRect = hoverEl.getBoundingClientRect();
         if (hoverRect.right > window.innerWidth) {
-            hoverEl.style.left = `${window.innerWidth - hoverRect.width - 10}px`;
+            hoverEl.style.left = `${window.innerWidth - hoverRect.width - UI_CONSTANTS.HOVER_OFFSET_HORIZONTAL}px`;
         }
         if (hoverRect.bottom > window.innerHeight) {
-            hoverEl.style.top = `${rect.top - hoverRect.height - 5}px`;
+            hoverEl.style.top = `${rect.top - hoverRect.height - UI_CONSTANTS.HOVER_OFFSET_TOP}px`;
         }
         
         hoverPopover = hoverEl;

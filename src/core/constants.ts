@@ -3,10 +3,22 @@ export const LIST_MARKERS = {
     DEFINITION_TILDE: '~',
     EXAMPLE_START: '(@',
     EXAMPLE_END: ')',
+    EXAMPLE_FULL: '(@)',
     HASH_NUMBERED: '#.',
+    CUSTOM_LABEL_FULL: '{::}',
     UNORDERED_DASH: '-',
     UNORDERED_STAR: '*',
     UNORDERED_PLUS: '+',
+} as const;
+
+export const LIST_TYPES = {
+    HASH: 'hash',
+    CUSTOM_LABEL: 'custom-label',
+    EXAMPLE: 'example',
+    DEFINITION: 'definition',
+    UNKNOWN: 'unknown',
+    ROMAN: 'roman',
+    LETTER: 'letter',
 } as const;
 
 export const INDENTATION = {
@@ -100,6 +112,7 @@ export const CSS_CLASSES = {
     HOVER_POPOVER: 'pandoc-hover-popover',
     HOVER_POPOVER_LABEL: 'pandoc-hover-popover-label',
     HOVER_POPOVER_CONTENT: 'pandoc-hover-popover-content',
+    HOVER_POPOVER_POSITIONED: 'pandoc-hover-popover-positioned',
     
     // List Panel View Classes
     LIST_PANEL_VIEW_CONTAINER: 'pandoc-list-panel-view-container',
@@ -185,10 +198,17 @@ export const UI_CONSTANTS = {
     MAX_HOVER_HEIGHT: '300px',
     HOVER_PADDING: '8px 12px',
     HOVER_Z_INDEX: '1000',
+    // Hover positioning
+    HOVER_OFFSET_BOTTOM: 5,
+    HOVER_OFFSET_TOP: 5,
+    HOVER_OFFSET_HORIZONTAL: 10,
+    HOVER_CLEANUP_DELAY_MS: 100,
 } as const;
 
 export const DOM_ATTRIBUTES = {
     CONTENT_EDITABLE_FALSE: 'false',
+    ELEMENT_DIV: 'div',
+    OVERFLOW_AUTO: 'auto',
 } as const;
 
 export const MATH_SYMBOLS = {
@@ -382,6 +402,28 @@ export const FILE_CONSTANTS = {
     SPACE: ' ',
     NEWLINE: '\n',
     TAB_CHARACTER: '\t',
+} as const;
+
+// Roman numeral conversion mappings
+export const ROMAN_NUMERALS = {
+    VALUES: {
+        'i': 1, 'iv': 4, 'v': 5, 'ix': 9, 'x': 10,
+        'xl': 40, 'l': 50, 'xc': 90, 'c': 100,
+        'cd': 400, 'd': 500, 'cm': 900, 'm': 1000,
+        'I': 1, 'IV': 4, 'V': 5, 'IX': 9, 'X': 10,
+        'XL': 40, 'L': 50, 'XC': 90, 'C': 100,
+        'CD': 400, 'D': 500, 'CM': 900, 'M': 1000
+    },
+    TO_ROMAN_UPPER: [
+        [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
+        [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
+        [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
+    ] as [number, string][],
+    TO_ROMAN_LOWER: [
+        [1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'],
+        [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'],
+        [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']
+    ] as [number, string][]
 } as const;
 
 // Helper function to create fancy list type class names

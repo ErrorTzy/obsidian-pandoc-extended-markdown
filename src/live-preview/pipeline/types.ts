@@ -13,7 +13,11 @@ export interface ContentRegion {
     to: number;
     type: 'list-content' | 'definition-content' | 'paragraph' | 'normal';
     parentStructure?: 'hash-list' | 'fancy-list' | 'example-list' | 'custom-label-list' | 'definition';
-    metadata?: any; // Structure-specific metadata
+    metadata?: {
+        label?: string;
+        isDuplicate?: boolean;
+        [key: string]: unknown;
+    }; // Structure-specific metadata
 }
 
 /**
@@ -90,7 +94,13 @@ export interface InlineMatch {
     from: number; // Relative to region start
     to: number;
     type: string;
-    data: any;
+    data: {
+        text?: string;
+        label?: string;
+        number?: number;
+        content?: string;
+        [key: string]: unknown;
+    };
 }
 
 /**

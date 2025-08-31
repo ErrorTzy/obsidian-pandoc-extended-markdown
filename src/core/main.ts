@@ -81,7 +81,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
                 return activeView?.file?.path || null;
             },
             () => this.app,
-            () => this as any
+            () => this as Component
         ));
         
         // Register list autocompletion keymap with highest priority
