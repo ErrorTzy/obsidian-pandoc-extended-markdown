@@ -18,13 +18,16 @@ export function truncateContent(content: string): string {
     return content;
 }
 
-export function truncateContentWithRendering(content: string): string {
+export function truncateContentWithRendering(content: string, maxLength: number = UI_CONSTANTS.CONTENT_MAX_LENGTH): string {
     // If no math content, use simple truncation
     if (!content.includes('$')) {
-        return truncateContent(content);
+        if (content.length > maxLength) {
+            return content.slice(0, maxLength - 1) + '…';
+        }
+        return content;
     }
 
-    const parseResult = parseContentWithMath(content);
+    const parseResult = parseContentWithMath(content, maxLength);
     // Always return the normalized result to ensure math spaces are cleaned up
     return parseResult.result;
 }
@@ -60,12 +63,12 @@ interface CharacterResult {
  * const result = parseContentWithMath('Text with $E=mc^2$ formula');
  * // Considers rendered length of math when truncating
  */
-function parseContentWithMath(content: string): ParseResult {
+function parseContentWithMath(content: string, maxLength: number = UI_CONSTANTS.CONTENT_MAX_LENGTH): ParseResult {
     // First, normalize any math content with trailing spaces
     const normalizedContent = normalizeMathSpaces(content);
     
-    // Initialize parsing state
-    const state = initializeParsingState();
+    // Initialize parsing state with max length
+    const state = initializeParsingState(maxLength);
     
     // Process each character
     for (let i = 0; i < normalizedContent.length; i++) {
@@ -97,14 +100,16 @@ interface ParsingState {
     result: string;
     inMath: boolean;
     mathBuffer: string;
+    maxLength: number;
 }
 
-function initializeParsingState(): ParsingState {
+function initializeParsingState(maxLength: number = UI_CONSTANTS.CONTENT_MAX_LENGTH): ParsingState {
     return {
         renderedLength: 0,
         result: '',
         inMath: false,
-        mathBuffer: ''
+        mathBuffer: '',
+        maxLength: maxLength
     };
 }
 
@@ -114,7 +119,8 @@ function processCharacter(char: string, state: ParsingState): { result: string; 
             state.inMath,
             state.mathBuffer,
             state.result,
-            state.renderedLength
+            state.renderedLength,
+            state.maxLength
         );
         
         // Update state
@@ -128,7 +134,7 @@ function processCharacter(char: string, state: ParsingState): { result: string; 
         state.mathBuffer += char;
         return { result: state.result, shouldBreak: false };
     } else {
-        const textResult = processRegularCharacter(char, state.result, state.renderedLength);
+        const textResult = processRegularCharacter(char, state.result, state.renderedLength, state.maxLength);
         state.result = textResult.result;
         state.renderedLength = textResult.renderedLength;
         return { result: textResult.result, shouldBreak: textResult.shouldBreak };
@@ -136,7 +142,7 @@ function processCharacter(char: string, state: ParsingState): { result: string; 
 }
 
 function handleUnclosedMathWrapper(state: ParsingState): ParseResult {
-    const finalResult = handleUnclosedMath(state.mathBuffer, state.result, state.renderedLength);
+    const finalResult = handleUnclosedMath(state.mathBuffer, state.result, state.renderedLength, state.maxLength);
     return { result: finalResult.result, truncated: finalResult.truncated };
 }
 
@@ -159,13 +165,14 @@ function processMathDelimiter(
     inMath: boolean,
     mathBuffer: string,
     currentResult: string,
-    currentLength: number
+    currentLength: number,
+    maxLength: number = UI_CONSTANTS.CONTENT_MAX_LENGTH
 ): MathDelimiterResult {
     if (inMath) {
         // End of math block - trim trailing spaces from math buffer
         const trimmedBuffer = mathBuffer.trimEnd();
         const renderedMath = renderMathToText(trimmedBuffer);
-        const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+        const remainingSpace = maxLength - currentLength;
         
         if (renderedMath.length <= remainingSpace) {
             // Entire math fits
@@ -185,7 +192,7 @@ function processMathDelimiter(
             );
             return {
                 result: truncatedResult,
-                renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+                renderedLength: maxLength,
                 mathBuffer: '',
                 inMath: false,
                 shouldBreak: true
@@ -220,9 +227,10 @@ function processMathDelimiter(
 function processRegularCharacter(
     char: string,
     currentResult: string,
-    currentLength: number
+    currentLength: number,
+    maxLength: number = UI_CONSTANTS.CONTENT_MAX_LENGTH
 ): CharacterResult {
-    if (currentLength < UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+    if (currentLength < maxLength) {
         return {
             result: currentResult + char,
             renderedLength: currentLength + 1,
@@ -235,7 +243,7 @@ function processRegularCharacter(
             : currentResult + '…';
         return {
             result: truncated,
-            renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+            renderedLength: maxLength,
             shouldBreak: true
         };
     }
@@ -244,10 +252,11 @@ function processRegularCharacter(
 function handleUnclosedMath(
     mathBuffer: string,
     currentResult: string,
-    currentLength: number
+    currentLength: number,
+    maxLength: number = UI_CONSTANTS.CONTENT_MAX_LENGTH
 ): ParseResult {
     const renderedMath = renderMathToText(mathBuffer);
-    const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+    const remainingSpace = maxLength - currentLength;
     
     if (renderedMath.length <= remainingSpace) {
         // Math fits

@@ -221,6 +221,16 @@ A modular sidebar panel displays various list-related content from the active do
 - Hover previews for truncated items with full content
 - Math rendering support in content column
 
+**Definition Lists Panel** `DL:`
+- Displays all definition lists from the current document
+- Two-column layout: terms and their definitions
+- Terms support full markdown rendering (bold, italic, math, references)
+- Multiple definitions per term shown as bullet list
+- Continuation lines automatically merged with definitions
+- Click definitions to navigate to the term in the editor
+- Smart truncation: terms (100 chars), definitions (300 chars)
+- Hover previews for truncated content with full rendering
+
 ## Installation
 
 ### From Obsidian Community Plugins (Coming Soon)

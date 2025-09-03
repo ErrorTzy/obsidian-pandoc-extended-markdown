@@ -132,6 +132,13 @@ export const CSS_CLASSES = {
     EXAMPLE_LIST_VIEW_LABEL: 'pandoc-example-list-view-label',
     EXAMPLE_LIST_VIEW_CONTENT: 'pandoc-example-list-view-content',
     EXAMPLE_LIST_VIEW_EMPTY: 'pandoc-example-list-view-empty',
+    
+    // Definition List View Classes
+    DEFINITION_LIST_VIEW_CONTAINER: 'pandoc-definition-list-view-container',
+    DEFINITION_LIST_VIEW_ROW: 'pandoc-definition-list-view-row',
+    DEFINITION_LIST_VIEW_TERM: 'pandoc-definition-list-view-term',
+    DEFINITION_LIST_VIEW_DEFINITIONS: 'pandoc-definition-list-view-definitions',
+    DEFINITION_LIST_VIEW_EMPTY: 'pandoc-definition-list-view-empty',
 } as const;
 
 export const DECORATION_STYLES = {
@@ -159,8 +166,10 @@ export const MESSAGES = {
     NO_ACTIVE_FILE: 'No active file',
     NO_CUSTOM_LABELS: 'No custom labels found',
     NO_EXAMPLE_LISTS: 'No example lists found',
+    NO_DEFINITION_LISTS: 'No definition lists found',
     CUSTOM_LABELS_VIEW_TITLE: 'Custom Labels',
     EXAMPLE_LISTS_VIEW_TITLE: 'Example Lists',
+    DEFINITION_LISTS_VIEW_TITLE: 'Definition Lists',
     
     // Formatting issue messages
     FORMATTING_ISSUES: (count: number) => `Found ${count} formatting issues`,
@@ -185,6 +194,13 @@ export const UI_CONSTANTS = {
     // Custom Label View
     LABEL_MAX_LENGTH: 6,
     LABEL_TRUNCATION_LENGTH: 5,  // Length before adding ellipsis
+    // Definition List View
+    TERM_MAX_LENGTH: 100,
+    TERM_TRUNCATION_LENGTH: 99,  // Length before adding ellipsis
+    DEFINITION_MAX_LENGTH: 300,
+    DEFINITION_TRUNCATION_LENGTH: 299,  // Length before adding ellipsis
+    // Indentation
+    MARKDOWN_INDENT_SIZE: 4,  // Standard markdown indent for continuations
     // Icon dimensions
     PANEL_ICON_SIZE: 20,
     CONTENT_MAX_LENGTH: 51,
@@ -279,6 +295,12 @@ export const ICONS = {
               fill="currentColor">
             (@)
         </text>
+    </svg>`,
+    DEFINITION_LIST_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <g fill="currentColor" font-family="monospace" font-weight="bold">
+            <text x="30" y="45" font-size="40" text-anchor="middle">DL</text>
+            <text x="70" y="65" font-size="48" text-anchor="middle">:</text>
+        </g>
     </svg>`,
     LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <g fill="currentColor" font-family="monospace" font-weight="bold">

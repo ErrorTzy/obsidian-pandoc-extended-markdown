@@ -312,7 +312,8 @@ sub.pandoc-subscript {
 
 /* Text-based icons for panels */
 .pandoc-icon-custom-label,
-.pandoc-icon-example-list {
+.pandoc-icon-example-list,
+.pandoc-icon-definition-list {
     font-family: var(--font-monospace);
     font-weight: bold;
     font-size: 10px;
@@ -321,12 +322,14 @@ sub.pandoc-subscript {
 }
 
 .pandoc-list-panel-icon-button.is-active .pandoc-icon-custom-label,
-.pandoc-list-panel-icon-button.is-active .pandoc-icon-example-list {
+.pandoc-list-panel-icon-button.is-active .pandoc-icon-example-list,
+.pandoc-list-panel-icon-button.is-active .pandoc-icon-definition-list {
     color: var(--text-on-accent);
 }
 
 .pandoc-list-panel-icon-button:hover .pandoc-icon-custom-label,
-.pandoc-list-panel-icon-button:hover .pandoc-icon-example-list {
+.pandoc-list-panel-icon-button:hover .pandoc-icon-example-list,
+.pandoc-list-panel-icon-button:hover .pandoc-icon-definition-list {
     color: var(--text-normal);
 }
 
@@ -592,6 +595,75 @@ td.pandoc-example-list-view-content:hover {
 }
 
 .pandoc-example-list-view-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Definition List View Styles */
+table.pandoc-definition-list-view-container {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875em;
+    table-layout: fixed;
+}
+
+tr.pandoc-definition-list-view-row {
+    border-bottom: 1px solid var(--background-modifier-border);
+    transition: background-color 0.15s ease;
+}
+
+tr.pandoc-definition-list-view-row:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+td.pandoc-definition-list-view-term {
+    width: 30%;
+    padding: 8px;
+    font-weight: 600;
+    color: var(--text-normal);
+    vertical-align: top;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td.pandoc-definition-list-view-definitions {
+    width: 70%;
+    padding: 8px;
+    color: var(--text-normal);
+    vertical-align: top;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+td.pandoc-definition-list-view-definitions ul {
+    margin: 0;
+    padding-left: 1.2em;
+    list-style-type: disc;
+}
+
+td.pandoc-definition-list-view-definitions li {
+    margin-bottom: 4px;
+}
+
+td.pandoc-definition-list-view-definitions li:last-child {
+    margin-bottom: 0;
+}
+
+td.pandoc-definition-list-view-definitions p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+td.pandoc-definition-list-view-definitions:hover {
+    background-color: var(--interactive-hover);
+}
+
+.pandoc-definition-list-view-empty {
     display: flex;
     align-items: center;
     justify-content: center;

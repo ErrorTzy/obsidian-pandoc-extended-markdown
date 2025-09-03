@@ -163,7 +163,13 @@ var CSS_CLASSES = {
   EXAMPLE_LIST_VIEW_NUMBER: "pandoc-example-list-view-number",
   EXAMPLE_LIST_VIEW_LABEL: "pandoc-example-list-view-label",
   EXAMPLE_LIST_VIEW_CONTENT: "pandoc-example-list-view-content",
-  EXAMPLE_LIST_VIEW_EMPTY: "pandoc-example-list-view-empty"
+  EXAMPLE_LIST_VIEW_EMPTY: "pandoc-example-list-view-empty",
+  // Definition List View Classes
+  DEFINITION_LIST_VIEW_CONTAINER: "pandoc-definition-list-view-container",
+  DEFINITION_LIST_VIEW_ROW: "pandoc-definition-list-view-row",
+  DEFINITION_LIST_VIEW_TERM: "pandoc-definition-list-view-term",
+  DEFINITION_LIST_VIEW_DEFINITIONS: "pandoc-definition-list-view-definitions",
+  DEFINITION_LIST_VIEW_EMPTY: "pandoc-definition-list-view-empty"
 };
 var DECORATION_STYLES = {
   HASH_LIST_INDENT: 29,
@@ -188,8 +194,10 @@ var MESSAGES = {
   NO_ACTIVE_FILE: "No active file",
   NO_CUSTOM_LABELS: "No custom labels found",
   NO_EXAMPLE_LISTS: "No example lists found",
+  NO_DEFINITION_LISTS: "No definition lists found",
   CUSTOM_LABELS_VIEW_TITLE: "Custom Labels",
   EXAMPLE_LISTS_VIEW_TITLE: "Example Lists",
+  DEFINITION_LISTS_VIEW_TITLE: "Definition Lists",
   // Formatting issue messages
   FORMATTING_ISSUES: (count) => `Found ${count} formatting issues`
 };
@@ -207,6 +215,16 @@ var UI_CONSTANTS = {
   LABEL_MAX_LENGTH: 6,
   LABEL_TRUNCATION_LENGTH: 5,
   // Length before adding ellipsis
+  // Definition List View
+  TERM_MAX_LENGTH: 100,
+  TERM_TRUNCATION_LENGTH: 99,
+  // Length before adding ellipsis
+  DEFINITION_MAX_LENGTH: 300,
+  DEFINITION_TRUNCATION_LENGTH: 299,
+  // Length before adding ellipsis
+  // Indentation
+  MARKDOWN_INDENT_SIZE: 4,
+  // Standard markdown indent for continuations
   // Icon dimensions
   PANEL_ICON_SIZE: 20,
   CONTENT_MAX_LENGTH: 51,
@@ -299,6 +317,12 @@ var ICONS = {
               fill="currentColor">
             (@)
         </text>
+    </svg>`,
+  DEFINITION_LIST_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <g fill="currentColor" font-family="monospace" font-weight="bold">
+            <text x="30" y="45" font-size="40" text-anchor="middle">DL</text>
+            <text x="70" y="65" font-size="48" text-anchor="middle">:</text>
+        </g>
     </svg>`,
   LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <g fill="currentColor" font-family="monospace" font-weight="bold">
@@ -1069,22 +1093,19 @@ function truncateLabel(label) {
   }
   return label;
 }
-function truncateContent(content) {
-  if (content.length > UI_CONSTANTS.CONTENT_MAX_LENGTH) {
-    return content.slice(0, UI_CONSTANTS.CONTENT_TRUNCATION_LENGTH) + "\u2026";
-  }
-  return content;
-}
-function truncateContentWithRendering(content) {
+function truncateContentWithRendering(content, maxLength = UI_CONSTANTS.CONTENT_MAX_LENGTH) {
   if (!content.includes("$")) {
-    return truncateContent(content);
+    if (content.length > maxLength) {
+      return content.slice(0, maxLength - 1) + "\u2026";
+    }
+    return content;
   }
-  const parseResult = parseContentWithMath(content);
+  const parseResult = parseContentWithMath(content, maxLength);
   return parseResult.result;
 }
-function parseContentWithMath(content) {
+function parseContentWithMath(content, maxLength = UI_CONSTANTS.CONTENT_MAX_LENGTH) {
   const normalizedContent = normalizeMathSpaces(content);
-  const state = initializeParsingState();
+  const state = initializeParsingState(maxLength);
   for (let i = 0; i < normalizedContent.length; i++) {
     const char = normalizedContent[i];
     const parseResult = processCharacter(char, state);
@@ -1103,12 +1124,13 @@ function normalizeMathSpaces(content) {
   }
   return content;
 }
-function initializeParsingState() {
+function initializeParsingState(maxLength = UI_CONSTANTS.CONTENT_MAX_LENGTH) {
   return {
     renderedLength: 0,
     result: "",
     inMath: false,
-    mathBuffer: ""
+    mathBuffer: "",
+    maxLength
   };
 }
 function processCharacter(char, state) {
@@ -1117,7 +1139,8 @@ function processCharacter(char, state) {
       state.inMath,
       state.mathBuffer,
       state.result,
-      state.renderedLength
+      state.renderedLength,
+      state.maxLength
     );
     state.result = mathResult.result;
     state.renderedLength = mathResult.renderedLength;
@@ -1128,21 +1151,21 @@ function processCharacter(char, state) {
     state.mathBuffer += char;
     return { result: state.result, shouldBreak: false };
   } else {
-    const textResult = processRegularCharacter(char, state.result, state.renderedLength);
+    const textResult = processRegularCharacter(char, state.result, state.renderedLength, state.maxLength);
     state.result = textResult.result;
     state.renderedLength = textResult.renderedLength;
     return { result: textResult.result, shouldBreak: textResult.shouldBreak };
   }
 }
 function handleUnclosedMathWrapper(state) {
-  const finalResult = handleUnclosedMath(state.mathBuffer, state.result, state.renderedLength);
+  const finalResult = handleUnclosedMath(state.mathBuffer, state.result, state.renderedLength, state.maxLength);
   return { result: finalResult.result, truncated: finalResult.truncated };
 }
-function processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) {
+function processMathDelimiter(inMath, mathBuffer, currentResult, currentLength, maxLength = UI_CONSTANTS.CONTENT_MAX_LENGTH) {
   if (inMath) {
     const trimmedBuffer = mathBuffer.trimEnd();
     const renderedMath = renderMathToText(trimmedBuffer);
-    const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+    const remainingSpace = maxLength - currentLength;
     if (renderedMath.length <= remainingSpace) {
       return {
         result: currentResult + trimmedBuffer + "$",
@@ -1159,7 +1182,7 @@ function processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) 
       );
       return {
         result: truncatedResult,
-        renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+        renderedLength: maxLength,
         mathBuffer: "",
         inMath: false,
         shouldBreak: true
@@ -1175,8 +1198,8 @@ function processMathDelimiter(inMath, mathBuffer, currentResult, currentLength) 
     };
   }
 }
-function processRegularCharacter(char, currentResult, currentLength) {
-  if (currentLength < UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+function processRegularCharacter(char, currentResult, currentLength, maxLength = UI_CONSTANTS.CONTENT_MAX_LENGTH) {
+  if (currentLength < maxLength) {
     return {
       result: currentResult + char,
       renderedLength: currentLength + 1,
@@ -1186,14 +1209,14 @@ function processRegularCharacter(char, currentResult, currentLength) {
     const truncated = currentResult.length > 0 && !currentResult.endsWith("\u2026") ? currentResult.slice(0, -1) + "\u2026" : currentResult + "\u2026";
     return {
       result: truncated,
-      renderedLength: UI_CONSTANTS.CONTENT_MAX_LENGTH,
+      renderedLength: maxLength,
       shouldBreak: true
     };
   }
 }
-function handleUnclosedMath(mathBuffer, currentResult, currentLength) {
+function handleUnclosedMath(mathBuffer, currentResult, currentLength, maxLength = UI_CONSTANTS.CONTENT_MAX_LENGTH) {
   const renderedMath = renderMathToText(mathBuffer);
-  const remainingSpace = UI_CONSTANTS.CONTENT_MAX_LENGTH - currentLength;
+  const remainingSpace = maxLength - currentLength;
   if (renderedMath.length <= remainingSpace) {
     return {
       result: currentResult + mathBuffer.trimEnd() + "$",
@@ -2119,6 +2142,271 @@ var ExampleListPanelModule = class {
   }
 };
 
+// src/shared/extractors/definitionListExtractor.ts
+function extractDefinitionLists(content) {
+  var _a, _b;
+  const lines = content.split("\n");
+  const items = [];
+  let currentTerm = null;
+  let currentDefinitions = [];
+  let termLineNumber = -1;
+  let termPosition = null;
+  let inDefinitionBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const defMatch = ListPatterns.isDefinitionMarker(line);
+    if (defMatch) {
+      if (!currentTerm) {
+        continue;
+      }
+      inDefinitionBlock = true;
+      const content2 = line.substring(defMatch[0].length);
+      if (content2) {
+        currentDefinitions.push(content2);
+      }
+      continue;
+    }
+    if (inDefinitionBlock && line.trim()) {
+      const leadingSpaces2 = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1].length) || 0;
+      if (leadingSpaces2 >= UI_CONSTANTS.MARKDOWN_INDENT_SIZE && !ListPatterns.isDefinitionMarker(line)) {
+        if (currentDefinitions.length > 0) {
+          const lastIndex = currentDefinitions.length - 1;
+          currentDefinitions[lastIndex] += " " + line.trim();
+          continue;
+        }
+      }
+    }
+    const isNotListItem = !line.match(ListPatterns.UNORDERED_LIST) && !line.match(ListPatterns.NUMBERED_LIST) && !line.match(ListPatterns.HASH_LIST) && !line.match(ListPatterns.FANCY_LIST) && !line.match(ListPatterns.CUSTOM_LABEL_LIST) && !line.match(ListPatterns.EXAMPLE_LIST) && !ListPatterns.isDefinitionMarker(line);
+    const leadingSpaces = ((_b = line.match(/^(\s*)/)) == null ? void 0 : _b[1].length) || 0;
+    const isPotentialTerm = line.trim() && leadingSpaces < UI_CONSTANTS.MARKDOWN_INDENT_SIZE && isNotListItem;
+    if (isPotentialTerm) {
+      if (currentTerm && currentDefinitions.length > 0 && termPosition) {
+        items.push({
+          term: currentTerm,
+          definitions: [...currentDefinitions],
+          lineNumber: termLineNumber,
+          position: termPosition
+        });
+      }
+      currentTerm = line.trim();
+      currentDefinitions = [];
+      termLineNumber = i;
+      termPosition = { line: i, ch: leadingSpaces };
+      inDefinitionBlock = false;
+    } else if (!line.trim()) {
+      continue;
+    }
+  }
+  if (currentTerm && currentDefinitions.length > 0 && termPosition) {
+    items.push({
+      term: currentTerm,
+      definitions: [...currentDefinitions],
+      lineNumber: termLineNumber,
+      position: termPosition
+    });
+  }
+  return items;
+}
+
+// src/views/panels/modules/DefinitionListPanelModule.ts
+var DefinitionListPanelModule = class {
+  constructor(plugin) {
+    this.id = "definition-lists";
+    this.displayName = "Definition Lists";
+    this.icon = ICONS.DEFINITION_LIST_SVG;
+    this.isActive = false;
+    this.definitionItems = [];
+    this.containerEl = null;
+    this.lastActiveMarkdownView = null;
+    this.abortController = null;
+    this.currentContext = {};
+    this.plugin = plugin;
+  }
+  onActivate(containerEl, activeView) {
+    this.isActive = true;
+    this.containerEl = containerEl;
+    this.lastActiveMarkdownView = activeView;
+    this.abortController = new AbortController();
+    this.updateContent(activeView);
+  }
+  onDeactivate() {
+    this.isActive = false;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    if (this.containerEl) {
+      this.containerEl.empty();
+      this.containerEl = null;
+    }
+  }
+  onUpdate(activeView) {
+    if (!this.isActive || !this.containerEl) return;
+    if (activeView && activeView.file) {
+      this.lastActiveMarkdownView = activeView;
+    } else if (!activeView) {
+      activeView = this.lastActiveMarkdownView;
+    }
+    this.updateContent(activeView);
+  }
+  shouldUpdate() {
+    return this.isActive;
+  }
+  destroy() {
+    this.onDeactivate();
+    this.definitionItems = [];
+    this.lastActiveMarkdownView = null;
+  }
+  updateContent(activeView) {
+    if (!this.containerEl) return;
+    this.containerEl.empty();
+    if (!activeView || !activeView.file) {
+      this.showNoFileMessage();
+      return;
+    }
+    const content = activeView.editor.getValue();
+    this.definitionItems = extractDefinitionLists(content);
+    this.buildRenderingContext(content);
+    this.renderDefinitionItems(activeView);
+  }
+  showNoFileMessage() {
+    if (!this.containerEl) return;
+    this.containerEl.createEl("div", {
+      text: MESSAGES.NO_ACTIVE_FILE,
+      cls: CSS_CLASSES.DEFINITION_LIST_VIEW_EMPTY
+    });
+    this.definitionItems = [];
+  }
+  /**
+   * Build the rendering context for processing content references
+   * @param content The document content to extract context from
+   */
+  buildRenderingContext(content) {
+    var _a;
+    const exampleItems = extractExampleLists(content);
+    const exampleLabels = /* @__PURE__ */ new Map();
+    exampleItems.forEach((item) => {
+      const label = item.rawLabel.substring(1);
+      if (label) {
+        exampleLabels.set(label, item.renderedNumber);
+      }
+    });
+    const rawToProcessed = /* @__PURE__ */ new Map();
+    if ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) {
+      const customLabels = extractCustomLabels(content, true);
+      customLabels.forEach((label) => {
+        const match = label.rawLabel.match(/\{::([^}]+)\}/);
+        if (match) {
+          rawToProcessed.set(match[1], label.label);
+        }
+      });
+    }
+    this.currentContext = {
+      exampleLabels,
+      rawToProcessed
+    };
+  }
+  renderDefinitionItems(activeView) {
+    if (!this.containerEl) return;
+    if (this.definitionItems.length === 0) {
+      this.containerEl.createEl("div", {
+        text: MESSAGES.NO_DEFINITION_LISTS,
+        cls: CSS_CLASSES.DEFINITION_LIST_VIEW_EMPTY
+      });
+      return;
+    }
+    const container = this.containerEl.createEl("table", {
+      cls: CSS_CLASSES.DEFINITION_LIST_VIEW_CONTAINER
+    });
+    const tbody = container.createEl("tbody");
+    for (const item of this.definitionItems) {
+      this.renderDefinitionRow(tbody, item, activeView);
+    }
+  }
+  renderDefinitionRow(tbody, item, activeView) {
+    const row = tbody.createEl("tr", {
+      cls: CSS_CLASSES.DEFINITION_LIST_VIEW_ROW
+    });
+    const termEl = row.createEl("td", {
+      cls: CSS_CLASSES.DEFINITION_LIST_VIEW_TERM
+    });
+    const truncatedTerm = this.truncateTermWithRendering(item.term);
+    renderContentWithMath(termEl, truncatedTerm, this.plugin.app, this.plugin, this.currentContext);
+    if (truncatedTerm !== item.term) {
+      this.setupTermHoverPreview(termEl, item.term);
+    }
+    const definitionsEl = row.createEl("td", {
+      cls: CSS_CLASSES.DEFINITION_LIST_VIEW_DEFINITIONS
+    });
+    if (item.definitions.length === 1) {
+      const truncatedContent = truncateContentWithRendering(item.definitions[0], UI_CONSTANTS.DEFINITION_MAX_LENGTH);
+      renderContentWithMath(definitionsEl, truncatedContent, this.plugin.app, this.plugin, this.currentContext);
+      if (truncatedContent !== item.definitions[0]) {
+        this.setupContentHoverPreview(definitionsEl, item.definitions[0]);
+      }
+    } else {
+      const ul = definitionsEl.createEl("ul");
+      for (const def of item.definitions) {
+        const li = ul.createEl("li");
+        const truncatedContent = truncateContentWithRendering(def, UI_CONSTANTS.DEFINITION_MAX_LENGTH);
+        renderContentWithMath(li, truncatedContent, this.plugin.app, this.plugin, this.currentContext);
+        if (truncatedContent !== def) {
+          this.setupContentHoverPreview(li, def);
+        }
+      }
+    }
+    this.setupDefinitionClickHandler(definitionsEl, item, activeView);
+  }
+  truncateTermWithRendering(term) {
+    return truncateContentWithRendering(term, UI_CONSTANTS.TERM_MAX_LENGTH);
+  }
+  setupTermHoverPreview(element, fullTerm) {
+    var _a;
+    setupRenderedHoverPreview(
+      element,
+      fullTerm,
+      this.plugin.app,
+      this.plugin,
+      this.currentContext,
+      CSS_CLASSES.HOVER_POPOVER_CONTENT,
+      (_a = this.abortController) == null ? void 0 : _a.signal
+    );
+  }
+  setupDefinitionClickHandler(element, item, activeView) {
+    var _a;
+    const clickHandler = () => {
+      try {
+        if (activeView && activeView.editor) {
+          const editor = activeView.editor;
+          const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
+          const targetLeaf = leaves.find((leaf) => leaf.view === activeView);
+          if (targetLeaf) {
+            this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+          }
+          editor.setCursor(item.position);
+          editor.scrollIntoView({ from: item.position, to: item.position }, true);
+          highlightLine2(activeView, item.lineNumber);
+        }
+      } catch (error) {
+        handleError(error, "Scroll to definition term");
+      }
+    };
+    element.addEventListener("click", clickHandler, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
+  }
+  setupContentHoverPreview(element, content) {
+    var _a;
+    setupRenderedHoverPreview(
+      element,
+      content,
+      this.plugin.app,
+      this.plugin,
+      this.currentContext,
+      CSS_CLASSES.HOVER_POPOVER_CONTENT,
+      (_a = this.abortController) == null ? void 0 : _a.signal
+    );
+  }
+};
+
 // src/views/panels/ListPanelView.ts
 var VIEW_TYPE_LIST_PANEL = "list-panel-view";
 var ListPanelView = class extends import_obsidian5.ItemView {
@@ -2155,7 +2443,14 @@ var ListPanelView = class extends import_obsidian5.ItemView {
       icon: exampleListModule.icon,
       module: exampleListModule
     });
-    const panelOrder = this.plugin.settings.panelOrder || ["custom-labels", "example-lists"];
+    const definitionListModule = new DefinitionListPanelModule(this.plugin);
+    availablePanels.push({
+      id: definitionListModule.id,
+      displayName: definitionListModule.displayName,
+      icon: definitionListModule.icon,
+      module: definitionListModule
+    });
+    const panelOrder = this.plugin.settings.panelOrder || ["custom-labels", "example-lists", "definition-lists"];
     this.panels = [];
     for (const panelId of panelOrder) {
       const panel = availablePanels.find((p) => p.id === panelId);
@@ -2240,6 +2535,11 @@ var ListPanelView = class extends import_obsidian5.ItemView {
         const iconText = iconContainer.createSpan({
           cls: CSS_CLASSES.LIST_PANEL_ICON_EXAMPLE_LIST,
           text: "(@)"
+        });
+      } else if (panel.id === "definition-lists") {
+        const iconText = iconContainer.createSpan({
+          cls: "pandoc-icon-definition-list",
+          text: "DL:"
         });
       } else {
         iconContainer.addClass(`pandoc-icon-${panel.id}`);

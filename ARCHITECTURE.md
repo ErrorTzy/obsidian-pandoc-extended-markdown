@@ -87,7 +87,8 @@ pandoc-lists-plugin/
 │   │   │   ├── modules/             # Panel modules
 │   │   │   │   ├── PanelTypes.ts
 │   │   │   │   ├── CustomLabelPanelModule.ts
-│   │   │   │   └── ExampleListPanelModule.ts
+│   │   │   │   ├── ExampleListPanelModule.ts
+│   │   │   │   └── DefinitionListPanelModule.ts
 │   │   │   └── utils/               # Panel utilities
 │   │   │       ├── contentTruncator.ts
 │   │   │       └── viewInteractions.ts
@@ -105,7 +106,8 @@ pandoc-lists-plugin/
 │       │   └── settingsTypes.ts    # Settings type definitions
 │       ├── extractors/              # Content extractors
 │       │   ├── customLabelExtractor.ts
-│       │   └── exampleListExtractor.ts
+│       │   ├── exampleListExtractor.ts
+│       │   └── definitionListExtractor.ts
 │       ├── rendering/               # Content rendering utilities
 │       │   ├── ContentProcessorRegistry.ts
 │       │   └── processors/
@@ -154,6 +156,7 @@ Both modes share a common state management system through `PluginStateManager`.
 Additionally, the plugin provides a **List Panel View** - a modular sidebar panel with an icon toolbar that can display different types of list-related content. Currently supports:
 - **Custom Label Panel**: Displays all custom label lists from the current document in an organized, interactive format (only available when "Custom Label List" setting is enabled)
 - **Example List Panel**: Displays all example lists with their numbers, labels, and content in a three-column layout (always available)
+- **Definition List Panel**: Displays all definition lists with terms and their definitions in a two-column layout with smart truncation (always available)
 
 ```mermaid
 graph TB
@@ -182,6 +185,7 @@ graph TB
         LPView[views/panels/ListPanelView.ts<br/>Modular Panel]
         CLPanel[views/panels/modules/CustomLabelPanelModule.ts<br/>Label Display]
         ELPanel[views/panels/modules/ExampleListPanelModule.ts<br/>Example Display]
+        DLPanel[views/panels/modules/DefinitionListPanelModule.ts<br/>Definition Display]
     end
     
     Main --> CMExt
@@ -189,6 +193,7 @@ graph TB
     Main --> LPView
     LPView --> CLPanel
     LPView --> ELPanel
+    LPView --> DLPanel
     Main --> SM
     Settings --> LPView
     
@@ -718,11 +723,13 @@ To add a new panel module:
    - `onDeactivate()`: Called when switching to another module
    - `destroy()`: Cleanup when view closes
 
-### Implementation Example: Custom Label Panel
+### Implementation Examples
+
+#### Custom Label Panel
 
 The Custom Label Panel displays all custom label lists (`{::LABEL}` syntax) from the active markdown document.
 
-### Features
+**Features:**
 - **Two-column layout**: Displays processed labels and their rendered content
 - **Smart truncation**: 
   - Labels limited to 6 characters
@@ -737,6 +744,30 @@ The Custom Label Panel displays all custom label lists (`{::LABEL}` syntax) from
 - **Content rendering**: Displays fully rendered text with processed references and math
 - **Auto-refresh**: Updates when switching files or editing content
 - **Error boundaries**: Safe operation with fallback for errors
+
+#### Definition List Panel
+
+The Definition List Panel displays all definition lists (`:` and `~` syntax) from the active markdown document.
+
+**Features:**
+- **Two-column layout**: Terms column and definitions column
+- **Smart truncation**:
+  - Terms limited to 100 rendered characters
+  - Definitions limited to 300 rendered characters  
+  - Math-aware truncation preserves formula rendering
+- **Multiple definitions handling**: 
+  - Single definitions displayed directly
+  - Multiple definitions shown as bullet list
+  - Continuation lines properly merged
+- **Interactive elements**:
+  - Definition click: Navigates to term position in editor with highlight
+  - Hover previews: Shows full content when truncated
+  - Terms are not clickable (no clipboard copy)
+- **Full rendering support**: Both terms and definitions support:
+  - Markdown formatting (bold, italic)
+  - Math expressions
+  - Cross-references (example and custom label)
+- **Auto-refresh**: Updates when document changes
 
 ### View Interaction Flow
 
@@ -974,6 +1005,7 @@ flowchart LR
 | `PanelTypes.ts` | Panel module interfaces | Type definitions for extensible panel system |
 | `CustomLabelPanelModule.ts` | Custom label panel implementation | Label display, navigation, clipboard operations |
 | `ExampleListPanelModule.ts` | Example list panel implementation | Three-column display with numbers, labels, and content |
+| `DefinitionListPanelModule.ts` | Definition list panel implementation | Two-column display with terms and definitions, smart truncation |
 
 
 ### Live Preview Components

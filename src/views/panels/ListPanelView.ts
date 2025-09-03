@@ -13,6 +13,7 @@ import { handleError } from '../../shared/utils/errorHandler';
 // Internal modules
 import { CustomLabelPanelModule } from './modules/CustomLabelPanelModule';
 import { ExampleListPanelModule } from './modules/ExampleListPanelModule';
+import { DefinitionListPanelModule } from './modules/DefinitionListPanelModule';
 import { PandocExtendedMarkdownPlugin } from '../../core/main';
 
 export const VIEW_TYPE_LIST_PANEL = 'list-panel-view';
@@ -62,8 +63,16 @@ export class ListPanelView extends ItemView {
             module: exampleListModule
         });
         
+        const definitionListModule = new DefinitionListPanelModule(this.plugin);
+        availablePanels.push({
+            id: definitionListModule.id,
+            displayName: definitionListModule.displayName,
+            icon: definitionListModule.icon,
+            module: definitionListModule
+        });
+        
         // Sort panels according to settings order
-        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists'];
+        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists', 'definition-lists'];
         this.panels = [];
         
         // First, add panels in the specified order
@@ -176,6 +185,12 @@ export class ListPanelView extends ItemView {
                 const iconText = iconContainer.createSpan({
                     cls: CSS_CLASSES.LIST_PANEL_ICON_EXAMPLE_LIST,
                     text: '(@)'
+                });
+            } else if (panel.id === 'definition-lists') {
+                // Create definition list icon using text element
+                const iconText = iconContainer.createSpan({
+                    cls: 'pandoc-icon-definition-list',
+                    text: 'DL:'
                 });
             } else {
                 // For future panels, add a generic icon class
