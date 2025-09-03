@@ -40,7 +40,7 @@ var DEFAULT_SETTINGS = {
   strictPandocMode: false,
   autoRenumberLists: false,
   moreExtendedSyntax: false,
-  panelOrder: ["custom-labels", "example-lists"]
+  panelOrder: ["custom-labels", "example-lists", "definition-lists"]
 };
 
 // src/core/constants.ts
@@ -354,6 +354,11 @@ var PANEL_SETTINGS = {
       id: "example-lists",
       displayName: "Example List Panel",
       icon: ICONS.EXAMPLE_LIST_SVG
+    },
+    {
+      id: "definition-lists",
+      displayName: "Definition Lists",
+      icon: ICONS.DEFINITION_LIST_SVG
     }
   ],
   UI_TEXT: {

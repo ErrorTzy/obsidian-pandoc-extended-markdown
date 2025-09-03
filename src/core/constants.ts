@@ -333,6 +333,11 @@ export const PANEL_SETTINGS = {
             id: 'example-lists',
             displayName: 'Example List Panel',
             icon: ICONS.EXAMPLE_LIST_SVG
+        },
+        {
+            id: 'definition-lists',
+            displayName: 'Definition Lists',
+            icon: ICONS.DEFINITION_LIST_SVG
         }
     ],
     UI_TEXT: {

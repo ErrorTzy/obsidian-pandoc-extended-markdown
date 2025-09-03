@@ -54,5 +54,5 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
     autoRenumberLists: false,
     moreExtendedSyntax: false,
-    panelOrder: ['custom-labels', 'example-lists']
+    panelOrder: ['custom-labels', 'example-lists', 'definition-lists']
 };
