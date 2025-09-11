@@ -792,9 +792,18 @@ ListPatterns.HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
 // Text can contain escaped spaces (\ ) but not unescaped spaces
 ListPatterns.SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
 ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
-// Inline superscript and subscript patterns for inline processors
-ListPatterns.SUPERSCRIPT_INLINE = /\^([^^~\s]+(?:\s+[^^~\s]+)*)\^/g;
-ListPatterns.SUBSCRIPT_INLINE = /~([^~^\s]+(?:\s+[^~^\s]+)*)~/g;
+/**
+ * Inline superscript pattern for inline processors.
+ * Excludes $ character to prevent matching across LaTeX math boundaries,
+ * ensuring math expressions like $R^{+}_{xy}$ remain intact.
+ */
+ListPatterns.SUPERSCRIPT_INLINE = /\^([^^~\s$]+(?:\s+[^^~\s$]+)*)\^/g;
+/**
+ * Inline subscript pattern for inline processors.
+ * Excludes $ character to prevent matching across LaTeX math boundaries,
+ * ensuring math expressions remain properly formatted.
+ */
+ListPatterns.SUBSCRIPT_INLINE = /~([^~^\s$]+(?:\s+[^~^\s$]+)*)~/g;
 // Custom label list patterns for More Extended Syntax
 // Matches {::LABEL} at start of line with required space after
 // Now supports placeholders like {::P(#first)} or pure placeholders like {::(#name)}
@@ -3176,6 +3185,7 @@ function detectCodeRegions(doc) {
   const text = doc.toString();
   detectCodeBlocks(text, regions);
   detectInlineCode(text, regions);
+  detectMathRegions(text, regions);
   return regions;
 }
 function detectCodeBlocks(text, regions) {
@@ -3274,6 +3284,74 @@ function isRangeCompletelyInCodeRegion(from, to, codeRegions) {
 }
 function isRangeInCodeRegion(from, to, codeRegions) {
   return isRangeCompletelyInCodeRegion(from, to, codeRegions);
+}
+function detectMathRegions(text, regions) {
+  let i = 0;
+  while (i < text.length) {
+    if (isInExistingRegion(i, regions)) {
+      i++;
+      continue;
+    }
+    if (text[i] === "$") {
+      if (i > 0 && text[i - 1] === "\\") {
+        i++;
+        continue;
+      }
+      if (i + 1 < text.length && text[i + 1] === "$") {
+        let j = i + 2;
+        while (j < text.length - 1) {
+          if (text[j] === "$" && text[j + 1] === "$") {
+            if (j > 0 && text[j - 1] === "\\") {
+              j++;
+              continue;
+            }
+            regions.push({
+              from: i,
+              to: j + 2,
+              type: "math"
+            });
+            i = j + 2;
+            break;
+          }
+          j++;
+        }
+        if (j >= text.length - 1) {
+          i += 2;
+        }
+      } else {
+        let j = i + 1;
+        while (j < text.length) {
+          if (text[j] === "$") {
+            if (j > 0 && text[j - 1] === "\\") {
+              j++;
+              continue;
+            }
+            regions.push({
+              from: i,
+              to: j + 1,
+              type: "math"
+            });
+            i = j + 1;
+            break;
+          }
+          j++;
+        }
+        if (j >= text.length) {
+          i++;
+        }
+      }
+    } else {
+      i++;
+    }
+  }
+}
+function isInExistingRegion(pos, regions) {
+  for (const region of regions) {
+    if (pos >= region.from && pos < region.to) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // src/live-preview/scanners/customLabelScanner.ts
