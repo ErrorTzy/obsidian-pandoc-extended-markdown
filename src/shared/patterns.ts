@@ -98,9 +98,19 @@ export class ListPatterns {
     static readonly SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
     static readonly SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
     
-    // Inline superscript and subscript patterns for inline processors
-    static readonly SUPERSCRIPT_INLINE = /\^([^^~\s]+(?:\s+[^^~\s]+)*)\^/g;
-    static readonly SUBSCRIPT_INLINE = /~([^~^\s]+(?:\s+[^~^\s]+)*)~/g;
+    /**
+     * Inline superscript pattern for inline processors.
+     * Excludes $ character to prevent matching across LaTeX math boundaries,
+     * ensuring math expressions like $R^{+}_{xy}$ remain intact.
+     */
+    static readonly SUPERSCRIPT_INLINE = /\^([^^~\s$]+(?:\s+[^^~\s$]+)*)\^/g;
+    
+    /**
+     * Inline subscript pattern for inline processors.
+     * Excludes $ character to prevent matching across LaTeX math boundaries,
+     * ensuring math expressions remain properly formatted.
+     */
+    static readonly SUBSCRIPT_INLINE = /~([^~^\s$]+(?:\s+[^~^\s$]+)*)~/g;
     
     // Custom label list patterns for More Extended Syntax
     // Matches {::LABEL} at start of line with required space after

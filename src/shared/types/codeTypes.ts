@@ -3,13 +3,13 @@
  */
 
 /**
- * Represents a region of code that should not be processed by syntax processors
+ * Represents a region of code or math that should not be processed by syntax processors
  */
 export interface CodeRegion {
-    /** Starting position of the code region in the document */
+    /** Starting position of the code/math region in the document */
     from: number;
-    /** Ending position of the code region in the document */
+    /** Ending position of the code/math region in the document */
     to: number;
-    /** Type of code region - either a multi-line code block or inline code */
-    type: 'codeblock' | 'inline-code';
+    /** Type of region - code block, inline code, or math expression */
+    type: 'codeblock' | 'inline-code' | 'math';
 }

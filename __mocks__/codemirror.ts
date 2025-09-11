@@ -1,3 +1,48 @@
+export class Text {
+  length: number;
+  lines: number;
+  private text: string;
+
+  constructor(text: string) {
+    this.text = text;
+    this.length = text.length;
+    this.lines = text.split('\n').length;
+  }
+
+  static of(lines: string[]): Text {
+    const text = lines.join('\n');
+    const instance = new Text(text);
+    return Object.assign(instance, {
+      toString: () => text,
+      sliceString: (from: number, to: number) => text.slice(from, to),
+      line: (num: number) => {
+        const lineArray = lines;
+        if (num < 1 || num > lineArray.length) {
+          return { from: 0, to: 0, text: '', number: num };
+        }
+        let currentPos = 0;
+        for (let i = 0; i < num - 1; i++) {
+          currentPos += lineArray[i].length + 1;
+        }
+        return {
+          from: currentPos,
+          to: currentPos + lineArray[num - 1].length,
+          text: lineArray[num - 1],
+          number: num
+        };
+      }
+    });
+  }
+
+  toString(): string {
+    return this.text;
+  }
+
+  sliceString(from: number, to: number): string {
+    return this.text.slice(from, to);
+  }
+}
+
 export class EditorState {
   doc: any;
   selection: any;
@@ -203,25 +248,33 @@ export class DecorationSet {
     }
   }
   
-  iter() {
-    let index = 0;
-    const decorations = this.decorations;
-    const iterator = {
-      value: decorations[index] || null,
-      from: decorations[index]?.from || 0,
-      to: decorations[index]?.to || 0,
-      next() {
-        index++;
-        if (index < decorations.length) {
-          this.value = decorations[index];
-          this.from = decorations[index].from;
-          this.to = decorations[index].to;
-        } else {
-          this.value = null;
-        }
+  iter(callback?: (from: number, to: number, value: any) => void) {
+    if (callback) {
+      // When callback is provided, iterate and call it
+      for (const dec of this.decorations) {
+        callback(dec.from, dec.to, dec.decoration || dec);
       }
-    };
-    return iterator;
+    } else {
+      // When no callback, return an iterator
+      let index = 0;
+      const decorations = this.decorations;
+      const iterator = {
+        value: decorations[index] || null,
+        from: decorations[index]?.from || 0,
+        to: decorations[index]?.to || 0,
+        next() {
+          index++;
+          if (index < decorations.length) {
+            this.value = decorations[index];
+            this.from = decorations[index].from;
+            this.to = decorations[index].to;
+          } else {
+            this.value = null;
+          }
+        }
+      };
+      return iterator;
+    }
   }
 }
 

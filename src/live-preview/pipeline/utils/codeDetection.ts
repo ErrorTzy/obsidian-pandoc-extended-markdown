@@ -3,7 +3,7 @@ import { CodeRegion } from '../../../shared/types/codeTypes';
 import { ListPatterns } from '../../../shared/patterns';
 
 /**
- * Detects code blocks and inline code regions in a document
+ * Detects code blocks, inline code, and math regions in a document
  */
 export function detectCodeRegions(doc: Text): CodeRegion[] {
     const regions: CodeRegion[] = [];
@@ -14,6 +14,9 @@ export function detectCodeRegions(doc: Text): CodeRegion[] {
     
     // Detect inline code (backticks) - but skip those in code blocks
     detectInlineCode(text, regions);
+    
+    // Detect math regions ($...$ and $$...$$)
+    detectMathRegions(text, regions);
     
     return regions;
 }
@@ -179,4 +182,108 @@ export function isRangeCompletelyInCodeRegion(from: number, to: number, codeRegi
  */
 export function isRangeInCodeRegion(from: number, to: number, codeRegions: CodeRegion[]): boolean {
     return isRangeCompletelyInCodeRegion(from, to, codeRegions);
+}
+
+/**
+ * Detect math regions in the text
+ * 
+ * This function identifies both inline math ($...$) and display math ($$...$$).
+ * It handles several edge cases:
+ * 1. Escaped dollar signs (\$) are not treated as math delimiters
+ * 2. Display math ($$) is prioritized over inline math
+ * 3. Math inside code blocks is ignored (already marked as code)
+ * 4. Unclosed math expressions are skipped
+ * 
+ * @param text - The document text to scan
+ * @param regions - Array to add found math regions to
+ */
+function detectMathRegions(text: string, regions: CodeRegion[]): void {
+    let i = 0;
+    while (i < text.length) {
+        // Skip if we're inside a code block or inline code
+        if (isInExistingRegion(i, regions)) {
+            i++;
+            continue;
+        }
+        
+        // Look for dollar sign
+        if (text[i] === '$') {
+            // Check if it's escaped with backslash
+            if (i > 0 && text[i - 1] === '\\') {
+                i++;
+                continue;
+            }
+            
+            // Check for display math ($$)
+            if (i + 1 < text.length && text[i + 1] === '$') {
+                // Search for closing $$
+                let j = i + 2;
+                while (j < text.length - 1) {
+                    if (text[j] === '$' && text[j + 1] === '$') {
+                        // Check if the closing $$ is escaped
+                        if (j > 0 && text[j - 1] === '\\') {
+                            j++;
+                            continue;
+                        }
+                        
+                        // Found valid closing $$ - mark as display math
+                        regions.push({
+                            from: i,
+                            to: j + 2,
+                            type: 'math'
+                        });
+                        i = j + 2;
+                        break;
+                    }
+                    j++;
+                }
+                
+                // If no closing $$ found, skip these dollar signs
+                if (j >= text.length - 1) {
+                    i += 2;
+                }
+            } else {
+                // Single $ - look for inline math
+                let j = i + 1;
+                while (j < text.length) {
+                    if (text[j] === '$') {
+                        // Check if the closing $ is escaped
+                        if (j > 0 && text[j - 1] === '\\') {
+                            j++;
+                            continue;
+                        }
+                        
+                        // Found valid closing $ - mark as inline math
+                        regions.push({
+                            from: i,
+                            to: j + 1,
+                            type: 'math'
+                        });
+                        i = j + 1;
+                        break;
+                    }
+                    j++;
+                }
+                
+                // If no closing $ found, skip this dollar sign
+                if (j >= text.length) {
+                    i++;
+                }
+            }
+        } else {
+            i++;
+        }
+    }
+}
+
+/**
+ * Check if a position is inside any existing region (code block, inline code, or math)
+ */
+function isInExistingRegion(pos: number, regions: CodeRegion[]): boolean {
+    for (const region of regions) {
+        if (pos >= region.from && pos < region.to) {
+            return true;
+        }
+    }
+    return false;
 }
