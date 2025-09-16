@@ -1,101 +1,57 @@
-import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
-import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
+import { StructuralResult, ProcessingContext } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
-import { CSS_CLASSES } from '../../../core/constants';
 import { FancyListMarkerWidget } from '../../widgets';
+import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
 /**
  * Processes fancy lists (A., i., etc.) - only handles structural elements
  */
-export class FancyListProcessor implements StructuralProcessor {
+export class FancyListProcessor extends BaseStructuralProcessor {
     name = 'fancy-list';
     priority = 20;
-    
+
     canProcess(line: Line, context: ProcessingContext): boolean {
         const lineText = line.text;
         return ListPatterns.isFancyList(lineText) !== null;
     }
-    
+
     process(line: Line, context: ProcessingContext): StructuralResult {
         const lineText = line.text;
         const fancyMatch = ListPatterns.isFancyList(lineText);
-        
+
         if (!fancyMatch) {
             return { decorations: [] };
         }
-        
+
         // Check if this list item is in an invalid block
-        if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+        if (this.isInvalidInStrictMode(line, context)) {
             return { decorations: [] };
         }
-        
+
         const indent = fancyMatch[1];
         const markerWithDelimiter = fancyMatch[2];  // e.g., "A."
         const marker = fancyMatch[3];                // e.g., "A"
         const delimiter = fancyMatch[4];             // e.g., "."
         const space = fancyMatch[5];
-        
+
         const markerStart = line.from + indent.length;
         const markerEnd = line.from + indent.length + marker.length + delimiter.length + space.length;
         const contentStart = markerEnd;
-        
-        // Check if cursor is within the marker area
-        const cursorPos = context.view.state.selection?.main?.head;
-        const cursorInMarker = cursorPos !== undefined && cursorPos >= markerStart && cursorPos < markerEnd;
-        
-        const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-        
-        // Add line decoration with CSS class for proper styling
-        decorations.push({
-            from: line.from,
-            to: line.from,
-            decoration: Decoration.line({
-                class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE}`
-            })
-        });
-        
-        // Only replace the marker if cursor is not within it
-        if (!cursorInMarker) {
-            decorations.push({
-                from: markerStart,
-                to: markerEnd,
-                decoration: Decoration.replace({
-                    widget: new FancyListMarkerWidget(marker, delimiter, context.view, markerStart),
-                    inclusive: false
-                })
-            });
-        }
-        
-        // Wrap the content area
-        decorations.push({
-            from: contentStart,
-            to: line.to,
-            decoration: Decoration.mark({
-                class: CSS_CLASSES.CM_LIST_1
-            })
-        });
-        
-        // Mark content region for inline processing
-        const contentRegion = {
-            from: contentStart,
-            to: line.to,
-            type: 'list-content' as const,
-            parentStructure: 'fancy-list' as const
-        };
-        
-        // Set list context for continuation line detection
-        context.listContext = {
-            isInList: true,
-            contentStartColumn: indent.length + marker.length + delimiter.length + space.length,
-            listLevel: 1, // Can be calculated based on indent depth
-            parentStructure: 'fancy-list'
-        };
-        
-        return {
-            decorations,
-            contentRegion,
-            skipFurtherProcessing: true
-        };
+
+        // Create the widget for the marker
+        const widget = new FancyListMarkerWidget(marker, delimiter, context.view, markerStart);
+
+        // Use the base class method for standard list processing
+        return this.processStandardList(
+            line,
+            context,
+            markerStart,
+            markerEnd,
+            contentStart,
+            widget,
+            'fancy-list',
+            1 // Can be calculated based on indent depth
+        );
     }
 }

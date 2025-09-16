@@ -3,6 +3,7 @@ import { CSS_CLASSES } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 import { CustomLabelInfo } from '../../shared/types/listTypes';
+import { createTextNodeWalker } from '../utils/domUtils';
 
 /**
  * Parses a custom label list marker from a line of text and extracts label information.
@@ -212,11 +213,7 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
  */
 function processElementPreservingSpans(elem: Element, placeholderContext?: PlaceholderContext): void {
     // Walk through text nodes only and process custom label references
-    const walker = document.createTreeWalker(
-        elem,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode: (node) => {
+    const walker = createTextNodeWalker(elem, (node) => {
                 // Skip text nodes inside already-processed spans
                 const parent = node.parentElement;
                 if (parent && (
@@ -239,9 +236,7 @@ function processElementPreservingSpans(elem: Element, placeholderContext?: Place
                     return NodeFilter.FILTER_SKIP;
                 }
                 return NodeFilter.FILTER_ACCEPT;
-            }
-        }
-    );
+            });
     
     const nodesToProcess: Text[] = [];
     let node;
@@ -273,94 +268,132 @@ function processElementPreservingSpans(elem: Element, placeholderContext?: Place
     });
 }
 
-function processElement(elem: Element, placeholderContext?: PlaceholderContext) {
+/**
+ * Checks if element should be skipped for processing
+ */
+function shouldSkipElement(elem: Element): boolean {
     // Skip code blocks and pre elements
     if (elem.querySelector('code, pre') || elem.closest('code, pre')) {
-        return;
+        return true;
     }
-    
+
     // Skip if no custom labels in text content
     if (!elem.textContent || !elem.textContent.includes('{::')) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Checks if element has already processed content
+ */
+function hasProcessedContent(elem: Element): boolean {
+    return !!(elem.querySelector('span') ||
+              elem.querySelector('strong') ||
+              elem.querySelector('em'));
+}
+
+/**
+ * Checks if a span element is already processed
+ */
+function isProcessedSpan(elemNode: Element): boolean {
+    return elemNode.tagName === 'SPAN' &&
+           (elemNode.className === CSS_CLASSES.EXAMPLE_REF ||
+            elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER ||
+            elemNode.className.includes('pandoc-list-fancy') ||
+            elemNode.className === CSS_CLASSES.EXAMPLE_LIST ||
+            elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED);
+}
+
+/**
+ * Processes a text node and appends to container
+ */
+function processTextNodeLines(
+    node: Node,
+    container: HTMLElement,
+    placeholderContext?: PlaceholderContext
+): void {
+    const text = node.textContent || '';
+    const lines = text.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+        if (i > 0) {
+            container.appendChild(document.createTextNode('\n'));
+        }
+
+        if (lines[i]) {
+            processTextNode({ textContent: lines[i] } as Node, container, placeholderContext);
+        }
+    }
+}
+
+/**
+ * Processes an element node and appends to container
+ */
+function processElementNode(
+    node: Element,
+    container: HTMLElement,
+    placeholderContext?: PlaceholderContext
+): void {
+    if (isProcessedSpan(node)) {
+        // Already-processed element, preserve it as-is
+        container.appendChild(node.cloneNode(true));
+    } else if (node.textContent && node.textContent.includes('{::')) {
+        // Clone the element and process its content
+        const clonedElem = node.cloneNode(false) as Element;
+
+        // Process the element's children
+        const tempContainer = document.createElement('div');
+        Array.from(node.childNodes).forEach(child => {
+            tempContainer.appendChild(child.cloneNode(true));
+        });
+        processElement(tempContainer, placeholderContext);
+
+        // Move processed content to cloned element
+        while (tempContainer.firstChild) {
+            clonedElem.appendChild(tempContainer.firstChild);
+        }
+
+        container.appendChild(clonedElem);
+    } else {
+        // No custom labels, just clone the element
+        container.appendChild(node.cloneNode(true));
+    }
+}
+
+/**
+ * Main function to process custom labels in an element
+ */
+function processElement(elem: Element, placeholderContext?: PlaceholderContext) {
+    if (shouldSkipElement(elem)) {
         return;
     }
-    
-    // ALWAYS use the preserving method if the element has any processed content
-    // This prevents destroying existing spans like example references
-    const hasAnyProcessedContent = 
-        elem.querySelector('span') || // Any span element
-        elem.querySelector('strong') || // Any strong element
-        elem.querySelector('em'); // Any em element
-    
-    if (hasAnyProcessedContent) {
-        // Element has some processed content, preserve it
+
+    // Use preserving method if element has processed content
+    if (hasProcessedContent(elem)) {
         return processElementPreservingSpans(elem, placeholderContext);
     }
-    
+
     // Create a new container to build the processed content
     const newContainer = document.createElement('div');
-    
+
     // Process each child node
     const childNodes = Array.from(elem.childNodes);
-    
+
     for (const node of childNodes) {
         if (node.nodeType === Node.TEXT_NODE) {
-            // Process text nodes line by line
-            const text = node.textContent || '';
-            const lines = text.split('\n');
-            
-            for (let i = 0; i < lines.length; i++) {
-                if (i > 0) {
-                    // Add line break between lines
-                    newContainer.appendChild(document.createTextNode('\n'));
-                }
-                
-                if (lines[i]) {
-                    processTextNode({ textContent: lines[i] } as Node, newContainer, placeholderContext);
-                }
-            }
+            processTextNodeLines(node, newContainer, placeholderContext);
         } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'BR') {
-            // Preserve BR elements
             newContainer.appendChild(document.createElement('br'));
         } else if (node.nodeType === Node.ELEMENT_NODE) {
-            // For other elements, check if they're already processed elements we should preserve
-            const elemNode = node as Element;
-            
-            // Preserve already-processed example reference spans
-            if (elemNode.tagName === 'SPAN' && 
-                (elemNode.className === CSS_CLASSES.EXAMPLE_REF || 
-                 elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER ||
-                 elemNode.className.includes('pandoc-list-fancy') ||
-                 elemNode.className === CSS_CLASSES.EXAMPLE_LIST ||
-                 elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED)) {
-                // This is an already-processed element, preserve it as-is
-                newContainer.appendChild(node.cloneNode(true));
-            } else if (elemNode.textContent && elemNode.textContent.includes('{::')) {
-                // Clone the element and process its content
-                const clonedElem = elemNode.cloneNode(false) as Element;
-                
-                // Process the element's children
-                const tempContainer = createDiv();
-                Array.from(elemNode.childNodes).forEach(child => {
-                    tempContainer.appendChild(child.cloneNode(true));
-                });
-                processElement(tempContainer, placeholderContext);
-                
-                // Move processed content to cloned element
-                while (tempContainer.firstChild) {
-                    clonedElem.appendChild(tempContainer.firstChild);
-                }
-                
-                newContainer.appendChild(clonedElem);
-            } else {
-                // No custom labels, just clone the element
-                newContainer.appendChild(node.cloneNode(true));
-            }
+            processElementNode(node as Element, newContainer, placeholderContext);
         } else {
             // Other node types (comments, etc.) - preserve as is
             newContainer.appendChild(node.cloneNode(true));
         }
     }
-    
+
     // Replace the element's content with processed content
     while (elem.firstChild) {
         elem.removeChild(elem.firstChild);

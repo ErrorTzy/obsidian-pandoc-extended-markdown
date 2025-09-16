@@ -2,6 +2,7 @@ import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
 import { SuperscriptWidget } from '../../widgets';
+import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
 
 /**
  * Processes superscript syntax (^text^) in content
@@ -19,8 +20,7 @@ export class SuperscriptProcessor implements InlineProcessor {
         const pattern = ListPatterns.SUPERSCRIPT_INLINE;
         
         // Get cursor position relative to region
-        const cursorPos = context.view?.state?.selection?.main?.head;
-        const regionCursorPos = cursorPos !== undefined ? cursorPos - region.from : -1;
+        const regionCursorPos = getRegionCursorPosition(context, region);
         
         let match;
         while ((match = pattern.exec(text)) !== null) {

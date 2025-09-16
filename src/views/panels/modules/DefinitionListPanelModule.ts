@@ -1,8 +1,8 @@
 // External libraries
 import { MarkdownView } from 'obsidian';
 
-// Types
-import { PanelModule } from './PanelTypes';
+// Base class
+import { BasePanelModule } from './BasePanelModule';
 
 // Constants
 import { CSS_CLASSES, MESSAGES, ICONS, UI_CONSTANTS } from '../../../core/constants';
@@ -14,96 +14,32 @@ import { handleError } from '../../../shared/utils/errorHandler';
 import { DefinitionListItem, extractDefinitionLists } from '../../../shared/extractors/definitionListExtractor';
 import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 import { highlightLine } from '../../editor/highlightUtils';
-import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
-import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
-import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
 // Internal modules
 import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 
-export class DefinitionListPanelModule implements PanelModule {
+export class DefinitionListPanelModule extends BasePanelModule {
     id = 'definition-lists';
     displayName = 'Definition Lists';
     icon = ICONS.DEFINITION_LIST_SVG;
-    isActive = false;
-    
-    private plugin: PandocExtendedMarkdownPlugin;
+
     private definitionItems: DefinitionListItem[] = [];
-    private containerEl: HTMLElement | null = null;
-    private lastActiveMarkdownView: MarkdownView | null = null;
-    private abortController: AbortController | null = null;
-    private currentContext: ProcessingContext = {};
     
-    constructor(plugin: PandocExtendedMarkdownPlugin) {
-        this.plugin = plugin;
-    }
-    
-    onActivate(containerEl: HTMLElement, activeView: MarkdownView | null): void {
-        this.isActive = true;
-        this.containerEl = containerEl;
-        this.lastActiveMarkdownView = activeView;
-        // Create new abort controller for cleanup
-        this.abortController = new AbortController();
-        this.updateContent(activeView);
-    }
-    
-    onDeactivate(): void {
-        this.isActive = false;
-        // Clean up all event listeners
-        if (this.abortController) {
-            this.abortController.abort();
-            this.abortController = null;
-        }
-        if (this.containerEl) {
-            this.containerEl.empty();
-            this.containerEl = null;
-        }
-    }
-    
-    onUpdate(activeView: MarkdownView | null): void {
-        if (!this.isActive || !this.containerEl) return;
-        
-        if (activeView && activeView.file) {
-            this.lastActiveMarkdownView = activeView;
-        } else if (!activeView) {
-            activeView = this.lastActiveMarkdownView;
-        }
-        
-        this.updateContent(activeView);
-    }
-    
-    shouldUpdate(): boolean {
-        return this.isActive;
-    }
-    
-    destroy(): void {
-        this.onDeactivate();
+    protected cleanupModuleData(): void {
         this.definitionItems = [];
-        this.lastActiveMarkdownView = null;
     }
-    
-    private updateContent(activeView: MarkdownView | null): void {
-        if (!this.containerEl) return;
-        
-        this.containerEl.empty();
-        
-        if (!activeView || !activeView.file) {
-            this.showNoFileMessage();
-            return;
-        }
-        
-        const content = activeView.editor.getValue();
+
+    protected extractData(content: string): void {
         this.definitionItems = extractDefinitionLists(content);
-        
-        // Build context for reference processing
-        this.buildRenderingContext(content);
-        
+    }
+
+    protected renderContent(activeView: MarkdownView): void {
         this.renderDefinitionItems(activeView);
     }
     
-    private showNoFileMessage(): void {
+    protected showNoFileMessage(): void {
         if (!this.containerEl) return;
-        
+
         this.containerEl.createEl('div', {
             text: MESSAGES.NO_ACTIVE_FILE,
             cls: CSS_CLASSES.DEFINITION_LIST_VIEW_EMPTY
@@ -111,40 +47,6 @@ export class DefinitionListPanelModule implements PanelModule {
         this.definitionItems = [];
     }
     
-    /**
-     * Build the rendering context for processing content references
-     * @param content The document content to extract context from
-     */
-    private buildRenderingContext(content: string): void {
-        // Build example labels map from the document
-        const exampleItems = extractExampleLists(content);
-        const exampleLabels = new Map<string, number>();
-        exampleItems.forEach(item => {
-            // Extract label from rawLabel (e.g., "@a" -> "a")
-            const label = item.rawLabel.substring(1);
-            if (label) {
-                exampleLabels.set(label, item.renderedNumber);
-            }
-        });
-        
-        // Extract custom labels for reference processing if enabled
-        const rawToProcessed = new Map<string, string>();
-        if (this.plugin.settings?.moreExtendedSyntax) {
-            const customLabels = extractCustomLabels(content, true);
-            customLabels.forEach(label => {
-                // Extract the raw label without the {::} wrapper
-                const match = label.rawLabel.match(/\{::([^}]+)\}/);
-                if (match) {
-                    rawToProcessed.set(match[1], label.label);
-                }
-            });
-        }
-        
-        this.currentContext = {
-            exampleLabels,
-            rawToProcessed
-        };
-    }
     
     private renderDefinitionItems(activeView: MarkdownView): void {
         if (!this.containerEl) return;

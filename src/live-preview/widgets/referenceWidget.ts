@@ -1,17 +1,15 @@
-import { WidgetType, EditorView } from '@codemirror/view';
-import { setTooltip, App, Component } from 'obsidian';
-import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
-import { setupRenderedHoverPreview } from '../../shared/utils/hoverPopovers';
+import { EditorView } from '@codemirror/view';
+import { App, Component } from 'obsidian';
+import { CSS_CLASSES } from '../../core/constants';
+import { BaseWidget } from './BaseWidget';
 
 // Widget for example references
-export class ExampleReferenceWidget extends WidgetType {
-    private controller: AbortController;
-
+export class ExampleReferenceWidget extends BaseWidget {
     constructor(
-        public number: number, 
-        public tooltipText?: string, 
-        private view?: EditorView, 
-        private pos?: number,
+        public number: number,
+        public tooltipText?: string,
+        view?: EditorView,
+        pos?: number,
         private app?: App,
         private component?: Component,
         private context?: {
@@ -21,58 +19,42 @@ export class ExampleReferenceWidget extends WidgetType {
             rawToProcessed?: Map<string, string>;
         }
     ) {
-        super();
-        this.controller = new AbortController();
+        super(view, pos);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.EXAMPLE_REF;
-        span.textContent = `(${this.number})`;
-        
-        // Add hover preview with rendered content if available
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.EXAMPLE_REF;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = `(${this.number})`;
+    }
+
+    protected setupTooltip(element: HTMLElement): void {
         if (this.tooltipText) {
             // If app and component are available, use rendered preview
             if (this.app && this.component) {
-                setupRenderedHoverPreview(span, this.tooltipText, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
+                this.addRenderedHoverPreview(
+                    element,
+                    this.tooltipText,
+                    this.app,
+                    this.component,
+                    this.context,
+                    CSS_CLASSES.HOVER_POPOVER_CONTENT
+                );
             } else {
                 // Fallback to plain tooltip
-                setTooltip(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+                this.addSimpleTooltip(element, this.tooltipText);
             }
         }
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
-    }
-    
-    // Make the widget editable - allow all editing events to pass through
-    ignoreEvent() {
-        return false;
     }
 
-    eq(other: ExampleReferenceWidget) {
-        return other.number === this.number && 
-               other.tooltipText === this.tooltipText && 
+    eq(other: ExampleReferenceWidget): boolean {
+        return other.number === this.number &&
+               other.tooltipText === this.tooltipText &&
                other.pos === this.pos &&
                other.app === this.app &&
                other.component === this.component &&
                other.context === this.context;
-    }
-
-    destroy() {
-        this.controller.abort();
     }
 }

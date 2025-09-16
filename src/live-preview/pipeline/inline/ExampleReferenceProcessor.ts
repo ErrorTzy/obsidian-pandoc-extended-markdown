@@ -2,6 +2,8 @@ import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
 import { ExampleReferenceWidget } from '../../widgets';
+import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
+import { buildReferenceContext } from '../../../shared/utils/contextUtils';
 
 /**
  * Processes example references ((@label)) in content
@@ -16,8 +18,7 @@ export class ExampleReferenceProcessor implements InlineProcessor {
         const pattern = ListPatterns.EXAMPLE_REFERENCE;
         
         // Get cursor position relative to region
-        const cursorPos = context.view?.state?.selection?.main?.head;
-        const regionCursorPos = cursorPos !== undefined ? cursorPos - region.from : -1;
+        const regionCursorPos = getRegionCursorPosition(context, region);
         
         let match;
         while ((match = pattern.exec(text)) !== null) {
@@ -53,12 +54,7 @@ export class ExampleReferenceProcessor implements InlineProcessor {
         const absolutePosition = match.from + (region?.from || 0);
         
         // Create a context object to pass to the widget for processing references in popovers
-        const referenceContext = {
-            exampleLabels: context.exampleLabels,
-            exampleContent: context.exampleContent,
-            customLabels: context.customLabels,
-            rawToProcessed: context.rawToProcessed
-        };
+        const referenceContext = buildReferenceContext(context);
         
         return Decoration.replace({
             widget: new ExampleReferenceWidget(

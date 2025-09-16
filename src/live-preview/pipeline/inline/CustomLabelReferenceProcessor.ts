@@ -2,6 +2,8 @@ import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
 import { CustomLabelReferenceWidget, DuplicateCustomLabelWidget } from '../../widgets';
 import { ListPatterns } from '../../../shared/patterns';
+import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
+import { buildReferenceContext } from '../../../shared/utils/contextUtils';
 
 /**
  * Processes custom label references ({::label}) in content
@@ -20,8 +22,7 @@ export class CustomLabelReferenceProcessor implements InlineProcessor {
         }
         
         // Get cursor position relative to region
-        const cursorPos = context.view?.state?.selection?.main?.head;
-        const regionCursorPos = cursorPos !== undefined ? cursorPos - region.from : -1;
+        const regionCursorPos = getRegionCursorPosition(context, region);
         
         const pattern = ListPatterns.findCustomLabelReferences(text);
         
@@ -123,12 +124,7 @@ export class CustomLabelReferenceProcessor implements InlineProcessor {
         const labelContent = context.customLabels?.get(processedLabel) || '';
         
         // Create a context object to pass to the widget for processing references in popovers
-        const referenceContext = {
-            exampleLabels: context.exampleLabels,
-            exampleContent: context.exampleContent,
-            customLabels: context.customLabels,
-            rawToProcessed: context.rawToProcessed
-        };
+        const referenceContext = buildReferenceContext(context);
         
         return Decoration.replace({
             widget: new CustomLabelReferenceWidget(

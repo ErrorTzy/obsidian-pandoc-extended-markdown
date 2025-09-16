@@ -3,6 +3,7 @@ import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
 
 // Types
 import { getSectionInfo } from '../../shared/types/obsidian-extended';
+import { extractSectionLines, createTextNodeWalker } from '../utils/domUtils';
 
 // Constants
 import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
@@ -61,22 +62,8 @@ export function processExampleLists(element: HTMLElement, context: MarkdownPostP
     const allExamplesMap = new Map<string, number>(); // Maps full example text to number
     let exampleCounter = 1;
     
-    const section = element.closest('.markdown-preview-section') as HTMLElement;
-    if (!section) return;
-    
-    // Try to get section info with fallback
-    const sectionInfo = getSectionInfo(section);
-    let lines: string[] = [];
-    
-    if (sectionInfo?.text) {
-        lines = sectionInfo.text.split('\n');
-    } else {
-        // Fallback: extract text from the element
-        const fullText = element.textContent || '';
-        lines = fullText.split('\n');
-    }
-    
-    if (lines.length === 0) return;
+    const lines = extractSectionLines(element);
+    if (!lines || lines.length === 0) return;
     
     // First pass: assign numbers to all examples (labeled and unlabeled)
     const lineNumberToExample = new Map<number, number>();
@@ -185,13 +172,7 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
 }
 
 function processExampleReferences(element: HTMLElement, exampleMap: Map<string, number>, exampleContent: Map<string, string>) {
-    const walker = document.createTreeWalker(
-        element,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode: () => NodeFilter.FILTER_ACCEPT
-        }
-    );
+    const walker = createTextNodeWalker(element);
     
     const nodesToReplace: { node: Text; matches: RegExpMatchArray[] }[] = [];
     

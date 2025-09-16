@@ -28,9 +28,9 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian15 = require("obsidian");
-var import_state4 = require("@codemirror/state");
-var import_view18 = require("@codemirror/view");
+var import_obsidian14 = require("obsidian");
+var import_state8 = require("@codemirror/state");
+var import_view13 = require("@codemirror/view");
 
 // src/core/settings.ts
 var import_obsidian6 = require("obsidian");
@@ -43,7 +43,7 @@ var DEFAULT_SETTINGS = {
   panelOrder: ["custom-labels", "example-lists", "definition-lists"]
 };
 
-// src/core/constants.ts
+// src/core/constants/listConstants.ts
 var LIST_MARKERS = {
   DEFINITION_COLON: ":",
   DEFINITION_TILDE: "~",
@@ -74,6 +74,8 @@ var INDENTATION = {
   TAB: "	",
   FOUR_SPACES: "    "
 };
+
+// src/core/constants/cssConstants.ts
 var CSS_CLASSES = {
   // Fancy List Classes
   FANCY_LIST: "pandoc-list-fancy",
@@ -110,9 +112,12 @@ var CSS_CLASSES = {
   LIST_LINE_4: "HyperMD-list-line-4",
   LIST_LINE_NOBULLET: "HyperMD-list-line-nobullet",
   CM_LIST_1: "cm-list-1",
+  CM_LIST_2: "cm-list-2",
+  CM_LIST_3: "cm-list-3",
   CM_FORMATTING: "cm-formatting",
   CM_FORMATTING_LIST: "cm-formatting-list",
   CM_FORMATTING_LIST_OL: "cm-formatting-list-ol",
+  CM_FORMATTING_LIST_UL: "cm-formatting-list-ul",
   LIST_NUMBER: "list-number",
   DEFINITION_TERM_DECORATION: "cm-pandoc-definition-term",
   DEFINITION_PARAGRAPH: "cm-pandoc-definition-paragraph",
@@ -171,6 +176,10 @@ var CSS_CLASSES = {
   DEFINITION_LIST_VIEW_DEFINITIONS: "pandoc-definition-list-view-definitions",
   DEFINITION_LIST_VIEW_EMPTY: "pandoc-definition-list-view-empty"
 };
+var COMPOSITE_CSS = {
+  // Standard formatting for list markers in widgets
+  STANDARD_LIST_MARKER_CLASSES: `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`
+};
 var DECORATION_STYLES = {
   HASH_LIST_INDENT: 29,
   EXAMPLE_LIST_INDENT: 35,
@@ -180,6 +189,8 @@ var DECORATION_STYLES = {
   CUSTOM_LABEL_PREFIX_LENGTH: 3
   // Length of "{::" prefix
 };
+
+// src/core/constants.ts
 var MESSAGES = {
   // Success messages
   FORMAT_SUCCESS: "Document formatted to pandoc standard",
@@ -211,6 +222,7 @@ var COMMANDS = {
 var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4,
   STATE_TRANSITION_DELAY_MS: 100,
+  HIGHLIGHT_ANIMATION_DURATION_MS: 2e3,
   // Custom Label View
   LABEL_MAX_LENGTH: 6,
   LABEL_TRUNCATION_LENGTH: 5,
@@ -297,23 +309,23 @@ var MATH_SYMBOLS = {
 };
 var ICONS = {
   CUSTOM_LABEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <text x="50" y="50" 
-              text-anchor="middle" 
-              dominant-baseline="central" 
-              font-family="monospace" 
-              font-size="48" 
-              font-weight="bold" 
+        <text x="50" y="50"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-family="monospace"
+              font-size="48"
+              font-weight="bold"
               fill="currentColor">
             {::}
         </text>
     </svg>`,
   EXAMPLE_LIST_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <text x="50" y="50" 
-              text-anchor="middle" 
-              dominant-baseline="central" 
-              font-family="monospace" 
-              font-size="58" 
-              font-weight="bold" 
+        <text x="50" y="50"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-family="monospace"
+              font-size="58"
+              font-weight="bold"
               fill="currentColor">
             (@)
         </text>
@@ -329,13 +341,13 @@ var ICONS = {
             <!-- 2x2 grid of Pandoc list markers for better visibility -->
             <!-- Top left: Roman numeral -->
             <text x="25" y="35" font-size="48" text-anchor="middle">i.</text>
-            
+
             <!-- Top right: Letter with parenthesis -->
             <text x="75" y="35" font-size="48" text-anchor="middle">a)</text>
-            
+
             <!-- Bottom left: Hash number -->
             <text x="25" y="75" font-size="48" text-anchor="middle">#.</text>
-            
+
             <!-- Bottom right: Definition marker -->
             <text x="75" y="75" font-size="48" text-anchor="middle">~</text>
         </g>
@@ -406,6 +418,18 @@ var NUMERIC_CONSTANTS = {
   // List processing
   LIST_NESTING_LEVEL: 1,
   MAX_NESTING_DEPTH: 10
+};
+var TEXT_PROCESSING = {
+  // Preview truncation
+  PREVIEW_TRUNCATE_LENGTH: 30,
+  PREVIEW_ELLIPSIS: "...",
+  // Tab/space conversion
+  TAB_EQUIVALENT_SPACES: 4,
+  // Content extraction
+  MIN_CONTENT_LENGTH: 1,
+  // Text formatting
+  LINE_SEPARATOR: "\n",
+  SPACE_CHARACTER: " "
 };
 var FILE_CONSTANTS = {
   EXTENSION_TS: ".ts",
@@ -493,6 +517,14 @@ var PluginError = class extends Error {
 function withErrorBoundary(fn, fallback, context) {
   try {
     return fn();
+  } catch (error) {
+    handleError(error, context);
+    return fallback;
+  }
+}
+async function withAsyncErrorBoundary(fn, fallback, context) {
+  try {
+    return await fn();
   } catch (error) {
     handleError(error, context);
     return fallback;
@@ -1345,13 +1377,11 @@ function processContent(content, context) {
 
 // src/views/panels/utils/viewInteractions.ts
 function highlightLine(view, lineNumber) {
-  try {
+  withErrorBoundary(() => {
     const editor = view.editor;
     setCursorAndScroll(editor, lineNumber);
     applyLineHighlight(editor, lineNumber);
-  } catch (error) {
-    handleError(error, "error");
-  }
+  }, void 0, "highlight line");
 }
 function setCursorAndScroll(editor, lineNumber) {
   const lineStart = { line: lineNumber, ch: 0 };
@@ -1398,25 +1428,20 @@ function applyHighlight(lineElement) {
   lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
   setTimeout(() => {
     lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
-  }, 2e3);
+  }, UI_CONSTANTS.HIGHLIGHT_ANIMATION_DURATION_MS);
 }
 function setupLabelClickHandler(element, rawLabel, abortSignal) {
-  const clickHandler = () => {
-    try {
-      navigator.clipboard.writeText(rawLabel).then(() => {
-        new import_obsidian2.Notice(MESSAGES.LABEL_COPIED);
-      }).catch((error) => {
-        handleError(error, "error");
-      });
-    } catch (error) {
-      handleError(error, "error");
-    }
+  const clickHandler = async () => {
+    await withAsyncErrorBoundary(async () => {
+      await navigator.clipboard.writeText(rawLabel);
+      new import_obsidian2.Notice(MESSAGES.LABEL_COPIED);
+    }, void 0, "copy label to clipboard");
   };
   element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
 function setupContentClickHandler(element, label, lastActiveMarkdownView, app, abortSignal) {
   const clickHandler = () => {
-    try {
+    withErrorBoundary(() => {
       const targetView = lastActiveMarkdownView;
       if (targetView && targetView.editor) {
         const editor = targetView.editor;
@@ -1429,9 +1454,7 @@ function setupContentClickHandler(element, label, lastActiveMarkdownView, app, a
         editor.scrollIntoView({ from: label.position, to: label.position }, true);
         highlightLine(targetView, label.lineNumber);
       }
-    } catch (error) {
-      handleError(error, "error");
-    }
+    }, void 0, "navigate to custom label");
   };
   element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
@@ -1721,14 +1744,10 @@ function extractExampleLists(content) {
   }, "Extract example lists", []);
 }
 
-// src/views/panels/modules/CustomLabelPanelModule.ts
-var CustomLabelPanelModule = class {
+// src/views/panels/modules/BasePanelModule.ts
+var BasePanelModule = class {
   constructor(plugin) {
-    this.id = "custom-labels";
-    this.displayName = "Custom Labels";
-    this.icon = ICONS.CUSTOM_LABEL_SVG;
     this.isActive = false;
-    this.labels = [];
     this.containerEl = null;
     this.lastActiveMarkdownView = null;
     this.abortController = null;
@@ -1752,6 +1771,7 @@ var CustomLabelPanelModule = class {
       this.containerEl.empty();
       this.containerEl = null;
     }
+    this.cleanupModuleData();
   }
   onUpdate(activeView) {
     if (!this.isActive || !this.containerEl) return;
@@ -1767,9 +1787,11 @@ var CustomLabelPanelModule = class {
   }
   destroy() {
     this.onDeactivate();
-    this.labels = [];
     this.lastActiveMarkdownView = null;
   }
+  /**
+   * Main update method that orchestrates content extraction and rendering.
+   */
   updateContent(activeView) {
     if (!this.containerEl) return;
     this.containerEl.empty();
@@ -1778,8 +1800,75 @@ var CustomLabelPanelModule = class {
       return;
     }
     const content = activeView.editor.getValue();
-    this.labels = this.extractCustomLabels(content);
+    this.extractData(content);
     this.buildRenderingContext(content);
+    this.renderContent(activeView);
+  }
+  /**
+   * Shows a message when no file is open.
+   */
+  showNoFileMessage() {
+    if (!this.containerEl) return;
+    this.containerEl.createEl("div", {
+      text: MESSAGES.NO_FILE,
+      cls: CSS_CLASSES.NO_FILE_MESSAGE
+    });
+  }
+  /**
+   * Builds the rendering context for processing references.
+   * Common implementation that can be overridden if needed.
+   */
+  buildRenderingContext(content) {
+    const exampleItems = extractExampleLists(content);
+    const exampleLabels = /* @__PURE__ */ new Map();
+    const exampleContent = /* @__PURE__ */ new Map();
+    exampleItems.forEach((item) => {
+      if (item.label) {
+        exampleLabels.set(item.label, item.number);
+        exampleContent.set(item.label, item.content.trim());
+      }
+    });
+    const customLabels = extractCustomLabels(content);
+    const customLabelMap = /* @__PURE__ */ new Map();
+    const rawToProcessed = /* @__PURE__ */ new Map();
+    customLabels.forEach((label) => {
+      customLabelMap.set(label.rawLabel, label.content);
+      if (label.processedLabel !== label.rawLabel) {
+        rawToProcessed.set(label.rawLabel, label.processedLabel);
+      }
+    });
+    this.currentContext = {
+      exampleLabels,
+      exampleContent,
+      customLabels: customLabelMap,
+      rawToProcessed
+    };
+  }
+  /**
+   * Clean up module-specific data.
+   * Should be implemented by subclasses if they have data to clean up.
+   */
+  cleanupModuleData() {
+  }
+};
+
+// src/views/panels/modules/CustomLabelPanelModule.ts
+var CustomLabelPanelModule = class extends BasePanelModule {
+  constructor() {
+    super(...arguments);
+    this.id = "custom-labels";
+    this.displayName = "Custom Labels";
+    this.icon = ICONS.CUSTOM_LABEL_SVG;
+    this.labels = [];
+  }
+  cleanupModuleData() {
+    this.labels = [];
+  }
+  extractData(content) {
+    var _a;
+    this.labels = extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
+  }
+  renderContent(activeView) {
     this.renderLabels(activeView);
   }
   showNoFileMessage() {
@@ -1790,23 +1879,12 @@ var CustomLabelPanelModule = class {
     });
     this.labels = [];
   }
-  extractCustomLabels(content) {
-    var _a;
-    return extractCustomLabels(content, ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) || false);
-  }
   /**
    * Build the rendering context for processing content references
    * @param content The document content to extract context from
    */
   buildRenderingContext(content) {
-    const exampleItems = extractExampleLists(content);
-    const exampleLabels = /* @__PURE__ */ new Map();
-    exampleItems.forEach((item) => {
-      const label = item.rawLabel.substring(1);
-      if (label) {
-        exampleLabels.set(label, item.renderedNumber);
-      }
-    });
+    super.buildRenderingContext(content);
     const rawToProcessed = /* @__PURE__ */ new Map();
     this.labels.forEach((label) => {
       const match = label.rawLabel.match(/\{::([^}]+)\}/);
@@ -1815,7 +1893,7 @@ var CustomLabelPanelModule = class {
       }
     });
     this.currentContext = {
-      exampleLabels,
+      ...this.currentContext,
       rawToProcessed
     };
   }
@@ -1939,64 +2017,21 @@ function applyHighlight2(lineElement) {
 }
 
 // src/views/panels/modules/ExampleListPanelModule.ts
-var ExampleListPanelModule = class {
-  constructor(plugin) {
+var ExampleListPanelModule = class extends BasePanelModule {
+  constructor() {
+    super(...arguments);
     this.id = "example-lists";
     this.displayName = "Example Lists";
     this.icon = ICONS.EXAMPLE_LIST_SVG;
-    this.isActive = false;
     this.exampleItems = [];
-    this.containerEl = null;
-    this.lastActiveMarkdownView = null;
-    this.abortController = null;
-    this.currentContext = {};
-    this.plugin = plugin;
   }
-  onActivate(containerEl, activeView) {
-    this.isActive = true;
-    this.containerEl = containerEl;
-    this.lastActiveMarkdownView = activeView;
-    this.abortController = new AbortController();
-    this.updateContent(activeView);
-  }
-  onDeactivate() {
-    this.isActive = false;
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
-    }
-    if (this.containerEl) {
-      this.containerEl.empty();
-      this.containerEl = null;
-    }
-  }
-  onUpdate(activeView) {
-    if (!this.isActive || !this.containerEl) return;
-    if (activeView && activeView.file) {
-      this.lastActiveMarkdownView = activeView;
-    } else if (!activeView) {
-      activeView = this.lastActiveMarkdownView;
-    }
-    this.updateContent(activeView);
-  }
-  shouldUpdate() {
-    return this.isActive;
-  }
-  destroy() {
-    this.onDeactivate();
+  cleanupModuleData() {
     this.exampleItems = [];
-    this.lastActiveMarkdownView = null;
   }
-  updateContent(activeView) {
-    if (!this.containerEl) return;
-    this.containerEl.empty();
-    if (!activeView || !activeView.file) {
-      this.showNoFileMessage();
-      return;
-    }
-    const content = activeView.editor.getValue();
+  extractData(content) {
     this.exampleItems = extractExampleLists(content);
-    this.buildRenderingContext(content);
+  }
+  renderContent(activeView) {
     this.renderExampleItems(activeView);
   }
   showNoFileMessage() {
@@ -2007,15 +2042,13 @@ var ExampleListPanelModule = class {
     });
     this.exampleItems = [];
   }
-  extractExampleLists(content) {
-    return extractExampleLists(content);
-  }
   /**
    * Build the rendering context for processing content references
    * @param content The document content to extract context from
    */
   buildRenderingContext(content) {
     var _a;
+    super.buildRenderingContext(content);
     const exampleLabels = /* @__PURE__ */ new Map();
     this.exampleItems.forEach((item) => {
       const label = item.rawLabel.substring(1);
@@ -2034,6 +2067,7 @@ var ExampleListPanelModule = class {
       });
     }
     this.currentContext = {
+      ...this.currentContext,
       exampleLabels,
       rawToProcessed
     };
@@ -2157,130 +2191,90 @@ var ExampleListPanelModule = class {
 };
 
 // src/shared/extractors/definitionListExtractor.ts
+function isNotListItem(line) {
+  return !line.match(ListPatterns.UNORDERED_LIST) && !line.match(ListPatterns.NUMBERED_LIST) && !line.match(ListPatterns.HASH_LIST) && !line.match(ListPatterns.FANCY_LIST) && !line.match(ListPatterns.CUSTOM_LABEL_LIST) && !line.match(ListPatterns.EXAMPLE_LIST) && !ListPatterns.isDefinitionMarker(line);
+}
+function processDefinitionLine(line, defMatch, state) {
+  if (!state.currentTerm) return;
+  state.inDefinitionBlock = true;
+  const content = line.substring(defMatch[0].length);
+  if (content) {
+    state.currentDefinitions.push(content);
+  }
+}
+function processContinuationLine(line, state) {
+  var _a;
+  if (!state.inDefinitionBlock || !line.trim()) return false;
+  const leadingSpaces = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1].length) || 0;
+  if (leadingSpaces >= UI_CONSTANTS.MARKDOWN_INDENT_SIZE && !ListPatterns.isDefinitionMarker(line) && state.currentDefinitions.length > 0) {
+    const lastIndex = state.currentDefinitions.length - 1;
+    state.currentDefinitions[lastIndex] += " " + line.trim();
+    return true;
+  }
+  return false;
+}
+function saveCurrentTerm(state, items) {
+  if (state.currentTerm && state.currentDefinitions.length > 0 && state.termPosition) {
+    items.push({
+      term: state.currentTerm,
+      definitions: [...state.currentDefinitions],
+      lineNumber: state.termLineNumber,
+      position: state.termPosition
+    });
+  }
+}
 function extractDefinitionLists(content) {
-  var _a, _b;
+  var _a;
   const lines = content.split("\n");
   const items = [];
-  let currentTerm = null;
-  let currentDefinitions = [];
-  let termLineNumber = -1;
-  let termPosition = null;
-  let inDefinitionBlock = false;
+  const state = {
+    currentTerm: null,
+    currentDefinitions: [],
+    termLineNumber: -1,
+    termPosition: null,
+    inDefinitionBlock: false
+  };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const defMatch = ListPatterns.isDefinitionMarker(line);
     if (defMatch) {
-      if (!currentTerm) {
-        continue;
-      }
-      inDefinitionBlock = true;
-      const content2 = line.substring(defMatch[0].length);
-      if (content2) {
-        currentDefinitions.push(content2);
-      }
+      processDefinitionLine(line, defMatch, state);
       continue;
     }
-    if (inDefinitionBlock && line.trim()) {
-      const leadingSpaces2 = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1].length) || 0;
-      if (leadingSpaces2 >= UI_CONSTANTS.MARKDOWN_INDENT_SIZE && !ListPatterns.isDefinitionMarker(line)) {
-        if (currentDefinitions.length > 0) {
-          const lastIndex = currentDefinitions.length - 1;
-          currentDefinitions[lastIndex] += " " + line.trim();
-          continue;
-        }
-      }
+    if (processContinuationLine(line, state)) {
+      continue;
     }
-    const isNotListItem = !line.match(ListPatterns.UNORDERED_LIST) && !line.match(ListPatterns.NUMBERED_LIST) && !line.match(ListPatterns.HASH_LIST) && !line.match(ListPatterns.FANCY_LIST) && !line.match(ListPatterns.CUSTOM_LABEL_LIST) && !line.match(ListPatterns.EXAMPLE_LIST) && !ListPatterns.isDefinitionMarker(line);
-    const leadingSpaces = ((_b = line.match(/^(\s*)/)) == null ? void 0 : _b[1].length) || 0;
-    const isPotentialTerm = line.trim() && leadingSpaces < UI_CONSTANTS.MARKDOWN_INDENT_SIZE && isNotListItem;
+    const leadingSpaces = ((_a = line.match(/^(\s*)/)) == null ? void 0 : _a[1].length) || 0;
+    const isPotentialTerm = line.trim() && leadingSpaces < UI_CONSTANTS.MARKDOWN_INDENT_SIZE && isNotListItem(line);
     if (isPotentialTerm) {
-      if (currentTerm && currentDefinitions.length > 0 && termPosition) {
-        items.push({
-          term: currentTerm,
-          definitions: [...currentDefinitions],
-          lineNumber: termLineNumber,
-          position: termPosition
-        });
-      }
-      currentTerm = line.trim();
-      currentDefinitions = [];
-      termLineNumber = i;
-      termPosition = { line: i, ch: leadingSpaces };
-      inDefinitionBlock = false;
-    } else if (!line.trim()) {
-      continue;
+      saveCurrentTerm(state, items);
+      state.currentTerm = line.trim();
+      state.currentDefinitions = [];
+      state.termLineNumber = i;
+      state.termPosition = { line: i, ch: leadingSpaces };
+      state.inDefinitionBlock = false;
     }
   }
-  if (currentTerm && currentDefinitions.length > 0 && termPosition) {
-    items.push({
-      term: currentTerm,
-      definitions: [...currentDefinitions],
-      lineNumber: termLineNumber,
-      position: termPosition
-    });
-  }
+  saveCurrentTerm(state, items);
   return items;
 }
 
 // src/views/panels/modules/DefinitionListPanelModule.ts
-var DefinitionListPanelModule = class {
-  constructor(plugin) {
+var DefinitionListPanelModule = class extends BasePanelModule {
+  constructor() {
+    super(...arguments);
     this.id = "definition-lists";
     this.displayName = "Definition Lists";
     this.icon = ICONS.DEFINITION_LIST_SVG;
-    this.isActive = false;
     this.definitionItems = [];
-    this.containerEl = null;
-    this.lastActiveMarkdownView = null;
-    this.abortController = null;
-    this.currentContext = {};
-    this.plugin = plugin;
   }
-  onActivate(containerEl, activeView) {
-    this.isActive = true;
-    this.containerEl = containerEl;
-    this.lastActiveMarkdownView = activeView;
-    this.abortController = new AbortController();
-    this.updateContent(activeView);
-  }
-  onDeactivate() {
-    this.isActive = false;
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
-    }
-    if (this.containerEl) {
-      this.containerEl.empty();
-      this.containerEl = null;
-    }
-  }
-  onUpdate(activeView) {
-    if (!this.isActive || !this.containerEl) return;
-    if (activeView && activeView.file) {
-      this.lastActiveMarkdownView = activeView;
-    } else if (!activeView) {
-      activeView = this.lastActiveMarkdownView;
-    }
-    this.updateContent(activeView);
-  }
-  shouldUpdate() {
-    return this.isActive;
-  }
-  destroy() {
-    this.onDeactivate();
+  cleanupModuleData() {
     this.definitionItems = [];
-    this.lastActiveMarkdownView = null;
   }
-  updateContent(activeView) {
-    if (!this.containerEl) return;
-    this.containerEl.empty();
-    if (!activeView || !activeView.file) {
-      this.showNoFileMessage();
-      return;
-    }
-    const content = activeView.editor.getValue();
+  extractData(content) {
     this.definitionItems = extractDefinitionLists(content);
-    this.buildRenderingContext(content);
+  }
+  renderContent(activeView) {
     this.renderDefinitionItems(activeView);
   }
   showNoFileMessage() {
@@ -2290,35 +2284,6 @@ var DefinitionListPanelModule = class {
       cls: CSS_CLASSES.DEFINITION_LIST_VIEW_EMPTY
     });
     this.definitionItems = [];
-  }
-  /**
-   * Build the rendering context for processing content references
-   * @param content The document content to extract context from
-   */
-  buildRenderingContext(content) {
-    var _a;
-    const exampleItems = extractExampleLists(content);
-    const exampleLabels = /* @__PURE__ */ new Map();
-    exampleItems.forEach((item) => {
-      const label = item.rawLabel.substring(1);
-      if (label) {
-        exampleLabels.set(label, item.renderedNumber);
-      }
-    });
-    const rawToProcessed = /* @__PURE__ */ new Map();
-    if ((_a = this.plugin.settings) == null ? void 0 : _a.moreExtendedSyntax) {
-      const customLabels = extractCustomLabels(content, true);
-      customLabels.forEach((label) => {
-        const match = label.rawLabel.match(/\{::([^}]+)\}/);
-        if (match) {
-          rawToProcessed.set(match[1], label.label);
-        }
-      });
-    }
-    this.currentContext = {
-      exampleLabels,
-      rawToProcessed
-    };
   }
   renderDefinitionItems(activeView) {
     if (!this.containerEl) return;
@@ -2906,8 +2871,8 @@ function createProcessorConfig(vaultConfig, pluginSettings) {
 
 // src/live-preview/extension.ts
 var import_state2 = require("@codemirror/state");
-var import_view17 = require("@codemirror/view");
-var import_obsidian10 = require("obsidian");
+var import_view12 = require("@codemirror/view");
+var import_obsidian8 = require("obsidian");
 
 // src/core/state/pluginStateManager.ts
 var PluginStateManager = class {
@@ -3837,193 +3802,49 @@ var ProcessingPipeline = class {
   }
 };
 
-// src/live-preview/pipeline/structural/HashListProcessor.ts
-var import_view6 = require("@codemirror/view");
-
-// src/live-preview/widgets/listWidgets.ts
+// src/live-preview/widgets/BaseWidget.ts
 var import_view = require("@codemirror/view");
 var import_obsidian7 = require("obsidian");
-var FancyListMarkerWidget = class extends import_view.WidgetType {
-  constructor(marker, delimiter, view, pos) {
-    super();
-    this.marker = marker;
-    this.delimiter = delimiter;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
-  }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-    const innerSpan = document.createElement("span");
-    innerSpan.className = "list-number";
-    innerSpan.textContent = this.marker + this.delimiter + " ";
-    span.appendChild(innerSpan);
-    if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
-  }
-  eq(other) {
-    return other.marker === this.marker && other.delimiter === this.delimiter && other.pos === this.pos;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
-  }
-};
-var HashListMarkerWidget = class extends import_view.WidgetType {
-  constructor(number, view, pos) {
-    super();
-    this.number = number;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
-  }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-    const innerSpan = document.createElement("span");
-    innerSpan.className = "list-number";
-    innerSpan.textContent = `${this.number}. `;
-    span.appendChild(innerSpan);
-    if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
-  }
-  eq(other) {
-    return other.number === this.number && other.pos === this.pos;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
-  }
-};
-var ExampleListMarkerWidget = class extends import_view.WidgetType {
-  constructor(number, label, view, pos) {
-    super();
-    this.number = number;
-    this.label = label;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
-  }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER} ${CSS_CLASSES.EXAMPLE_REF}`;
-    const innerSpan = document.createElement("span");
-    innerSpan.className = "list-number";
-    innerSpan.textContent = `(${this.number}) `;
-    span.appendChild(innerSpan);
-    const tooltipText = this.label ? `@${this.label}` : "@";
-    (0, import_obsidian7.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-    if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
-  }
-  eq(other) {
-    return other.number === this.number && other.label === this.label && other.pos === this.pos;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
-  }
-};
-var DuplicateExampleLabelWidget = class extends import_view.WidgetType {
-  constructor(label, originalLine, originalLineContent, view, pos) {
-    super();
-    this.label = label;
-    this.originalLine = originalLine;
-    this.originalLineContent = originalLineContent;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
-  }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = CSS_CLASSES.DUPLICATE_MARKERS;
-    span.textContent = `(@${this.label})`;
-    let lineContent = this.originalLineContent.trim();
-    if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
-      lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + "...";
-    }
-    const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
-    (0, import_obsidian7.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-    if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
-  }
-  eq(other) {
-    return other.label === this.label && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
-  }
-};
-
-// src/live-preview/widgets/definitionWidget.ts
-var import_view2 = require("@codemirror/view");
-var DefinitionBulletWidget = class extends import_view2.WidgetType {
+var BaseWidget = class extends import_view.WidgetType {
   constructor(view, pos) {
     super();
     this.view = view;
     this.pos = pos;
     this.controller = new AbortController();
   }
+  /**
+   * Creates the root DOM element with common setup.
+   * Subclasses should override this to create their specific DOM structure.
+   */
   toDOM() {
-    const span = document.createElement("span");
-    span.className = "cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker";
-    span.textContent = "\u2022 ";
+    const element = this.createRootElement();
+    this.applyStyles(element);
+    this.setContent(element);
+    this.setupTooltip(element);
+    this.setupClickHandler(element);
+    this.setupAdditionalHandlers(element);
+    return element;
+  }
+  /**
+   * Creates the root element for the widget.
+   * Override to use different element types (e.g., 'sup', 'sub').
+   */
+  createRootElement() {
+    return document.createElement("span");
+  }
+  /**
+   * Sets up tooltip for the element if needed.
+   * Override to add tooltips.
+   */
+  setupTooltip(element) {
+  }
+  /**
+   * Sets up the standard click handler for cursor positioning.
+   * Can be overridden for custom click behavior.
+   */
+  setupClickHandler(element) {
     if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
+      element.addEventListener("mousedown", (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (this.view && this.pos !== void 0) {
@@ -4034,327 +3855,357 @@ var DefinitionBulletWidget = class extends import_view2.WidgetType {
         }
       }, { signal: this.controller.signal });
     }
-    return span;
+  }
+  /**
+   * Hook for additional event handlers.
+   * Override to add custom event handling.
+   */
+  setupAdditionalHandlers(element) {
+  }
+  /**
+   * Helper method to create inner elements with classes.
+   */
+  createElement(tag, className, textContent) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (textContent) element.textContent = textContent;
+    return element;
+  }
+  /**
+   * Helper method to add a simple tooltip.
+   */
+  addSimpleTooltip(element, text) {
+    (0, import_obsidian7.setTooltip)(element, text, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+  }
+  /**
+   * Helper method to add a rendered hover preview.
+   */
+  addRenderedHoverPreview(element, content, app, component, context, cssClass) {
+    setupRenderedHoverPreview(
+      element,
+      content,
+      app,
+      component,
+      context,
+      cssClass || "hover-popover-content",
+      this.controller.signal
+    );
+  }
+  /**
+   * Cleanup method called when the widget is destroyed.
+   */
+  destroy() {
+    this.controller.abort();
+  }
+  /**
+   * Determines whether to ignore events.
+   * Default: allow all events to pass through.
+   */
+  ignoreEvent() {
+    return false;
+  }
+};
+
+// src/live-preview/widgets/listWidgets.ts
+var FancyListMarkerWidget = class extends BaseWidget {
+  constructor(marker, delimiter, view, pos) {
+    super(view, pos);
+    this.marker = marker;
+    this.delimiter = delimiter;
+  }
+  applyStyles(element) {
+    element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
+  }
+  setContent(element) {
+    const innerSpan = this.createElement(
+      "span",
+      CSS_CLASSES.LIST_NUMBER,
+      this.marker + this.delimiter + " "
+    );
+    element.appendChild(innerSpan);
+  }
+  eq(other) {
+    return other.marker === this.marker && other.delimiter === this.delimiter && other.pos === this.pos;
+  }
+};
+var HashListMarkerWidget = class extends BaseWidget {
+  constructor(number, view, pos) {
+    super(view, pos);
+    this.number = number;
+  }
+  applyStyles(element) {
+    element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
+  }
+  setContent(element) {
+    const innerSpan = this.createElement(
+      "span",
+      CSS_CLASSES.LIST_NUMBER,
+      `${this.number}. `
+    );
+    element.appendChild(innerSpan);
+  }
+  eq(other) {
+    return other.number === this.number && other.pos === this.pos;
+  }
+};
+var ExampleListMarkerWidget = class extends BaseWidget {
+  constructor(number, label, view, pos) {
+    super(view, pos);
+    this.number = number;
+    this.label = label;
+  }
+  applyStyles(element) {
+    element.className = `${COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES} ${CSS_CLASSES.EXAMPLE_REF}`;
+  }
+  setContent(element) {
+    const innerSpan = this.createElement(
+      "span",
+      CSS_CLASSES.LIST_NUMBER,
+      `(${this.number}) `
+    );
+    element.appendChild(innerSpan);
+  }
+  setupTooltip(element) {
+    const tooltipText = this.label ? `@${this.label}` : "@";
+    this.addSimpleTooltip(element, tooltipText);
+  }
+  eq(other) {
+    return other.number === this.number && other.label === this.label && other.pos === this.pos;
+  }
+};
+var DuplicateExampleLabelWidget = class extends BaseWidget {
+  constructor(label, originalLine, originalLineContent, view, pos) {
+    super(view, pos);
+    this.label = label;
+    this.originalLine = originalLine;
+    this.originalLineContent = originalLineContent;
+  }
+  applyStyles(element) {
+    element.className = CSS_CLASSES.DUPLICATE_MARKERS;
+  }
+  setContent(element) {
+    element.textContent = `(@${this.label})`;
+  }
+  setupTooltip(element) {
+    let lineContent = this.originalLineContent.trim();
+    if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
+      lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + "...";
+    }
+    const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
+    this.addSimpleTooltip(element, tooltipText);
+  }
+  eq(other) {
+    return other.label === this.label && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
+  }
+};
+
+// src/live-preview/widgets/definitionWidget.ts
+var DefinitionBulletWidget = class extends BaseWidget {
+  constructor(view, pos) {
+    super(view, pos);
+  }
+  applyStyles(element) {
+    element.className = "cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker";
+  }
+  setContent(element) {
+    element.textContent = "\u2022 ";
   }
   eq(other) {
     return other.pos === this.pos;
   }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
-  }
 };
 
 // src/live-preview/widgets/referenceWidget.ts
-var import_view3 = require("@codemirror/view");
-var import_obsidian8 = require("obsidian");
-var ExampleReferenceWidget = class extends import_view3.WidgetType {
+var ExampleReferenceWidget = class extends BaseWidget {
   constructor(number, tooltipText, view, pos, app, component, context) {
-    super();
+    super(view, pos);
     this.number = number;
     this.tooltipText = tooltipText;
-    this.view = view;
-    this.pos = pos;
     this.app = app;
     this.component = component;
     this.context = context;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = CSS_CLASSES.EXAMPLE_REF;
-    span.textContent = `(${this.number})`;
+  applyStyles(element) {
+    element.className = CSS_CLASSES.EXAMPLE_REF;
+  }
+  setContent(element) {
+    element.textContent = `(${this.number})`;
+  }
+  setupTooltip(element) {
     if (this.tooltipText) {
       if (this.app && this.component) {
-        setupRenderedHoverPreview(span, this.tooltipText, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
+        this.addRenderedHoverPreview(
+          element,
+          this.tooltipText,
+          this.app,
+          this.component,
+          this.context,
+          CSS_CLASSES.HOVER_POPOVER_CONTENT
+        );
       } else {
-        (0, import_obsidian8.setTooltip)(span, this.tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+        this.addSimpleTooltip(element, this.tooltipText);
       }
     }
-    if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
-  }
-  // Make the widget editable - allow all editing events to pass through
-  ignoreEvent() {
-    return false;
   }
   eq(other) {
     return other.number === this.number && other.tooltipText === this.tooltipText && other.pos === this.pos && other.app === this.app && other.component === this.component && other.context === this.context;
   }
-  destroy() {
-    this.controller.abort();
-  }
 };
 
 // src/live-preview/widgets/formatWidgets.ts
-var import_view4 = require("@codemirror/view");
-var SuperscriptWidget = class extends import_view4.WidgetType {
+var SuperscriptWidget = class extends BaseWidget {
   constructor(content, view, pos) {
-    super();
+    super(view, pos);
     this.content = content;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const sup = document.createElement("sup");
-    sup.className = CSS_CLASSES.SUPERSCRIPT;
-    sup.textContent = this.content;
-    if (this.view && this.pos !== void 0) {
-      sup.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return sup;
+  createRootElement() {
+    return document.createElement("sup");
+  }
+  applyStyles(element) {
+    element.className = CSS_CLASSES.SUPERSCRIPT;
+  }
+  setContent(element) {
+    element.textContent = this.content;
   }
   eq(other) {
     return other.content === this.content && other.pos === this.pos;
-  }
-  destroy() {
-    this.controller.abort();
-  }
-  ignoreEvent() {
-    return false;
   }
 };
-var SubscriptWidget = class extends import_view4.WidgetType {
+var SubscriptWidget = class extends BaseWidget {
   constructor(content, view, pos) {
-    super();
+    super(view, pos);
     this.content = content;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const sub = document.createElement("sub");
-    sub.className = CSS_CLASSES.SUBSCRIPT;
-    sub.textContent = this.content;
-    if (this.view && this.pos !== void 0) {
-      sub.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return sub;
+  createRootElement() {
+    return document.createElement("sub");
+  }
+  applyStyles(element) {
+    element.className = CSS_CLASSES.SUBSCRIPT;
+  }
+  setContent(element) {
+    element.textContent = this.content;
   }
   eq(other) {
     return other.content === this.content && other.pos === this.pos;
-  }
-  destroy() {
-    this.controller.abort();
-  }
-  ignoreEvent() {
-    return false;
   }
 };
 
 // src/live-preview/widgets/customLabelWidget.ts
-var import_view5 = require("@codemirror/view");
-var import_obsidian9 = require("obsidian");
-var CustomLabelMarkerWidget = class extends import_view5.WidgetType {
+var CustomLabelMarkerWidget = class extends BaseWidget {
   constructor(label, view, position) {
-    super();
+    super(view, position);
     this.label = label;
-    this.view = view;
-    this.position = position;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-    const innerSpan = document.createElement("span");
-    innerSpan.className = "list-number";
-    innerSpan.textContent = `(${this.label}) `;
-    span.appendChild(innerSpan);
-    if (this.view && this.position !== void 0) {
-      span.classList.add(CSS_CLASSES.CUSTOM_LABEL_REF_CLICKABLE);
-      span.addEventListener("click", () => {
-        if (this.view && this.position !== void 0) {
+  applyStyles(element) {
+    element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
+    if (this.view && this.pos !== void 0) {
+      element.classList.add(CSS_CLASSES.CUSTOM_LABEL_REF_CLICKABLE);
+    }
+  }
+  setContent(element) {
+    const innerSpan = this.createElement("span", "list-number", `(${this.label}) `);
+    element.appendChild(innerSpan);
+  }
+  setupClickHandler(element) {
+    if (this.view && this.pos !== void 0) {
+      element.addEventListener("click", () => {
+        if (this.view && this.pos !== void 0) {
           this.view.dispatch({
-            selection: { anchor: this.position }
+            selection: { anchor: this.pos }
           });
           this.view.focus();
         }
       }, { signal: this.controller.signal });
     }
-    return span;
   }
   eq(other) {
-    return other.label === this.label && other.position === this.position;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
+    return other.label === this.label && other.pos === this.pos;
   }
 };
-var CustomLabelPartialWidget = class extends import_view5.WidgetType {
+var CustomLabelPartialWidget = class extends BaseWidget {
   constructor(text, view, position) {
-    super();
+    super(view, position);
     this.text = text;
-    this.view = view;
-    this.position = position;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-    span.textContent = this.text;
-    if (this.view && this.position !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.position !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.position }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
+  applyStyles(element) {
+    element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
+  }
+  setContent(element) {
+    element.textContent = this.text;
   }
   eq(other) {
-    return other.text === this.text && other.position === this.position;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
+    return other.text === this.text && other.pos === this.pos;
   }
 };
-var CustomLabelProcessedWidget = class extends import_view5.WidgetType {
+var CustomLabelProcessedWidget = class extends BaseWidget {
   constructor(text, view, position) {
-    super();
+    super(view, position);
     this.text = text;
-    this.view = view;
-    this.position = position;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-    span.textContent = this.text;
-    if (this.view && this.position !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.position !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.position }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
+  applyStyles(element) {
+    element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
+  }
+  setContent(element) {
+    element.textContent = this.text;
   }
   eq(other) {
-    return other.text === this.text && other.position === this.position;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
+    return other.text === this.text && other.pos === this.pos;
   }
 };
-var CustomLabelInlineNumberWidget = class extends import_view5.WidgetType {
+var CustomLabelInlineNumberWidget = class extends BaseWidget {
   constructor(number, view) {
-    super();
+    super(view, void 0);
     this.number = number;
-    this.view = view;
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
-    span.textContent = this.number;
-    return span;
+  applyStyles(element) {
+    element.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
+  }
+  setContent(element) {
+    element.textContent = this.number;
+  }
+  setupClickHandler(element) {
   }
   eq(other) {
     return other.number === this.number;
   }
-  ignoreEvent() {
-    return false;
-  }
 };
-var CustomLabelReferenceWidget = class extends import_view5.WidgetType {
+var CustomLabelReferenceWidget = class extends BaseWidget {
   constructor(label, content, view, position, app, component, context) {
-    super();
+    super(view, position);
     this.label = label;
     this.content = content;
-    this.view = view;
-    this.position = position;
     this.app = app;
     this.component = component;
     this.context = context;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = CSS_CLASSES.EXAMPLE_REF;
-    span.setAttribute("data-custom-label-ref", this.label);
-    span.textContent = `(${this.label})`;
+  applyStyles(element) {
+    element.className = CSS_CLASSES.EXAMPLE_REF;
+    element.setAttribute("data-custom-label-ref", this.label);
+  }
+  setContent(element) {
+    element.textContent = `(${this.label})`;
+  }
+  setupTooltip(element) {
     if (this.content) {
       if (this.app && this.component) {
-        setupRenderedHoverPreview(span, this.content, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
+        this.addRenderedHoverPreview(
+          element,
+          this.content,
+          this.app,
+          this.component,
+          this.context,
+          CSS_CLASSES.HOVER_POPOVER_CONTENT
+        );
       } else {
-        span.setAttribute("title", this.content);
+        element.setAttribute("title", this.content);
       }
     }
-    if (this.view && this.position !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.position !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.position }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
   }
   eq(other) {
-    return other.label === this.label && other.content === this.content && other.position === this.position && other.app === this.app && other.component === this.component && other.context === this.context;
-  }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
+    return other.label === this.label && other.content === this.content && other.pos === this.pos && other.app === this.app && other.component === this.component && other.context === this.context;
   }
 };
-var DuplicateCustomLabelWidget = class extends import_view5.WidgetType {
+var DuplicateCustomLabelWidget = class extends BaseWidget {
   /**
    * @param rawLabel - The raw label text (e.g., "P(#a)")
    * @param originalLine - Line number of the first occurrence
@@ -4363,115 +4214,124 @@ var DuplicateCustomLabelWidget = class extends import_view5.WidgetType {
    * @param pos - Optional position for cursor placement
    */
   constructor(rawLabel, originalLine, originalLineContent, view, pos) {
-    super();
+    super(view, pos);
     this.rawLabel = rawLabel;
     this.originalLine = originalLine;
     this.originalLineContent = originalLineContent;
-    this.view = view;
-    this.pos = pos;
-    this.controller = new AbortController();
   }
-  toDOM() {
-    const span = document.createElement("span");
-    span.className = CSS_CLASSES.DUPLICATE_MARKERS;
-    span.textContent = `{::${this.rawLabel}}`;
+  applyStyles(element) {
+    element.className = CSS_CLASSES.DUPLICATE_MARKERS;
+  }
+  setContent(element) {
+    element.textContent = `{::${this.rawLabel}}`;
+  }
+  setupTooltip(element) {
     let lineContent = this.originalLineContent.trim();
     if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
       lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + "...";
     }
     const tooltipText = `Duplicate label at line ${this.originalLine}: ${lineContent}`;
-    (0, import_obsidian9.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-    if (this.view && this.pos !== void 0) {
-      span.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.view && this.pos !== void 0) {
-          this.view.dispatch({
-            selection: { anchor: this.pos }
-          });
-          this.view.focus();
-        }
-      }, { signal: this.controller.signal });
-    }
-    return span;
+    this.addSimpleTooltip(element, tooltipText);
   }
   eq(other) {
     return other.rawLabel === this.rawLabel && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
   }
-  ignoreEvent() {
-    return false;
-  }
-  destroy() {
-    this.controller.abort();
-  }
 };
 
-// src/live-preview/pipeline/structural/HashListProcessor.ts
-var HashListProcessor = class {
-  constructor() {
-    this.name = "hash-list";
-    this.priority = 10;
-  }
-  canProcess(line, context) {
-    const lineText = line.text;
-    return ListPatterns.isHashList(lineText) !== null;
-  }
-  process(line, context) {
+// src/live-preview/pipeline/structural/BaseStructuralProcessor.ts
+var import_view2 = require("@codemirror/view");
+var BaseStructuralProcessor = class {
+  /**
+   * Check if cursor is within a marker range
+   */
+  isCursorInMarker(markerStart, markerEnd, context) {
     var _a, _b;
-    const lineText = line.text;
-    const hashMatch = ListPatterns.isHashList(lineText);
-    if (!hashMatch) {
-      return { decorations: [] };
-    }
-    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
-      return { decorations: [] };
-    }
-    const indent = hashMatch[1];
-    const marker = hashMatch[2];
-    const space = hashMatch[3];
-    const markerStart = line.from + indent.length;
-    const markerEnd = line.from + indent.length + marker.length + space.length;
-    const contentStart = markerEnd;
     const cursorPos = (_b = (_a = context.view.state.selection) == null ? void 0 : _a.main) == null ? void 0 : _b.head;
-    const cursorInMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
-    const decorations = [];
-    decorations.push({
+    return cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
+  }
+  /**
+   * Check if strict mode validation should block processing
+   */
+  isInvalidInStrictMode(line, context) {
+    return context.settings.strictPandocMode && context.invalidLines.has(line.number);
+  }
+  /**
+   * Create standard line decoration for lists
+   */
+  createLineDecoration(line, additionalClasses) {
+    const classes = [
+      CSS_CLASSES.LIST_LINE,
+      CSS_CLASSES.LIST_LINE_1,
+      CSS_CLASSES.PANDOC_LIST_LINE,
+      additionalClasses
+    ].filter(Boolean).join(" ");
+    return {
       from: line.from,
       to: line.from,
-      decoration: import_view6.Decoration.line({
-        class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE}`
-      })
-    });
-    if (!cursorInMarker) {
-      decorations.push({
-        from: markerStart,
-        to: markerEnd,
-        decoration: import_view6.Decoration.replace({
-          widget: new HashListMarkerWidget(context.hashCounter.value, context.view, markerStart),
-          inclusive: false
-        })
-      });
-    }
-    context.hashCounter.value++;
-    decorations.push({
-      from: contentStart,
-      to: line.to,
-      decoration: import_view6.Decoration.mark({
-        class: CSS_CLASSES.CM_LIST_1
-      })
-    });
-    const contentRegion = {
-      from: contentStart,
-      to: line.to,
-      type: "list-content",
-      parentStructure: "hash-list"
+      decoration: import_view2.Decoration.line({ class: classes })
     };
+  }
+  /**
+   * Create content area wrapping decoration
+   */
+  createContentMarkDecoration(contentStart, contentEnd, listLevel = 1) {
+    const className = listLevel === 1 ? CSS_CLASSES.CM_LIST_1 : listLevel === 2 ? CSS_CLASSES.CM_LIST_2 : listLevel === 3 ? CSS_CLASSES.CM_LIST_3 : CSS_CLASSES.CM_LIST_1;
+    return {
+      from: contentStart,
+      to: contentEnd,
+      decoration: import_view2.Decoration.mark({ class: className })
+    };
+  }
+  /**
+   * Create marker replacement decoration
+   */
+  createMarkerReplacement(markerStart, markerEnd, widget) {
+    return {
+      from: markerStart,
+      to: markerEnd,
+      decoration: import_view2.Decoration.replace({
+        widget,
+        inclusive: false
+      })
+    };
+  }
+  /**
+   * Create content region for inline processing
+   */
+  createContentRegion(contentStart, contentEnd, parentStructure, metadata) {
+    return {
+      from: contentStart,
+      to: contentEnd,
+      type: "list-content",
+      parentStructure,
+      metadata
+    };
+  }
+  /**
+   * Set list context for continuation line detection
+   */
+  setListContext(context, contentStartColumn, listLevel, parentStructure) {
     context.listContext = {
       isInList: true,
-      contentStartColumn: indent.length + marker.length + space.length,
-      listLevel: 1,
-      parentStructure: "hash-list"
+      contentStartColumn,
+      listLevel,
+      parentStructure
     };
+  }
+  /**
+   * Standard pattern for processing list lines
+   * This provides the common structure that most list processors follow
+   */
+  processStandardList(line, context, markerStart, markerEnd, contentStart, widget, parentStructure, listLevel = 1) {
+    const decorations = [];
+    decorations.push(this.createLineDecoration(line));
+    const cursorInMarker = this.isCursorInMarker(markerStart, markerEnd, context);
+    if (!cursorInMarker) {
+      decorations.push(this.createMarkerReplacement(markerStart, markerEnd, widget));
+    }
+    decorations.push(this.createContentMarkDecoration(contentStart, line.to, listLevel));
+    const contentRegion = this.createContentRegion(contentStart, line.to, parentStructure);
+    this.setListContext(context, contentStart - line.from, listLevel, parentStructure);
     return {
       decorations,
       contentRegion,
@@ -4480,10 +4340,51 @@ var HashListProcessor = class {
   }
 };
 
-// src/live-preview/pipeline/structural/FancyListProcessor.ts
-var import_view7 = require("@codemirror/view");
-var FancyListProcessor = class {
+// src/live-preview/pipeline/structural/HashListProcessor.ts
+var HashListProcessor = class extends BaseStructuralProcessor {
   constructor() {
+    super(...arguments);
+    this.name = "hash-list";
+    this.priority = 10;
+  }
+  canProcess(line, context) {
+    const lineText = line.text;
+    return ListPatterns.isHashList(lineText) !== null;
+  }
+  process(line, context) {
+    const lineText = line.text;
+    const hashMatch = ListPatterns.isHashList(lineText);
+    if (!hashMatch) {
+      return { decorations: [] };
+    }
+    if (this.isInvalidInStrictMode(line, context)) {
+      return { decorations: [] };
+    }
+    const indent = hashMatch[1];
+    const marker = hashMatch[2];
+    const space = hashMatch[3];
+    const markerStart = line.from + indent.length;
+    const markerEnd = line.from + indent.length + marker.length + space.length;
+    const contentStart = markerEnd;
+    const widget = new HashListMarkerWidget(context.hashCounter.value, context.view, markerStart);
+    context.hashCounter.value++;
+    return this.processStandardList(
+      line,
+      context,
+      markerStart,
+      markerEnd,
+      contentStart,
+      widget,
+      "hash-list",
+      1
+    );
+  }
+};
+
+// src/live-preview/pipeline/structural/FancyListProcessor.ts
+var FancyListProcessor = class extends BaseStructuralProcessor {
+  constructor() {
+    super(...arguments);
     this.name = "fancy-list";
     this.priority = 20;
   }
@@ -4492,13 +4393,12 @@ var FancyListProcessor = class {
     return ListPatterns.isFancyList(lineText) !== null;
   }
   process(line, context) {
-    var _a, _b;
     const lineText = line.text;
     const fancyMatch = ListPatterns.isFancyList(lineText);
     if (!fancyMatch) {
       return { decorations: [] };
     }
-    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+    if (this.isInvalidInStrictMode(line, context)) {
       return { decorations: [] };
     }
     const indent = fancyMatch[1];
@@ -4509,58 +4409,26 @@ var FancyListProcessor = class {
     const markerStart = line.from + indent.length;
     const markerEnd = line.from + indent.length + marker.length + delimiter.length + space.length;
     const contentStart = markerEnd;
-    const cursorPos = (_b = (_a = context.view.state.selection) == null ? void 0 : _a.main) == null ? void 0 : _b.head;
-    const cursorInMarker = cursorPos !== void 0 && cursorPos >= markerStart && cursorPos < markerEnd;
-    const decorations = [];
-    decorations.push({
-      from: line.from,
-      to: line.from,
-      decoration: import_view7.Decoration.line({
-        class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE}`
-      })
-    });
-    if (!cursorInMarker) {
-      decorations.push({
-        from: markerStart,
-        to: markerEnd,
-        decoration: import_view7.Decoration.replace({
-          widget: new FancyListMarkerWidget(marker, delimiter, context.view, markerStart),
-          inclusive: false
-        })
-      });
-    }
-    decorations.push({
-      from: contentStart,
-      to: line.to,
-      decoration: import_view7.Decoration.mark({
-        class: CSS_CLASSES.CM_LIST_1
-      })
-    });
-    const contentRegion = {
-      from: contentStart,
-      to: line.to,
-      type: "list-content",
-      parentStructure: "fancy-list"
-    };
-    context.listContext = {
-      isInList: true,
-      contentStartColumn: indent.length + marker.length + delimiter.length + space.length,
-      listLevel: 1,
+    const widget = new FancyListMarkerWidget(marker, delimiter, context.view, markerStart);
+    return this.processStandardList(
+      line,
+      context,
+      markerStart,
+      markerEnd,
+      contentStart,
+      widget,
+      "fancy-list",
+      1
       // Can be calculated based on indent depth
-      parentStructure: "fancy-list"
-    };
-    return {
-      decorations,
-      contentRegion,
-      skipFurtherProcessing: true
-    };
+    );
   }
 };
 
 // src/live-preview/pipeline/structural/ExampleListProcessor.ts
-var import_view8 = require("@codemirror/view");
-var ExampleListProcessor = class {
+var import_view3 = require("@codemirror/view");
+var ExampleListProcessor = class extends BaseStructuralProcessor {
   constructor() {
+    super(...arguments);
     this.name = "example-list";
     this.priority = 30;
   }
@@ -4569,24 +4437,35 @@ var ExampleListProcessor = class {
     return ListPatterns.isExampleList(lineText) !== null;
   }
   process(line, context) {
+    var _a;
     const lineText = line.text;
     const exampleMatch = ListPatterns.isExampleList(lineText);
     if (!exampleMatch) {
       return { decorations: [] };
     }
-    if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+    if (this.isInvalidInStrictMode(line, context)) {
       return { decorations: [] };
     }
     const markerInfo = this.extractMarkerInfo(exampleMatch, line);
     const decorations = [];
-    this.addLineDecoration(decorations, line);
-    const cursorInMarker = this.isCursorInMarker(markerInfo, context);
+    decorations.push(this.createLineDecoration(line));
+    const cursorInMarker = this.isCursorInMarker(markerInfo.markerStart, markerInfo.markerEnd, context);
     if (!cursorInMarker) {
       this.addMarkerWidget(decorations, markerInfo, line, lineText, context);
     }
-    this.addContentDecoration(decorations, markerInfo.contentStart, line.to);
-    const contentRegion = this.createContentRegion(markerInfo, line, context);
-    this.updateListContext(markerInfo, context);
+    decorations.push(this.createContentMarkDecoration(markerInfo.contentStart, line.to));
+    const contentRegion = this.createContentRegion(
+      markerInfo.contentStart,
+      line.to,
+      "example-list",
+      { label: markerInfo.label, isDuplicate: ((_a = context.duplicateExampleLineNumbers) == null ? void 0 : _a.has(line.number)) || false }
+    );
+    this.setListContext(
+      context,
+      markerInfo.indent.length + markerInfo.fullMarker.length + markerInfo.space.length,
+      1,
+      "example-list"
+    );
     return {
       decorations,
       contentRegion,
@@ -4607,26 +4486,6 @@ var ExampleListProcessor = class {
     return { indent, fullMarker, label, space, markerStart, markerEnd, contentStart };
   }
   /**
-   * Checks if cursor is within the marker area.
-   */
-  isCursorInMarker(markerInfo, context) {
-    var _a, _b;
-    const cursorPos = (_b = (_a = context.view.state.selection) == null ? void 0 : _a.main) == null ? void 0 : _b.head;
-    return cursorPos !== void 0 && cursorPos >= markerInfo.markerStart && cursorPos < markerInfo.markerEnd;
-  }
-  /**
-   * Adds line decoration for styling.
-   */
-  addLineDecoration(decorations, line) {
-    decorations.push({
-      from: line.from,
-      to: line.from,
-      decoration: import_view8.Decoration.line({
-        class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE}`
-      })
-    });
-  }
-  /**
    * Adds the appropriate marker widget.
    */
   addMarkerWidget(decorations, markerInfo, line, lineText, context) {
@@ -4638,7 +4497,7 @@ var ExampleListProcessor = class {
       decorations.push({
         from: markerInfo.markerStart,
         to: markerInfo.markerEnd,
-        decoration: import_view8.Decoration.replace({
+        decoration: import_view3.Decoration.replace({
           widget: new DuplicateExampleLabelWidget(
             markerInfo.label,
             firstLine,
@@ -4654,7 +4513,7 @@ var ExampleListProcessor = class {
       decorations.push({
         from: markerInfo.markerStart,
         to: markerInfo.markerEnd,
-        decoration: import_view8.Decoration.replace({
+        decoration: import_view3.Decoration.replace({
           widget: new ExampleListMarkerWidget(
             exampleNumber,
             markerInfo.label,
@@ -4666,47 +4525,270 @@ var ExampleListProcessor = class {
       });
     }
   }
-  /**
-   * Adds content area decoration.
-   */
-  addContentDecoration(decorations, contentStart, contentEnd) {
-    decorations.push({
-      from: contentStart,
-      to: contentEnd,
-      decoration: import_view8.Decoration.mark({
-        class: CSS_CLASSES.CM_LIST_1
-      })
-    });
-  }
-  /**
-   * Creates content region for inline processing.
-   */
-  createContentRegion(markerInfo, line, context) {
-    var _a;
-    const isDuplicate = (_a = context.duplicateExampleLineNumbers) == null ? void 0 : _a.has(line.number);
-    return {
-      from: markerInfo.contentStart,
-      to: line.to,
-      type: "list-content",
-      parentStructure: "example-list",
-      metadata: { label: markerInfo.label, isDuplicate: isDuplicate || false }
-    };
-  }
-  /**
-   * Updates list context for continuation line detection.
-   */
-  updateListContext(markerInfo, context) {
-    context.listContext = {
-      isInList: true,
-      contentStartColumn: markerInfo.indent.length + markerInfo.fullMarker.length + markerInfo.space.length,
-      listLevel: 1,
-      parentStructure: "example-list"
-    };
-  }
 };
 
+// src/live-preview/pipeline/structural/customLabel/parser.ts
+function parseCustomLabel(line, context) {
+  var _a, _b;
+  const lineText = context.document.sliceString(line.from, line.to);
+  const lineNum = context.document.lineAt(line.from).number;
+  const customLabelMatch = ListPatterns.isCustomLabelList(lineText);
+  if (!customLabelMatch) {
+    return null;
+  }
+  if (context.settings.strictPandocMode && context.invalidLines.has(lineNum - 1)) {
+    return null;
+  }
+  const indent = customLabelMatch[1];
+  const fullMarker = customLabelMatch[2];
+  const rawLabel = customLabelMatch[3];
+  const space = customLabelMatch[4];
+  const processedLabel = ((_a = context.rawToProcessed) == null ? void 0 : _a.get(rawLabel)) || rawLabel;
+  const markerStart = line.from + indent.length;
+  const markerEnd = line.from + indent.length + fullMarker.length + space.length;
+  const isDuplicate = ((_b = context.duplicateCustomLabels) == null ? void 0 : _b.has(processedLabel)) || false;
+  return {
+    indent,
+    fullMarker,
+    rawLabel,
+    space,
+    processedLabel,
+    markerStart,
+    markerEnd,
+    isDuplicate
+  };
+}
+function parsePlaceholders(parsedLabel) {
+  const placeholderMatches = Array.from(parsedLabel.rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN));
+  const placeholderRanges = [];
+  for (const match of placeholderMatches) {
+    if (match.index !== void 0) {
+      const placeholderStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH + match.index;
+      const placeholderEnd = placeholderStart + match[0].length;
+      placeholderRanges.push({
+        start: placeholderStart,
+        end: placeholderEnd,
+        name: match[1]
+      });
+    }
+  }
+  return placeholderRanges;
+}
+function handleCursorPosition(parsedLabel, placeholderRanges, context) {
+  var _a;
+  const selection = context.view.state.selection;
+  const cursorPos = (_a = selection == null ? void 0 : selection.main) == null ? void 0 : _a.from;
+  if (cursorPos === void 0) {
+    return {
+      pos: -1,
+      isInMarker: false,
+      isAtListMarker: false,
+      cursorPlaceholder: null
+    };
+  }
+  const isInMarker = cursorPos >= parsedLabel.markerStart && cursorPos <= parsedLabel.markerEnd;
+  const isAtListMarker = cursorPos >= parsedLabel.markerStart && cursorPos < parsedLabel.markerEnd;
+  let cursorPlaceholder = null;
+  if (isInMarker) {
+    for (const range of placeholderRanges) {
+      if (cursorPos >= range.start && cursorPos <= range.end) {
+        cursorPlaceholder = range;
+        break;
+      }
+    }
+  }
+  return {
+    pos: cursorPos,
+    isInMarker,
+    isAtListMarker,
+    cursorPlaceholder
+  };
+}
+
+// src/live-preview/pipeline/structural/customLabel/decorations.ts
+var import_view4 = require("@codemirror/view");
+function determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo) {
+  if (cursorInfo.isAtListMarker) {
+    return "full";
+  }
+  if (placeholderRanges.length > 0 && !cursorInfo.isInMarker) {
+    const isCursorInLine = cursorInfo.pos !== -1 && cursorInfo.pos >= line.from && cursorInfo.pos <= line.to;
+    return isCursorInLine ? "semi-expanded" : "collapsed";
+  }
+  return "collapsed";
+}
+function createCollapsedDecorations(parsedLabel, context) {
+  const decorations = [];
+  decorations.push({
+    from: parsedLabel.markerStart,
+    to: parsedLabel.markerEnd,
+    decoration: import_view4.Decoration.replace({
+      widget: new CustomLabelMarkerWidget(
+        parsedLabel.processedLabel,
+        context.view,
+        parsedLabel.markerStart
+      ),
+      inclusive: false
+    })
+  });
+  return decorations;
+}
+function createSemiExpandedDecorations(parsedLabel, context) {
+  const decorations = [];
+  decorations.push({
+    from: parsedLabel.markerStart,
+    to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
+    decoration: import_view4.Decoration.replace({
+      widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
+      inclusive: false
+    })
+  });
+  const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
+  const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
+  decorations.push({
+    from: labelStart,
+    to: labelEnd,
+    decoration: import_view4.Decoration.replace({
+      widget: new CustomLabelProcessedWidget(
+        parsedLabel.processedLabel,
+        context.view,
+        labelStart
+      ),
+      inclusive: false
+    })
+  });
+  decorations.push({
+    from: labelEnd,
+    to: labelEnd + 1,
+    decoration: import_view4.Decoration.replace({
+      widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
+      inclusive: false
+    })
+  });
+  return decorations;
+}
+function processPlaceholders(line, parsedLabel, placeholderRanges, cursorInfo, context) {
+  var _a, _b, _c;
+  const decorations = [];
+  const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
+  const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
+  let lastEnd = labelStart;
+  for (const range of placeholderRanges) {
+    if (range.start > lastEnd) {
+      decorations.push({
+        from: lastEnd,
+        to: range.start,
+        decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+      });
+    }
+    if (cursorInfo.cursorPlaceholder && cursorInfo.cursorPlaceholder === range) {
+      decorations.push({
+        from: range.start,
+        to: range.end,
+        decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER })
+      });
+    } else {
+      const placeholderKey = `${parsedLabel.rawLabel.substring(
+        0,
+        parsedLabel.rawLabel.indexOf("(")
+      )}(#${range.name})`;
+      const processedKey = (_a = context.rawToProcessed) == null ? void 0 : _a.get(placeholderKey);
+      const number = processedKey ? parseInt(((_b = processedKey.match(ListPatterns.TRAILING_DIGITS)) == null ? void 0 : _b[0]) || "0") : ((_c = context.placeholderContext) == null ? void 0 : _c.getPlaceholderNumber(range.name)) || 0;
+      decorations.push({
+        from: range.start,
+        to: range.end,
+        decoration: import_view4.Decoration.replace({
+          widget: new CustomLabelInlineNumberWidget(String(number), context.view),
+          inclusive: false
+        })
+      });
+    }
+    lastEnd = range.end;
+  }
+  if (lastEnd < labelEnd) {
+    decorations.push({
+      from: lastEnd,
+      to: labelEnd,
+      decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+    });
+  }
+  return decorations;
+}
+function createFullDisplayDecorations(line, parsedLabel, placeholderRanges, cursorInfo, context) {
+  var _a, _b, _c;
+  const decorations = [];
+  const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
+  const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
+  decorations.push({
+    from: parsedLabel.markerStart,
+    to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
+    decoration: import_view4.Decoration.replace({
+      widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
+      inclusive: false
+    })
+  });
+  if (parsedLabel.isDuplicate) {
+    const firstOccurrence = (_a = context.duplicateCustomLineInfo) == null ? void 0 : _a.get(parsedLabel.processedLabel);
+    decorations.push({
+      from: labelStart,
+      to: labelEnd,
+      decoration: import_view4.Decoration.replace({
+        widget: new DuplicateCustomLabelWidget(
+          parsedLabel.rawLabel,
+          (_b = firstOccurrence == null ? void 0 : firstOccurrence.firstLine) != null ? _b : void 0,
+          (_c = firstOccurrence == null ? void 0 : firstOccurrence.firstContent) != null ? _c : void 0
+        ),
+        inclusive: false
+      })
+    });
+  } else if (placeholderRanges.length > 0) {
+    const placeholderDecorations = processPlaceholders(
+      line,
+      parsedLabel,
+      placeholderRanges,
+      cursorInfo,
+      context
+    );
+    decorations.push(...placeholderDecorations);
+  } else {
+    decorations.push({
+      from: labelStart,
+      to: labelEnd,
+      decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+    });
+  }
+  decorations.push({
+    from: labelEnd,
+    to: labelEnd + 1,
+    decoration: import_view4.Decoration.replace({
+      widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
+      inclusive: false
+    })
+  });
+  return decorations;
+}
+function buildStructuralResult(parsedLabel, line, decorations, context) {
+  const contentRegion = {
+    from: parsedLabel.markerEnd,
+    to: line.to,
+    type: "list-content",
+    parentStructure: "custom-label-list",
+    metadata: {
+      rawLabel: parsedLabel.rawLabel,
+      processedLabel: parsedLabel.processedLabel,
+      isDuplicate: parsedLabel.isDuplicate
+    }
+  };
+  context.listContext = {
+    isInList: true,
+    contentStartColumn: parsedLabel.markerEnd - line.from,
+    listLevel: 1,
+    parentStructure: "custom-label-list"
+  };
+  return contentRegion;
+}
+
 // src/live-preview/pipeline/structural/CustomLabelProcessor.ts
-var import_view9 = require("@codemirror/view");
 var CustomLabelProcessor = class {
   constructor() {
     this.name = "custom-label-list";
@@ -4720,322 +4802,39 @@ var CustomLabelProcessor = class {
     const lineText = context.document.sliceString(line.from, line.to);
     return ListPatterns.isCustomLabelList(lineText) !== null;
   }
-  /**
-   * Parse the custom label syntax from a line of text
-   */
-  parseCustomLabel(line, context) {
-    var _a, _b;
-    const lineText = context.document.sliceString(line.from, line.to);
-    const lineNum = context.document.lineAt(line.from).number;
-    const customLabelMatch = ListPatterns.isCustomLabelList(lineText);
-    if (!customLabelMatch) {
-      return null;
+  process(line, context) {
+    const parsedLabel = parseCustomLabel(line, context);
+    if (!parsedLabel) {
+      return { decorations: [] };
     }
-    if (context.settings.strictPandocMode && context.invalidLines.has(lineNum - 1)) {
-      return null;
-    }
-    const indent = customLabelMatch[1];
-    const fullMarker = customLabelMatch[2];
-    const rawLabel = customLabelMatch[3];
-    const space = customLabelMatch[4];
-    const processedLabel = ((_a = context.rawToProcessed) == null ? void 0 : _a.get(rawLabel)) || rawLabel;
-    const markerStart = line.from + indent.length;
-    const markerEnd = line.from + indent.length + fullMarker.length + space.length;
-    const isDuplicate = ((_b = context.duplicateCustomLabels) == null ? void 0 : _b.has(processedLabel)) || false;
-    return {
-      indent,
-      fullMarker,
-      rawLabel,
-      space,
-      processedLabel,
-      markerStart,
-      markerEnd,
-      isDuplicate
-    };
-  }
-  /**
-   * Parse placeholder ranges within the custom label
-   */
-  parsePlaceholders(parsedLabel) {
-    const placeholderMatches = Array.from(parsedLabel.rawLabel.matchAll(ListPatterns.PLACEHOLDER_PATTERN));
-    const placeholderRanges = [];
-    for (const match of placeholderMatches) {
-      if (match.index !== void 0) {
-        const placeholderStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH + match.index;
-        const placeholderEnd = placeholderStart + match[0].length;
-        placeholderRanges.push({
-          start: placeholderStart,
-          end: placeholderEnd,
-          name: match[1]
-        });
-      }
-    }
-    return placeholderRanges;
-  }
-  /**
-   * Analyze cursor position relative to the custom label
-   */
-  handleCursorPosition(parsedLabel, placeholderRanges, context) {
-    var _a;
-    const selection = context.view.state.selection;
-    const cursorPos = (_a = selection == null ? void 0 : selection.main) == null ? void 0 : _a.from;
-    if (cursorPos === void 0) {
-      return {
-        pos: -1,
-        isInMarker: false,
-        isAtListMarker: false,
-        cursorPlaceholder: null
-      };
-    }
-    const isInMarker = cursorPos >= parsedLabel.markerStart && cursorPos <= parsedLabel.markerEnd;
-    const isAtListMarker = cursorPos >= parsedLabel.markerStart && cursorPos < parsedLabel.markerEnd;
-    let cursorPlaceholder = null;
-    if (isInMarker) {
-      for (const range of placeholderRanges) {
-        if (cursorPos >= range.start && cursorPos <= range.end) {
-          cursorPlaceholder = range;
-          break;
-        }
-      }
-    }
-    return {
-      pos: cursorPos,
-      isInMarker,
-      isAtListMarker,
-      cursorPlaceholder
-    };
-  }
-  /**
-   * Determine the display level based on cursor position and placeholder presence
-   */
-  determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo) {
-    if (cursorInfo.isAtListMarker) {
-      return "full";
-    }
-    if (placeholderRanges.length > 0 && !cursorInfo.isInMarker) {
-      const isCursorInLine = cursorInfo.pos !== -1 && cursorInfo.pos >= line.from && cursorInfo.pos <= line.to;
-      return isCursorInLine ? "semi-expanded" : "collapsed";
-    }
-    return "collapsed";
-  }
-  /**
-   * Create decorations for collapsed display mode (fully processed marker widget)
-   */
-  createCollapsedDecorations(parsedLabel, context) {
-    const decorations = [];
-    decorations.push({
-      from: parsedLabel.markerStart,
-      to: parsedLabel.markerEnd,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelMarkerWidget(
-          parsedLabel.processedLabel,
-          context.view,
-          parsedLabel.markerStart
-        ),
-        inclusive: false
-      })
-    });
-    return decorations;
-  }
-  /**
-   * Create decorations for semi-expanded display mode (brackets and processed label)
-   */
-  createSemiExpandedDecorations(parsedLabel, context) {
-    const decorations = [];
-    decorations.push({
-      from: parsedLabel.markerStart,
-      to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
-        inclusive: false
-      })
-    });
-    const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
-    const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
-    decorations.push({
-      from: labelStart,
-      to: labelEnd,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelProcessedWidget(
-          parsedLabel.processedLabel,
-          context.view,
-          labelStart
-        ),
-        inclusive: false
-      })
-    });
-    decorations.push({
-      from: labelEnd,
-      to: labelEnd + 1,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
-        inclusive: false
-      })
-    });
-    return decorations;
-  }
-  /**
-   * Process placeholders within full display mode
-   */
-  processPlaceholders(line, parsedLabel, placeholderRanges, cursorInfo, context) {
-    var _a, _b, _c;
-    const decorations = [];
-    const lineText = context.document.sliceString(line.from, line.to);
-    const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
-    const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
-    let lastEnd = labelStart;
-    for (const range of placeholderRanges) {
-      if (range.start > lastEnd) {
-        decorations.push({
-          from: lastEnd,
-          to: range.start,
-          decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
-        });
-      }
-      if (cursorInfo.cursorPlaceholder && cursorInfo.cursorPlaceholder === range) {
-        decorations.push({
-          from: range.start,
-          to: range.end,
-          decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER })
-        });
-      } else {
-        const placeholderKey = `${parsedLabel.rawLabel.substring(
-          0,
-          parsedLabel.rawLabel.indexOf("(")
-        )}(#${range.name})`;
-        const processedKey = (_a = context.rawToProcessed) == null ? void 0 : _a.get(placeholderKey);
-        const number = processedKey ? parseInt(((_b = processedKey.match(ListPatterns.TRAILING_DIGITS)) == null ? void 0 : _b[0]) || "0") : ((_c = context.placeholderContext) == null ? void 0 : _c.getPlaceholderNumber(range.name)) || 0;
-        decorations.push({
-          from: range.start,
-          to: range.end,
-          decoration: import_view9.Decoration.replace({
-            widget: new CustomLabelInlineNumberWidget(String(number), context.view),
-            inclusive: false
-          })
-        });
-      }
-      lastEnd = range.end;
-    }
-    if (lastEnd < labelEnd) {
-      decorations.push({
-        from: lastEnd,
-        to: labelEnd,
-        decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
-      });
-    }
-    return decorations;
-  }
-  /**
-   * Create decorations for full display mode (complete syntax with selective placeholder expansion)
-   */
-  createFullDisplayDecorations(line, parsedLabel, placeholderRanges, cursorInfo, context) {
-    var _a, _b, _c;
-    const decorations = [];
-    const labelStart = parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH;
-    const labelEnd = parsedLabel.markerEnd - parsedLabel.space.length - 1;
-    decorations.push({
-      from: parsedLabel.markerStart,
-      to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
-        inclusive: false
-      })
-    });
-    if (parsedLabel.isDuplicate) {
-      const firstOccurrence = (_a = context.duplicateCustomLineInfo) == null ? void 0 : _a.get(parsedLabel.processedLabel);
-      decorations.push({
-        from: labelStart,
-        to: labelEnd,
-        decoration: import_view9.Decoration.replace({
-          widget: new DuplicateCustomLabelWidget(
-            parsedLabel.rawLabel,
-            (_b = firstOccurrence == null ? void 0 : firstOccurrence.firstLine) != null ? _b : void 0,
-            (_c = firstOccurrence == null ? void 0 : firstOccurrence.firstContent) != null ? _c : void 0
-          ),
-          inclusive: false
-        })
-      });
-    } else if (placeholderRanges.length > 0) {
-      const placeholderDecorations = this.processPlaceholders(
+    const placeholderRanges = parsePlaceholders(parsedLabel);
+    const cursorInfo = handleCursorPosition(parsedLabel, placeholderRanges, context);
+    const displayLevel = determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo);
+    let decorations;
+    if (displayLevel === "collapsed" && !parsedLabel.isDuplicate) {
+      decorations = createCollapsedDecorations(parsedLabel, context);
+    } else if (displayLevel === "semi-expanded") {
+      decorations = createSemiExpandedDecorations(parsedLabel, context);
+    } else {
+      decorations = createFullDisplayDecorations(
         line,
         parsedLabel,
         placeholderRanges,
         cursorInfo,
         context
       );
-      decorations.push(...placeholderDecorations);
-    } else {
-      decorations.push({
-        from: labelStart,
-        to: labelEnd,
-        decoration: import_view9.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
-      });
     }
-    decorations.push({
-      from: labelEnd,
-      to: labelEnd + 1,
-      decoration: import_view9.Decoration.replace({
-        widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
-        inclusive: false
-      })
-    });
-    return decorations;
-  }
-  /**
-   * Build the content region for inline processing
-   */
-  buildStructuralResult(parsedLabel, line, decorations, context) {
-    const contentRegion = {
-      from: parsedLabel.markerEnd,
-      to: line.to,
-      type: "list-content",
-      parentStructure: "custom-label-list",
-      metadata: {
-        rawLabel: parsedLabel.rawLabel,
-        processedLabel: parsedLabel.processedLabel,
-        isDuplicate: parsedLabel.isDuplicate
-      }
-    };
-    context.listContext = {
-      isInList: true,
-      contentStartColumn: parsedLabel.markerEnd - line.from,
-      listLevel: 1,
-      parentStructure: "custom-label-list"
-    };
+    const contentRegion = buildStructuralResult(parsedLabel, line, decorations, context);
     return {
       decorations,
       contentRegion,
       skipFurtherProcessing: true
     };
   }
-  process(line, context) {
-    const parsedLabel = this.parseCustomLabel(line, context);
-    if (!parsedLabel) {
-      return { decorations: [] };
-    }
-    const placeholderRanges = this.parsePlaceholders(parsedLabel);
-    const cursorInfo = this.handleCursorPosition(parsedLabel, placeholderRanges, context);
-    const displayLevel = this.determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo);
-    let decorations;
-    if (displayLevel === "collapsed" && !parsedLabel.isDuplicate) {
-      decorations = this.createCollapsedDecorations(parsedLabel, context);
-    } else if (displayLevel === "semi-expanded") {
-      decorations = this.createSemiExpandedDecorations(parsedLabel, context);
-    } else {
-      decorations = this.createFullDisplayDecorations(
-        line,
-        parsedLabel,
-        placeholderRanges,
-        cursorInfo,
-        context
-      );
-    }
-    return this.buildStructuralResult(parsedLabel, line, decorations, context);
-  }
 };
 
 // src/live-preview/pipeline/structural/DefinitionProcessor.ts
-var import_view10 = require("@codemirror/view");
+var import_view5 = require("@codemirror/view");
 var DefinitionProcessor = class {
   constructor() {
     this.name = "definition-list";
@@ -5097,7 +4896,7 @@ var DefinitionProcessor = class {
         decorations.push({
           from: markerStart,
           to: markerEnd,
-          decoration: import_view10.Decoration.replace({
+          decoration: import_view5.Decoration.replace({
             widget: new DefinitionBulletWidget(context.view, markerStart),
             inclusive: false
           })
@@ -5109,7 +4908,7 @@ var DefinitionProcessor = class {
       decorations.push({
         from: markerStart,
         to: markerEnd,
-        decoration: import_view10.Decoration.mark({
+        decoration: import_view5.Decoration.mark({
           class: CSS_CLASSES.DEFINITION_MARKER_CURSOR
         })
       });
@@ -5133,7 +4932,7 @@ var DefinitionProcessor = class {
     decorations.push({
       from: line.from,
       to: line.to,
-      decoration: import_view10.Decoration.mark({
+      decoration: import_view5.Decoration.mark({
         class: "cm-strong cm-pandoc-definition-term"
       })
     });
@@ -5147,7 +4946,7 @@ var DefinitionProcessor = class {
     decorations.push({
       from: line.from,
       to: line.from,
-      decoration: import_view10.Decoration.line({
+      decoration: import_view5.Decoration.line({
         class: CSS_CLASSES.DEFINITION_PARAGRAPH
       })
     });
@@ -5195,7 +4994,7 @@ var DefinitionProcessor = class {
 };
 
 // src/live-preview/pipeline/structural/StandardListProcessor.ts
-var import_view11 = require("@codemirror/view");
+var import_view6 = require("@codemirror/view");
 var StandardListProcessor = class {
   constructor() {
     this.name = "standard-list";
@@ -5225,19 +5024,20 @@ var StandardListProcessor = class {
     const markerEnd = line.from + indent.length + marker.length + space.length;
     const contentStart = markerEnd;
     const decorations = [];
-    const indentLevel = Math.floor(indent.replace(/\t/g, "    ").length / 4) + 1;
+    const spacesPerTab = " ".repeat(TEXT_PROCESSING.TAB_EQUIVALENT_SPACES);
+    const indentLevel = Math.floor(indent.replace(/\t/g, spacesPerTab).length / TEXT_PROCESSING.TAB_EQUIVALENT_SPACES) + 1;
     const listClass = indentLevel === 1 ? CSS_CLASSES.LIST_LINE_1 : indentLevel === 2 ? CSS_CLASSES.LIST_LINE_2 : indentLevel === 3 ? CSS_CLASSES.LIST_LINE_3 : CSS_CLASSES.LIST_LINE_4;
     decorations.push({
       from: line.from,
       to: line.from,
-      decoration: import_view11.Decoration.line({
+      decoration: import_view6.Decoration.line({
         class: `${CSS_CLASSES.LIST_LINE} ${listClass} HyperMD-list-line HyperMD-list-line-${indentLevel}`
       })
     });
     decorations.push({
       from: markerStart,
       to: markerEnd - space.length,
-      decoration: import_view11.Decoration.mark({
+      decoration: import_view6.Decoration.mark({
         class: "cm-formatting-list cm-formatting-list-ul"
       })
     });
@@ -5245,7 +5045,7 @@ var StandardListProcessor = class {
       decorations.push({
         from: contentStart,
         to: line.to,
-        decoration: import_view11.Decoration.mark({
+        decoration: import_view6.Decoration.mark({
           class: `cm-list-${indentLevel}`
         })
       });
@@ -5265,7 +5065,7 @@ var StandardListProcessor = class {
 };
 
 // src/live-preview/pipeline/structural/ListContinuationProcessor.ts
-var import_view12 = require("@codemirror/view");
+var import_view7 = require("@codemirror/view");
 var ListContinuationProcessor = class {
   constructor() {
     this.name = "list-continuation";
@@ -5315,7 +5115,7 @@ var ListContinuationProcessor = class {
     decorations.push({
       from: line.from,
       to: line.from,
-      decoration: import_view12.Decoration.line({
+      decoration: import_view7.Decoration.line({
         class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`,
         attributes: {
           style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart};`
@@ -5330,7 +5130,7 @@ var ListContinuationProcessor = class {
     decorations.push({
       from: line.from,
       to: line.from + indentLength,
-      decoration: import_view12.Decoration.mark({
+      decoration: import_view7.Decoration.mark({
         class: "cm-hmd-list-indent cm-hmd-list-indent-1",
         tagName: "span"
       })
@@ -5338,7 +5138,7 @@ var ListContinuationProcessor = class {
     decorations.push({
       from: line.from,
       to: line.from + indentLength,
-      decoration: import_view12.Decoration.mark({
+      decoration: import_view7.Decoration.mark({
         class: "cm-indent-spacing",
         tagName: "span",
         inclusive: false
@@ -5352,7 +5152,7 @@ var ListContinuationProcessor = class {
     decorations.push({
       from: line.from + indentLength,
       to: line.to,
-      decoration: import_view12.Decoration.mark({
+      decoration: import_view7.Decoration.mark({
         class: CSS_CLASSES.CM_LIST_1
       })
     });
@@ -5389,7 +5189,26 @@ var ListContinuationProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
-var import_view13 = require("@codemirror/view");
+var import_view8 = require("@codemirror/view");
+
+// src/shared/utils/cursorUtils.ts
+function getRegionCursorPosition(context, region) {
+  var _a, _b, _c, _d;
+  const cursorPos = (_d = (_c = (_b = (_a = context.view) == null ? void 0 : _a.state) == null ? void 0 : _b.selection) == null ? void 0 : _c.main) == null ? void 0 : _d.head;
+  return cursorPos !== void 0 ? cursorPos - region.from : -1;
+}
+
+// src/shared/utils/contextUtils.ts
+function buildReferenceContext(context) {
+  return {
+    exampleLabels: context.exampleLabels,
+    exampleContent: context.exampleContent,
+    customLabels: context.customLabels,
+    rawToProcessed: context.rawToProcessed
+  };
+}
+
+// src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
 var ExampleReferenceProcessor = class {
   constructor() {
     this.name = "example-reference";
@@ -5397,11 +5216,9 @@ var ExampleReferenceProcessor = class {
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
   findMatches(text, region, context) {
-    var _a, _b, _c, _d;
     const matches = [];
     const pattern = ListPatterns.EXAMPLE_REFERENCE;
-    const cursorPos = (_d = (_c = (_b = (_a = context.view) == null ? void 0 : _a.state) == null ? void 0 : _b.selection) == null ? void 0 : _c.main) == null ? void 0 : _d.head;
-    const regionCursorPos = cursorPos !== void 0 ? cursorPos - region.from : -1;
+    const regionCursorPos = getRegionCursorPosition(context, region);
     let match;
     while ((match = pattern.exec(text)) !== null) {
       const label = match[1];
@@ -5428,13 +5245,8 @@ var ExampleReferenceProcessor = class {
     const number = context.exampleLabels.get(label) || 0;
     const content = context.exampleContent.get(label) || "";
     const absolutePosition = match.from + ((region == null ? void 0 : region.from) || 0);
-    const referenceContext = {
-      exampleLabels: context.exampleLabels,
-      exampleContent: context.exampleContent,
-      customLabels: context.customLabels,
-      rawToProcessed: context.rawToProcessed
-    };
-    return import_view13.Decoration.replace({
+    const referenceContext = buildReferenceContext(context);
+    return import_view8.Decoration.replace({
       widget: new ExampleReferenceWidget(
         number,
         content,
@@ -5450,7 +5262,7 @@ var ExampleReferenceProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SuperscriptProcessor.ts
-var import_view14 = require("@codemirror/view");
+var import_view9 = require("@codemirror/view");
 var SuperscriptProcessor = class {
   constructor() {
     this.name = "superscript";
@@ -5458,11 +5270,9 @@ var SuperscriptProcessor = class {
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
   findMatches(text, region, context) {
-    var _a, _b, _c, _d;
     const matches = [];
     const pattern = ListPatterns.SUPERSCRIPT_INLINE;
-    const cursorPos = (_d = (_c = (_b = (_a = context.view) == null ? void 0 : _a.state) == null ? void 0 : _b.selection) == null ? void 0 : _c.main) == null ? void 0 : _d.head;
-    const regionCursorPos = cursorPos !== void 0 ? cursorPos - region.from : -1;
+    const regionCursorPos = getRegionCursorPosition(context, region);
     let match;
     while ((match = pattern.exec(text)) !== null) {
       const supStart = match.index;
@@ -5485,7 +5295,7 @@ var SuperscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view14.Decoration.replace({
+    return import_view9.Decoration.replace({
       widget: new SuperscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -5493,7 +5303,7 @@ var SuperscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SubscriptProcessor.ts
-var import_view15 = require("@codemirror/view");
+var import_view10 = require("@codemirror/view");
 var SubscriptProcessor = class {
   constructor() {
     this.name = "subscript";
@@ -5501,11 +5311,9 @@ var SubscriptProcessor = class {
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
   findMatches(text, region, context) {
-    var _a, _b, _c, _d;
     const matches = [];
     const pattern = ListPatterns.SUBSCRIPT_INLINE;
-    const cursorPos = (_d = (_c = (_b = (_a = context.view) == null ? void 0 : _a.state) == null ? void 0 : _b.selection) == null ? void 0 : _c.main) == null ? void 0 : _d.head;
-    const regionCursorPos = cursorPos !== void 0 ? cursorPos - region.from : -1;
+    const regionCursorPos = getRegionCursorPosition(context, region);
     let match;
     while ((match = pattern.exec(text)) !== null) {
       const subStart = match.index;
@@ -5528,7 +5336,7 @@ var SubscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view15.Decoration.replace({
+    return import_view10.Decoration.replace({
       widget: new SubscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -5536,7 +5344,7 @@ var SubscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/CustomLabelReferenceProcessor.ts
-var import_view16 = require("@codemirror/view");
+var import_view11 = require("@codemirror/view");
 var CustomLabelReferenceProcessor = class {
   constructor() {
     this.name = "custom-label-reference";
@@ -5544,24 +5352,22 @@ var CustomLabelReferenceProcessor = class {
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
   findMatches(text, region, context) {
-    var _a, _b, _c, _d;
     const matches = [];
     if (!context.settings.moreExtendedSyntax) {
       return matches;
     }
-    const cursorPos = (_d = (_c = (_b = (_a = context.view) == null ? void 0 : _a.state) == null ? void 0 : _b.selection) == null ? void 0 : _c.main) == null ? void 0 : _d.head;
-    const regionCursorPos = cursorPos !== void 0 ? cursorPos - region.from : -1;
+    const regionCursorPos = getRegionCursorPosition(context, region);
     const pattern = ListPatterns.findCustomLabelReferences(text);
     pattern.forEach((match) => {
-      var _a2, _b2, _c2;
+      var _a, _b, _c;
       const fullMatch = match[0];
       const rawLabel = match[1];
       let isValid = false;
-      if ((_a2 = context.rawToProcessed) == null ? void 0 : _a2.has(rawLabel)) {
+      if ((_a = context.rawToProcessed) == null ? void 0 : _a.has(rawLabel)) {
         isValid = true;
-      } else if ((_b2 = context.customLabels) == null ? void 0 : _b2.has(rawLabel)) {
+      } else if ((_b = context.customLabels) == null ? void 0 : _b.has(rawLabel)) {
         isValid = true;
-      } else if ((_c2 = context.duplicateCustomLabels) == null ? void 0 : _c2.has(rawLabel)) {
+      } else if ((_c = context.duplicateCustomLabels) == null ? void 0 : _c.has(rawLabel)) {
         isValid = true;
       } else if (context.placeholderContext) {
         const processedLabel = context.placeholderContext.getProcessedLabel(rawLabel);
@@ -5604,7 +5410,7 @@ var CustomLabelReferenceProcessor = class {
     const isDuplicate = (_d = context.duplicateCustomLabels) == null ? void 0 : _d.has(processedLabel);
     if (isDuplicate) {
       const duplicateInfo = (_e = context.duplicateCustomLineInfo) == null ? void 0 : _e.get(processedLabel);
-      return import_view16.Decoration.replace({
+      return import_view11.Decoration.replace({
         widget: new DuplicateCustomLabelWidget(
           processedLabel,
           (duplicateInfo == null ? void 0 : duplicateInfo.firstLine) || 0,
@@ -5615,13 +5421,8 @@ var CustomLabelReferenceProcessor = class {
       });
     }
     const labelContent = ((_f = context.customLabels) == null ? void 0 : _f.get(processedLabel)) || "";
-    const referenceContext = {
-      exampleLabels: context.exampleLabels,
-      exampleContent: context.exampleContent,
-      customLabels: context.customLabels,
-      rawToProcessed: context.rawToProcessed
-    };
-    return import_view16.Decoration.replace({
+    const referenceContext = buildReferenceContext(context);
+    return import_view11.Decoration.replace({
       widget: new CustomLabelReferenceWidget(
         processedLabel,
         labelContent,
@@ -5645,7 +5446,7 @@ var CustomLabelReferenceProcessor = class {
 };
 
 // src/live-preview/extension.ts
-var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view17.ViewPlugin.fromClass(
+var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view12.ViewPlugin.fromClass(
   class PandocExtendedMarkdownView {
     constructor(view) {
       this.initializePipeline(getApp, getComponent);
@@ -5668,15 +5469,15 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponen
       this.pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
     }
     update(update) {
-      const prevLivePreview = update.startState.field(import_obsidian10.editorLivePreviewField);
-      const currLivePreview = update.state.field(import_obsidian10.editorLivePreviewField);
+      const prevLivePreview = update.startState.field(import_obsidian8.editorLivePreviewField);
+      const currLivePreview = update.state.field(import_obsidian8.editorLivePreviewField);
       const livePreviewChanged = prevLivePreview !== currLivePreview;
       if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
         this.decorations = this.buildDecorations(update.view);
       }
     }
     buildDecorations(view) {
-      const isLivePreview = view.state.field(import_obsidian10.editorLivePreviewField);
+      const isLivePreview = view.state.field(import_obsidian8.editorLivePreviewField);
       if (!isLivePreview || !this.pipeline) {
         return new import_state2.RangeSetBuilder().finish();
       }
@@ -5708,6 +5509,18 @@ function getSectionInfo(element) {
     }
   }
   return null;
+}
+
+// src/reading-mode/utils/domUtils.ts
+var import_obsidian9 = require("obsidian");
+function createTextNodeWalker(element, filter) {
+  return document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: filter || (() => NodeFilter.FILTER_ACCEPT)
+    }
+  );
 }
 
 // src/reading-mode/parsers/fancyListParser.ts
@@ -5754,7 +5567,7 @@ function parseFancyListMarker(line) {
 }
 
 // src/reading-mode/parsers/exampleListParser.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 function parseExampleListMarker(line) {
   const match = ListPatterns.isExampleList(line);
   if (!match) {
@@ -5800,19 +5613,13 @@ function findSuperSubInText(text) {
   return matches;
 }
 function processSuperSub(element) {
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: (node) => {
-        const parent = node.parentElement;
-        if (parent && (parent.classList.contains(CSS_CLASSES.SUPERSCRIPT) || parent.classList.contains(CSS_CLASSES.SUBSCRIPT))) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        return NodeFilter.FILTER_ACCEPT;
-      }
+  const walker = createTextNodeWalker(element, (node) => {
+    const parent = node.parentElement;
+    if (parent && (parent.classList.contains(CSS_CLASSES.SUPERSCRIPT) || parent.classList.contains(CSS_CLASSES.SUBSCRIPT))) {
+      return NodeFilter.FILTER_REJECT;
     }
-  );
+    return NodeFilter.FILTER_ACCEPT;
+  });
   const nodesToReplace = [];
   while (walker.nextNode()) {
     const node = walker.currentNode;
@@ -5999,7 +5806,7 @@ var ReadingModeParser = class {
 };
 
 // src/reading-mode/renderer.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 var ReadingModeRenderer = class {
   /**
    * Render a parsed line to DOM elements
@@ -6135,7 +5942,7 @@ var ReadingModeRenderer = class {
         span.textContent = `(${exampleNumber})`;
         const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, ref.label);
         if (tooltipText) {
-          (0, import_obsidian12.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+          (0, import_obsidian11.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         }
         elements.push(span);
       } else {
@@ -6192,7 +5999,7 @@ var ReadingModeRenderer = class {
         span.textContent = `(${exampleNumber})`;
         const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, label);
         if (tooltipText) {
-          (0, import_obsidian12.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+          (0, import_obsidian11.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         }
         elements.push(span);
       } else {
@@ -6286,24 +6093,18 @@ function processReferencesInText(text, container, placeholderContext) {
   }
 }
 function processElementPreservingSpans(elem, placeholderContext) {
-  const walker = document.createTreeWalker(
-    elem,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: (node2) => {
-        const parent = node2.parentElement;
-        if (parent && (parent.className === CSS_CLASSES.EXAMPLE_REF || parent.className === CSS_CLASSES.PANDOC_LIST_MARKER || parent.className.includes("pandoc-list-fancy") || parent.className === CSS_CLASSES.EXAMPLE_LIST || parent.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED || parent.tagName === "STRONG" || // Skip text inside strong tags that might contain processed content
-        parent.tagName === "EM")) {
-          return NodeFilter.FILTER_SKIP;
-        }
-        const grandParent = parent == null ? void 0 : parent.parentElement;
-        if (grandParent && (grandParent.className === CSS_CLASSES.EXAMPLE_REF || grandParent.className === CSS_CLASSES.EXAMPLE_LIST)) {
-          return NodeFilter.FILTER_SKIP;
-        }
-        return NodeFilter.FILTER_ACCEPT;
-      }
+  const walker = createTextNodeWalker(elem, (node2) => {
+    const parent = node2.parentElement;
+    if (parent && (parent.className === CSS_CLASSES.EXAMPLE_REF || parent.className === CSS_CLASSES.PANDOC_LIST_MARKER || parent.className.includes("pandoc-list-fancy") || parent.className === CSS_CLASSES.EXAMPLE_LIST || parent.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED || parent.tagName === "STRONG" || // Skip text inside strong tags that might contain processed content
+    parent.tagName === "EM")) {
+      return NodeFilter.FILTER_SKIP;
     }
-  );
+    const grandParent = parent == null ? void 0 : parent.parentElement;
+    if (grandParent && (grandParent.className === CSS_CLASSES.EXAMPLE_REF || grandParent.className === CSS_CLASSES.EXAMPLE_LIST)) {
+      return NodeFilter.FILTER_SKIP;
+    }
+    return NodeFilter.FILTER_ACCEPT;
+  });
   const nodesToProcess = [];
   let node;
   while (node = walker.nextNode()) {
@@ -6324,53 +6125,67 @@ function processElementPreservingSpans(elem, placeholderContext) {
     parent.removeChild(textNode);
   });
 }
-function processElement(elem, placeholderContext) {
+function shouldSkipElement(elem) {
   if (elem.querySelector("code, pre") || elem.closest("code, pre")) {
-    return;
+    return true;
   }
   if (!elem.textContent || !elem.textContent.includes("{::")) {
+    return true;
+  }
+  return false;
+}
+function hasProcessedContent(elem) {
+  return !!(elem.querySelector("span") || elem.querySelector("strong") || elem.querySelector("em"));
+}
+function isProcessedSpan(elemNode) {
+  return elemNode.tagName === "SPAN" && (elemNode.className === CSS_CLASSES.EXAMPLE_REF || elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER || elemNode.className.includes("pandoc-list-fancy") || elemNode.className === CSS_CLASSES.EXAMPLE_LIST || elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED);
+}
+function processTextNodeLines(node, container, placeholderContext) {
+  const text = node.textContent || "";
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) {
+      container.appendChild(document.createTextNode("\n"));
+    }
+    if (lines[i]) {
+      processTextNode({ textContent: lines[i] }, container, placeholderContext);
+    }
+  }
+}
+function processElementNode(node, container, placeholderContext) {
+  if (isProcessedSpan(node)) {
+    container.appendChild(node.cloneNode(true));
+  } else if (node.textContent && node.textContent.includes("{::")) {
+    const clonedElem = node.cloneNode(false);
+    const tempContainer = document.createElement("div");
+    Array.from(node.childNodes).forEach((child) => {
+      tempContainer.appendChild(child.cloneNode(true));
+    });
+    processElement(tempContainer, placeholderContext);
+    while (tempContainer.firstChild) {
+      clonedElem.appendChild(tempContainer.firstChild);
+    }
+    container.appendChild(clonedElem);
+  } else {
+    container.appendChild(node.cloneNode(true));
+  }
+}
+function processElement(elem, placeholderContext) {
+  if (shouldSkipElement(elem)) {
     return;
   }
-  const hasAnyProcessedContent = elem.querySelector("span") || // Any span element
-  elem.querySelector("strong") || // Any strong element
-  elem.querySelector("em");
-  if (hasAnyProcessedContent) {
+  if (hasProcessedContent(elem)) {
     return processElementPreservingSpans(elem, placeholderContext);
   }
   const newContainer = document.createElement("div");
   const childNodes = Array.from(elem.childNodes);
   for (const node of childNodes) {
     if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || "";
-      const lines = text.split("\n");
-      for (let i = 0; i < lines.length; i++) {
-        if (i > 0) {
-          newContainer.appendChild(document.createTextNode("\n"));
-        }
-        if (lines[i]) {
-          processTextNode({ textContent: lines[i] }, newContainer, placeholderContext);
-        }
-      }
+      processTextNodeLines(node, newContainer, placeholderContext);
     } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "BR") {
       newContainer.appendChild(document.createElement("br"));
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const elemNode = node;
-      if (elemNode.tagName === "SPAN" && (elemNode.className === CSS_CLASSES.EXAMPLE_REF || elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER || elemNode.className.includes("pandoc-list-fancy") || elemNode.className === CSS_CLASSES.EXAMPLE_LIST || elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED)) {
-        newContainer.appendChild(node.cloneNode(true));
-      } else if (elemNode.textContent && elemNode.textContent.includes("{::")) {
-        const clonedElem = elemNode.cloneNode(false);
-        const tempContainer = createDiv();
-        Array.from(elemNode.childNodes).forEach((child) => {
-          tempContainer.appendChild(child.cloneNode(true));
-        });
-        processElement(tempContainer, placeholderContext);
-        while (tempContainer.firstChild) {
-          clonedElem.appendChild(tempContainer.firstChild);
-        }
-        newContainer.appendChild(clonedElem);
-      } else {
-        newContainer.appendChild(node.cloneNode(true));
-      }
+      processElementNode(node, newContainer, placeholderContext);
     } else {
       newContainer.appendChild(node.cloneNode(true));
     }
@@ -6662,8 +6477,8 @@ function validateListInStrictMode(line, documentLines, config) {
 }
 
 // src/editor-extensions/suggestions/exampleReferenceSuggest.ts
-var import_obsidian13 = require("obsidian");
-var ExampleReferenceSuggest = class extends import_obsidian13.EditorSuggest {
+var import_obsidian12 = require("obsidian");
+var ExampleReferenceSuggest = class extends import_obsidian12.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -6711,8 +6526,8 @@ var ExampleReferenceSuggest = class extends import_obsidian13.EditorSuggest {
     for (const [label, data] of exampleData) {
       if (!query || label.toLowerCase().startsWith(query.toLowerCase())) {
         let previewText = data.text;
-        if (previewText.length > 30) {
-          previewText = previewText.substring(0, 30) + "...";
+        if (previewText.length > TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) {
+          previewText = previewText.substring(0, TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) + TEXT_PROCESSING.PREVIEW_ELLIPSIS;
         }
         suggestions.push({
           label,
@@ -6756,8 +6571,8 @@ var ExampleReferenceSuggest = class extends import_obsidian13.EditorSuggest {
 };
 
 // src/editor-extensions/suggestions/customLabelReferenceSuggest.ts
-var import_obsidian14 = require("obsidian");
-var CustomLabelReferenceSuggest = class extends import_obsidian14.EditorSuggest {
+var import_obsidian13 = require("obsidian");
+var CustomLabelReferenceSuggest = class extends import_obsidian13.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -6847,8 +6662,8 @@ var CustomLabelReferenceSuggest = class extends import_obsidian14.EditorSuggest 
       const matchesProcessed = processedLabel && (!query || processedLabel.toLowerCase().startsWith(query.toLowerCase()));
       if (matchesRaw || matchesProcessed) {
         let previewText = data.text;
-        if (previewText.length > 30) {
-          previewText = previewText.substring(0, 30) + "...";
+        if (previewText.length > TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) {
+          previewText = previewText.substring(0, TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) + TEXT_PROCESSING.PREVIEW_ELLIPSIS;
         }
         let displayLabel = processedLabel;
         let placeholderParts = null;
@@ -6930,7 +6745,76 @@ var CustomLabelReferenceSuggest = class extends import_obsidian14.EditorSuggest 
   }
 };
 
-// src/editor-extensions/listAutocompletion.ts
+// src/editor-extensions/listAutocompletion/utils/lineInfo.ts
+function getCurrentLineInfo(view) {
+  const state = view.state;
+  const selection = state.selection.main;
+  const line = state.doc.lineAt(selection.from);
+  const lineText = line.text;
+  const isAtEndOfLine = selection.from === line.to;
+  const distanceFromEnd = line.to - selection.from;
+  return {
+    line,
+    lineText,
+    selection,
+    isAtEndOfLine,
+    distanceFromEnd
+  };
+}
+
+// src/editor-extensions/listAutocompletion/utils/markerDetection.ts
+function detectListMarker(currentLine, view) {
+  const { lineText, selection, line, distanceFromEnd } = currentLine;
+  const state = view.state;
+  const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
+  if (isEmptyExampleList) {
+    const beforeCursor = state.doc.sliceString(line.from, selection.from);
+    const afterCursor = state.doc.sliceString(selection.from, line.to);
+    if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
+      return {
+        isListItem: true,
+        shouldHandleEnter: true,
+        isEmptyExampleListSpecial: true,
+        isEmptyCustomLabelSpecial: false
+      };
+    }
+  }
+  const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
+  if (isEmptyCustomLabelList) {
+    const beforeCursor = state.doc.sliceString(line.from, selection.from);
+    const afterCursor = state.doc.sliceString(selection.from, line.to);
+    if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
+      return {
+        isListItem: true,
+        shouldHandleEnter: true,
+        isEmptyExampleListSpecial: false,
+        isEmptyCustomLabelSpecial: true
+      };
+    }
+  }
+  const isListItem2 = lineText.match(ListPatterns.ANY_LIST_MARKER);
+  if (!isListItem2) {
+    const shouldHandle2 = selection.from === line.to && selection.from === selection.to;
+    return {
+      isListItem: false,
+      shouldHandleEnter: shouldHandle2,
+      isEmptyExampleListSpecial: false,
+      isEmptyCustomLabelSpecial: false
+    };
+  }
+  const shouldHandle = distanceFromEnd <= 2 && selection.from === selection.to;
+  return {
+    isListItem: true,
+    shouldHandleEnter: shouldHandle,
+    isEmptyExampleListSpecial: false,
+    isEmptyCustomLabelSpecial: false
+  };
+}
+function isExtendedList(lineText) {
+  return !!(ListPatterns.isFancyList(lineText) || ListPatterns.isExampleList(lineText) || ListPatterns.isCustomLabelList(lineText) || ListPatterns.isHashList(lineText));
+}
+
+// src/editor-extensions/listAutocompletion/handlers/emptyListHandler.ts
 var import_state3 = require("@codemirror/state");
 
 // src/shared/utils/listHelpers.ts
@@ -7190,6 +7074,122 @@ function getNextListMarker(currentLine, allLines, currentLineIndex) {
   }
 }
 
+// src/editor-extensions/listAutocompletion/utils/indentation.ts
+function calculateIndentation(currentIndent) {
+  let newIndent = "";
+  if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
+    newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
+  } else if (currentIndent.startsWith(INDENTATION.TAB)) {
+    newIndent = currentIndent.substring(1);
+  } else {
+    newIndent = currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
+  }
+  return newIndent;
+}
+function removeIndentLevel(currentIndent) {
+  if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
+    return currentIndent.substring(INDENTATION.TAB_SIZE);
+  } else if (currentIndent.startsWith(INDENTATION.TAB)) {
+    return currentIndent.substring(1);
+  } else {
+    return currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
+  }
+}
+
+// src/editor-extensions/listAutocompletion/handlers/emptyListHandler.ts
+function handleEmptyListSpecialCases(config) {
+  const { view, currentLine, beforeCursor, afterCursor } = config;
+  const { line, lineText } = currentLine;
+  const state = view.state;
+  if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
+    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+    const indent = indentMatch ? indentMatch[1] : "";
+    const changes = {
+      from: line.from,
+      to: line.to,
+      insert: indent
+    };
+    const transaction = state.update({
+      changes,
+      selection: import_state3.EditorSelection.cursor(line.from + indent.length)
+    });
+    view.dispatch(transaction);
+    return true;
+  }
+  if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
+    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+    const indent = indentMatch ? indentMatch[1] : "";
+    const changes = {
+      from: line.from,
+      to: line.to,
+      insert: indent
+    };
+    const transaction = state.update({
+      changes,
+      selection: import_state3.EditorSelection.cursor(line.from + indent.length)
+    });
+    view.dispatch(transaction);
+    return true;
+  }
+  return false;
+}
+function handleEmptyListItem(config) {
+  const { view, currentLine } = config;
+  const { line, lineText } = currentLine;
+  const state = view.state;
+  if (!isEmptyListItem(lineText)) {
+    return false;
+  }
+  const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
+  if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
+    const currentIndent = indentMatch[1];
+    const newIndent = calculateIndentation(currentIndent);
+    let previousMarker = null;
+    for (let i = line.number - 1; i >= 1; i--) {
+      const prevLine = state.doc.line(i);
+      const prevText = prevLine.text;
+      const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
+      if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
+        const allLines = state.doc.toString().split("\n");
+        const markerInfo = getNextListMarker(prevText, allLines, i - 1);
+        if (markerInfo) {
+          previousMarker = markerInfo;
+          break;
+        }
+      }
+    }
+    if (previousMarker && newIndent.length > 0) {
+      const spaces = previousMarker.spaces || " ";
+      const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
+      const changes2 = {
+        from: line.from,
+        to: line.to,
+        insert: newLine
+      };
+      const transaction2 = state.update({
+        changes: changes2,
+        selection: import_state3.EditorSelection.cursor(line.from + newLine.length)
+      });
+      view.dispatch(transaction2);
+      return true;
+    }
+  }
+  const changes = {
+    from: line.from,
+    to: line.to,
+    insert: ""
+  };
+  const transaction = state.update({
+    changes,
+    selection: import_state3.EditorSelection.cursor(line.from)
+  });
+  view.dispatch(transaction);
+  return true;
+}
+
+// src/editor-extensions/listAutocompletion/handlers/listItemHandler.ts
+var import_state4 = require("@codemirror/state");
+
 // src/shared/utils/listRenumbering.ts
 function findBlockBoundaries(allLines, insertedLineNum) {
   let blockStart = insertedLineNum;
@@ -7341,169 +7341,7 @@ function renumberListItems(view, insertedLineNum) {
   }
 }
 
-// src/editor-extensions/listAutocompletion.ts
-function getCurrentLineInfo(view) {
-  const state = view.state;
-  const selection = state.selection.main;
-  const line = state.doc.lineAt(selection.from);
-  const lineText = line.text;
-  const isAtEndOfLine = selection.from === line.to;
-  const distanceFromEnd = line.to - selection.from;
-  return {
-    line,
-    lineText,
-    selection,
-    isAtEndOfLine,
-    distanceFromEnd
-  };
-}
-function detectListMarker(currentLine, view) {
-  const { lineText, selection, line, distanceFromEnd } = currentLine;
-  const state = view.state;
-  const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
-  if (isEmptyExampleList) {
-    const beforeCursor = state.doc.sliceString(line.from, selection.from);
-    const afterCursor = state.doc.sliceString(selection.from, line.to);
-    if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
-      return {
-        isListItem: true,
-        shouldHandleEnter: true,
-        isEmptyExampleListSpecial: true,
-        isEmptyCustomLabelSpecial: false
-      };
-    }
-  }
-  const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
-  if (isEmptyCustomLabelList) {
-    const beforeCursor = state.doc.sliceString(line.from, selection.from);
-    const afterCursor = state.doc.sliceString(selection.from, line.to);
-    if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
-      return {
-        isListItem: true,
-        shouldHandleEnter: true,
-        isEmptyExampleListSpecial: false,
-        isEmptyCustomLabelSpecial: true
-      };
-    }
-  }
-  const isListItem2 = lineText.match(ListPatterns.ANY_LIST_MARKER);
-  if (!isListItem2) {
-    const shouldHandle2 = selection.from === line.to && selection.from === selection.to;
-    return {
-      isListItem: false,
-      shouldHandleEnter: shouldHandle2,
-      isEmptyExampleListSpecial: false,
-      isEmptyCustomLabelSpecial: false
-    };
-  }
-  const shouldHandle = distanceFromEnd <= 2 && selection.from === selection.to;
-  return {
-    isListItem: true,
-    shouldHandleEnter: shouldHandle,
-    isEmptyExampleListSpecial: false,
-    isEmptyCustomLabelSpecial: false
-  };
-}
-function handleEmptyListSpecialCases(config) {
-  const { view, currentLine, beforeCursor, afterCursor } = config;
-  const { line, lineText } = currentLine;
-  const state = view.state;
-  if (beforeCursor.endsWith("(@") && afterCursor.startsWith(")")) {
-    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-    const indent = indentMatch ? indentMatch[1] : "";
-    const changes = {
-      from: line.from,
-      to: line.to,
-      insert: indent
-    };
-    const transaction = state.update({
-      changes,
-      selection: import_state3.EditorSelection.cursor(line.from + indent.length)
-    });
-    view.dispatch(transaction);
-    return true;
-  }
-  if (beforeCursor.endsWith("{::") && afterCursor.startsWith("}")) {
-    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-    const indent = indentMatch ? indentMatch[1] : "";
-    const changes = {
-      from: line.from,
-      to: line.to,
-      insert: indent
-    };
-    const transaction = state.update({
-      changes,
-      selection: import_state3.EditorSelection.cursor(line.from + indent.length)
-    });
-    view.dispatch(transaction);
-    return true;
-  }
-  return false;
-}
-function calculateIndentation(currentIndent) {
-  let newIndent = "";
-  if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
-    newIndent = currentIndent.substring(INDENTATION.TAB_SIZE);
-  } else if (currentIndent.startsWith(INDENTATION.TAB)) {
-    newIndent = currentIndent.substring(1);
-  } else {
-    newIndent = currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
-  }
-  return newIndent;
-}
-function handleEmptyListItem(config) {
-  const { view, currentLine } = config;
-  const { line, lineText } = currentLine;
-  const state = view.state;
-  if (!isEmptyListItem(lineText)) {
-    return false;
-  }
-  const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-  if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
-    const currentIndent = indentMatch[1];
-    const newIndent = calculateIndentation(currentIndent);
-    let previousMarker = null;
-    for (let i = line.number - 1; i >= 1; i--) {
-      const prevLine = state.doc.line(i);
-      const prevText = prevLine.text;
-      const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
-      if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
-        const allLines = state.doc.toString().split("\n");
-        const markerInfo = getNextListMarker(prevText, allLines, i - 1);
-        if (markerInfo) {
-          previousMarker = markerInfo;
-          break;
-        }
-      }
-    }
-    if (previousMarker && newIndent.length > 0) {
-      const spaces = previousMarker.spaces || " ";
-      const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
-      const changes2 = {
-        from: line.from,
-        to: line.to,
-        insert: newLine
-      };
-      const transaction2 = state.update({
-        changes: changes2,
-        selection: import_state3.EditorSelection.cursor(line.from + newLine.length)
-      });
-      view.dispatch(transaction2);
-      return true;
-    }
-  }
-  const changes = {
-    from: line.from,
-    to: line.to,
-    insert: ""
-  };
-  const transaction = state.update({
-    changes,
-    selection: import_state3.EditorSelection.cursor(line.from)
-  });
-  view.dispatch(transaction);
-  return true;
-}
+// src/editor-extensions/listAutocompletion/handlers/listItemHandler.ts
 function insertNewListItem(config) {
   const { view, currentLine, markerInfo, settings } = config;
   const { line, selection } = currentLine;
@@ -7520,7 +7358,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
   const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
   const transaction = state.update({
     changes,
-    selection: import_state3.EditorSelection.cursor(insertPos + cursorOffset)
+    selection: import_state4.EditorSelection.cursor(insertPos + cursorOffset)
   });
   view.dispatch(transaction);
   if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
@@ -7547,6 +7385,11 @@ function handleNonEmptyListItem(config) {
   }
   return false;
 }
+
+// src/editor-extensions/listAutocompletion/handlers/continuationHandler.ts
+var import_state5 = require("@codemirror/state");
+
+// src/editor-extensions/listAutocompletion/utils/continuationUtils.ts
 function findLastListItem(state, currentLineNumber) {
   let lastListLine = null;
   let lastListLineText = "";
@@ -7576,6 +7419,8 @@ function findLastListItem(state, currentLineNumber) {
   }
   return lastListLine ? { line: lastListLine, text: lastListLineText } : null;
 }
+
+// src/editor-extensions/listAutocompletion/handlers/continuationHandler.ts
 function handleContinuationLine(config) {
   const { view, currentLine, settings } = config;
   const state = view.state;
@@ -7606,7 +7451,7 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
   const cursorOffset = markerInfo.marker === "(@)" ? newLine.length - spaces.length - 1 : markerInfo.marker === "{::}" ? newLine.length - spaces.length - 1 : newLine.length;
   const transaction = state.update({
     changes,
-    selection: import_state3.EditorSelection.cursor(insertPos + cursorOffset)
+    selection: import_state5.EditorSelection.cursor(insertPos + cursorOffset)
   });
   view.dispatch(transaction);
   if (settings.autoRenumberLists && markerInfo.marker !== "(@)" && markerInfo.marker !== "{::}" && markerInfo.marker !== "#." && !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
@@ -7617,8 +7462,10 @@ ${markerInfo.indent}${markerInfo.marker}${spaces}`;
   }
   return true;
 }
-function createListAutocompletionKeymap(settings) {
-  const handleListEnter = {
+
+// src/editor-extensions/listAutocompletion/handlers/enterHandler.ts
+function createEnterHandler(settings) {
+  return {
     key: "Enter",
     run: (view) => {
       const currentLine = getCurrentLineInfo(view);
@@ -7666,7 +7513,12 @@ function createListAutocompletionKeymap(settings) {
       return handleNonEmptyListItem(nonEmptyConfig);
     }
   };
-  const handleListTab = {
+}
+
+// src/editor-extensions/listAutocompletion/handlers/tabHandler.ts
+var import_state6 = require("@codemirror/state");
+function createTabHandler() {
+  return {
     key: "Tab",
     run: (view) => {
       const state = view.state;
@@ -7689,7 +7541,7 @@ function createListAutocompletionKeymap(settings) {
           };
           const transaction = state.update({
             changes,
-            selection: import_state3.EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
+            selection: import_state6.EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
           });
           view.dispatch(transaction);
           return true;
@@ -7698,16 +7550,9 @@ function createListAutocompletionKeymap(settings) {
       return false;
     }
   };
-  function removeIndentLevel(currentIndent) {
-    if (currentIndent.startsWith(INDENTATION.FOUR_SPACES)) {
-      return currentIndent.substring(INDENTATION.TAB_SIZE);
-    } else if (currentIndent.startsWith(INDENTATION.TAB)) {
-      return currentIndent.substring(1);
-    } else {
-      return currentIndent.substring(Math.min(INDENTATION.TAB_SIZE, currentIndent.length));
-    }
-  }
-  const handleListShiftTab = {
+}
+function createShiftTabHandler() {
+  return {
     key: "Shift-Tab",
     run: (view) => {
       const state = view.state;
@@ -7732,7 +7577,7 @@ function createListAutocompletionKeymap(settings) {
         const newCursorOffset = Math.max(newIndent.length + marker.length + space.length, oldCursorOffset - indentDiff);
         const transaction = state.update({
           changes,
-          selection: import_state3.EditorSelection.cursor(line.from + newCursorOffset)
+          selection: import_state6.EditorSelection.cursor(line.from + newCursorOffset)
         });
         view.dispatch(transaction);
         return true;
@@ -7740,10 +7585,12 @@ function createListAutocompletionKeymap(settings) {
       return false;
     }
   };
-  function isExtendedList(lineText) {
-    return !!(ListPatterns.isFancyList(lineText) || ListPatterns.isExampleList(lineText) || ListPatterns.isCustomLabelList(lineText) || ListPatterns.isHashList(lineText));
-  }
-  const handleListShiftEnter = {
+}
+
+// src/editor-extensions/listAutocompletion/handlers/shiftHandlers.ts
+var import_state7 = require("@codemirror/state");
+function createShiftEnterHandler() {
+  return {
     key: "Shift-Enter",
     run: (view) => {
       const state = view.state;
@@ -7760,7 +7607,7 @@ function createListAutocompletionKeymap(settings) {
         };
         const transaction = state.update({
           changes,
-          selection: import_state3.EditorSelection.cursor(insertPos + 1 + 3)
+          selection: import_state7.EditorSelection.cursor(insertPos + 1 + 3)
           // Cursor after 3 spaces
         });
         view.dispatch(transaction);
@@ -7769,17 +7616,20 @@ function createListAutocompletionKeymap(settings) {
       return false;
     }
   };
+}
+
+// src/editor-extensions/listAutocompletion/index.ts
+function createListAutocompletionKeymap(settings) {
   return [
-    handleListEnter,
-    handleListShiftEnter,
-    // Add the Shift+Enter handler
-    handleListTab,
-    handleListShiftTab
+    createEnterHandler(settings),
+    createShiftEnterHandler(),
+    createTabHandler(),
+    createShiftTabHandler()
   ];
 }
 
 // src/core/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian14.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerViewIcons();
@@ -7801,21 +7651,21 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
     this.registerCommands();
   }
   registerViewIcons() {
-    (0, import_obsidian15.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
-    (0, import_obsidian15.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
+    (0, import_obsidian14.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
+    (0, import_obsidian14.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
   }
   registerExtensions() {
     this.registerEditorExtension(pandocExtendedMarkdownExtension(
       () => this.settings,
       () => {
         var _a;
-        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian14.MarkdownView);
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       },
       () => this.app,
       () => this
     ));
-    this.registerEditorExtension(import_state4.Prec.highest(import_view18.keymap.of(createListAutocompletionKeymap(this.settings))));
+    this.registerEditorExtension(import_state8.Prec.highest(import_view13.keymap.of(createListAutocompletionKeymap(this.settings))));
   }
   registerPostProcessor() {
     this.registerMarkdownPostProcessor((element, context) => {
@@ -7853,12 +7703,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian15.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian14.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian15.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian14.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -7871,9 +7721,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian15.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian14.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian15.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian14.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -7885,9 +7735,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian15.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian14.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian15.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian14.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -7899,9 +7749,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian15.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian14.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian15.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian14.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

@@ -1,6 +1,6 @@
 import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
 import PandocExtendedMarkdownPlugin from '../../core/main';
-import { CSS_CLASSES } from '../../core/constants';
+import { CSS_CLASSES, TEXT_PROCESSING } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 
 interface ExampleSuggestion {
@@ -80,10 +80,10 @@ export class ExampleReferenceSuggest extends EditorSuggest<ExampleSuggestion> {
         for (const [label, data] of exampleData) {
             // Filter: label must start with query (case-insensitive)
             if (!query || label.toLowerCase().startsWith(query.toLowerCase())) {
-                // Truncate preview text to 30 characters
+                // Truncate preview text
                 let previewText = data.text;
-                if (previewText.length > 30) {
-                    previewText = previewText.substring(0, 30) + '...';
+                if (previewText.length > TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) {
+                    previewText = previewText.substring(0, TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) + TEXT_PROCESSING.PREVIEW_ELLIPSIS;
                 }
                 suggestions.push({ 
                     label, 

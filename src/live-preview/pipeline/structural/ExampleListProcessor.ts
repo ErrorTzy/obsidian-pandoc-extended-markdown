@@ -1,14 +1,15 @@
 import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
-import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
+import { StructuralResult, ProcessingContext } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
 import { CSS_CLASSES } from '../../../core/constants';
 import { ExampleListMarkerWidget, DuplicateExampleLabelWidget } from '../../widgets';
+import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
 /**
  * Processes example lists (@label) - only handles structural elements
  */
-export class ExampleListProcessor implements StructuralProcessor {
+export class ExampleListProcessor extends BaseStructuralProcessor {
     name = 'example-list';
     priority = 30;
     
@@ -20,35 +21,46 @@ export class ExampleListProcessor implements StructuralProcessor {
     process(line: Line, context: ProcessingContext): StructuralResult {
         const lineText = line.text;
         const exampleMatch = ListPatterns.isExampleList(lineText);
-        
+
         if (!exampleMatch) {
             return { decorations: [] };
         }
-        
+
         // Check if this list item is in an invalid block
-        if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
+        if (this.isInvalidInStrictMode(line, context)) {
             return { decorations: [] };
         }
-        
+
         const markerInfo = this.extractMarkerInfo(exampleMatch, line);
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-        
-        // Add line decoration
-        this.addLineDecoration(decorations, line);
-        
+
+        // Add line decoration using base class method
+        decorations.push(this.createLineDecoration(line));
+
         // Add marker widget if cursor is not within it
-        const cursorInMarker = this.isCursorInMarker(markerInfo, context);
+        const cursorInMarker = this.isCursorInMarker(markerInfo.markerStart, markerInfo.markerEnd, context);
         if (!cursorInMarker) {
             this.addMarkerWidget(decorations, markerInfo, line, lineText, context);
         }
-        
-        // Add content decoration
-        this.addContentDecoration(decorations, markerInfo.contentStart, line.to);
-        
+
+        // Add content decoration using base class method
+        decorations.push(this.createContentMarkDecoration(markerInfo.contentStart, line.to));
+
         // Create content region and update context
-        const contentRegion = this.createContentRegion(markerInfo, line, context);
-        this.updateListContext(markerInfo, context);
-        
+        const contentRegion = this.createContentRegion(
+            markerInfo.contentStart,
+            line.to,
+            'example-list',
+            { label: markerInfo.label, isDuplicate: context.duplicateExampleLineNumbers?.has(line.number) || false }
+        );
+
+        this.setListContext(
+            context,
+            markerInfo.indent.length + markerInfo.fullMarker.length + markerInfo.space.length,
+            1,
+            'example-list'
+        );
+
         return {
             decorations,
             contentRegion,
@@ -72,34 +84,6 @@ export class ExampleListProcessor implements StructuralProcessor {
         return { indent, fullMarker, label, space, markerStart, markerEnd, contentStart };
     }
     
-    /**
-     * Checks if cursor is within the marker area.
-     */
-    private isCursorInMarker(
-        markerInfo: ReturnType<typeof this.extractMarkerInfo>,
-        context: ProcessingContext
-    ): boolean {
-        const cursorPos = context.view.state.selection?.main?.head;
-        return cursorPos !== undefined && 
-               cursorPos >= markerInfo.markerStart && 
-               cursorPos < markerInfo.markerEnd;
-    }
-    
-    /**
-     * Adds line decoration for styling.
-     */
-    private addLineDecoration(
-        decorations: Array<{from: number, to: number, decoration: Decoration}>,
-        line: Line
-    ): void {
-        decorations.push({
-            from: line.from,
-            to: line.from,
-            decoration: Decoration.line({
-                class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.PANDOC_LIST_LINE}`
-            })
-        });
-    }
     
     /**
      * Adds the appropriate marker widget.
@@ -150,55 +134,5 @@ export class ExampleListProcessor implements StructuralProcessor {
                 })
             });
         }
-    }
-    
-    /**
-     * Adds content area decoration.
-     */
-    private addContentDecoration(
-        decorations: Array<{from: number, to: number, decoration: Decoration}>,
-        contentStart: number,
-        contentEnd: number
-    ): void {
-        decorations.push({
-            from: contentStart,
-            to: contentEnd,
-            decoration: Decoration.mark({
-                class: CSS_CLASSES.CM_LIST_1
-            })
-        });
-    }
-    
-    /**
-     * Creates content region for inline processing.
-     */
-    private createContentRegion(
-        markerInfo: ReturnType<typeof this.extractMarkerInfo>,
-        line: Line,
-        context: ProcessingContext
-    ) {
-        const isDuplicate = context.duplicateExampleLineNumbers?.has(line.number);
-        return {
-            from: markerInfo.contentStart,
-            to: line.to,
-            type: 'list-content' as const,
-            parentStructure: 'example-list' as const,
-            metadata: { label: markerInfo.label, isDuplicate: isDuplicate || false }
-        };
-    }
-    
-    /**
-     * Updates list context for continuation line detection.
-     */
-    private updateListContext(
-        markerInfo: ReturnType<typeof this.extractMarkerInfo>,
-        context: ProcessingContext
-    ): void {
-        context.listContext = {
-            isInList: true,
-            contentStartColumn: markerInfo.indent.length + markerInfo.fullMarker.length + markerInfo.space.length,
-            listLevel: 1,
-            parentStructure: 'example-list'
-        };
     }
 }

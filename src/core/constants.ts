@@ -1,155 +1,26 @@
-export const LIST_MARKERS = {
-    DEFINITION_COLON: ':',
-    DEFINITION_TILDE: '~',
-    EXAMPLE_START: '(@',
-    EXAMPLE_END: ')',
-    EXAMPLE_FULL: '(@)',
-    HASH_NUMBERED: '#.',
-    CUSTOM_LABEL_FULL: '{::}',
-    UNORDERED_DASH: '-',
-    UNORDERED_STAR: '*',
-    UNORDERED_PLUS: '+',
+/**
+ * Central constants index file
+ * Re-exports constants from split files and defines remaining constants
+ */
+
+// Core list-related constants
+export { LIST_MARKERS, LIST_TYPES, INDENTATION } from './constants/listConstants';
+
+// CSS and styling constants
+export { CSS_CLASSES, COMPOSITE_CSS, DECORATION_STYLES } from './constants/cssConstants';
+
+// Add missing syntax markers
+export const SYNTAX_MARKERS = {
+    CUSTOM_LABEL_OPEN: '{::',
+    CUSTOM_LABEL_CLOSE: '}}',
+    CUSTOM_LABEL_BRACKET_CLOSE: '}',
+    EXAMPLE_LIST_OPEN: '(@',
+    EXAMPLE_LIST_CLOSE: ')',
+    ELLIPSIS: '…',
+    DEFINITION_LIST_COLON: 'DL:',
 } as const;
 
-export const LIST_TYPES = {
-    HASH: 'hash',
-    CUSTOM_LABEL: 'custom-label',
-    EXAMPLE: 'example',
-    DEFINITION: 'definition',
-    UNKNOWN: 'unknown',
-    ROMAN: 'roman',
-    LETTER: 'letter',
-} as const;
-
-export const INDENTATION = {
-    TAB_SIZE: 4,
-    MIN_INDENT: 0,
-    MAX_INDENT: 40,
-    SINGLE_SPACE: 1,
-    DOUBLE_SPACE: 2,
-    TAB: '\t',
-    FOUR_SPACES: '    ',
-} as const;
-
-export const CSS_CLASSES = {
-    // Fancy List Classes
-    FANCY_LIST: 'pandoc-list-fancy',
-    FANCY_LIST_UPPER_ALPHA: 'pandoc-list-upper-alpha',
-    FANCY_LIST_LOWER_ALPHA: 'pandoc-list-lower-alpha',
-    FANCY_LIST_UPPER_ROMAN: 'pandoc-list-upper-roman',
-    FANCY_LIST_LOWER_ROMAN: 'pandoc-list-lower-roman',
-    FANCY_LIST_PAREN: 'pandoc-list-paren',
-    
-    // Definition List Classes
-    DEFINITION_LIST: 'pandoc-definition-list',
-    DEFINITION_TERM: 'pandoc-definition-term',
-    DEFINITION_DESC: 'pandoc-list-definition-desc',
-    DEFINITION_ITEMS: 'pandoc-definition-items',
-    DEFINITION_CONTENT_TEXT: 'pandoc-definition-content-text',
-    
-    // Example List Classes
-    EXAMPLE_REF: 'pandoc-example-reference',
-    EXAMPLE_LIST: 'pandoc-example-list',
-    EXAMPLE_ITEM: 'pandoc-example-item',
-    DUPLICATE_MARKERS: 'pandoc-duplicate-markers',
-    
-    // Superscript and Subscript Classes
-    SUPERSCRIPT: 'pandoc-superscript',
-    SUBSCRIPT: 'pandoc-subscript',
-    
-    // Suggestion Classes
-    SUGGESTION_CONTENT: 'pandoc-suggestion-content',
-    SUGGESTION_TITLE: 'pandoc-suggestion-title',
-    SUGGESTION_PREVIEW: 'pandoc-suggestion-preview',
-    SUGGESTION_NUMBER: 'pandoc-suggestion-number',
-    SUGGESTION_PLACEHOLDER: 'pandoc-suggestion-placeholder',
-    
-    // CodeMirror Classes
-    LIST_LINE: 'HyperMD-list-line',
-    LIST_LINE_1: 'HyperMD-list-line-1',
-    LIST_LINE_2: 'HyperMD-list-line-2',
-    LIST_LINE_3: 'HyperMD-list-line-3',
-    LIST_LINE_4: 'HyperMD-list-line-4',
-    LIST_LINE_NOBULLET: 'HyperMD-list-line-nobullet',
-    CM_LIST_1: 'cm-list-1',
-    CM_FORMATTING: 'cm-formatting',
-    CM_FORMATTING_LIST: 'cm-formatting-list',
-    CM_FORMATTING_LIST_OL: 'cm-formatting-list-ol',
-    LIST_NUMBER: 'list-number',
-    DEFINITION_TERM_DECORATION: 'cm-pandoc-definition-term',
-    DEFINITION_PARAGRAPH: 'cm-pandoc-definition-paragraph',
-    
-    // Generic Classes
-    PANDOC_LIST_MARKER: 'pandoc-list-marker',
-    PANDOC_LIST_LINE_INDENT: 'pandoc-list-line-indent',
-    PANDOC_LIST_LINE: 'pandoc-list-line',
-    DEFINITION_MARKER_CURSOR: 'cm-pandoc-definition-marker-cursor',
-    
-    // Custom Label Classes
-    CUSTOM_LABEL_PROCESSED: 'pandoc-custom-label-processed',
-    CUSTOM_LABEL_ITEM: 'pandoc-custom-label-item',
-    CUSTOM_LABEL_REFERENCE_PROCESSED: 'pandoc-custom-label-reference-processed',
-    CUSTOM_LABEL_REF_CLICKABLE: 'pandoc-custom-label-ref-clickable',
-    CUSTOM_LABEL_PLACEHOLDER: 'pandoc-custom-label-placeholder',
-    INLINE_PLACEHOLDER_NUMBER: 'pandoc-inline-placeholder-number',
-    CUSTOM_LABEL_MARKER: 'pandoc-custom-label-marker',
-    CUSTOM_LABEL_BRACKET: 'pandoc-custom-label-bracket',
-    CUSTOM_LABEL_TEXT: 'pandoc-custom-label-text',
-    
-    // Custom Label View Classes
-    CUSTOM_LABEL_VIEW_CONTAINER: 'custom-label-view-container',
-    CUSTOM_LABEL_VIEW_HEADER: 'custom-label-view-header',
-    CUSTOM_LABEL_VIEW_HEADER_LABEL: 'custom-label-view-header-label',
-    CUSTOM_LABEL_VIEW_HEADER_CONTENT: 'custom-label-view-header-content',
-    CUSTOM_LABEL_VIEW_ROW: 'custom-label-view-row',
-    CUSTOM_LABEL_VIEW_LABEL: 'custom-label-view-label',
-    CUSTOM_LABEL_VIEW_CONTENT: 'custom-label-view-content',
-    CUSTOM_LABEL_VIEW_EMPTY: 'custom-label-view-empty',
-    CUSTOM_LABEL_HOVER_PREVIEW: 'custom-label-hover-preview',
-    CUSTOM_LABEL_HIGHLIGHT: 'custom-label-highlight',
-    
-    // Hover popover styles
-    HOVER_POPOVER: 'pandoc-hover-popover',
-    HOVER_POPOVER_LABEL: 'pandoc-hover-popover-label',
-    HOVER_POPOVER_CONTENT: 'pandoc-hover-popover-content',
-    HOVER_POPOVER_POSITIONED: 'pandoc-hover-popover-positioned',
-    
-    // List Panel View Classes
-    LIST_PANEL_VIEW_CONTAINER: 'pandoc-list-panel-view-container',
-    LIST_PANEL_ICON_ROW: 'pandoc-list-panel-icon-row',
-    LIST_PANEL_ICON_BUTTON: 'pandoc-list-panel-icon-button',
-    LIST_PANEL_ICON_CONTAINER: 'pandoc-panel-icon-container',
-    LIST_PANEL_ICON_CUSTOM_LABEL: 'pandoc-icon-custom-label',
-    LIST_PANEL_ICON_EXAMPLE_LIST: 'pandoc-icon-example-list',
-    LIST_PANEL_SEPARATOR: 'pandoc-list-panel-separator',
-    LIST_PANEL_CONTENT_CONTAINER: 'pandoc-list-panel-content-container',
-    LIST_PANEL_ICON_ACTIVE: 'is-active',
-    
-    // Example List View Classes
-    EXAMPLE_LIST_VIEW_CONTAINER: 'pandoc-example-list-view-container',
-    EXAMPLE_LIST_VIEW_ROW: 'pandoc-example-list-view-row',
-    EXAMPLE_LIST_VIEW_NUMBER: 'pandoc-example-list-view-number',
-    EXAMPLE_LIST_VIEW_LABEL: 'pandoc-example-list-view-label',
-    EXAMPLE_LIST_VIEW_CONTENT: 'pandoc-example-list-view-content',
-    EXAMPLE_LIST_VIEW_EMPTY: 'pandoc-example-list-view-empty',
-    
-    // Definition List View Classes
-    DEFINITION_LIST_VIEW_CONTAINER: 'pandoc-definition-list-view-container',
-    DEFINITION_LIST_VIEW_ROW: 'pandoc-definition-list-view-row',
-    DEFINITION_LIST_VIEW_TERM: 'pandoc-definition-list-view-term',
-    DEFINITION_LIST_VIEW_DEFINITIONS: 'pandoc-definition-list-view-definitions',
-    DEFINITION_LIST_VIEW_EMPTY: 'pandoc-definition-list-view-empty',
-} as const;
-
-export const DECORATION_STYLES = {
-    HASH_LIST_INDENT: 29,
-    EXAMPLE_LIST_INDENT: 35,
-    FANCY_LIST_INDENT_MULTIPLIER: 7,
-    LINE_TRUNCATION_LIMIT: 100,
-    TOOLTIP_DELAY_MS: 300,
-    CUSTOM_LABEL_PREFIX_LENGTH: 3, // Length of "{::" prefix
-} as const;
-
+// Messages and user-facing strings
 export const MESSAGES = {
     // Success messages
     FORMAT_SUCCESS: 'Document formatted to pandoc standard',
@@ -158,10 +29,10 @@ export const MESSAGES = {
     TOGGLE_BOLD_SUCCESS: 'Definition terms bold style toggled',
     TOGGLE_UNDERLINE_SUCCESS: 'Definition terms underline style toggled',
     LABEL_COPIED: 'Label copied to clipboard',
-    
+
     // Error messages
     NO_DEFINITION_TERMS: 'No definition terms found to toggle',
-    
+
     // View messages
     NO_ACTIVE_FILE: 'No active file',
     NO_CUSTOM_LABELS: 'No custom labels found',
@@ -170,11 +41,12 @@ export const MESSAGES = {
     CUSTOM_LABELS_VIEW_TITLE: 'Custom Labels',
     EXAMPLE_LISTS_VIEW_TITLE: 'Example Lists',
     DEFINITION_LISTS_VIEW_TITLE: 'Definition Lists',
-    
+
     // Formatting issue messages
     FORMATTING_ISSUES: (count: number) => `Found ${count} formatting issues`,
 } as const;
 
+// Command identifiers
 export const COMMANDS = {
     CHECK_PANDOC: 'check-pandoc-formatting',
     FORMAT_PANDOC: 'format-to-pandoc-standard',
@@ -183,14 +55,17 @@ export const COMMANDS = {
     OPEN_LIST_PANEL: 'open-list-panel',
 } as const;
 
+// Settings keys
 export const SETTINGS = {
     STRICT_MODE: 'strictPandocMode',
     AUTO_RENUMBER: 'autoRenumberLists',
 } as const;
 
+// UI timing and sizing constants
 export const UI_CONSTANTS = {
     NOTICE_DURATION_MS: 10000,
     STATE_TRANSITION_DELAY_MS: 100,
+    HIGHLIGHT_ANIMATION_DURATION_MS: 2000,
     // Custom Label View
     LABEL_MAX_LENGTH: 6,
     LABEL_TRUNCATION_LENGTH: 5,  // Length before adding ellipsis
@@ -221,12 +96,14 @@ export const UI_CONSTANTS = {
     HOVER_CLEANUP_DELAY_MS: 100,
 } as const;
 
+// DOM-related attributes
 export const DOM_ATTRIBUTES = {
     CONTENT_EDITABLE_FALSE: 'false',
     ELEMENT_DIV: 'div',
     OVERFLOW_AUTO: 'auto',
 } as const;
 
+// Math symbol mappings
 export const MATH_SYMBOLS = {
     // LaTeX to Unicode mappings for math rendering
     LATEX_TO_UNICODE: {
@@ -273,25 +150,26 @@ export const MATH_SYMBOLS = {
     } as const
 } as const;
 
+// Icon SVGs
 export const ICONS = {
     CUSTOM_LABEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <text x="50" y="50" 
-              text-anchor="middle" 
-              dominant-baseline="central" 
-              font-family="monospace" 
-              font-size="48" 
-              font-weight="bold" 
+        <text x="50" y="50"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-family="monospace"
+              font-size="48"
+              font-weight="bold"
               fill="currentColor">
             {::}
         </text>
     </svg>`,
     EXAMPLE_LIST_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <text x="50" y="50" 
-              text-anchor="middle" 
-              dominant-baseline="central" 
-              font-family="monospace" 
-              font-size="58" 
-              font-weight="bold" 
+        <text x="50" y="50"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-family="monospace"
+              font-size="58"
+              font-weight="bold"
               fill="currentColor">
             (@)
         </text>
@@ -307,13 +185,13 @@ export const ICONS = {
             <!-- 2x2 grid of Pandoc list markers for better visibility -->
             <!-- Top left: Roman numeral -->
             <text x="25" y="35" font-size="48" text-anchor="middle">i.</text>
-            
+
             <!-- Top right: Letter with parenthesis -->
             <text x="75" y="35" font-size="48" text-anchor="middle">a)</text>
-            
+
             <!-- Bottom left: Hash number -->
             <text x="25" y="75" font-size="48" text-anchor="middle">#.</text>
-            
+
             <!-- Bottom right: Definition marker -->
             <text x="75" y="75" font-size="48" text-anchor="middle">~</text>
         </g>
@@ -322,6 +200,7 @@ export const ICONS = {
     LIST_PANEL_ID: 'list-panel-view'
 } as const;
 
+// Panel settings configuration
 export const PANEL_SETTINGS = {
     AVAILABLE_PANELS: [
         {
@@ -351,7 +230,7 @@ export const PANEL_SETTINGS = {
     }
 } as const;
 
-// Error codes moved from errorHandler.ts
+// Error codes
 export const ERROR_CODES = {
     PARSE_ERROR: 'PARSE_ERROR',
     RENDER_ERROR: 'RENDER_ERROR',
@@ -361,7 +240,7 @@ export const ERROR_CODES = {
     UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
 
-// Error messages and contexts
+// Error messages
 export const ERROR_MESSAGES = {
     PLUGIN_PREFIX: 'Pandoc Extended Markdown',
     UNEXPECTED_ERROR: 'An unexpected error occurred',
@@ -387,37 +266,54 @@ export const LOG_MESSAGES = {
     INVALID_MARKER_WARN: 'Invalid marker positions for definition:',
 } as const;
 
-// Magic numbers and thresholds
+// Numeric constants and thresholds
 export const NUMERIC_CONSTANTS = {
     // Document validation
     MIN_DOC_POSITION: 0,
-    
+
     // Position validation
     POSITION_TOLERANCE: 0,
-    
+
     // Line processing
     LINE_PROCESSING_BATCH_SIZE: 100,
-    
+
     // Content limits
     MAX_CONTENT_LENGTH: 1000,
     MAX_LABEL_LENGTH: 100,
-    
+
     // Timer intervals
     DEBOUNCE_INTERVAL_MS: 100,
     SELECTION_TIMEOUT_MS: 50,
-    
+
     // Character limits
     SINGLE_CHARACTER: 1,
     EMPTY_LENGTH: 0,
-    
+
     // Array indices
     FIRST_INDEX: 0,
     SECOND_INDEX: 1,
     THIRD_INDEX: 2,
-    
+
     // List processing
     LIST_NESTING_LEVEL: 1,
     MAX_NESTING_DEPTH: 10,
+} as const;
+
+// Text processing constants
+export const TEXT_PROCESSING = {
+    // Preview truncation
+    PREVIEW_TRUNCATE_LENGTH: 30,
+    PREVIEW_ELLIPSIS: '...',
+
+    // Tab/space conversion
+    TAB_EQUIVALENT_SPACES: 4,
+
+    // Content extraction
+    MIN_CONTENT_LENGTH: 1,
+
+    // Text formatting
+    LINE_SEPARATOR: '\n',
+    SPACE_CHARACTER: ' ',
 } as const;
 
 // File and path constants

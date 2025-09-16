@@ -2,7 +2,7 @@ import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
-import { CSS_CLASSES } from '../../../core/constants';
+import { CSS_CLASSES, TEXT_PROCESSING } from '../../../core/constants';
 
 /**
  * Processes standard unordered lists (*, +, -) to ensure they render correctly
@@ -49,8 +49,9 @@ export class StandardListProcessor implements StructuralProcessor {
         
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
         
-        // Calculate indentation level based on spaces (4 spaces = 1 level, tabs = 1 level)
-        const indentLevel = Math.floor(indent.replace(/\t/g, '    ').length / 4) + 1;
+        // Calculate indentation level based on spaces (tabs = 1 level)
+        const spacesPerTab = ' '.repeat(TEXT_PROCESSING.TAB_EQUIVALENT_SPACES);
+        const indentLevel = Math.floor(indent.replace(/\t/g, spacesPerTab).length / TEXT_PROCESSING.TAB_EQUIVALENT_SPACES) + 1;
         const listClass = indentLevel === 1 ? CSS_CLASSES.LIST_LINE_1 : 
                          indentLevel === 2 ? CSS_CLASSES.LIST_LINE_2 :
                          indentLevel === 3 ? CSS_CLASSES.LIST_LINE_3 :

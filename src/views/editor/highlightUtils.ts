@@ -1,5 +1,10 @@
+// External libraries
 import { MarkdownView } from 'obsidian';
+
+// Constants
 import { CSS_CLASSES, UI_CONSTANTS } from '../../core/constants';
+
+// Utils
 import { handleError } from '../../shared/utils/errorHandler';
 
 export function highlightLine(view: MarkdownView, lineNumber: number): void {

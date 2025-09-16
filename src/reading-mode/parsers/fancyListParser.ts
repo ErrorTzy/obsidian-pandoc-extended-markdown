@@ -2,6 +2,7 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 
 import { getSectionInfo } from '../../shared/types/obsidian-extended';
 import { FancyListType, FancyListMarker } from '../../shared/types/listTypes';
+import { extractSectionLines } from '../utils/domUtils';
 
 import { CSS_CLASSES, getFancyListClass } from '../../core/constants';
 
@@ -107,13 +108,8 @@ function processFancyOrderedList(list: HTMLOListElement) {
     
     if (!sourcePos) return;
     
-    const section = list.closest('.markdown-preview-section') as HTMLElement;
-    if (!section) return;
-    
-    const sectionInfo = getSectionInfo(section);
-    if (!sectionInfo) return;
-    
-    const lines = sectionInfo.text.split('\n');
+    const lines = extractSectionLines(list as HTMLElement);
+    if (!lines) return;
     const lineNum = parseInt(sourcePos);
     
     if (lineNum >= lines.length) return;

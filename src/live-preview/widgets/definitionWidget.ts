@@ -1,46 +1,21 @@
-import { WidgetType } from '@codemirror/view';
 import { EditorView } from '@codemirror/view';
+import { BaseWidget } from './BaseWidget';
 
 // Widget for definition list bullets
-export class DefinitionBulletWidget extends WidgetType {
-    private controller: AbortController;
+export class DefinitionBulletWidget extends BaseWidget {
+    constructor(view?: EditorView, pos?: number) {
+        super(view, pos);
+    }
 
-    constructor(private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
+    protected applyStyles(element: HTMLElement): void {
+        element.className = 'cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker';
     }
-    
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = 'cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker';
-        span.textContent = '• ';
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = '• ';
     }
-    
-    eq(other: DefinitionBulletWidget) {
+
+    eq(other: DefinitionBulletWidget): boolean {
         return other.pos === this.pos;
-    }
-
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
     }
 }

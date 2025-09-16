@@ -1,8 +1,14 @@
+// External libraries
 import { MarkdownView } from 'obsidian';
-import { PanelModule } from './PanelTypes';
-import { PandocExtendedMarkdownPlugin } from '../../../core/main';
+
+// Types
+import { CustomLabel } from '../../../shared/extractors/customLabelExtractor';
+
+// Constants
 import { CSS_CLASSES, MESSAGES, ICONS } from '../../../core/constants';
-import { CustomLabel, extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
+
+// Utils
+import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
 import { truncateLabel, truncateContentWithRendering } from '../utils/contentTruncator';
 import {
     setupLabelClickHandler,
@@ -11,92 +17,33 @@ import {
     renderContentWithMath
 } from '../utils/viewInteractions';
 import { setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
-import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
-import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
-export class CustomLabelPanelModule implements PanelModule {
+// Internal modules
+import { BasePanelModule } from './BasePanelModule';
+import { PandocExtendedMarkdownPlugin } from '../../../core/main';
+
+export class CustomLabelPanelModule extends BasePanelModule {
     id = 'custom-labels';
     displayName = 'Custom Labels';
     icon = ICONS.CUSTOM_LABEL_SVG;
-    isActive = false;
-    
-    private plugin: PandocExtendedMarkdownPlugin;
+
     private labels: CustomLabel[] = [];
-    private containerEl: HTMLElement | null = null;
-    private lastActiveMarkdownView: MarkdownView | null = null;
-    private abortController: AbortController | null = null;
-    private currentContext: ProcessingContext = {};
     
-    constructor(plugin: PandocExtendedMarkdownPlugin) {
-        this.plugin = plugin;
-    }
-    
-    onActivate(containerEl: HTMLElement, activeView: MarkdownView | null): void {
-        this.isActive = true;
-        this.containerEl = containerEl;
-        this.lastActiveMarkdownView = activeView;
-        // Create new abort controller for cleanup
-        this.abortController = new AbortController();
-        this.updateContent(activeView);
-    }
-    
-    onDeactivate(): void {
-        this.isActive = false;
-        // Clean up all event listeners
-        if (this.abortController) {
-            this.abortController.abort();
-            this.abortController = null;
-        }
-        if (this.containerEl) {
-            this.containerEl.empty();
-            this.containerEl = null;
-        }
-    }
-    
-    onUpdate(activeView: MarkdownView | null): void {
-        if (!this.isActive || !this.containerEl) return;
-        
-        if (activeView && activeView.file) {
-            this.lastActiveMarkdownView = activeView;
-        } else if (!activeView) {
-            activeView = this.lastActiveMarkdownView;
-        }
-        
-        this.updateContent(activeView);
-    }
-    
-    shouldUpdate(): boolean {
-        return this.isActive;
-    }
-    
-    destroy(): void {
-        this.onDeactivate();
+    protected cleanupModuleData(): void {
         this.labels = [];
-        this.lastActiveMarkdownView = null;
     }
-    
-    private updateContent(activeView: MarkdownView | null): void {
-        if (!this.containerEl) return;
-        
-        this.containerEl.empty();
-        
-        if (!activeView || !activeView.file) {
-            this.showNoFileMessage();
-            return;
-        }
-        
-        const content = activeView.editor.getValue();
-        this.labels = this.extractCustomLabels(content);
-        
-        // Build context for reference processing
-        this.buildRenderingContext(content);
-        
+
+    protected extractData(content: string): void {
+        this.labels = extractCustomLabels(content, this.plugin.settings?.moreExtendedSyntax || false);
+    }
+
+    protected renderContent(activeView: MarkdownView): void {
         this.renderLabels(activeView);
     }
     
-    private showNoFileMessage(): void {
+    protected showNoFileMessage(): void {
         if (!this.containerEl) return;
-        
+
         this.containerEl.createEl('div', {
             text: MESSAGES.NO_ACTIVE_FILE,
             cls: CSS_CLASSES.CUSTOM_LABEL_VIEW_EMPTY
@@ -104,26 +51,14 @@ export class CustomLabelPanelModule implements PanelModule {
         this.labels = [];
     }
     
-    private extractCustomLabels(content: string): CustomLabel[] {
-        return extractCustomLabels(content, this.plugin.settings?.moreExtendedSyntax || false);
-    }
-    
     /**
      * Build the rendering context for processing content references
      * @param content The document content to extract context from
      */
-    private buildRenderingContext(content: string): void {
-        // Extract example labels for reference processing
-        const exampleItems = extractExampleLists(content);
-        const exampleLabels = new Map<string, number>();
-        exampleItems.forEach(item => {
-            // Extract label from rawLabel (e.g., "@a" -> "a")
-            const label = item.rawLabel.substring(1);
-            if (label) {
-                exampleLabels.set(label, item.renderedNumber);
-            }
-        });
-        
+    protected buildRenderingContext(content: string): void {
+        // Call parent to build base context
+        super.buildRenderingContext(content);
+
         // Build rawToProcessed map for custom labels
         const rawToProcessed = new Map<string, string>();
         this.labels.forEach(label => {
@@ -133,9 +68,9 @@ export class CustomLabelPanelModule implements PanelModule {
                 rawToProcessed.set(match[1], label.label);
             }
         });
-        
+
         this.currentContext = {
-            exampleLabels,
+            ...this.currentContext,
             rawToProcessed
         };
     }

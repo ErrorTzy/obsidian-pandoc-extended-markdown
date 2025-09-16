@@ -1,201 +1,126 @@
-import { WidgetType, EditorView } from '@codemirror/view';
-import { setTooltip } from 'obsidian';
-
-import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
+import { EditorView } from '@codemirror/view';
+import { CSS_CLASSES, COMPOSITE_CSS, DECORATION_STYLES } from '../../core/constants';
+import { BaseWidget } from './BaseWidget';
 
 // Widget for rendering fancy list markers
-export class FancyListMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private marker: string, private delimiter: string, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
+export class FancyListMarkerWidget extends BaseWidget {
+    constructor(
+        private marker: string,
+        private delimiter: string,
+        view?: EditorView,
+        pos?: number
+    ) {
+        super(view, pos);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = this.marker + this.delimiter + ' '; // Include delimiter and space
-        span.appendChild(innerSpan);
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+    protected applyStyles(element: HTMLElement): void {
+        element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
     }
 
-    eq(other: FancyListMarkerWidget) {
-        return other.marker === this.marker && other.delimiter === this.delimiter && other.pos === this.pos;
+    protected setContent(element: HTMLElement): void {
+        const innerSpan = this.createElement('span', CSS_CLASSES.LIST_NUMBER,
+            this.marker + this.delimiter + ' '); // Include delimiter and space
+        element.appendChild(innerSpan);
     }
 
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
+    eq(other: FancyListMarkerWidget): boolean {
+        return other.marker === this.marker &&
+               other.delimiter === this.delimiter &&
+               other.pos === this.pos;
     }
 }
 
 // Widget for hash auto-numbering
-export class HashListMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private number: number, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
+export class HashListMarkerWidget extends BaseWidget {
+    constructor(
+        private number: number,
+        view?: EditorView,
+        pos?: number
+    ) {
+        super(view, pos);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = `${this.number}. `; // Space already included
-        span.appendChild(innerSpan);
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+    protected applyStyles(element: HTMLElement): void {
+        element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
     }
 
-    eq(other: HashListMarkerWidget) {
+    protected setContent(element: HTMLElement): void {
+        const innerSpan = this.createElement('span', CSS_CLASSES.LIST_NUMBER,
+            `${this.number}. `); // Space already included
+        element.appendChild(innerSpan);
+    }
+
+    eq(other: HashListMarkerWidget): boolean {
         return other.number === this.number && other.pos === this.pos;
-    }
-
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
     }
 }
 
 // Widget for example list markers
-export class ExampleListMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private number: number, private label: string | undefined, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
+export class ExampleListMarkerWidget extends BaseWidget {
+    constructor(
+        private number: number,
+        private label: string | undefined,
+        view?: EditorView,
+        pos?: number
+    ) {
+        super(view, pos);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER} ${CSS_CLASSES.EXAMPLE_REF}`;
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = `(${this.number}) `; // Space already included
-        span.appendChild(innerSpan);
-        
-        // Add tooltip to show original label
+    protected applyStyles(element: HTMLElement): void {
+        element.className = `${COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES} ${CSS_CLASSES.EXAMPLE_REF}`;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        const innerSpan = this.createElement('span', CSS_CLASSES.LIST_NUMBER,
+            `(${this.number}) `); // Space already included
+        element.appendChild(innerSpan);
+    }
+
+    protected setupTooltip(element: HTMLElement): void {
         const tooltipText = this.label ? `@${this.label}` : '@';
-        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+        this.addSimpleTooltip(element, tooltipText);
     }
 
-    eq(other: ExampleListMarkerWidget) {
-        return other.number === this.number && other.label === this.label && other.pos === this.pos;
-    }
-
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
+    eq(other: ExampleListMarkerWidget): boolean {
+        return other.number === this.number &&
+               other.label === this.label &&
+               other.pos === this.pos;
     }
 }
 
 // Widget for duplicate example list labels
-export class DuplicateExampleLabelWidget extends WidgetType {
-    private controller: AbortController;
-
-    constructor(private label: string, private originalLine: number, private originalLineContent: string, private view?: EditorView, private pos?: number) {
-        super();
-        this.controller = new AbortController();
+export class DuplicateExampleLabelWidget extends BaseWidget {
+    constructor(
+        private label: string,
+        private originalLine: number,
+        private originalLineContent: string,
+        view?: EditorView,
+        pos?: number
+    ) {
+        super(view, pos);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.DUPLICATE_MARKERS;
-        span.textContent = `(@${this.label})`;
-        
-        // Add tooltip with full line content, truncated if necessary
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.DUPLICATE_MARKERS;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = `(@${this.label})`;
+    }
+
+    protected setupTooltip(element: HTMLElement): void {
         let lineContent = this.originalLineContent.trim();
         if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
             lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + '...';
         }
         const tooltipText = `Duplicate index at line ${this.originalLine}: ${lineContent}`;
-        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-        
-        // Handle click events to place cursor
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+        this.addSimpleTooltip(element, tooltipText);
     }
 
-    eq(other: DuplicateExampleLabelWidget) {
-        return other.label === this.label && other.originalLine === this.originalLine && other.originalLineContent === this.originalLineContent && other.pos === this.pos;
-    }
-
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
+    eq(other: DuplicateExampleLabelWidget): boolean {
+        return other.label === this.label &&
+               other.originalLine === this.originalLine &&
+               other.originalLineContent === this.originalLineContent &&
+               other.pos === this.pos;
     }
 }

@@ -1,6 +1,6 @@
 import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile } from 'obsidian';
 import { PandocExtendedMarkdownPlugin } from '../../core/main';
-import { CSS_CLASSES } from '../../core/constants';
+import { CSS_CLASSES, TEXT_PROCESSING } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 import { CustomLabelSuggestion } from '../../shared/types/listTypes';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
@@ -139,10 +139,10 @@ export class CustomLabelReferenceSuggest extends EditorSuggest<CustomLabelSugges
             const matchesProcessed = processedLabel && (!query || processedLabel.toLowerCase().startsWith(query.toLowerCase()));
             
             if (matchesRaw || matchesProcessed) {
-                // Truncate preview text to 30 characters
+                // Truncate preview text
                 let previewText = data.text;
-                if (previewText.length > 30) {
-                    previewText = previewText.substring(0, 30) + '...';
+                if (previewText.length > TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) {
+                    previewText = previewText.substring(0, TEXT_PROCESSING.PREVIEW_TRUNCATE_LENGTH) + TEXT_PROCESSING.PREVIEW_ELLIPSIS;
                 }
                 
                 // Check if this label has placeholders

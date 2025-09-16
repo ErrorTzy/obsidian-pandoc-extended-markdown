@@ -1,6 +1,11 @@
+// Constants
 import { CSS_CLASSES } from '../../core/constants';
 
+// Patterns
 import { ListPatterns } from '../../shared/patterns';
+
+// Utils
+import { createTextNodeWalker } from '../utils/domUtils';
 
 export interface SuperSubMatch {
     index: number;
@@ -61,11 +66,7 @@ export function findSuperSubInText(text: string): SuperSubMatch[] {
  * Process superscripts and subscripts in an HTML element for reading mode.
  */
 export function processSuperSub(element: HTMLElement) {
-    const walker = document.createTreeWalker(
-        element,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode: (node) => {
+    const walker = createTextNodeWalker(element, (node) => {
                 // Skip if already processed
                 const parent = node.parentElement;
                 if (parent && (
@@ -75,9 +76,7 @@ export function processSuperSub(element: HTMLElement) {
                     return NodeFilter.FILTER_REJECT;
                 }
                 return NodeFilter.FILTER_ACCEPT;
-            }
-        }
-    );
+            });
     
     const nodesToReplace: { node: Text; matches: SuperSubMatch[] }[] = [];
     

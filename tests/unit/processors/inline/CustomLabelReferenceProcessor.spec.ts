@@ -366,7 +366,7 @@ describe('CustomLabelReferenceProcessor', () => {
             
             // The widget should be created with the correct absolute position
             expect(widget).toBeDefined();
-            expect(widget.position).toBe(15);
+            expect(widget.pos).toBe(15);
             
             // Create DOM element and test click handler
             const dom = widget.toDOM();

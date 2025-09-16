@@ -4,7 +4,7 @@ import { CustomLabel } from '../../../shared/extractors/customLabelExtractor';
 import { processContent, ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
 import { CSS_CLASSES, MESSAGES, UI_CONSTANTS } from '../../../core/constants';
-import { handleError } from '../../../shared/utils/errorHandler';
+import { withErrorBoundary, withAsyncErrorBoundary, handleError } from '../../../shared/utils/errorHandler';
 
 /**
  * Highlights a specific line in the markdown editor with a visual animation effect.
@@ -19,13 +19,11 @@ import { handleError } from '../../../shared/utils/errorHandler';
  * highlightLine(activeView, 5);
  */
 export function highlightLine(view: MarkdownView, lineNumber: number): void {
-    try {
+    withErrorBoundary(() => {
         const editor = view.editor;
         setCursorAndScroll(editor, lineNumber);
         applyLineHighlight(editor, lineNumber);
-    } catch (error) {
-        handleError(error, 'error');
-    }
+    }, undefined, 'highlight line');
 }
 
 /**
@@ -119,10 +117,10 @@ function applyHighlight(lineElement: HTMLElement): void {
     // Add the highlight class to trigger the animation
     lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
     
-    // Remove the class after animation completes (2s duration)
+    // Remove the class after animation completes
     setTimeout(() => {
         lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
-    }, 2000);
+    }, UI_CONSTANTS.HIGHLIGHT_ANIMATION_DURATION_MS);
 }
 
 export function setupLabelClickHandler(
@@ -130,16 +128,11 @@ export function setupLabelClickHandler(
     rawLabel: string,
     abortSignal?: AbortSignal
 ): void {
-    const clickHandler = () => {
-        try {
-            navigator.clipboard.writeText(rawLabel).then(() => {
-                new Notice(MESSAGES.LABEL_COPIED);
-            }).catch((error) => {
-                handleError(error, 'error');
-            });
-        } catch (error) {
-            handleError(error, 'error');
-        }
+    const clickHandler = async () => {
+        await withAsyncErrorBoundary(async () => {
+            await navigator.clipboard.writeText(rawLabel);
+            new Notice(MESSAGES.LABEL_COPIED);
+        }, undefined, 'copy label to clipboard');
     };
     
     element.addEventListener('click', clickHandler, { signal: abortSignal });
@@ -153,29 +146,27 @@ export function setupContentClickHandler(
     abortSignal?: AbortSignal
 ): void {
     const clickHandler = () => {
-        try {
+        withErrorBoundary(() => {
             // Use the last active markdown view
             const targetView = lastActiveMarkdownView;
             if (targetView && targetView.editor) {
                 const editor = targetView.editor;
-                
+
                 // First, make the markdown view active
                 const leaves = app.workspace.getLeavesOfType("markdown");
                 const targetLeaf = leaves.find((leaf: WorkspaceLeaf) => leaf.view === targetView);
                 if (targetLeaf) {
                     app.workspace.setActiveLeaf(targetLeaf, { focus: true });
                 }
-                
+
                 // Then scroll to position
                 editor.setCursor(label.position);
                 editor.scrollIntoView({ from: label.position, to: label.position }, true);
-                
+
                 // Add highlight effect
                 highlightLine(targetView, label.lineNumber);
             }
-        } catch (error) {
-            handleError(error, 'error');
-        }
+        }, undefined, 'navigate to custom label');
     };
     
     element.addEventListener('click', clickHandler, { signal: abortSignal });

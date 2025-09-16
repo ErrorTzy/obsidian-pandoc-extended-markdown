@@ -1,8 +1,10 @@
-export { 
-    FancyListMarkerWidget, 
-    HashListMarkerWidget, 
-    ExampleListMarkerWidget, 
-    DuplicateExampleLabelWidget 
+export { BaseWidget } from './BaseWidget';
+
+export {
+    FancyListMarkerWidget,
+    HashListMarkerWidget,
+    ExampleListMarkerWidget,
+    DuplicateExampleLabelWidget
 } from './listWidgets';
 
 export { DefinitionBulletWidget } from './definitionWidget';

@@ -2,6 +2,7 @@ import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
 import { SubscriptWidget } from '../../widgets';
+import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
 
 /**
  * Processes subscript syntax (~text~) in content
@@ -18,8 +19,7 @@ export class SubscriptProcessor implements InlineProcessor {
         const pattern = ListPatterns.SUBSCRIPT_INLINE;
         
         // Get cursor position relative to region
-        const cursorPos = context.view?.state?.selection?.main?.head;
-        const regionCursorPos = cursorPos !== undefined ? cursorPos - region.from : -1;
+        const regionCursorPos = getRegionCursorPosition(context, region);
         
         let match;
         while ((match = pattern.exec(text)) !== null) {

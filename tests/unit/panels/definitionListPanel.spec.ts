@@ -151,7 +151,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
         });
 
         it('should truncate long rendered terms properly', () => {
-            const longTerm = '**' + 'A'.repeat(40) + '**'; // Will render to 40 chars
+            const longTerm = '**' + 'A'.repeat(120) + '**'; // Will render to 120 chars
             mockMarkdownView.editor = {
                 getValue: jest.fn().mockReturnValue(`${longTerm}
 : Definition`),
@@ -159,14 +159,14 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
                 scrollIntoView: jest.fn(),
                 cursorCoords: jest.fn().mockReturnValue({ top: 100, left: 10 })
             } as any;
-            
+
             module.onActivate(containerEl, mockMarkdownView);
-            
+
             const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
             expect(termCell).toBeTruthy();
-            // Should be truncated with ellipsis (30 char limit for terms)
+            // Should be truncated with ellipsis (100 char limit for terms)
             const text = termCell?.textContent || '';
-            expect(text.length).toBeLessThanOrEqual(30);
+            expect(text.length).toBeLessThanOrEqual(101); // 100 + ellipsis
             expect(text).toContain('…');
         });
     });

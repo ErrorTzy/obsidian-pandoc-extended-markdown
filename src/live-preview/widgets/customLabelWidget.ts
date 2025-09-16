@@ -1,213 +1,153 @@
 // External libraries
-import { WidgetType, EditorView } from '@codemirror/view';
-import { setTooltip, App, Component } from 'obsidian';
+import { EditorView } from '@codemirror/view';
+import { App, Component } from 'obsidian';
 
 // Constants
-import { CSS_CLASSES, DECORATION_STYLES, DOM_ATTRIBUTES } from '../../core/constants';
-import { setupRenderedHoverPreview } from '../../shared/utils/hoverPopovers';
+import { CSS_CLASSES, COMPOSITE_CSS, DECORATION_STYLES } from '../../core/constants';
+import { BaseWidget } from './BaseWidget';
 
-export class CustomLabelMarkerWidget extends WidgetType {
-    private controller: AbortController;
-
+export class CustomLabelMarkerWidget extends BaseWidget {
     constructor(
         private label: string,
-        private view: EditorView,
-        private position: number
+        view: EditorView,
+        position: number
     ) {
-        super();
-        this.controller = new AbortController();
+        super(view, position);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_OL} ${CSS_CLASSES.CM_LIST_1} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        
-        const innerSpan = document.createElement('span');
-        innerSpan.className = 'list-number';
-        innerSpan.textContent = `(${this.label}) `;
-        span.appendChild(innerSpan);
-        
-        // Make it clickable to jump to position
-        if (this.view && this.position !== undefined) {
-            span.classList.add(CSS_CLASSES.CUSTOM_LABEL_REF_CLICKABLE);
-            span.addEventListener('click', () => {
-                if (this.view && this.position !== undefined) {
+    protected applyStyles(element: HTMLElement): void {
+        element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
+        if (this.view && this.pos !== undefined) {
+            element.classList.add(CSS_CLASSES.CUSTOM_LABEL_REF_CLICKABLE);
+        }
+    }
+
+    protected setContent(element: HTMLElement): void {
+        const innerSpan = this.createElement('span', 'list-number', `(${this.label}) `);
+        element.appendChild(innerSpan);
+    }
+
+    protected setupClickHandler(element: HTMLElement): void {
+        // Override with click instead of mousedown for this widget
+        if (this.view && this.pos !== undefined) {
+            element.addEventListener('click', () => {
+                if (this.view && this.pos !== undefined) {
                     this.view.dispatch({
-                        selection: { anchor: this.position }
+                        selection: { anchor: this.pos }
                     });
                     this.view.focus();
                 }
             }, { signal: this.controller.signal });
         }
-        
-        return span;
     }
 
-    eq(other: CustomLabelMarkerWidget) {
-        return other.label === this.label && 
-               other.position === this.position;
-    }
-
-    ignoreEvent() {
-        return false;  // Allow all events to pass through
-    }
-    
-    destroy() {
-        this.controller.abort();
+    eq(other: CustomLabelMarkerWidget): boolean {
+        return other.label === this.label &&
+               other.pos === this.pos;
     }
 }
 
-export class CustomLabelPartialWidget extends WidgetType {
-    private controller: AbortController;
-
+export class CustomLabelPartialWidget extends BaseWidget {
     constructor(
         private text: string,
-        private view: EditorView,
-        private position?: number
+        view: EditorView,
+        position?: number
     ) {
-        super();
-        this.controller = new AbortController();
+        super(view, position);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        span.textContent = this.text;
-        
-        // Handle click events to place cursor if position is provided
-        if (this.view && this.position !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.position !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.position }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+    protected applyStyles(element: HTMLElement): void {
+        element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
     }
 
-    eq(other: CustomLabelPartialWidget) {
-        return other.text === this.text && other.position === this.position;
+    protected setContent(element: HTMLElement): void {
+        element.textContent = this.text;
     }
 
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
+    eq(other: CustomLabelPartialWidget): boolean {
+        return other.text === this.text && other.pos === this.pos;
     }
 }
 
-export class CustomLabelPlaceholderWidget extends WidgetType {
+export class CustomLabelPlaceholderWidget extends BaseWidget {
     constructor(
         private number: string,
-        private view: EditorView
+        view: EditorView
     ) {
-        super();
+        super(view, undefined);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER;
-        span.textContent = this.number;
-        return span;
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER;
     }
 
-    eq(other: CustomLabelPlaceholderWidget) {
+    protected setContent(element: HTMLElement): void {
+        element.textContent = this.number;
+    }
+
+    protected setupClickHandler(element: HTMLElement): void {
+        // No click handler for this widget
+    }
+
+    eq(other: CustomLabelPlaceholderWidget): boolean {
         return other.number === this.number;
     }
-
-    ignoreEvent() {
-        return false;
-    }
 }
 
-export class CustomLabelProcessedWidget extends WidgetType {
-    private controller: AbortController;
-
+export class CustomLabelProcessedWidget extends BaseWidget {
     constructor(
         private text: string,
-        private view: EditorView,
-        private position?: number
+        view: EditorView,
+        position?: number
     ) {
-        super();
-        this.controller = new AbortController();
+        super(view, position);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
-        span.textContent = this.text;
-        
-        // Handle click events to place cursor if position is provided
-        if (this.view && this.position !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.position !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.position }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+    protected applyStyles(element: HTMLElement): void {
+        element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
     }
 
-    eq(other: CustomLabelProcessedWidget) {
-        return other.text === this.text && other.position === this.position;
+    protected setContent(element: HTMLElement): void {
+        element.textContent = this.text;
     }
 
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
+    eq(other: CustomLabelProcessedWidget): boolean {
+        return other.text === this.text && other.pos === this.pos;
     }
 }
 
-export class CustomLabelInlineNumberWidget extends WidgetType {
+export class CustomLabelInlineNumberWidget extends BaseWidget {
     constructor(
         private number: string,
-        private view: EditorView
+        view: EditorView
     ) {
-        super();
+        super(view, undefined);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
-        span.textContent = this.number;
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.INLINE_PLACEHOLDER_NUMBER;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = this.number;
         // Don't set contentEditable - let CodeMirror handle it
-        return span;
     }
 
-    eq(other: CustomLabelInlineNumberWidget) {
+    protected setupClickHandler(element: HTMLElement): void {
+        // No click handler for this widget
+    }
+
+    eq(other: CustomLabelInlineNumberWidget): boolean {
         return other.number === this.number;
-    }
-
-    ignoreEvent() {
-        return false;
     }
 }
 
-export class CustomLabelReferenceWidget extends WidgetType {
-    private controller: AbortController;
-
+export class CustomLabelReferenceWidget extends BaseWidget {
     constructor(
         private label: string,
         private content: string | undefined,
-        private view: EditorView,
-        private position: number,
+        view: EditorView,
+        position: number,
         private app?: App,
         private component?: Component,
         private context?: {
@@ -217,59 +157,44 @@ export class CustomLabelReferenceWidget extends WidgetType {
             rawToProcessed?: Map<string, string>;
         }
     ) {
-        super();
-        this.controller = new AbortController();
+        super(view, position);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.EXAMPLE_REF;
-        span.setAttribute('data-custom-label-ref', this.label);
-        span.textContent = `(${this.label})`;
-        
-        // Add hover preview with rendered content if available
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.EXAMPLE_REF;
+        element.setAttribute('data-custom-label-ref', this.label);
+    }
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = `(${this.label})`;
+    }
+
+    protected setupTooltip(element: HTMLElement): void {
         if (this.content) {
             // If app and component are available, use rendered preview
             if (this.app && this.component) {
-                setupRenderedHoverPreview(span, this.content, this.app, this.component, this.context, CSS_CLASSES.HOVER_POPOVER_CONTENT, this.controller.signal);
+                this.addRenderedHoverPreview(
+                    element,
+                    this.content,
+                    this.app,
+                    this.component,
+                    this.context,
+                    CSS_CLASSES.HOVER_POPOVER_CONTENT
+                );
             } else {
                 // Fallback to plain title attribute
-                span.setAttribute('title', this.content);
+                element.setAttribute('title', this.content);
             }
         }
-        
-        // Handle click events to place cursor
-        if (this.view && this.position !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (this.view && this.position !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.position }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
     }
 
-    eq(other: CustomLabelReferenceWidget) {
+    eq(other: CustomLabelReferenceWidget): boolean {
         return other.label === this.label &&
                other.content === this.content &&
-               other.position === this.position &&
+               other.pos === this.pos &&
                other.app === this.app &&
                other.component === this.component &&
                other.context === this.context;
-    }
-
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
     }
 }
 
@@ -277,9 +202,7 @@ export class CustomLabelReferenceWidget extends WidgetType {
  * Widget for displaying duplicate custom label markers with error styling.
  * Shows the original label syntax with a tooltip indicating the first occurrence.
  */
-export class DuplicateCustomLabelWidget extends WidgetType {
-    private controller: AbortController;
-
+export class DuplicateCustomLabelWidget extends BaseWidget {
     /**
      * @param rawLabel - The raw label text (e.g., "P(#a)")
      * @param originalLine - Line number of the first occurrence
@@ -291,56 +214,33 @@ export class DuplicateCustomLabelWidget extends WidgetType {
         private rawLabel: string,
         private originalLine: number,
         private originalLineContent: string,
-        private view?: EditorView,
-        private pos?: number
+        view?: EditorView,
+        pos?: number
     ) {
-        super();
-        this.controller = new AbortController();
+        super(view, pos);
     }
 
-    toDOM() {
-        const span = document.createElement('span');
-        span.className = CSS_CLASSES.DUPLICATE_MARKERS;
-        span.textContent = `{::${this.rawLabel}}`;
-        
-        // Add tooltip with full line content, truncated if necessary
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.DUPLICATE_MARKERS;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = `{::${this.rawLabel}}`;
+    }
+
+    protected setupTooltip(element: HTMLElement): void {
         let lineContent = this.originalLineContent.trim();
         if (lineContent.length > DECORATION_STYLES.LINE_TRUNCATION_LIMIT) {
             lineContent = lineContent.substring(0, DECORATION_STYLES.LINE_TRUNCATION_LIMIT) + '...';
         }
         const tooltipText = `Duplicate label at line ${this.originalLine}: ${lineContent}`;
-        setTooltip(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-        
-        // Handle click events to place cursor (only if both view and pos are provided)
-        if (this.view && this.pos !== undefined) {
-            span.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // Re-check to ensure TypeScript knows they're defined
-                if (this.view && this.pos !== undefined) {
-                    this.view.dispatch({
-                        selection: { anchor: this.pos }
-                    });
-                    this.view.focus();
-                }
-            }, { signal: this.controller.signal });
-        }
-        
-        return span;
+        this.addSimpleTooltip(element, tooltipText);
     }
 
-    eq(other: DuplicateCustomLabelWidget) {
-        return other.rawLabel === this.rawLabel && 
-               other.originalLine === this.originalLine && 
-               other.originalLineContent === this.originalLineContent && 
+    eq(other: DuplicateCustomLabelWidget): boolean {
+        return other.rawLabel === this.rawLabel &&
+               other.originalLine === this.originalLine &&
+               other.originalLineContent === this.originalLineContent &&
                other.pos === this.pos;
-    }
-
-    ignoreEvent() {
-        return false;
-    }
-
-    destroy() {
-        this.controller.abort();
     }
 }

@@ -78,7 +78,7 @@ B. Second item`;
         expect(line2Decoration?.value?.spec?.class).toContain('HyperMD-list-line-nobullet');
         
         // Should have decoration for line 3 (B. Second item)
-        const line3Decoration = lineDecorations.find(d => d.from === 33); // Position after first two lines
+        const line3Decoration = lineDecorations.find(d => d.from === 35); // Position after first two lines
         expect(line3Decoration).toBeDefined();
         expect(line3Decoration?.value?.spec?.class).toContain('pandoc-list-line');
     });

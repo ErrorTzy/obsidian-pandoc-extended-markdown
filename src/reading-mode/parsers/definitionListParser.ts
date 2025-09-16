@@ -2,6 +2,7 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 
 import { getSectionInfo } from '../../shared/types/obsidian-extended';
 import { DefinitionList, DefinitionTerm, DefinitionItem } from '../../shared/types/listTypes';
+import { extractSectionLines } from '../utils/domUtils';
 
 import { CSS_CLASSES } from '../../core/constants';
 
@@ -74,13 +75,8 @@ export function parseDefinitionListMarker(line: string): DefinitionListMarker | 
  * processDefinitionLists(sectionElement, context);
  */
 export function processDefinitionLists(element: HTMLElement, context: MarkdownPostProcessorContext) {
-    const section = element.closest('.markdown-preview-section') as HTMLElement;
-    if (!section) return;
-    
-    const sectionInfo = getSectionInfo(section);
-    if (!sectionInfo) return;
-    
-    const lines = sectionInfo.text.split('\n');
+    const lines = extractSectionLines(element);
+    if (!lines) return;
     const definitionLists: DefinitionList[] = [];
     
     let currentList: DefinitionList | null = null;
