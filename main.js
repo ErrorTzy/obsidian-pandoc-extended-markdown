@@ -828,14 +828,16 @@ ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
  * Inline superscript pattern for inline processors.
  * Excludes $ character to prevent matching across LaTeX math boundaries,
  * ensuring math expressions like $R^{+}_{xy}$ remain intact.
+ * Excludes [ and ] to prevent matching footnote syntax like [^1].
  */
-ListPatterns.SUPERSCRIPT_INLINE = /\^([^^~\s$]+(?:\s+[^^~\s$]+)*)\^/g;
+ListPatterns.SUPERSCRIPT_INLINE = /\^([^^~\s$\[\]]+(?:\s+[^^~\s$\[\]]+)*)\^/g;
 /**
  * Inline subscript pattern for inline processors.
  * Excludes $ character to prevent matching across LaTeX math boundaries,
  * ensuring math expressions remain properly formatted.
+ * Excludes [ and ] to prevent matching patterns that might conflict with brackets.
  */
-ListPatterns.SUBSCRIPT_INLINE = /~([^~^\s$]+(?:\s+[^~^\s$]+)*)~/g;
+ListPatterns.SUBSCRIPT_INLINE = /~([^~^\s$\[\]]+(?:\s+[^~^\s$\[\]]+)*)~/g;
 // Custom label list patterns for More Extended Syntax
 // Matches {::LABEL} at start of line with required space after
 // Now supports placeholders like {::P(#first)} or pure placeholders like {::(#name)}
