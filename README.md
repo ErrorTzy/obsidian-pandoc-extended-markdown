@@ -231,6 +231,13 @@ A modular sidebar panel displays various list-related content from the active do
 - Smart truncation: terms (100 chars), definitions (300 chars)
 - Hover previews for truncated content with full rendering
 
+**Footnotes Panel** `[^]`
+- Lists every footnote definition detected in the document
+- Two-column layout: footnote label and fully rendered content (markdown, math, references)
+- Clicking a label focuses the editor and positions the cursor immediately after the corresponding `[^label]` reference
+- Clicking content jumps to the footnote definition block and highlights the line
+- Uses the shared rendering pipeline for consistent formatting across panels
+
 ## Installation
 
 ### From Obsidian Community Plugins (Coming Soon)

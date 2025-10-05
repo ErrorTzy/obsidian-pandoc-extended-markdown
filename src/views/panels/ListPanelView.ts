@@ -14,6 +14,7 @@ import { handleError } from '../../shared/utils/errorHandler';
 import { CustomLabelPanelModule } from './modules/CustomLabelPanelModule';
 import { ExampleListPanelModule } from './modules/ExampleListPanelModule';
 import { DefinitionListPanelModule } from './modules/DefinitionListPanelModule';
+import { FootnotePanelModule } from './modules/FootnotePanelModule';
 import { PandocExtendedMarkdownPlugin } from '../../core/main';
 
 export const VIEW_TYPE_LIST_PANEL = 'list-panel-view';
@@ -70,9 +71,17 @@ export class ListPanelView extends ItemView {
             icon: definitionListModule.icon,
             module: definitionListModule
         });
+
+        const footnoteModule = new FootnotePanelModule(this.plugin);
+        availablePanels.push({
+            id: footnoteModule.id,
+            displayName: footnoteModule.displayName,
+            icon: footnoteModule.icon,
+            module: footnoteModule
+        });
         
         // Sort panels according to settings order
-        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists', 'definition-lists'];
+        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists', 'definition-lists', 'footnotes'];
         this.panels = [];
         
         // First, add panels in the specified order
@@ -191,6 +200,11 @@ export class ListPanelView extends ItemView {
                 const iconText = iconContainer.createSpan({
                     cls: 'pandoc-icon-definition-list',
                     text: 'DL:'
+                });
+            } else if (panel.id === 'footnotes') {
+                iconContainer.createSpan({
+                    cls: CSS_CLASSES.LIST_PANEL_ICON_FOOTNOTE,
+                    text: '[^]'
                 });
             } else {
                 // For future panels, add a generic icon class

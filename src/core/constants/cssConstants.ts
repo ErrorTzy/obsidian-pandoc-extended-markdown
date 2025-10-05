@@ -95,6 +95,7 @@ export const CSS_CLASSES = {
     LIST_PANEL_ICON_CONTAINER: 'pandoc-panel-icon-container',
     LIST_PANEL_ICON_CUSTOM_LABEL: 'pandoc-icon-custom-label',
     LIST_PANEL_ICON_EXAMPLE_LIST: 'pandoc-icon-example-list',
+    LIST_PANEL_ICON_FOOTNOTE: 'pandoc-icon-footnote',
     LIST_PANEL_SEPARATOR: 'pandoc-list-panel-separator',
     LIST_PANEL_CONTENT_CONTAINER: 'pandoc-list-panel-content-container',
     LIST_PANEL_ICON_ACTIVE: 'is-active',
@@ -113,6 +114,13 @@ export const CSS_CLASSES = {
     DEFINITION_LIST_VIEW_TERM: 'pandoc-definition-list-view-term',
     DEFINITION_LIST_VIEW_DEFINITIONS: 'pandoc-definition-list-view-definitions',
     DEFINITION_LIST_VIEW_EMPTY: 'pandoc-definition-list-view-empty',
+
+    // Footnote Panel View Classes
+    FOOTNOTE_PANEL_CONTAINER: 'pandoc-footnote-panel-container',
+    FOOTNOTE_PANEL_ROW: 'pandoc-footnote-panel-row',
+    FOOTNOTE_PANEL_INDEX: 'pandoc-footnote-panel-index',
+    FOOTNOTE_PANEL_CONTENT: 'pandoc-footnote-panel-content',
+    FOOTNOTE_PANEL_EMPTY: 'pandoc-footnote-panel-empty',
 } as const;
 
 // Composite CSS Classes - commonly used combinations

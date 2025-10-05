@@ -28,19 +28,19 @@ __export(main_exports, {
   default: () => main_default
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian14 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 var import_state8 = require("@codemirror/state");
 var import_view13 = require("@codemirror/view");
 
 // src/core/settings.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/shared/types/settingsTypes.ts
 var DEFAULT_SETTINGS = {
   strictPandocMode: false,
   autoRenumberLists: false,
   moreExtendedSyntax: false,
-  panelOrder: ["custom-labels", "example-lists", "definition-lists"]
+  panelOrder: ["custom-labels", "example-lists", "definition-lists", "footnotes"]
 };
 
 // src/core/constants/listConstants.ts
@@ -159,6 +159,7 @@ var CSS_CLASSES = {
   LIST_PANEL_ICON_CONTAINER: "pandoc-panel-icon-container",
   LIST_PANEL_ICON_CUSTOM_LABEL: "pandoc-icon-custom-label",
   LIST_PANEL_ICON_EXAMPLE_LIST: "pandoc-icon-example-list",
+  LIST_PANEL_ICON_FOOTNOTE: "pandoc-icon-footnote",
   LIST_PANEL_SEPARATOR: "pandoc-list-panel-separator",
   LIST_PANEL_CONTENT_CONTAINER: "pandoc-list-panel-content-container",
   LIST_PANEL_ICON_ACTIVE: "is-active",
@@ -174,7 +175,13 @@ var CSS_CLASSES = {
   DEFINITION_LIST_VIEW_ROW: "pandoc-definition-list-view-row",
   DEFINITION_LIST_VIEW_TERM: "pandoc-definition-list-view-term",
   DEFINITION_LIST_VIEW_DEFINITIONS: "pandoc-definition-list-view-definitions",
-  DEFINITION_LIST_VIEW_EMPTY: "pandoc-definition-list-view-empty"
+  DEFINITION_LIST_VIEW_EMPTY: "pandoc-definition-list-view-empty",
+  // Footnote Panel View Classes
+  FOOTNOTE_PANEL_CONTAINER: "pandoc-footnote-panel-container",
+  FOOTNOTE_PANEL_ROW: "pandoc-footnote-panel-row",
+  FOOTNOTE_PANEL_INDEX: "pandoc-footnote-panel-index",
+  FOOTNOTE_PANEL_CONTENT: "pandoc-footnote-panel-content",
+  FOOTNOTE_PANEL_EMPTY: "pandoc-footnote-panel-empty"
 };
 var COMPOSITE_CSS = {
   // Standard formatting for list markers in widgets
@@ -206,9 +213,12 @@ var MESSAGES = {
   NO_CUSTOM_LABELS: "No custom labels found",
   NO_EXAMPLE_LISTS: "No example lists found",
   NO_DEFINITION_LISTS: "No definition lists found",
+  NO_FOOTNOTES: "No footnotes found",
+  FOOTNOTE_REFERENCE_NOT_FOUND: "No matching footnote reference found",
   CUSTOM_LABELS_VIEW_TITLE: "Custom Labels",
   EXAMPLE_LISTS_VIEW_TITLE: "Example Lists",
   DEFINITION_LISTS_VIEW_TITLE: "Definition Lists",
+  FOOTNOTE_VIEW_TITLE: "Footnotes",
   // Formatting issue messages
   FORMATTING_ISSUES: (count) => `Found ${count} formatting issues`
 };
@@ -336,6 +346,17 @@ var ICONS = {
             <text x="70" y="65" font-size="48" text-anchor="middle">:</text>
         </g>
     </svg>`,
+  FOOTNOTE_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <text x="50" y="55"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-family="monospace"
+              font-size="56"
+              font-weight="bold"
+              fill="currentColor">
+            [^]
+        </text>
+    </svg>`,
   LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <g fill="currentColor" font-family="monospace" font-weight="bold">
             <!-- 2x2 grid of Pandoc list markers for better visibility -->
@@ -371,6 +392,11 @@ var PANEL_SETTINGS = {
       id: "definition-lists",
       displayName: "Definition Lists",
       icon: ICONS.DEFINITION_LIST_SVG
+    },
+    {
+      id: "footnotes",
+      displayName: "Footnotes",
+      icon: ICONS.FOOTNOTE_SVG
     }
   ],
   UI_TEXT: {
@@ -502,7 +528,7 @@ var ROMAN_NUMERALS = {
 };
 
 // src/views/panels/ListPanelView.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/shared/utils/errorHandler.ts
 var import_obsidian = require("obsidian");
@@ -757,6 +783,9 @@ ListPatterns.DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
 ListPatterns.DEFINITION_INDENTED = /^(    |\t)/;
 ListPatterns.DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
 ListPatterns.DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
+ListPatterns.FOOTNOTE_DEFINITION = /^\[\^([^\]]+)\]:\s*(.*)$/;
+ListPatterns.FOOTNOTE_CONTINUATION = /^( {4,}|\t+)(.*)$/;
+ListPatterns.FOOTNOTE_REFERENCE = /\[\^([^\]]+)\]/g;
 ListPatterns.NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
 ListPatterns.UNORDERED_LIST = /^(\s*)[-*+]\s+/;
 ListPatterns.CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;
@@ -1958,10 +1987,15 @@ var CustomLabelPanelModule = class extends BasePanelModule {
 var import_obsidian4 = require("obsidian");
 
 // src/views/editor/highlightUtils.ts
-function highlightLine2(view, lineNumber) {
+function highlightLine2(view, lineNumber, cursorPosition) {
   try {
     const editor = view.editor;
-    moveCursorToLine(editor, lineNumber);
+    if (cursorPosition) {
+      editor.setCursor(cursorPosition);
+      editor.scrollIntoView({ from: cursorPosition, to: cursorPosition }, true);
+    } else {
+      moveCursorToLine(editor, lineNumber);
+    }
     const cm = editor.cm;
     if (cm) {
       const editorDom = cm.dom || cm.contentDOM;
@@ -2388,9 +2422,291 @@ var DefinitionListPanelModule = class extends BasePanelModule {
   }
 };
 
+// src/views/panels/modules/FootnotePanelModule.ts
+var import_obsidian5 = require("obsidian");
+
+// src/shared/extractors/footnoteExtractor.ts
+function extractFootnotes(content) {
+  return withErrorBoundary(() => {
+    const lines = content.split("\n");
+    const referencePositions = collectReferencePositions(lines);
+    const items = [];
+    let index = 0;
+    while (index < lines.length) {
+      const parseResult = parseFootnoteDefinition(lines, index);
+      if (!parseResult) {
+        index += 1;
+        continue;
+      }
+      const { item, nextIndex } = parseResult;
+      const referenceInfo = referencePositions.get(item.label);
+      if (referenceInfo) {
+        item.referenceLine = referenceInfo.position.line;
+        item.referencePosition = referenceInfo.position;
+        item.referenceLength = referenceInfo.length;
+      }
+      items.push(item);
+      index = nextIndex;
+    }
+    return items;
+  }, [], "Extract footnotes");
+}
+function collectReferencePositions(lines) {
+  var _a, _b, _c;
+  const positions = /* @__PURE__ */ new Map();
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex];
+    if (ListPatterns.FOOTNOTE_DEFINITION.test(line)) {
+      continue;
+    }
+    const referencePattern = new RegExp(ListPatterns.FOOTNOTE_REFERENCE.source, "g");
+    let match;
+    while ((match = referencePattern.exec(line)) !== null) {
+      const label = (_a = match[1]) == null ? void 0 : _a.trim();
+      if (!label || positions.has(label)) {
+        continue;
+      }
+      positions.set(label, {
+        position: {
+          line: lineIndex,
+          ch: match.index
+        },
+        length: (_c = (_b = match[0]) == null ? void 0 : _b.length) != null ? _c : 0
+      });
+    }
+  }
+  return positions;
+}
+function parseFootnoteDefinition(lines, startIndex) {
+  var _a, _b, _c, _d;
+  const line = lines[startIndex];
+  const match = line.match(ListPatterns.FOOTNOTE_DEFINITION);
+  if (!match) {
+    return null;
+  }
+  const rawLabel = (_a = match[1]) == null ? void 0 : _a.trim();
+  if (!rawLabel) {
+    return null;
+  }
+  const initialContent = (_b = match[2]) != null ? _b : "";
+  const builder = new FootnoteContentBuilder();
+  if (initialContent.trim()) {
+    builder.addText(initialContent.trim());
+  }
+  let nextIndex = startIndex + 1;
+  while (nextIndex < lines.length) {
+    const nextLine = lines[nextIndex];
+    const continuationMatch = nextLine.match(ListPatterns.FOOTNOTE_CONTINUATION);
+    if (continuationMatch) {
+      const continuationText = (_d = (_c = continuationMatch[2]) == null ? void 0 : _c.trim()) != null ? _d : "";
+      if (continuationText) {
+        builder.addText(continuationText);
+      } else {
+        builder.addParagraphBreak();
+      }
+      nextIndex += 1;
+      continue;
+    }
+    if (!nextLine.trim()) {
+      const lookahead = nextIndex + 1 < lines.length ? lines[nextIndex + 1] : "";
+      if (lookahead && ListPatterns.FOOTNOTE_CONTINUATION.test(lookahead)) {
+        builder.addParagraphBreak();
+        nextIndex += 1;
+        continue;
+      }
+    }
+    break;
+  }
+  const content = builder.build();
+  const definitionPosition = {
+    line: startIndex,
+    ch: Math.max(0, line.indexOf(match[0]))
+  };
+  const item = {
+    label: rawLabel,
+    content,
+    definitionLine: startIndex,
+    definitionPosition,
+    referenceLine: null,
+    referencePosition: null,
+    referenceLength: null
+  };
+  return { item, nextIndex };
+}
+var FootnoteContentBuilder = class {
+  constructor() {
+    this.paragraphs = [];
+    this.current = [];
+  }
+  addText(text) {
+    if (!text) {
+      return;
+    }
+    this.current.push(text);
+  }
+  addParagraphBreak() {
+    this.commitCurrentParagraph();
+    const last = this.paragraphs[this.paragraphs.length - 1];
+    if (last === null) {
+      return;
+    }
+    this.paragraphs.push(null);
+  }
+  build() {
+    this.commitCurrentParagraph();
+    while (this.paragraphs.length > 0 && this.paragraphs[this.paragraphs.length - 1] === null) {
+      this.paragraphs.pop();
+    }
+    if (this.paragraphs.length === 0) {
+      return "";
+    }
+    let result = "";
+    let appendedParagraphs = 0;
+    let pendingBlank = false;
+    for (const paragraph of this.paragraphs) {
+      if (paragraph === null) {
+        if (appendedParagraphs > 0) {
+          pendingBlank = true;
+        }
+        continue;
+      }
+      if (pendingBlank || appendedParagraphs > 0) {
+        result += "\n\n";
+        pendingBlank = false;
+      }
+      if (paragraph.length > 0) {
+        result += paragraph;
+        appendedParagraphs += 1;
+      }
+    }
+    return result;
+  }
+  commitCurrentParagraph() {
+    if (this.current.length === 0) {
+      return;
+    }
+    this.paragraphs.push(this.current.join(" "));
+    this.current = [];
+  }
+};
+
+// src/views/panels/modules/FootnotePanelModule.ts
+var FootnotePanelModule = class extends BasePanelModule {
+  constructor(plugin) {
+    super(plugin);
+    this.id = "footnotes";
+    this.displayName = MESSAGES.FOOTNOTE_VIEW_TITLE;
+    this.icon = ICONS.FOOTNOTE_SVG;
+    this.footnotes = [];
+  }
+  cleanupModuleData() {
+    this.footnotes = [];
+  }
+  extractData(content) {
+    this.footnotes = extractFootnotes(content);
+  }
+  renderContent(activeView) {
+    if (!this.containerEl) return;
+    if (this.footnotes.length === 0) {
+      this.containerEl.createEl("div", {
+        text: MESSAGES.NO_FOOTNOTES,
+        cls: CSS_CLASSES.FOOTNOTE_PANEL_EMPTY
+      });
+      return;
+    }
+    this.renderFootnoteTable(activeView);
+  }
+  renderFootnoteTable(activeView) {
+    if (!this.containerEl) return;
+    const table = this.containerEl.createEl("table", {
+      cls: CSS_CLASSES.FOOTNOTE_PANEL_CONTAINER
+    });
+    const tbody = table.createEl("tbody");
+    for (const footnote of this.footnotes) {
+      this.renderFootnoteRow(tbody, footnote, activeView);
+    }
+  }
+  renderFootnoteRow(tbody, footnote, activeView) {
+    const row = tbody.createEl("tr", {
+      cls: CSS_CLASSES.FOOTNOTE_PANEL_ROW
+    });
+    const indexCell = row.createEl("td", {
+      cls: CSS_CLASSES.FOOTNOTE_PANEL_INDEX,
+      text: footnote.label
+    });
+    const contentCell = row.createEl("td", {
+      cls: CSS_CLASSES.FOOTNOTE_PANEL_CONTENT
+    });
+    renderContentWithMath(
+      contentCell,
+      footnote.content,
+      this.plugin.app,
+      this.plugin,
+      this.currentContext
+    );
+    this.setupReferenceClick(indexCell, footnote, activeView);
+    this.setupDefinitionClick(contentCell, footnote, activeView);
+  }
+  setupReferenceClick(element, footnote, activeView) {
+    var _a;
+    element.addEventListener("click", () => {
+      var _a2;
+      try {
+        if (!footnote.referencePosition) {
+          new import_obsidian5.Notice(MESSAGES.FOOTNOTE_REFERENCE_NOT_FOUND);
+          return;
+        }
+        this.focusEditor(activeView);
+        const offset = (_a2 = footnote.referenceLength) != null ? _a2 : 0;
+        const targetPosition = {
+          line: footnote.referencePosition.line,
+          ch: footnote.referencePosition.ch + offset
+        };
+        this.scrollToPosition(activeView, targetPosition, footnote.referencePosition.line);
+      } catch (error) {
+        handleError(error, "Scroll to footnote reference");
+      }
+    }, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
+  }
+  setupDefinitionClick(element, footnote, activeView) {
+    var _a;
+    element.addEventListener("click", () => {
+      try {
+        this.focusEditor(activeView);
+        this.scrollToPosition(activeView, footnote.definitionPosition, footnote.definitionLine);
+      } catch (error) {
+        handleError(error, "Scroll to footnote definition");
+      }
+    }, { signal: (_a = this.abortController) == null ? void 0 : _a.signal });
+  }
+  focusEditor(activeView) {
+    if (!activeView) return;
+    const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
+    const targetLeaf = leaves.find((leaf) => leaf.view === activeView);
+    if (targetLeaf) {
+      this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+    }
+  }
+  scrollToPosition(view, position, fallbackLine) {
+    if (!view || !view.editor) {
+      return;
+    }
+    const editor = view.editor;
+    if (!position) {
+      if (typeof fallbackLine === "number") {
+        highlightLine2(view, fallbackLine);
+      }
+      return;
+    }
+    editor.setCursor(position);
+    editor.scrollIntoView({ from: position, to: position }, true);
+    highlightLine2(view, position.line, position);
+  }
+};
+
 // src/views/panels/ListPanelView.ts
 var VIEW_TYPE_LIST_PANEL = "list-panel-view";
-var ListPanelView = class extends import_obsidian5.ItemView {
+var ListPanelView = class extends import_obsidian6.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.panels = [];
@@ -2431,7 +2747,14 @@ var ListPanelView = class extends import_obsidian5.ItemView {
       icon: definitionListModule.icon,
       module: definitionListModule
     });
-    const panelOrder = this.plugin.settings.panelOrder || ["custom-labels", "example-lists", "definition-lists"];
+    const footnoteModule = new FootnotePanelModule(this.plugin);
+    availablePanels.push({
+      id: footnoteModule.id,
+      displayName: footnoteModule.displayName,
+      icon: footnoteModule.icon,
+      module: footnoteModule
+    });
+    const panelOrder = this.plugin.settings.panelOrder || ["custom-labels", "example-lists", "definition-lists", "footnotes"];
     this.panels = [];
     for (const panelId of panelOrder) {
       const panel = availablePanels.find((p) => p.id === panelId);
@@ -2522,6 +2845,11 @@ var ListPanelView = class extends import_obsidian5.ItemView {
           cls: "pandoc-icon-definition-list",
           text: "DL:"
         });
+      } else if (panel.id === "footnotes") {
+        iconContainer.createSpan({
+          cls: CSS_CLASSES.LIST_PANEL_ICON_FOOTNOTE,
+          text: "[^]"
+        });
       } else {
         iconContainer.addClass(`pandoc-icon-${panel.id}`);
       }
@@ -2567,7 +2895,7 @@ var ListPanelView = class extends import_obsidian5.ItemView {
   }
   async updateView() {
     try {
-      let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
       if (markdownView && markdownView.file) {
         this.lastActiveMarkdownView = markdownView;
       }
@@ -2611,7 +2939,7 @@ var ListPanelView = class extends import_obsidian5.ItemView {
 };
 
 // src/core/settings.ts
-var PandocExtendedMarkdownSettingTab = class extends import_obsidian6.PluginSettingTab {
+var PandocExtendedMarkdownSettingTab = class extends import_obsidian7.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -2623,15 +2951,15 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian6.PluginSett
     this.renderPanelOrderSettings(containerEl);
   }
   renderGeneralSettings(containerEl) {
-    new import_obsidian6.Setting(containerEl).setName("Strict Pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName("Strict Pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian6.Setting(containerEl).setName("Auto-renumber lists").setDesc("Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName("Auto-renumber lists").setDesc("Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
       this.plugin.settings.autoRenumberLists = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian6.Setting(containerEl).setName("Custom Label List").setDesc("Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.").addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName("Custom Label List").setDesc("Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.").addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
       this.plugin.settings.moreExtendedSyntax = value;
       await this.plugin.saveSettings();
       this.refreshListPanels();
@@ -2639,7 +2967,7 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian6.PluginSett
   }
   renderPanelOrderSettings(containerEl) {
     containerEl.createEl("h2", { text: PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_HEADING });
-    const panelOrderSetting = new import_obsidian6.Setting(containerEl).setName("").setDesc(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_DESC);
+    const panelOrderSetting = new import_obsidian7.Setting(containerEl).setName("").setDesc(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_DESC);
     const infoEl = panelOrderSetting.infoEl;
     if (infoEl) {
       infoEl.addClass("pandoc-panel-order-info");
@@ -2874,7 +3202,7 @@ function createProcessorConfig(vaultConfig, pluginSettings) {
 // src/live-preview/extension.ts
 var import_state2 = require("@codemirror/state");
 var import_view12 = require("@codemirror/view");
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 
 // src/core/state/pluginStateManager.ts
 var PluginStateManager = class {
@@ -3806,7 +4134,7 @@ var ProcessingPipeline = class {
 
 // src/live-preview/widgets/BaseWidget.ts
 var import_view = require("@codemirror/view");
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 var BaseWidget = class extends import_view.WidgetType {
   constructor(view, pos) {
     super();
@@ -3877,7 +4205,7 @@ var BaseWidget = class extends import_view.WidgetType {
    * Helper method to add a simple tooltip.
    */
   addSimpleTooltip(element, text) {
-    (0, import_obsidian7.setTooltip)(element, text, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+    (0, import_obsidian8.setTooltip)(element, text, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
   }
   /**
    * Helper method to add a rendered hover preview.
@@ -5471,15 +5799,15 @@ var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponen
       this.pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
     }
     update(update) {
-      const prevLivePreview = update.startState.field(import_obsidian8.editorLivePreviewField);
-      const currLivePreview = update.state.field(import_obsidian8.editorLivePreviewField);
+      const prevLivePreview = update.startState.field(import_obsidian9.editorLivePreviewField);
+      const currLivePreview = update.state.field(import_obsidian9.editorLivePreviewField);
       const livePreviewChanged = prevLivePreview !== currLivePreview;
       if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
         this.decorations = this.buildDecorations(update.view);
       }
     }
     buildDecorations(view) {
-      const isLivePreview = view.state.field(import_obsidian8.editorLivePreviewField);
+      const isLivePreview = view.state.field(import_obsidian9.editorLivePreviewField);
       if (!isLivePreview || !this.pipeline) {
         return new import_state2.RangeSetBuilder().finish();
       }
@@ -5514,7 +5842,7 @@ function getSectionInfo(element) {
 }
 
 // src/reading-mode/utils/domUtils.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 function createTextNodeWalker(element, filter) {
   return document.createTreeWalker(
     element,
@@ -5569,7 +5897,7 @@ function parseFancyListMarker(line) {
 }
 
 // src/reading-mode/parsers/exampleListParser.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 function parseExampleListMarker(line) {
   const match = ListPatterns.isExampleList(line);
   if (!match) {
@@ -5808,7 +6136,7 @@ var ReadingModeParser = class {
 };
 
 // src/reading-mode/renderer.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 var ReadingModeRenderer = class {
   /**
    * Render a parsed line to DOM elements
@@ -5944,7 +6272,7 @@ var ReadingModeRenderer = class {
         span.textContent = `(${exampleNumber})`;
         const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, ref.label);
         if (tooltipText) {
-          (0, import_obsidian11.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+          (0, import_obsidian12.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         }
         elements.push(span);
       } else {
@@ -6001,7 +6329,7 @@ var ReadingModeRenderer = class {
         span.textContent = `(${exampleNumber})`;
         const tooltipText = (_b = context.getExampleContent) == null ? void 0 : _b.call(context, label);
         if (tooltipText) {
-          (0, import_obsidian11.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+          (0, import_obsidian12.setTooltip)(span, tooltipText, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
         }
         elements.push(span);
       } else {
@@ -6479,8 +6807,8 @@ function validateListInStrictMode(line, documentLines, config) {
 }
 
 // src/editor-extensions/suggestions/exampleReferenceSuggest.ts
-var import_obsidian12 = require("obsidian");
-var ExampleReferenceSuggest = class extends import_obsidian12.EditorSuggest {
+var import_obsidian13 = require("obsidian");
+var ExampleReferenceSuggest = class extends import_obsidian13.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -6573,8 +6901,8 @@ var ExampleReferenceSuggest = class extends import_obsidian12.EditorSuggest {
 };
 
 // src/editor-extensions/suggestions/customLabelReferenceSuggest.ts
-var import_obsidian13 = require("obsidian");
-var CustomLabelReferenceSuggest = class extends import_obsidian13.EditorSuggest {
+var import_obsidian14 = require("obsidian");
+var CustomLabelReferenceSuggest = class extends import_obsidian14.EditorSuggest {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -7631,7 +7959,7 @@ function createListAutocompletionKeymap(settings) {
 }
 
 // src/core/main.ts
-var PandocExtendedMarkdownPlugin = class extends import_obsidian14.Plugin {
+var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerViewIcons();
@@ -7653,15 +7981,15 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian14.Plugin {
     this.registerCommands();
   }
   registerViewIcons() {
-    (0, import_obsidian14.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
-    (0, import_obsidian14.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
+    (0, import_obsidian15.addIcon)(ICONS.CUSTOM_LABEL_ID, ICONS.CUSTOM_LABEL_SVG);
+    (0, import_obsidian15.addIcon)(ICONS.LIST_PANEL_ID, ICONS.LIST_PANEL_SVG);
   }
   registerExtensions() {
     this.registerEditorExtension(pandocExtendedMarkdownExtension(
       () => this.settings,
       () => {
         var _a;
-        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian14.MarkdownView);
+        const activeView = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
         return ((_a = activeView == null ? void 0 : activeView.file) == null ? void 0 : _a.path) || null;
       },
       () => this.app,
@@ -7705,12 +8033,12 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian14.Plugin {
         const content = editor.getValue();
         const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
         if (issues.length === 0) {
-          new import_obsidian14.Notice(MESSAGES.PANDOC_COMPLIANT);
+          new import_obsidian15.Notice(MESSAGES.PANDOC_COMPLIANT);
         } else {
           const issueList = issues.map(
             (issue) => `Line ${issue.line}: ${issue.message}`
           ).join("\n");
-          new import_obsidian14.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
+          new import_obsidian15.Notice(`${MESSAGES.FORMATTING_ISSUES(issues.length)}:
 ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         }
       }
@@ -7723,9 +8051,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
         if (content !== formatted) {
           editor.setValue(formatted);
-          new import_obsidian14.Notice(MESSAGES.FORMAT_SUCCESS);
+          new import_obsidian15.Notice(MESSAGES.FORMAT_SUCCESS);
         } else {
-          new import_obsidian14.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
+          new import_obsidian15.Notice(MESSAGES.FORMAT_ALREADY_COMPLIANT);
         }
       }
     });
@@ -7737,9 +8065,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionBoldStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian14.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
+          new import_obsidian15.Notice(MESSAGES.TOGGLE_BOLD_SUCCESS);
         } else {
-          new import_obsidian14.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian15.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });
@@ -7751,9 +8079,9 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
         const toggled = this.toggleDefinitionUnderlineStyle(content);
         if (content !== toggled) {
           editor.setValue(toggled);
-          new import_obsidian14.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
+          new import_obsidian15.Notice(MESSAGES.TOGGLE_UNDERLINE_SUCCESS);
         } else {
-          new import_obsidian14.Notice(MESSAGES.NO_DEFINITION_TERMS);
+          new import_obsidian15.Notice(MESSAGES.NO_DEFINITION_TERMS);
         }
       }
     });

@@ -15,6 +15,9 @@ export class ListPatterns {
     static readonly DEFINITION_INDENTED = /^(    |\t)/;
     static readonly DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
     static readonly DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
+    static readonly FOOTNOTE_DEFINITION = /^\[\^([^\]]+)\]:\s*(.*)$/;
+    static readonly FOOTNOTE_CONTINUATION = /^( {4,}|\t+)(.*)$/;
+    static readonly FOOTNOTE_REFERENCE = /\[\^([^\]]+)\]/g;
     static readonly NUMBERED_LIST = /^(\s*)([0-9]+[.)])/;
     static readonly UNORDERED_LIST = /^(\s*)[-*+]\s+/;
     static readonly CAPITAL_LETTER_LIST = /^(\s*)([A-Z])(\.)(\s+)/;

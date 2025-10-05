@@ -7,10 +7,17 @@ import { CSS_CLASSES, UI_CONSTANTS } from '../../core/constants';
 // Utils
 import { handleError } from '../../shared/utils/errorHandler';
 
-export function highlightLine(view: MarkdownView, lineNumber: number): void {
+type EditorCursorPosition = { line: number; ch: number };
+
+export function highlightLine(view: MarkdownView, lineNumber: number, cursorPosition?: EditorCursorPosition): void {
     try {
         const editor = view.editor;
-        moveCursorToLine(editor, lineNumber);
+        if (cursorPosition) {
+            editor.setCursor(cursorPosition);
+            editor.scrollIntoView({ from: cursorPosition, to: cursorPosition }, true);
+        } else {
+            moveCursorToLine(editor, lineNumber);
+        }
         
         const cm = (editor as any).cm;
         if (cm) {
