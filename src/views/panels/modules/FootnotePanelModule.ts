@@ -1,13 +1,13 @@
 import { MarkdownView, Notice } from 'obsidian';
 
-import { BasePanelModule } from './BasePanelModule';
+import { FootnotePanelItem } from '../../../shared/types/footnoteTypes';
 import { CSS_CLASSES, ICONS, MESSAGES } from '../../../core/constants';
 import { extractFootnotes } from '../../../shared/extractors/footnoteExtractor';
-import { FootnotePanelItem } from '../../../shared/types/footnoteTypes';
 import { handleError } from '../../../shared/utils/errorHandler';
 import { highlightLine } from '../../editor/highlightUtils';
-import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 import { renderContentWithMath } from '../utils/viewInteractions';
+import { PandocExtendedMarkdownPlugin } from '../../../core/main';
+import { BasePanelModule } from './BasePanelModule';
 
 type EditorPosition = { line: number; ch: number };
 

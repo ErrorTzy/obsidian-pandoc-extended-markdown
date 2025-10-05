@@ -1,6 +1,6 @@
+import { FootnotePanelItem } from '../types/footnoteTypes';
 import { ListPatterns } from '../patterns';
 import { withErrorBoundary } from '../utils/errorHandler';
-import { FootnotePanelItem } from '../types/footnoteTypes';
 
 type EditorPosition = { line: number; ch: number };
 
@@ -14,6 +14,12 @@ interface FootnoteParseResult {
     nextIndex: number;
 }
 
+/**
+ * Extracts every footnote definition and its matching reference metadata from document content.
+ *
+ * @param content - Full markdown document text to scan
+ * @returns Ordered collection of footnote panel items with definition and reference positions
+ */
 export function extractFootnotes(content: string): FootnotePanelItem[] {
     return withErrorBoundary(() => {
         const lines = content.split('\n');
