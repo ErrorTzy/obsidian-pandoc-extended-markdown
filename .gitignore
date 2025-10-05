@@ -29,6 +29,7 @@ npm-debug.log*
 *.txt
 CLAUDE.md
 WARP.md
+AGENTS.md
 
 # Package lock (keep package.json)
 package-lock.json
