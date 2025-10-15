@@ -72,7 +72,8 @@ var INDENTATION = {
   SINGLE_SPACE: 1,
   DOUBLE_SPACE: 2,
   TAB: "	",
-  FOUR_SPACES: "    "
+  FOUR_SPACES: "    ",
+  CONTINUATION_MIN_VISUAL: 3
 };
 
 // src/core/constants/cssConstants.ts
@@ -5408,8 +5409,8 @@ var ListContinuationProcessor = class {
       return false;
     }
     const lineText = line.text;
-    const indentLength = this.getIndentLength(lineText);
-    return indentLength >= 3;
+    const indent = this.getIndentMetrics(lineText);
+    return indent.visualLength >= INDENTATION.CONTINUATION_MIN_VISUAL;
   }
   process(line, context) {
     if (!context.listContext) {
@@ -5417,14 +5418,14 @@ var ListContinuationProcessor = class {
     }
     const lineText = line.text;
     const decorations = [];
-    const indentLength = this.getIndentLength(lineText);
+    const indent = this.getIndentMetrics(lineText);
     this.addLineDecoration(decorations, line, context.listContext.contentStartColumn);
-    if (indentLength > 0) {
-      this.addIndentDecorations(decorations, line, indentLength);
+    if (indent.textLength > 0) {
+      this.addIndentDecorations(decorations, line, indent.textLength);
     }
-    this.addContentDecoration(decorations, line, indentLength);
+    this.addContentDecoration(decorations, line, indent.textLength);
     const contentRegion = {
-      from: line.from + indentLength,
+      from: line.from + indent.textLength,
       to: line.to,
       type: "list-content",
       parentStructure: context.listContext.parentStructure
@@ -5456,10 +5457,10 @@ var ListContinuationProcessor = class {
   /**
    * Adds indent decorations for leading whitespace.
    */
-  addIndentDecorations(decorations, line, indentLength) {
+  addIndentDecorations(decorations, line, indentCharLength) {
     decorations.push({
       from: line.from,
-      to: line.from + indentLength,
+      to: line.from + indentCharLength,
       decoration: import_view7.Decoration.mark({
         class: "cm-hmd-list-indent cm-hmd-list-indent-1",
         tagName: "span"
@@ -5467,7 +5468,7 @@ var ListContinuationProcessor = class {
     });
     decorations.push({
       from: line.from,
-      to: line.from + indentLength,
+      to: line.from + indentCharLength,
       decoration: import_view7.Decoration.mark({
         class: "cm-indent-spacing",
         tagName: "span",
@@ -5478,9 +5479,9 @@ var ListContinuationProcessor = class {
   /**
    * Adds content area decoration.
    */
-  addContentDecoration(decorations, line, indentLength) {
+  addContentDecoration(decorations, line, indentCharLength) {
     decorations.push({
-      from: line.from + indentLength,
+      from: line.from + indentCharLength,
       to: line.to,
       decoration: import_view7.Decoration.mark({
         class: CSS_CLASSES.CM_LIST_1
@@ -5495,26 +5496,32 @@ var ListContinuationProcessor = class {
     if (nextLineNum <= context.document.lines) {
       const nextLine = context.document.line(nextLineNum);
       const nextLineText = nextLine.text.trim();
-      const nextIndentLength = this.getIndentLength(nextLine.text);
-      if (nextLineText === "" || nextIndentLength < 3) {
+      const nextIndent = this.getIndentMetrics(nextLine.text);
+      if (nextLineText === "" || nextIndent.visualLength < INDENTATION.CONTINUATION_MIN_VISUAL) {
         context.listContext = void 0;
       }
     } else {
       context.listContext = void 0;
     }
   }
-  getIndentLength(text) {
-    let length = 0;
+  getIndentMetrics(text) {
+    let visualLength = 0;
+    let textLength = 0;
     for (const char of text) {
       if (char === " ") {
-        length++;
-      } else if (char === "	") {
-        length += INDENTATION.TAB_SIZE;
+        visualLength += INDENTATION.SINGLE_SPACE;
+        textLength += 1;
+      } else if (char === INDENTATION.TAB) {
+        visualLength += INDENTATION.TAB_SIZE;
+        textLength += 1;
       } else {
         break;
       }
     }
-    return length;
+    return {
+      visualLength,
+      textLength
+    };
   }
 };
 

@@ -5,6 +5,14 @@
 export type FancyListType = 'upper-alpha' | 'lower-alpha' | 'upper-roman' | 'lower-roman' | 'decimal' | 'hash';
 
 /**
+ * Represents indentation measurements in both visual columns and raw text length
+ */
+export interface IndentMetrics {
+    visualLength: number;
+    textLength: number;
+}
+
+/**
  * List item for renumbering operations
  */
 export interface ListItem {

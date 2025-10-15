@@ -1,6 +1,7 @@
 import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
+import { IndentMetrics } from '../../../shared/types/listTypes';
 import { CSS_CLASSES, INDENTATION } from '../../../core/constants';
 
 /**
@@ -18,10 +19,9 @@ export class ListContinuationProcessor implements StructuralProcessor {
         
         const lineText = line.text;
         
-        // Check if this line is properly indented to be a continuation
-        // It should have at least 3 spaces (or 4 spaces which Obsidian treats as a tab)
-        const indentLength = this.getIndentLength(lineText);
-        return indentLength >= 3; // Accept 3 or more spaces as continuation
+        // Check if this line is properly indented to be a continuation using visual indentation width
+        const indent = this.getIndentMetrics(lineText);
+        return indent.visualLength >= INDENTATION.CONTINUATION_MIN_VISUAL;
     }
     
     process(line: Line, context: ProcessingContext): StructuralResult {
@@ -31,22 +31,22 @@ export class ListContinuationProcessor implements StructuralProcessor {
         
         const lineText = line.text;
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
-        const indentLength = this.getIndentLength(lineText);
+        const indent = this.getIndentMetrics(lineText);
         
         // Add line decoration
         this.addLineDecoration(decorations, line, context.listContext.contentStartColumn);
         
         // Add indent decorations if present
-        if (indentLength > 0) {
-            this.addIndentDecorations(decorations, line, indentLength);
+        if (indent.textLength > 0) {
+            this.addIndentDecorations(decorations, line, indent.textLength);
         }
         
         // Add content decoration
-        this.addContentDecoration(decorations, line, indentLength);
+        this.addContentDecoration(decorations, line, indent.textLength);
         
         // Mark content region for inline processing
         const contentRegion = {
-            from: line.from + indentLength,
+            from: line.from + indent.textLength,
             to: line.to,
             type: 'list-content' as const,
             parentStructure: context.listContext.parentStructure
@@ -91,11 +91,11 @@ export class ListContinuationProcessor implements StructuralProcessor {
     private addIndentDecorations(
         decorations: Array<{from: number, to: number, decoration: Decoration}>,
         line: Line,
-        indentLength: number
+        indentCharLength: number
     ): void {
         decorations.push({
             from: line.from,
-            to: line.from + indentLength,
+            to: line.from + indentCharLength,
             decoration: Decoration.mark({
                 class: 'cm-hmd-list-indent cm-hmd-list-indent-1',
                 tagName: 'span'
@@ -105,7 +105,7 @@ export class ListContinuationProcessor implements StructuralProcessor {
         // Add the indent spacing span
         decorations.push({
             from: line.from,
-            to: line.from + indentLength,
+            to: line.from + indentCharLength,
             decoration: Decoration.mark({
                 class: 'cm-indent-spacing',
                 tagName: 'span',
@@ -113,17 +113,17 @@ export class ListContinuationProcessor implements StructuralProcessor {
             })
         });
     }
-    
+
     /**
      * Adds content area decoration.
      */
     private addContentDecoration(
         decorations: Array<{from: number, to: number, decoration: Decoration}>,
         line: Line,
-        indentLength: number
+        indentCharLength: number
     ): void {
         decorations.push({
-            from: line.from + indentLength,
+            from: line.from + indentCharLength,
             to: line.to,
             decoration: Decoration.mark({
                 class: CSS_CLASSES.CM_LIST_1
@@ -139,10 +139,10 @@ export class ListContinuationProcessor implements StructuralProcessor {
         if (nextLineNum <= context.document.lines) {
             const nextLine = context.document.line(nextLineNum);
             const nextLineText = nextLine.text.trim();
-            const nextIndentLength = this.getIndentLength(nextLine.text);
+            const nextIndent = this.getIndentMetrics(nextLine.text);
             
-            // Clear list context if next line is blank or has less than 3 spaces
-            if (nextLineText === '' || nextIndentLength < 3) {
+            // Clear list context if next line is blank or below the continuation indent threshold
+            if (nextLineText === '' || nextIndent.visualLength < INDENTATION.CONTINUATION_MIN_VISUAL) {
                 context.listContext = undefined;
             }
             // Keep the list context active if the next line is also a continuation
@@ -152,17 +152,25 @@ export class ListContinuationProcessor implements StructuralProcessor {
         }
     }
     
-    private getIndentLength(text: string): number {
-        let length = 0;
+    private getIndentMetrics(text: string): IndentMetrics {
+        let visualLength = 0;
+        let textLength = 0;
+
         for (const char of text) {
             if (char === ' ') {
-                length++;
-            } else if (char === '\t') {
-                length += INDENTATION.TAB_SIZE;
+                visualLength += INDENTATION.SINGLE_SPACE;
+                textLength += 1;
+            } else if (char === INDENTATION.TAB) {
+                visualLength += INDENTATION.TAB_SIZE;
+                textLength += 1;
             } else {
                 break;
             }
         }
-        return length;
+
+        return {
+            visualLength,
+            textLength
+        };
     }
 }

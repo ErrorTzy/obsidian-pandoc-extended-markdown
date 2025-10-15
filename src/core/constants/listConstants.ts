@@ -33,4 +33,5 @@ export const INDENTATION = {
     DOUBLE_SPACE: 2,
     TAB: '\t',
     FOUR_SPACES: '    ',
+    CONTINUATION_MIN_VISUAL: 3,
 } as const;

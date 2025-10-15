@@ -6,6 +6,7 @@ import { ListContinuationProcessor } from '../../../../src/live-preview/pipeline
 import { DEFAULT_SETTINGS } from '../../../../src/core/settings';
 import { PandocExtendedMarkdownSettings } from '../../../../src/shared/types/settingsTypes';
 import { pluginStateManager } from '../../../../src/core/state/pluginStateManager';
+import * as errorHandler from '../../../../src/shared/utils/errorHandler';
 
 // Mock the EditorView
 jest.mock('@codemirror/view');
@@ -29,6 +30,10 @@ describe('List Continuation Processing', () => {
         // Register processors
         pipeline.registerStructuralProcessor(new FancyListProcessor());
         pipeline.registerStructuralProcessor(new ListContinuationProcessor());
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('should detect and decorate continuation lines in fancy lists', () => {
@@ -81,5 +86,30 @@ B. Second item`;
         const line3Decoration = lineDecorations.find(d => d.from === 35); // Position after first two lines
         expect(line3Decoration).toBeDefined();
         expect(line3Decoration?.value?.spec?.class).toContain('pandoc-list-line');
+    });
+
+    it('should not emit invalid decoration errors for tab-indented fancy list markers without trailing space', () => {
+        const handleErrorSpy = jest.spyOn(errorHandler, 'handleError');
+
+        const docLines = [
+            '1. some text',
+            '\ta.  some text',
+            '\tb.'
+        ];
+
+        const mockDoc = Text.of(docLines);
+
+        mockView = {
+            state: {
+                doc: mockDoc,
+                selection: { main: { head: mockDoc.length } }
+            }
+        } as any;
+
+        pipeline.process(mockView, settings);
+
+        expect(handleErrorSpy).not.toHaveBeenCalled();
+
+        handleErrorSpy.mockRestore();
     });
 });
