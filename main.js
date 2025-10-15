@@ -5497,11 +5497,6 @@ var ListContinuationProcessor = class {
     const baseConfig = {
       class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`
     };
-    const textIndent = "0px";
-    const paddingStart = this.calculatePadding(indentWidthPx);
-    baseConfig.attributes = {
-      style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart} !important;`
-    };
     decorations.push({
       from: line.from,
       to: line.from,
