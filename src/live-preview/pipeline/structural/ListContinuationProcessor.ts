@@ -2,7 +2,8 @@ import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
 import { IndentMetrics } from '../../../shared/types/listTypes';
-import { CSS_CLASSES, INDENTATION } from '../../../core/constants';
+import { CSS_CLASSES, INDENTATION, DECORATION_STYLES } from '../../../core/constants';
+import { ListContinuationIndentWidget } from '../../widgets';
 
 /**
  * Processes list continuation lines (lines within a list item that don't have their own marker)
@@ -32,17 +33,28 @@ export class ListContinuationProcessor implements StructuralProcessor {
         const lineText = line.text;
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
         const indent = this.getIndentMetrics(lineText);
+        const listLevel = this.getListLevel(context);
+        const indentWidthPx = this.calculateIndentWidth(
+            context.listContext.contentStartColumn,
+            indent.visualLength
+        );
         
         // Add line decoration
-        this.addLineDecoration(decorations, line, context.listContext.contentStartColumn);
+        this.addLineDecoration(decorations, line, indentWidthPx);
         
         // Add indent decorations if present
         if (indent.textLength > 0) {
-            this.addIndentDecorations(decorations, line, indent.textLength);
+            this.addIndentDecorations(
+                decorations,
+                line,
+                indent.textLength,
+                indentWidthPx,
+                listLevel
+            );
         }
         
         // Add content decoration
-        this.addContentDecoration(decorations, line, indent.textLength);
+        this.addContentDecoration(decorations, line, indent.textLength, listLevel);
         
         // Mark content region for inline processing
         const contentRegion = {
@@ -68,20 +80,22 @@ export class ListContinuationProcessor implements StructuralProcessor {
     private addLineDecoration(
         decorations: Array<{from: number, to: number, decoration: Decoration}>,
         line: Line,
-        contentStartColumn: number
+        indentWidthPx: number
     ): void {
+        const baseConfig: { class: string; attributes?: Record<string, string> } = {
+            class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`
+        };
+
         const textIndent = '0px'; // Override Obsidian's negative indent
-        const paddingStart = (contentStartColumn * 6) + 'px';
-        
+        const paddingStart = this.calculatePadding(indentWidthPx);
+        baseConfig.attributes = {
+            style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart} !important;`
+        };
+
         decorations.push({
             from: line.from,
             to: line.from,
-            decoration: Decoration.line({
-                class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`,
-                attributes: {
-                    style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart};`
-                }
-            })
+            decoration: Decoration.line(baseConfig)
         });
     }
     
@@ -91,24 +105,15 @@ export class ListContinuationProcessor implements StructuralProcessor {
     private addIndentDecorations(
         decorations: Array<{from: number, to: number, decoration: Decoration}>,
         line: Line,
-        indentCharLength: number
+        indentCharLength: number,
+        indentWidthPx: number,
+        listLevel: number
     ): void {
         decorations.push({
             from: line.from,
             to: line.from + indentCharLength,
-            decoration: Decoration.mark({
-                class: 'cm-hmd-list-indent cm-hmd-list-indent-1',
-                tagName: 'span'
-            })
-        });
-        
-        // Add the indent spacing span
-        decorations.push({
-            from: line.from,
-            to: line.from + indentCharLength,
-            decoration: Decoration.mark({
-                class: 'cm-indent-spacing',
-                tagName: 'span',
+            decoration: Decoration.replace({
+                widget: new ListContinuationIndentWidget(indentWidthPx, listLevel),
                 inclusive: false
             })
         });
@@ -120,13 +125,14 @@ export class ListContinuationProcessor implements StructuralProcessor {
     private addContentDecoration(
         decorations: Array<{from: number, to: number, decoration: Decoration}>,
         line: Line,
-        indentCharLength: number
+        indentCharLength: number,
+        listLevel: number
     ): void {
         decorations.push({
             from: line.from + indentCharLength,
             to: line.to,
             decoration: Decoration.mark({
-                class: CSS_CLASSES.CM_LIST_1
+                class: this.getContentClass(listLevel)
             })
         });
     }
@@ -172,5 +178,32 @@ export class ListContinuationProcessor implements StructuralProcessor {
             visualLength,
             textLength
         };
+    }
+
+    private calculateIndentWidth(contentStartColumn: number, indentVisualLength: number): number {
+        const columnWidth = DECORATION_STYLES.CONTINUATION_INDENT_UNIT_PX;
+        const baseColumns = contentStartColumn > 0 ? contentStartColumn : indentVisualLength;
+        return Math.max(baseColumns, INDENTATION.CONTINUATION_MIN_VISUAL) * columnWidth;
+    }
+
+    private calculatePadding(indentWidthPx: number): string {
+        return `${indentWidthPx}px`;
+    }
+
+    private getListLevel(context: ProcessingContext): number {
+        return context.listContext?.listLevel && context.listContext.listLevel > 0
+            ? context.listContext.listLevel
+            : 1;
+    }
+
+    private getContentClass(listLevel: number): string {
+        switch (listLevel) {
+            case 2:
+                return CSS_CLASSES.CM_LIST_2;
+            case 3:
+                return CSS_CLASSES.CM_LIST_3;
+            default:
+                return CSS_CLASSES.CM_LIST_1;
+        }
     }
 }

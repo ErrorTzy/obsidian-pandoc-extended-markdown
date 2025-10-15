@@ -194,6 +194,14 @@ li.pandoc-example-item::before {
     padding-inline-start: var(--list-indent-editing, 30px);
 }
 
+.pandoc-list-continuation-widget {
+    display: inline-block;
+    pointer-events: none;
+    white-space: pre;
+    width: 0; /* width is set inline by widget */
+    flex-shrink: 0;
+}
+
 /* Custom Label Reference Clickable */
 .pandoc-custom-label-ref-clickable {
     cursor: pointer;

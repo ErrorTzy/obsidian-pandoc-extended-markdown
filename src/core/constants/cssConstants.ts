@@ -58,6 +58,7 @@ export const CSS_CLASSES = {
     PANDOC_LIST_LINE_INDENT: 'pandoc-list-line-indent',
     PANDOC_LIST_LINE: 'pandoc-list-line',
     DEFINITION_MARKER_CURSOR: 'cm-pandoc-definition-marker-cursor',
+    LIST_CONTINUATION_WIDGET: 'pandoc-list-continuation-widget',
 
     // Custom Label Classes
     CUSTOM_LABEL_PROCESSED: 'pandoc-custom-label-processed',
@@ -133,6 +134,7 @@ export const DECORATION_STYLES = {
     HASH_LIST_INDENT: 29,
     EXAMPLE_LIST_INDENT: 35,
     FANCY_LIST_INDENT_MULTIPLIER: 7,
+    CONTINUATION_INDENT_UNIT_PX: 6,
     LINE_TRUNCATION_LIMIT: 100,
     TOOLTIP_DELAY_MS: 300,
     CUSTOM_LABEL_PREFIX_LENGTH: 3, // Length of "{::" prefix

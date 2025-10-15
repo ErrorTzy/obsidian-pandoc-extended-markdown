@@ -19,3 +19,5 @@ export {
     CustomLabelInlineNumberWidget,
     DuplicateCustomLabelWidget
 } from './customLabelWidget';
+
+export { ListContinuationIndentWidget } from './ListContinuationIndentWidget';

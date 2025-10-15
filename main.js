@@ -30,7 +30,7 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian15 = require("obsidian");
 var import_state8 = require("@codemirror/state");
-var import_view13 = require("@codemirror/view");
+var import_view14 = require("@codemirror/view");
 
 // src/core/settings.ts
 var import_obsidian7 = require("obsidian");
@@ -127,6 +127,7 @@ var CSS_CLASSES = {
   PANDOC_LIST_LINE_INDENT: "pandoc-list-line-indent",
   PANDOC_LIST_LINE: "pandoc-list-line",
   DEFINITION_MARKER_CURSOR: "cm-pandoc-definition-marker-cursor",
+  LIST_CONTINUATION_WIDGET: "pandoc-list-continuation-widget",
   // Custom Label Classes
   CUSTOM_LABEL_PROCESSED: "pandoc-custom-label-processed",
   CUSTOM_LABEL_ITEM: "pandoc-custom-label-item",
@@ -192,6 +193,7 @@ var DECORATION_STYLES = {
   HASH_LIST_INDENT: 29,
   EXAMPLE_LIST_INDENT: 35,
   FANCY_LIST_INDENT_MULTIPLIER: 7,
+  CONTINUATION_INDENT_UNIT_PX: 6,
   LINE_TRUNCATION_LIMIT: 100,
   TOOLTIP_DELAY_MS: 300,
   CUSTOM_LABEL_PREFIX_LENGTH: 3
@@ -3202,7 +3204,7 @@ function createProcessorConfig(vaultConfig, pluginSettings) {
 
 // src/live-preview/extension.ts
 var import_state2 = require("@codemirror/state");
-var import_view12 = require("@codemirror/view");
+var import_view13 = require("@codemirror/view");
 var import_obsidian9 = require("obsidian");
 
 // src/core/state/pluginStateManager.ts
@@ -4569,8 +4571,48 @@ var DuplicateCustomLabelWidget = class extends BaseWidget {
   }
 };
 
-// src/live-preview/pipeline/structural/BaseStructuralProcessor.ts
+// src/live-preview/widgets/ListContinuationIndentWidget.ts
 var import_view2 = require("@codemirror/view");
+var ListContinuationIndentWidget = class extends import_view2.WidgetType {
+  constructor(width, listLevel) {
+    super();
+    this.width = Math.max(width, 0);
+    this.listLevel = listLevel;
+  }
+  eq(other) {
+    return this.width === other.width && this.listLevel === other.listLevel;
+  }
+  toDOM() {
+    const outerSpacing = document.createElement("span");
+    outerSpacing.className = "cm-indent-spacing";
+    const innerSpacing = document.createElement("span");
+    innerSpacing.className = "cm-indent-spacing";
+    outerSpacing.appendChild(innerSpacing);
+    const indentSpan = document.createElement("span");
+    indentSpan.className = `cm-hmd-list-indent cm-hmd-list-indent-${this.getClampedLevel()} ${CSS_CLASSES.LIST_CONTINUATION_WIDGET}`;
+    indentSpan.style.width = `${this.width}px`;
+    indentSpan.style.whiteSpace = "pre";
+    indentSpan.textContent = "\xA0";
+    indentSpan.setAttribute("aria-hidden", "true");
+    innerSpacing.appendChild(indentSpan);
+    return outerSpacing;
+  }
+  ignoreEvent() {
+    return false;
+  }
+  getClampedLevel() {
+    if (this.listLevel < 1) {
+      return 1;
+    }
+    if (this.listLevel > 4) {
+      return 4;
+    }
+    return this.listLevel;
+  }
+};
+
+// src/live-preview/pipeline/structural/BaseStructuralProcessor.ts
+var import_view3 = require("@codemirror/view");
 var BaseStructuralProcessor = class {
   /**
    * Check if cursor is within a marker range
@@ -4599,7 +4641,7 @@ var BaseStructuralProcessor = class {
     return {
       from: line.from,
       to: line.from,
-      decoration: import_view2.Decoration.line({ class: classes })
+      decoration: import_view3.Decoration.line({ class: classes })
     };
   }
   /**
@@ -4610,7 +4652,7 @@ var BaseStructuralProcessor = class {
     return {
       from: contentStart,
       to: contentEnd,
-      decoration: import_view2.Decoration.mark({ class: className })
+      decoration: import_view3.Decoration.mark({ class: className })
     };
   }
   /**
@@ -4620,7 +4662,7 @@ var BaseStructuralProcessor = class {
     return {
       from: markerStart,
       to: markerEnd,
-      decoration: import_view2.Decoration.replace({
+      decoration: import_view3.Decoration.replace({
         widget,
         inclusive: false
       })
@@ -4756,7 +4798,7 @@ var FancyListProcessor = class extends BaseStructuralProcessor {
 };
 
 // src/live-preview/pipeline/structural/ExampleListProcessor.ts
-var import_view3 = require("@codemirror/view");
+var import_view4 = require("@codemirror/view");
 var ExampleListProcessor = class extends BaseStructuralProcessor {
   constructor() {
     super(...arguments);
@@ -4828,7 +4870,7 @@ var ExampleListProcessor = class extends BaseStructuralProcessor {
       decorations.push({
         from: markerInfo.markerStart,
         to: markerInfo.markerEnd,
-        decoration: import_view3.Decoration.replace({
+        decoration: import_view4.Decoration.replace({
           widget: new DuplicateExampleLabelWidget(
             markerInfo.label,
             firstLine,
@@ -4844,7 +4886,7 @@ var ExampleListProcessor = class extends BaseStructuralProcessor {
       decorations.push({
         from: markerInfo.markerStart,
         to: markerInfo.markerEnd,
-        decoration: import_view3.Decoration.replace({
+        decoration: import_view4.Decoration.replace({
           widget: new ExampleListMarkerWidget(
             exampleNumber,
             markerInfo.label,
@@ -4937,7 +4979,7 @@ function handleCursorPosition(parsedLabel, placeholderRanges, context) {
 }
 
 // src/live-preview/pipeline/structural/customLabel/decorations.ts
-var import_view4 = require("@codemirror/view");
+var import_view5 = require("@codemirror/view");
 function determineDisplayLevel(line, parsedLabel, placeholderRanges, cursorInfo) {
   if (cursorInfo.isAtListMarker) {
     return "full";
@@ -4953,7 +4995,7 @@ function createCollapsedDecorations(parsedLabel, context) {
   decorations.push({
     from: parsedLabel.markerStart,
     to: parsedLabel.markerEnd,
-    decoration: import_view4.Decoration.replace({
+    decoration: import_view5.Decoration.replace({
       widget: new CustomLabelMarkerWidget(
         parsedLabel.processedLabel,
         context.view,
@@ -4969,7 +5011,7 @@ function createSemiExpandedDecorations(parsedLabel, context) {
   decorations.push({
     from: parsedLabel.markerStart,
     to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
-    decoration: import_view4.Decoration.replace({
+    decoration: import_view5.Decoration.replace({
       widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
       inclusive: false
     })
@@ -4979,7 +5021,7 @@ function createSemiExpandedDecorations(parsedLabel, context) {
   decorations.push({
     from: labelStart,
     to: labelEnd,
-    decoration: import_view4.Decoration.replace({
+    decoration: import_view5.Decoration.replace({
       widget: new CustomLabelProcessedWidget(
         parsedLabel.processedLabel,
         context.view,
@@ -4991,7 +5033,7 @@ function createSemiExpandedDecorations(parsedLabel, context) {
   decorations.push({
     from: labelEnd,
     to: labelEnd + 1,
-    decoration: import_view4.Decoration.replace({
+    decoration: import_view5.Decoration.replace({
       widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
       inclusive: false
     })
@@ -5009,14 +5051,14 @@ function processPlaceholders(line, parsedLabel, placeholderRanges, cursorInfo, c
       decorations.push({
         from: lastEnd,
         to: range.start,
-        decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+        decoration: import_view5.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
       });
     }
     if (cursorInfo.cursorPlaceholder && cursorInfo.cursorPlaceholder === range) {
       decorations.push({
         from: range.start,
         to: range.end,
-        decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER })
+        decoration: import_view5.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_PLACEHOLDER })
       });
     } else {
       const placeholderKey = `${parsedLabel.rawLabel.substring(
@@ -5028,7 +5070,7 @@ function processPlaceholders(line, parsedLabel, placeholderRanges, cursorInfo, c
       decorations.push({
         from: range.start,
         to: range.end,
-        decoration: import_view4.Decoration.replace({
+        decoration: import_view5.Decoration.replace({
           widget: new CustomLabelInlineNumberWidget(String(number), context.view),
           inclusive: false
         })
@@ -5040,7 +5082,7 @@ function processPlaceholders(line, parsedLabel, placeholderRanges, cursorInfo, c
     decorations.push({
       from: lastEnd,
       to: labelEnd,
-      decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+      decoration: import_view5.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
     });
   }
   return decorations;
@@ -5053,7 +5095,7 @@ function createFullDisplayDecorations(line, parsedLabel, placeholderRanges, curs
   decorations.push({
     from: parsedLabel.markerStart,
     to: parsedLabel.markerStart + DECORATION_STYLES.CUSTOM_LABEL_PREFIX_LENGTH,
-    decoration: import_view4.Decoration.replace({
+    decoration: import_view5.Decoration.replace({
       widget: new CustomLabelPartialWidget("{::", context.view, parsedLabel.markerStart),
       inclusive: false
     })
@@ -5063,7 +5105,7 @@ function createFullDisplayDecorations(line, parsedLabel, placeholderRanges, curs
     decorations.push({
       from: labelStart,
       to: labelEnd,
-      decoration: import_view4.Decoration.replace({
+      decoration: import_view5.Decoration.replace({
         widget: new DuplicateCustomLabelWidget(
           parsedLabel.rawLabel,
           (_b = firstOccurrence == null ? void 0 : firstOccurrence.firstLine) != null ? _b : void 0,
@@ -5085,13 +5127,13 @@ function createFullDisplayDecorations(line, parsedLabel, placeholderRanges, curs
     decorations.push({
       from: labelStart,
       to: labelEnd,
-      decoration: import_view4.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
+      decoration: import_view5.Decoration.mark({ class: CSS_CLASSES.CUSTOM_LABEL_TEXT })
     });
   }
   decorations.push({
     from: labelEnd,
     to: labelEnd + 1,
-    decoration: import_view4.Decoration.replace({
+    decoration: import_view5.Decoration.replace({
       widget: new CustomLabelPartialWidget("}", context.view, labelEnd),
       inclusive: false
     })
@@ -5165,7 +5207,7 @@ var CustomLabelProcessor = class {
 };
 
 // src/live-preview/pipeline/structural/DefinitionProcessor.ts
-var import_view5 = require("@codemirror/view");
+var import_view6 = require("@codemirror/view");
 var DefinitionProcessor = class {
   constructor() {
     this.name = "definition-list";
@@ -5227,7 +5269,7 @@ var DefinitionProcessor = class {
         decorations.push({
           from: markerStart,
           to: markerEnd,
-          decoration: import_view5.Decoration.replace({
+          decoration: import_view6.Decoration.replace({
             widget: new DefinitionBulletWidget(context.view, markerStart),
             inclusive: false
           })
@@ -5239,7 +5281,7 @@ var DefinitionProcessor = class {
       decorations.push({
         from: markerStart,
         to: markerEnd,
-        decoration: import_view5.Decoration.mark({
+        decoration: import_view6.Decoration.mark({
           class: CSS_CLASSES.DEFINITION_MARKER_CURSOR
         })
       });
@@ -5263,7 +5305,7 @@ var DefinitionProcessor = class {
     decorations.push({
       from: line.from,
       to: line.to,
-      decoration: import_view5.Decoration.mark({
+      decoration: import_view6.Decoration.mark({
         class: "cm-strong cm-pandoc-definition-term"
       })
     });
@@ -5277,7 +5319,7 @@ var DefinitionProcessor = class {
     decorations.push({
       from: line.from,
       to: line.from,
-      decoration: import_view5.Decoration.line({
+      decoration: import_view6.Decoration.line({
         class: CSS_CLASSES.DEFINITION_PARAGRAPH
       })
     });
@@ -5325,7 +5367,7 @@ var DefinitionProcessor = class {
 };
 
 // src/live-preview/pipeline/structural/StandardListProcessor.ts
-var import_view6 = require("@codemirror/view");
+var import_view7 = require("@codemirror/view");
 var StandardListProcessor = class {
   constructor() {
     this.name = "standard-list";
@@ -5361,14 +5403,14 @@ var StandardListProcessor = class {
     decorations.push({
       from: line.from,
       to: line.from,
-      decoration: import_view6.Decoration.line({
+      decoration: import_view7.Decoration.line({
         class: `${CSS_CLASSES.LIST_LINE} ${listClass} HyperMD-list-line HyperMD-list-line-${indentLevel}`
       })
     });
     decorations.push({
       from: markerStart,
       to: markerEnd - space.length,
-      decoration: import_view6.Decoration.mark({
+      decoration: import_view7.Decoration.mark({
         class: "cm-formatting-list cm-formatting-list-ul"
       })
     });
@@ -5376,7 +5418,7 @@ var StandardListProcessor = class {
       decorations.push({
         from: contentStart,
         to: line.to,
-        decoration: import_view6.Decoration.mark({
+        decoration: import_view7.Decoration.mark({
           class: `cm-list-${indentLevel}`
         })
       });
@@ -5396,7 +5438,7 @@ var StandardListProcessor = class {
 };
 
 // src/live-preview/pipeline/structural/ListContinuationProcessor.ts
-var import_view7 = require("@codemirror/view");
+var import_view8 = require("@codemirror/view");
 var ListContinuationProcessor = class {
   constructor() {
     this.name = "list-continuation";
@@ -5419,11 +5461,22 @@ var ListContinuationProcessor = class {
     const lineText = line.text;
     const decorations = [];
     const indent = this.getIndentMetrics(lineText);
-    this.addLineDecoration(decorations, line, context.listContext.contentStartColumn);
+    const listLevel = this.getListLevel(context);
+    const indentWidthPx = this.calculateIndentWidth(
+      context.listContext.contentStartColumn,
+      indent.visualLength
+    );
+    this.addLineDecoration(decorations, line, indentWidthPx);
     if (indent.textLength > 0) {
-      this.addIndentDecorations(decorations, line, indent.textLength);
+      this.addIndentDecorations(
+        decorations,
+        line,
+        indent.textLength,
+        indentWidthPx,
+        listLevel
+      );
     }
-    this.addContentDecoration(decorations, line, indent.textLength);
+    this.addContentDecoration(decorations, line, indent.textLength, listLevel);
     const contentRegion = {
       from: line.from + indent.textLength,
       to: line.to,
@@ -5440,38 +5493,30 @@ var ListContinuationProcessor = class {
   /**
    * Adds line decoration with proper styling for continuation lines.
    */
-  addLineDecoration(decorations, line, contentStartColumn) {
+  addLineDecoration(decorations, line, indentWidthPx) {
+    const baseConfig = {
+      class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`
+    };
     const textIndent = "0px";
-    const paddingStart = contentStartColumn * 6 + "px";
+    const paddingStart = this.calculatePadding(indentWidthPx);
+    baseConfig.attributes = {
+      style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart} !important;`
+    };
     decorations.push({
       from: line.from,
       to: line.from,
-      decoration: import_view7.Decoration.line({
-        class: `${CSS_CLASSES.LIST_LINE} ${CSS_CLASSES.LIST_LINE_1} ${CSS_CLASSES.LIST_LINE_NOBULLET}`,
-        attributes: {
-          style: `text-indent: ${textIndent} !important; padding-inline-start: ${paddingStart};`
-        }
-      })
+      decoration: import_view8.Decoration.line(baseConfig)
     });
   }
   /**
    * Adds indent decorations for leading whitespace.
    */
-  addIndentDecorations(decorations, line, indentCharLength) {
+  addIndentDecorations(decorations, line, indentCharLength, indentWidthPx, listLevel) {
     decorations.push({
       from: line.from,
       to: line.from + indentCharLength,
-      decoration: import_view7.Decoration.mark({
-        class: "cm-hmd-list-indent cm-hmd-list-indent-1",
-        tagName: "span"
-      })
-    });
-    decorations.push({
-      from: line.from,
-      to: line.from + indentCharLength,
-      decoration: import_view7.Decoration.mark({
-        class: "cm-indent-spacing",
-        tagName: "span",
+      decoration: import_view8.Decoration.replace({
+        widget: new ListContinuationIndentWidget(indentWidthPx, listLevel),
         inclusive: false
       })
     });
@@ -5479,12 +5524,12 @@ var ListContinuationProcessor = class {
   /**
    * Adds content area decoration.
    */
-  addContentDecoration(decorations, line, indentCharLength) {
+  addContentDecoration(decorations, line, indentCharLength, listLevel) {
     decorations.push({
       from: line.from + indentCharLength,
       to: line.to,
-      decoration: import_view7.Decoration.mark({
-        class: CSS_CLASSES.CM_LIST_1
+      decoration: import_view8.Decoration.mark({
+        class: this.getContentClass(listLevel)
       })
     });
   }
@@ -5523,10 +5568,32 @@ var ListContinuationProcessor = class {
       textLength
     };
   }
+  calculateIndentWidth(contentStartColumn, indentVisualLength) {
+    const columnWidth = DECORATION_STYLES.CONTINUATION_INDENT_UNIT_PX;
+    const baseColumns = contentStartColumn > 0 ? contentStartColumn : indentVisualLength;
+    return Math.max(baseColumns, INDENTATION.CONTINUATION_MIN_VISUAL) * columnWidth;
+  }
+  calculatePadding(indentWidthPx) {
+    return `${indentWidthPx}px`;
+  }
+  getListLevel(context) {
+    var _a;
+    return ((_a = context.listContext) == null ? void 0 : _a.listLevel) && context.listContext.listLevel > 0 ? context.listContext.listLevel : 1;
+  }
+  getContentClass(listLevel) {
+    switch (listLevel) {
+      case 2:
+        return CSS_CLASSES.CM_LIST_2;
+      case 3:
+        return CSS_CLASSES.CM_LIST_3;
+      default:
+        return CSS_CLASSES.CM_LIST_1;
+    }
+  }
 };
 
 // src/live-preview/pipeline/inline/ExampleReferenceProcessor.ts
-var import_view8 = require("@codemirror/view");
+var import_view9 = require("@codemirror/view");
 
 // src/shared/utils/cursorUtils.ts
 function getRegionCursorPosition(context, region) {
@@ -5583,7 +5650,7 @@ var ExampleReferenceProcessor = class {
     const content = context.exampleContent.get(label) || "";
     const absolutePosition = match.from + ((region == null ? void 0 : region.from) || 0);
     const referenceContext = buildReferenceContext(context);
-    return import_view8.Decoration.replace({
+    return import_view9.Decoration.replace({
       widget: new ExampleReferenceWidget(
         number,
         content,
@@ -5599,7 +5666,7 @@ var ExampleReferenceProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SuperscriptProcessor.ts
-var import_view9 = require("@codemirror/view");
+var import_view10 = require("@codemirror/view");
 var SuperscriptProcessor = class {
   constructor() {
     this.name = "superscript";
@@ -5632,7 +5699,7 @@ var SuperscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view9.Decoration.replace({
+    return import_view10.Decoration.replace({
       widget: new SuperscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -5640,7 +5707,7 @@ var SuperscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/SubscriptProcessor.ts
-var import_view10 = require("@codemirror/view");
+var import_view11 = require("@codemirror/view");
 var SubscriptProcessor = class {
   constructor() {
     this.name = "subscript";
@@ -5673,7 +5740,7 @@ var SubscriptProcessor = class {
   }
   createDecoration(match, context) {
     const { content, absoluteFrom } = match.data;
-    return import_view10.Decoration.replace({
+    return import_view11.Decoration.replace({
       widget: new SubscriptWidget(content, context.view, absoluteFrom),
       inclusive: false
     });
@@ -5681,7 +5748,7 @@ var SubscriptProcessor = class {
 };
 
 // src/live-preview/pipeline/inline/CustomLabelReferenceProcessor.ts
-var import_view11 = require("@codemirror/view");
+var import_view12 = require("@codemirror/view");
 var CustomLabelReferenceProcessor = class {
   constructor() {
     this.name = "custom-label-reference";
@@ -5747,7 +5814,7 @@ var CustomLabelReferenceProcessor = class {
     const isDuplicate = (_d = context.duplicateCustomLabels) == null ? void 0 : _d.has(processedLabel);
     if (isDuplicate) {
       const duplicateInfo = (_e = context.duplicateCustomLineInfo) == null ? void 0 : _e.get(processedLabel);
-      return import_view11.Decoration.replace({
+      return import_view12.Decoration.replace({
         widget: new DuplicateCustomLabelWidget(
           processedLabel,
           (duplicateInfo == null ? void 0 : duplicateInfo.firstLine) || 0,
@@ -5759,7 +5826,7 @@ var CustomLabelReferenceProcessor = class {
     }
     const labelContent = ((_f = context.customLabels) == null ? void 0 : _f.get(processedLabel)) || "";
     const referenceContext = buildReferenceContext(context);
-    return import_view11.Decoration.replace({
+    return import_view12.Decoration.replace({
       widget: new CustomLabelReferenceWidget(
         processedLabel,
         labelContent,
@@ -5783,7 +5850,7 @@ var CustomLabelReferenceProcessor = class {
 };
 
 // src/live-preview/extension.ts
-var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view12.ViewPlugin.fromClass(
+var pandocExtendedMarkdownPlugin = (getSettings, getDocPath, getApp, getComponent) => import_view13.ViewPlugin.fromClass(
   class PandocExtendedMarkdownView {
     constructor(view) {
       this.initializePipeline(getApp, getComponent);
@@ -8022,7 +8089,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
       () => this.app,
       () => this
     ));
-    this.registerEditorExtension(import_state8.Prec.highest(import_view13.keymap.of(createListAutocompletionKeymap(this.settings))));
+    this.registerEditorExtension(import_state8.Prec.highest(import_view14.keymap.of(createListAutocompletionKeymap(this.settings))));
   }
   registerPostProcessor() {
     this.registerMarkdownPostProcessor((element, context) => {
