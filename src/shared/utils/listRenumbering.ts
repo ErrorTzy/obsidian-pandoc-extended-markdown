@@ -1,9 +1,9 @@
 import { EditorView } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
+import { ListItem } from '../types/listTypes';
+import { INDENTATION, NUMERIC_CONSTANTS } from '../../core/constants';
 import { ListPatterns } from '../patterns';
 import { intToRoman, numberToLetter } from './listHelpers';
-import { ListItem } from '../types/listTypes';
-import { NUMERIC_CONSTANTS } from '../../core/constants';
 
 /**
  * Information about the boundaries of a list block
@@ -23,6 +23,24 @@ interface ListTypeInfo {
 }
 
 /**
+ * Calculate the visual length of an indentation string with tab support.
+ *
+ * @param indent - Raw indentation characters to evaluate
+ * @returns Visual indentation length
+ */
+function calculateIndentLength(indent: string): number {
+    let length = NUMERIC_CONSTANTS.EMPTY_LENGTH;
+
+    for (const char of indent) {
+        length += char === INDENTATION.TAB
+            ? INDENTATION.TAB_SIZE
+            : INDENTATION.SINGLE_SPACE;
+    }
+
+    return length;
+}
+
+/**
  * Find the start and end boundaries of a list block at a given indentation level
  * @param allLines - Array of all document lines
  * @param insertedLineNum - The line number where a new item was inserted
@@ -36,67 +54,70 @@ function findBlockBoundaries(allLines: string[], insertedLineNum: number): ListB
     const insertedLine = allLines[insertedLineNum];
     const insertedIndentMatch = insertedLine.match(ListPatterns.INDENT_ONLY);
     const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : '';
+    const insertedIndentLength = calculateIndentLength(insertedIndent);
     
     // Find the start of the list block (going backwards)
     for (let i = insertedLineNum - 1; i >= NUMERIC_CONSTANTS.MIN_DOC_POSITION; i--) {
         const line = allLines[i];
-        
-        // Skip empty lines
+
         if (!line.trim()) {
             continue;
         }
-        
-        // Check if this line is a list item with same or less indentation
+
         const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
-        if (!listMatch) {
-            // Not a list item, stop here
-            break;
+        const indentMatch = line.match(ListPatterns.INDENT_ONLY);
+        const lineIndent = indentMatch ? indentMatch[1] : '';
+        const lineIndentLength = calculateIndentLength(lineIndent);
+
+        if (listMatch) {
+            if (lineIndentLength < insertedIndentLength) {
+                break;
+            }
+
+            if (lineIndentLength === insertedIndentLength) {
+                blockStart = i;
+            }
+
+            continue;
         }
-        
-        const lineIndent = listMatch[1];
-        
-        // If this line has less indentation, it's a parent list - don't include it
-        if (lineIndent.length < insertedIndent.length) {
-            break;
+
+        if (lineIndentLength > insertedIndentLength) {
+            continue;
         }
-        
-        // If same indentation, include in the block
-        if (lineIndent === insertedIndent) {
-            blockStart = i;
-        }
-        
-        // If more indentation, it's a nested list - skip it but continue looking
+
+        break;
     }
     
     // Find the end of the list block (going forwards)
     for (let i = insertedLineNum + 1; i < allLines.length; i++) {
         const line = allLines[i];
-        
-        // Skip empty lines within the list
+
         if (!line.trim()) {
             continue;
         }
-        
-        // Check if this line is a list item
+
         const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
-        if (!listMatch) {
-            // Not a list item, stop here
-            break;
+        const indentMatch = line.match(ListPatterns.INDENT_ONLY);
+        const lineIndent = indentMatch ? indentMatch[1] : '';
+        const lineIndentLength = calculateIndentLength(lineIndent);
+
+        if (listMatch) {
+            if (lineIndentLength < insertedIndentLength) {
+                break;
+            }
+
+            if (lineIndentLength === insertedIndentLength) {
+                blockEnd = i;
+            }
+
+            continue;
         }
-        
-        const lineIndent = listMatch[1];
-        
-        // If this line has less indentation, it's a different list level
-        if (lineIndent.length < insertedIndent.length) {
-            break;
+
+        if (lineIndentLength > insertedIndentLength) {
+            continue;
         }
-        
-        // If same indentation, include in the block
-        if (lineIndent === insertedIndent) {
-            blockEnd = i;
-        }
-        
-        // If more indentation, it's a nested list - continue but don't update blockEnd
+
+        break;
     }
     
     return {

@@ -7528,28 +7528,42 @@ function handleEmptyListItem(config) {
 var import_state4 = require("@codemirror/state");
 
 // src/shared/utils/listRenumbering.ts
+function calculateIndentLength(indent) {
+  let length = NUMERIC_CONSTANTS.EMPTY_LENGTH;
+  for (const char of indent) {
+    length += char === INDENTATION.TAB ? INDENTATION.TAB_SIZE : INDENTATION.SINGLE_SPACE;
+  }
+  return length;
+}
 function findBlockBoundaries(allLines, insertedLineNum) {
   let blockStart = insertedLineNum;
   let blockEnd = insertedLineNum;
   const insertedLine = allLines[insertedLineNum];
   const insertedIndentMatch = insertedLine.match(ListPatterns.INDENT_ONLY);
   const insertedIndent = insertedIndentMatch ? insertedIndentMatch[1] : "";
+  const insertedIndentLength = calculateIndentLength(insertedIndent);
   for (let i = insertedLineNum - 1; i >= NUMERIC_CONSTANTS.MIN_DOC_POSITION; i--) {
     const line = allLines[i];
     if (!line.trim()) {
       continue;
     }
     const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
-    if (!listMatch) {
-      break;
+    const indentMatch = line.match(ListPatterns.INDENT_ONLY);
+    const lineIndent = indentMatch ? indentMatch[1] : "";
+    const lineIndentLength = calculateIndentLength(lineIndent);
+    if (listMatch) {
+      if (lineIndentLength < insertedIndentLength) {
+        break;
+      }
+      if (lineIndentLength === insertedIndentLength) {
+        blockStart = i;
+      }
+      continue;
     }
-    const lineIndent = listMatch[1];
-    if (lineIndent.length < insertedIndent.length) {
-      break;
+    if (lineIndentLength > insertedIndentLength) {
+      continue;
     }
-    if (lineIndent === insertedIndent) {
-      blockStart = i;
-    }
+    break;
   }
   for (let i = insertedLineNum + 1; i < allLines.length; i++) {
     const line = allLines[i];
@@ -7557,16 +7571,22 @@ function findBlockBoundaries(allLines, insertedLineNum) {
       continue;
     }
     const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_OR_HASH_LIST);
-    if (!listMatch) {
-      break;
+    const indentMatch = line.match(ListPatterns.INDENT_ONLY);
+    const lineIndent = indentMatch ? indentMatch[1] : "";
+    const lineIndentLength = calculateIndentLength(lineIndent);
+    if (listMatch) {
+      if (lineIndentLength < insertedIndentLength) {
+        break;
+      }
+      if (lineIndentLength === insertedIndentLength) {
+        blockEnd = i;
+      }
+      continue;
     }
-    const lineIndent = listMatch[1];
-    if (lineIndent.length < insertedIndent.length) {
-      break;
+    if (lineIndentLength > insertedIndentLength) {
+      continue;
     }
-    if (lineIndent === insertedIndent) {
-      blockEnd = i;
-    }
+    break;
   }
   return {
     blockStart,
