@@ -23,13 +23,6 @@ Render Pandoc-style superscripts and subscripts:
 - **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
 - **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
 
-### Strict Pandoc Mode
-
-- **Format Command**: Auto-format document to meet Pandoc standards
-- **Toggle Setting**: Enable strict Pandoc formatting requirements
-- **Validation**: Only renders lists that conform to Pandoc standards
-- **Check Command**: Scan document for formatting issues
-
 ### Example Lists with Cross-References
 Create numbered examples that can be referenced throughout your document:
 ```markdown
@@ -46,17 +39,6 @@ The references will automatically render the correct example numbers:
 
 Later in the document, refer to (1) and (2).
 ```
-
-#### Features
-- **Autocompletion**: Press Enter after an example list item to create a new `(@)` marker with cursor positioned for label entry
-- **Autocomplete for References**: When typing `(@` in your document, an autocomplete dropdown will appear showing all available example labels
-- **Preview in Dropdown**: The dropdown displays the label name and a preview of the example text (truncated to 30 characters)
-- **Duplicate Label Handling**: When the same label appears multiple times:
-  - Duplicates are displayed in red with underline instead of being numbered
-  - Hovering shows which line has the first occurrence (e.g., "Duplicate index at line 2: (@good) This is a good example.")
-  - Only the first occurrence gets a number and can be referenced
-- **Label Tooltips**: Hovering over any example list number shows the original label (e.g., hovering over `(2)` shows `@good`)
-
 
 ### Definition Lists
 Create structured term-definition pairs with enhanced support:
@@ -84,29 +66,44 @@ Term 3
 - **Autocompletion**: Press Enter after `:` or `~` markers to continue with the same marker type
 - **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
 
-#### Known Limitations
+### List Panel View
 
-Due to how Markdown parsers work, there are some limitations with definition lists in reading mode:
+A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types.
 
-- **Definition terms**: Cannot be automatically styled with bold/underline when they appear on separate lines from the definition marker. This is because Obsidian's reading mode renders each line as a separate HTML element.
+#### Available Panels
 
-- **Indented paragraphs**: In reading mode, indented text (using 4 spaces or tab) is treated as code blocks by the Markdown parser before the plugin can process it. This is standard Markdown behavior that cannot be overridden in post-processing.
+**Custom Label Lists Panel** `{::}`
+- Displays all custom label lists from the current document
+- Two-column layout: processed labels and their content
+- Click labels to copy raw syntax to clipboard
+- Click content to navigate to the label in the editor
+- Hover previews for truncated content with rendered math
 
-#### Toggle Definition Styles
+**Example Lists Panel** `(@)`
+- Displays all example lists from the current document
+- Three-column layout: rendered numbers, raw labels, and content
+- Rendered numbers show sequential numbering (truncated at 3rd digit)
+- Click labels to copy raw syntax (e.g., `(@a)`) to clipboard
+- Click content to navigate to the example in the editor
+- Hover previews for truncated items with full content
+- Math rendering support in content column
 
-The plugin provides commands to toggle formatting styles for definition terms:
+**Definition Lists Panel** `DL:`
+- Displays all definition lists from the current document
+- Two-column layout: terms and their definitions
+- Terms support full markdown rendering (bold, italic, math, references)
+- Multiple definitions per term shown as bullet list
+- Continuation lines automatically merged with definitions
+- Click definitions to navigate to the term in the editor
+- Smart truncation: terms (100 chars), definitions (300 chars)
+- Hover previews for truncated content with full rendering
 
-**Toggle Definition Bold Style**
-
-- **Implicit bold**: Terms appear bold through plugin styling (e.g., `Term`)
-- **Explicit bold**: Terms have markdown bold syntax (e.g., `**Term**`)
-
-**Toggle Definition Underline Style**
-
-- **Implicit underline**: Terms appear underlined through plugin styling (e.g., `Term`)
-- **Explicit underline**: Terms have HTML underline syntax (e.g., `<span class="underline">Term</span>`)
-
-These commands are useful for maintaining compatibility with other markdown readers that don't have this plugin installed.
+**Footnotes Panel** `[^]`
+- Lists every footnote definition detected in the document
+- Two-column layout: footnote label and fully rendered content (markdown, math, references)
+- Clicking a label focuses the editor and positions the cursor immediately after the corresponding `[^label]` reference
+- Clicking content jumps to the footnote definition block and highlights the line
+- Uses the shared rendering pipeline for consistent formatting across panels
 
 ### Auto-Renumbering Lists
 
@@ -145,6 +142,12 @@ This feature:
 - Respects indentation levels (only renumbers items at the same level)
 - Preserves nested list numbering independently
 
+### Strict Pandoc Mode
+
+- **Format Command**: Auto-format document to meet Pandoc standards
+- **Toggle Setting**: Enable strict Pandoc formatting requirements
+- **Validation**: Only renders lists that conform to Pandoc standards
+- **Check Command**: Scan document for formatting issues
 
 ### Beyond Pandoc Extended Syntax!!!
 
@@ -198,45 +201,6 @@ Which renders as:
 - (1) A premise  
 - (2) A conclusion
 - (1+2) Combined expression
-
-### List Panel View
-
-A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types.
-
-#### Available Panels
-
-**Custom Label Lists Panel** `{::}`
-- Displays all custom label lists from the current document
-- Two-column layout: processed labels and their content
-- Click labels to copy raw syntax to clipboard
-- Click content to navigate to the label in the editor
-- Hover previews for truncated content with rendered math
-
-**Example Lists Panel** `(@)`
-- Displays all example lists from the current document
-- Three-column layout: rendered numbers, raw labels, and content
-- Rendered numbers show sequential numbering (truncated at 3rd digit)
-- Click labels to copy raw syntax (e.g., `(@a)`) to clipboard
-- Click content to navigate to the example in the editor
-- Hover previews for truncated items with full content
-- Math rendering support in content column
-
-**Definition Lists Panel** `DL:`
-- Displays all definition lists from the current document
-- Two-column layout: terms and their definitions
-- Terms support full markdown rendering (bold, italic, math, references)
-- Multiple definitions per term shown as bullet list
-- Continuation lines automatically merged with definitions
-- Click definitions to navigate to the term in the editor
-- Smart truncation: terms (100 chars), definitions (300 chars)
-- Hover previews for truncated content with full rendering
-
-**Footnotes Panel** `[^]`
-- Lists every footnote definition detected in the document
-- Two-column layout: footnote label and fully rendered content (markdown, math, references)
-- Clicking a label focuses the editor and positions the cursor immediately after the corresponding `[^label]` reference
-- Clicking content jumps to the footnote definition block and highlights the line
-- Uses the shared rendering pipeline for consistent formatting across panels
 
 ## Installation
 
