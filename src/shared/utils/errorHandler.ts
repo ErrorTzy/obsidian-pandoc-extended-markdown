@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian';
-import { ERROR_CODES, ERROR_MESSAGES } from '../../core/constants';
+import { ERROR_MESSAGES } from '../../core/constants';
 
 /**
  * Custom error class for the Pandoc Extended Markdown plugin.
@@ -14,8 +14,6 @@ export class PluginError extends Error {
         this.name = 'PandocExtendedMarkdownPluginError';
     }
 }
-
-// ERROR_CODES moved to core/constants.ts
 
 /**
  * Wraps a function with error handling.
@@ -83,12 +81,13 @@ export function handleError(error: unknown, context: string): void {
  * Returns a fallback if the method doesn't exist.
  */
 export function validateApiMethod<T>(
-    obj: any,
+    obj: Record<string, unknown> | null | undefined,
     methodName: string,
-    fallback: T
-): T {
-    if (obj && typeof obj[methodName] === 'function') {
-        return obj[methodName].bind(obj);
+    fallback: (...args: unknown[]) => T
+): (...args: unknown[]) => T {
+    const candidate = obj?.[methodName];
+    if (typeof candidate === 'function') {
+        return (...args: unknown[]) => (candidate as (...innerArgs: unknown[]) => T).apply(obj, args);
     }
     
     return fallback;
@@ -129,13 +128,13 @@ export function safeRender<T>(
  */
 export function errorHandler(context: string) {
     return function (
-        target: any,
+        target: object,
         propertyKey: string,
         descriptor: PropertyDescriptor
     ) {
-        const originalMethod = descriptor.value;
+        const originalMethod = descriptor.value as (...args: unknown[]) => unknown;
         
-        descriptor.value = function (...args: any[]) {
+        descriptor.value = function (...args: unknown[]) {
             try {
                 const result = originalMethod.apply(this, args);
                 

@@ -32,7 +32,7 @@ export class PluginStateManager {
     private modeChangeListeners: Set<ModeChangeCallback> = new Set();
     
     // Track processed elements to prevent duplicate counter increments
-    private processedElements = new WeakMap<Element, Map<string, any>>();
+    private processedElements = new WeakMap<Element, Map<string, unknown>>();
     
     // Track which documents need element reprocessing
     private documentsNeedingReprocess = new Set<string>();
@@ -224,7 +224,7 @@ export class PluginStateManager {
     /**
      * Mark an element as processed to prevent duplicate processing
      */
-    markElementProcessed(element: Element, key: string, value: any): void {
+    markElementProcessed(element: Element, key: string, value: unknown): void {
         if (!this.processedElements.has(element)) {
             this.processedElements.set(element, new Map());
         }
@@ -253,7 +253,7 @@ export class PluginStateManager {
     /**
      * Get processed element data
      */
-    getProcessedElementData(element: Element, key: string): any {
+    getProcessedElementData(element: Element, key: string): unknown {
         if (this.processedElements.has(element)) {
             return this.processedElements.get(element)!.get(key);
         }

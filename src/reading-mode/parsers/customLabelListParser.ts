@@ -239,10 +239,10 @@ function processElementPreservingSpans(elem: Element, placeholderContext?: Place
             });
     
     const nodesToProcess: Text[] = [];
-    let node;
-    while (node = walker.nextNode()) {
-        if (node.textContent && node.textContent.includes('{::')) {
-            nodesToProcess.push(node as Text);
+    let currentNode: Node | null;
+    while ((currentNode = walker.nextNode())) {
+        if (currentNode.textContent && currentNode.textContent.includes('{::')) {
+            nodesToProcess.push(currentNode as Text);
         }
     }
     

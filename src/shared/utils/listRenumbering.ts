@@ -1,5 +1,4 @@
 import { EditorView } from '@codemirror/view';
-import { EditorSelection } from '@codemirror/state';
 import { ListItem } from '../types/listTypes';
 import { INDENTATION, NUMERIC_CONSTANTS } from '../../core/constants';
 import { ListPatterns } from '../patterns';

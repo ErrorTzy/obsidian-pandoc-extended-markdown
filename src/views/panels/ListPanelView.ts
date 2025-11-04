@@ -1,11 +1,11 @@
 // External libraries
-import { ItemView, WorkspaceLeaf, MarkdownView, HoverLinkSource, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, MarkdownView, HoverLinkSource } from 'obsidian';
 
 // Types
 import { PanelModule, PanelTabInfo } from './modules/PanelTypes';
 
 // Constants
-import { UI_CONSTANTS, ICONS, MESSAGES, CSS_CLASSES } from '../../core/constants';
+import { UI_CONSTANTS, ICONS, CSS_CLASSES } from '../../core/constants';
 
 // Utils
 import { handleError } from '../../shared/utils/errorHandler';
@@ -34,7 +34,7 @@ export class ListPanelView extends ItemView {
         this.plugin = plugin;
         
         this.hoverLinkSource = {
-            display: 'List Panel',
+            display: 'List panel',
             defaultMod: true
         };
         
@@ -105,7 +105,7 @@ export class ListPanelView extends ItemView {
     }
     
     getDisplayText(): string {
-        return 'List Panel';
+        return 'List panel';
     }
     
     getIcon(): string {
@@ -144,7 +144,7 @@ export class ListPanelView extends ItemView {
         this.plugin.registerHoverLinkSource(VIEW_TYPE_LIST_PANEL, this.hoverLinkSource);
     }
     
-    async onClose() {
+    onClose(): Promise<void> {
         if (this.updateTimer) {
             clearTimeout(this.updateTimer);
         }
@@ -154,6 +154,7 @@ export class ListPanelView extends ItemView {
         }
         
         this.contentEl.empty();
+        return Promise.resolve();
     }
     
     private renderView(): void {
@@ -185,19 +186,19 @@ export class ListPanelView extends ItemView {
             // This avoids innerHTML and allows theme customization
             if (panel.id === 'custom-labels') {
                 // Create custom label icon using text element
-                const iconText = iconContainer.createSpan({
+                iconContainer.createSpan({
                     cls: CSS_CLASSES.LIST_PANEL_ICON_CUSTOM_LABEL,
                     text: '{::}'
                 });
             } else if (panel.id === 'example-lists') {
                 // Create example list icon using text element
-                const iconText = iconContainer.createSpan({
+                iconContainer.createSpan({
                     cls: CSS_CLASSES.LIST_PANEL_ICON_EXAMPLE_LIST,
                     text: '(@)'
                 });
             } else if (panel.id === 'definition-lists') {
                 // Create definition list icon using text element
-                const iconText = iconContainer.createSpan({
+                iconContainer.createSpan({
                     cls: 'pandoc-icon-definition-list',
                     text: 'DL:'
                 });
@@ -216,7 +217,7 @@ export class ListPanelView extends ItemView {
             });
         }
         
-        const separator = viewContainer.createEl('hr', {
+        viewContainer.createEl('hr', {
             cls: CSS_CLASSES.LIST_PANEL_SEPARATOR
         });
         
@@ -259,29 +260,31 @@ export class ListPanelView extends ItemView {
         }
         
         this.updateTimer = setTimeout(() => {
-            this.updateView();
+            void this.updateView();
         }, UI_CONSTANTS.UPDATE_DEBOUNCE_MS);
     }
-    
-    async updateView(): Promise<void> {
-        try {
-            // Use proper API to get active markdown view
-            let markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-            
-            if (markdownView && markdownView.file) {
-                this.lastActiveMarkdownView = markdownView;
+
+    updateView(): Promise<void> {
+        return Promise.resolve().then(() => {
+            try {
+                // Use proper API to get active markdown view
+                let markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+                
+                if (markdownView && markdownView.file) {
+                    this.lastActiveMarkdownView = markdownView;
+                }
+                
+                if (!markdownView || !markdownView.file) {
+                    markdownView = this.lastActiveMarkdownView;
+                }
+                
+                if (this.activePanel && this.activePanel.shouldUpdate()) {
+                    this.activePanel.onUpdate(markdownView);
+                }
+            } catch (error) {
+                handleError(error, 'Update list panel view');
             }
-            
-            if (!markdownView || !markdownView.file) {
-                markdownView = this.lastActiveMarkdownView;
-            }
-            
-            if (this.activePanel && this.activePanel.shouldUpdate()) {
-                this.activePanel.onUpdate(markdownView);
-            }
-        } catch (error) {
-            handleError(error, 'Update list panel view');
-        }
+        });
     }
     
     getCustomLabels(): Array<{ label: string; content: string; lineNumber: number }> {

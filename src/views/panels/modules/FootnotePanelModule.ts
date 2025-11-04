@@ -119,7 +119,7 @@ export class FootnotePanelModule extends BasePanelModule {
         if (!activeView) return;
 
         const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
-        const targetLeaf = leaves.find((leaf: any) => leaf.view === activeView);
+        const targetLeaf = leaves.find((leaf) => leaf.view === activeView);
         if (targetLeaf) {
             this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
         }

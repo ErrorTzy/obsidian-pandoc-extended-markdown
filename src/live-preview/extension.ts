@@ -1,6 +1,6 @@
 import { Extension, RangeSetBuilder } from '@codemirror/state';
 import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet } from '@codemirror/view';
-import { editorLivePreviewField } from 'obsidian';
+import { editorLivePreviewField, App, Component } from 'obsidian';
 import { PandocExtendedMarkdownSettings } from '../core/settings';
 import { pluginStateManager } from '../core/state/pluginStateManager';
 
@@ -13,8 +13,8 @@ import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, Cu
 const pandocExtendedMarkdownPlugin = (
     getSettings: () => PandocExtendedMarkdownSettings, 
     getDocPath: () => string | null,
-    getApp?: () => any,
-    getComponent?: () => any
+    getApp?: () => App | undefined,
+    getComponent?: () => Component | undefined
 ) => ViewPlugin.fromClass(
     class PandocExtendedMarkdownView {
         decorations: DecorationSet;
@@ -25,7 +25,7 @@ const pandocExtendedMarkdownPlugin = (
             this.decorations = this.buildDecorations(view);
         }
         
-        private initializePipeline(getApp?: () => any, getComponent?: () => any): void {
+        private initializePipeline(getApp?: () => App | undefined, getComponent?: () => Component | undefined): void {
             const app = getApp ? getApp() : undefined;
             const component = getComponent ? getComponent() : undefined;
             this.pipeline = new ProcessingPipeline(pluginStateManager, app, component);
@@ -79,8 +79,8 @@ const pandocExtendedMarkdownPlugin = (
 export function pandocExtendedMarkdownExtension(
     getSettings: () => PandocExtendedMarkdownSettings, 
     getDocPath: () => string | null,
-    getApp?: () => any,
-    getComponent?: () => any
+    getApp?: () => App | undefined,
+    getComponent?: () => Component | undefined
 ): Extension {
     return pandocExtendedMarkdownPlugin(getSettings, getDocPath, getApp, getComponent);
 }

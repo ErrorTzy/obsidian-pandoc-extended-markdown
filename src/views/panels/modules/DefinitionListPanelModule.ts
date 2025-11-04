@@ -12,11 +12,8 @@ import { truncateContentWithRendering } from '../utils/contentTruncator';
 import { renderContentWithMath } from '../utils/viewInteractions';
 import { handleError } from '../../../shared/utils/errorHandler';
 import { DefinitionListItem, extractDefinitionLists } from '../../../shared/extractors/definitionListExtractor';
-import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
+import { setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 import { highlightLine } from '../../editor/highlightUtils';
-
-// Internal modules
-import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 
 export class DefinitionListPanelModule extends BasePanelModule {
     id = 'definition-lists';
@@ -152,7 +149,7 @@ export class DefinitionListPanelModule extends BasePanelModule {
                     
                     // First, make the markdown view active
                     const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
-                    const targetLeaf = leaves.find((leaf: any) => leaf.view === activeView);
+                    const targetLeaf = leaves.find((leaf) => leaf.view === activeView);
                     if (targetLeaf) {
                         this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
                     }

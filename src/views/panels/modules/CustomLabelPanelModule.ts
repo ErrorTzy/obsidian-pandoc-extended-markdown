@@ -20,7 +20,6 @@ import { setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 
 // Internal modules
 import { BasePanelModule } from './BasePanelModule';
-import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 
 export class CustomLabelPanelModule extends BasePanelModule {
     id = 'custom-labels';

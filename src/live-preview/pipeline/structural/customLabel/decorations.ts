@@ -15,7 +15,6 @@ import { ListPatterns } from '../../../../shared/patterns';
 import {
     CustomLabelMarkerWidget,
     CustomLabelPartialWidget,
-    CustomLabelPlaceholderWidget,
     CustomLabelProcessedWidget,
     CustomLabelInlineNumberWidget,
     DuplicateCustomLabelWidget

@@ -100,7 +100,7 @@ export function processSuperSub(element: HTMLElement) {
         matches.forEach(match => {
             // Add text before the match
             if (match.index > lastIndex) {
-                fragments.push(node.textContent!.substring(lastIndex, match.index));
+                fragments.push(text.substring(lastIndex, match.index));
             }
             
             // Create the appropriate element
@@ -119,8 +119,8 @@ export function processSuperSub(element: HTMLElement) {
         });
         
         // Add remaining text
-        if (lastIndex < node.textContent!.length) {
-            fragments.push(node.textContent!.substring(lastIndex));
+        if (lastIndex < text.length) {
+            fragments.push(text.substring(lastIndex));
         }
         
         // Replace the node with fragments

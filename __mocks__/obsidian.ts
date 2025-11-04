@@ -1,22 +1,84 @@
-export class Plugin {
-  app: App;
-  constructor(app: App, manifest: any) {
-    this.app = app;
-  }
-  loadData() { return Promise.resolve({}); }
-  saveData() { return Promise.resolve(); }
-  registerEditorExtension() {}
-  registerMarkdownPostProcessor() {}
-  registerView() {}
-  addRibbonIcon() {}
-  registerEditorSuggest() {}
-  addSettingTab() {}
-  addCommand() {}
-  registerEvent() {}
-  registerHoverLinkSource() {}
+interface TooltipOptions {
+  delay?: number;
 }
 
-export function setTooltip(element: HTMLElement, text: string, options?: any) {
+interface WorkspaceMock {
+  on: jest.Mock;
+  getActiveViewOfType: jest.Mock;
+  getLeavesOfType: jest.Mock<WorkspaceLeaf[], [string]>;
+  getRightLeaf: jest.Mock<WorkspaceLeaf | null, [boolean]>;
+  revealLeaf: jest.Mock<void, [WorkspaceLeaf]>;
+  detachLeavesOfType: jest.Mock<void, [string]>;
+  trigger: jest.Mock;
+  setActiveLeaf: jest.Mock<void, [WorkspaceLeaf, { focus: boolean }]>;
+}
+
+interface CreateElOptions {
+  text?: string;
+  cls?: string;
+  attr?: Record<string, string>;
+}
+
+type ExtendedElement = HTMLElement & {
+  empty: () => void;
+  createEl: (tag: string, opts?: CreateElOptions) => ExtendedElement;
+  createDiv: (opts?: CreateElOptions) => ExtendedElement;
+  createSpan: (opts?: CreateElOptions) => ExtendedElement;
+  addClass: (cls: string) => void;
+  removeClass: (cls: string) => void;
+};
+
+function enhanceElement(element: HTMLElement): ExtendedElement {
+  const extended = element as ExtendedElement;
+  extended.empty = function empty() {
+    this.innerHTML = '';
+  };
+  extended.createEl = function createEl(tag: string, opts?: CreateElOptions) {
+    const newEl = enhanceElement(document.createElement(tag));
+    if (opts?.text) newEl.textContent = opts.text;
+    if (opts?.cls) newEl.className = opts.cls;
+    if (opts?.attr) {
+      Object.entries(opts.attr).forEach(([key, value]) => {
+        newEl.setAttribute(key, value);
+      });
+    }
+    this.appendChild(newEl);
+    return newEl;
+  };
+  extended.createDiv = function createDiv(opts?: CreateElOptions) {
+    return this.createEl('div', opts);
+  };
+  extended.createSpan = function createSpan(opts?: CreateElOptions) {
+    return this.createEl('span', opts);
+  };
+  extended.addClass = function addClass(cls: string) {
+    this.classList.add(cls);
+  };
+  extended.removeClass = function removeClass(cls: string) {
+    this.classList.remove(cls);
+  };
+  return extended;
+}
+
+export class Plugin {
+  app: App;
+  constructor(app: App, _manifest: unknown) {
+    this.app = app;
+  }
+  loadData(): Promise<Record<string, unknown>> { return Promise.resolve({}); }
+  saveData(): Promise<void> { return Promise.resolve(); }
+  registerEditorExtension(): void {}
+  registerMarkdownPostProcessor(): void {}
+  registerView(): void {}
+  addRibbonIcon(): void {}
+  registerEditorSuggest(): void {}
+  addSettingTab(): void {}
+  addCommand(): void {}
+  registerEvent(): void {}
+  registerHoverLinkSource(): void {}
+}
+
+export function setTooltip(element: HTMLElement, text: string, _options?: TooltipOptions) {
   // Mock implementation - just set a data attribute for testing
   element.setAttribute('data-tooltip', text);
 }
@@ -32,55 +94,27 @@ export class MarkdownPostProcessorContext {
 }
 
 export class ItemView {
-  contentEl: HTMLElement & {
-    empty: () => void;
-    createEl: (tag: string, opts?: any) => HTMLElement;
-    createDiv: (opts?: any) => HTMLElement;
-  };
+  contentEl: ExtendedElement;
   app: App;
   constructor(leaf: WorkspaceLeaf) {
-    const el = document.createElement('div') as HTMLElement & {
-      empty: () => void;
-      createEl: (tag: string, opts?: any) => HTMLElement;
-      createDiv: (opts?: any) => HTMLElement;
-    };
-    el.empty = function() {
-      this.innerHTML = '';
-    };
-    el.createEl = function(tag: string, opts?: any) {
-      const newEl = document.createElement(tag);
-      if (opts?.text) newEl.textContent = opts.text;
-      if (opts?.cls) newEl.className = opts.cls;
-      this.appendChild(newEl);
-      // Add the same methods to the new element
-      (newEl as any).empty = el.empty.bind(newEl);
-      (newEl as any).createEl = el.createEl.bind(newEl);
-      (newEl as any).createDiv = el.createDiv.bind(newEl);
-      (newEl as any).createSpan = el.createSpan.bind(newEl);
-      (newEl as any).addClass = function(cls: string) { this.classList.add(cls); };
-      (newEl as any).removeClass = function(cls: string) { this.classList.remove(cls); };
-      return newEl as HTMLElement;
-    };
-    el.createDiv = function(opts?: any) {
-      return el.createEl('div', opts);
-    };
-    el.createSpan = function(opts?: any) {
-      return el.createEl('span', opts);
-    };
-    this.contentEl = el;
+    this.contentEl = enhanceElement(document.createElement('div'));
     this.app = new App();
   }
-  onOpen() { return Promise.resolve(); }
-  onClose() { return Promise.resolve(); }
-  getViewType() { return ''; }
-  getDisplayText() { return ''; }
-  getIcon() { return ''; }
-  registerEvent() {}
+  onOpen(): Promise<void> { return Promise.resolve(); }
+  onClose(): Promise<void> { return Promise.resolve(); }
+  getViewType(): string { return ''; }
+  getDisplayText(): string { return ''; }
+  getIcon(): string { return ''; }
+  registerEvent(): void {}
 }
 
 export class WorkspaceLeaf {
-  constructor(app: App) {}
-  setViewState() { return Promise.resolve(); }
+  app: App;
+  view?: MarkdownView;
+  constructor(app: App) {
+    this.app = app;
+  }
+  setViewState(): Promise<void> { return Promise.resolve(); }
 }
 
 export class Modal {}
@@ -88,28 +122,37 @@ export class Notice {}
 export class PluginSettingTab {}
 export class Setting {}
 export class App {
-  workspace: any = {
+  workspace: WorkspaceMock = {
     on: jest.fn(),
     getActiveViewOfType: jest.fn(),
-    getLeavesOfType: jest.fn().mockReturnValue([]),
-    getRightLeaf: jest.fn(),
+    getLeavesOfType: jest.fn<WorkspaceLeaf[], [string]>().mockReturnValue([]),
+    getRightLeaf: jest.fn<WorkspaceLeaf | null, [boolean]>().mockReturnValue(null),
     revealLeaf: jest.fn(),
     detachLeavesOfType: jest.fn(),
-    trigger: jest.fn()
+    trigger: jest.fn(),
+    setActiveLeaf: jest.fn()
   };
 }
 export class MarkdownView {
-  file: any;
-  editor: any;
+  file: TFile | null = null;
+  editor: Editor = new Editor();
 }
 export class Editor {
-  getValue() { return ''; }
-  setCursor() {}
-  scrollIntoView() {}
-  getLine() { return ''; }
+  cm?: {
+    dom?: HTMLElement;
+    contentDOM?: HTMLElement;
+  };
+
+  getValue(): string { return ''; }
+  setCursor(_pos: EditorPosition): void {}
+  scrollIntoView(_range: { from: EditorPosition; to: EditorPosition }, _center?: boolean): void {}
+  getLine(): string { return ''; }
+  cursorCoords(_force: boolean, _mode?: 'local' | 'page'): { top: number } | null {
+    return { top: 0 };
+  }
 }
 export class EditorSuggest {
-  constructor(plugin: any) {}
+  constructor(_plugin: unknown) {}
 }
 export interface HoverLinkSource {
   display: string;

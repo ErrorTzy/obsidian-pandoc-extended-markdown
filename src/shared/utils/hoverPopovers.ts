@@ -271,7 +271,7 @@ async function renderPopoverContent(
     component: Component,
     context?: ProcessingContext
 ): Promise<void> {
-    const processedContent = processPopoverContent(content, context);
+    const processedContent = context ? processContentWithRegistry(content, context) : content;
     
     try {
         await MarkdownRenderer.render(
@@ -311,7 +311,7 @@ export function setupRenderedHoverPreview(
     const mouseEnterHandler = async () => {
         clearCleanupTimeout(state);
         state.isMouseOverElement = true;
-        
+
         // Increment generation to track this specific render attempt
         const currentGeneration = ++state.renderingGeneration;
         
@@ -370,7 +370,8 @@ export function setupRenderedHoverPreview(
         abortSignal.addEventListener('abort', () => removeAsyncPopover(state), { once: true });
     }
     
-    element.addEventListener('mouseenter', mouseEnterHandler, { signal: abortSignal });
+    const enterListener = () => { void mouseEnterHandler(); };
+    element.addEventListener('mouseenter', enterListener, { signal: abortSignal });
     element.addEventListener('mouseleave', mouseLeaveHandler, { signal: abortSignal });
     element.addEventListener('click', clickHandler, { signal: abortSignal });
 }

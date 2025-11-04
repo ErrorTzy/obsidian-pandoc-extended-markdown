@@ -1,6 +1,5 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
-import { getSectionInfo } from '../../shared/types/obsidian-extended';
 import { FancyListType, FancyListMarker } from '../../shared/types/listTypes';
 import { extractSectionLines } from '../utils/domUtils';
 

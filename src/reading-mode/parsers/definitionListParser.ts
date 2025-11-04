@@ -1,7 +1,6 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
-import { getSectionInfo } from '../../shared/types/obsidian-extended';
-import { DefinitionList, DefinitionTerm, DefinitionItem } from '../../shared/types/listTypes';
+import { DefinitionList, DefinitionTerm } from '../../shared/types/listTypes';
 import { extractSectionLines } from '../utils/domUtils';
 
 import { CSS_CLASSES } from '../../core/constants';

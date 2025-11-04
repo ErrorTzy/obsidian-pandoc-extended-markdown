@@ -1,4 +1,3 @@
-import { DefinitionList, DefinitionTerm, DefinitionItem } from '../types/listTypes';
 import { ListPatterns } from '../patterns';
 import { UI_CONSTANTS } from '../../core/constants';
 

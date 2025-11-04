@@ -1,11 +1,11 @@
 // External libraries
-import { Plugin, MarkdownPostProcessorContext, Notice, Editor, MarkdownView, WorkspaceLeaf, addIcon } from 'obsidian';
-import { Extension, Prec } from '@codemirror/state';
+import { Plugin, Notice, Editor, MarkdownView, WorkspaceLeaf, addIcon } from 'obsidian';
+import { Prec } from '@codemirror/state';
 import { keymap, EditorView } from '@codemirror/view';
 
 // Types
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
-import { ProcessorConfig, createProcessorConfig } from '../shared/types/processorConfig';
+import { createProcessorConfig } from '../shared/types/processorConfig';
 
 // Constants
 import { MESSAGES, COMMANDS, UI_CONSTANTS, ICONS } from './constants';
@@ -60,7 +60,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         
         // Add ribbon icon for list panel view
         this.addRibbonIcon(ICONS.LIST_PANEL_ID, 'Open list panel', () => {
-            this.activateListPanelView();
+            void this.activateListPanelView();
         });
         
         // Register all commands
@@ -204,7 +204,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             id: COMMANDS.OPEN_LIST_PANEL,
             name: 'Open list panel',
             callback: () => {
-                this.activateListPanelView();
+                void this.activateListPanelView();
             }
         });
     }

@@ -7,6 +7,12 @@
  */
 import { ListPatterns } from '../patterns';
 
+export interface PlaceholderRange {
+    start: number;
+    end: number;
+    name: string;
+}
+
 export function processPlaceholders(label: string): string {
     const placeholderMap = new Map<string, number>();
     let nextNumber = 1;
@@ -61,6 +67,14 @@ export class PlaceholderContext {
      */
     getPlaceholderNumber(name: string): number | null {
         return this.placeholderMap.get(name) || null;
+    }
+
+    /**
+     * Wrapper to expose placeholder values for UI rendering.
+     * Returns undefined when the placeholder has not been assigned yet.
+     */
+    getPlaceholderValue(name: string): number | undefined {
+        return this.placeholderMap.get(name);
     }
     
     /**

@@ -2,6 +2,7 @@ import { WidgetType, EditorView } from '@codemirror/view';
 import { setTooltip, App, Component } from 'obsidian';
 import { DECORATION_STYLES } from '../../core/constants';
 import { setupRenderedHoverPreview } from '../../shared/utils/hoverPopovers';
+import type { ReferenceContext } from '../../shared/utils/contextUtils';
 
 /**
  * Base class for all plugin widgets.
@@ -112,7 +113,7 @@ export abstract class BaseWidget extends WidgetType {
         content: string,
         app: App,
         component: Component,
-        context?: any,
+        context?: ReferenceContext,
         cssClass?: string
     ): void {
         setupRenderedHoverPreview(
@@ -145,5 +146,5 @@ export abstract class BaseWidget extends WidgetType {
      * Abstract method for equality comparison.
      * Must be implemented by subclasses.
      */
-    abstract eq(other: any): boolean;
+    abstract eq(other: WidgetType): boolean;
 }

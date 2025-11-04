@@ -46,7 +46,6 @@ export function isStrictPandocFormatting(context: ValidationContext, strictMode:
     }
     
     // Check if this is part of a list block and verify empty line after
-    let isLastItemInList = true;
     if (currentLine < lines.length - 1) {
         const nextLine = lines[currentLine + 1];
         // Check if next line is also a list item
@@ -55,10 +54,6 @@ export function isStrictPandocFormatting(context: ValidationContext, strictMode:
         if (!nextIsListItem && nextLine.trim() !== '') {
             // Next line is not a list item and not empty - invalid in strict mode
             return false;
-        }
-        
-        if (nextIsListItem) {
-            isLastItemInList = false;
         }
     }
     

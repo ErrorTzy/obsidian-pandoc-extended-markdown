@@ -22,6 +22,10 @@
   "author": "ErrorTzy",
   "license": "MIT",
   "description": "Obsidian plugin for rendering Pandoc extended markdown syntax",
+  "dependencies": {
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.1"
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",

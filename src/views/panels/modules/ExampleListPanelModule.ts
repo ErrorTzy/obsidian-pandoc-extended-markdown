@@ -16,9 +16,6 @@ import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../sha
 import { highlightLine } from '../../editor/highlightUtils';
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
 
-// Internal modules
-import { PandocExtendedMarkdownPlugin } from '../../../core/main';
-
 export class ExampleListPanelModule extends BasePanelModule {
     id = 'example-lists';
     displayName = 'Example Lists';
@@ -210,7 +207,7 @@ export class ExampleListPanelModule extends BasePanelModule {
                     
                     // First, make the markdown view active
                     const leaves = this.plugin.app.workspace.getLeavesOfType("markdown");
-                    const targetLeaf = leaves.find((leaf: any) => leaf.view === activeView);
+                    const targetLeaf = leaves.find((leaf) => leaf.view === activeView);
                     if (targetLeaf) {
                         this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
                     }

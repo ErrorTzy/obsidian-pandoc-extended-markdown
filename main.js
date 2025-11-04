@@ -619,11 +619,11 @@ var ListPatterns = class {
   /**
    * Find all example references in a text.
    */
-  static findExampleReferences(text) {
+  static findExampleReferences(text2) {
     const matches = [];
     const regex = new RegExp(this.EXAMPLE_REFERENCE.source, "g");
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(text2)) !== null) {
       matches.push(match);
     }
     return matches;
@@ -643,11 +643,11 @@ var ListPatterns = class {
   /**
    * Find all superscripts in a text.
    */
-  static findSuperscripts(text) {
+  static findSuperscripts(text2) {
     const matches = [];
     const regex = new RegExp(this.SUPERSCRIPT.source, "g");
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(text2)) !== null) {
       matches.push(match);
     }
     return matches;
@@ -655,11 +655,11 @@ var ListPatterns = class {
   /**
    * Find all subscripts in a text.
    */
-  static findSubscripts(text) {
+  static findSubscripts(text2) {
     const matches = [];
     const regex = new RegExp(this.SUBSCRIPT.source, "g");
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(text2)) !== null) {
       matches.push(match);
     }
     return matches;
@@ -679,11 +679,11 @@ var ListPatterns = class {
   /**
    * Find all custom label references in a text.
    */
-  static findCustomLabelReferences(text) {
+  static findCustomLabelReferences(text2) {
     const matches = [];
     const regex = new RegExp(this.CUSTOM_LABEL_REFERENCE.source, "g");
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(text2)) !== null) {
       matches.push(match);
     }
     return matches;
@@ -716,20 +716,20 @@ var ListPatterns = class {
   /**
    * Check if text starts with a formatting marker.
    */
-  static startsWithFormatting(text) {
-    return this.FORMATTING_MARKER_START.test(text);
+  static startsWithFormatting(text2) {
+    return this.FORMATTING_MARKER_START.test(text2);
   }
   /**
    * Remove trailing quotes from text.
    */
-  static removeTrailingQuotes(text) {
-    return text.replace(this.TRAILING_QUOTES, "");
+  static removeTrailingQuotes(text2) {
+    return text2.replace(this.TRAILING_QUOTES, "");
   }
   /**
    * Clean up whitespace and formatting in mathematical expressions.
    */
-  static cleanMathExpression(text) {
-    return text.replace(this.BACKSLASH_ESCAPE, "").replace(this.WHITESPACE_CLEANUP, " ").trim();
+  static cleanMathExpression(text2) {
+    return text2.replace(this.BACKSLASH_ESCAPE, "").replace(this.WHITESPACE_CLEANUP, " ").trim();
   }
   /**
    * Clean up whitespace before dollar signs in LaTeX.
@@ -753,26 +753,26 @@ var ListPatterns = class {
   /**
    * Replace escaped spaces with regular spaces.
    */
-  static unescapeSpaces(text) {
-    return text.replace(this.ESCAPED_SPACE, " ");
+  static unescapeSpaces(text2) {
+    return text2.replace(this.ESCAPED_SPACE, " ");
   }
   /**
    * Find all example reference starts in text.
    */
-  static findExampleRefStarts(text) {
-    return [...text.matchAll(this.EXAMPLE_REF_START)];
+  static findExampleRefStarts(text2) {
+    return [...text2.matchAll(this.EXAMPLE_REF_START)];
   }
   /**
    * Find all custom label reference starts in text.
    */
-  static findCustomLabelRefStarts(text) {
-    return [...text.matchAll(this.CUSTOM_LABEL_REF_START)];
+  static findCustomLabelRefStarts(text2) {
+    return [...text2.matchAll(this.CUSTOM_LABEL_REF_START)];
   }
   /**
    * Split text by inline formatting markers.
    */
-  static splitByInlineFormatting(text) {
-    return text.split(this.INLINE_FORMATTING_SPLIT);
+  static splitByInlineFormatting(text2) {
+    return text2.split(this.INLINE_FORMATTING_SPLIT);
   }
 };
 // Base patterns as static readonly properties
@@ -783,8 +783,8 @@ ListPatterns.EXAMPLE_LIST_WITH_CONTENT = /^(\s*)\(@([a-zA-Z0-9_-]+)\)\s+(.*)$/;
 ListPatterns.EXAMPLE_REFERENCE = /\(@([a-zA-Z0-9_-]+)\)/g;
 ListPatterns.DEFINITION_MARKER = /^(\s*)([~:])(\s+)/;
 ListPatterns.DEFINITION_MARKER_WITH_INDENT = /^(\s*)([~:])(\s+)/;
-ListPatterns.DEFINITION_INDENTED = /^(    |\t)/;
-ListPatterns.DEFINITION_INDENTED_WITH_CONTENT = /^(    |\t)(.*)$/;
+ListPatterns.DEFINITION_INDENTED = /^( {4}|\t)/;
+ListPatterns.DEFINITION_INDENTED_WITH_CONTENT = /^( {4}|\t)(.*)$/;
 ListPatterns.DEFINITION_TERM_PATTERN = /^([^\n:~]+)$/;
 ListPatterns.FOOTNOTE_DEFINITION = /^\[\^([^\]]+)\]:\s*(.*)$/;
 ListPatterns.FOOTNOTE_CONTINUATION = /^( {4,}|\t+)(.*)$/;
@@ -854,22 +854,22 @@ ListPatterns.HEADING_WITH_CONTENT = /^(#{1,6})\s+(.*)$/;
 // Superscript and subscript patterns
 // Matches ^text^ for superscript and ~text~ for subscript
 // Text can contain escaped spaces (\ ) but not unescaped spaces
-ListPatterns.SUPERSCRIPT = /\^([^\^\s]|\\[ ])+?\^/g;
-ListPatterns.SUBSCRIPT = /~([^~\s]|\\[ ])+?~/g;
+ListPatterns.SUPERSCRIPT = /\^([^\s^]|\\[ ])+?\^/g;
+ListPatterns.SUBSCRIPT = /~([^\s~]|\\[ ])+?~/g;
 /**
  * Inline superscript pattern for inline processors.
  * Excludes $ character to prevent matching across LaTeX math boundaries,
  * ensuring math expressions like $R^{+}_{xy}$ remain intact.
  * Excludes [ and ] to prevent matching footnote syntax like [^1].
  */
-ListPatterns.SUPERSCRIPT_INLINE = /\^([^^~\s$\[\]]+(?:\s+[^^~\s$\[\]]+)*)\^/g;
+ListPatterns.SUPERSCRIPT_INLINE = /\^([^^~\s$\x5B\x5D]+(?:\s+[^^~\s$\x5B\x5D]+)*)\^/g;
 /**
  * Inline subscript pattern for inline processors.
  * Excludes $ character to prevent matching across LaTeX math boundaries,
  * ensuring math expressions remain properly formatted.
  * Excludes [ and ] to prevent matching patterns that might conflict with brackets.
  */
-ListPatterns.SUBSCRIPT_INLINE = /~([^~^\s$\[\]]+(?:\s+[^~^\s$\[\]]+)*)~/g;
+ListPatterns.SUBSCRIPT_INLINE = /~([^~^\s$\x5B\x5D]+(?:\s+[^~^\s$\x5B\x5D]+)*)~/g;
 // Custom label list patterns for More Extended Syntax
 // Matches {::LABEL} at start of line with required space after
 // Now supports placeholders like {::P(#first)} or pure placeholders like {::(#name)}
@@ -936,6 +936,13 @@ var PlaceholderContext = class {
    */
   getPlaceholderNumber(name) {
     return this.placeholderMap.get(name) || null;
+  }
+  /**
+   * Wrapper to expose placeholder values for UI rendering.
+   * Returns undefined when the placeholder has not been assigned yet.
+   */
+  getPlaceholderValue(name) {
+    return this.placeholderMap.get(name);
   }
   /**
    * Get the processed version of a label without modifying state.
@@ -1432,13 +1439,14 @@ function applyLineHighlight(editor, lineNumber) {
   }, 50);
 }
 function findAndHighlightLine(editorDom, editor) {
+  var _a;
   const activeLine = editorDom.querySelector(".cm-line.cm-active");
-  if (activeLine) {
+  if (activeLine instanceof HTMLElement) {
     applyHighlight(activeLine);
     return;
   }
   const allLines = editorDom.querySelectorAll(".cm-line");
-  const coords = editor.cursorCoords(true, "local");
+  const coords = (_a = editor.cursorCoords) == null ? void 0 : _a.call(editor, true, "local");
   if (!coords || allLines.length === 0) return;
   let targetLine = null;
   let minDistance = Infinity;
@@ -1447,7 +1455,7 @@ function findAndHighlightLine(editorDom, editor) {
     const editorRect = editorDom.getBoundingClientRect();
     const relativeTop = rect.top - editorRect.top;
     const distance = Math.abs(relativeTop - coords.top);
-    if (distance < minDistance) {
+    if (distance < minDistance && line instanceof HTMLElement) {
       minDistance = distance;
       targetLine = line;
     }
@@ -1465,8 +1473,8 @@ function applyHighlight(lineElement) {
   }, UI_CONSTANTS.HIGHLIGHT_ANIMATION_DURATION_MS);
 }
 function setupLabelClickHandler(element, rawLabel, abortSignal) {
-  const clickHandler = async () => {
-    await withAsyncErrorBoundary(async () => {
+  const clickHandler = () => {
+    void withAsyncErrorBoundary(async () => {
       await navigator.clipboard.writeText(rawLabel);
       new import_obsidian2.Notice(MESSAGES.LABEL_COPIED);
     }, void 0, "copy label to clipboard");
@@ -1526,7 +1534,7 @@ function renderContentWithMath(element, truncatedContent, app, component, contex
   if (context) {
     contentToRender = processContent(truncatedContent, context);
   }
-  import_obsidian2.MarkdownRenderer.render(
+  void import_obsidian2.MarkdownRenderer.render(
     app,
     contentToRender,
     element,
@@ -1537,10 +1545,6 @@ function renderContentWithMath(element, truncatedContent, app, component, contex
 
 // src/shared/utils/hoverPopovers.ts
 var import_obsidian3 = require("obsidian");
-function processPopoverContent(content, context) {
-  if (!context) return content;
-  return processContent(content, context);
-}
 function createHoverState() {
   return {
     hoverPopover: null,
@@ -1673,7 +1677,7 @@ function removeAsyncPopover(state) {
   }
 }
 async function renderPopoverContent(popoverElement, content, app, component, context) {
-  const processedContent = processPopoverContent(content, context);
+  const processedContent = context ? processContent(content, context) : content;
   try {
     await import_obsidian3.MarkdownRenderer.render(
       app,
@@ -1733,7 +1737,10 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
   if (abortSignal) {
     abortSignal.addEventListener("abort", () => removeAsyncPopover(state), { once: true });
   }
-  element.addEventListener("mouseenter", mouseEnterHandler, { signal: abortSignal });
+  const enterListener = () => {
+    void mouseEnterHandler();
+  };
+  element.addEventListener("mouseenter", enterListener, { signal: abortSignal });
   element.addEventListener("mouseleave", mouseLeaveHandler, { signal: abortSignal });
   element.addEventListener("click", clickHandler, { signal: abortSignal });
 }
@@ -2019,18 +2026,19 @@ function moveCursorToLine(editor, lineNumber) {
 }
 function highlightTargetLine(editorDom, editor) {
   const activeLine = editorDom.querySelector(".cm-line.cm-active");
-  if (activeLine) {
+  if (activeLine instanceof HTMLElement) {
     applyHighlight2(activeLine);
   } else {
     const targetLine = findClosestLine(editorDom, editor);
-    if (targetLine) {
+    if (targetLine instanceof HTMLElement) {
       applyHighlight2(targetLine);
     }
   }
 }
 function findClosestLine(editorDom, editor) {
+  var _a;
   const allLines = editorDom.querySelectorAll(".cm-line");
-  const coords = editor.cursorCoords(true, "local");
+  const coords = (_a = editor.cursorCoords) == null ? void 0 : _a.call(editor, true, "local");
   if (!coords || allLines.length === 0) return null;
   let targetLine = null;
   let minDistance = Infinity;
@@ -2039,7 +2047,7 @@ function findClosestLine(editorDom, editor) {
     const editorRect = editorDom.getBoundingClientRect();
     const relativeTop = rect.top - editorRect.top;
     const distance = Math.abs(relativeTop - coords.top);
-    if (distance < minDistance) {
+    if (distance < minDistance && line instanceof HTMLElement) {
       minDistance = distance;
       targetLine = line;
     }
@@ -2541,11 +2549,11 @@ var FootnoteContentBuilder = class {
     this.paragraphs = [];
     this.current = [];
   }
-  addText(text) {
-    if (!text) {
+  addText(text2) {
+    if (!text2) {
       return;
     }
-    this.current.push(text);
+    this.current.push(text2);
   }
   addParagraphBreak() {
     this.commitCurrentParagraph();
@@ -2720,7 +2728,7 @@ var ListPanelView = class extends import_obsidian6.ItemView {
     this.contentContainerEl = null;
     this.plugin = plugin;
     this.hoverLinkSource = {
-      display: "List Panel",
+      display: "List panel",
       defaultMod: true
     };
     this.initializePanels();
@@ -2775,7 +2783,7 @@ var ListPanelView = class extends import_obsidian6.ItemView {
     return VIEW_TYPE_LIST_PANEL;
   }
   getDisplayText() {
-    return "List Panel";
+    return "List panel";
   }
   getIcon() {
     return ICONS.LIST_PANEL_ID;
@@ -2805,7 +2813,7 @@ var ListPanelView = class extends import_obsidian6.ItemView {
     );
     this.plugin.registerHoverLinkSource(VIEW_TYPE_LIST_PANEL, this.hoverLinkSource);
   }
-  async onClose() {
+  onClose() {
     if (this.updateTimer) {
       clearTimeout(this.updateTimer);
     }
@@ -2813,6 +2821,7 @@ var ListPanelView = class extends import_obsidian6.ItemView {
       panel.module.destroy();
     }
     this.contentEl.empty();
+    return Promise.resolve();
   }
   renderView() {
     this.contentEl.empty();
@@ -2834,17 +2843,17 @@ var ListPanelView = class extends import_obsidian6.ItemView {
         cls: CSS_CLASSES.LIST_PANEL_ICON_CONTAINER
       });
       if (panel.id === "custom-labels") {
-        const iconText = iconContainer.createSpan({
+        iconContainer.createSpan({
           cls: CSS_CLASSES.LIST_PANEL_ICON_CUSTOM_LABEL,
           text: "{::}"
         });
       } else if (panel.id === "example-lists") {
-        const iconText = iconContainer.createSpan({
+        iconContainer.createSpan({
           cls: CSS_CLASSES.LIST_PANEL_ICON_EXAMPLE_LIST,
           text: "(@)"
         });
       } else if (panel.id === "definition-lists") {
-        const iconText = iconContainer.createSpan({
+        iconContainer.createSpan({
           cls: "pandoc-icon-definition-list",
           text: "DL:"
         });
@@ -2860,7 +2869,7 @@ var ListPanelView = class extends import_obsidian6.ItemView {
         this.switchToPanel(panel);
       });
     }
-    const separator = viewContainer.createEl("hr", {
+    viewContainer.createEl("hr", {
       cls: CSS_CLASSES.LIST_PANEL_SEPARATOR
     });
     this.contentContainerEl = viewContainer.createDiv({
@@ -2893,24 +2902,26 @@ var ListPanelView = class extends import_obsidian6.ItemView {
       clearTimeout(this.updateTimer);
     }
     this.updateTimer = setTimeout(() => {
-      this.updateView();
+      void this.updateView();
     }, UI_CONSTANTS.UPDATE_DEBOUNCE_MS);
   }
-  async updateView() {
-    try {
-      let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
-      if (markdownView && markdownView.file) {
-        this.lastActiveMarkdownView = markdownView;
+  updateView() {
+    return Promise.resolve().then(() => {
+      try {
+        let markdownView = this.app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
+        if (markdownView && markdownView.file) {
+          this.lastActiveMarkdownView = markdownView;
+        }
+        if (!markdownView || !markdownView.file) {
+          markdownView = this.lastActiveMarkdownView;
+        }
+        if (this.activePanel && this.activePanel.shouldUpdate()) {
+          this.activePanel.onUpdate(markdownView);
+        }
+      } catch (error) {
+        handleError(error, "Update list panel view");
       }
-      if (!markdownView || !markdownView.file) {
-        markdownView = this.lastActiveMarkdownView;
-      }
-      if (this.activePanel && this.activePanel.shouldUpdate()) {
-        this.activePanel.onUpdate(markdownView);
-      }
-    } catch (error) {
-      handleError(error, "Update list panel view");
-    }
+    });
   }
   getCustomLabels() {
     const customLabelPanel = this.panels.find((p) => p.id === "custom-labels");
@@ -2954,7 +2965,7 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian7.PluginSett
     this.renderPanelOrderSettings(containerEl);
   }
   renderGeneralSettings(containerEl) {
-    new import_obsidian7.Setting(containerEl).setName("Strict Pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
     }));
@@ -2962,15 +2973,15 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian7.PluginSett
       this.plugin.settings.autoRenumberLists = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian7.Setting(containerEl).setName("Custom Label List").setDesc("Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.").addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName("Custom label list").setDesc("Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.").addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
       this.plugin.settings.moreExtendedSyntax = value;
       await this.plugin.saveSettings();
       this.refreshListPanels();
     }));
   }
   renderPanelOrderSettings(containerEl) {
-    containerEl.createEl("h2", { text: PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_HEADING });
-    const panelOrderSetting = new import_obsidian7.Setting(containerEl).setName("").setDesc(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_DESC);
+    new import_obsidian7.Setting(containerEl).setName(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_HEADING).setHeading();
+    const panelOrderSetting = new import_obsidian7.Setting(containerEl).setDesc(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_DESC);
     const infoEl = panelOrderSetting.infoEl;
     if (infoEl) {
       infoEl.addClass("pandoc-panel-order-info");
@@ -3086,20 +3097,20 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian7.PluginSett
     buttons.moveBottom.disabled = idx < 0 || idx >= visiblePanels.length - 1;
   }
   setupPanelOrderEventHandlers(listEl, buttons) {
-    buttons.moveUp.addEventListener("click", async () => {
-      await this.movePanelUp();
+    buttons.moveUp.addEventListener("click", () => {
+      void this.movePanelUp();
     });
-    buttons.moveDown.addEventListener("click", async () => {
-      await this.movePanelDown();
+    buttons.moveDown.addEventListener("click", () => {
+      void this.movePanelDown();
     });
-    buttons.moveTop.addEventListener("click", async () => {
-      await this.movePanelToTop();
+    buttons.moveTop.addEventListener("click", () => {
+      void this.movePanelToTop();
     });
-    buttons.moveBottom.addEventListener("click", async () => {
-      await this.movePanelToBottom();
+    buttons.moveBottom.addEventListener("click", () => {
+      void this.movePanelToBottom();
     });
-    buttons.reset.addEventListener("click", async () => {
-      await this.resetPanelOrder();
+    buttons.reset.addEventListener("click", () => {
+      void this.resetPanelOrder();
     });
     listEl.addEventListener("keydown", (evt) => {
       if (!this.selectedPanelId) return;
@@ -3480,18 +3491,18 @@ var import_state = require("@codemirror/state");
 // src/live-preview/pipeline/utils/codeDetection.ts
 function detectCodeRegions(doc) {
   const regions = [];
-  const text = doc.toString();
-  detectCodeBlocks(text, regions);
-  detectInlineCode(text, regions);
-  detectMathRegions(text, regions);
+  const text2 = doc.toString();
+  detectCodeBlocks(text2, regions);
+  detectInlineCode(text2, regions);
+  detectMathRegions(text2, regions);
   return regions;
 }
-function detectCodeBlocks(text, regions) {
+function detectCodeBlocks(text2, regions) {
   const codeBlockRegex = ListPatterns.CODE_BLOCK_FENCE;
   let match;
   let inCodeBlock = false;
   let codeBlockStart = -1;
-  while ((match = codeBlockRegex.exec(text)) !== null) {
+  while ((match = codeBlockRegex.exec(text2)) !== null) {
     if (!inCodeBlock) {
       inCodeBlock = true;
       codeBlockStart = match.index;
@@ -3508,27 +3519,27 @@ function detectCodeBlocks(text, regions) {
   if (inCodeBlock && codeBlockStart !== -1) {
     regions.push({
       from: codeBlockStart,
-      to: text.length,
+      to: text2.length,
       type: "codeblock"
     });
   }
 }
-function detectInlineCode(text, regions) {
+function detectInlineCode(text2, regions) {
   let i = 0;
-  while (i < text.length) {
+  while (i < text2.length) {
     if (isInCodeBlock(i, regions)) {
       i++;
       continue;
     }
-    if (text[i] === "`") {
-      if (i > 0 && text[i - 1] === "\\") {
+    if (text2[i] === "`") {
+      if (i > 0 && text2[i - 1] === "\\") {
         i++;
         continue;
       }
       let j = i + 1;
-      while (j < text.length) {
-        if (text[j] === "`") {
-          if (j > 0 && text[j - 1] === "\\") {
+      while (j < text2.length) {
+        if (text2[j] === "`") {
+          if (j > 0 && text2[j - 1] === "\\") {
             j++;
             continue;
           }
@@ -3542,7 +3553,7 @@ function detectInlineCode(text, regions) {
         }
         j++;
       }
-      if (j >= text.length) {
+      if (j >= text2.length) {
         i++;
       }
     } else {
@@ -3583,23 +3594,23 @@ function isRangeCompletelyInCodeRegion(from, to, codeRegions) {
 function isRangeInCodeRegion(from, to, codeRegions) {
   return isRangeCompletelyInCodeRegion(from, to, codeRegions);
 }
-function detectMathRegions(text, regions) {
+function detectMathRegions(text2, regions) {
   let i = 0;
-  while (i < text.length) {
+  while (i < text2.length) {
     if (isInExistingRegion(i, regions)) {
       i++;
       continue;
     }
-    if (text[i] === "$") {
-      if (i > 0 && text[i - 1] === "\\") {
+    if (text2[i] === "$") {
+      if (i > 0 && text2[i - 1] === "\\") {
         i++;
         continue;
       }
-      if (i + 1 < text.length && text[i + 1] === "$") {
+      if (i + 1 < text2.length && text2[i + 1] === "$") {
         let j = i + 2;
-        while (j < text.length - 1) {
-          if (text[j] === "$" && text[j + 1] === "$") {
-            if (j > 0 && text[j - 1] === "\\") {
+        while (j < text2.length - 1) {
+          if (text2[j] === "$" && text2[j + 1] === "$") {
+            if (j > 0 && text2[j - 1] === "\\") {
               j++;
               continue;
             }
@@ -3613,14 +3624,14 @@ function detectMathRegions(text, regions) {
           }
           j++;
         }
-        if (j >= text.length - 1) {
+        if (j >= text2.length - 1) {
           i += 2;
         }
       } else {
         let j = i + 1;
-        while (j < text.length) {
-          if (text[j] === "$") {
-            if (j > 0 && text[j - 1] === "\\") {
+        while (j < text2.length) {
+          if (text2[j] === "$") {
+            if (j > 0 && text2[j - 1] === "\\") {
               j++;
               continue;
             }
@@ -3634,7 +3645,7 @@ function detectMathRegions(text, regions) {
           }
           j++;
         }
-        if (j >= text.length) {
+        if (j >= text2.length) {
           i++;
         }
       }
@@ -4040,21 +4051,21 @@ var ProcessingPipeline = class {
    * Process a single content region for inline matches
    */
   processRegion(region, context, docLength, codeRegions) {
-    const text = context.document.sliceString(region.from, region.to);
-    const allMatches = this.collectMatches(region, text, context, codeRegions);
+    const text2 = context.document.sliceString(region.from, region.to);
+    const allMatches = this.collectMatches(region, text2, context, codeRegions);
     allMatches.sort((a, b) => a.match.from - b.match.from);
     this.processMatches(allMatches, region, context, docLength);
   }
   /**
    * Collect all inline matches from all processors for a region
    */
-  collectMatches(region, text, context, codeRegions) {
+  collectMatches(region, text2, context, codeRegions) {
     const allMatches = [];
     for (const processor of this.inlineProcessors) {
       if (!processor.supportedRegions.has(region.type)) continue;
-      const matches = processor.findMatches(text, region, context);
+      const matches = processor.findMatches(text2, region, context);
       for (const match of matches) {
-        if (this.isValidMatch(match, text, region, codeRegions)) {
+        if (this.isValidMatch(match, text2, region, codeRegions)) {
           allMatches.push({ match, processor });
         }
       }
@@ -4064,8 +4075,8 @@ var ProcessingPipeline = class {
   /**
    * Check if a match is valid and not in a code region
    */
-  isValidMatch(match, text, region, codeRegions) {
-    if (match.from < 0 || match.to > text.length || match.from > match.to) {
+  isValidMatch(match, text2, region, codeRegions) {
+    if (match.from < 0 || match.to > text2.length || match.from > match.to) {
       return false;
     }
     const absoluteFrom = region.from + match.from;
@@ -4207,8 +4218,8 @@ var BaseWidget = class extends import_view.WidgetType {
   /**
    * Helper method to add a simple tooltip.
    */
-  addSimpleTooltip(element, text) {
-    (0, import_obsidian8.setTooltip)(element, text, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+  addSimpleTooltip(element, text2) {
+    (0, import_obsidian8.setTooltip)(element, text2, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
   }
   /**
    * Helper method to add a rendered hover preview.
@@ -4456,9 +4467,9 @@ var CustomLabelMarkerWidget = class extends BaseWidget {
   }
 };
 var CustomLabelPartialWidget = class extends BaseWidget {
-  constructor(text, view, position) {
+  constructor(text2, view, position) {
     super(view, position);
-    this.text = text;
+    this.text = text2;
   }
   applyStyles(element) {
     element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
@@ -4471,9 +4482,9 @@ var CustomLabelPartialWidget = class extends BaseWidget {
   }
 };
 var CustomLabelProcessedWidget = class extends BaseWidget {
-  constructor(text, view, position) {
+  constructor(text2, view, position) {
     super(view, position);
-    this.text = text;
+    this.text = text2;
   }
   applyStyles(element) {
     element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.PANDOC_LIST_MARKER}`;
@@ -4590,8 +4601,15 @@ var ListContinuationIndentWidget = class extends import_view2.WidgetType {
     outerSpacing.appendChild(innerSpacing);
     const indentSpan = document.createElement("span");
     indentSpan.className = `cm-hmd-list-indent cm-hmd-list-indent-${this.getClampedLevel()} ${CSS_CLASSES.LIST_CONTINUATION_WIDGET}`;
-    indentSpan.style.width = `${this.width}px`;
-    indentSpan.style.whiteSpace = "pre";
+    if ("setCssProps" in indentSpan) {
+      indentSpan.setCssProps({
+        width: `${this.width}px`,
+        whiteSpace: "pre"
+      });
+    } else {
+      indentSpan.style.width = `${this.width}px`;
+      indentSpan.style.whiteSpace = "pre";
+    }
     indentSpan.textContent = "\xA0";
     indentSpan.setAttribute("aria-hidden", "true");
     innerSpacing.appendChild(indentSpan);
@@ -4775,7 +4793,6 @@ var FancyListProcessor = class extends BaseStructuralProcessor {
       return { decorations: [] };
     }
     const indent = fancyMatch[1];
-    const markerWithDelimiter = fancyMatch[2];
     const marker = fancyMatch[3];
     const delimiter = fancyMatch[4];
     const space = fancyMatch[5];
@@ -5544,10 +5561,10 @@ var ListContinuationProcessor = class {
       context.listContext = void 0;
     }
   }
-  getIndentMetrics(text) {
+  getIndentMetrics(text2) {
     let visualLength = 0;
     let textLength = 0;
-    for (const char of text) {
+    for (const char of text2) {
       if (char === " ") {
         visualLength += INDENTATION.SINGLE_SPACE;
         textLength += 1;
@@ -5614,12 +5631,12 @@ var ExampleReferenceProcessor = class {
     this.priority = 10;
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
-  findMatches(text, region, context) {
+  findMatches(text2, region, context) {
     const matches = [];
     const pattern = ListPatterns.EXAMPLE_REFERENCE;
     const regionCursorPos = getRegionCursorPosition(context, region);
     let match;
-    while ((match = pattern.exec(text)) !== null) {
+    while ((match = pattern.exec(text2)) !== null) {
       const label = match[1];
       const refStart = match.index;
       const refEnd = match.index + match[0].length;
@@ -5668,12 +5685,12 @@ var SuperscriptProcessor = class {
     this.priority = 20;
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
-  findMatches(text, region, context) {
+  findMatches(text2, region, context) {
     const matches = [];
     const pattern = ListPatterns.SUPERSCRIPT_INLINE;
     const regionCursorPos = getRegionCursorPosition(context, region);
     let match;
-    while ((match = pattern.exec(text)) !== null) {
+    while ((match = pattern.exec(text2)) !== null) {
       const supStart = match.index;
       const supEnd = match.index + match[0].length;
       const cursorInSup = regionCursorPos >= supStart && regionCursorPos <= supEnd;
@@ -5709,12 +5726,12 @@ var SubscriptProcessor = class {
     this.priority = 30;
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
-  findMatches(text, region, context) {
+  findMatches(text2, region, context) {
     const matches = [];
     const pattern = ListPatterns.SUBSCRIPT_INLINE;
     const regionCursorPos = getRegionCursorPosition(context, region);
     let match;
-    while ((match = pattern.exec(text)) !== null) {
+    while ((match = pattern.exec(text2)) !== null) {
       const subStart = match.index;
       const subEnd = match.index + match[0].length;
       const cursorInSub = regionCursorPos >= subStart && regionCursorPos <= subEnd;
@@ -5750,13 +5767,13 @@ var CustomLabelReferenceProcessor = class {
     this.priority = 40;
     this.supportedRegions = /* @__PURE__ */ new Set(["list-content", "definition-content", "paragraph", "normal"]);
   }
-  findMatches(text, region, context) {
+  findMatches(text2, region, context) {
     const matches = [];
     if (!context.settings.moreExtendedSyntax) {
       return matches;
     }
     const regionCursorPos = getRegionCursorPosition(context, region);
-    const pattern = ListPatterns.findCustomLabelReferences(text);
+    const pattern = ListPatterns.findCustomLabelReferences(text2);
     pattern.forEach((match) => {
       var _a, _b, _c;
       const fullMatch = match[0];
@@ -5837,8 +5854,7 @@ var CustomLabelReferenceProcessor = class {
   processPlaceholders(label, placeholderContext) {
     if (!placeholderContext) return label;
     return ListPatterns.replacePlaceholderLetters(label, (match, letter) => {
-      var _a;
-      const value = (_a = placeholderContext.getPlaceholderValue) == null ? void 0 : _a.call(placeholderContext, letter);
+      const value = placeholderContext.getPlaceholderValue(letter);
       return value !== void 0 ? `(${value})` : match;
     });
   }
@@ -5984,9 +6000,9 @@ function extractContent(match, delimiter) {
   const content = match.slice(1, -1);
   return ListPatterns.unescapeSpaces(content);
 }
-function findSuperSubInText(text) {
+function findSuperSubInText(text2) {
   const matches = [];
-  const superscripts = ListPatterns.findSuperscripts(text);
+  const superscripts = ListPatterns.findSuperscripts(text2);
   superscripts.forEach((match) => {
     if (match.index !== void 0) {
       matches.push({
@@ -5997,7 +6013,7 @@ function findSuperSubInText(text) {
       });
     }
   });
-  const subscripts = ListPatterns.findSubscripts(text);
+  const subscripts = ListPatterns.findSubscripts(text2);
   subscripts.forEach((match) => {
     if (match.index !== void 0) {
       matches.push({
@@ -6022,8 +6038,8 @@ function processSuperSub(element) {
   const nodesToReplace = [];
   while (walker.nextNode()) {
     const node = walker.currentNode;
-    const text = node.textContent || "";
-    const matches = findSuperSubInText(text);
+    const text2 = node.textContent || "";
+    const matches = findSuperSubInText(text2);
     if (matches.length > 0) {
       nodesToReplace.push({ node, matches });
     }
@@ -6035,7 +6051,7 @@ function processSuperSub(element) {
     const fragments = [];
     matches.forEach((match) => {
       if (match.index > lastIndex) {
-        fragments.push(node.textContent.substring(lastIndex, match.index));
+        fragments.push(text.substring(lastIndex, match.index));
       }
       const elem = match.type === "superscript" ? document.createElement("sup") : document.createElement("sub");
       elem.className = match.type === "superscript" ? CSS_CLASSES.SUPERSCRIPT : CSS_CLASSES.SUBSCRIPT;
@@ -6043,8 +6059,8 @@ function processSuperSub(element) {
       fragments.push(elem);
       lastIndex = match.index + match.length;
     });
-    if (lastIndex < node.textContent.length) {
-      fragments.push(node.textContent.substring(lastIndex));
+    if (lastIndex < text.length) {
+      fragments.push(text.substring(lastIndex));
     }
     fragments.forEach((fragment) => {
       if (typeof fragment === "string") {
@@ -6179,11 +6195,11 @@ var ReadingModeParser = class {
   /**
    * Find example references in text
    */
-  findExampleReferences(text) {
+  findExampleReferences(text2) {
     const references = [];
     const regex = ListPatterns.EXAMPLE_REFERENCE;
     let match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(text2)) !== null) {
       references.push({
         fullMatch: match[0],
         label: match[1],
@@ -6326,13 +6342,13 @@ var ReadingModeRenderer = class {
   /**
    * Render text with example references
    */
-  renderWithReferences(text, data, context) {
+  renderWithReferences(text2, data, context) {
     const elements = [];
     let lastIndex = 0;
     data.references.forEach((ref) => {
       var _a, _b;
       if (ref.startIndex > lastIndex) {
-        elements.push(document.createTextNode(text.substring(lastIndex, ref.startIndex)));
+        elements.push(document.createTextNode(text2.substring(lastIndex, ref.startIndex)));
       }
       const exampleNumber = (_a = context.getExampleNumber) == null ? void 0 : _a.call(context, ref.label);
       if (exampleNumber !== void 0) {
@@ -6349,8 +6365,8 @@ var ReadingModeRenderer = class {
       }
       lastIndex = ref.endIndex;
     });
-    if (lastIndex < text.length) {
-      elements.push(document.createTextNode(text.substring(lastIndex)));
+    if (lastIndex < text2.length) {
+      elements.push(document.createTextNode(text2.substring(lastIndex)));
     }
     return elements;
   }
@@ -6421,8 +6437,8 @@ function processCustomLabelLists(element, context, placeholderContext) {
   if (placeholderContext) {
     const allElements = element.querySelectorAll("p, li");
     allElements.forEach((elem) => {
-      const text = elem.textContent || "";
-      const lines = text.split("\n");
+      const text2 = elem.textContent || "";
+      const lines = text2.split("\n");
       for (const line of lines) {
         const listMatch = ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT.exec(line);
         if (listMatch) {
@@ -6445,8 +6461,8 @@ function processCustomLabelLists(element, context, placeholderContext) {
   });
 }
 function processTextNode(node, container, placeholderContext) {
-  const text = node.textContent || "";
-  const listMatch = text.match(ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT);
+  const text2 = node.textContent || "";
+  const listMatch = text2.match(ListPatterns.CUSTOM_LABEL_LIST_WITH_CONTENT);
   if (listMatch) {
     const indent = listMatch[1];
     const rawLabel = listMatch[3];
@@ -6463,16 +6479,16 @@ function processTextNode(node, container, placeholderContext) {
     container.appendChild(document.createTextNode(space));
     processReferencesInText(rest, container, placeholderContext);
   } else {
-    processReferencesInText(text, container, placeholderContext);
+    processReferencesInText(text2, container, placeholderContext);
   }
 }
-function processReferencesInText(text, container, placeholderContext) {
+function processReferencesInText(text2, container, placeholderContext) {
   const refPattern = ListPatterns.CUSTOM_LABEL_REFERENCE;
   let lastIndex = 0;
   let match;
-  while ((match = refPattern.exec(text)) !== null) {
+  while ((match = refPattern.exec(text2)) !== null) {
     if (match.index > lastIndex) {
-      container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+      container.appendChild(document.createTextNode(text2.substring(lastIndex, match.index)));
     }
     const rawLabel = match[1];
     const processedLabel = placeholderContext ? placeholderContext.getProcessedLabel(rawLabel) : rawLabel;
@@ -6487,13 +6503,13 @@ function processReferencesInText(text, container, placeholderContext) {
     }
     lastIndex = refPattern.lastIndex;
   }
-  if (lastIndex < text.length) {
-    container.appendChild(document.createTextNode(text.substring(lastIndex)));
+  if (lastIndex < text2.length) {
+    container.appendChild(document.createTextNode(text2.substring(lastIndex)));
   }
 }
 function processElementPreservingSpans(elem, placeholderContext) {
-  const walker = createTextNodeWalker(elem, (node2) => {
-    const parent = node2.parentElement;
+  const walker = createTextNodeWalker(elem, (node) => {
+    const parent = node.parentElement;
     if (parent && (parent.className === CSS_CLASSES.EXAMPLE_REF || parent.className === CSS_CLASSES.PANDOC_LIST_MARKER || parent.className.includes("pandoc-list-fancy") || parent.className === CSS_CLASSES.EXAMPLE_LIST || parent.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED || parent.tagName === "STRONG" || // Skip text inside strong tags that might contain processed content
     parent.tagName === "EM")) {
       return NodeFilter.FILTER_SKIP;
@@ -6505,19 +6521,19 @@ function processElementPreservingSpans(elem, placeholderContext) {
     return NodeFilter.FILTER_ACCEPT;
   });
   const nodesToProcess = [];
-  let node;
-  while (node = walker.nextNode()) {
-    if (node.textContent && node.textContent.includes("{::")) {
-      nodesToProcess.push(node);
+  let currentNode;
+  while (currentNode = walker.nextNode()) {
+    if (currentNode.textContent && currentNode.textContent.includes("{::")) {
+      nodesToProcess.push(currentNode);
     }
   }
   nodesToProcess.forEach((textNode) => {
-    const text = textNode.textContent || "";
+    const text2 = textNode.textContent || "";
     const parent = textNode.parentNode;
     if (!parent) return;
-    if (!text.includes("{::")) return;
+    if (!text2.includes("{::")) return;
     const tempContainer = document.createElement("span");
-    processReferencesInText(text, tempContainer, placeholderContext);
+    processReferencesInText(text2, tempContainer, placeholderContext);
     while (tempContainer.firstChild) {
       parent.insertBefore(tempContainer.firstChild, textNode);
     }
@@ -6540,8 +6556,8 @@ function isProcessedSpan(elemNode) {
   return elemNode.tagName === "SPAN" && (elemNode.className === CSS_CLASSES.EXAMPLE_REF || elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER || elemNode.className.includes("pandoc-list-fancy") || elemNode.className === CSS_CLASSES.EXAMPLE_LIST || elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED);
 }
 function processTextNodeLines(node, container, placeholderContext) {
-  const text = node.textContent || "";
-  const lines = text.split("\n");
+  const text2 = node.textContent || "";
+  const lines = text2.split("\n");
   for (let i = 0; i < lines.length; i++) {
     if (i > 0) {
       container.appendChild(document.createTextNode("\n"));
@@ -6617,15 +6633,11 @@ function isStrictPandocFormatting(context, strictMode) {
       return false;
     }
   }
-  let isLastItemInList = true;
   if (currentLine < lines.length - 1) {
     const nextLine = lines[currentLine + 1];
     const nextIsListItem = isListItem(nextLine, false);
     if (!nextIsListItem && nextLine.trim() !== "") {
       return false;
-    }
-    if (nextIsListItem) {
-      isLastItemInList = false;
     }
   }
   return true;
@@ -6800,13 +6812,13 @@ function processElementTextNodes(elem, parser, renderer, config, docPath, valida
     if (parent.nodeName === "CODE" || parent.nodeName === "PRE") {
       return;
     }
-    const text = node.textContent || "";
-    if (!containsPandocSyntax(text, config)) {
+    const text2 = node.textContent || "";
+    if (!containsPandocSyntax(text2, config)) {
       return;
     }
     const isInParagraph = parent.nodeName === "P";
     const isAtParagraphStart = parent.firstChild === node;
-    const lines = text.split("\n");
+    const lines = text2.split("\n");
     const parsedLines = parser.parseLines(lines, isInParagraph, isAtParagraphStart);
     if (config.strictPandocMode) {
       parsedLines.forEach((parsedLine, index) => {
@@ -6852,9 +6864,9 @@ function processElementTextNodes(elem, parser, renderer, config, docPath, valida
     }
   });
 }
-function containsPandocSyntax(text, config) {
-  const hasBasicSyntax = ListPatterns.isHashList(text) || ListPatterns.isFancyList(text) || ListPatterns.isExampleList(text) || ListPatterns.isDefinitionMarker(text) || ListPatterns.findExampleReferences(text).length > 0;
-  const hasCustomLabelSyntax = (config == null ? void 0 : config.enableCustomLabelLists) && (ListPatterns.isCustomLabelList(text) || ListPatterns.findCustomLabelReferences(text).length > 0);
+function containsPandocSyntax(text2, config) {
+  const hasBasicSyntax = ListPatterns.isHashList(text2) || ListPatterns.isFancyList(text2) || ListPatterns.isExampleList(text2) || ListPatterns.isDefinitionMarker(text2) || ListPatterns.findExampleReferences(text2).length > 0;
+  const hasCustomLabelSyntax = (config == null ? void 0 : config.enableCustomLabelLists) && (ListPatterns.isCustomLabelList(text2) || ListPatterns.findCustomLabelReferences(text2).length > 0);
   return hasBasicSyntax || hasCustomLabelSyntax;
 }
 function validateListInStrictMode(line, documentLines, config) {
@@ -6913,9 +6925,9 @@ var ExampleReferenceSuggest = class extends import_obsidian13.EditorSuggest {
         const label = match[3];
         if (label) {
           const markerEnd = match[0].length;
-          const text = line.substring(markerEnd).trim();
+          const text2 = line.substring(markerEnd).trim();
           if (!exampleData.has(label)) {
-            exampleData.set(label, { number: counter, text });
+            exampleData.set(label, { number: counter, text: text2 });
           }
         }
         counter++;
@@ -7009,9 +7021,9 @@ var CustomLabelReferenceSuggest = class extends import_obsidian14.EditorSuggest 
         const rawLabel = match[3];
         if (rawLabel) {
           const markerEnd = match[0].length;
-          const text = line.substring(markerEnd).trim();
+          const text2 = line.substring(markerEnd).trim();
           if (!labelData.has(rawLabel)) {
-            labelData.set(rawLabel, { text, rawLabel });
+            labelData.set(rawLabel, { text: text2, rawLabel });
           }
         }
       }
@@ -7829,10 +7841,10 @@ function findLastListItem(state, currentLineNumber) {
   if (lastListLine) {
     for (let lineNum = lastListLine.number; lineNum < currentLineNumber; lineNum++) {
       const line = state.doc.line(lineNum);
-      const text = line.text;
-      if (ListPatterns.isFancyList(text) || ListPatterns.isExampleList(text) || ListPatterns.isCustomLabelList(text) || ListPatterns.isHashList(text)) {
+      const text2 = line.text;
+      if (ListPatterns.isFancyList(text2) || ListPatterns.isExampleList(text2) || ListPatterns.isCustomLabelList(text2) || ListPatterns.isHashList(text2)) {
         lastListLine = line;
-        lastListLineText = text;
+        lastListLineText = text2;
       }
     }
   }
@@ -8065,7 +8077,7 @@ var PandocExtendedMarkdownPlugin = class extends import_obsidian15.Plugin {
       (leaf) => new ListPanelView(leaf, this)
     );
     this.addRibbonIcon(ICONS.LIST_PANEL_ID, "Open list panel", () => {
-      this.activateListPanelView();
+      void this.activateListPanelView();
     });
     this.registerCommands();
   }
@@ -8178,7 +8190,7 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
       id: COMMANDS.OPEN_LIST_PANEL,
       name: "Open list panel",
       callback: () => {
-        this.activateListPanelView();
+        void this.activateListPanelView();
       }
     });
   }

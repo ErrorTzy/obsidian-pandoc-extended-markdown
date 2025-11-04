@@ -8,11 +8,13 @@ import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 /**
  * Represents a region of content that needs inline processing
  */
+type ListStructure = 'hash-list' | 'fancy-list' | 'example-list' | 'custom-label-list' | 'definition' | 'standard-list';
+
 export interface ContentRegion {
     from: number;
     to: number;
     type: 'list-content' | 'definition-content' | 'paragraph' | 'normal';
-    parentStructure?: 'hash-list' | 'fancy-list' | 'example-list' | 'custom-label-list' | 'definition';
+    parentStructure?: ListStructure;
     metadata?: {
         label?: string;
         isDuplicate?: boolean;
@@ -60,7 +62,7 @@ export interface ProcessingContext {
         isInList: boolean;
         contentStartColumn: number;
         listLevel: number;
-        parentStructure?: string;
+        parentStructure?: ListStructure;
     };
     
     // Code regions to skip

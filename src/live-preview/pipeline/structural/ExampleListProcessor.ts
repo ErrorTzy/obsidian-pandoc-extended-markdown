@@ -2,7 +2,6 @@ import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { StructuralResult, ProcessingContext } from '../types';
 import { ListPatterns } from '../../../shared/patterns';
-import { CSS_CLASSES } from '../../../core/constants';
 import { ExampleListMarkerWidget, DuplicateExampleLabelWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 

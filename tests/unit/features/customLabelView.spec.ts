@@ -68,7 +68,7 @@ Therefore, from {::P(#a)} and {::P(#b)}, we conclude our conclusion.`),
         });
 
         it('should return correct display text', () => {
-            expect(view.getDisplayText()).toBe('List Panel');
+            expect(view.getDisplayText()).toBe('List panel');
         });
 
         it('should have correct icon', () => {
@@ -86,7 +86,7 @@ Therefore, from {::P(#a)} and {::P(#b)}, we conclude our conclusion.`),
             app.workspace.getActiveViewOfType = jest.fn().mockReturnValue(mockMarkdownView);
             
             await view.onOpen();
-            await view.updateView(); // Explicitly call updateView
+            view.updateView(); // Explicitly call updateView
             
             const labels = view.getCustomLabels();
             expect(labels).toHaveLength(4);

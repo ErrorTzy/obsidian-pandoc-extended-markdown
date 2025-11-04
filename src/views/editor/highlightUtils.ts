@@ -1,5 +1,5 @@
 // External libraries
-import { MarkdownView } from 'obsidian';
+import { MarkdownView, Editor, EditorPosition } from 'obsidian';
 
 // Constants
 import { CSS_CLASSES, UI_CONSTANTS } from '../../core/constants';
@@ -7,11 +7,21 @@ import { CSS_CLASSES, UI_CONSTANTS } from '../../core/constants';
 // Utils
 import { handleError } from '../../shared/utils/errorHandler';
 
+interface CodeMirrorViewLike {
+    dom?: HTMLElement;
+    contentDOM?: HTMLElement;
+}
+
+type ExtendedEditor = Editor & {
+    cm?: CodeMirrorViewLike;
+    cursorCoords?: (force: boolean, mode?: 'local' | 'page') => { top: number } | null;
+};
+
 type EditorCursorPosition = { line: number; ch: number };
 
 export function highlightLine(view: MarkdownView, lineNumber: number, cursorPosition?: EditorCursorPosition): void {
     try {
-        const editor = view.editor;
+        const editor = view.editor as ExtendedEditor;
         if (cursorPosition) {
             editor.setCursor(cursorPosition);
             editor.scrollIntoView({ from: cursorPosition, to: cursorPosition }, true);
@@ -19,7 +29,7 @@ export function highlightLine(view: MarkdownView, lineNumber: number, cursorPosi
             moveCursorToLine(editor, lineNumber);
         }
         
-        const cm = (editor as any).cm;
+        const cm = editor.cm;
         if (cm) {
             const editorDom = cm.dom || cm.contentDOM;
             if (editorDom) {
@@ -44,8 +54,8 @@ export function highlightLine(view: MarkdownView, lineNumber: number, cursorPosi
  * @example
  * moveCursorToLine(view.editor, 10); // Navigate to line 10
  */
-function moveCursorToLine(editor: any, lineNumber: number): void {
-    const lineStart = { line: lineNumber, ch: 0 };
+function moveCursorToLine(editor: ExtendedEditor, lineNumber: number): void {
+    const lineStart: EditorPosition = { line: lineNumber, ch: 0 };
     editor.setCursor(lineStart);
     editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
 }
@@ -61,13 +71,13 @@ function moveCursorToLine(editor: any, lineNumber: number): void {
  * @example
  * highlightTargetLine(cmDom, editor); // Highlights the line at cursor position
  */
-function highlightTargetLine(editorDom: HTMLElement, editor: any): void {
+function highlightTargetLine(editorDom: HTMLElement, editor: ExtendedEditor): void {
     const activeLine = editorDom.querySelector('.cm-line.cm-active');
-    if (activeLine) {
-        applyHighlight(activeLine as HTMLElement);
+    if (activeLine instanceof HTMLElement) {
+        applyHighlight(activeLine);
     } else {
         const targetLine = findClosestLine(editorDom, editor);
-        if (targetLine) {
+        if (targetLine instanceof HTMLElement) {
             applyHighlight(targetLine);
         }
     }
@@ -86,9 +96,9 @@ function highlightTargetLine(editorDom: HTMLElement, editor: any): void {
  * const line = findClosestLine(editorDom, editor);
  * if (line) applyHighlight(line);
  */
-function findClosestLine(editorDom: HTMLElement, editor: any): HTMLElement | null {
+function findClosestLine(editorDom: HTMLElement, editor: ExtendedEditor): HTMLElement | null {
     const allLines = editorDom.querySelectorAll('.cm-line');
-    const coords = editor.cursorCoords(true, 'local');
+    const coords = editor.cursorCoords?.(true, 'local');
     
     if (!coords || allLines.length === 0) return null;
     
@@ -101,9 +111,9 @@ function findClosestLine(editorDom: HTMLElement, editor: any): HTMLElement | nul
         const relativeTop = rect.top - editorRect.top;
         const distance = Math.abs(relativeTop - coords.top);
         
-        if (distance < minDistance) {
+        if (distance < minDistance && line instanceof HTMLElement) {
             minDistance = distance;
-            targetLine = line as HTMLElement;
+            targetLine = line;
         }
     });
     

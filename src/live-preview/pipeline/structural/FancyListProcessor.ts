@@ -30,7 +30,6 @@ export class FancyListProcessor extends BaseStructuralProcessor {
         }
 
         const indent = fancyMatch[1];
-        const markerWithDelimiter = fancyMatch[2];  // e.g., "A."
         const marker = fancyMatch[3];                // e.g., "A"
         const delimiter = fancyMatch[4];             // e.g., "."
         const space = fancyMatch[5];

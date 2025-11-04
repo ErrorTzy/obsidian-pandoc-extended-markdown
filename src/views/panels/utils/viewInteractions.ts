@@ -1,10 +1,20 @@
-import { MarkdownView, Notice, MarkdownRenderer, Component, App, WorkspaceLeaf } from 'obsidian';
+import { MarkdownView, Notice, MarkdownRenderer, Component, App, Editor, EditorPosition } from 'obsidian';
 
 import { CustomLabel } from '../../../shared/extractors/customLabelExtractor';
 import { processContent, ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
 import { CSS_CLASSES, MESSAGES, UI_CONSTANTS } from '../../../core/constants';
 import { withErrorBoundary, withAsyncErrorBoundary, handleError } from '../../../shared/utils/errorHandler';
+
+interface CodeMirrorViewLike {
+    dom?: HTMLElement;
+    contentDOM?: HTMLElement;
+}
+
+type ExtendedEditor = Editor & {
+    cm?: CodeMirrorViewLike;
+    cursorCoords?: (force: boolean, mode?: 'local' | 'page') => { top: number } | null;
+};
 
 /**
  * Highlights a specific line in the markdown editor with a visual animation effect.
@@ -20,7 +30,7 @@ import { withErrorBoundary, withAsyncErrorBoundary, handleError } from '../../..
  */
 export function highlightLine(view: MarkdownView, lineNumber: number): void {
     withErrorBoundary(() => {
-        const editor = view.editor;
+        const editor = view.editor as ExtendedEditor;
         setCursorAndScroll(editor, lineNumber);
         applyLineHighlight(editor, lineNumber);
     }, undefined, 'highlight line');
@@ -31,8 +41,8 @@ export function highlightLine(view: MarkdownView, lineNumber: number): void {
  * @param editor The editor instance
  * @param lineNumber Zero-based line number to navigate to
  */
-function setCursorAndScroll(editor: any, lineNumber: number): void {
-    const lineStart = { line: lineNumber, ch: 0 };
+function setCursorAndScroll(editor: ExtendedEditor, lineNumber: number): void {
+    const lineStart: EditorPosition = { line: lineNumber, ch: 0 };
     editor.setCursor(lineStart);
     editor.scrollIntoView({ from: lineStart, to: lineStart }, true);
 }
@@ -42,10 +52,10 @@ function setCursorAndScroll(editor: any, lineNumber: number): void {
  * @param editor The editor instance
  * @param lineNumber Zero-based line number to highlight
  */
-function applyLineHighlight(editor: any, lineNumber: number): void {
+function applyLineHighlight(editor: ExtendedEditor, lineNumber: number): void {
     // Get the CodeMirror instance through the editor
     // Note: This uses internal Obsidian editor API which may change
-    const cm = (editor as any).cm;
+    const cm = editor.cm;
     if (!cm) return;
     
     const editorDom = cm.dom || cm.contentDOM;
@@ -62,21 +72,21 @@ function applyLineHighlight(editor: any, lineNumber: number): void {
  * @param editorDom The editor DOM element
  * @param editor The editor instance for cursor coordinates
  */
-function findAndHighlightLine(editorDom: HTMLElement, editor: any): void {
+function findAndHighlightLine(editorDom: HTMLElement, editor: ExtendedEditor): void {
     // After setCursor, the line should be in view
     const activeLine = editorDom.querySelector('.cm-line.cm-active');
-    if (activeLine) {
-        applyHighlight(activeLine as HTMLElement);
+    if (activeLine instanceof HTMLElement) {
+        applyHighlight(activeLine);
         return;
     }
     
     // Fallback: try to find line by position
     const allLines = editorDom.querySelectorAll('.cm-line');
-    const coords = editor.cursorCoords(true, 'local');
+    const coords = editor.cursorCoords?.(true, 'local');
     if (!coords || allLines.length === 0) return;
     
     // Find the closest line element
-    let targetLine = null;
+    let targetLine: HTMLElement | null = null;
     let minDistance = Infinity;
     
     allLines.forEach((line: Element) => {
@@ -85,14 +95,14 @@ function findAndHighlightLine(editorDom: HTMLElement, editor: any): void {
         const relativeTop = rect.top - editorRect.top;
         const distance = Math.abs(relativeTop - coords.top);
         
-        if (distance < minDistance) {
+        if (distance < minDistance && line instanceof HTMLElement) {
             minDistance = distance;
             targetLine = line;
         }
     });
     
     if (targetLine) {
-        applyHighlight(targetLine as HTMLElement);
+        applyHighlight(targetLine);
     }
 }
 
@@ -128,8 +138,8 @@ export function setupLabelClickHandler(
     rawLabel: string,
     abortSignal?: AbortSignal
 ): void {
-    const clickHandler = async () => {
-        await withAsyncErrorBoundary(async () => {
+    const clickHandler = () => {
+        void withAsyncErrorBoundary(async () => {
             await navigator.clipboard.writeText(rawLabel);
             new Notice(MESSAGES.LABEL_COPIED);
         }, undefined, 'copy label to clipboard');
@@ -150,11 +160,11 @@ export function setupContentClickHandler(
             // Use the last active markdown view
             const targetView = lastActiveMarkdownView;
             if (targetView && targetView.editor) {
-                const editor = targetView.editor;
+                const editor = targetView.editor as ExtendedEditor;
 
                 // First, make the markdown view active
                 const leaves = app.workspace.getLeavesOfType("markdown");
-                const targetLeaf = leaves.find((leaf: WorkspaceLeaf) => leaf.view === targetView);
+                const targetLeaf = leaves.find((leaf) => leaf.view === targetView);
                 if (targetLeaf) {
                     app.workspace.setActiveLeaf(targetLeaf, { focus: true });
                 }
@@ -232,7 +242,7 @@ export function renderContentWithMath(
     }
     
     // Use MarkdownRenderer for proper math and markdown rendering
-    MarkdownRenderer.render(
+    void MarkdownRenderer.render(
         app,
         contentToRender,
         element,
@@ -269,7 +279,7 @@ export function setupContentHoverPreview(
         // For math rendering, check if content contains math delimiters
         if (contentToShow.includes('$')) {
             // Use MarkdownRenderer for proper math rendering
-            MarkdownRenderer.render(
+            void MarkdownRenderer.render(
                 app,
                 contentToShow,
                 hoverEl,

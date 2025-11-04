@@ -3,6 +3,8 @@ import { Line } from '@codemirror/state';
 import { StructuralProcessor, StructuralResult, ProcessingContext, ContentRegion } from '../types';
 import { CSS_CLASSES } from '../../../core/constants';
 
+type ParentStructure = NonNullable<ContentRegion['parentStructure']>;
+
 /**
  * Base class for structural processors, providing common functionality
  * for list processing including cursor detection, decoration creation,
@@ -92,14 +94,14 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
     protected createContentRegion(
         contentStart: number,
         contentEnd: number,
-        parentStructure: string,
+        parentStructure: ParentStructure,
         metadata?: Record<string, unknown>
     ): ContentRegion {
         return {
             from: contentStart,
             to: contentEnd,
             type: 'list-content',
-            parentStructure: parentStructure as any,
+            parentStructure,
             metadata
         };
     }
@@ -111,7 +113,7 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
         context: ProcessingContext,
         contentStartColumn: number,
         listLevel: number,
-        parentStructure: string
+        parentStructure: ParentStructure
     ): void {
         context.listContext = {
             isInList: true,
@@ -131,8 +133,8 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
         markerStart: number,
         markerEnd: number,
         contentStart: number,
-        widget: any,
-        parentStructure: string,
+        widget: WidgetType,
+        parentStructure: ParentStructure,
         listLevel: number = 1
     ): StructuralResult {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];

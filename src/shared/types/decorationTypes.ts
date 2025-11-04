@@ -1,7 +1,7 @@
 /**
  * Type definitions for decoration-related interfaces and types
  */
-import { Decoration } from '@codemirror/view';
+import { Decoration, WidgetType } from '@codemirror/view';
 
 /**
  * Represents a decoration to be applied to the editor
@@ -55,7 +55,7 @@ export interface DecorationStyle {
  * Widget decoration configuration
  */
 export interface WidgetConfig {
-    widget: any; // CodeMirror widget
+    widget: WidgetType; // CodeMirror widget
     side?: number;
     block?: boolean;
 }

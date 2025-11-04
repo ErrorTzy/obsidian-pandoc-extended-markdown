@@ -40,7 +40,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private renderGeneralSettings(containerEl: HTMLElement): void {
         new Setting(containerEl)
-            .setName('Strict Pandoc mode')
+            .setName('Strict pandoc mode')
             .setDesc('Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.strictPandocMode)
@@ -60,7 +60,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Custom Label List')
+            .setName('Custom label list')
             .setDesc('Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.moreExtendedSyntax)
@@ -74,10 +74,11 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
     }
 
     private renderPanelOrderSettings(containerEl: HTMLElement): void {
-        containerEl.createEl('h2', { text: PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_HEADING });
+        new Setting(containerEl)
+            .setName(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_HEADING)
+            .setHeading();
 
         const panelOrderSetting = new Setting(containerEl)
-            .setName('')
             .setDesc(PANEL_SETTINGS.UI_TEXT.PANEL_ORDER_DESC);
         
         // Make the description column narrower
@@ -231,28 +232,28 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private setupPanelOrderEventHandlers(listEl: HTMLElement, buttons: PanelOrderButtons): void {
         // Move up
-        buttons.moveUp.addEventListener('click', async () => {
-            await this.movePanelUp();
+        buttons.moveUp.addEventListener('click', () => {
+            void this.movePanelUp();
         });
 
         // Move down
-        buttons.moveDown.addEventListener('click', async () => {
-            await this.movePanelDown();
+        buttons.moveDown.addEventListener('click', () => {
+            void this.movePanelDown();
         });
 
         // Move to top
-        buttons.moveTop.addEventListener('click', async () => {
-            await this.movePanelToTop();
+        buttons.moveTop.addEventListener('click', () => {
+            void this.movePanelToTop();
         });
 
         // Move to bottom
-        buttons.moveBottom.addEventListener('click', async () => {
-            await this.movePanelToBottom();
+        buttons.moveBottom.addEventListener('click', () => {
+            void this.movePanelToBottom();
         });
 
         // Reset default
-        buttons.reset.addEventListener('click', async () => {
-            await this.resetPanelOrder();
+        buttons.reset.addEventListener('click', () => {
+            void this.resetPanelOrder();
         });
 
         // Keyboard shortcuts while list is focused
