@@ -62,6 +62,24 @@ export const COMMANDS = {
 export const SETTINGS = {
     STRICT_MODE: 'strictPandocMode',
     AUTO_RENUMBER: 'autoRenumberLists',
+    CUSTOM_LABEL: 'moreExtendedSyntax',
+    PANEL_ORDER: 'panelOrder',
+} as const;
+
+// Settings UI text
+export const SETTINGS_UI = {
+    STRICT_MODE: {
+        NAME: 'Strict Pandoc mode',
+        DESCRIPTION: 'Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
+    },
+    AUTO_RENUMBER: {
+        NAME: 'Auto-renumber lists',
+        DESCRIPTION: 'Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.'
+    },
+    CUSTOM_LABEL: {
+        NAME: 'Custom label list',
+        DESCRIPTION: 'Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.'
+    }
 } as const;
 
 // UI timing and sizing constants

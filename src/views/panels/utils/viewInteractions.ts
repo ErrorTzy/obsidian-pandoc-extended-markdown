@@ -4,7 +4,7 @@ import { CustomLabel } from '../../../shared/extractors/customLabelExtractor';
 import { processContent, ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 
 import { CSS_CLASSES, MESSAGES, UI_CONSTANTS } from '../../../core/constants';
-import { withErrorBoundary, withAsyncErrorBoundary, handleError } from '../../../shared/utils/errorHandler';
+import { withErrorBoundary, withAsyncErrorBoundary } from '../../../shared/utils/errorHandler';
 
 interface CodeMirrorViewLike {
     dom?: HTMLElement;

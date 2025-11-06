@@ -28,15 +28,10 @@ export class ListContinuationIndentWidget extends WidgetType {
 
         const indentSpan = document.createElement('span');
         indentSpan.className = `cm-hmd-list-indent cm-hmd-list-indent-${this.getClampedLevel()} ${CSS_CLASSES.LIST_CONTINUATION_WIDGET}`;
-        if ('setCssProps' in indentSpan) {
-            indentSpan.setCssProps({
-                width: `${this.width}px`,
-                whiteSpace: 'pre'
-            });
-        } else {
-            indentSpan.style.width = `${this.width}px`;
-            indentSpan.style.whiteSpace = 'pre';
-        }
+        indentSpan.setCssProps({
+            width: `${this.width}px`,
+            whiteSpace: 'pre'
+        });
         indentSpan.textContent = '\u00A0';
         indentSpan.setAttribute('aria-hidden', 'true');
 

@@ -106,21 +106,10 @@ function processExampleOrderedList(list: HTMLOListElement, exampleMap: Map<strin
     const items = list.querySelectorAll('li');
     if (items.length === 0) return;
     
-    const section = list.closest('.markdown-preview-section') as HTMLElement;
-    if (!section) return;
-    
-    // Try to get section info with fallback
-    const sectionInfo = getSectionInfo(section);
-    let lines: string[] = [];
-    
-    if (sectionInfo?.text) {
-        lines = sectionInfo.text.split('\n');
-    } else {
-        // Fallback: extract text from the list element
-        const fullText = list.textContent || '';
-        lines = fullText.split('\n');
+    if (!list.closest('.markdown-preview-section')) {
+        return;
     }
-    
+
     // Check if this list contains example markers by examining the text content
     let hasExampleMarker = false;
     let listStartNumber: number | null = null;

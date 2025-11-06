@@ -1,5 +1,5 @@
 import { ListPatterns } from '../patterns';
-import { handleError, withErrorBoundary } from '../utils/errorHandler';
+import { withErrorBoundary } from '../utils/errorHandler';
 
 export interface ExampleListItem {
     renderedNumber: number;

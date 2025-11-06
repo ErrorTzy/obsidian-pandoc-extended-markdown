@@ -326,7 +326,7 @@ export function setupRenderedHoverPreview(
         
         try {
             await renderPopoverContent(hoverElement, content, app, component, context);
-        } catch (error) {
+        } catch {
             if (state.renderAbortController?.signal.aborted) {
                 return; // Expected abort, clean up silently
             }

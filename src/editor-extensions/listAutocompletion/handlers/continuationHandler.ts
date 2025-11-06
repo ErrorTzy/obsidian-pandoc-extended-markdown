@@ -1,5 +1,4 @@
 import { EditorSelection } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
 import { ListPatterns } from '../../../shared/patterns';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import { renumberListItems } from '../../../shared/utils/listRenumbering';

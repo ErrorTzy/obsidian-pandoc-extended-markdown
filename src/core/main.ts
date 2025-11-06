@@ -237,7 +237,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         
         // "Reveal" the leaf in case it is in a collapsed sidebar
         if (leaf) {
-            workspace.revealLeaf(leaf);
+            await workspace.revealLeaf(leaf);
         }
     }
     

@@ -28,6 +28,39 @@ type ExtendedElement = HTMLElement & {
   removeClass: (cls: string) => void;
 };
 
+function ensureCssHelpers(): void {
+  const toKebabCase = (property: string) =>
+    property.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+
+  if (typeof HTMLElement !== 'undefined') {
+    const elementProto = HTMLElement.prototype as HTMLElement & {
+      setCssProps?: (props: Record<string, string>) => void;
+    };
+    if (typeof elementProto.setCssProps !== 'function') {
+      elementProto.setCssProps = function setCssProps(props: Record<string, string>) {
+        Object.entries(props).forEach(([property, value]) => {
+          this.style.setProperty(toKebabCase(property), value);
+        });
+      };
+    }
+  }
+
+  if (typeof SVGElement !== 'undefined') {
+    const svgProto = SVGElement.prototype as SVGElement & {
+      setCssProps?: (props: Record<string, string>) => void;
+    };
+    if (typeof svgProto.setCssProps !== 'function') {
+      svgProto.setCssProps = function setCssProps(props: Record<string, string>) {
+        Object.entries(props).forEach(([property, value]) => {
+          this.style.setProperty(toKebabCase(property), value);
+        });
+      };
+    }
+  }
+}
+
+ensureCssHelpers();
+
 function enhanceElement(element: HTMLElement): ExtendedElement {
   const extended = element as ExtendedElement;
   extended.empty = function empty() {

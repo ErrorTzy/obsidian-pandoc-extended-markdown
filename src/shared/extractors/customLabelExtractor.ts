@@ -25,7 +25,7 @@ export function extractCustomLabels(content: string, moreExtendedSyntax: boolean
         }
         
         // Process labels with placeholder context
-        const { processedLabels, rawToProcessed } = processLabels(lines);
+        const { rawToProcessed } = processLabels(lines);
         
         // Extract label information
         for (let i = 0; i < lines.length; i++) {
@@ -66,9 +66,9 @@ export function extractCustomLabels(content: string, moreExtendedSyntax: boolean
     }, [], 'CustomLabelExtractor.extractCustomLabels');
 }
 
-export function processLabels(lines: string[]): { 
-    processedLabels: Map<string, string>, 
-    rawToProcessed: Map<string, string> 
+export function processLabels(lines: string[]): {
+    processedLabels: Map<string, string>,
+    rawToProcessed: Map<string, string>
 } {
     const placeholderContext = new PlaceholderContext();
     const processedLabels = new Map<string, string>();

@@ -47,11 +47,6 @@ export class ListBlockValidator {
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const isCurrentList = this.isListItemForValidation(line);
-            const prevWasListOrContinuation = i > 0 && (
-                this.isListItemForValidation(lines[i - 1]) || 
-                this.isListContinuation(lines[i - 1], inListBlock) ||
-                lines[i - 1].trim() === ''
-            );
             const isContinuation = this.isListContinuation(line, inListBlock);
             
             // Check if previous line is a definition term (special case)

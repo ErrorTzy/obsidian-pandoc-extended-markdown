@@ -47,7 +47,7 @@ export function getSectionInfo(element: HTMLElement | null): SectionInfo | null 
     if (typeof element.getSection === 'function') {
         try {
             return element.getSection();
-        } catch (error) {
+        } catch {
             return null;
         }
     }

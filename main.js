@@ -232,6 +232,20 @@ var COMMANDS = {
   TOGGLE_DEFINITION_UNDERLINE: "toggle-definition-underline-style",
   OPEN_LIST_PANEL: "open-list-panel"
 };
+var SETTINGS_UI = {
+  STRICT_MODE: {
+    NAME: "Strict Pandoc mode",
+    DESCRIPTION: "Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers."
+  },
+  AUTO_RENUMBER: {
+    NAME: "Auto-renumber lists",
+    DESCRIPTION: "Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list."
+  },
+  CUSTOM_LABEL: {
+    NAME: "Custom label list",
+    DESCRIPTION: "Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines."
+  }
+};
 var UI_CONSTANTS = {
   NOTICE_DURATION_MS: 1e4,
   STATE_TRANSITION_DELAY_MS: 100,
@@ -1050,7 +1064,7 @@ function extractCustomLabels(content, moreExtendedSyntax) {
     if (!moreExtendedSyntax) {
       return labels;
     }
-    const { processedLabels, rawToProcessed } = processLabels(lines);
+    const { rawToProcessed } = processLabels(lines);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const match = ListPatterns.isCustomLabelList(line);
@@ -1080,7 +1094,6 @@ function extractCustomLabels(content, moreExtendedSyntax) {
 }
 function processLabels(lines) {
   const placeholderContext = new PlaceholderContext();
-  const processedLabels = /* @__PURE__ */ new Map();
   const rawToProcessed = /* @__PURE__ */ new Map();
   for (const line of lines) {
     const match = ListPatterns.isCustomLabelList(line);
@@ -1089,11 +1102,10 @@ function processLabels(lines) {
       const fullMatch = match[0];
       const restOfLine = line.substring(fullMatch.length);
       const processedLabel = placeholderContext.processLabel(rawLabel);
-      processedLabels.set(processedLabel, restOfLine.trim());
       rawToProcessed.set(rawLabel, processedLabel);
     }
   }
-  return { processedLabels, rawToProcessed };
+  return { rawToProcessed };
 }
 
 // src/shared/utils/mathRenderer.ts
@@ -1141,7 +1153,6 @@ function tokenizeMath(mathContent) {
 function truncateMathContent(mathContent, maxRenderedLength) {
   const tokens = tokenizeMath(mathContent);
   let result = "$";
-  let tokenCount = 0;
   let accumulatedTokens = [];
   for (const token of tokens) {
     const testTokens = [...accumulatedTokens, token];
@@ -1149,7 +1160,6 @@ function truncateMathContent(mathContent, maxRenderedLength) {
     const testRendered = renderMathToText(testLatex);
     if (testRendered.length <= maxRenderedLength) {
       accumulatedTokens.push(token);
-      tokenCount++;
     } else {
       break;
     }
@@ -1704,7 +1714,7 @@ function setupRenderedHoverPreview(element, content, app, component, context, po
     hoverElement.classList.add(CSS_CLASSES.HOVER_POPOVER, popoverClass);
     try {
       await renderPopoverContent(hoverElement, content, app, component, context);
-    } catch (error) {
+    } catch (e) {
       if ((_a = state.renderAbortController) == null ? void 0 : _a.signal.aborted) {
         return;
       }
@@ -2965,15 +2975,15 @@ var PandocExtendedMarkdownSettingTab = class extends import_obsidian7.PluginSett
     this.renderPanelOrderSettings(containerEl);
   }
   renderGeneralSettings(containerEl) {
-    new import_obsidian7.Setting(containerEl).setName("Strict pandoc mode").setDesc("Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.").addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName(SETTINGS_UI.STRICT_MODE.NAME).setDesc(SETTINGS_UI.STRICT_MODE.DESCRIPTION).addToggle((toggle) => toggle.setValue(this.plugin.settings.strictPandocMode).onChange(async (value) => {
       this.plugin.settings.strictPandocMode = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian7.Setting(containerEl).setName("Auto-renumber lists").setDesc("Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.").addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName(SETTINGS_UI.AUTO_RENUMBER.NAME).setDesc(SETTINGS_UI.AUTO_RENUMBER.DESCRIPTION).addToggle((toggle) => toggle.setValue(this.plugin.settings.autoRenumberLists).onChange(async (value) => {
       this.plugin.settings.autoRenumberLists = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian7.Setting(containerEl).setName("Custom label list").setDesc("Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.").addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
+    new import_obsidian7.Setting(containerEl).setName(SETTINGS_UI.CUSTOM_LABEL.NAME).setDesc(SETTINGS_UI.CUSTOM_LABEL.DESCRIPTION).addToggle((toggle) => toggle.setValue(this.plugin.settings.moreExtendedSyntax).onChange(async (value) => {
       this.plugin.settings.moreExtendedSyntax = value;
       await this.plugin.saveSettings();
       this.refreshListPanels();
@@ -3785,7 +3795,6 @@ var ListBlockValidator = class {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const isCurrentList = this.isListItemForValidation(line);
-      const prevWasListOrContinuation = i > 0 && (this.isListItemForValidation(lines[i - 1]) || this.isListContinuation(lines[i - 1], inListBlock) || lines[i - 1].trim() === "");
       const isContinuation = this.isListContinuation(line, inListBlock);
       const prevIsDefinitionTerm = i > 0 && lines[i - 1].trim() && !ListPatterns.isDefinitionMarker(lines[i - 1]) && !ListPatterns.isIndentedContent(lines[i - 1]) && ListPatterns.isDefinitionMarker(line);
       if (isCurrentList && listBlockStart === -1) {
@@ -4601,15 +4610,10 @@ var ListContinuationIndentWidget = class extends import_view2.WidgetType {
     outerSpacing.appendChild(innerSpacing);
     const indentSpan = document.createElement("span");
     indentSpan.className = `cm-hmd-list-indent cm-hmd-list-indent-${this.getClampedLevel()} ${CSS_CLASSES.LIST_CONTINUATION_WIDGET}`;
-    if ("setCssProps" in indentSpan) {
-      indentSpan.setCssProps({
-        width: `${this.width}px`,
-        whiteSpace: "pre"
-      });
-    } else {
-      indentSpan.style.width = `${this.width}px`;
-      indentSpan.style.whiteSpace = "pre";
-    }
+    indentSpan.setCssProps({
+      width: `${this.width}px`,
+      whiteSpace: "pre"
+    });
     indentSpan.textContent = "\xA0";
     indentSpan.setAttribute("aria-hidden", "true");
     innerSpacing.appendChild(indentSpan);
@@ -5919,7 +5923,7 @@ function getSectionInfo(element) {
   if (typeof element.getSection === "function") {
     try {
       return element.getSection();
-    } catch (error) {
+    } catch (e) {
       return null;
     }
   }
@@ -8210,7 +8214,7 @@ ${issueList}`, UI_CONSTANTS.NOTICE_DURATION_MS);
       }
     }
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      await workspace.revealLeaf(leaf);
     }
   }
   async loadSettings() {

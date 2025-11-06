@@ -1,4 +1,4 @@
-import { UI_CONSTANTS, MATH_SYMBOLS } from '../../core/constants';
+import { MATH_SYMBOLS } from '../../core/constants';
 import { ListPatterns } from '../patterns';
 
 export function renderMathToText(mathContent: string): string {
@@ -66,7 +66,6 @@ export function truncateMathContent(mathContent: string, maxRenderedLength: numb
     // For complex math truncation, we'll render progressively and stop when we exceed the limit
     const tokens = tokenizeMath(mathContent);
     let result = '$';
-    let tokenCount = 0;
     
     // Render all tokens together to get the actual formatted output
     let accumulatedTokens: string[] = [];
@@ -79,7 +78,6 @@ export function truncateMathContent(mathContent: string, maxRenderedLength: numb
         
         if (testRendered.length <= maxRenderedLength) {
             accumulatedTokens.push(token);
-            tokenCount++;
         } else {
             // We've reached the limit
             break;

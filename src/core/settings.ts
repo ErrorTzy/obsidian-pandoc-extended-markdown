@@ -6,7 +6,7 @@ import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS } from '../shared/type
 import type { ListPanelView } from '../views/panels/ListPanelView';
 
 // Constants
-import { PANEL_SETTINGS } from './constants';
+import { PANEL_SETTINGS, SETTINGS_UI } from './constants';
 
 // Internal modules
 import { VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
@@ -40,8 +40,8 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private renderGeneralSettings(containerEl: HTMLElement): void {
         new Setting(containerEl)
-            .setName('Strict pandoc mode')
-            .setDesc('Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.')
+            .setName(SETTINGS_UI.STRICT_MODE.NAME)
+            .setDesc(SETTINGS_UI.STRICT_MODE.DESCRIPTION)
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.strictPandocMode)
                 .onChange(async (value) => {
@@ -50,8 +50,8 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Auto-renumber lists')
-            .setDesc('Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.')
+            .setName(SETTINGS_UI.AUTO_RENUMBER.NAME)
+            .setDesc(SETTINGS_UI.AUTO_RENUMBER.DESCRIPTION)
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoRenumberLists)
                 .onChange(async (value) => {
@@ -60,8 +60,8 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Custom label list')
-            .setDesc('Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.')
+            .setName(SETTINGS_UI.CUSTOM_LABEL.NAME)
+            .setDesc(SETTINGS_UI.CUSTOM_LABEL.DESCRIPTION)
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.moreExtendedSyntax)
                 .onChange(async (value) => {
