@@ -150,7 +150,7 @@ describe('DefinitionProcessor', () => {
                 
                 expect(result.decorations).toHaveLength(1);
                 // When cursor is in marker, we create a mark decoration instead of replace
-                expect(result.decorations[0].decoration.spec?.class).toBe('cm-pandoc-definition-marker-cursor');
+                expect(result.decorations[0].decoration.spec?.class).toBe('cm-pem-definition-marker-cursor');
             });
             
             it('should update definition state', () => {
@@ -184,7 +184,7 @@ describe('DefinitionProcessor', () => {
                 expect(result.decorations[0].from).toBe(0);
                 expect(result.decorations[0].to).toBe(4); // "Term"
                 expect(result.decorations[0].decoration.spec?.class).toContain('cm-strong');
-                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pandoc-definition-term');
+                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-definition-term');
             });
             
             it('should handle terms with blank line before definition', () => {
@@ -193,7 +193,7 @@ describe('DefinitionProcessor', () => {
                 const result = processor.process(line, context);
                 
                 expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pandoc-definition-term');
+                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-definition-term');
             });
             
             it('should not mark as content region', () => {
@@ -222,7 +222,7 @@ describe('DefinitionProcessor', () => {
                 const result = processor.process(line, context);
                 
                 expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pandoc-definition-paragraph');
+                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-definition-paragraph');
             });
             
             it('should create content region for indented content', () => {

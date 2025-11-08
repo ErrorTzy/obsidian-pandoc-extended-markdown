@@ -1,17 +1,17 @@
 /* List Marker Styles */
-.pandoc-list-marker {
+.pem-list-marker {
     cursor: text;
 }
 
 /* Custom Label Placeholder Styles */
-.pandoc-custom-label-placeholder {
+.pem-custom-label-placeholder {
     text-decoration: underline;
     text-decoration-style: dotted;
     text-decoration-color: var(--text-muted);
 }
 
 /* Inline placeholder number styles */
-.pandoc-inline-placeholder-number {
+.pem-inline-placeholder-number {
     text-decoration: underline;
     text-decoration-style: dotted;
     text-decoration-color: var(--text-muted);
@@ -19,70 +19,70 @@
 }
 
 /* Fancy Lists Styles */
-.pandoc-list-upper-alpha {
+.pem-list-upper-alpha {
     list-style-type: upper-alpha;
 }
 
-.pandoc-list-lower-alpha {
+.pem-list-lower-alpha {
     list-style-type: lower-alpha;
 }
 
-.pandoc-list-upper-roman {
+.pem-list-upper-roman {
     list-style-type: upper-roman;
 }
 
-.pandoc-list-lower-roman {
+.pem-list-lower-roman {
     list-style-type: lower-roman;
 }
 
-.pandoc-list-paren {
-    counter-reset: pandoc-list;
+.pem-list-paren {
+    counter-reset: pem-list;
 }
 
-.pandoc-list-paren > li {
-    counter-increment: pandoc-list;
+.pem-list-paren > li {
+    counter-increment: pem-list;
     list-style: none;
     position: relative;
 }
 
-.pandoc-list-paren > li::before {
-    content: counter(pandoc-list) ") ";
+.pem-list-paren > li::before {
+    content: counter(pem-list) ") ";
     position: absolute;
     left: -2em;
 }
 
 /* Definition Lists Styles */
-.pandoc-definition-list {
+.pem-definition-list {
     margin: 1em 0;
 }
 
-.pandoc-definition-term {
+.pem-definition-term {
     font-weight: bold;
     text-decoration: underline;
     margin-top: 0.5em;
     margin-bottom: 0.25em;
 }
 
-.pandoc-definition-items {
+.pem-definition-items {
     margin-left: 2em;
     margin-top: 0.25em;
     list-style-type: disc;
 }
 
-.pandoc-definition-items li {
+.pem-definition-items li {
     margin: 0.25em 0;
 }
 
 /* Definition content paragraphs - override Obsidian's indented text styling */
-.cm-pandoc-definition-paragraph {
+.cm-pem-definition-paragraph {
     /* No extra padding - indentation handled by spaces/tabs */
     text-indent: 0 !important;
 }
 
 /* Override code block styling for definition content */
-.cm-pandoc-definition-paragraph .cm-hmd-indented-code,
-.cm-pandoc-definition-paragraph .cm-inline-code,
-.pandoc-definition-content-text {
+.cm-pem-definition-paragraph .cm-hmd-indented-code,
+.cm-pem-definition-paragraph .cm-inline-code,
+.pem-definition-content-text {
     background: transparent !important;
     border: none !important;
     border-radius: 0 !important;
@@ -93,87 +93,87 @@
 }
 
 /* Ensure the indent is visible for proper cursor positioning */
-.cm-pandoc-definition-paragraph .cm-indent {
+.cm-pem-definition-paragraph .cm-indent {
     opacity: 1;
 }
 
 /* In live preview mode */
-.cm-line .pandoc-definition-term {
+.cm-line .pem-definition-term {
     font-weight: bold;
     text-decoration: underline;
 }
 
 /* CodeMirror-specific definition term styling */
-.cm-pandoc-definition-term {
+.cm-pem-definition-term {
     text-decoration: underline;
 }
 
-.cm-line .pandoc-definition-marker {
+.cm-line .pem-definition-marker {
     display: none;
 }
 
 /* Example Lists Styles */
-.pandoc-example-list {
+.pem-example-list {
     counter-reset: none;
 }
 
-li.pandoc-example-item {
+li.pem-example-item {
     list-style: none;
     position: relative;
 }
 
-li.pandoc-example-item::before {
+li.pem-example-item::before {
     content: "(" attr(data-example-number) ") ";
     position: absolute;
     left: -3em;
 }
 
-.pandoc-example-reference {
+.pem-example-reference {
     color: var(--text-accent);
     cursor: pointer;
 }
 
-.pandoc-example-reference:hover {
+.pem-example-reference:hover {
     text-decoration: underline;
 }
 
 /* Duplicate markers (for both example lists and custom label lists) */
-.pandoc-duplicate-markers {
+.pem-duplicate-markers {
     color: var(--text-error);
     text-decoration: underline;
     cursor: help;
 }
 
 /* Live Preview Mode Specific */
-.cm-formatting-list-ol.pandoc-list-upper-alpha::before {
+.cm-formatting-list-ol.pem-list-upper-alpha::before {
     content: attr(data-marker);
 }
 
-.cm-formatting-list-ol.pandoc-list-lower-alpha::before {
+.cm-formatting-list-ol.pem-list-lower-alpha::before {
     content: attr(data-marker);
 }
 
-.cm-formatting-list-ol.pandoc-list-upper-roman::before {
+.cm-formatting-list-ol.pem-list-upper-roman::before {
     content: attr(data-marker);
 }
 
-.cm-formatting-list-ol.pandoc-list-lower-roman::before {
+.cm-formatting-list-ol.pem-list-lower-roman::before {
     content: attr(data-marker);
 }
 
-.cm-formatting-list-ol.pandoc-example-list::before {
+.cm-formatting-list-ol.pem-example-list::before {
     content: attr(data-original);
 }
 
 /* Source Mode - preserve original text */
 .is-live-preview:not(.is-readable-line-width) .cm-s-obsidian {
-    .pandoc-list-upper-alpha,
-    .pandoc-list-lower-alpha,
-    .pandoc-list-upper-roman,
-    .pandoc-list-lower-roman,
-    .pandoc-example-list,
-    .pandoc-definition-term,
-    .pandoc-definition-marker {
+    .pem-list-upper-alpha,
+    .pem-list-lower-alpha,
+    .pem-list-upper-roman,
+    .pem-list-lower-roman,
+    .pem-example-list,
+    .pem-definition-term,
+    .pem-definition-marker {
         all: initial;
         color: inherit;
         font-family: inherit;
@@ -184,17 +184,17 @@ li.pandoc-example-item::before {
 /* List Line Indentation - Matching Obsidian's default list behavior */
 /* Obsidian already handles text-indent for HyperMD-list-line */
 /* We only need to ensure proper padding for alignment */
-.HyperMD-list-line.pandoc-list-line {
+.HyperMD-list-line.pem-list-line {
     /* Only padding needed - Obsidian handles text-indent internally */
     padding-inline-start: 29px;
 }
 
 /* For nested lists */
-.HyperMD-list-line-2.pandoc-list-line {
+.HyperMD-list-line-2.pem-list-line {
     padding-inline-start: var(--list-indent-editing, 30px);
 }
 
-.pandoc-list-continuation-widget {
+.pem-list-continuation-widget {
     display: inline-block;
     pointer-events: none;
     white-space: pre;
@@ -203,28 +203,28 @@ li.pandoc-example-item::before {
 }
 
 /* Custom Label Reference Clickable */
-.pandoc-custom-label-ref-clickable {
+.pem-custom-label-ref-clickable {
     cursor: pointer;
 }
 
 /* Custom Label Lists */
-.pandoc-custom-label-item {
+.pem-custom-label-item {
     list-style: none;
     position: relative;
 }
 
 /* Example Reference Suggestions */
-.pandoc-suggestion-content {
+.pem-suggestion-content {
     padding: 6px 10px;
 }
 
-.pandoc-suggestion-title {
+.pem-suggestion-title {
     font-weight: 600;
     color: var(--text-normal);
     margin-bottom: 2px;
 }
 
-.pandoc-suggestion-preview {
+.pem-suggestion-preview {
     font-size: 0.85em;
     color: var(--text-muted);
     white-space: nowrap;
@@ -233,43 +233,43 @@ li.pandoc-example-item::before {
     max-width: 300px;
 }
 
-.pandoc-suggestion-number {
+.pem-suggestion-number {
     text-decoration: underline;
     text-decoration-style: dotted;
     text-underline-offset: 2px;
     text-decoration-color: var(--text-muted);
 }
 
-.pandoc-suggestion-placeholder {
+.pem-suggestion-placeholder {
     font-size: 0.8em;
     color: var(--text-muted);
     opacity: 0.7;
 }
 
 /* Superscript and Subscript Styles */
-.pandoc-superscript,
-sup.pandoc-superscript {
+.pem-superscript,
+sup.pem-superscript {
     vertical-align: super;
     font-size: 0.85em;
     line-height: 0;
 }
 
-.pandoc-subscript,
-sub.pandoc-subscript {
+.pem-subscript,
+sub.pem-subscript {
     vertical-align: sub;
     font-size: 0.85em;
     line-height: 0;
 }
 
 /* List Panel View Styles */
-.pandoc-list-panel-view-container {
+.pem-list-panel-view-container {
     display: flex;
     flex-direction: column;
     height: 100%;
     padding: 8px;
 }
 
-.pandoc-list-panel-icon-row {
+.pem-list-panel-icon-row {
     display: flex;
     flex-direction: row;
     gap: 8px;
@@ -277,7 +277,7 @@ sub.pandoc-subscript {
     margin-bottom: 4px;
 }
 
-.pandoc-list-panel-icon-button {
+.pem-list-panel-icon-button {
     width: 32px;
     height: 32px;
     display: flex;
@@ -290,27 +290,27 @@ sub.pandoc-subscript {
     transition: all 0.2s ease;
 }
 
-.pandoc-list-panel-icon-button:hover {
+.pem-list-panel-icon-button:hover {
     background-color: var(--background-modifier-hover);
     border-color: var(--text-accent);
 }
 
-.pandoc-list-panel-icon-button.is-active {
+.pem-list-panel-icon-button.is-active {
     background-color: var(--interactive-accent);
     border-color: var(--interactive-accent);
 }
 
-.pandoc-list-panel-icon-button.is-active svg {
+.pem-list-panel-icon-button.is-active svg {
     color: var(--text-on-accent);
 }
 
-.pandoc-list-panel-icon-button svg {
+.pem-list-panel-icon-button svg {
     width: 20px;
     height: 20px;
 }
 
 /* Panel icon container */
-.pandoc-panel-icon-container {
+.pem-panel-icon-container {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -319,10 +319,10 @@ sub.pandoc-subscript {
 }
 
 /* Text-based icons for panels */
-.pandoc-icon-custom-label,
-.pandoc-icon-example-list,
-.pandoc-icon-definition-list,
-.pandoc-icon-footnote {
+.pem-icon-custom-label,
+.pem-icon-example-list,
+.pem-icon-definition-list,
+.pem-icon-footnote {
     font-family: var(--font-monospace);
     font-weight: bold;
     font-size: 10px;
@@ -330,44 +330,44 @@ sub.pandoc-subscript {
     color: var(--text-muted);
 }
 
-.pandoc-list-panel-icon-button.is-active .pandoc-icon-custom-label,
-.pandoc-list-panel-icon-button.is-active .pandoc-icon-example-list,
-.pandoc-list-panel-icon-button.is-active .pandoc-icon-definition-list,
-.pandoc-list-panel-icon-button.is-active .pandoc-icon-footnote {
+.pem-list-panel-icon-button.is-active .pem-icon-custom-label,
+.pem-list-panel-icon-button.is-active .pem-icon-example-list,
+.pem-list-panel-icon-button.is-active .pem-icon-definition-list,
+.pem-list-panel-icon-button.is-active .pem-icon-footnote {
     color: var(--text-on-accent);
 }
 
-.pandoc-list-panel-icon-button:hover .pandoc-icon-custom-label,
-.pandoc-list-panel-icon-button:hover .pandoc-icon-example-list,
-.pandoc-list-panel-icon-button:hover .pandoc-icon-definition-list,
-.pandoc-list-panel-icon-button:hover .pandoc-icon-footnote {
+.pem-list-panel-icon-button:hover .pem-icon-custom-label,
+.pem-list-panel-icon-button:hover .pem-icon-example-list,
+.pem-list-panel-icon-button:hover .pem-icon-definition-list,
+.pem-list-panel-icon-button:hover .pem-icon-footnote {
     color: var(--text-normal);
 }
 
-.pandoc-list-panel-separator {
+.pem-list-panel-separator {
     margin: 8px 0;
     border: none;
     border-top: 1px solid var(--background-modifier-border);
 }
 
-.pandoc-list-panel-content-container {
+.pem-list-panel-content-container {
     flex: 1;
     overflow-y: auto;
 }
 
 /* Panel Order Settings Styles */
-.pandoc-panel-order-info {
+.pem-panel-order-info {
     flex: 0 0 auto;
     max-width: 200px;
 }
 
-.pandoc-panel-order-container {
+.pem-panel-order-container {
     display: flex;
     gap: 12px;
     width: 100%;
 }
 
-.pandoc-panel-order-list {
+.pem-panel-order-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -378,7 +378,7 @@ sub.pandoc-subscript {
     padding: 8px;
 }
 
-.pandoc-panel-order-item {
+.pem-panel-order-item {
     padding: 6px 8px;
     border-radius: 6px;
     cursor: pointer;
@@ -388,25 +388,25 @@ sub.pandoc-subscript {
     gap: 8px;
 }
 
-.pandoc-panel-order-item.is-selected {
+.pem-panel-order-item.is-selected {
     background-color: var(--interactive-accent);
     color: var(--text-on-accent);
 }
 
-.pandoc-panel-order-icon {
+.pem-panel-order-icon {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
 }
 
-.pandoc-panel-order-buttons {
+.pem-panel-order-buttons {
     display: flex;
     flex-direction: column;
     gap: 6px;
     min-width: 140px;
 }
 
-.pandoc-panel-order-button {
+.pem-panel-order-button {
     width: 100%;
 }
 
@@ -507,22 +507,22 @@ td.custom-label-view-content:hover {
 }
 
 /* Example List View Styles */
-table.pandoc-example-list-view-container {
+table.pem-example-list-view-container {
     width: 100%;
     border-collapse: collapse;
     table-layout: auto;
 }
 
-tr.pandoc-example-list-view-row {
+tr.pem-example-list-view-row {
     border-bottom: 1px solid var(--background-modifier-border-hover);
     transition: background-color 0.15s ease;
 }
 
-tr.pandoc-example-list-view-row:hover {
+tr.pem-example-list-view-row:hover {
     background-color: var(--background-modifier-hover);
 }
 
-td.pandoc-example-list-view-number {
+td.pem-example-list-view-number {
     font-family: var(--font-monospace);
     font-size: 0.9em;
     color: var(--text-muted);
@@ -536,7 +536,7 @@ td.pandoc-example-list-view-number {
     min-width: fit-content;
 }
 
-td.pandoc-example-list-view-label {
+td.pem-example-list-view-label {
     font-family: var(--font-monospace);
     font-size: 0.9em;
     color: var(--text-accent);
@@ -551,11 +551,11 @@ td.pandoc-example-list-view-label {
     min-width: fit-content;
 }
 
-td.pandoc-example-list-view-label:hover {
+td.pem-example-list-view-label:hover {
     background-color: var(--background-modifier-hover);
 }
 
-td.pandoc-example-list-view-content {
+td.pem-example-list-view-content {
     font-size: 0.9em;
     color: var(--text-normal);
     cursor: pointer;
@@ -573,39 +573,39 @@ td.pandoc-example-list-view-content {
 }
 
 /* Normalize paragraph spacing in example list panel content */
-td.pandoc-example-list-view-content p {
+td.pem-example-list-view-content p {
     margin: 0;
     line-height: 1.3;
 }
 
-td.pandoc-example-list-view-content p:not(:last-child) {
+td.pem-example-list-view-content p:not(:last-child) {
     margin-bottom: 0.3em;
 }
 
 /* Also normalize lists in example list panel */
-td.pandoc-example-list-view-content ul,
-td.pandoc-example-list-view-content ol {
+td.pem-example-list-view-content ul,
+td.pem-example-list-view-content ol {
     margin: 0;
     padding-left: 1.2em;
     line-height: 1.3;
 }
 
-td.pandoc-example-list-view-content ul:not(:last-child),
-td.pandoc-example-list-view-content ol:not(:last-child) {
+td.pem-example-list-view-content ul:not(:last-child),
+td.pem-example-list-view-content ol:not(:last-child) {
     margin-bottom: 0.3em;
 }
 
-td.pandoc-example-list-view-content li {
+td.pem-example-list-view-content li {
     margin: 0;
     line-height: 1.3;
 }
 
-td.pandoc-example-list-view-content:hover {
+td.pem-example-list-view-content:hover {
     background-color: var(--background-modifier-hover);
     color: var(--text-accent);
 }
 
-.pandoc-example-list-view-empty {
+.pem-example-list-view-empty {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -615,23 +615,23 @@ td.pandoc-example-list-view-content:hover {
 }
 
 /* Definition List View Styles */
-table.pandoc-definition-list-view-container {
+table.pem-definition-list-view-container {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875em;
     table-layout: fixed;
 }
 
-tr.pandoc-definition-list-view-row {
+tr.pem-definition-list-view-row {
     border-bottom: 1px solid var(--background-modifier-border);
     transition: background-color 0.15s ease;
 }
 
-tr.pandoc-definition-list-view-row:hover {
+tr.pem-definition-list-view-row:hover {
     background-color: var(--background-modifier-hover);
 }
 
-td.pandoc-definition-list-view-term {
+td.pem-definition-list-view-term {
     width: 30%;
     padding: 8px;
     font-weight: 600;
@@ -642,7 +642,7 @@ td.pandoc-definition-list-view-term {
     white-space: nowrap;
 }
 
-td.pandoc-definition-list-view-definitions {
+td.pem-definition-list-view-definitions {
     width: 70%;
     padding: 8px;
     color: var(--text-normal);
@@ -651,30 +651,30 @@ td.pandoc-definition-list-view-definitions {
     transition: background-color 0.2s ease;
 }
 
-td.pandoc-definition-list-view-definitions ul {
+td.pem-definition-list-view-definitions ul {
     margin: 0;
     padding-left: 1.2em;
     list-style-type: disc;
 }
 
-td.pandoc-definition-list-view-definitions li {
+td.pem-definition-list-view-definitions li {
     margin-bottom: 4px;
 }
 
-td.pandoc-definition-list-view-definitions li:last-child {
+td.pem-definition-list-view-definitions li:last-child {
     margin-bottom: 0;
 }
 
-td.pandoc-definition-list-view-definitions p {
+td.pem-definition-list-view-definitions p {
     margin: 0;
     line-height: 1.4;
 }
 
-td.pandoc-definition-list-view-definitions:hover {
+td.pem-definition-list-view-definitions:hover {
     background-color: var(--interactive-hover);
 }
 
-.pandoc-definition-list-view-empty {
+.pem-definition-list-view-empty {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -684,22 +684,22 @@ td.pandoc-definition-list-view-definitions:hover {
 }
 
 /* Footnote Panel Styles */
-table.pandoc-footnote-panel-container {
+table.pem-footnote-panel-container {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
 }
 
-tr.pandoc-footnote-panel-row {
+tr.pem-footnote-panel-row {
     border-bottom: 1px solid var(--background-modifier-border);
     transition: background-color 0.15s ease;
 }
 
-tr.pandoc-footnote-panel-row:hover {
+tr.pem-footnote-panel-row:hover {
     background-color: var(--background-modifier-hover);
 }
 
-td.pandoc-footnote-panel-index {
+td.pem-footnote-panel-index {
     font-family: var(--font-monospace);
     font-size: 0.95em;
     color: var(--text-accent);
@@ -710,7 +710,7 @@ td.pandoc-footnote-panel-index {
     width: 56px;
 }
 
-td.pandoc-footnote-panel-content {
+td.pem-footnote-panel-content {
     font-size: 0.9em;
     color: var(--text-normal);
     cursor: pointer;
@@ -721,12 +721,12 @@ td.pandoc-footnote-panel-content {
     line-height: 1.3;
 }
 
-td.pandoc-footnote-panel-content:hover {
+td.pem-footnote-panel-content:hover {
     background-color: var(--background-modifier-hover);
     color: var(--text-accent);
 }
 
-.pandoc-footnote-panel-empty {
+.pem-footnote-panel-empty {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -736,7 +736,7 @@ td.pandoc-footnote-panel-content:hover {
 }
 
 /* Hover popover styles */
-.pandoc-hover-popover {
+.pem-hover-popover {
     position: absolute;
     z-index: 1000;
     padding: 8px 12px;
@@ -747,12 +747,12 @@ td.pandoc-footnote-panel-content:hover {
     font-size: 0.9em;
 }
 
-.pandoc-hover-popover-label {
+.pem-hover-popover-label {
     font-family: var(--font-monospace);
     white-space: nowrap;
 }
 
-.pandoc-hover-popover-content {
+.pem-hover-popover-content {
     max-width: 400px;
     max-height: 300px;
     overflow: auto;
@@ -761,29 +761,29 @@ td.pandoc-footnote-panel-content:hover {
 }
 
 /* Fix excessive line height in popover paragraphs */
-.pandoc-hover-popover p {
+.pem-hover-popover p {
     margin: 0;
     line-height: 1.5;
 }
 
-.pandoc-hover-popover p:not(:last-child) {
+.pem-hover-popover p:not(:last-child) {
     margin-bottom: 0.5em;
 }
 
 /* Also normalize other block elements that might appear in popovers */
-.pandoc-hover-popover ul,
-.pandoc-hover-popover ol {
+.pem-hover-popover ul,
+.pem-hover-popover ol {
     margin: 0;
     padding-left: 1.5em;
     line-height: 1.5;
 }
 
-.pandoc-hover-popover ul:not(:last-child),
-.pandoc-hover-popover ol:not(:last-child) {
+.pem-hover-popover ul:not(:last-child),
+.pem-hover-popover ol:not(:last-child) {
     margin-bottom: 0.5em;
 }
 
-.pandoc-hover-popover li {
+.pem-hover-popover li {
     margin: 0;
     line-height: 1.5;
 }

@@ -70,12 +70,12 @@ A.  crossref in **fancy list** (@a) and {::P(#a)}
         await browser.pause(500);
         
         // Get all example reference spans - using the correct class name
-        const exampleRefs = await $$('.pandoc-example-reference');
+        const exampleRefs = await $$('.pem-example-reference');
         
         // Get info about each reference - now including both example refs and custom label refs
         const refInfo = await browser.execute(() => {
             // Get both example references and custom label references that might have been misclassified
-            const refs = document.querySelectorAll('.pandoc-example-reference, .pandoc-custom-label-reference-processed');
+            const refs = document.querySelectorAll('.pem-example-reference, .pem-custom-label-reference-processed');
             return Array.from(refs).map((ref, i) => {
                 const parentP = ref.closest('p');
                 const parentLi = ref.closest('li');
@@ -96,12 +96,12 @@ A.  crossref in **fancy list** (@a) and {::P(#a)}
             // References to (@a) should all show as (1), but custom label refs (P1, P2) are ok
             if (ref.parentText.includes('crossref')) {
                 // Check if this is an example reference (should be "(1)")
-                if (ref.className === 'pandoc-example-reference' && ref.text !== '(1)') {
+                if (ref.className === 'pem-example-reference' && ref.text !== '(1)') {
                     // console.log(`BUG: Reference ${i} shows as "${ref.text}" instead of "(1)" in: ${ref.parentText}`);
                     bugFound = true;
                 }
                 // Custom label refs should start with P
-                if (ref.className === 'pandoc-custom-label-reference-processed' && !ref.text.includes('P')) {
+                if (ref.className === 'pem-custom-label-reference-processed' && !ref.text.includes('P')) {
                     // console.log(`BUG: Custom label ref ${i} shows as "${ref.text}" instead of "(P...)" in: ${ref.parentText}`);
                     bugFound = true;
                 }

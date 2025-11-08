@@ -151,7 +151,7 @@ describe('Cross-reference numbering bug', () => {
         // console.log('HTML after processing:', testElement.innerHTML);
         
         // Check that (@a) reference is rendered as (1)
-        const exampleRefs = testElement.querySelectorAll('.pandoc-example-reference');
+        const exampleRefs = testElement.querySelectorAll('.pem-example-reference');
         // console.log('Found example refs:', exampleRefs.length);
         exampleRefs.forEach((ref, i) => {
             // console.log(`  Ref ${i}: text="${ref.textContent}", class="${ref.className}"`);

@@ -55,7 +55,7 @@ describe('Cross-references in list content', () => {
             const html = container.innerHTML;
             
             // Should have the fancy list marker
-            expect(html).toContain('class="pandoc-list-fancy-upper-alpha"');
+            expect(html).toContain('class="pem-list-fancy-upper-alpha"');
             expect(html).toContain('A.');
             
             // FAILING: Should also have the reference converted to number
@@ -96,7 +96,7 @@ describe('Cross-references in list content', () => {
             const html = container.innerHTML;
             
             // Should have the example list marker
-            expect(html).toContain('class="pandoc-example-list"');
+            expect(html).toContain('class="pem-example-list"');
             
             // FAILING: Should also have the reference converted to number
             expect(html).toContain('(1)');
@@ -136,7 +136,7 @@ describe('Cross-references in list content', () => {
             const html = container.innerHTML;
             
             // Should have the hash list marker
-            expect(html).toContain('class="pandoc-list-fancy-hash"');
+            expect(html).toContain('class="pem-list-fancy-hash"');
             
             // FAILING: Should also have the reference converted to number
             expect(html).toContain('(1)');

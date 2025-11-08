@@ -92,7 +92,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell).toBeTruthy();
             // Check that the term is rendered with bold formatting (contains <strong> tag)
             expect(termCell?.innerHTML).toContain('<strong>Bold Term</strong>');
@@ -109,7 +109,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell).toBeTruthy();
             // Check that the term is rendered with italic formatting (contains <em> tag)
             expect(termCell?.innerHTML).toContain('<em>Italic Term</em>');
@@ -126,7 +126,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell).toBeTruthy();
             // Math should be preserved in the rendered output
             expect(termCell?.textContent).toContain('$E = mc^2$');
@@ -143,7 +143,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell).toBeTruthy();
             // Check for both bold and italic formatting
             expect(termCell?.innerHTML).toContain('<strong>Bold</strong>');
@@ -162,7 +162,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
 
             module.onActivate(containerEl, mockMarkdownView);
 
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell).toBeTruthy();
             // Should be truncated with ellipsis (100 char limit for terms)
             const text = termCell?.textContent || '';

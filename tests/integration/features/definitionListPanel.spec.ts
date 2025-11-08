@@ -105,7 +105,7 @@ Term 3
         it('should extract definition lists with single definitions', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-definition-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-definition-list-view-row');
             expect(rows.length).toBeGreaterThan(0);
             
             // Check first item (Term 1 with single definition)
@@ -118,12 +118,12 @@ Term 3
         it('should extract definition lists with multiple definitions', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-definition-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-definition-list-view-row');
             
             // Find Term 2 row (should have multiple definitions)
             let term2Row: Element | null = null;
             for (const row of rows) {
-                const termCell = row.querySelector('.pandoc-definition-list-view-term');
+                const termCell = row.querySelector('.pem-definition-list-view-term');
                 if (termCell?.textContent === 'Term 2') {
                     term2Row = row;
                     break;
@@ -132,7 +132,7 @@ Term 3
             
             expect(term2Row).toBeTruthy();
             if (term2Row) {
-                const defCell = term2Row.querySelector('.pandoc-definition-list-view-definitions');
+                const defCell = term2Row.querySelector('.pem-definition-list-view-definitions');
                 expect(defCell).toBeTruthy();
                 // Should contain bullet points for multiple definitions
                 const listItems = defCell?.querySelectorAll('li');
@@ -143,12 +143,12 @@ Term 3
         it('should handle continuation lines in definitions', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-definition-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-definition-list-view-row');
             
             // Find Term 2 row
             let term2Row: Element | null = null;
             for (const row of rows) {
-                const termCell = row.querySelector('.pandoc-definition-list-view-term');
+                const termCell = row.querySelector('.pem-definition-list-view-term');
                 if (termCell?.textContent === 'Term 2') {
                     term2Row = row;
                     break;
@@ -156,7 +156,7 @@ Term 3
             }
             
             if (term2Row) {
-                const defCell = term2Row.querySelector('.pandoc-definition-list-view-definitions');
+                const defCell = term2Row.querySelector('.pem-definition-list-view-definitions');
                 const firstListItem = defCell?.querySelector('li');
                 // Should contain the continuation text
                 expect(firstListItem?.textContent).toContain('another paragraph');
@@ -166,12 +166,12 @@ Term 3
         it('should handle tilde (~) definition markers', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-definition-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-definition-list-view-row');
             
             // Find Term 3 row
             let term3Row: Element | null = null;
             for (const row of rows) {
-                const termCell = row.querySelector('.pandoc-definition-list-view-term');
+                const termCell = row.querySelector('.pem-definition-list-view-term');
                 if (termCell?.textContent === 'Term 3') {
                     term3Row = row;
                     break;
@@ -180,7 +180,7 @@ Term 3
             
             expect(term3Row).toBeTruthy();
             if (term3Row) {
-                const defCell = term3Row.querySelector('.pandoc-definition-list-view-definitions');
+                const defCell = term3Row.querySelector('.pem-definition-list-view-definitions');
                 const listItems = defCell?.querySelectorAll('li');
                 expect(listItems?.length).toBe(2);
                 expect(listItems?.[0].textContent).toContain('Def 3a');
@@ -199,7 +199,7 @@ Term 3
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell?.textContent).toBeTruthy();
             expect(termCell?.textContent?.length).toBeLessThanOrEqual(100);
             expect(termCell?.textContent).toContain('…');
@@ -213,7 +213,7 @@ Term 3
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell?.textContent).toBe('Short Term');
         });
     });
@@ -228,7 +228,7 @@ Term 3
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const defCell = containerEl.querySelector('.pandoc-definition-list-view-definitions');
+            const defCell = containerEl.querySelector('.pem-definition-list-view-definitions');
             const displayedContent = defCell?.textContent || '';
             expect(displayedContent.length).toBeLessThanOrEqual(300);
             expect(displayedContent).toContain('…');
@@ -254,7 +254,7 @@ Term 3
         it('should NOT copy term on click (unlike label panels)', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term') as HTMLElement;
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term') as HTMLElement;
             expect(termCell).toBeTruthy();
             
             if (termCell) {
@@ -267,7 +267,7 @@ Term 3
         it('should navigate to term line on definition click', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const defCell = containerEl.querySelector('.pandoc-definition-list-view-definitions') as HTMLElement;
+            const defCell = containerEl.querySelector('.pem-definition-list-view-definitions') as HTMLElement;
             expect(defCell).toBeTruthy();
             
             if (defCell) {
@@ -303,7 +303,7 @@ Term 3
             module.onActivate(containerEl, mockMarkdownView);
             
             expect(module.isActive).toBe(true);
-            expect(containerEl.querySelector('.pandoc-definition-list-view-container')).toBeTruthy();
+            expect(containerEl.querySelector('.pem-definition-list-view-container')).toBeTruthy();
         });
 
         it('should deactivate properly', () => {
@@ -325,7 +325,7 @@ Term 3
             
             module.onUpdate(mockMarkdownView);
             
-            const termCell = containerEl.querySelector('.pandoc-definition-list-view-term');
+            const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell?.textContent).toBe('New Term');
         });
 

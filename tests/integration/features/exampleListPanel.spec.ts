@@ -98,7 +98,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             module.onActivate(containerEl, mockMarkdownView);
             
             // Access the private exampleItems through rendered DOM
-            const rows = containerEl.querySelectorAll('.pandoc-example-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-example-list-view-row');
             expect(rows).toHaveLength(3);
             
             // Check first item
@@ -112,7 +112,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
         it('should extract unlabeled example lists', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-example-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-example-list-view-row');
             
             // Check second item (unlabeled)
             const secondRow = rows[1];
@@ -125,9 +125,9 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
         it('should assign sequential numbers to example lists', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-example-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-example-list-view-row');
             const numbers = Array.from(rows).map(row => 
-                row.querySelector('.pandoc-example-list-view-number')?.textContent
+                row.querySelector('.pem-example-list-view-number')?.textContent
             );
             
             expect(numbers).toEqual(['1', '2', '3']);
@@ -142,9 +142,9 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-example-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-example-list-view-row');
             const lastRow = rows[rows.length - 1];
-            const numberCell = lastRow.querySelector('.pandoc-example-list-view-number');
+            const numberCell = lastRow.querySelector('.pem-example-list-view-number');
             
             expect(numberCell?.textContent).toBe('99'); // Should not be truncated
         });
@@ -156,9 +156,9 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const rows = containerEl.querySelectorAll('.pandoc-example-list-view-row');
+            const rows = containerEl.querySelectorAll('.pem-example-list-view-row');
             const lastRow = rows[rows.length - 1];
-            const numberCell = lastRow.querySelector('.pandoc-example-list-view-number');
+            const numberCell = lastRow.querySelector('.pem-example-list-view-number');
             
             expect(numberCell?.textContent).toBe('10…'); // Should be truncated
         });
@@ -172,7 +172,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const labelCell = containerEl.querySelector('.pandoc-example-list-view-label');
+            const labelCell = containerEl.querySelector('.pem-example-list-view-label');
             expect(labelCell?.textContent).toBe('@very…'); // Should be truncated at 6 chars
         });
 
@@ -183,7 +183,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const labelCell = containerEl.querySelector('.pandoc-example-list-view-label');
+            const labelCell = containerEl.querySelector('.pem-example-list-view-label');
             expect(labelCell?.textContent).toBe('@short'); // Should not be truncated
         });
     });
@@ -196,7 +196,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const contentCell = containerEl.querySelector('.pandoc-example-list-view-content');
+            const contentCell = containerEl.querySelector('.pem-example-list-view-content');
             expect(contentCell).toBeTruthy();
             // Math content should be rendered (though we can't test the actual rendering in unit tests)
             expect(contentCell?.innerHTML).toContain('$');
@@ -210,7 +210,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onActivate(containerEl, mockMarkdownView);
             
-            const contentCell = containerEl.querySelector('.pandoc-example-list-view-content');
+            const contentCell = containerEl.querySelector('.pem-example-list-view-content');
             const displayedContent = contentCell?.textContent || '';
             expect(displayedContent.length).toBeLessThanOrEqual(51);
             expect(displayedContent).toContain('…');
@@ -236,7 +236,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
         it('should copy raw label syntax on label click', async () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const labelCell = containerEl.querySelector('.pandoc-example-list-view-label') as HTMLElement;
+            const labelCell = containerEl.querySelector('.pem-example-list-view-label') as HTMLElement;
             expect(labelCell).toBeTruthy();
             
             if (labelCell) {
@@ -248,7 +248,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
         it('should navigate to line on content click', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const contentCell = containerEl.querySelector('.pandoc-example-list-view-content') as HTMLElement;
+            const contentCell = containerEl.querySelector('.pem-example-list-view-content') as HTMLElement;
             expect(contentCell).toBeTruthy();
             
             if (contentCell) {
@@ -261,7 +261,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
         it('should not have click handler on number column', () => {
             module.onActivate(containerEl, mockMarkdownView);
             
-            const numberCell = containerEl.querySelector('.pandoc-example-list-view-number') as HTMLElement;
+            const numberCell = containerEl.querySelector('.pem-example-list-view-number') as HTMLElement;
             expect(numberCell).toBeTruthy();
             
             if (numberCell) {
@@ -298,7 +298,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             module.onActivate(containerEl, mockMarkdownView);
             
             expect(module.isActive).toBe(true);
-            expect(containerEl.querySelector('.pandoc-example-list-view-container')).toBeTruthy();
+            expect(containerEl.querySelector('.pem-example-list-view-container')).toBeTruthy();
         });
 
         it('should deactivate properly', () => {
@@ -319,7 +319,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             module.onUpdate(mockMarkdownView);
             
-            const labelCell = containerEl.querySelector('.pandoc-example-list-view-label');
+            const labelCell = containerEl.querySelector('.pem-example-list-view-label');
             expect(labelCell?.textContent).toBe('@new');
         });
 

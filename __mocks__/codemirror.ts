@@ -192,7 +192,7 @@ export class EditorState {
         size: 1,
         between: (from: number, to: number, callback: DecorationCallback) => {
           // Call the callback with some mock data
-          callback(0, 6, { spec: { class: 'pandoc-definition-term' } });
+          callback(0, 6, { spec: { class: 'pem-definition-term' } });
           callback(8, 11, { spec: { widget: {} } });
         }
       }
@@ -259,7 +259,7 @@ export class EditorView {
         size: 1,
         between: (from: number, to: number, callback: DecorationCallback) => {
           // Call the callback with some mock data
-          callback(0, 6, { spec: { class: 'pandoc-definition-term' } });
+          callback(0, 6, { spec: { class: 'pem-definition-term' } });
           callback(8, 11, { spec: { widget: {} } });
         }
       }
@@ -367,8 +367,34 @@ export class RangeSetBuilder {
   }
 }
 
-export const syntaxTree = (_state: unknown) => ({
-  iterate: (_config: unknown) => {}
-});
+interface SyntaxTreeConfig {
+  enter?: (node: SyntaxNodeRefLike) => boolean | void;
+  leave?: (node: SyntaxNodeRefLike) => void;
+}
+
+interface SyntaxNodeRefLike {
+  from: number;
+  to: number;
+  type: { name: string };
+}
+
+type SyntaxTreeIterator = (state: unknown, config: SyntaxTreeConfig) => void;
+
+let syntaxTreeIterator: SyntaxTreeIterator = () => {};
+
+interface SyntaxTreeFunction {
+  (state: unknown): { iterate: (config: SyntaxTreeConfig) => void };
+  __setMockIterator?: (fn: SyntaxTreeIterator) => void;
+}
+
+export const syntaxTree = ((state: unknown) => ({
+  iterate: (config: SyntaxTreeConfig) => {
+    syntaxTreeIterator(state, config);
+  }
+})) as SyntaxTreeFunction;
+
+syntaxTree.__setMockIterator = (fn: SyntaxTreeIterator) => {
+  syntaxTreeIterator = fn;
+};
 
 export const Extension: [] = [];

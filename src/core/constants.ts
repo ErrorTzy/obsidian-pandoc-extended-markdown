@@ -86,6 +86,7 @@ export const SETTINGS_UI = {
 export const UI_CONSTANTS = {
     NOTICE_DURATION_MS: 10000,
     STATE_TRANSITION_DELAY_MS: 100,
+    MODE_REFRESH_DELAY_MS: 20,
     HIGHLIGHT_ANIMATION_DURATION_MS: 2000,
     // Custom Label View
     LABEL_MAX_LENGTH: 6,
@@ -388,5 +389,5 @@ export const ROMAN_NUMERALS = {
 
 // Helper function to create fancy list type class names
 export function getFancyListClass(type: string): string {
-    return `pandoc-list-${type}`;
+    return `pem-list-${type}`;
 }

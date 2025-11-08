@@ -88,7 +88,7 @@ describe('FootnotePanelModule', () => {
             expect.any(Object)
         );
 
-        const contentEl = containerEl.querySelector(`.${'pandoc-footnote-panel-content'}`);
+        const contentEl = containerEl.querySelector(`.${'pem-footnote-panel-content'}`);
         expect(contentEl).not.toBeNull();
         expect(contentEl?.innerHTML).toContain('<em>content</em>');
         expect(contentEl?.textContent).toContain('E=mc^2');
@@ -101,7 +101,7 @@ describe('FootnotePanelModule', () => {
         const referenceLine = 'Footnote reference[^1].';
         const expectedCh = referenceLine.indexOf(marker) + marker.length;
 
-        const indexCell = containerEl.querySelector(`.${'pandoc-footnote-panel-index'}`);
+        const indexCell = containerEl.querySelector(`.${'pem-footnote-panel-index'}`);
         expect(indexCell).not.toBeNull();
 
         indexCell?.dispatchEvent(new MouseEvent('click'));

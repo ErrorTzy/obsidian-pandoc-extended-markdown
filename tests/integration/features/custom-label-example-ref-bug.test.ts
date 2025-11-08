@@ -72,7 +72,7 @@ describe('Custom label and example reference interaction bug', () => {
         // console.log('Counter after:', pluginStateManager.getDocumentCounters(docPath).exampleCounter);
         
         // Check what happened to the example references
-        const exampleRefs = testEl.querySelectorAll('.pandoc-example-reference');
+        const exampleRefs = testEl.querySelectorAll('.pem-example-reference');
         // console.log('\nExample references found:', exampleRefs.length);
         exampleRefs.forEach((ref, i) => {
             const parent = ref.closest('p');
@@ -81,7 +81,7 @@ describe('Custom label and example reference interaction bug', () => {
         });
         
         // Check for incorrectly created example lists
-        const exampleLists = testEl.querySelectorAll('.pandoc-example-list');
+        const exampleLists = testEl.querySelectorAll('.pem-example-list');
         // console.log('\nExample lists found:', exampleLists.length);
         exampleLists.forEach((list, i) => {
             const parent = list.closest('p');
@@ -121,7 +121,7 @@ describe('Custom label and example reference interaction bug', () => {
         
         processReadingMode(testEl, context, config);
         
-        const exampleRefs = testEl.querySelectorAll('.pandoc-example-reference');
+        const exampleRefs = testEl.querySelectorAll('.pem-example-reference');
         const errors: string[] = [];
         exampleRefs.forEach((ref, i) => {
             if (ref.textContent !== '(1)') {

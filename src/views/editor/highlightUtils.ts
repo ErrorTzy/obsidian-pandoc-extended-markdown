@@ -33,7 +33,7 @@ export function highlightLine(view: MarkdownView, lineNumber: number, cursorPosi
         if (cm) {
             const editorDom = cm.dom || cm.contentDOM;
             if (editorDom) {
-                setTimeout(() => {
+                window.setTimeout(() => {
                     highlightTargetLine(editorDom, editor);
                 }, 50);
             }
@@ -142,7 +142,7 @@ function applyHighlight(lineElement: HTMLElement): void {
     lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
     
     // Remove the class after animation completes (2s duration)
-    setTimeout(() => {
+    window.setTimeout(() => {
         lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
     }, UI_CONSTANTS.HIGHLIGHT_DURATION_MS);
 }

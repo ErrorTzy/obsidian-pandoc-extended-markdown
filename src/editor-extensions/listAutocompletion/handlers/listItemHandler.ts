@@ -51,7 +51,7 @@ export function insertNewListItem(config: NewListItemConfig): boolean {
         const newLineNum = line.number; // This is 1-based, but we need 0-based for our function
 
         // Use setTimeout to ensure the insertion is complete before renumbering
-        setTimeout(() => {
+        window.setTimeout(() => {
             renumberListItems(view, newLineNum);
         }, 0);
     }

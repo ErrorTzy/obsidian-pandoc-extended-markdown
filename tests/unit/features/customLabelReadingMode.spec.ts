@@ -25,7 +25,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const span = element.querySelector('span.pandoc-list-marker');
+      const span = element.querySelector('span.pem-list-marker');
       expect(span).toBeTruthy();
       expect(span?.textContent).toBe('(P)');
       
@@ -39,7 +39,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const span = element.querySelector('span.pandoc-list-marker');
+      const span = element.querySelector('span.pem-list-marker');
       expect(span).toBeTruthy();
       expect(span?.textContent).toBe("(P')");
     });
@@ -50,7 +50,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const span = element.querySelector('span.pandoc-list-marker');
+      const span = element.querySelector('span.pem-list-marker');
       expect(span).toBeTruthy();
       expect(span?.textContent).toBe('(X_0)');
     });
@@ -65,7 +65,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const markers = element.querySelectorAll('span.pandoc-list-marker');
+      const markers = element.querySelectorAll('span.pem-list-marker');
       expect(markers).toHaveLength(3);
       expect(markers[0].textContent).toBe('(P)');
       expect(markers[1].textContent).toBe('(Q)');
@@ -80,12 +80,12 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const span = element.querySelector('span.pandoc-list-marker');
+      const span = element.querySelector('span.pem-list-marker');
       expect(span).toBeTruthy();
       expect(span?.textContent).toBe('(P)');
       
       const li = element.querySelector('li');
-      expect(li?.classList.contains('pandoc-custom-label-item')).toBe(true);
+      expect(li?.classList.contains('pem-custom-label-item')).toBe(true);
     });
 
     it('should process multiple custom labels in list', () => {
@@ -99,10 +99,10 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const markers = element.querySelectorAll('span.pandoc-list-marker');
+      const markers = element.querySelectorAll('span.pem-list-marker');
       expect(markers).toHaveLength(2);
       
-      const items = element.querySelectorAll('li.pandoc-custom-label-item');
+      const items = element.querySelectorAll('li.pem-custom-label-item');
       expect(items).toHaveLength(2);
     });
   });
@@ -114,7 +114,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
+      const refs = element.querySelectorAll('span.pem-custom-label-reference-processed');
       expect(refs).toHaveLength(2);
       expect(refs[0].textContent).toBe('(P)');
       expect(refs[1].textContent).toBe('(Q)');
@@ -128,7 +128,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
+      const refs = element.querySelectorAll('span.pem-custom-label-reference-processed');
       expect(refs).toHaveLength(3);
     });
 
@@ -138,7 +138,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
+      const refs = element.querySelectorAll('span.pem-custom-label-reference-processed');
       expect(refs).toHaveLength(2);
       expect(refs[0].textContent).toBe("(P')");
       expect(refs[1].textContent).toBe('(X_0)');
@@ -156,10 +156,10 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const markers = element.querySelectorAll('span.pandoc-list-marker');
+      const markers = element.querySelectorAll('span.pem-list-marker');
       expect(markers).toHaveLength(2);
       
-      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
+      const refs = element.querySelectorAll('span.pem-custom-label-reference-processed');
       expect(refs).toHaveLength(2);
     });
 
@@ -173,7 +173,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const markers = element.querySelectorAll('span.pandoc-list-marker');
+      const markers = element.querySelectorAll('span.pem-list-marker');
       expect(markers).toHaveLength(1);
       
       const codeBlock = element.querySelector('code');
@@ -186,7 +186,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
+      const refs = element.querySelectorAll('span.pem-custom-label-reference-processed');
       expect(refs).toHaveLength(0);
       
       const code = element.querySelector('code');
@@ -216,7 +216,7 @@ describe('Custom Label Reading Mode', () => {
       
       processCustomLabelLists(element, context);
       
-      const markers = element.querySelectorAll('span.pandoc-list-marker');
+      const markers = element.querySelectorAll('span.pem-list-marker');
       expect(markers).toHaveLength(0);
     });
 

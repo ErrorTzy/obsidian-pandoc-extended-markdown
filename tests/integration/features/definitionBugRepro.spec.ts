@@ -76,7 +76,7 @@ describe('Definition List Bug Reproduction', () => {
         if (decorations) {
             decorations.between(0, 6, (from: number, to: number, decoration: any) => {
                 // Term is at position 0-6 ("Term 1")
-                if (decoration.spec?.class?.includes('pandoc-definition-term')) {
+                if (decoration.spec?.class?.includes('pem-definition-term')) {
                     hasTermDecoration = true;
                 }
             });
@@ -151,7 +151,7 @@ describe('Definition List Bug Reproduction', () => {
         if (decorations) {
             decorations.between(0, 6, (from: number, to: number, decoration: any) => {
                 // Term is at position 0-6 ("Term 1")
-                if (decoration.spec?.class?.includes('pandoc-definition-term')) {
+                if (decoration.spec?.class?.includes('pem-definition-term')) {
                     hasTermDecoration = true;
                 }
             });

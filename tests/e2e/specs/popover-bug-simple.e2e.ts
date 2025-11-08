@@ -48,7 +48,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         await browser.pause(500);
         
         // Find inline example references
-        const references = await $$('.pandoc-example-reference');
+        const references = await $$('.pem-example-reference');
         // console.log(`Found ${references.length} total example references`);
         
         // Find only the inline references (numbered ones)
@@ -77,7 +77,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         await browser.pause(800);
         
         // Check popover exists
-        let popovers = await $$('.pandoc-hover-popover');
+        let popovers = await $$('.pem-hover-popover');
         // console.log(`After hover: ${popovers.length} popovers found`);
         expect(popovers.length).toBeGreaterThan(0);
         
@@ -86,7 +86,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         await browser.pause(500);
         
         // Check popover is gone
-        popovers = await $$('.pandoc-hover-popover');
+        popovers = await $$('.pem-hover-popover');
         // console.log(`After click: ${popovers.length} popovers found`);
         
         // 3. Move mouse away completely
@@ -96,7 +96,7 @@ describe('Popover Bug Fix - Simple Test', () => {
         
         // 4. Move back to the reference
         // Need to re-query as element might be stale
-        const refsAgain = await $$('.pandoc-example-reference');
+        const refsAgain = await $$('.pem-example-reference');
         let targetRefAgain = null;
         for (const ref of refsAgain) {
             try {
@@ -115,7 +115,7 @@ describe('Popover Bug Fix - Simple Test', () => {
             await browser.pause(800);
             
             // Popover should appear again (not stuck from before)
-            popovers = await $$('.pandoc-hover-popover');
+            popovers = await $$('.pem-hover-popover');
             // console.log(`After re-hover: ${popovers.length} popovers found`);
             
             // Move away again
@@ -123,7 +123,7 @@ describe('Popover Bug Fix - Simple Test', () => {
             await browser.pause(800);
             
             // Final check - no popovers should remain
-            popovers = await $$('.pandoc-hover-popover');
+            popovers = await $$('.pem-hover-popover');
             // console.log(`Final check: ${popovers.length} popovers found`);
             
             // Check if any are actually visible

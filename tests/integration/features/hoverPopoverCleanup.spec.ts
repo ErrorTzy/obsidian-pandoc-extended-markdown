@@ -33,7 +33,7 @@ describe('Hover Popover Cleanup', () => {
             element.dispatchEvent(mouseEnterEvent);
             
             // Check popover exists
-            setTimeout(() => {
+            window.setTimeout(() => {
                 const popover = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`);
                 expect(popover).toBeTruthy();
                 expect(popover?.textContent).toBe('Full text');
@@ -49,12 +49,12 @@ describe('Hover Popover Cleanup', () => {
             element.dispatchEvent(mouseEnterEvent);
             
             // Trigger mouseleave
-            setTimeout(() => {
+            window.setTimeout(() => {
                 const mouseLeaveEvent = new MouseEvent('mouseleave', { bubbles: true });
                 element.dispatchEvent(mouseLeaveEvent);
                 
                 // Check popover is removed after delay
-                setTimeout(() => {
+                window.setTimeout(() => {
                     const popover = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`);
                     expect(popover).toBeFalsy();
                     done();
@@ -70,12 +70,12 @@ describe('Hover Popover Cleanup', () => {
             element.dispatchEvent(mouseEnterEvent);
             
             // Trigger click
-            setTimeout(() => {
+            window.setTimeout(() => {
                 const clickEvent = new MouseEvent('click', { bubbles: true });
                 element.dispatchEvent(clickEvent);
                 
                 // Check popover is removed immediately
-                setTimeout(() => {
+                window.setTimeout(() => {
                     const popover = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`);
                     expect(popover).toBeFalsy();
                     done();
@@ -90,7 +90,7 @@ describe('Hover Popover Cleanup', () => {
             const rapidHover = () => {
                 if (eventCount >= 10) {
                     // After rapid hovering, wait for cleanup
-                    setTimeout(() => {
+                    window.setTimeout(() => {
                         const popovers = document.querySelectorAll(`.${CSS_CLASSES.HOVER_POPOVER}`);
                         expect(popovers.length).toBeLessThanOrEqual(1); // At most one popover
                         
@@ -99,7 +99,7 @@ describe('Hover Popover Cleanup', () => {
                         element.dispatchEvent(mouseLeaveEvent);
                         
                         // Wait for final cleanup
-                        setTimeout(() => {
+                        window.setTimeout(() => {
                             const finalPopovers = document.querySelectorAll(`.${CSS_CLASSES.HOVER_POPOVER}`);
                             expect(finalPopovers.length).toBe(0); // No popovers should remain
                             done();
@@ -116,7 +116,7 @@ describe('Hover Popover Cleanup', () => {
                 eventCount++;
                 
                 // Very short delay between events
-                setTimeout(rapidHover, 5);
+                window.setTimeout(rapidHover, 5);
             };
             
             rapidHover();
@@ -129,7 +129,7 @@ describe('Hover Popover Cleanup', () => {
             const mouseEnterEvent1 = new MouseEvent('mouseenter', { bubbles: true });
             element.dispatchEvent(mouseEnterEvent1);
             
-            setTimeout(() => {
+            window.setTimeout(() => {
                 const firstPopover = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`);
                 expect(firstPopover).toBeTruthy();
                 
@@ -137,7 +137,7 @@ describe('Hover Popover Cleanup', () => {
                 const mouseEnterEvent2 = new MouseEvent('mouseenter', { bubbles: true });
                 element.dispatchEvent(mouseEnterEvent2);
                 
-                setTimeout(() => {
+                window.setTimeout(() => {
                     const popovers = document.querySelectorAll(`.${CSS_CLASSES.HOVER_POPOVER}`);
                     expect(popovers.length).toBe(1); // Only one popover should exist
                     done();
@@ -153,14 +153,14 @@ describe('Hover Popover Cleanup', () => {
             const mouseEnterEvent = new MouseEvent('mouseenter', { bubbles: true });
             element.dispatchEvent(mouseEnterEvent);
             
-            setTimeout(() => {
+            window.setTimeout(() => {
                 const popover = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`);
                 expect(popover).toBeTruthy();
                 
                 // Abort
                 localAbortController.abort();
                 
-                setTimeout(() => {
+                window.setTimeout(() => {
                     const popoverAfterAbort = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`);
                     expect(popoverAfterAbort).toBeFalsy();
                     done();

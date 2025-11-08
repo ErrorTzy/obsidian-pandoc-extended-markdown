@@ -49,7 +49,7 @@ export function processReadingMode(
         }
         
         // Check if we've already processed this element (pass docPath for reprocess check)
-        if (pluginStateManager.isElementProcessed(elem, 'pandoc-processed', docPath)) {
+        if (pluginStateManager.isElementProcessed(elem, 'pem-processed', docPath)) {
             return;
         }
         
@@ -57,7 +57,7 @@ export function processReadingMode(
         processElementTextNodes(elem, parser, renderer, config, docPath, validationLines);
         
         // Mark element as processed
-        pluginStateManager.markElementProcessed(elem, 'pandoc-processed', true);
+        pluginStateManager.markElementProcessed(elem, 'pem-processed', true);
     });
     
     // Process superscripts and subscripts across the entire element

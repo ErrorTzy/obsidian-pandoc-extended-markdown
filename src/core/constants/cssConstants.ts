@@ -4,36 +4,36 @@
 
 export const CSS_CLASSES = {
     // Fancy List Classes
-    FANCY_LIST: 'pandoc-list-fancy',
-    FANCY_LIST_UPPER_ALPHA: 'pandoc-list-upper-alpha',
-    FANCY_LIST_LOWER_ALPHA: 'pandoc-list-lower-alpha',
-    FANCY_LIST_UPPER_ROMAN: 'pandoc-list-upper-roman',
-    FANCY_LIST_LOWER_ROMAN: 'pandoc-list-lower-roman',
-    FANCY_LIST_PAREN: 'pandoc-list-paren',
+    FANCY_LIST: 'pem-list-fancy',
+    FANCY_LIST_UPPER_ALPHA: 'pem-list-upper-alpha',
+    FANCY_LIST_LOWER_ALPHA: 'pem-list-lower-alpha',
+    FANCY_LIST_UPPER_ROMAN: 'pem-list-upper-roman',
+    FANCY_LIST_LOWER_ROMAN: 'pem-list-lower-roman',
+    FANCY_LIST_PAREN: 'pem-list-paren',
 
     // Definition List Classes
-    DEFINITION_LIST: 'pandoc-definition-list',
-    DEFINITION_TERM: 'pandoc-definition-term',
-    DEFINITION_DESC: 'pandoc-list-definition-desc',
-    DEFINITION_ITEMS: 'pandoc-definition-items',
-    DEFINITION_CONTENT_TEXT: 'pandoc-definition-content-text',
+    DEFINITION_LIST: 'pem-definition-list',
+    DEFINITION_TERM: 'pem-definition-term',
+    DEFINITION_DESC: 'pem-list-definition-desc',
+    DEFINITION_ITEMS: 'pem-definition-items',
+    DEFINITION_CONTENT_TEXT: 'pem-definition-content-text',
 
     // Example List Classes
-    EXAMPLE_REF: 'pandoc-example-reference',
-    EXAMPLE_LIST: 'pandoc-example-list',
-    EXAMPLE_ITEM: 'pandoc-example-item',
-    DUPLICATE_MARKERS: 'pandoc-duplicate-markers',
+    EXAMPLE_REF: 'pem-example-reference',
+    EXAMPLE_LIST: 'pem-example-list',
+    EXAMPLE_ITEM: 'pem-example-item',
+    DUPLICATE_MARKERS: 'pem-duplicate-markers',
 
     // Superscript and Subscript Classes
-    SUPERSCRIPT: 'pandoc-superscript',
-    SUBSCRIPT: 'pandoc-subscript',
+    SUPERSCRIPT: 'pem-superscript',
+    SUBSCRIPT: 'pem-subscript',
 
     // Suggestion Classes
-    SUGGESTION_CONTENT: 'pandoc-suggestion-content',
-    SUGGESTION_TITLE: 'pandoc-suggestion-title',
-    SUGGESTION_PREVIEW: 'pandoc-suggestion-preview',
-    SUGGESTION_NUMBER: 'pandoc-suggestion-number',
-    SUGGESTION_PLACEHOLDER: 'pandoc-suggestion-placeholder',
+    SUGGESTION_CONTENT: 'pem-suggestion-content',
+    SUGGESTION_TITLE: 'pem-suggestion-title',
+    SUGGESTION_PREVIEW: 'pem-suggestion-preview',
+    SUGGESTION_NUMBER: 'pem-suggestion-number',
+    SUGGESTION_PLACEHOLDER: 'pem-suggestion-placeholder',
 
     // CodeMirror Classes
     LIST_LINE: 'HyperMD-list-line',
@@ -50,26 +50,26 @@ export const CSS_CLASSES = {
     CM_FORMATTING_LIST_OL: 'cm-formatting-list-ol',
     CM_FORMATTING_LIST_UL: 'cm-formatting-list-ul',
     LIST_NUMBER: 'list-number',
-    DEFINITION_TERM_DECORATION: 'cm-pandoc-definition-term',
-    DEFINITION_PARAGRAPH: 'cm-pandoc-definition-paragraph',
+    DEFINITION_TERM_DECORATION: 'cm-pem-definition-term',
+    DEFINITION_PARAGRAPH: 'cm-pem-definition-paragraph',
 
     // Generic Classes
-    PANDOC_LIST_MARKER: 'pandoc-list-marker',
-    PANDOC_LIST_LINE_INDENT: 'pandoc-list-line-indent',
-    PANDOC_LIST_LINE: 'pandoc-list-line',
-    DEFINITION_MARKER_CURSOR: 'cm-pandoc-definition-marker-cursor',
-    LIST_CONTINUATION_WIDGET: 'pandoc-list-continuation-widget',
+    PANDOC_LIST_MARKER: 'pem-list-marker',
+    PANDOC_LIST_LINE_INDENT: 'pem-list-line-indent',
+    PANDOC_LIST_LINE: 'pem-list-line',
+    DEFINITION_MARKER_CURSOR: 'cm-pem-definition-marker-cursor',
+    LIST_CONTINUATION_WIDGET: 'pem-list-continuation-widget',
 
     // Custom Label Classes
-    CUSTOM_LABEL_PROCESSED: 'pandoc-custom-label-processed',
-    CUSTOM_LABEL_ITEM: 'pandoc-custom-label-item',
-    CUSTOM_LABEL_REFERENCE_PROCESSED: 'pandoc-custom-label-reference-processed',
-    CUSTOM_LABEL_REF_CLICKABLE: 'pandoc-custom-label-ref-clickable',
-    CUSTOM_LABEL_PLACEHOLDER: 'pandoc-custom-label-placeholder',
-    INLINE_PLACEHOLDER_NUMBER: 'pandoc-inline-placeholder-number',
-    CUSTOM_LABEL_MARKER: 'pandoc-custom-label-marker',
-    CUSTOM_LABEL_BRACKET: 'pandoc-custom-label-bracket',
-    CUSTOM_LABEL_TEXT: 'pandoc-custom-label-text',
+    CUSTOM_LABEL_PROCESSED: 'pem-custom-label-processed',
+    CUSTOM_LABEL_ITEM: 'pem-custom-label-item',
+    CUSTOM_LABEL_REFERENCE_PROCESSED: 'pem-custom-label-reference-processed',
+    CUSTOM_LABEL_REF_CLICKABLE: 'pem-custom-label-ref-clickable',
+    CUSTOM_LABEL_PLACEHOLDER: 'pem-custom-label-placeholder',
+    INLINE_PLACEHOLDER_NUMBER: 'pem-inline-placeholder-number',
+    CUSTOM_LABEL_MARKER: 'pem-custom-label-marker',
+    CUSTOM_LABEL_BRACKET: 'pem-custom-label-bracket',
+    CUSTOM_LABEL_TEXT: 'pem-custom-label-text',
 
     // Custom Label View Classes
     CUSTOM_LABEL_VIEW_CONTAINER: 'custom-label-view-container',
@@ -84,44 +84,45 @@ export const CSS_CLASSES = {
     CUSTOM_LABEL_HIGHLIGHT: 'custom-label-highlight',
 
     // Hover popover styles
-    HOVER_POPOVER: 'pandoc-hover-popover',
-    HOVER_POPOVER_LABEL: 'pandoc-hover-popover-label',
-    HOVER_POPOVER_CONTENT: 'pandoc-hover-popover-content',
-    HOVER_POPOVER_POSITIONED: 'pandoc-hover-popover-positioned',
+    HOVER_POPOVER: 'pem-hover-popover',
+    HOVER_POPOVER_LABEL: 'pem-hover-popover-label',
+    HOVER_POPOVER_CONTENT: 'pem-hover-popover-content',
+    HOVER_POPOVER_POSITIONED: 'pem-hover-popover-positioned',
 
     // List Panel View Classes
-    LIST_PANEL_VIEW_CONTAINER: 'pandoc-list-panel-view-container',
-    LIST_PANEL_ICON_ROW: 'pandoc-list-panel-icon-row',
-    LIST_PANEL_ICON_BUTTON: 'pandoc-list-panel-icon-button',
-    LIST_PANEL_ICON_CONTAINER: 'pandoc-panel-icon-container',
-    LIST_PANEL_ICON_CUSTOM_LABEL: 'pandoc-icon-custom-label',
-    LIST_PANEL_ICON_EXAMPLE_LIST: 'pandoc-icon-example-list',
-    LIST_PANEL_ICON_FOOTNOTE: 'pandoc-icon-footnote',
-    LIST_PANEL_SEPARATOR: 'pandoc-list-panel-separator',
-    LIST_PANEL_CONTENT_CONTAINER: 'pandoc-list-panel-content-container',
+    LIST_PANEL_VIEW_CONTAINER: 'pem-list-panel-view-container',
+    LIST_PANEL_ICON_ROW: 'pem-list-panel-icon-row',
+    LIST_PANEL_ICON_BUTTON: 'pem-list-panel-icon-button',
+    LIST_PANEL_ICON_CONTAINER: 'pem-panel-icon-container',
+    LIST_PANEL_ICON_CUSTOM_LABEL: 'pem-icon-custom-label',
+    LIST_PANEL_ICON_EXAMPLE_LIST: 'pem-icon-example-list',
+    LIST_PANEL_ICON_DEFINITION_LIST: 'pem-icon-definition-list',
+    LIST_PANEL_ICON_FOOTNOTE: 'pem-icon-footnote',
+    LIST_PANEL_SEPARATOR: 'pem-list-panel-separator',
+    LIST_PANEL_CONTENT_CONTAINER: 'pem-list-panel-content-container',
     LIST_PANEL_ICON_ACTIVE: 'is-active',
 
     // Example List View Classes
-    EXAMPLE_LIST_VIEW_CONTAINER: 'pandoc-example-list-view-container',
-    EXAMPLE_LIST_VIEW_ROW: 'pandoc-example-list-view-row',
-    EXAMPLE_LIST_VIEW_NUMBER: 'pandoc-example-list-view-number',
-    EXAMPLE_LIST_VIEW_LABEL: 'pandoc-example-list-view-label',
-    EXAMPLE_LIST_VIEW_CONTENT: 'pandoc-example-list-view-content',
-    EXAMPLE_LIST_VIEW_EMPTY: 'pandoc-example-list-view-empty',
+    EXAMPLE_LIST_VIEW_CONTAINER: 'pem-example-list-view-container',
+    EXAMPLE_LIST_VIEW_ROW: 'pem-example-list-view-row',
+    EXAMPLE_LIST_VIEW_NUMBER: 'pem-example-list-view-number',
+    EXAMPLE_LIST_VIEW_LABEL: 'pem-example-list-view-label',
+    EXAMPLE_LIST_VIEW_CONTENT: 'pem-example-list-view-content',
+    EXAMPLE_LIST_VIEW_EMPTY: 'pem-example-list-view-empty',
 
     // Definition List View Classes
-    DEFINITION_LIST_VIEW_CONTAINER: 'pandoc-definition-list-view-container',
-    DEFINITION_LIST_VIEW_ROW: 'pandoc-definition-list-view-row',
-    DEFINITION_LIST_VIEW_TERM: 'pandoc-definition-list-view-term',
-    DEFINITION_LIST_VIEW_DEFINITIONS: 'pandoc-definition-list-view-definitions',
-    DEFINITION_LIST_VIEW_EMPTY: 'pandoc-definition-list-view-empty',
+    DEFINITION_LIST_VIEW_CONTAINER: 'pem-definition-list-view-container',
+    DEFINITION_LIST_VIEW_ROW: 'pem-definition-list-view-row',
+    DEFINITION_LIST_VIEW_TERM: 'pem-definition-list-view-term',
+    DEFINITION_LIST_VIEW_DEFINITIONS: 'pem-definition-list-view-definitions',
+    DEFINITION_LIST_VIEW_EMPTY: 'pem-definition-list-view-empty',
 
     // Footnote Panel View Classes
-    FOOTNOTE_PANEL_CONTAINER: 'pandoc-footnote-panel-container',
-    FOOTNOTE_PANEL_ROW: 'pandoc-footnote-panel-row',
-    FOOTNOTE_PANEL_INDEX: 'pandoc-footnote-panel-index',
-    FOOTNOTE_PANEL_CONTENT: 'pandoc-footnote-panel-content',
-    FOOTNOTE_PANEL_EMPTY: 'pandoc-footnote-panel-empty',
+    FOOTNOTE_PANEL_CONTAINER: 'pem-footnote-panel-container',
+    FOOTNOTE_PANEL_ROW: 'pem-footnote-panel-row',
+    FOOTNOTE_PANEL_INDEX: 'pem-footnote-panel-index',
+    FOOTNOTE_PANEL_CONTENT: 'pem-footnote-panel-content',
+    FOOTNOTE_PANEL_EMPTY: 'pem-footnote-panel-empty',
 } as const;
 
 // Composite CSS Classes - commonly used combinations

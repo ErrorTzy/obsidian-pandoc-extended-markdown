@@ -75,7 +75,7 @@ B. Second item`;
         // Should have decoration for line 1 (A. First item)
         const line1Decoration = lineDecorations.find(d => d.from === 0);
         expect(line1Decoration).toBeDefined();
-        expect(line1Decoration?.value?.spec?.class).toContain('pandoc-list-line');
+        expect(line1Decoration?.value?.spec?.class).toContain('pem-list-line');
         
         // Should have decoration for line 2 (continuation)
         const line2Decoration = lineDecorations.find(d => d.from === 14); // Position after "A. First item\n"
@@ -85,7 +85,7 @@ B. Second item`;
         // Should have decoration for line 3 (B. Second item)
         const line3Decoration = lineDecorations.find(d => d.from === 35); // Position after first two lines
         expect(line3Decoration).toBeDefined();
-        expect(line3Decoration?.value?.spec?.class).toContain('pandoc-list-line');
+        expect(line3Decoration?.value?.spec?.class).toContain('pem-list-line');
     });
 
     it('should not emit invalid decoration errors for tab-indented fancy list markers without trailing space', () => {

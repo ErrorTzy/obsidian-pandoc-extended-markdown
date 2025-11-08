@@ -63,7 +63,7 @@ describe('Debug cross-reference bug', () => {
         // console.log('Counter after:', pluginStateManager.getDocumentCounters(docPath).exampleCounter);
         
         // Check spans
-        const exampleRefs = testElement.querySelectorAll('.pandoc-example-reference');
+        const exampleRefs = testElement.querySelectorAll('.pem-example-reference');
         // console.log('Example ref spans found:', exampleRefs.length);
         exampleRefs.forEach((ref, i) => {
             // console.log(`  Ref ${i}: "${ref.textContent}" with data-example-number="${ref.getAttribute('data-example-number')}"`);

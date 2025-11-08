@@ -116,7 +116,7 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
         processElement(li, placeholderContext);
         // Add class if it contains a custom label list marker
         if (li.querySelector(`.${CSS_CLASSES.PANDOC_LIST_MARKER}`)) {
-            li.classList.add('pandoc-custom-label-item');
+            li.classList.add('pem-custom-label-item');
         }
     });
 }
@@ -204,7 +204,7 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
  * @throws Does not throw exceptions - skips processing for invalid elements
  * @example
  * // Transforms: {::eq1} E = mc^2
- * // Into: <span class="pandoc-list-marker">(1)</span> E = mc^2
+ * // Into: <span class="pem-list-marker">(1)</span> E = mc^2
  * processElement(paragraphElement, placeholderContext);
  */
 /**
@@ -219,7 +219,7 @@ function processElementPreservingSpans(elem: Element, placeholderContext?: Place
                 if (parent && (
                     parent.className === CSS_CLASSES.EXAMPLE_REF ||
                     parent.className === CSS_CLASSES.PANDOC_LIST_MARKER ||
-                    parent.className.includes('pandoc-list-fancy') ||
+                    parent.className.includes('pem-list-fancy') ||
                     parent.className === CSS_CLASSES.EXAMPLE_LIST ||
                     parent.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED ||
                     parent.tagName === 'STRONG' ||  // Skip text inside strong tags that might contain processed content
@@ -301,7 +301,7 @@ function isProcessedSpan(elemNode: Element): boolean {
     return elemNode.tagName === 'SPAN' &&
            (elemNode.className === CSS_CLASSES.EXAMPLE_REF ||
             elemNode.className === CSS_CLASSES.PANDOC_LIST_MARKER ||
-            elemNode.className.includes('pandoc-list-fancy') ||
+            elemNode.className.includes('pem-list-fancy') ||
             elemNode.className === CSS_CLASSES.EXAMPLE_LIST ||
             elemNode.className === CSS_CLASSES.CUSTOM_LABEL_REFERENCE_PROCESSED);
 }

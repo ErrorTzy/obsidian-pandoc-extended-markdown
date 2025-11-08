@@ -75,7 +75,7 @@ export function handleContinuationLine(config: ContinuationLineConfig): boolean 
         const newLineNum = currentLine.line.number;
 
         // Use setTimeout to ensure the insertion is complete before renumbering
-        setTimeout(() => {
+        window.setTimeout(() => {
             renumberListItems(view, newLineNum);
         }, 0);
     }

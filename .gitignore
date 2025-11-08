@@ -1,7 +1,8 @@
 # Node modules
 node_modules/
 
-# Build output (keep main.js for releases)
+# Build output
+main.js
 *.js.map
 
 # IDE files

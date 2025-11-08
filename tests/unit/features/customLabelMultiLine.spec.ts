@@ -23,7 +23,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
+    const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(3);
     expect(markers[0].textContent).toBe('(P)');
     expect(markers[1].textContent).toBe('(Q)');
@@ -38,7 +38,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
+    const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(3);
   });
 
@@ -48,8 +48,8 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
-    const refs = element.querySelectorAll('span.pandoc-custom-label-reference-processed');
+    const markers = element.querySelectorAll('span.pem-list-marker');
+    const refs = element.querySelectorAll('span.pem-custom-label-reference-processed');
     
     expect(markers).toHaveLength(2); // P and Q are list markers
     expect(refs).toHaveLength(2); // A and B are references
@@ -69,7 +69,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
+    const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(3);
   });
 
@@ -80,7 +80,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
+    const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(3);
     expect(markers[0].textContent).toBe('(P)');
     expect(markers[1].textContent).toBe('(Q)');
@@ -97,7 +97,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     const brTags = element.querySelectorAll('br');
     expect(brTags).toHaveLength(1);
     
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
+    const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(2);
   });
 
@@ -113,7 +113,7 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     expect(brTags).toHaveLength(2);
     
     // Should have processed the markers
-    const markers = element.querySelectorAll('span.pandoc-list-marker');
+    const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(3);
   });
 });

@@ -66,7 +66,7 @@ describe('Cross-references in extended lists bug', () => {
         expect(text).not.toContain('(@a)');
         
         // The 'A.' marker should still be there
-        expect(element.innerHTML).toContain('pandoc-list-fancy');
+        expect(element.innerHTML).toContain('pem-list-fancy');
     });
     
     it('should handle unlabeled example list (@) with reference (@a)', () => {
@@ -166,7 +166,7 @@ describe('Cross-references in extended lists bug', () => {
         processReadingMode(element, context, config);
         
         // Check all (@a) references
-        const exampleRefs = element.querySelectorAll('.pandoc-example-reference');
+        const exampleRefs = element.querySelectorAll('.pem-example-reference');
         // console.log(`Found ${exampleRefs.length} example references`);
         
         const errors: string[] = [];

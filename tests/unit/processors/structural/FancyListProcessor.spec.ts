@@ -190,7 +190,7 @@ describe('FancyListProcessor', () => {
             );
             expect(lineDecoration).toBeDefined();
             expect(lineDecoration!.decoration.spec?.class).toContain('HyperMD-list-line');
-            expect(lineDecoration!.decoration.spec?.class).toContain('pandoc-list-line');
+            expect(lineDecoration!.decoration.spec?.class).toContain('pem-list-line');
         });
         
         it('should wrap content area with mark decoration', () => {

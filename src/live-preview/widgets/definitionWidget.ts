@@ -8,7 +8,7 @@ export class DefinitionBulletWidget extends BaseWidget {
     }
 
     protected applyStyles(element: HTMLElement): void {
-        element.className = 'cm-formatting cm-formatting-list cm-list-1 pandoc-list-marker';
+        element.className = 'cm-formatting cm-formatting-list cm-list-1 pem-list-marker';
     }
 
     protected setContent(element: HTMLElement): void {

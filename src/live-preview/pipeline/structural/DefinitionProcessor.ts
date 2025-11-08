@@ -153,7 +153,7 @@ export class DefinitionProcessor implements StructuralProcessor {
             from: line.from,
             to: line.to,
             decoration: Decoration.mark({
-                class: 'cm-strong cm-pandoc-definition-term'
+                class: `cm-strong ${CSS_CLASSES.DEFINITION_TERM_DECORATION}`
             })
         });
         

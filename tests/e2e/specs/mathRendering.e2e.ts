@@ -88,7 +88,7 @@ describe('Math Expression Rendering Bug', () => {
         console.log('Live Preview HTML:', livePreviewHTML);
 
         // Check if the bug is present - superscript widgets interrupting math
-        const hasBug = livePreviewHTML.includes('pandoc-superscript') && 
+        const hasBug = livePreviewHTML.includes('pem-superscript') && 
                       livePreviewHTML.includes('class="math"');
         
         // Log details for debugging
@@ -96,13 +96,13 @@ describe('Math Expression Rendering Bug', () => {
             console.log('BUG DETECTED: Math expressions are being interrupted by superscript widgets');
         }
         
-        // The bug manifests as the math being broken up with pandoc-superscript widgets
-        // So we check if pandoc-superscript appears in what should be pure math rendering
+        // The bug manifests as the math being broken up with pem-superscript widgets
+        // So we check if pem-superscript appears in what should be pure math rendering
         expect(livePreviewHTML).toContain('math'); // Math should be rendered
         
-        // If our fix works, there should be NO pandoc-superscript in this line
+        // If our fix works, there should be NO pem-superscript in this line
         // because the entire line should be protected as math expressions
-        if (livePreviewHTML.includes('pandoc-superscript')) {
+        if (livePreviewHTML.includes('pem-superscript')) {
             console.log('FAILURE: Superscript processor is still interfering with math!');
             throw new Error('Math expressions are being broken by superscript processor');
         } else {

@@ -1,5 +1,6 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { syntaxTree } from '@codemirror/language';
 import { ProcessingPipeline } from '../../../src/live-preview/pipeline/ProcessingPipeline';
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS } from '../../../src/core/settings';
 import { PluginStateManager } from '../../../src/core/state/pluginStateManager';
@@ -8,11 +9,59 @@ import { CustomLabelReferenceProcessor } from '../../../src/live-preview/pipelin
 import { CustomLabelProcessor } from '../../../src/live-preview/pipeline/structural/CustomLabelProcessor';
 import { ExampleListProcessor } from '../../../src/live-preview/pipeline/structural/ExampleListProcessor';
 
+type SyntaxNodeMock = {
+    from: number;
+    to: number;
+    type: { name: string };
+};
+
+type SyntaxTreeMock = typeof syntaxTree & {
+    __setMockIterator?: (fn: (state: EditorState, config: { enter?: (node: SyntaxNodeMock) => boolean | void }) => void) => void;
+};
+
+const syntaxTreeMock = syntaxTree as SyntaxTreeMock;
+
+function configureSyntaxTreeMock(): void {
+    syntaxTreeMock.__setMockIterator?.((state, config) => {
+        const text = (state as unknown as { doc?: { toString?: () => string } })?.doc?.toString?.() ?? '';
+        const codeBlocks = findRegions(text, /```[\s\S]*?```/g, 'FencedCode');
+        const inlineBlocks = findRegions(text, /`[^`\n]+`/g, 'InlineCode', codeBlocks);
+        [...codeBlocks, ...inlineBlocks].forEach(node => config.enter?.(node));
+    });
+}
+
+function findRegions(
+    text: string, 
+    regex: RegExp, 
+    nodeName: string, 
+    exclude: SyntaxNodeMock[] = []
+): SyntaxNodeMock[] {
+    const regions: SyntaxNodeMock[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+        const from = match.index ?? 0;
+        const to = from + match[0].length;
+        if (exclude.some(region => from >= region.from && to <= region.to)) {
+            continue;
+        }
+        regions.push({ from, to, type: { name: nodeName } });
+    }
+    return regions;
+}
+
 describe('Code Block and Inline Code Skipping', () => {
     let pipeline: ProcessingPipeline;
     let stateManager: PluginStateManager;
     let settings: PandocExtendedMarkdownSettings;
     let view: EditorView;
+
+    beforeAll(() => {
+        configureSyntaxTreeMock();
+    });
+
+    afterAll(() => {
+        syntaxTreeMock.__setMockIterator?.(() => {});
+    });
 
     beforeEach(() => {
         stateManager = new PluginStateManager();

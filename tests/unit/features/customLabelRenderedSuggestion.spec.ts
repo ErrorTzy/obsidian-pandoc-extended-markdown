@@ -204,7 +204,7 @@ Ref: {::|}`;
 
             // Verify the structure was created
             expect(mockEl.createDiv).toHaveBeenCalledWith(
-                expect.objectContaining({ cls: 'pandoc-suggestion-content' })
+                expect.objectContaining({ cls: 'pem-suggestion-content' })
             );
         });
 
@@ -226,7 +226,7 @@ Ref: {::|}`;
             suggest.renderSuggestion(suggestion, mockEl);
 
             expect(mockEl.createDiv).toHaveBeenCalledWith(
-                expect.objectContaining({ cls: 'pandoc-suggestion-content' })
+                expect.objectContaining({ cls: 'pem-suggestion-content' })
             );
         });
     });

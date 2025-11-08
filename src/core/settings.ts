@@ -84,17 +84,17 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         // Make the description column narrower
         const infoEl = panelOrderSetting.infoEl;
         if (infoEl) {
-            infoEl.addClass('pandoc-panel-order-info');
+            infoEl.addClass('pem-panel-order-info');
         }
 
         // Create flex container for list and buttons
         const flexContainer = panelOrderSetting.controlEl.createDiv({
-            cls: 'pandoc-panel-order-container'
+            cls: 'pem-panel-order-container'
         });
 
         // Create container for the list (left side)
         const listEl = flexContainer.createDiv({
-            cls: 'pandoc-panel-order-list'
+            cls: 'pem-panel-order-list'
         });
         listEl.setAttribute('role', 'listbox');
         listEl.tabIndex = 0;
@@ -137,7 +137,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             }
 
             const itemEl = listEl.createDiv({
-                cls: 'pandoc-panel-order-item'
+                cls: 'pem-panel-order-item'
             });
             itemEl.setAttribute('role', 'option');
             itemEl.dataset.id = panelId;
@@ -145,7 +145,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
             // Add icon
             const iconContainer = itemEl.createDiv({
-                cls: 'pandoc-panel-order-icon'
+                cls: 'pem-panel-order-icon'
             });
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(panelInfo.icon, 'image/svg+xml');
@@ -187,28 +187,28 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private createPanelOrderButtons(container: HTMLElement): PanelOrderButtons {
         const btnWrap = container.createDiv({
-            cls: 'pandoc-panel-order-buttons'
+            cls: 'pem-panel-order-buttons'
         });
 
         const btnMoveUp = btnWrap.createEl('button', { 
             text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_UP,
-            cls: 'pandoc-panel-order-button'
+            cls: 'pem-panel-order-button'
         });
         const btnMoveDown = btnWrap.createEl('button', { 
             text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_DOWN,
-            cls: 'pandoc-panel-order-button'
+            cls: 'pem-panel-order-button'
         });
         const btnTop = btnWrap.createEl('button', { 
             text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_TOP,
-            cls: 'pandoc-panel-order-button'
+            cls: 'pem-panel-order-button'
         });
         const btnBottom = btnWrap.createEl('button', { 
             text: PANEL_SETTINGS.UI_TEXT.BTN_MOVE_BOTTOM,
-            cls: 'pandoc-panel-order-button'
+            cls: 'pem-panel-order-button'
         });
         const btnReset = btnWrap.createEl('button', { 
             text: PANEL_SETTINGS.UI_TEXT.BTN_RESTORE_DEFAULT,
-            cls: 'pandoc-panel-order-button'
+            cls: 'pem-panel-order-button'
         });
 
         return {

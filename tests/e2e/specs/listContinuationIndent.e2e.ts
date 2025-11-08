@@ -119,7 +119,7 @@ describe('List continuation indentation', () => {
                         const contentRect = (contentSpan as HTMLElement).getBoundingClientRect();
                         contentOffset = contentRect.left - lineRect.left;
                     }
-                    const widget = el.querySelector('.pandoc-list-continuation-widget') as HTMLElement | null;
+                    const widget = el.querySelector('.pem-list-continuation-widget') as HTMLElement | null;
                     return {
                         paddingInlineStart: computed.paddingInlineStart,
                         textIndent: computed.textIndent,

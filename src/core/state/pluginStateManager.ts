@@ -21,6 +21,19 @@ import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 
 type ModeChangeCallback = (event: ModeChangeEvent) => void;
 
+/**
+ * Centralized document state shared between live preview, reading mode, and auxiliary UI.
+ *
+ * CodeMirror state only exists while an editor is mounted, which means it cannot be used to
+ * coordinate features that also run when the document is rendered in reading mode or when the
+ * side panel requests metadata for inactive files. This manager keeps document counters,
+ * placeholder contexts, and processed-element tracking in one place so every rendering surface
+ * can consume the same data without having to keep a CodeMirror editor alive.
+ *
+ * It also tracks mode transitions at the leaf level so we can reset counters when a file changes
+ * or when the user toggles editing modes, guaranteeing that reading-mode DOM and live-preview
+ * decorations stay consistent without relying on deprecated workspace APIs.
+ */
 export class PluginStateManager {
     // Document-specific counters
     private documentCounters = new Map<string, DocumentCounters>();
@@ -152,7 +165,7 @@ export class PluginStateManager {
         // Clear reprocess flag when entering reading mode
         if (event.currentMode === "reading" && event.currentPath) {
             // Give a small delay to ensure all elements are ready
-            setTimeout(() => {
+            window.setTimeout(() => {
                 this.clearReprocessFlag(event.currentPath!);
             }, UI_CONSTANTS.STATE_TRANSITION_DELAY_MS);
         }

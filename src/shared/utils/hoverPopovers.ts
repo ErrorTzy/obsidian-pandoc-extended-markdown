@@ -50,7 +50,7 @@ function createHoverState(): HoverState {
  */
 function clearCleanupTimeout(state: HoverState): void {
     if (state.cleanupTimeout) {
-        clearTimeout(state.cleanupTimeout);
+        window.clearTimeout(state.cleanupTimeout);
         state.cleanupTimeout = null;
     }
 }
@@ -77,7 +77,7 @@ function removePopover(state: HoverState): void {
  */
 function scheduleRemoval(state: HoverState): void {
     clearCleanupTimeout(state);
-    state.cleanupTimeout = setTimeout(() => {
+    state.cleanupTimeout = window.setTimeout(() => {
         if (!state.isMouseOverElement && !state.isMouseOverPopover) {
             removePopover(state);
         }
@@ -89,7 +89,7 @@ function scheduleRemoval(state: HoverState): void {
  */
 function scheduleAsyncRemoval(state: AsyncHoverState): void {
     clearCleanupTimeout(state);
-    state.cleanupTimeout = setTimeout(() => {
+    state.cleanupTimeout = window.setTimeout(() => {
         if (!state.isMouseOverElement && !state.isMouseOverPopover) {
             removeAsyncPopover(state);
         }

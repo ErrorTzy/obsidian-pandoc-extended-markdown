@@ -62,7 +62,7 @@ function applyLineHighlight(editor: ExtendedEditor, lineNumber: number): void {
     if (!editorDom) return;
     
     // Delay to ensure DOM is updated after setCursor
-    setTimeout(() => {
+    window.setTimeout(() => {
         findAndHighlightLine(editorDom, editor);
     }, 50);
 }
@@ -128,7 +128,7 @@ function applyHighlight(lineElement: HTMLElement): void {
     lineElement.classList.add(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
     
     // Remove the class after animation completes
-    setTimeout(() => {
+    window.setTimeout(() => {
         lineElement.classList.remove(CSS_CLASSES.CUSTOM_LABEL_HIGHLIGHT);
     }, UI_CONSTANTS.HIGHLIGHT_ANIMATION_DURATION_MS);
 }

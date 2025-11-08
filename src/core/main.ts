@@ -1,7 +1,7 @@
 // External libraries
 import { Plugin, Notice, Editor, MarkdownView, WorkspaceLeaf, addIcon } from 'obsidian';
 import { Prec } from '@codemirror/state';
-import { keymap, EditorView } from '@codemirror/view';
+import { keymap } from '@codemirror/view';
 
 // Types
 import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
@@ -107,15 +107,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             
             // Only force CodeMirror refresh if there were actual mode changes
             if (hadChanges) {
-                // Small delay to ensure mode switch is complete
-                setTimeout(() => {
-                    this.app.workspace.iterateCodeMirrors((cm: EditorView) => {
-                        // Trigger a minor update to force decoration recalculation
-                        if (cm.dispatch) {
-                            cm.dispatch({ effects: [] });
-                        }
-                    });
-                }, 10);
+                // Small delay to ensure mode switch side effects settle before refreshing editors
+                window.setTimeout(() => {
+                    this.app.workspace.updateOptions();
+                }, UI_CONSTANTS.MODE_REFRESH_DELAY_MS);
             }
         };
         

@@ -146,7 +146,7 @@ export class ListPanelView extends ItemView {
     
     onClose(): Promise<void> {
         if (this.updateTimer) {
-            clearTimeout(this.updateTimer);
+            window.clearTimeout(this.updateTimer);
         }
         
         for (const panel of this.panels) {
@@ -199,7 +199,7 @@ export class ListPanelView extends ItemView {
             } else if (panel.id === 'definition-lists') {
                 // Create definition list icon using text element
                 iconContainer.createSpan({
-                    cls: 'pandoc-icon-definition-list',
+                    cls: CSS_CLASSES.LIST_PANEL_ICON_DEFINITION_LIST,
                     text: 'DL:'
                 });
             } else if (panel.id === 'footnotes') {
@@ -209,7 +209,7 @@ export class ListPanelView extends ItemView {
                 });
             } else {
                 // For future panels, add a generic icon class
-                iconContainer.addClass(`pandoc-icon-${panel.id}`);
+                iconContainer.addClass(`pem-icon-${panel.id}`);
             }
             
             iconButton.addEventListener('click', () => {
@@ -256,10 +256,10 @@ export class ListPanelView extends ItemView {
     
     private scheduleUpdate(): void {
         if (this.updateTimer) {
-            clearTimeout(this.updateTimer);
+            window.clearTimeout(this.updateTimer);
         }
         
-        this.updateTimer = setTimeout(() => {
+        this.updateTimer = window.setTimeout(() => {
             void this.updateView();
         }, UI_CONSTANTS.UPDATE_DEBOUNCE_MS);
     }
