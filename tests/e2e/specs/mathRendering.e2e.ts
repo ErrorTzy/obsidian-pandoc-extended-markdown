@@ -25,45 +25,69 @@ describe('Math Expression Rendering Bug', () => {
         });
     });
 
+    it('should ignore superscript syntax inside inline code spans', async () => {
+        const filePath = 'inline-code-superscript.md';
+        const testContent = '`X^2` is x^2^ but the "`^2` is x"';
+
+        await createOrReplaceFile(filePath, testContent);
+        await openFileInActiveLeaf(filePath);
+        await ensureSourceMode();
+
+        const renderInfo = await browser.execute(() => {
+            const container = document.querySelector('.markdown-source-view.mod-cm6 .cm-content');
+            if (!container) {
+                return { inlineHasSuperscript: true, supTexts: ['error'] };
+            }
+            const inlineNodes = Array.from(container.querySelectorAll('.cm-inline-code')) as HTMLElement[];
+            const inlineHasSuperscript = inlineNodes.some(node => node.querySelector('.pem-superscript'));
+            const supTexts = Array.from(container.querySelectorAll('.pem-superscript')).map(el => el.textContent ?? '');
+            return {
+                inlineHasSuperscript,
+                supTexts
+            };
+        });
+
+        const treeNodes = await browser.execute(() => {
+            const requireFunc = (window as unknown as { require?: (path: string) => any }).require;
+            if (!requireFunc) return [];
+            try {
+                const { syntaxTree } = requireFunc('@codemirror/language');
+                // @ts-ignore
+                const leaves = app.workspace.getLeavesOfType('markdown');
+                if (!leaves.length) return [];
+                const view = leaves[0].view as any;
+                const cm = view?.editor?.cm || view?.editor?.cm6 || view?.cm;
+                if (!cm) return [];
+                const tree = syntaxTree(cm.state);
+                const nodes: Array<{name: string; from: number; to: number}> = [];
+                tree.iterate({
+                    enter: (node) => {
+                        if (nodes.length < 40) {
+                            nodes.push({ name: node.type.name, from: node.from, to: node.to });
+                        }
+                    }
+                });
+                return nodes;
+            } catch (error) {
+                console.error('Tree inspection failed', error);
+                return [];
+            }
+        });
+        console.log('Syntax tree nodes:', treeNodes);
+
+        expect(renderInfo.supTexts).toEqual(['2']);
+        expect(renderInfo.inlineHasSuperscript).toBe(false);
+
+        await deleteFileIfExists(filePath);
+    });
+
     it('should not interfere with math expressions containing superscripts', async () => {
         // Create a test file with the problematic content
         const testContent = `> Given $R^{+}_{xy}$ and $R^{+}_{yz}$, if x=y or y=z, obviously we have $R^{+}_{xz}$`;
         
-        await browser.execute((content) => {
-            // @ts-ignore
-            const file = app.vault.getAbstractFileByPath('math-bug-test.md');
-            if (file) {
-                // @ts-ignore
-                app.vault.delete(file);
-            }
-            // @ts-ignore
-            app.vault.create('math-bug-test.md', content);
-            return true; // Return simple value to avoid circular reference
-        }, testContent);
-        
-        // Open the file
-        await browser.execute(() => {
-            // @ts-ignore
-            const file = app.vault.getAbstractFileByPath('math-bug-test.md');
-            // @ts-ignore
-            return app.workspace.getLeaf().openFile(file);
-        });
-        
-        await browser.pause(500);
-
-        // Ensure we're in live preview mode
-        await browser.execute(() => {
-            // @ts-ignore
-            const leaves = app.workspace.getLeavesOfType('markdown');
-            if (leaves.length > 0) {
-                const view = leaves[0].view;
-                if (view && view.getMode && view.getMode() !== 'source') {
-                    // @ts-ignore
-                    view.setMode('source');
-                }
-            }
-        });
-        await browser.pause(500);
+        await createOrReplaceFile('math-bug-test.md', testContent);
+        await openFileInActiveLeaf('math-bug-test.md');
+        await ensureSourceMode();
 
         // Get the rendered HTML in live preview
         const livePreviewHTML = await browser.execute(() => {
@@ -110,14 +134,59 @@ describe('Math Expression Rendering Bug', () => {
         }
 
         // Clean up
-        await browser.execute(() => {
-            // @ts-ignore
-            const file = app.vault.getAbstractFileByPath('math-bug-test.md');
-            if (file) {
-                // @ts-ignore
-                return app.vault.delete(file);
-            }
-        });
+        await deleteFileIfExists('math-bug-test.md');
     });
 
 });
+
+async function createOrReplaceFile(path: string, content: string): Promise<void> {
+    await browser.execute((filePath: string, data: string) => {
+        // @ts-ignore
+        const existing = app.vault.getAbstractFileByPath(filePath);
+        if (existing) {
+            // @ts-ignore
+            app.vault.delete(existing);
+        }
+        // @ts-ignore
+        app.vault.create(filePath, data);
+        return true;
+    }, path, content);
+}
+
+async function openFileInActiveLeaf(path: string): Promise<void> {
+    await browser.execute((filePath: string) => {
+        // @ts-ignore
+        const file = app.vault.getAbstractFileByPath(filePath);
+        if (file) {
+            // @ts-ignore
+            return app.workspace.getLeaf().openFile(file);
+        }
+        return false;
+    }, path);
+}
+
+async function ensureSourceMode(): Promise<void> {
+    await browser.execute(() => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        if (leaves.length > 0) {
+            const view = leaves[0].view;
+            if (view && view.getMode && view.getMode() !== 'source') {
+                // @ts-ignore
+                view.setMode('source');
+            }
+        }
+    });
+    await browser.pause(500);
+}
+
+async function deleteFileIfExists(path: string): Promise<void> {
+    await browser.execute((filePath: string) => {
+        // @ts-ignore
+        const file = app.vault.getAbstractFileByPath(filePath);
+        if (file) {
+            // @ts-ignore
+            app.vault.delete(file);
+        }
+    }, path);
+}

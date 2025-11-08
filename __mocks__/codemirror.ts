@@ -397,4 +397,22 @@ syntaxTree.__setMockIterator = (fn: SyntaxTreeIterator) => {
   syntaxTreeIterator = fn;
 };
 
+type EnsureSyntaxTreeFunction = {
+  (state: unknown, _upto?: number, _timeout?: number): { iterate: (config: SyntaxTreeConfig) => void } | null;
+  __setReturnNull?: (value: boolean) => void;
+};
+
+let ensureReturnsNull = false;
+
+export const ensureSyntaxTree = ((state: unknown) => {
+  if (ensureReturnsNull) {
+    return null;
+  }
+  return syntaxTree(state);
+}) as EnsureSyntaxTreeFunction;
+
+ensureSyntaxTree.__setReturnNull = (value: boolean) => {
+  ensureReturnsNull = value;
+};
+
 export const Extension: [] = [];

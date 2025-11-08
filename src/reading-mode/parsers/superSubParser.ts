@@ -5,7 +5,7 @@ import { CSS_CLASSES } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 
 // Utils
-import { createTextNodeWalker } from '../utils/domUtils';
+import { createSmartTextNodeWalker } from '../utils/domUtils';
 
 export interface SuperSubMatch {
     index: number;
@@ -66,22 +66,22 @@ export function findSuperSubInText(text: string): SuperSubMatch[] {
  * Process superscripts and subscripts in an HTML element for reading mode.
  */
 export function processSuperSub(element: HTMLElement) {
-    const walker = createTextNodeWalker(element, (node) => {
-                // Skip if already processed
-                const parent = node.parentElement;
-                if (parent && (
-                    parent.classList.contains(CSS_CLASSES.SUPERSCRIPT) ||
-                    parent.classList.contains(CSS_CLASSES.SUBSCRIPT)
-                )) {
-                    return NodeFilter.FILTER_REJECT;
-                }
-                return NodeFilter.FILTER_ACCEPT;
-            });
+    const walker = createSmartTextNodeWalker(element);
     
     const nodesToReplace: { node: Text; matches: SuperSubMatch[] }[] = [];
     
     while (walker.nextNode()) {
         const node = walker.currentNode as Text;
+        const parent = node.parentElement;
+
+        // Skip if already processed
+        if (parent && (
+            parent.classList.contains(CSS_CLASSES.SUPERSCRIPT) ||
+            parent.classList.contains(CSS_CLASSES.SUBSCRIPT)
+        )) {
+            continue;
+        }
+
         const text = node.textContent || '';
         const matches = findSuperSubInText(text);
         
@@ -93,6 +93,7 @@ export function processSuperSub(element: HTMLElement) {
     nodesToReplace.forEach(({ node, matches }) => {
         const parent = node.parentNode;
         if (!parent) return;
+        const text = node.textContent || '';
         
         let lastIndex = 0;
         const fragments: (string | HTMLElement)[] = [];

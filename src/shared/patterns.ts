@@ -98,8 +98,8 @@ export class ListPatterns {
     // Superscript and subscript patterns
     // Matches ^text^ for superscript and ~text~ for subscript
     // Text can contain escaped spaces (\ ) but not unescaped spaces
-    static readonly SUPERSCRIPT = /\^([^\s^]|\\[ ])+?\^/g;
-    static readonly SUBSCRIPT = /~([^\s~]|\\[ ])+?~/g;
+    static readonly SUPERSCRIPT = /\^([^\s^\x60]|\\[ ])+?\^/g;
+    static readonly SUBSCRIPT = /~([^\s~\x60]|\\[ ])+?~/g;
     
     /**
      * Inline superscript pattern for inline processors.
@@ -107,7 +107,7 @@ export class ListPatterns {
      * ensuring math expressions like $R^{+}_{xy}$ remain intact.
      * Excludes [ and ] to prevent matching footnote syntax like [^1].
      */
-    static readonly SUPERSCRIPT_INLINE = /\^([^^~\s$\x5B\x5D]+(?:\s+[^^~\s$\x5B\x5D]+)*)\^/g;
+    static readonly SUPERSCRIPT_INLINE = /\^([^^~\s$\x5B\x5D\x60]+(?:\s+[^^~\s$\x5B\x5D\x60]+)*)\^/g;
     
     /**
      * Inline subscript pattern for inline processors.
@@ -115,7 +115,7 @@ export class ListPatterns {
      * ensuring math expressions remain properly formatted.
      * Excludes [ and ] to prevent matching patterns that might conflict with brackets.
      */
-    static readonly SUBSCRIPT_INLINE = /~([^~^\s$\x5B\x5D]+(?:\s+[^~^\s$\x5B\x5D]+)*)~/g;
+    static readonly SUBSCRIPT_INLINE = /~([^~^\s$\x5B\x5D\x60]+(?:\s+[^~^\s$\x5B\x5D\x60]+)*)~/g;
     
     // Custom label list patterns for More Extended Syntax
     // Matches {::LABEL} at start of line with required space after

@@ -2,7 +2,6 @@
 import { MarkdownPostProcessorContext, setTooltip } from 'obsidian';
 
 // Types
-import { getSectionInfo } from '../../shared/types/obsidian-extended';
 import { extractSectionLines, createTextNodeWalker } from '../utils/domUtils';
 
 // Constants

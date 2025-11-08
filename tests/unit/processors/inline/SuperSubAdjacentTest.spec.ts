@@ -204,4 +204,32 @@ describe('Adjacent Superscript and Subscript Processing', () => {
         expect(widgets).toContain('superscript');
         expect(widgets.length).toBe(2);
     });
+
+    test('should process superscript after inline code spans', () => {
+        const view = createView('`X^2` is x^2^');
+        const widgets = getWidgetTexts(view, pipeline, settings);
+
+        const superOccurences = widgets.filter(content => content === '2');
+        expect(superOccurences.length).toBe(1);
+    });
+
+    test('processor still detects superscript outside inline code', () => {
+        const result = testProcessors('`X^2` is x^2^');
+        expect(result.superscripts).toContain('2');
+    });
+
+    test('should process superscript after fenced code blocks and inline code', () => {
+        const content = [
+            '```',
+            'H~2~O',
+            '```',
+            '',
+            '`X^2` is x^2^'
+        ].join('\n');
+        const view = createView(content);
+        const widgets = getWidgetTexts(view, pipeline, settings);
+
+        expect(widgets).toContain('2');
+        expect(widgets.filter(text => text === '2').length).toBe(1);
+    });
 });
