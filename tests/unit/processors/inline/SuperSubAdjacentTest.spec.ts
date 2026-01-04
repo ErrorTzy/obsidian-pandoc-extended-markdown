@@ -1,5 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
+import { syntaxTree } from '@codemirror/language';
 import { ProcessingPipeline } from '../../../../src/live-preview/pipeline/ProcessingPipeline';
 import { SuperscriptProcessor } from '../../../../src/live-preview/pipeline/inline/SuperscriptProcessor';
 import { SubscriptProcessor } from '../../../../src/live-preview/pipeline/inline/SubscriptProcessor';
@@ -51,6 +52,7 @@ describe('Adjacent Superscript and Subscript Processing', () => {
     });
     
     function createView(content: string): EditorView {
+        setSyntaxTreeNodesForContent(content);
         const state = EditorState.create({
             doc: content
         });
@@ -139,6 +141,111 @@ describe('Adjacent Superscript and Subscript Processing', () => {
         
         // console.log('Total decorations:', count, 'Widgets extracted:', widgets.length);
         return widgets;
+    }
+
+    function setSyntaxTreeNodesForContent(content: string): void {
+        const nodes: Array<{ name: string; from: number; to: number }> = [];
+        const codeBlocks = collectCodeBlockRanges(content);
+        
+        for (const block of codeBlocks) {
+            nodes.push({
+                name: 'HyperMD-codeblock-begin',
+                from: block.from,
+                to: Math.min(block.from + 3, block.to)
+            });
+            if (block.hasEnd) {
+                nodes.push({
+                    name: 'HyperMD-codeblock-end',
+                    from: Math.max(block.to - 3, block.from),
+                    to: block.to
+                });
+            }
+        }
+        
+        const inlineNodes = collectInlineCodeNodes(content, codeBlocks);
+        nodes.push(...inlineNodes);
+        
+        syntaxTree.__setMockIterator?.((_state, config) => {
+            nodes.forEach(node => config.enter?.({
+                type: { name: node.name },
+                from: node.from,
+                to: node.to
+            }));
+        });
+    }
+
+    function collectCodeBlockRanges(content: string): Array<{ from: number; to: number; hasEnd: boolean }> {
+        const ranges: Array<{ from: number; to: number; hasEnd: boolean }> = [];
+        const fenceRegex = /```|~~~/g;
+        const fencePositions: number[] = [];
+        let match;
+        
+        while ((match = fenceRegex.exec(content)) !== null) {
+            fencePositions.push(match.index);
+        }
+        
+        for (let i = 0; i < fencePositions.length; i += 2) {
+            const start = fencePositions[i];
+            const endFence = fencePositions[i + 1];
+            if (endFence !== undefined) {
+                ranges.push({
+                    from: start,
+                    to: endFence + 3,
+                    hasEnd: true
+                });
+            } else {
+                ranges.push({
+                    from: start,
+                    to: content.length,
+                    hasEnd: false
+                });
+            }
+        }
+        
+        return ranges;
+    }
+
+    function collectInlineCodeNodes(
+        content: string,
+        codeBlocks: Array<{ from: number; to: number }>
+    ): Array<{ name: string; from: number; to: number }> {
+        const nodes: Array<{ name: string; from: number; to: number }> = [];
+        let i = 0;
+        
+        while (i < content.length) {
+            if (isInCodeBlock(i, codeBlocks)) {
+                i++;
+                continue;
+            }
+            
+            if (content[i] === '`' && (i === 0 || content[i - 1] !== '\\')) {
+                let j = i + 1;
+                while (j < content.length) {
+                    if (content[j] === '`' && content[j - 1] !== '\\') {
+                        nodes.push({
+                            name: 'inline-code',
+                            from: i,
+                            to: j + 1
+                        });
+                        i = j + 1;
+                        break;
+                    }
+                    j++;
+                }
+                
+                if (j >= content.length) {
+                    i++;
+                }
+            } else {
+                i++;
+            }
+        }
+        
+        return nodes;
+    }
+
+    function isInCodeBlock(pos: number, codeBlocks: Array<{ from: number; to: number }>): boolean {
+        return codeBlocks.some(block => pos >= block.from && pos < block.to);
     }
     
     test('processors should find adjacent subscript and superscript', () => {

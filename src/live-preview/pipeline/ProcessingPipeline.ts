@@ -235,7 +235,7 @@ export class ProcessingPipeline {
         const docPath = this.getDocumentPath();
         
         // Detect code regions that should be skipped
-        const codeRegions = detectCodeRegions(doc);
+        const codeRegions = detectCodeRegions(doc, view.state);
         
         // Pre-scan and validate (pass codeRegions to skip scanning inside them)
         const exampleScanResult = scanExampleLabelsFromDoc(doc, settings, codeRegions);

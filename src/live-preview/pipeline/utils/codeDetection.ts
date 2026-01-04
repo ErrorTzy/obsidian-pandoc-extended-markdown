@@ -1,140 +1,172 @@
-import { Text } from '@codemirror/state';
+import { EditorState, Text } from '@codemirror/state';
+import { ensureSyntaxTree, syntaxTree } from '@codemirror/language';
 import { CodeRegion } from '../../../shared/types/codeTypes';
-import { ListPatterns } from '../../../shared/patterns';
 
 /**
  * Detects code blocks, inline code, and math regions in a document
  */
-export function detectCodeRegions(doc: Text): CodeRegion[] {
+export function detectCodeRegions(doc: Text, state: EditorState): CodeRegion[] {
+    return detectCodeRegionsFromSyntaxTree(state, doc);
+}
+
+function detectCodeRegionsFromSyntaxTree(state: EditorState, doc: Text): CodeRegion[] {
     const regions: CodeRegion[] = [];
-    const text = doc.toString();
+    const inlineCandidates: CodeRegion[] = [];
+    const blockCandidates: CodeRegion[] = [];
+    const mathCandidates: CodeRegion[] = [];
+    const blockStarts: number[] = [];
+    const blockEnds: number[] = [];
     
-    // Detect code blocks (``` or ~~~)
-    detectCodeBlocks(text, regions);
+    const tree = ensureSyntaxTree(state, doc.length, 1000) ?? syntaxTree(state);
     
-    // Detect inline code (backticks) - but skip those in code blocks
-    detectInlineCode(text, regions);
+    tree.iterate({
+        enter: node => {
+            const name = node.type.name.toLowerCase();
+            
+            if (isInlineCodeNode(name)) {
+                inlineCandidates.push({
+                    from: node.from,
+                    to: node.to,
+                    type: 'inline-code'
+                });
+                return;
+            }
+            
+            if (isMathNode(name)) {
+                mathCandidates.push({
+                    from: node.from,
+                    to: node.to,
+                    type: 'math'
+                });
+            }
+            
+            if (isCodeBlockStartNode(name)) {
+                blockStarts.push(node.from);
+            }
+            
+            if (isCodeBlockEndNode(name)) {
+                blockEnds.push(node.to);
+            }
+            
+            if (isCodeBlockNode(name)) {
+                blockCandidates.push({
+                    from: node.from,
+                    to: node.to,
+                    type: 'codeblock'
+                });
+            }
+        }
+    });
     
-    // Detect math regions ($...$ and $$...$$)
-    detectMathRegions(text, regions);
+    const pairedBlocks = pairCodeBlockRegions(blockStarts, blockEnds, doc.length);
+    const mergedBlocks = pairedBlocks.length > 0
+        ? pairedBlocks
+        : mergeRegions(blockCandidates, true);
+    const expandedBlocks = expandRegionsToFullLines(mergedBlocks, doc);
+    
+    const inlineRegions = mergeRegions(inlineCandidates, false);
+    const mathRegions = mergeRegions(mathCandidates, true);
+    
+    regions.push(...expandedBlocks);
+    regions.push(...inlineRegions);
+    regions.push(...mathRegions);
     
     return regions;
 }
 
-/**
- * Detect code blocks in the text
- */
-function detectCodeBlocks(text: string, regions: CodeRegion[]): void {
-    // Match code blocks with ``` or ~~~
-    const codeBlockRegex = ListPatterns.CODE_BLOCK_FENCE;
-    let match;
-    let inCodeBlock = false;
-    let codeBlockStart = -1;
+function isInlineCodeNode(name: string): boolean {
+    return name.includes('inline-code') || name.includes('code_inline') || name.includes('inlinecode');
+}
+
+function isCodeBlockStartNode(name: string): boolean {
+    return name.includes('codeblock-begin');
+}
+
+function isCodeBlockEndNode(name: string): boolean {
+    return name.includes('codeblock-end');
+}
+
+function isCodeBlockNode(name: string): boolean {
+    if (name.includes('inline-code')) {
+        return false;
+    }
+    return (
+        name.includes('codeblock') ||
+        name.includes('code-block') ||
+        name.includes('fenced') ||
+        name.includes('hmd-codeblock')
+    );
+}
+
+function isMathNode(name: string): boolean {
+    return name.includes('math');
+}
+
+function pairCodeBlockRegions(starts: number[], ends: number[], docLength: number): CodeRegion[] {
+    const regions: CodeRegion[] = [];
+    const sortedStarts = [...starts].sort((a, b) => a - b);
+    const sortedEnds = [...ends].sort((a, b) => a - b);
+    let endIndex = 0;
     
-    while ((match = codeBlockRegex.exec(text)) !== null) {
-        if (!inCodeBlock) {
-            inCodeBlock = true;
-            codeBlockStart = match.index;
-        } else {
-            // End of code block
+    for (const start of sortedStarts) {
+        while (endIndex < sortedEnds.length && sortedEnds[endIndex] <= start) {
+            endIndex++;
+        }
+        if (endIndex < sortedEnds.length) {
             regions.push({
-                from: codeBlockStart,
-                to: match.index + match[0].length,
+                from: start,
+                to: sortedEnds[endIndex],
                 type: 'codeblock'
             });
-            inCodeBlock = false;
-            codeBlockStart = -1;
+            endIndex++;
+        } else {
+            regions.push({
+                from: start,
+                to: docLength,
+                type: 'codeblock'
+            });
         }
     }
     
-    // Handle unclosed code block
-    if (inCodeBlock && codeBlockStart !== -1) {
-        regions.push({
-            from: codeBlockStart,
-            to: text.length,
-            type: 'codeblock'
-        });
-    }
+    return regions;
 }
 
-/**
- * Detect inline code regions in the text
- * 
- * This function identifies inline code marked by single backticks (`).
- * It handles several edge cases:
- * 1. Escaped backticks (\`) are not treated as code delimiters
- * 2. Backticks inside code blocks are ignored (already marked as code)
- * 3. Unclosed backticks are skipped (no matching closing backtick)
- * 
- * Algorithm:
- * - Iterate through each character in the text
- * - Skip positions already inside code blocks
- * - When a backtick is found, check if it's escaped
- * - If not escaped, search for the matching closing backtick
- * - Mark the region between backticks as inline code
- * 
- * @param text - The document text to scan
- * @param regions - Array to add found inline code regions to
- */
-function detectInlineCode(text: string, regions: CodeRegion[]): void {
-    let i = 0;
-    while (i < text.length) {
-        // Skip if we're inside a code block
-        if (isInCodeBlock(i, regions)) {
-            i++;
-            continue;
-        }
+function mergeRegions(regions: CodeRegion[], mergeAdjacent: boolean): CodeRegion[] {
+    if (regions.length === 0) {
+        return regions;
+    }
+    
+    const sorted = [...regions].sort((a, b) => a.from - b.from || a.to - b.to);
+    const merged: CodeRegion[] = [sorted[0]];
+    
+    for (let i = 1; i < sorted.length; i++) {
+        const current = sorted[i];
+        const last = merged[merged.length - 1];
+        const overlaps = current.from <= (mergeAdjacent ? last.to : last.to - 1);
         
-        // Look for backtick
-        if (text[i] === '`') {
-            // Check if it's escaped with backslash
-            if (i > 0 && text[i - 1] === '\\') {
-                i++;
-                continue;
-            }
-            
-            // Search for the matching closing backtick
-            let j = i + 1;
-            while (j < text.length) {
-                if (text[j] === '`') {
-                    // Check if the closing backtick is escaped
-                    if (j > 0 && text[j - 1] === '\\') {
-                        j++;
-                        continue;
-                    }
-                    
-                    // Found valid closing backtick - mark as inline code
-                    regions.push({
-                        from: i,
-                        to: j + 1,
-                        type: 'inline-code'
-                    });
-                    i = j + 1;
-                    break;
-                }
-                j++;
-            }
-            
-            // If no closing backtick found, skip this backtick
-            if (j >= text.length) {
-                i++;
-            }
-        } else {
-            i++;
+        if (current.type === last.type && overlaps) {
+            last.to = Math.max(last.to, current.to);
+        } else if (!(current.from === last.from && current.to === last.to && current.type === last.type)) {
+            merged.push(current);
         }
     }
+    
+    return merged;
 }
 
-/**
- * Check if a position is inside a code block
- */
-function isInCodeBlock(pos: number, regions: CodeRegion[]): boolean {
-    for (const region of regions) {
-        if (region.type === 'codeblock' && pos >= region.from && pos < region.to) {
-            return true;
+function expandRegionsToFullLines(regions: CodeRegion[], doc: Text): CodeRegion[] {
+    return regions.map(region => {
+        if (region.type !== 'codeblock') {
+            return region;
         }
-    }
-    return false;
+        const startLine = doc.lineAt(region.from);
+        const endLine = doc.lineAt(Math.max(region.to - 1, region.from));
+        return {
+            ...region,
+            from: startLine.from,
+            to: endLine.to
+        };
+    });
 }
 
 /**
@@ -183,110 +215,6 @@ export function isRangeInCodeRegion(from: number, to: number, codeRegions: CodeR
     if (from === to) return false;
     for (const region of codeRegions) {
         if (from < region.to && to > region.from) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Detect math regions in the text
- * 
- * This function identifies both inline math ($...$) and display math ($$...$$).
- * It handles several edge cases:
- * 1. Escaped dollar signs (\$) are not treated as math delimiters
- * 2. Display math ($$) is prioritized over inline math
- * 3. Math inside code blocks is ignored (already marked as code)
- * 4. Unclosed math expressions are skipped
- * 
- * @param text - The document text to scan
- * @param regions - Array to add found math regions to
- */
-function detectMathRegions(text: string, regions: CodeRegion[]): void {
-    let i = 0;
-    while (i < text.length) {
-        // Skip if we're inside a code block or inline code
-        if (isInExistingRegion(i, regions)) {
-            i++;
-            continue;
-        }
-        
-        // Look for dollar sign
-        if (text[i] === '$') {
-            // Check if it's escaped with backslash
-            if (i > 0 && text[i - 1] === '\\') {
-                i++;
-                continue;
-            }
-            
-            // Check for display math ($$)
-            if (i + 1 < text.length && text[i + 1] === '$') {
-                // Search for closing $$
-                let j = i + 2;
-                while (j < text.length - 1) {
-                    if (text[j] === '$' && text[j + 1] === '$') {
-                        // Check if the closing $$ is escaped
-                        if (j > 0 && text[j - 1] === '\\') {
-                            j++;
-                            continue;
-                        }
-                        
-                        // Found valid closing $$ - mark as display math
-                        regions.push({
-                            from: i,
-                            to: j + 2,
-                            type: 'math'
-                        });
-                        i = j + 2;
-                        break;
-                    }
-                    j++;
-                }
-                
-                // If no closing $$ found, skip these dollar signs
-                if (j >= text.length - 1) {
-                    i += 2;
-                }
-            } else {
-                // Single $ - look for inline math
-                let j = i + 1;
-                while (j < text.length) {
-                    if (text[j] === '$') {
-                        // Check if the closing $ is escaped
-                        if (j > 0 && text[j - 1] === '\\') {
-                            j++;
-                            continue;
-                        }
-                        
-                        // Found valid closing $ - mark as inline math
-                        regions.push({
-                            from: i,
-                            to: j + 1,
-                            type: 'math'
-                        });
-                        i = j + 1;
-                        break;
-                    }
-                    j++;
-                }
-                
-                // If no closing $ found, skip this dollar sign
-                if (j >= text.length) {
-                    i++;
-                }
-            }
-        } else {
-            i++;
-        }
-    }
-}
-
-/**
- * Check if a position is inside any existing region (code block, inline code, or math)
- */
-function isInExistingRegion(pos: number, regions: CodeRegion[]): boolean {
-    for (const region of regions) {
-        if (pos >= region.from && pos < region.to) {
             return true;
         }
     }
