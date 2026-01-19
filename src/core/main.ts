@@ -26,6 +26,7 @@ import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelVi
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;
     private customLabelSuggester: CustomLabelReferenceSuggest;
+    private listPanelRibbonIcon: HTMLElement | null = null;
     settings: PandocExtendedMarkdownSettings;
 
     async onload() {
@@ -58,13 +59,15 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             (leaf) => new ListPanelView(leaf, this)
         );
         
-        // Add ribbon icon for list panel view
-        this.addRibbonIcon(ICONS.LIST_PANEL_ID, 'Open list panel', () => {
-            void this.activateListPanelView();
-        });
-        
         // Register all commands
         this.registerCommands();
+
+        this.updateListPanelAvailability();
+
+        // Apply list panel availability once layout is ready
+        this.app.workspace.onLayoutReady(() => {
+            this.updateListPanelAvailability();
+        });
     }
 
     private registerViewIcons(): void {
@@ -213,6 +216,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     }
     
     async activateListPanelView() {
+        if (!this.settings.enableListPanel) {
+            new Notice(MESSAGES.LIST_PANEL_DISABLED);
+            return;
+        }
         const { workspace } = this.app;
         
         let leaf: WorkspaceLeaf | null = null;
@@ -233,6 +240,35 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         // "Reveal" the leaf in case it is in a collapsed sidebar
         if (leaf) {
             await workspace.revealLeaf(leaf);
+        }
+    }
+
+    updateListPanelAvailability(): void {
+        if (this.settings.enableListPanel) {
+            this.ensureListPanelRibbonIcon();
+        } else {
+            this.removeListPanelRibbonIcon();
+            this.closeListPanelViews();
+        }
+    }
+
+    private ensureListPanelRibbonIcon(): void {
+        if (this.listPanelRibbonIcon) return;
+        this.listPanelRibbonIcon = this.addRibbonIcon(ICONS.LIST_PANEL_ID, 'Open list panel', () => {
+            void this.activateListPanelView();
+        });
+    }
+
+    private removeListPanelRibbonIcon(): void {
+        if (!this.listPanelRibbonIcon) return;
+        this.listPanelRibbonIcon.remove();
+        this.listPanelRibbonIcon = null;
+    }
+
+    private closeListPanelViews(): void {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIST_PANEL);
+        for (const leaf of leaves) {
+            leaf.detach();
         }
     }
     

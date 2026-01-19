@@ -291,6 +291,9 @@ The plugin provides a settings tab where you can configure:
   - Should be used together with lua_filter/CustomLabelList.lua for Pandoc output
   - When strict mode is enabled, custom label blocks require blank lines before/after
 
+- **List panel**: Toggle the list panel view in the sidebar
+  - When disabled, the list panel view and its ribbon icon are hidden
+
 ## Commands
 
 The plugin adds the following commands to the command palette:

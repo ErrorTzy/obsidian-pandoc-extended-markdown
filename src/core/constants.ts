@@ -40,6 +40,7 @@ export const MESSAGES = {
     NO_DEFINITION_LISTS: 'No definition lists found',
     NO_FOOTNOTES: 'No footnotes found',
     FOOTNOTE_REFERENCE_NOT_FOUND: 'No matching footnote reference found',
+    LIST_PANEL_DISABLED: 'List panel is disabled in settings',
     CUSTOM_LABELS_VIEW_TITLE: 'Custom Labels',
     EXAMPLE_LISTS_VIEW_TITLE: 'Example Lists',
     DEFINITION_LISTS_VIEW_TITLE: 'Definition Lists',
@@ -63,6 +64,7 @@ export const SETTINGS = {
     STRICT_MODE: 'strictPandocMode',
     AUTO_RENUMBER: 'autoRenumberLists',
     CUSTOM_LABEL: 'moreExtendedSyntax',
+    LIST_PANEL: 'enableListPanel',
     PANEL_ORDER: 'panelOrder',
 } as const;
 
@@ -79,6 +81,10 @@ export const SETTINGS_UI = {
     CUSTOM_LABEL: {
         NAME: 'Custom label list',
         DESCRIPTION: 'Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.'
+    },
+    LIST_PANEL: {
+        NAME: 'List panel',
+        DESCRIPTION: 'Enable the list panel view and its ribbon icon in the sidebar.'
     }
 } as const;
 

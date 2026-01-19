@@ -22,10 +22,18 @@ interface PanelOrderButtons {
 }
 
 export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
-    plugin: Plugin & { settings: PandocExtendedMarkdownSettings; saveSettings: () => Promise<void> };
+    plugin: Plugin & {
+        settings: PandocExtendedMarkdownSettings;
+        saveSettings: () => Promise<void>;
+        updateListPanelAvailability: () => void;
+    };
     private selectedPanelId?: string;
 
-    constructor(app: App, plugin: Plugin & { settings: PandocExtendedMarkdownSettings; saveSettings: () => Promise<void> }) {
+    constructor(app: App, plugin: Plugin & {
+        settings: PandocExtendedMarkdownSettings;
+        saveSettings: () => Promise<void>;
+        updateListPanelAvailability: () => void;
+    }) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -70,6 +78,17 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     
                     // Refresh list panel views if they exist
                     this.refreshListPanels();
+                }));
+
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.LIST_PANEL.NAME)
+            .setDesc(SETTINGS_UI.LIST_PANEL.DESCRIPTION)
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableListPanel)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableListPanel = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.updateListPanelAvailability();
                 }));
     }
 

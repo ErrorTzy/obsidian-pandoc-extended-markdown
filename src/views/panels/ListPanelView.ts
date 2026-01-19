@@ -114,6 +114,10 @@ export class ListPanelView extends ItemView {
     }
     
     async onOpen() {
+        if (!this.plugin.settings.enableListPanel) {
+            this.leaf.detach();
+            return;
+        }
         this.renderView();
         await this.updateView();
         

@@ -47,6 +47,7 @@ export interface PandocExtendedMarkdownSettings {
     strictPandocMode: boolean;
     autoRenumberLists: boolean;
     moreExtendedSyntax: boolean;
+    enableListPanel: boolean;
     panelOrder: string[];
 }
 
@@ -54,5 +55,6 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
     autoRenumberLists: false,
     moreExtendedSyntax: false,
+    enableListPanel: true,
     panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'footnotes']
 };
