@@ -14,6 +14,11 @@ export interface SuperSubMatch {
     type: 'superscript' | 'subscript';
 }
 
+interface SuperSubOptions {
+    enableSuperscript?: boolean;
+    enableSubscript?: boolean;
+}
+
 /**
  * Extract the actual text content from a superscript or subscript match,
  * handling escaped spaces.
@@ -27,34 +32,38 @@ function extractContent(match: string, delimiter: string): string {
 /**
  * Find all superscripts and subscripts in a text.
  */
-export function findSuperSubInText(text: string): SuperSubMatch[] {
+export function findSuperSubInText(text: string, options?: SuperSubOptions): SuperSubMatch[] {
     const matches: SuperSubMatch[] = [];
     
     // Find superscripts
-    const superscripts = ListPatterns.findSuperscripts(text);
-    superscripts.forEach(match => {
-        if (match.index !== undefined) {
-            matches.push({
-                index: match.index,
-                length: match[0].length,
-                content: extractContent(match[0], '^'),
-                type: 'superscript'
-            });
-        }
-    });
+    if (options?.enableSuperscript !== false) {
+        const superscripts = ListPatterns.findSuperscripts(text);
+        superscripts.forEach(match => {
+            if (match.index !== undefined) {
+                matches.push({
+                    index: match.index,
+                    length: match[0].length,
+                    content: extractContent(match[0], '^'),
+                    type: 'superscript'
+                });
+            }
+        });
+    }
     
     // Find subscripts
-    const subscripts = ListPatterns.findSubscripts(text);
-    subscripts.forEach(match => {
-        if (match.index !== undefined) {
-            matches.push({
-                index: match.index,
-                length: match[0].length,
-                content: extractContent(match[0], '~'),
-                type: 'subscript'
-            });
-        }
-    });
+    if (options?.enableSubscript !== false) {
+        const subscripts = ListPatterns.findSubscripts(text);
+        subscripts.forEach(match => {
+            if (match.index !== undefined) {
+                matches.push({
+                    index: match.index,
+                    length: match[0].length,
+                    content: extractContent(match[0], '~'),
+                    type: 'subscript'
+                });
+            }
+        });
+    }
     
     // Sort by index to process in order
     matches.sort((a, b) => a.index - b.index);
@@ -65,7 +74,7 @@ export function findSuperSubInText(text: string): SuperSubMatch[] {
 /**
  * Process superscripts and subscripts in an HTML element for reading mode.
  */
-export function processSuperSub(element: HTMLElement) {
+export function processSuperSub(element: HTMLElement, options?: SuperSubOptions) {
     const walker = createSmartTextNodeWalker(element);
     
     const nodesToReplace: { node: Text; matches: SuperSubMatch[] }[] = [];
@@ -83,7 +92,7 @@ export function processSuperSub(element: HTMLElement) {
         }
 
         const text = node.textContent || '';
-        const matches = findSuperSubInText(text);
+        const matches = findSuperSubInText(text, options);
         
         if (matches.length > 0) {
             nodesToReplace.push({ node, matches });

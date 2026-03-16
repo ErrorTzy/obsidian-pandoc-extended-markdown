@@ -1,5 +1,6 @@
 import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
 import { SuperscriptWidget } from '../../widgets';
 import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
@@ -14,6 +15,10 @@ export class SuperscriptProcessor implements InlineProcessor {
     
     findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[] {
         const matches: InlineMatch[] = [];
+
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableSuperscript')) {
+            return matches;
+        }
         
         // Pattern for superscript: ^text^ but not ~text~
         // Uses negative character classes for compatibility with older browsers

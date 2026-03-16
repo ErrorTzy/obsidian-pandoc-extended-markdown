@@ -4,7 +4,13 @@ import { Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 
 // Types
-import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS, PandocExtendedMarkdownSettingTab } from './settings';
+import {
+    PandocExtendedMarkdownSettings,
+    DEFAULT_SETTINGS,
+    PandocExtendedMarkdownSettingTab,
+    normalizeSettings,
+    isSyntaxFeatureEnabled
+} from './settings';
 import { createProcessorConfig } from '../shared/types/processorConfig';
 
 // Constants
@@ -133,7 +139,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             name: 'Check pandoc formatting',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
-                const issues = checkPandocFormatting(content, this.settings.moreExtendedSyntax);
+                const issues = checkPandocFormatting(
+                    content,
+                    isSyntaxFeatureEnabled(this.settings, 'enableCustomLabelLists')
+                );
                 
                 if (issues.length === 0) {
                     new Notice(MESSAGES.PANDOC_COMPLIANT);
@@ -152,7 +161,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
             name: 'Format document to pandoc standard',
             editorCallback: (editor: Editor) => {
                 const content = editor.getValue();
-                const formatted = formatToPandocStandard(content, this.settings.moreExtendedSyntax);
+                const formatted = formatToPandocStandard(
+                    content,
+                    isSyntaxFeatureEnabled(this.settings, 'enableCustomLabelLists')
+                );
                 
                 if (content !== formatted) {
                     editor.setValue(formatted);
@@ -273,10 +285,11 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     }
     
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        this.settings = normalizeSettings(Object.assign({}, DEFAULT_SETTINGS, await this.loadData()));
     }
 
     async saveSettings() {
+        this.settings = normalizeSettings(this.settings);
         await this.saveData(this.settings);
     }
     

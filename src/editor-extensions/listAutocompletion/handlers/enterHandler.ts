@@ -33,7 +33,7 @@ export function createEnterHandler(settings: PandocExtendedMarkdownSettings): Ke
             }
 
             // Original detection logic for when we're on a list item line
-            const detection = detectListMarker(currentLine, view);
+            const detection = detectListMarker(currentLine, view, settings);
 
             if (!detection.shouldHandleEnter) {
                 return false; // Let default Enter handling take over
@@ -45,12 +45,13 @@ export function createEnterHandler(settings: PandocExtendedMarkdownSettings): Ke
                 const beforeCursor = state.doc.sliceString(currentLine.line.from, currentLine.selection.from);
                 const afterCursor = state.doc.sliceString(currentLine.selection.from, currentLine.line.to);
 
-                const specialConfig: EmptyListHandlingConfig = {
-                    view,
-                    currentLine,
-                    beforeCursor,
-                    afterCursor
-                };
+            const specialConfig: EmptyListHandlingConfig = {
+                view,
+                currentLine,
+                settings,
+                beforeCursor,
+                afterCursor
+            };
 
                 return handleEmptyListSpecialCases(specialConfig);
             }
@@ -64,6 +65,7 @@ export function createEnterHandler(settings: PandocExtendedMarkdownSettings): Ke
             const emptyListConfig: EmptyListHandlingConfig = {
                 view,
                 currentLine,
+                settings,
                 beforeCursor: '',
                 afterCursor: ''
             };

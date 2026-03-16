@@ -47,6 +47,13 @@ export interface PandocExtendedMarkdownSettings {
     strictPandocMode: boolean;
     autoRenumberLists: boolean;
     moreExtendedSyntax: boolean;
+    enableHashAutoNumber?: boolean;
+    enableFancyLists?: boolean;
+    enableExampleLists?: boolean;
+    enableDefinitionLists?: boolean;
+    enableSuperscript?: boolean;
+    enableSubscript?: boolean;
+    enableCustomLabelLists?: boolean;
     enableListPanel: boolean;
     panelOrder: string[];
 }
@@ -55,6 +62,61 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
     autoRenumberLists: false,
     moreExtendedSyntax: false,
+    enableHashAutoNumber: true,
+    enableFancyLists: true,
+    enableExampleLists: true,
+    enableDefinitionLists: true,
+    enableSuperscript: true,
+    enableSubscript: true,
+    enableCustomLabelLists: false,
     enableListPanel: true,
     panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'footnotes']
 };
+
+export type SyntaxFeatureSettingKey =
+    | 'enableHashAutoNumber'
+    | 'enableFancyLists'
+    | 'enableExampleLists'
+    | 'enableDefinitionLists'
+    | 'enableSuperscript'
+    | 'enableSubscript'
+    | 'enableCustomLabelLists';
+
+export function isSyntaxFeatureEnabled(
+    settings: Partial<PandocExtendedMarkdownSettings>,
+    key: SyntaxFeatureSettingKey
+): boolean {
+    if (key === 'enableCustomLabelLists') {
+        if (settings.moreExtendedSyntax === true) {
+            return true;
+        }
+
+        return settings.enableCustomLabelLists
+            ?? settings.moreExtendedSyntax
+            ?? DEFAULT_SETTINGS.enableCustomLabelLists
+            ?? false;
+    }
+
+    return settings[key] ?? DEFAULT_SETTINGS[key] ?? false;
+}
+
+export function normalizeSettings(
+    settings?: Partial<PandocExtendedMarkdownSettings>
+): PandocExtendedMarkdownSettings {
+    const sourceSettings = settings ?? {};
+    const normalized: PandocExtendedMarkdownSettings = {
+        ...DEFAULT_SETTINGS,
+        ...settings
+    };
+
+    normalized.enableHashAutoNumber = isSyntaxFeatureEnabled(sourceSettings, 'enableHashAutoNumber');
+    normalized.enableFancyLists = isSyntaxFeatureEnabled(sourceSettings, 'enableFancyLists');
+    normalized.enableExampleLists = isSyntaxFeatureEnabled(sourceSettings, 'enableExampleLists');
+    normalized.enableDefinitionLists = isSyntaxFeatureEnabled(sourceSettings, 'enableDefinitionLists');
+    normalized.enableSuperscript = isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript');
+    normalized.enableSubscript = isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript');
+    normalized.enableCustomLabelLists = isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists');
+    normalized.moreExtendedSyntax = normalized.enableCustomLabelLists;
+
+    return normalized;
+}

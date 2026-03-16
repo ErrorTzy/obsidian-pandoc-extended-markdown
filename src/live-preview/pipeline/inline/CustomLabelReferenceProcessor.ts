@@ -1,5 +1,6 @@
 import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { CustomLabelReferenceWidget, DuplicateCustomLabelWidget } from '../../widgets';
 import { ListPatterns } from '../../../shared/patterns';
 import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
@@ -17,8 +18,7 @@ export class CustomLabelReferenceProcessor implements InlineProcessor {
     findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[] {
         const matches: InlineMatch[] = [];
         
-        // Only process if More Extended Syntax is enabled
-        if (!context.settings.moreExtendedSyntax) {
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableCustomLabelLists')) {
             return matches;
         }
         

@@ -1,6 +1,7 @@
 import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { StructuralResult, ProcessingContext } from '../types';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
 import { ExampleListMarkerWidget, DuplicateExampleLabelWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
@@ -13,6 +14,10 @@ export class ExampleListProcessor extends BaseStructuralProcessor {
     priority = 30;
     
     canProcess(line: Line, context: ProcessingContext): boolean {
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableExampleLists')) {
+            return false;
+        }
+
         const lineText = line.text;
         return ListPatterns.isExampleList(lineText) !== null;
     }

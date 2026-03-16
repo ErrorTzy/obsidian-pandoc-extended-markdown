@@ -63,13 +63,23 @@ export const COMMANDS = {
 export const SETTINGS = {
     STRICT_MODE: 'strictPandocMode',
     AUTO_RENUMBER: 'autoRenumberLists',
-    CUSTOM_LABEL: 'moreExtendedSyntax',
+    HASH_AUTO_NUMBER: 'enableHashAutoNumber',
+    FANCY_LISTS: 'enableFancyLists',
+    EXAMPLE_LISTS: 'enableExampleLists',
+    DEFINITION_LISTS: 'enableDefinitionLists',
+    SUPERSCRIPT: 'enableSuperscript',
+    SUBSCRIPT: 'enableSubscript',
+    CUSTOM_LABEL: 'enableCustomLabelLists',
     LIST_PANEL: 'enableListPanel',
     PANEL_ORDER: 'panelOrder',
 } as const;
 
 // Settings UI text
 export const SETTINGS_UI = {
+    SYNTAX_FEATURES: {
+        NAME: 'Syntax features',
+        DESCRIPTION: 'Choose which Pandoc syntaxes the plugin should recognize and render.'
+    },
     STRICT_MODE: {
         NAME: 'Strict Pandoc mode',
         DESCRIPTION: 'Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
@@ -78,9 +88,33 @@ export const SETTINGS_UI = {
         NAME: 'Auto-renumber lists',
         DESCRIPTION: 'Automatically renumber all list items when inserting a new item. This ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...) when you add items in the middle of a list.'
     },
+    HASH_AUTO_NUMBER: {
+        NAME: 'Hash auto-number lists',
+        DESCRIPTION: 'Enable `#.` auto-numbering lists in live preview, reading mode, and list continuation logic.'
+    },
+    FANCY_LISTS: {
+        NAME: 'Fancy lists',
+        DESCRIPTION: 'Enable alphabetic and Roman numeral list markers such as `A.` and `iv.`.'
+    },
+    EXAMPLE_LISTS: {
+        NAME: 'Example lists',
+        DESCRIPTION: 'Enable Pandoc example lists using `(@label)` markers and example reference rendering.'
+    },
+    DEFINITION_LISTS: {
+        NAME: 'Definition lists',
+        DESCRIPTION: 'Enable Pandoc definition lists with term lines followed by `:` or `~` definitions.'
+    },
+    SUPERSCRIPT: {
+        NAME: 'Superscript',
+        DESCRIPTION: 'Render inline superscript syntax like `2^10^`.'
+    },
+    SUBSCRIPT: {
+        NAME: 'Subscript',
+        DESCRIPTION: 'Render inline subscript syntax like `H~2~O`.'
+    },
     CUSTOM_LABEL: {
-        NAME: 'Custom label list',
-        DESCRIPTION: 'Should use it together with CustomLabelList.lua to enhance pandoc output. Enables custom label lists using {::LABEL} syntax. When strict pandoc mode is enabled, custom label lists must be preceded and followed by blank lines.'
+        NAME: 'Custom label lists',
+        DESCRIPTION: 'Enable `{::LABEL}` custom label lists and references. Use together with `CustomLabelList.lua` for Pandoc output. In strict mode, custom label lists must be surrounded by blank lines.'
     },
     LIST_PANEL: {
         NAME: 'List panel',

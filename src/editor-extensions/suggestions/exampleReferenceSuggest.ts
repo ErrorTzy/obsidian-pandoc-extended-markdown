@@ -2,6 +2,7 @@ import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSugg
 import PandocExtendedMarkdownPlugin from '../../core/main';
 import { CSS_CLASSES, TEXT_PROCESSING } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
+import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 interface ExampleSuggestion {
     label: string;
@@ -18,6 +19,10 @@ export class ExampleReferenceSuggest extends EditorSuggest<ExampleSuggestion> {
     }
 
     onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
+        if (!isSyntaxFeatureEnabled(this.plugin.settings, 'enableExampleLists')) {
+            return null;
+        }
+
         // Get the line up to the cursor
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
         

@@ -20,6 +20,7 @@ import { setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 
 // Internal modules
 import { BasePanelModule } from './BasePanelModule';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 
 export class CustomLabelPanelModule extends BasePanelModule {
     id = 'custom-labels';
@@ -33,7 +34,10 @@ export class CustomLabelPanelModule extends BasePanelModule {
     }
 
     protected extractData(content: string): void {
-        this.labels = extractCustomLabels(content, this.plugin.settings?.moreExtendedSyntax || false);
+        this.labels = extractCustomLabels(
+            content,
+            isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')
+        );
     }
 
     protected renderContent(activeView: MarkdownView): void {

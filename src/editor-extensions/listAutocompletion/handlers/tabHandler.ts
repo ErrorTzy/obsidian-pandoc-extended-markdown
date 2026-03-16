@@ -2,14 +2,16 @@ import { EditorView, KeyBinding } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
 import { ListPatterns } from '../../../shared/patterns';
 import { INDENTATION } from '../../../core/constants';
+import { PandocExtendedMarkdownSettings } from '../../../core/settings';
 import { removeIndentLevel } from '../utils/indentation';
+import { isExtendedList } from '../utils/markerDetection';
 
 /**
  * Creates the Tab key handler for nested lists.
  *
  * @returns KeyBinding for Tab key
  */
-export function createTabHandler(): KeyBinding {
+export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
     return {
         key: 'Tab',
         run: (view: EditorView): boolean => {
@@ -21,7 +23,9 @@ export function createTabHandler(): KeyBinding {
             const lineText = line.text;
 
             // Check if we're at the start of a list item (after the marker)
-            const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE);
+            const listMatch = isExtendedList(lineText, settings)
+                ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE)
+                : null;
             if (listMatch) {
                 const currentIndent = listMatch[1];
                 const marker = listMatch[2];
@@ -60,7 +64,7 @@ export function createTabHandler(): KeyBinding {
  *
  * @returns KeyBinding for Shift+Tab key
  */
-export function createShiftTabHandler(): KeyBinding {
+export function createShiftTabHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
     return {
         key: 'Shift-Tab',
         run: (view: EditorView): boolean => {
@@ -72,7 +76,9 @@ export function createShiftTabHandler(): KeyBinding {
             const lineText = line.text;
 
             // Check if we're in a list item with indentation
-            const listMatch = lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE);
+            const listMatch = isExtendedList(lineText, settings)
+                ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE)
+                : null;
             if (listMatch && listMatch[1].length > 0) {
                 const currentIndent = listMatch[1];
                 const marker = listMatch[2];

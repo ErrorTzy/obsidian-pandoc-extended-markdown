@@ -13,6 +13,7 @@ import {
 } from './types';
 import { CodeRegion } from '../../shared/types/codeTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
+import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 // Patterns
 import { ListPatterns } from '../../shared/patterns';
@@ -85,6 +86,10 @@ function createExampleScanResult() {
 // Scan example labels from document
 function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSettings, codeRegions?: CodeRegion[]) {
     const result = createExampleScanResult();
+    if (!isSyntaxFeatureEnabled(settings, 'enableExampleLists')) {
+        return { ...result, duplicateLineNumbers: new Set<number>() };
+    }
+
     const counter = { value: 1 };
     const lines = doc.toString().split('\n');
     const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : new Set<number>();
@@ -177,7 +182,7 @@ export class ProcessingPipeline {
         placeholderContext: PlaceholderContext,
         codeRegions?: CodeRegion[]
     ) {
-        return settings.moreExtendedSyntax 
+        return isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists')
             ? scanCustomLabels(doc, settings, placeholderContext, codeRegions)
             : {
                 customLabels: new Map<string, string>(),

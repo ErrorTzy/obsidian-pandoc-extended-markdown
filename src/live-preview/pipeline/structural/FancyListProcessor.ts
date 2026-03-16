@@ -1,5 +1,6 @@
 import { Line } from '@codemirror/state';
 import { StructuralResult, ProcessingContext } from '../types';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
 import { FancyListMarkerWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
@@ -12,6 +13,10 @@ export class FancyListProcessor extends BaseStructuralProcessor {
     priority = 20;
 
     canProcess(line: Line, context: ProcessingContext): boolean {
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableFancyLists')) {
+            return false;
+        }
+
         const lineText = line.text;
         return ListPatterns.isFancyList(lineText) !== null;
     }

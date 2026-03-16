@@ -3,6 +3,7 @@ import { PandocExtendedMarkdownPlugin } from '../../core/main';
 import { CSS_CLASSES, TEXT_PROCESSING } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 import { CustomLabelSuggestion } from '../../shared/types/listTypes';
+import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 import { withErrorBoundary } from '../../shared/utils/errorHandler';
 
@@ -19,8 +20,7 @@ export class CustomLabelReferenceSuggest extends EditorSuggest<CustomLabelSugges
     }
 
     onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
-        // Only trigger if More Extended Syntax is enabled
-        if (!this.plugin.settings.moreExtendedSyntax) return null;
+        if (!isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')) return null;
         
         // Get the line up to the cursor
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);

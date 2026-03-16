@@ -14,9 +14,9 @@ import { createShiftEnterHandler } from './handlers/shiftHandlers';
 export function createListAutocompletionKeymap(settings: PandocExtendedMarkdownSettings): KeyBinding[] {
     return [
         createEnterHandler(settings),
-        createShiftEnterHandler(),
-        createTabHandler(),
-        createShiftTabHandler()
+        createShiftEnterHandler(settings),
+        createTabHandler(settings),
+        createShiftTabHandler(settings)
     ];
 }
 

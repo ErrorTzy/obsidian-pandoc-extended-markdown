@@ -33,7 +33,7 @@ export function handleContinuationLine(config: ContinuationLineConfig): boolean 
 
     // We found the last list item before the continuation - create the next list item
     const allLines = state.doc.toString().split('\n');
-    const markerInfo = getNextListMarker(lastListItem.text, allLines, lastListItem.line.number - 1);
+    const markerInfo = getNextListMarker(lastListItem.text, allLines, lastListItem.line.number - 1, settings);
 
     if (!markerInfo) {
         return false;

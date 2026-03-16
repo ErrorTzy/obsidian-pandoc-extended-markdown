@@ -29,6 +29,7 @@ export interface ListMarkerDetectionResult {
 export interface EmptyListHandlingConfig {
     view: EditorView;
     currentLine: CurrentLineInfo;
+    settings: PandocExtendedMarkdownSettings;
     beforeCursor: string;
     afterCursor: string;
 }

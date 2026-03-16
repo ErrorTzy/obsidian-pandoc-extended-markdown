@@ -1,5 +1,6 @@
 import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
 import { ExampleReferenceWidget } from '../../widgets';
 import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
@@ -15,6 +16,11 @@ export class ExampleReferenceProcessor implements InlineProcessor {
     
     findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[] {
         const matches: InlineMatch[] = [];
+
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableExampleLists')) {
+            return matches;
+        }
+
         const pattern = ListPatterns.EXAMPLE_REFERENCE;
         
         // Get cursor position relative to region

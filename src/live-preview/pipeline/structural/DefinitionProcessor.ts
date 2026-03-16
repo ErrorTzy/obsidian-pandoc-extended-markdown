@@ -1,5 +1,6 @@
 import { Line } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 
 import { StructuralProcessor, StructuralResult, ProcessingContext, ContentRegion } from '../types';
 
@@ -19,6 +20,10 @@ export class DefinitionProcessor implements StructuralProcessor {
     priority = 20; // Process after other lists
     
     canProcess(line: Line, context: ProcessingContext): boolean {
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableDefinitionLists')) {
+            return false;
+        }
+
         const lineText = context.document.sliceString(line.from, line.to);
         
         // Check if it's a definition item

@@ -62,7 +62,10 @@ export function processReadingMode(
     
     // Process superscripts and subscripts across the entire element
     if (config.enableSuperSubscripts) {
-        processSuperSub(element);
+        processSuperSub(element, {
+            enableSuperscript: config.enableSuperscript !== false,
+            enableSubscript: config.enableSubscript !== false
+        });
     }
     
     // Process custom label lists if More Extended Syntax is enabled
@@ -134,7 +137,7 @@ function processElementTextNodes(
         const lines = text.split('\n');
         
         // Parse all lines with additional context
-        const parsedLines = parser.parseLines(lines, isInParagraph, isAtParagraphStart);
+        const parsedLines = parser.parseLines(lines, isInParagraph, isAtParagraphStart, config);
         
         // Validate if needed
         if (config.strictPandocMode) {
@@ -199,11 +202,11 @@ function processElementTextNodes(
 }
 
 function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {
-    const hasBasicSyntax = ListPatterns.isHashList(text) ||
-           ListPatterns.isFancyList(text) ||
-           ListPatterns.isExampleList(text) ||
-           ListPatterns.isDefinitionMarker(text) ||
-           ListPatterns.findExampleReferences(text).length > 0;
+    const hasBasicSyntax = (config?.enableHashLists !== false && !!ListPatterns.isHashList(text)) ||
+           (config?.enableFancyLists !== false && !!ListPatterns.isFancyList(text)) ||
+           (config?.enableExampleLists !== false && !!ListPatterns.isExampleList(text)) ||
+           (config?.enableDefinitionLists !== false && !!ListPatterns.isDefinitionMarker(text)) ||
+           (config?.enableExampleLists !== false && ListPatterns.findExampleReferences(text).length > 0);
     
     // Check for custom label syntax if enabled
     const hasCustomLabelSyntax = config?.enableCustomLabelLists && 

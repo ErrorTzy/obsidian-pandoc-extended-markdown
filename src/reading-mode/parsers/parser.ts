@@ -6,6 +6,7 @@
  */
 
 import { ListPatterns } from '../../shared/patterns';
+import { ProcessorConfig } from '../../shared/types/processorConfig';
 
 import { parseFancyListMarker } from './fancyListParser';
 import { parseExampleListMarker } from './exampleListParser';
@@ -55,9 +56,14 @@ export class ReadingModeParser {
     /**
      * Parse a single line and identify its type and data
      */
-    parseLine(line: string, context?: { nextLine?: string, isInParagraph?: boolean, isAtParagraphStart?: boolean }): ParsedLine {
-        // Check for hash auto-numbering list
-        const hashMatch = ListPatterns.isHashList(line);
+    parseLine(
+        line: string,
+        context?: { nextLine?: string, isInParagraph?: boolean, isAtParagraphStart?: boolean },
+        config?: ProcessorConfig
+    ): ParsedLine {
+        const hashMatch = config?.enableHashLists !== false
+            ? ListPatterns.isHashList(line)
+            : null;
         if (hashMatch) {
             return {
                 type: 'hash',
@@ -72,7 +78,9 @@ export class ReadingModeParser {
         }
 
         // Check for fancy list markers
-        const fancyMarker = parseFancyListMarker(line);
+        const fancyMarker = config?.enableFancyLists !== false
+            ? parseFancyListMarker(line)
+            : null;
         if (fancyMarker && fancyMarker.type !== 'hash') {
             return {
                 type: 'fancy',
@@ -89,7 +97,9 @@ export class ReadingModeParser {
         // Check for example list markers (only in paragraphs)
         // Example lists should only be recognized at the start of a paragraph,
         // not after inline elements like <strong> tags
-        if (context?.isInParagraph && context?.isAtParagraphStart !== false) {
+        if (config?.enableExampleLists !== false &&
+            context?.isInParagraph &&
+            context?.isAtParagraphStart !== false) {
             const exampleMarker = parseExampleListMarker(line);
             if (exampleMarker) {
                 const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
@@ -107,7 +117,9 @@ export class ReadingModeParser {
         }
 
         // Check for definition list markers
-        const defMarker = parseDefinitionListMarker(line);
+        const defMarker = config?.enableDefinitionLists !== false
+            ? parseDefinitionListMarker(line)
+            : null;
         if (defMarker && defMarker.type === 'definition') {
             return {
                 type: 'definition-item',
@@ -119,7 +131,9 @@ export class ReadingModeParser {
         }
 
         // Check if this is a definition term (followed by definition marker)
-        if (context?.nextLine && ListPatterns.isDefinitionMarker(context.nextLine)) {
+        if (config?.enableDefinitionLists !== false &&
+            context?.nextLine &&
+            ListPatterns.isDefinitionMarker(context.nextLine)) {
             return {
                 type: 'definition-term',
                 content: line,
@@ -130,7 +144,9 @@ export class ReadingModeParser {
         }
 
         // Check for example references
-        const references = this.findExampleReferences(line);
+        const references = config?.enableExampleLists !== false
+            ? this.findExampleReferences(line)
+            : [];
         if (references.length > 0) {
             return {
                 type: 'reference',
@@ -150,12 +166,17 @@ export class ReadingModeParser {
     /**
      * Parse multiple lines with context
      */
-    parseLines(lines: string[], isInParagraph: boolean = false, isAtParagraphStart: boolean = true): ParsedLine[] {
+    parseLines(
+        lines: string[],
+        isInParagraph: boolean = false,
+        isAtParagraphStart: boolean = true,
+        config?: ProcessorConfig
+    ): ParsedLine[] {
         return lines.map((line, index) => {
             const nextLine = index < lines.length - 1 ? lines[index + 1] : undefined;
             // Only the first line is at paragraph start, unless there are explicit line breaks
             const isLineAtStart = index === 0 ? isAtParagraphStart : true;
-            return this.parseLine(line, { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart });
+            return this.parseLine(line, { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart }, config);
         });
     }
 

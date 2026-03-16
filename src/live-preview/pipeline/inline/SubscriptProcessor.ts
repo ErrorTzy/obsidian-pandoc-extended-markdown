@@ -1,5 +1,6 @@
 import { Decoration } from '@codemirror/view';
 import { InlineProcessor, InlineMatch, ProcessingContext, ContentRegion } from '../types';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
 import { SubscriptWidget } from '../../widgets';
 import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
@@ -14,6 +15,10 @@ export class SubscriptProcessor implements InlineProcessor {
     
     findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[] {
         const matches: InlineMatch[] = [];
+
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableSubscript')) {
+            return matches;
+        }
         
         // Pattern for subscript: ~text~ but not ^text^
         const pattern = ListPatterns.SUBSCRIPT_INLINE;

@@ -1,5 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import { ListPatterns } from '../../../shared/patterns';
+import { PandocExtendedMarkdownSettings, isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { CurrentLineInfo, ListMarkerDetectionResult } from '../types';
 
 /**
@@ -9,12 +10,18 @@ import { CurrentLineInfo, ListMarkerDetectionResult } from '../types';
  * @param view - The editor view for accessing document state
  * @returns Detection result with handling flags
  */
-export function detectListMarker(currentLine: CurrentLineInfo, view: EditorView): ListMarkerDetectionResult {
+export function detectListMarker(
+    currentLine: CurrentLineInfo,
+    view: EditorView,
+    settings: PandocExtendedMarkdownSettings
+): ListMarkerDetectionResult {
     const { lineText, selection, line, distanceFromEnd } = currentLine;
     const state = view.state;
 
     // Check for empty example list special case
-    const isEmptyExampleList = lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL);
+    const isEmptyExampleList = isSyntaxFeatureEnabled(settings, 'enableExampleLists')
+        ? lineText.match(ListPatterns.EMPTY_EXAMPLE_LIST_NO_LABEL)
+        : null;
     if (isEmptyExampleList) {
         const beforeCursor = state.doc.sliceString(line.from, selection.from);
         const afterCursor = state.doc.sliceString(selection.from, line.to);
@@ -29,7 +36,9 @@ export function detectListMarker(currentLine: CurrentLineInfo, view: EditorView)
     }
 
     // Check for empty custom label list special case
-    const isEmptyCustomLabelList = lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL);
+    const isEmptyCustomLabelList = isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists')
+        ? lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)
+        : null;
     if (isEmptyCustomLabelList) {
         const beforeCursor = state.doc.sliceString(line.from, selection.from);
         const afterCursor = state.doc.sliceString(selection.from, line.to);
@@ -44,7 +53,7 @@ export function detectListMarker(currentLine: CurrentLineInfo, view: EditorView)
     }
 
     // Check if we're dealing with a list item
-    const isListItem = lineText.match(ListPatterns.ANY_LIST_MARKER);
+    const isListItem = isExtendedList(lineText, settings);
 
     if (!isListItem) {
         // Not a list item - require cursor at end of line
@@ -74,11 +83,12 @@ export function detectListMarker(currentLine: CurrentLineInfo, view: EditorView)
  * @param lineText - The text of the line to check
  * @returns True if the line is an extended list type
  */
-export function isExtendedList(lineText: string): boolean {
+export function isExtendedList(lineText: string, settings: PandocExtendedMarkdownSettings): boolean {
     return !!(
-        ListPatterns.isFancyList(lineText) ||
-        ListPatterns.isExampleList(lineText) ||
-        ListPatterns.isCustomLabelList(lineText) ||
-        ListPatterns.isHashList(lineText)
+        (isSyntaxFeatureEnabled(settings, 'enableFancyLists') && ListPatterns.isFancyList(lineText)) ||
+        (isSyntaxFeatureEnabled(settings, 'enableExampleLists') && ListPatterns.isExampleList(lineText)) ||
+        (isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists') && ListPatterns.isCustomLabelList(lineText)) ||
+        (isSyntaxFeatureEnabled(settings, 'enableHashAutoNumber') && ListPatterns.isHashList(lineText)) ||
+        (isSyntaxFeatureEnabled(settings, 'enableDefinitionLists') && ListPatterns.isDefinitionMarker(lineText))
     );
 }

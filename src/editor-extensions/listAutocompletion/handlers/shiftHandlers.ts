@@ -1,13 +1,14 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
 import { isExtendedList } from '../utils/markerDetection';
+import { PandocExtendedMarkdownSettings } from '../../../core/settings';
 
 /**
  * Creates the Shift+Enter key handler for list continuation.
  *
  * @returns KeyBinding for Shift+Enter key
  */
-export function createShiftEnterHandler(): KeyBinding {
+export function createShiftEnterHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
     return {
         key: 'Shift-Enter',
         run: (view: EditorView): boolean => {
@@ -19,7 +20,7 @@ export function createShiftEnterHandler(): KeyBinding {
             const lineText = line.text;
 
             // Check if we're in any kind of extended list
-            if (isExtendedList(lineText)) {
+            if (isExtendedList(lineText, settings)) {
                 // Insert newline with proper indentation
                 // Always use 3 spaces for continuation lines to ensure consistent alignment
                 const continuationIndent = '   '; // Exactly 3 spaces

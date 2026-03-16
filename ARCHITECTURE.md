@@ -58,13 +58,18 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
    - Processing artifacts: ProcessingContext
    - User preferences: Settings
 
-5. **Error Handling**
+5. **Feature Flags**
+   - Syntax enable/disable state is centralized in `shared/types/settingsTypes.ts`
+   - `normalizeSettings()` keeps persisted settings consistent and preserves legacy `moreExtendedSyntax` compatibility
+   - `isSyntaxFeatureEnabled()` is the shared gate for live preview, reading mode, editor suggestions, autocompletion, and panel visibility
+
+6. **Error Handling**
    - Centralized error handling with `errorHandler.ts`
    - `withErrorBoundary()` for synchronous operations
    - `withAsyncErrorBoundary()` for async operations
    - Consistent error context and recovery patterns
 
-6. **Code Quality Standards**
+7. **Code Quality Standards**
    - Maximum 400 lines per file
    - Maximum 50 lines per function
    - Import order: External → Types → Constants → Patterns → Utils → Internal
@@ -534,7 +539,8 @@ async function myAsyncFunction() {
 #### Task: Support a New List Marker Style
 1. Check `FancyListProcessor` - it likely already handles it
 2. If not, add pattern to `ListPatterns.FANCY_LIST`
-3. Test with `tests/unit/processors/structural/FancyListProcessor.spec.ts`
+3. Gate it through `isSyntaxFeatureEnabled()` if it should be user-toggleable
+4. Test with `tests/unit/processors/structural/FancyListProcessor.spec.ts`
 
 #### Task: Add Hover Preview to Something
 1. Use `setupRenderedHoverPreview()` from `hoverPopovers.ts`

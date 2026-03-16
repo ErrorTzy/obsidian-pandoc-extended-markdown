@@ -286,10 +286,15 @@ The plugin provides a settings tab where you can configure:
   - Ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...)
   - Only affects alphabetic and roman numeral lists, not hash (#.) or example (@) lists
 
-- **More extended syntax**: Enables additional extensions beyond pandoc markdown
-  - Custom label lists using `{::LABEL}` syntax for flexible list markers
-  - Should be used together with lua_filter/CustomLabelList.lua for Pandoc output
-  - When strict mode is enabled, custom label blocks require blank lines before/after
+- **Syntax features**: Toggle individual Pandoc syntaxes on or off
+  - Hash auto-number lists (`#.`)
+  - Fancy lists (`A.`, `i.`, etc.)
+  - Example lists and example references (`(@label)`)
+  - Definition lists
+  - Superscript and subscript
+  - Custom label lists (`{::LABEL}`) and custom label references
+  - Custom label lists should be used together with `lua_filter/CustomLabelList.lua` for Pandoc output
+  - When strict mode is enabled, custom label blocks still require blank lines before/after
 
 - **List panel**: Toggle the list panel view in the sidebar
   - When disabled, the list panel view and its ribbon icon are hidden

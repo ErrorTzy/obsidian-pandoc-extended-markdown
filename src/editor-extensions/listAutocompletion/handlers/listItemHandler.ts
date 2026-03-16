@@ -66,7 +66,7 @@ export function insertNewListItem(config: NewListItemConfig): boolean {
  * @returns True if handled successfully
  */
 export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerInfo'>): boolean {
-    const { currentLine } = config;
+    const { currentLine, settings } = config;
     const { lineText } = currentLine;
 
     // Skip regular numbered lists - let Obsidian handle those
@@ -78,7 +78,7 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     const state = config.view.state;
     const allLines = state.doc.toString().split('\n');
     const currentLineIndex = currentLine.line.number - 1; // Convert to 0-based index
-    const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex);
+    const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex, settings);
 
     if (markerInfo) {
         const newConfig = { ...config, markerInfo } as NewListItemConfig;

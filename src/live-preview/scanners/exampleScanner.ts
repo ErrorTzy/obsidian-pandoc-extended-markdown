@@ -1,6 +1,7 @@
 import { EditorView } from '@codemirror/view';
 
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
+import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 import { ListPatterns } from '../../shared/patterns';
 
@@ -25,6 +26,10 @@ export function scanExampleLabels(
         duplicateLabels: new Map(),
         duplicateLabelContent: new Map()
     };
+
+    if (!isSyntaxFeatureEnabled(settings, 'enableExampleLists')) {
+        return result;
+    }
     
     let counter = 1;
     const docText = view.state.doc.toString();

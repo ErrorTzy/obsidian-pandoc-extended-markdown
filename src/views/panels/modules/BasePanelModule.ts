@@ -5,6 +5,7 @@ import { CSS_CLASSES, MESSAGES } from '../../../core/constants';
 import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 
 /**
  * Base class for all panel modules.
@@ -113,29 +114,31 @@ export abstract class BasePanelModule implements PanelModule {
      * Common implementation that can be overridden if needed.
      */
     protected buildRenderingContext(content: string): void {
-        // Extract example lists for reference processing
-        const exampleItems = extractExampleLists(content);
         const exampleLabels = new Map<string, number>();
         const exampleContent = new Map<string, string>();
 
-        exampleItems.forEach(item => {
-            if (item.label) {
-                exampleLabels.set(item.label, item.number);
-                exampleContent.set(item.label, item.content.trim());
-            }
-        });
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableExampleLists')) {
+            const exampleItems = extractExampleLists(content);
+            exampleItems.forEach(item => {
+                if (item.label) {
+                    exampleLabels.set(item.label, item.number);
+                    exampleContent.set(item.label, item.content.trim());
+                }
+            });
+        }
 
-        // Extract custom labels for reference processing
-        const customLabels = extractCustomLabels(content);
         const customLabelMap = new Map<string, string>();
         const rawToProcessed = new Map<string, string>();
 
-        customLabels.forEach(label => {
-            customLabelMap.set(label.rawLabel, label.content);
-            if (label.processedLabel !== label.rawLabel) {
-                rawToProcessed.set(label.rawLabel, label.processedLabel);
-            }
-        });
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')) {
+            const customLabels = extractCustomLabels(content, true);
+            customLabels.forEach(label => {
+                customLabelMap.set(label.rawLabel, label.content);
+                if (label.processedLabel !== label.rawLabel) {
+                    rawToProcessed.set(label.rawLabel, label.processedLabel);
+                }
+            });
+        }
 
         this.currentContext = {
             exampleLabels,

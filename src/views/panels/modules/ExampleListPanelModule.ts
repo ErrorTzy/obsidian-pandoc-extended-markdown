@@ -15,6 +15,7 @@ import { ExampleListItem, extractExampleLists } from '../../../shared/extractors
 import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 import { highlightLine } from '../../editor/highlightUtils';
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 
 export class ExampleListPanelModule extends BasePanelModule {
     id = 'example-lists';
@@ -65,7 +66,7 @@ export class ExampleListPanelModule extends BasePanelModule {
 
         // Extract custom labels for reference processing if enabled
         const rawToProcessed = new Map<string, string>();
-        if (this.plugin.settings?.moreExtendedSyntax) {
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')) {
             const customLabels = extractCustomLabels(content, true);
             customLabels.forEach(label => {
                 // Extract the raw label without the {::} wrapper

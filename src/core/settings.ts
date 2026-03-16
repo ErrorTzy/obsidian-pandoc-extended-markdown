@@ -2,7 +2,13 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 // Types
-import { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS } from '../shared/types/settingsTypes';
+import {
+    PandocExtendedMarkdownSettings,
+    DEFAULT_SETTINGS,
+    normalizeSettings,
+    isSyntaxFeatureEnabled,
+    SyntaxFeatureSettingKey
+} from '../shared/types/settingsTypes';
 import type { ListPanelView } from '../views/panels/ListPanelView';
 
 // Constants
@@ -11,7 +17,12 @@ import { PANEL_SETTINGS, SETTINGS_UI } from './constants';
 // Internal modules
 import { VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
 
-export { PandocExtendedMarkdownSettings, DEFAULT_SETTINGS };
+export {
+    PandocExtendedMarkdownSettings,
+    DEFAULT_SETTINGS,
+    normalizeSettings,
+    isSyntaxFeatureEnabled
+};
 
 interface PanelOrderButtons {
     moveUp: HTMLButtonElement;
@@ -41,6 +52,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
+        this.plugin.settings = normalizeSettings(this.plugin.settings);
 
         this.renderGeneralSettings(containerEl);
         this.renderPanelOrderSettings(containerEl);
@@ -68,16 +80,56 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
+            .setName(SETTINGS_UI.SYNTAX_FEATURES.NAME)
+            .setDesc(SETTINGS_UI.SYNTAX_FEATURES.DESCRIPTION)
+            .setHeading();
+
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.HASH_AUTO_NUMBER.NAME,
+            SETTINGS_UI.HASH_AUTO_NUMBER.DESCRIPTION,
+            'enableHashAutoNumber'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.FANCY_LISTS.NAME,
+            SETTINGS_UI.FANCY_LISTS.DESCRIPTION,
+            'enableFancyLists'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.EXAMPLE_LISTS.NAME,
+            SETTINGS_UI.EXAMPLE_LISTS.DESCRIPTION,
+            'enableExampleLists'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.DEFINITION_LISTS.NAME,
+            SETTINGS_UI.DEFINITION_LISTS.DESCRIPTION,
+            'enableDefinitionLists'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.SUPERSCRIPT.NAME,
+            SETTINGS_UI.SUPERSCRIPT.DESCRIPTION,
+            'enableSuperscript'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.SUBSCRIPT.NAME,
+            SETTINGS_UI.SUBSCRIPT.DESCRIPTION,
+            'enableSubscript'
+        );
+        new Setting(containerEl)
             .setName(SETTINGS_UI.CUSTOM_LABEL.NAME)
             .setDesc(SETTINGS_UI.CUSTOM_LABEL.DESCRIPTION)
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.moreExtendedSyntax)
+                .setValue(isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists'))
                 .onChange(async (value) => {
-                    this.plugin.settings.moreExtendedSyntax = value;
+                    this.plugin.settings.enableCustomLabelLists = value;
                     await this.plugin.saveSettings();
-                    
-                    // Refresh list panel views if they exist
                     this.refreshListPanels();
+                    this.display();
                 }));
 
         new Setting(containerEl)
@@ -89,6 +141,25 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     this.plugin.settings.enableListPanel = value;
                     await this.plugin.saveSettings();
                     this.plugin.updateListPanelAvailability();
+                }));
+    }
+
+    private createFeatureToggle(
+        containerEl: HTMLElement,
+        name: string,
+        description: string,
+        settingKey: SyntaxFeatureSettingKey
+    ): void {
+        new Setting(containerEl)
+            .setName(name)
+            .setDesc(description)
+            .addToggle(toggle => toggle
+                .setValue(isSyntaxFeatureEnabled(this.plugin.settings, settingKey))
+                .onChange(async (value) => {
+                    this.plugin.settings[settingKey] = value;
+                    await this.plugin.saveSettings();
+                    this.refreshListPanels();
+                    this.display();
                 }));
     }
 
@@ -150,8 +221,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             const panelInfo = PANEL_SETTINGS.AVAILABLE_PANELS.find(p => p.id === panelId);
             if (!panelInfo) continue;
 
-            // Skip custom-labels if moreExtendedSyntax is disabled
-            if (panelId === 'custom-labels' && !this.plugin.settings.moreExtendedSyntax) {
+            if (!this.isPanelVisible(panelId)) {
                 continue;
             }
 
@@ -344,11 +414,25 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private getVisiblePanels(): string[] {
         return this.plugin.settings.panelOrder.filter(id => {
-            if (id === 'custom-labels' && !this.plugin.settings.moreExtendedSyntax) {
-                return false;
-            }
+            if (!this.isPanelVisible(id)) return false;
             return PANEL_SETTINGS.AVAILABLE_PANELS.some(panel => panel.id === id);
         });
+    }
+
+    private isPanelVisible(panelId: string): boolean {
+        if (panelId === 'custom-labels') {
+            return isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists');
+        }
+
+        if (panelId === 'example-lists') {
+            return isSyntaxFeatureEnabled(this.plugin.settings, 'enableExampleLists');
+        }
+
+        if (panelId === 'definition-lists') {
+            return isSyntaxFeatureEnabled(this.plugin.settings, 'enableDefinitionLists');
+        }
+
+        return true;
     }
 
     private getCurrentPanelIndex(): number {

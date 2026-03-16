@@ -1,4 +1,5 @@
 import { ListMarkerInfo } from '../types/listTypes';
+import { PandocExtendedMarkdownSettings, isSyntaxFeatureEnabled } from '../types/settingsTypes';
 
 import { ListPatterns } from '../patterns';
 import { NUMERIC_CONSTANTS, LIST_MARKERS, LIST_TYPES } from '../../core/constants';
@@ -48,9 +49,11 @@ export interface ListContext {
  * // Returns: { type: 'hash', indent: '', marker: '#.', spaces: ' ' }
  * ```
  */
-function parseMarkerParts(line: string): MarkerComponents | null {
+function parseMarkerParts(line: string, settings?: Partial<PandocExtendedMarkdownSettings>): MarkerComponents | null {
     // Check for hash auto-numbering
-    const hashMatch = ListPatterns.isHashList(line);
+    const hashMatch = isSyntaxFeatureEnabled(settings || {}, 'enableHashAutoNumber')
+        ? ListPatterns.isHashList(line)
+        : null;
     if (hashMatch) {
         return {
             type: 'hash',
@@ -61,7 +64,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     }
     
     // Check for custom label lists
-    const customLabelMatch = ListPatterns.isCustomLabelList(line);
+    const customLabelMatch = isSyntaxFeatureEnabled(settings || {}, 'enableCustomLabelLists')
+        ? ListPatterns.isCustomLabelList(line)
+        : null;
     if (customLabelMatch) {
         return {
             type: 'custom-label',
@@ -72,7 +77,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     }
     
     // Check for letters or roman numerals
-    const listMatch = line.match(ListPatterns.LETTER_OR_ROMAN_LIST);
+    const listMatch = isSyntaxFeatureEnabled(settings || {}, 'enableFancyLists')
+        ? line.match(ListPatterns.LETTER_OR_ROMAN_LIST)
+        : null;
     if (listMatch) {
         return {
             type: 'unknown', // Will be determined by detectListType
@@ -84,7 +91,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     }
     
     // Check for example lists with required spaces
-    const exampleMatch = line.match(ListPatterns.EXAMPLE_LIST);
+    const exampleMatch = isSyntaxFeatureEnabled(settings || {}, 'enableExampleLists')
+        ? line.match(ListPatterns.EXAMPLE_LIST)
+        : null;
     if (exampleMatch) {
         return {
             type: LIST_TYPES.EXAMPLE,
@@ -95,7 +104,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     }
     
     // Try optional space pattern if the first one didn't match
-    const altMatch = line.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE);
+    const altMatch = isSyntaxFeatureEnabled(settings || {}, 'enableExampleLists')
+        ? line.match(ListPatterns.EXAMPLE_LIST_OPTIONAL_SPACE)
+        : null;
     if (altMatch && line.length > altMatch[0].length) {
         // There's content after the marker even without explicit spaces
         return {
@@ -107,7 +118,9 @@ function parseMarkerParts(line: string): MarkerComponents | null {
     }
     
     // Check for definition lists
-    const definitionMatch = line.match(ListPatterns.DEFINITION_MARKER);
+    const definitionMatch = isSyntaxFeatureEnabled(settings || {}, 'enableDefinitionLists')
+        ? line.match(ListPatterns.DEFINITION_MARKER)
+        : null;
     if (definitionMatch) {
         return {
             type: LIST_TYPES.DEFINITION,
@@ -431,11 +444,16 @@ function handleSpecialCases(components: MarkerComponents): ListMarkerInfo | null
  * // Returns: { marker: 'ii.', indent: '  ', spaces: ' ' }
  * ```
  */
-export function getNextListMarker(currentLine: string, allLines?: string[], currentLineIndex?: number): ListMarkerInfo | null {
+export function getNextListMarker(
+    currentLine: string,
+    allLines?: string[],
+    currentLineIndex?: number,
+    settings?: Partial<PandocExtendedMarkdownSettings>
+): ListMarkerInfo | null {
     const context: ListContext = { currentLine, allLines, currentLineIndex };
     
     // Parse the marker components from the current line
-    const components = parseMarkerParts(currentLine);
+    const components = parseMarkerParts(currentLine, settings);
     if (!components) {
         return null;
     }

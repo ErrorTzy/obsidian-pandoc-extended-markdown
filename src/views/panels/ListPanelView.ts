@@ -9,6 +9,7 @@ import { UI_CONSTANTS, ICONS, CSS_CLASSES } from '../../core/constants';
 
 // Utils
 import { handleError } from '../../shared/utils/errorHandler';
+import { isSyntaxFeatureEnabled, normalizeSettings } from '../../shared/types/settingsTypes';
 
 // Internal modules
 import { CustomLabelPanelModule } from './modules/CustomLabelPanelModule';
@@ -32,6 +33,7 @@ export class ListPanelView extends ItemView {
     constructor(leaf: WorkspaceLeaf, plugin: PandocExtendedMarkdownPlugin) {
         super(leaf);
         this.plugin = plugin;
+        this.plugin.settings = normalizeSettings(this.plugin.settings);
         
         this.hoverLinkSource = {
             display: 'List panel',
@@ -45,8 +47,7 @@ export class ListPanelView extends ItemView {
         const availablePanels: PanelTabInfo[] = [];
         
         // Register all available panels
-        // Only register custom label panel if More Extended Syntax is enabled
-        if (this.plugin.settings.moreExtendedSyntax) {
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')) {
             const customLabelModule = new CustomLabelPanelModule(this.plugin);
             availablePanels.push({
                 id: customLabelModule.id,
@@ -56,21 +57,25 @@ export class ListPanelView extends ItemView {
             });
         }
         
-        const exampleListModule = new ExampleListPanelModule(this.plugin);
-        availablePanels.push({
-            id: exampleListModule.id,
-            displayName: exampleListModule.displayName,
-            icon: exampleListModule.icon,
-            module: exampleListModule
-        });
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableExampleLists')) {
+            const exampleListModule = new ExampleListPanelModule(this.plugin);
+            availablePanels.push({
+                id: exampleListModule.id,
+                displayName: exampleListModule.displayName,
+                icon: exampleListModule.icon,
+                module: exampleListModule
+            });
+        }
         
-        const definitionListModule = new DefinitionListPanelModule(this.plugin);
-        availablePanels.push({
-            id: definitionListModule.id,
-            displayName: definitionListModule.displayName,
-            icon: definitionListModule.icon,
-            module: definitionListModule
-        });
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableDefinitionLists')) {
+            const definitionListModule = new DefinitionListPanelModule(this.plugin);
+            availablePanels.push({
+                id: definitionListModule.id,
+                displayName: definitionListModule.displayName,
+                icon: definitionListModule.icon,
+                module: definitionListModule
+            });
+        }
 
         const footnoteModule = new FootnotePanelModule(this.plugin);
         availablePanels.push({
@@ -114,6 +119,7 @@ export class ListPanelView extends ItemView {
     }
     
     async onOpen() {
+        this.plugin.settings = normalizeSettings(this.plugin.settings);
         if (!this.plugin.settings.enableListPanel) {
             this.leaf.detach();
             return;

@@ -1,3 +1,8 @@
+import {
+    PandocExtendedMarkdownSettings,
+    isSyntaxFeatureEnabled
+} from './settingsTypes';
+
 /**
  * Processor Configuration
  * 
@@ -19,6 +24,8 @@ export interface ProcessorConfig {
     enableExampleLists?: boolean;
     enableDefinitionLists?: boolean;
     enableSuperSubscripts?: boolean;
+    enableSuperscript?: boolean;
+    enableSubscript?: boolean;
     enableCustomLabelLists?: boolean;
 }
 
@@ -27,21 +34,20 @@ export interface ProcessorConfig {
  */
 export function createProcessorConfig(
     vaultConfig: { strictLineBreaks?: boolean },
-    pluginSettings: { 
-        strictPandocMode?: boolean,
-        moreExtendedSyntax?: boolean
-    }
+    pluginSettings: Partial<PandocExtendedMarkdownSettings>
 ): ProcessorConfig {
-    const moreExtendedSyntax = pluginSettings.moreExtendedSyntax ?? false;
     return {
         strictLineBreaks: vaultConfig.strictLineBreaks ?? false,
         strictPandocMode: pluginSettings.strictPandocMode ?? false,
-        moreExtendedSyntax: moreExtendedSyntax,
-        enableHashLists: true,
-        enableFancyLists: true,
-        enableExampleLists: true,
-        enableDefinitionLists: true,
-        enableSuperSubscripts: true,
-        enableCustomLabelLists: moreExtendedSyntax
+        moreExtendedSyntax: isSyntaxFeatureEnabled(pluginSettings, 'enableCustomLabelLists'),
+        enableHashLists: isSyntaxFeatureEnabled(pluginSettings, 'enableHashAutoNumber'),
+        enableFancyLists: isSyntaxFeatureEnabled(pluginSettings, 'enableFancyLists'),
+        enableExampleLists: isSyntaxFeatureEnabled(pluginSettings, 'enableExampleLists'),
+        enableDefinitionLists: isSyntaxFeatureEnabled(pluginSettings, 'enableDefinitionLists'),
+        enableSuperSubscripts: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript')
+            || isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
+        enableSuperscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript'),
+        enableSubscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
+        enableCustomLabelLists: isSyntaxFeatureEnabled(pluginSettings, 'enableCustomLabelLists')
     };
 }

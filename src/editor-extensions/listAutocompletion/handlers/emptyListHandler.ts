@@ -100,7 +100,7 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
             const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
             if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
                 const allLines = state.doc.toString().split('\n');
-                const markerInfo = getNextListMarker(prevText, allLines, i - 1);
+                const markerInfo = getNextListMarker(prevText, allLines, i - 1, config.settings);
                 if (markerInfo) {
                     previousMarker = markerInfo;
                     break;

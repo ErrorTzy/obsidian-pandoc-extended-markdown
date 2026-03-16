@@ -4,6 +4,7 @@ import { Text } from '@codemirror/state';
 // Types
 import { CodeRegion } from '../../shared/types/codeTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
+import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 // Patterns
 import { ListPatterns } from '../../shared/patterns';
@@ -92,8 +93,7 @@ export function scanCustomLabels(
     const seenLabels = new Map<string, { line: number; content: string }>();
     const context = placeholderContext || new PlaceholderContext();
     
-    // Only scan if More Extended Syntax is enabled
-    if (!settings.moreExtendedSyntax) {
+    if (!isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists')) {
         return { customLabels, rawToProcessed, duplicateLabels, duplicateLineInfo, placeholderContext: context };
     }
     
@@ -165,8 +165,7 @@ export function validateCustomLabelBlocks(
 ): Set<number> {
     const invalidLines = new Set<number>();
     
-    // Only validate if More Extended Syntax is enabled AND strict pandoc mode is enabled
-    if (!settings.moreExtendedSyntax || !settings.strictPandocMode) {
+    if (!isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists') || !settings.strictPandocMode) {
         return invalidLines;
     }
     
