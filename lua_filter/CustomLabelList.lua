@@ -179,12 +179,12 @@ function LabelParser.extract_label_from_inlines(inlines)
     return nil
 end
 
-function LabelParser.split_by_softbreak(inlines)
+function LabelParser.split_by_break(inlines)
     local groups = {}
     local current = pandoc.List{}
     
     for _, inline in ipairs(inlines) do
-        if inline.t == "SoftBreak" then
+        if inline.t == "SoftBreak" or inline.t == "LineBreak" then
             if #current > 0 then
                 table.insert(groups, current)
                 current = pandoc.List{}
@@ -375,7 +375,7 @@ function DocumentScanner.scan(blocks)
     
     for i, block in ipairs(blocks) do
         if block.t == "Para" or block.t == "Plain" then
-            local groups = LabelParser.split_by_softbreak(block.content)
+            local groups = LabelParser.split_by_break(block.content)
             local has_examples = false
             
             for _, group in ipairs(groups) do
@@ -424,7 +424,7 @@ function BlockTransformer.transform(blocks, example_blocks)
     for i, block in ipairs(blocks) do
         if example_blocks[i] then
             -- Process example block
-            local groups = LabelParser.split_by_softbreak(block.content)
+            local groups = LabelParser.split_by_break(block.content)
             
             for _, group in ipairs(groups) do
                 local content, label = BlockTransformer.process_example_group(group)
