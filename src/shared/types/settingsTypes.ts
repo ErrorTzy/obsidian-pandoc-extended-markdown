@@ -2,6 +2,11 @@
  * Settings and state-related type definitions for the Pandoc Extended Markdown plugin.
  */
 import { PlaceholderContext } from '../utils/placeholderProcessor';
+import {
+    DEFAULT_ORDERED_LIST_MARKER_ORDER,
+    OrderedListMarkerStyle,
+    normalizeOrderedListMarkerOrder
+} from './orderedListTypes';
 
 /**
  * View modes supported by the plugin
@@ -56,6 +61,8 @@ export interface PandocExtendedMarkdownSettings {
     enableCustomLabelLists?: boolean;
     enableUnorderedListMarkerCycling?: boolean;
     enableUnorderedListMarkerStyles?: boolean;
+    enableOrderedListMarkerCycling?: boolean;
+    orderedListMarkerOrder: OrderedListMarkerStyle[];
     enableListPanel: boolean;
     panelOrder: string[];
 }
@@ -73,6 +80,8 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableCustomLabelLists: false,
     enableUnorderedListMarkerCycling: true,
     enableUnorderedListMarkerStyles: true,
+    enableOrderedListMarkerCycling: true,
+    orderedListMarkerOrder: [...DEFAULT_ORDERED_LIST_MARKER_ORDER],
     enableListPanel: true,
     panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'footnotes']
 };
@@ -86,7 +95,8 @@ export type SyntaxFeatureSettingKey =
     | 'enableSubscript'
     | 'enableCustomLabelLists'
     | 'enableUnorderedListMarkerCycling'
-    | 'enableUnorderedListMarkerStyles';
+    | 'enableUnorderedListMarkerStyles'
+    | 'enableOrderedListMarkerCycling';
 
 export function isSyntaxFeatureEnabled(
     settings: Partial<PandocExtendedMarkdownSettings>,
@@ -124,6 +134,8 @@ export function normalizeSettings(
     normalized.enableCustomLabelLists = isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists');
     normalized.enableUnorderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerCycling');
     normalized.enableUnorderedListMarkerStyles = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerStyles');
+    normalized.enableOrderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableOrderedListMarkerCycling');
+    normalized.orderedListMarkerOrder = normalizeOrderedListMarkerOrder(sourceSettings.orderedListMarkerOrder);
     normalized.moreExtendedSyntax = normalized.enableCustomLabelLists;
 
     return normalized;

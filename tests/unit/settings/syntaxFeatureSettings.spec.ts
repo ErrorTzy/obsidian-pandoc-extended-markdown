@@ -58,4 +58,22 @@ describe('Syntax feature settings', () => {
         expect(settings.enableUnorderedListMarkerStyles).toBe(false);
         expect(config.enableUnorderedListMarkerStyles).toBe(false);
     });
+
+    it('enables ordered list marker cycling by default', () => {
+        const settings = normalizeSettings({});
+
+        expect(settings.enableOrderedListMarkerCycling).toBe(true);
+        expect(settings.orderedListMarkerOrder).toEqual([
+            'decimal-period',
+            'lower-alpha-period',
+            'lower-roman-period',
+            'upper-alpha-period',
+            'upper-roman-period',
+            'decimal-one-paren',
+            'lower-alpha-one-paren',
+            'lower-roman-one-paren',
+            'upper-alpha-one-paren',
+            'upper-roman-one-paren'
+        ]);
+    });
 });

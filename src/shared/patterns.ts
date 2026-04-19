@@ -74,6 +74,8 @@ export class ListPatterns {
     static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
     static readonly UNORDERED_LIST_MARKER_WITH_SPACE = /^(\s*)([-+*])(\s+)/;
     static readonly UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)([-+*])(\s+)/;
+    static readonly ORDERED_LIST_MARKER_WITH_SPACE = /^(\s*)(\d+[.)]|[A-Za-z]+[.)])(\s+)/;
+    static readonly ORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(\d+[.)]|[A-Za-z]+[.)])(\s+)/;
     
     // Indentation patterns
     static readonly INDENT_ONLY = /^(\s*)/;

@@ -465,6 +465,45 @@ sub.pem-subscript {
     width: 100%;
 }
 
+.pem-ordered-list-order-container {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(120px, 150px);
+    align-items: flex-start;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.pem-ordered-list-order-list {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.pem-ordered-list-order-container .pem-panel-order-buttons {
+    min-width: 0;
+    width: 100%;
+}
+
+.pem-ordered-list-order-item {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    line-height: 1.35;
+}
+
+.pem-ordered-list-order-marker {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.pem-ordered-list-order-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+
 /* Custom Label View Styles */
 table.custom-label-view-container {
     width: 100%;

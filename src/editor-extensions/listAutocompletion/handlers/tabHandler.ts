@@ -7,11 +7,16 @@ import { ListPatterns } from '../../../shared/patterns';
 import { removeIndentLevel } from '../utils/indentation';
 import { isExtendedList } from '../utils/markerDetection';
 import { getMarkerForIndent } from '../utils/unorderedMarkers';
+import { getOrderedMarkerForIndent } from '../utils/orderedMarkers';
 import { resolveSettings, SettingsProvider } from '../types';
 
 function getTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
     if (ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE.test(lineText)) {
         return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE);
+    }
+
+    if (ListPatterns.ORDERED_LIST_MARKER_WITH_SPACE.test(lineText)) {
+        return lineText.match(ListPatterns.ORDERED_LIST_MARKER_WITH_SPACE);
     }
 
     return isExtendedList(lineText, settings)
@@ -24,9 +29,22 @@ function getShiftTabListMatch(lineText: string, settings: PandocExtendedMarkdown
         return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE);
     }
 
+    if (ListPatterns.ORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE.test(lineText)) {
+        return lineText.match(ListPatterns.ORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE);
+    }
+
     return isExtendedList(lineText, settings)
         ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE)
         : null;
+}
+
+function getMarkerForTargetIndent(
+    marker: string,
+    indent: string,
+    settings: PandocExtendedMarkdownSettings
+): string {
+    const unorderedMarker = getMarkerForIndent(marker, indent, settings);
+    return getOrderedMarkerForIndent(unorderedMarker, indent, settings);
 }
 
 /**
@@ -58,7 +76,7 @@ export function createTabHandler(settingsProvider: SettingsProvider): KeyBinding
                 if (selection.from === line.from + markerEnd && selection.to === selection.from) {
                     // Add indentation (4 spaces or 1 tab based on user preference)
                     const newIndent = currentIndent + INDENTATION.FOUR_SPACES; // Using 4 spaces
-                    const newMarker = getMarkerForIndent(marker, newIndent, settings);
+                    const newMarker = getMarkerForTargetIndent(marker, newIndent, settings);
                     const newLine = newIndent + newMarker + space + lineText.substring(markerEnd);
 
                     const changes = {
@@ -109,7 +127,7 @@ export function createShiftTabHandler(settingsProvider: SettingsProvider): KeyBi
 
                 // Remove indentation level
                 const newIndent = removeIndentLevel(currentIndent);
-                const newMarker = getMarkerForIndent(marker, newIndent, settings);
+                const newMarker = getMarkerForTargetIndent(marker, newIndent, settings);
                 const newLine = newIndent + newMarker + space + lineText.substring(markerEnd);
 
                 const changes = {

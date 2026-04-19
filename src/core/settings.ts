@@ -9,6 +9,7 @@ import {
     isSyntaxFeatureEnabled,
     SyntaxFeatureSettingKey
 } from '../shared/types/settingsTypes';
+import { OrderedListMarkerStyle } from '../shared/types/orderedListTypes';
 import type { ListPanelView } from '../views/panels/ListPanelView';
 
 // Constants
@@ -16,6 +17,7 @@ import { PANEL_SETTINGS, SETTINGS_UI } from './constants';
 
 // Internal modules
 import { VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
+import { OrderedListOrderControl } from './settingsOrderedListOrder';
 
 export {
     PandocExtendedMarkdownSettings,
@@ -39,6 +41,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         updateListPanelAvailability: () => void;
     };
     private selectedPanelId?: string;
+    private selectedOrderedListStyleId?: OrderedListMarkerStyle;
 
     constructor(app: App, plugin: Plugin & {
         settings: PandocExtendedMarkdownSettings;
@@ -55,6 +58,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         this.plugin.settings = normalizeSettings(this.plugin.settings);
 
         this.renderGeneralSettings(containerEl);
+        this.renderOrderedListMarkerOrderSettings(containerEl);
         this.renderPanelOrderSettings(containerEl);
     }
 
@@ -122,6 +126,12 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         );
         this.createFeatureToggle(
             containerEl,
+            SETTINGS_UI.ORDERED_LIST_MARKER_CYCLING.NAME,
+            SETTINGS_UI.ORDERED_LIST_MARKER_CYCLING.DESCRIPTION,
+            'enableOrderedListMarkerCycling'
+        );
+        this.createFeatureToggle(
+            containerEl,
             SETTINGS_UI.SUPERSCRIPT.NAME,
             SETTINGS_UI.SUPERSCRIPT.DESCRIPTION,
             'enableSuperscript'
@@ -154,6 +164,21 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.updateListPanelAvailability();
                 }));
+    }
+
+    private renderOrderedListMarkerOrderSettings(containerEl: HTMLElement): void {
+        new OrderedListOrderControl({
+            containerEl,
+            settings: this.plugin.settings,
+            saveSettings: () => this.plugin.saveSettings(),
+            selectedStyleId: this.selectedOrderedListStyleId,
+            setSelectedStyleId: (styleId) => {
+                this.selectedOrderedListStyleId = styleId;
+            },
+            refresh: () => {
+                this.display();
+            }
+        }).render();
     }
 
     private createFeatureToggle(

@@ -11,6 +11,7 @@ interface WorkspaceMock {
   detachLeavesOfType: jest.Mock<void, [string]>;
   trigger: jest.Mock;
   setActiveLeaf: jest.Mock<void, [WorkspaceLeaf, { focus: boolean }]>;
+  updateOptions: jest.Mock;
 }
 
 interface CreateElOptions {
@@ -27,6 +28,8 @@ type ExtendedElement = HTMLElement & {
   addClass: (cls: string) => void;
   removeClass: (cls: string) => void;
 };
+
+type ToggleChangeHandler = (value: boolean) => void | Promise<void>;
 
 function ensureCssHelpers(): void {
   const toKebabCase = (property: string) =>
@@ -152,8 +155,73 @@ export class WorkspaceLeaf {
 
 export class Modal {}
 export class Notice {}
-export class PluginSettingTab {}
-export class Setting {}
+export class PluginSettingTab {
+  app: App;
+  plugin: unknown;
+  containerEl: ExtendedElement;
+
+  constructor(app: App, plugin: unknown) {
+    this.app = app;
+    this.plugin = plugin;
+    this.containerEl = enhanceElement(document.createElement('div'));
+  }
+}
+
+class ToggleComponent {
+  private inputEl: HTMLInputElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.inputEl = document.createElement('input');
+    this.inputEl.type = 'checkbox';
+    containerEl.appendChild(this.inputEl);
+  }
+
+  setValue(value: boolean): this {
+    this.inputEl.checked = value;
+    return this;
+  }
+
+  onChange(callback: ToggleChangeHandler): this {
+    this.inputEl.addEventListener('change', () => {
+      void callback(this.inputEl.checked);
+    });
+    return this;
+  }
+}
+
+export class Setting {
+  settingEl: ExtendedElement;
+  infoEl: ExtendedElement;
+  controlEl: ExtendedElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.settingEl = enhanceElement(document.createElement('div'));
+    this.settingEl.className = 'setting-item';
+    this.infoEl = this.settingEl.createDiv({ cls: 'setting-item-info' });
+    this.controlEl = this.settingEl.createDiv({ cls: 'setting-item-control' });
+    containerEl.appendChild(this.settingEl);
+  }
+
+  setName(name: string): this {
+    this.infoEl.createDiv({ text: name, cls: 'setting-item-name' });
+    return this;
+  }
+
+  setDesc(description: string): this {
+    this.infoEl.createDiv({ text: description, cls: 'setting-item-description' });
+    return this;
+  }
+
+  setHeading(): this {
+    this.settingEl.classList.add('setting-item-heading');
+    return this;
+  }
+
+  addToggle(callback: (toggle: ToggleComponent) => void): this {
+    callback(new ToggleComponent(this.controlEl));
+    return this;
+  }
+}
 export class App {
   workspace: WorkspaceMock = {
     on: jest.fn(),
@@ -163,7 +231,8 @@ export class App {
     revealLeaf: jest.fn(),
     detachLeavesOfType: jest.fn(),
     trigger: jest.fn(),
-    setActiveLeaf: jest.fn()
+    setActiveLeaf: jest.fn(),
+    updateOptions: jest.fn()
   };
 }
 export class MarkdownView {

@@ -22,6 +22,7 @@ Render Pandoc-style superscripts and subscripts:
 - **Hash Auto-numbering**: `#.` automatically numbers items sequentially
 - **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
 - **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
+- **Depth-based ordered marker cycling**: Indenting with Tab cycles ordered markers by nesting depth. Supported non-auto markers are decimal, lowercase letters, uppercase letters, lowercase roman numerals, and uppercase roman numerals with either `.` or `)`.
 
 ### Unordered Lists
 - **Depth-based marker cycling**: Indenting with Tab cycles unordered markers by nesting depth: `-`, `+`, `*`, then repeats. Outdenting restores the marker for the shallower level.
@@ -300,11 +301,14 @@ The plugin provides a settings tab where you can configure:
   - Custom label lists (`{::LABEL}`) and custom label references
   - Depth-based unordered list marker cycling
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
+  - Depth-based ordered list marker cycling for `1.`, `1)`, `a.`, `a)`, `A.`, `A)`, `i.`, `i)`, `I.`, and `I)`
   - Custom label lists should be used together with `lua_filter/CustomLabelList.lua` for Pandoc output
   - When strict mode is enabled, custom label blocks still require blank lines before/after
 
 - **List panel**: Toggle the list panel view in the sidebar
   - When disabled, the list panel view and its ribbon icon are hidden
+
+- **Ordered list marker order**: Choose the nesting-depth order used by ordered marker cycling. Hash auto-number lists (`#.`) are not included because they are already auto-numbered.
 
 ## Commands
 

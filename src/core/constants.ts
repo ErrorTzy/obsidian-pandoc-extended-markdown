@@ -70,6 +70,8 @@ export const SETTINGS = {
     SUPERSCRIPT: 'enableSuperscript',
     SUBSCRIPT: 'enableSubscript',
     CUSTOM_LABEL: 'enableCustomLabelLists',
+    ORDERED_LIST_MARKER_CYCLING: 'enableOrderedListMarkerCycling',
+    ORDERED_LIST_MARKER_ORDER: 'orderedListMarkerOrder',
     LIST_PANEL: 'enableListPanel',
     PANEL_ORDER: 'panelOrder',
 } as const;
@@ -123,6 +125,10 @@ export const SETTINGS_UI = {
     UNORDERED_LIST_MARKER_STYLES: {
         NAME: 'Distinct unordered list markers',
         DESCRIPTION: 'Render `+` unordered list markers as squares and `*` markers as hollow circles in Live Preview and Reading mode.'
+    },
+    ORDERED_LIST_MARKER_CYCLING: {
+        NAME: 'Cycle ordered list markers',
+        DESCRIPTION: 'When indenting or outdenting ordered list items, choose the marker style from the final nesting depth.'
     },
     LIST_PANEL: {
         NAME: 'List panel',
@@ -308,6 +314,8 @@ export const PANEL_SETTINGS = {
     UI_TEXT: {
         PANEL_ORDER_HEADING: 'Panel Order',
         PANEL_ORDER_DESC: 'Select a panel and use the buttons to change its order in the sidebar',
+        ORDERED_LIST_ORDER_HEADING: 'Ordered list marker order',
+        ORDERED_LIST_ORDER_DESC: 'Select an ordered list marker style and use the buttons to change its nesting-depth order',
         BTN_MOVE_UP: 'Move up',
         BTN_MOVE_DOWN: 'Move down',
         BTN_MOVE_TOP: 'Move to top',
