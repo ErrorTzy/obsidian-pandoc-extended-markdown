@@ -207,4 +207,144 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toMatch(/\nB\./);
         });
     });
+
+    describe('Tab key handling for unordered lists', () => {
+        it('should use the bullet marker for the resulting nested depth when indenting', () => {
+            const listText = '- item 1\n- ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    + ');
+        });
+
+        it('should switch from plus to star when indenting to the second nested depth', () => {
+            const listText = '- item 1\n    + item 2\n    + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('        * ');
+        });
+
+        it('should wrap from star back to dash at the third nested depth', () => {
+            const listText = '- item 1\n    + item 2\n        * item 3\n        * ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('            - ');
+        });
+
+        it('should use the bullet marker for the resulting shallower depth when outdenting', () => {
+            const listText = '- item 1\n    + item 2\n        * ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    + ');
+        });
+
+        it('should return plus markers to dash when outdenting to top level', () => {
+            const listText = '- item 1\n    + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('- ');
+        });
+    });
+
+    describe('Enter key handling for empty unordered list items', () => {
+        it('should outdent an empty plus item to a top-level dash item', () => {
+            const listText = '- item 1\n    + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('- ');
+        });
+
+        it('should outdent an empty star item to a plus item', () => {
+            const listText = '- item 1\n    + item 2\n        * ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    + ');
+        });
+
+        it('should remove an empty top-level unordered marker', () => {
+            const listText = '- item 1\n- ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('');
+        });
+    });
 });

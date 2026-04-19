@@ -71,6 +71,9 @@ export function isEmptyListItem(line: string): boolean {
     
     // Check fancy lists
     if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
+
+    // Check unordered lists
+    if (line.match(ListPatterns.EMPTY_UNORDERED_LIST)) return true;
     
     // Note: We do NOT check for empty example lists here
     // (@) is a valid list marker (unlabeled example) and should continue to next item

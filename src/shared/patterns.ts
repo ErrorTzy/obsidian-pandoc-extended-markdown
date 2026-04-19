@@ -61,6 +61,7 @@ export class ListPatterns {
     // Empty list item patterns
     static readonly EMPTY_HASH_LIST = /^(\s*)(#\.)(\s*)$/;
     static readonly EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/;
+    static readonly EMPTY_UNORDERED_LIST = /^(\s*)([-+*])(\s*)$/;
     static readonly EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;
     static readonly EMPTY_EXAMPLE_LIST_NO_LABEL = /^(\s*)\(@\)(\s*)$/;
     static readonly EMPTY_DEFINITION_LIST = /^(\s*)([~:])(\s*)$/;
@@ -71,6 +72,8 @@ export class ListPatterns {
     static readonly ANY_LIST_MARKER = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})/;
     static readonly ANY_LIST_MARKER_WITH_SPACE = /^(\s*)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
     static readonly ANY_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)(#\.|[A-Za-z]+[.)]|[ivxlcdmIVXLCDM]+[.)]|\(@[a-zA-Z0-9_-]*\)|[~:]|\{::[a-zA-Z][a-zA-Z0-9_']*\})(\s+)/;
+    static readonly UNORDERED_LIST_MARKER_WITH_SPACE = /^(\s*)([-+*])(\s+)/;
+    static readonly UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE = /^(\s+)([-+*])(\s+)/;
     
     // Indentation patterns
     static readonly INDENT_ONLY = /^(\s*)/;

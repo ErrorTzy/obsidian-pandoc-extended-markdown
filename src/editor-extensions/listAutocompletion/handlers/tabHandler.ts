@@ -1,10 +1,32 @@
-import { EditorView, KeyBinding } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
-import { ListPatterns } from '../../../shared/patterns';
+import type { KeyBinding } from '@codemirror/view';
+import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
 import { INDENTATION } from '../../../core/constants';
-import { PandocExtendedMarkdownSettings } from '../../../core/settings';
+import { ListPatterns } from '../../../shared/patterns';
 import { removeIndentLevel } from '../utils/indentation';
 import { isExtendedList } from '../utils/markerDetection';
+import { getMarkerForIndent } from '../utils/unorderedMarkers';
+
+function getTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
+    if (ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE.test(lineText)) {
+        return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE);
+    }
+
+    return isExtendedList(lineText, settings)
+        ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE)
+        : null;
+}
+
+function getShiftTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
+    if (ListPatterns.UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE.test(lineText)) {
+        return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE);
+    }
+
+    return isExtendedList(lineText, settings)
+        ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE)
+        : null;
+}
 
 /**
  * Creates the Tab key handler for nested lists.
@@ -23,9 +45,7 @@ export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyB
             const lineText = line.text;
 
             // Check if we're at the start of a list item (after the marker)
-            const listMatch = isExtendedList(lineText, settings)
-                ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE)
-                : null;
+            const listMatch = getTabListMatch(lineText, settings);
             if (listMatch) {
                 const currentIndent = listMatch[1];
                 const marker = listMatch[2];
@@ -36,7 +56,8 @@ export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyB
                 if (selection.from === line.from + markerEnd && selection.to === selection.from) {
                     // Add indentation (4 spaces or 1 tab based on user preference)
                     const newIndent = currentIndent + INDENTATION.FOUR_SPACES; // Using 4 spaces
-                    const newLine = newIndent + marker + space + lineText.substring(markerEnd);
+                    const newMarker = getMarkerForIndent(marker, newIndent);
+                    const newLine = newIndent + newMarker + space + lineText.substring(markerEnd);
 
                     const changes = {
                         from: line.from,
@@ -46,7 +67,7 @@ export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyB
 
                     const transaction = state.update({
                         changes,
-                        selection: EditorSelection.cursor(line.from + newIndent.length + marker.length + space.length)
+                        selection: EditorSelection.cursor(line.from + newIndent.length + newMarker.length + space.length)
                     });
 
                     view.dispatch(transaction);
@@ -76,9 +97,7 @@ export function createShiftTabHandler(settings: PandocExtendedMarkdownSettings):
             const lineText = line.text;
 
             // Check if we're in a list item with indentation
-            const listMatch = isExtendedList(lineText, settings)
-                ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE)
-                : null;
+            const listMatch = getShiftTabListMatch(lineText, settings);
             if (listMatch && listMatch[1].length > 0) {
                 const currentIndent = listMatch[1];
                 const marker = listMatch[2];
@@ -87,7 +106,8 @@ export function createShiftTabHandler(settings: PandocExtendedMarkdownSettings):
 
                 // Remove indentation level
                 const newIndent = removeIndentLevel(currentIndent);
-                const newLine = newIndent + marker + space + lineText.substring(markerEnd);
+                const newMarker = getMarkerForIndent(marker, newIndent);
+                const newLine = newIndent + newMarker + space + lineText.substring(markerEnd);
 
                 const changes = {
                     from: line.from,

@@ -15,6 +15,7 @@ import { ListPatterns } from '../../../shared/patterns';
 import { isEmptyListItem } from '../../../shared/utils/listHelpers';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import { calculateIndentation } from '../utils/indentation';
+import { getUnorderedMarkerForIndent } from '../utils/unorderedMarkers';
 
 /**
  * Handles special cases for empty example and custom label lists.
@@ -90,6 +91,25 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
     if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
         const currentIndent = indentMatch[1];
         const newIndent = calculateIndentation(currentIndent);
+        const unorderedMatch = lineText.match(ListPatterns.EMPTY_UNORDERED_LIST);
+
+        if (unorderedMatch) {
+            const spaces = unorderedMatch[3] || ' ';
+            const newLine = `${newIndent}${getUnorderedMarkerForIndent(newIndent)}${spaces}`;
+            const changes = {
+                from: line.from,
+                to: line.to,
+                insert: newLine
+            };
+
+            const transaction = state.update({
+                changes,
+                selection: EditorSelection.cursor(line.from + newLine.length)
+            });
+
+            view.dispatch(transaction);
+            return true;
+        }
 
         // Try to find the appropriate marker for this indent level
         let previousMarker: ListMarkerInfo | null = null;
