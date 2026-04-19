@@ -465,7 +465,8 @@ sub.pem-subscript {
     width: 100%;
 }
 
-.pem-ordered-list-order-container {
+.pem-ordered-list-order-container,
+.pem-unordered-list-order-container {
     display: grid;
     grid-template-columns: minmax(220px, 1fr) minmax(120px, 150px);
     align-items: flex-start;
@@ -473,18 +474,21 @@ sub.pem-subscript {
     box-sizing: border-box;
 }
 
-.pem-ordered-list-order-list {
+.pem-ordered-list-order-list,
+.pem-unordered-list-order-list {
     min-width: 0;
     width: 100%;
     box-sizing: border-box;
 }
 
-.pem-ordered-list-order-container .pem-panel-order-buttons {
+.pem-ordered-list-order-container .pem-panel-order-buttons,
+.pem-unordered-list-order-container .pem-panel-order-buttons {
     min-width: 0;
     width: 100%;
 }
 
-.pem-ordered-list-order-item {
+.pem-ordered-list-order-item,
+.pem-unordered-list-order-item {
     display: grid;
     grid-template-columns: 36px minmax(0, 1fr);
     align-items: start;
@@ -492,13 +496,15 @@ sub.pem-subscript {
     line-height: 1.35;
 }
 
-.pem-ordered-list-order-marker {
+.pem-ordered-list-order-marker,
+.pem-unordered-list-order-marker {
     font-variant-numeric: tabular-nums;
     text-align: right;
     white-space: nowrap;
 }
 
-.pem-ordered-list-order-label {
+.pem-ordered-list-order-label,
+.pem-unordered-list-order-label {
     min-width: 0;
     overflow-wrap: anywhere;
     text-align: left;

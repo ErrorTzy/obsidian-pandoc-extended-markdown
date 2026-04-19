@@ -44,6 +44,7 @@ describe('Syntax feature settings', () => {
 
         expect(settings.enableUnorderedListMarkerCycling).toBe(true);
         expect(settings.enableUnorderedListMarkerStyles).toBe(true);
+        expect(settings.unorderedListMarkerOrder).toEqual(['-', '+', '*']);
         expect(config.enableUnorderedListMarkerStyles).toBe(true);
     });
 
@@ -63,6 +64,7 @@ describe('Syntax feature settings', () => {
         const settings = normalizeSettings({});
 
         expect(settings.enableOrderedListMarkerCycling).toBe(true);
+        expect(settings.unorderedListMarkerOrder).toEqual(['-', '+', '*']);
         expect(settings.orderedListMarkerOrder).toEqual([
             'decimal-period',
             'lower-alpha-period',

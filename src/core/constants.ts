@@ -70,6 +70,7 @@ export const SETTINGS = {
     SUPERSCRIPT: 'enableSuperscript',
     SUBSCRIPT: 'enableSubscript',
     CUSTOM_LABEL: 'enableCustomLabelLists',
+    UNORDERED_LIST_MARKER_ORDER: 'unorderedListMarkerOrder',
     ORDERED_LIST_MARKER_CYCLING: 'enableOrderedListMarkerCycling',
     ORDERED_LIST_MARKER_ORDER: 'orderedListMarkerOrder',
     LIST_PANEL: 'enableListPanel',
@@ -314,6 +315,8 @@ export const PANEL_SETTINGS = {
     UI_TEXT: {
         PANEL_ORDER_HEADING: 'Panel Order',
         PANEL_ORDER_DESC: 'Select a panel and use the buttons to change its order in the sidebar',
+        UNORDERED_LIST_ORDER_HEADING: 'Unordered list marker order',
+        UNORDERED_LIST_ORDER_DESC: 'Select an unordered list marker and use the buttons to change its nesting-depth order',
         ORDERED_LIST_ORDER_HEADING: 'Ordered list marker order',
         ORDERED_LIST_ORDER_DESC: 'Select an ordered list marker style and use the buttons to change its nesting-depth order',
         BTN_MOVE_UP: 'Move up',

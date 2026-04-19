@@ -7,6 +7,11 @@ import {
     OrderedListMarkerStyle,
     normalizeOrderedListMarkerOrder
 } from './orderedListTypes';
+import {
+    DEFAULT_UNORDERED_LIST_MARKER_ORDER,
+    UnorderedListMarker,
+    normalizeUnorderedListMarkerOrder
+} from './unorderedListTypes';
 
 /**
  * View modes supported by the plugin
@@ -61,6 +66,7 @@ export interface PandocExtendedMarkdownSettings {
     enableCustomLabelLists?: boolean;
     enableUnorderedListMarkerCycling?: boolean;
     enableUnorderedListMarkerStyles?: boolean;
+    unorderedListMarkerOrder: UnorderedListMarker[];
     enableOrderedListMarkerCycling?: boolean;
     orderedListMarkerOrder: OrderedListMarkerStyle[];
     enableListPanel: boolean;
@@ -80,6 +86,7 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableCustomLabelLists: false,
     enableUnorderedListMarkerCycling: true,
     enableUnorderedListMarkerStyles: true,
+    unorderedListMarkerOrder: [...DEFAULT_UNORDERED_LIST_MARKER_ORDER],
     enableOrderedListMarkerCycling: true,
     orderedListMarkerOrder: [...DEFAULT_ORDERED_LIST_MARKER_ORDER],
     enableListPanel: true,
@@ -134,6 +141,7 @@ export function normalizeSettings(
     normalized.enableCustomLabelLists = isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists');
     normalized.enableUnorderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerCycling');
     normalized.enableUnorderedListMarkerStyles = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerStyles');
+    normalized.unorderedListMarkerOrder = normalizeUnorderedListMarkerOrder(sourceSettings.unorderedListMarkerOrder);
     normalized.enableOrderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableOrderedListMarkerCycling');
     normalized.orderedListMarkerOrder = normalizeOrderedListMarkerOrder(sourceSettings.orderedListMarkerOrder);
     normalized.moreExtendedSyntax = normalized.enableCustomLabelLists;

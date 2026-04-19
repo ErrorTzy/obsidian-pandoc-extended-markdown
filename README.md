@@ -25,7 +25,7 @@ Render Pandoc-style superscripts and subscripts:
 - **Depth-based ordered marker cycling**: Indenting with Tab cycles ordered markers by nesting depth. Supported non-auto markers are decimal, lowercase letters, uppercase letters, lowercase roman numerals, and uppercase roman numerals with either `.` or `)`.
 
 ### Unordered Lists
-- **Depth-based marker cycling**: Indenting with Tab cycles unordered markers by nesting depth: `-`, `+`, `*`, then repeats. Outdenting restores the marker for the shallower level.
+- **Depth-based marker cycling**: Indenting with Tab cycles unordered markers by nesting depth using the configured marker order. The default order is `-`, `+`, `*`, then repeats. Outdenting restores the marker for the shallower level.
 - **Source-aware marker rendering**: `-` keeps Obsidian's default filled circle, `+` renders as a square, and `*` renders as a hollow circle in Live Preview and Reading mode.
 - Both unordered list behaviors have independent settings toggles.
 
@@ -307,6 +307,8 @@ The plugin provides a settings tab where you can configure:
 
 - **List panel**: Toggle the list panel view in the sidebar
   - When disabled, the list panel view and its ribbon icon are hidden
+
+- **Unordered list marker order**: Choose the nesting-depth order used by unordered marker cycling. The available markers are `-`, `+`, and `*`.
 
 - **Ordered list marker order**: Choose the nesting-depth order used by ordered marker cycling. Hash auto-number lists (`#.`) are not included because they are already auto-numbered.
 

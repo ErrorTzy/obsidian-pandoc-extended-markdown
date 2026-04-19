@@ -5,10 +5,10 @@ import {
     PandocExtendedMarkdownSettings
 } from '../shared/types/settingsTypes';
 import {
-    ORDERED_LIST_MARKER_STYLES,
-    OrderedListMarkerStyle,
-    normalizeOrderedListMarkerOrder
-} from '../shared/types/orderedListTypes';
+    UNORDERED_LIST_MARKERS,
+    UnorderedListMarker,
+    normalizeUnorderedListMarkerOrder
+} from '../shared/types/unorderedListTypes';
 
 import { PANEL_SETTINGS } from './constants';
 
@@ -20,35 +20,35 @@ interface OrderButtons {
     reset: HTMLButtonElement;
 }
 
-export interface OrderedListOrderControlConfig {
+export interface UnorderedListOrderControlConfig {
     containerEl: HTMLElement;
     settings: PandocExtendedMarkdownSettings;
     saveSettings: () => Promise<void>;
-    selectedStyleId?: OrderedListMarkerStyle;
-    setSelectedStyleId: (styleId: OrderedListMarkerStyle | undefined) => void;
+    selectedMarkerId?: UnorderedListMarker;
+    setSelectedMarkerId: (markerId: UnorderedListMarker | undefined) => void;
 }
 
-export class OrderedListOrderControl {
-    private selectedStyleId?: OrderedListMarkerStyle;
+export class UnorderedListOrderControl {
+    private selectedMarkerId?: UnorderedListMarker;
 
-    constructor(private config: OrderedListOrderControlConfig) {}
+    constructor(private config: UnorderedListOrderControlConfig) {}
 
     render(): void {
-        this.selectedStyleId = this.config.selectedStyleId;
+        this.selectedMarkerId = this.config.selectedMarkerId;
 
         new Setting(this.config.containerEl)
-            .setName(PANEL_SETTINGS.UI_TEXT.ORDERED_LIST_ORDER_HEADING)
+            .setName(PANEL_SETTINGS.UI_TEXT.UNORDERED_LIST_ORDER_HEADING)
             .setHeading();
 
         const orderSetting = new Setting(this.config.containerEl)
-            .setDesc(PANEL_SETTINGS.UI_TEXT.ORDERED_LIST_ORDER_DESC);
+            .setDesc(PANEL_SETTINGS.UI_TEXT.UNORDERED_LIST_ORDER_DESC);
         orderSetting.infoEl?.addClass('pem-panel-order-info');
 
         const flexContainer = orderSetting.controlEl.createDiv({
-            cls: 'pem-panel-order-container pem-ordered-list-order-container'
+            cls: 'pem-panel-order-container pem-unordered-list-order-container'
         });
         const listEl = flexContainer.createDiv({
-            cls: 'pem-panel-order-list pem-ordered-list-order-list'
+            cls: 'pem-panel-order-list pem-unordered-list-order-list'
         });
         listEl.setAttribute('role', 'listbox');
         listEl.tabIndex = 0;
@@ -62,33 +62,33 @@ export class OrderedListOrderControl {
     }
 
     private syncOrder(): void {
-        this.config.settings.orderedListMarkerOrder = normalizeOrderedListMarkerOrder(
-            this.config.settings.orderedListMarkerOrder
+        this.config.settings.unorderedListMarkerOrder = normalizeUnorderedListMarkerOrder(
+            this.config.settings.unorderedListMarkerOrder
         );
     }
 
     private renderList(listEl: HTMLElement, buttons: OrderButtons): void {
-        for (const styleId of this.config.settings.orderedListMarkerOrder) {
-            const style = ORDERED_LIST_MARKER_STYLES.find(item => item.id === styleId);
-            if (!style) continue;
+        for (const markerId of this.config.settings.unorderedListMarkerOrder) {
+            const marker = UNORDERED_LIST_MARKERS.find(item => item.id === markerId);
+            if (!marker) continue;
 
             const itemEl = listEl.createDiv({
-                cls: 'pem-panel-order-item pem-ordered-list-order-item'
+                cls: 'pem-panel-order-item pem-unordered-list-order-item'
             });
             itemEl.setAttribute('role', 'option');
-            itemEl.dataset.id = styleId;
+            itemEl.dataset.id = markerId;
             itemEl.tabIndex = 0;
 
             itemEl.createSpan({
-                text: style.marker,
-                cls: 'pem-ordered-list-order-marker'
+                text: marker.marker,
+                cls: 'pem-unordered-list-order-marker'
             });
             itemEl.createSpan({
-                text: style.displayName,
-                cls: 'pem-ordered-list-order-label'
+                text: marker.displayName,
+                cls: 'pem-unordered-list-order-label'
             });
 
-            if (styleId === this.selectedStyleId) {
+            if (markerId === this.selectedMarkerId) {
                 itemEl.classList.add('is-selected');
                 itemEl.setAttribute('aria-selected', 'true');
             } else {
@@ -96,28 +96,28 @@ export class OrderedListOrderControl {
             }
 
             itemEl.addEventListener('click', () => {
-                this.selectStyle(styleId, listEl, buttons);
+                this.selectMarker(markerId, listEl, buttons);
             });
             itemEl.addEventListener('keydown', (evt) => {
                 if (evt.key === 'Enter' || evt.key === ' ') {
                     evt.preventDefault();
-                    this.selectStyle(styleId, listEl, buttons);
+                    this.selectMarker(markerId, listEl, buttons);
                 }
             });
         }
     }
 
-    private selectStyle(
-        styleId: OrderedListMarkerStyle,
+    private selectMarker(
+        markerId: UnorderedListMarker,
         listEl: HTMLElement,
         buttons: OrderButtons
     ): void {
-        this.selectedStyleId = styleId;
-        this.config.setSelectedStyleId(styleId);
+        this.selectedMarkerId = markerId;
+        this.config.setSelectedMarkerId(markerId);
 
         for (const item of Array.from(listEl.children)) {
             const itemEl = item as HTMLElement;
-            const isSelected = itemEl.dataset.id === styleId;
+            const isSelected = itemEl.dataset.id === markerId;
             itemEl.classList.toggle('is-selected', isSelected);
             itemEl.setAttribute('aria-selected', String(isSelected));
         }
@@ -154,7 +154,7 @@ export class OrderedListOrderControl {
 
     private updateButtonStates(buttons: OrderButtons): void {
         const idx = this.getSelectedIndex();
-        const lastIndex = this.config.settings.orderedListMarkerOrder.length - 1;
+        const lastIndex = this.config.settings.unorderedListMarkerOrder.length - 1;
 
         buttons.moveUp.disabled = idx <= 0;
         buttons.moveDown.disabled = idx < 0 || idx >= lastIndex;
@@ -170,7 +170,7 @@ export class OrderedListOrderControl {
         buttons.reset.addEventListener('click', () => void this.resetOrder(listEl, buttons));
 
         listEl.addEventListener('keydown', (evt) => {
-            if (!this.selectedStyleId) return;
+            if (!this.selectedMarkerId) return;
             if (evt.key === 'ArrowUp') {
                 evt.preventDefault();
                 buttons.moveUp.click();
@@ -188,7 +188,7 @@ export class OrderedListOrderControl {
     ): Promise<void> {
         const index = this.getSelectedIndex();
         const nextIndex = index + offset;
-        const order = this.config.settings.orderedListMarkerOrder;
+        const order = this.config.settings.unorderedListMarkerOrder;
 
         if (index < 0 || nextIndex < 0 || nextIndex >= order.length) {
             return;
@@ -205,15 +205,15 @@ export class OrderedListOrderControl {
         buttons: OrderButtons
     ): Promise<void> {
         const index = this.getSelectedIndex();
-        const order = this.config.settings.orderedListMarkerOrder;
+        const order = this.config.settings.unorderedListMarkerOrder;
 
         if (index < 0) return;
 
-        const [styleId] = order.splice(index, 1);
+        const [markerId] = order.splice(index, 1);
         if (edge === 'top') {
-            order.unshift(styleId);
+            order.unshift(markerId);
         } else {
-            order.push(styleId);
+            order.push(markerId);
         }
 
         await this.config.saveSettings();
@@ -224,11 +224,11 @@ export class OrderedListOrderControl {
         listEl: HTMLElement,
         buttons: OrderButtons
     ): Promise<void> {
-        this.config.settings.orderedListMarkerOrder = [
-            ...DEFAULT_SETTINGS.orderedListMarkerOrder
+        this.config.settings.unorderedListMarkerOrder = [
+            ...DEFAULT_SETTINGS.unorderedListMarkerOrder
         ];
-        this.selectedStyleId = undefined;
-        this.config.setSelectedStyleId(undefined);
+        this.selectedMarkerId = undefined;
+        this.config.setSelectedMarkerId(undefined);
         await this.config.saveSettings();
         this.rerenderList(listEl, buttons);
     }
@@ -240,7 +240,7 @@ export class OrderedListOrderControl {
     }
 
     private getSelectedIndex(): number {
-        if (!this.selectedStyleId) return -1;
-        return this.config.settings.orderedListMarkerOrder.indexOf(this.selectedStyleId);
+        if (!this.selectedMarkerId) return -1;
+        return this.config.settings.unorderedListMarkerOrder.indexOf(this.selectedMarkerId);
     }
 }

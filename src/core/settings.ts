@@ -10,6 +10,7 @@ import {
     SyntaxFeatureSettingKey
 } from '../shared/types/settingsTypes';
 import { OrderedListMarkerStyle } from '../shared/types/orderedListTypes';
+import { UnorderedListMarker } from '../shared/types/unorderedListTypes';
 import type { ListPanelView } from '../views/panels/ListPanelView';
 
 // Constants
@@ -18,9 +19,10 @@ import { PANEL_SETTINGS, SETTINGS_UI } from './constants';
 // Internal modules
 import { VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
 import { OrderedListOrderControl } from './settingsOrderedListOrder';
+import { UnorderedListOrderControl } from './settingsUnorderedListOrder';
 
+export type { PandocExtendedMarkdownSettings };
 export {
-    PandocExtendedMarkdownSettings,
     DEFAULT_SETTINGS,
     normalizeSettings,
     isSyntaxFeatureEnabled
@@ -41,6 +43,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         updateListPanelAvailability: () => void;
     };
     private selectedPanelId?: string;
+    private selectedUnorderedListMarkerId?: UnorderedListMarker;
     private selectedOrderedListStyleId?: OrderedListMarkerStyle;
 
     constructor(app: App, plugin: Plugin & {
@@ -58,6 +61,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         this.plugin.settings = normalizeSettings(this.plugin.settings);
 
         this.renderGeneralSettings(containerEl);
+        this.renderUnorderedListMarkerOrderSettings(containerEl);
         this.renderOrderedListMarkerOrderSettings(containerEl);
         this.renderPanelOrderSettings(containerEl);
     }
@@ -150,8 +154,9 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.enableCustomLabelLists = value;
                     await this.plugin.saveSettings();
+                    this.app.workspace.updateOptions();
                     this.refreshListPanels();
-                    this.display();
+                    this.refreshPanelOrderList();
                 }));
 
         new Setting(containerEl)
@@ -166,6 +171,18 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 }));
     }
 
+    private renderUnorderedListMarkerOrderSettings(containerEl: HTMLElement): void {
+        new UnorderedListOrderControl({
+            containerEl,
+            settings: this.plugin.settings,
+            saveSettings: () => this.plugin.saveSettings(),
+            selectedMarkerId: this.selectedUnorderedListMarkerId,
+            setSelectedMarkerId: (markerId) => {
+                this.selectedUnorderedListMarkerId = markerId;
+            }
+        }).render();
+    }
+
     private renderOrderedListMarkerOrderSettings(containerEl: HTMLElement): void {
         new OrderedListOrderControl({
             containerEl,
@@ -174,9 +191,6 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             selectedStyleId: this.selectedOrderedListStyleId,
             setSelectedStyleId: (styleId) => {
                 this.selectedOrderedListStyleId = styleId;
-            },
-            refresh: () => {
-                this.display();
             }
         }).render();
     }
@@ -197,7 +211,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.app.workspace.updateOptions();
                     this.refreshListPanels();
-                    this.display();
+                    this.refreshPanelOrderList();
                 }));
     }
 
@@ -217,12 +231,12 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
         // Create flex container for list and buttons
         const flexContainer = panelOrderSetting.controlEl.createDiv({
-            cls: 'pem-panel-order-container'
+            cls: 'pem-panel-order-container pem-list-panel-order-container'
         });
 
         // Create container for the list (left side)
         const listEl = flexContainer.createDiv({
-            cls: 'pem-panel-order-list'
+            cls: 'pem-panel-order-list pem-list-panel-order-list'
         });
         listEl.setAttribute('role', 'listbox');
         listEl.tabIndex = 0;
@@ -345,6 +359,45 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             moveBottom: btnBottom,
             reset: btnReset
         };
+    }
+
+    private getPanelOrderButtons(container: HTMLElement): PanelOrderButtons | null {
+        const buttons = Array.from(
+            container.querySelectorAll<HTMLButtonElement>('.pem-panel-order-buttons button')
+        );
+
+        if (buttons.length < 5) {
+            return null;
+        }
+
+        return {
+            moveUp: buttons[0],
+            moveDown: buttons[1],
+            moveTop: buttons[2],
+            moveBottom: buttons[3],
+            reset: buttons[4]
+        };
+    }
+
+    private refreshPanelOrderList(): void {
+        const listEl = this.containerEl.querySelector<HTMLElement>('.pem-list-panel-order-list');
+        const container = this.containerEl.querySelector<HTMLElement>('.pem-list-panel-order-container');
+        if (!listEl || !container) {
+            return;
+        }
+
+        if (this.selectedPanelId && !this.isPanelVisible(this.selectedPanelId)) {
+            this.selectedPanelId = undefined;
+        }
+
+        this.syncPanelOrder();
+        listEl.empty();
+        this.renderPanelList(listEl);
+
+        const buttons = this.getPanelOrderButtons(container);
+        if (buttons) {
+            this.updateButtonStates(buttons);
+        }
     }
 
     private updateButtonStates(buttons: PanelOrderButtons): void {

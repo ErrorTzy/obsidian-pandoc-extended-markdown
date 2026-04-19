@@ -243,6 +243,25 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('        * ');
         });
 
+        it('should use configured unordered marker order when indenting', () => {
+            mockSettings.unorderedListMarkerOrder = ['*', '-', '+'];
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '- item 1\n- ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
+        });
+
         it('should wrap from star back to dash at the third nested depth', () => {
             const listText = '- item 1\n    + item 2\n        * item 3\n        * ';
             const doc = `${listText}\nnext`;
@@ -512,6 +531,25 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('    + ');
+        });
+
+        it('should use configured unordered marker order when outdenting an empty item', () => {
+            mockSettings.unorderedListMarkerOrder = ['*', '-', '+'];
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '* item 1\n    - item 2\n        + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
         });
 
         it('should remove an empty top-level unordered marker', () => {
