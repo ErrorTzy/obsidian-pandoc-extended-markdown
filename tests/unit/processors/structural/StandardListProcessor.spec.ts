@@ -110,6 +110,15 @@ describe('StandardListProcessor', () => {
         expect(lineClass).toContain('HyperMD-list-line');
     });
 
+    it('skips marker classes when unordered marker rendering is disabled', () => {
+        context.settings.enableUnorderedListMarkerStyles = false;
+        createView('+ item');
+        const line = view.state.doc.line(1);
+
+        expect(processor.canProcess(line, context)).toBe(false);
+        expect(processor.process(line, context).decorations).toHaveLength(0);
+    });
+
     it('rejects ordered and regular lines', () => {
         createView('1. ordered item');
         expect(processor.canProcess(view.state.doc.line(1), context)).toBe(false);

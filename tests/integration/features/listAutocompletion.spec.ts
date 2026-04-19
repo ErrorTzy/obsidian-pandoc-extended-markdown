@@ -293,6 +293,70 @@ describe('List Autocompletion', () => {
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('- ');
         });
+
+        it('should preserve the current unordered marker when marker cycling is disabled', () => {
+            mockSettings.enableUnorderedListMarkerCycling = false;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '- item 1\n- ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
+        });
+
+        it('should read current marker cycling settings from a settings provider', () => {
+            let currentSettings = {
+                ...mockSettings,
+                enableUnorderedListMarkerCycling: true
+            };
+            keybindings = createListAutocompletionKeymap(() => currentSettings);
+            currentSettings = {
+                ...currentSettings,
+                enableUnorderedListMarkerCycling: false
+            };
+            const listText = '- item 1\n- ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
+        });
+
+        it('should preserve the current unordered marker when marker cycling is disabled during outdent', () => {
+            mockSettings.enableUnorderedListMarkerCycling = false;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '+ item 1\n    + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('+ ');
+        });
     });
 
     describe('Enter key handling for empty unordered list items', () => {
@@ -345,6 +409,25 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('');
+        });
+
+        it('should preserve the current unordered marker when marker cycling is disabled during empty-item outdent', () => {
+            mockSettings.enableUnorderedListMarkerCycling = false;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '+ item 1\n    + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('+ ');
         });
     });
 });

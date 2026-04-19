@@ -2,6 +2,14 @@ import { EditorView } from '@codemirror/view';
 import { ListMarkerInfo } from '../../shared/types/listTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
 
+export type SettingsProvider =
+    | PandocExtendedMarkdownSettings
+    | (() => PandocExtendedMarkdownSettings);
+
+export function resolveSettings(provider: SettingsProvider): PandocExtendedMarkdownSettings {
+    return typeof provider === 'function' ? provider() : provider;
+}
+
 /**
  * Information about the current line and cursor position.
  */

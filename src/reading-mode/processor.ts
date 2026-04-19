@@ -16,7 +16,10 @@ import { ReadingModeParser, ExampleListData } from './parsers/parser';
 import { ReadingModeRenderer, RenderContext } from './renderer';
 import { processSuperSub } from './parsers/superSubParser';
 import { processCustomLabelLists } from './parsers/customLabelListParser';
-import { applyUnorderedListMarkerClasses } from './parsers/unorderedListMarkerParser';
+import {
+    applyUnorderedListMarkerClasses,
+    clearUnorderedListMarkerClasses
+} from './parsers/unorderedListMarkerParser';
 import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting, ValidationContext } from '../editor-extensions/pandocValidator';
 
@@ -42,7 +45,11 @@ export function processReadingMode(
         }
     }
 
-    applyUnorderedListMarkerClasses(element, context);
+    if (config.enableUnorderedListMarkerStyles !== false) {
+        applyUnorderedListMarkerClasses(element, context);
+    } else {
+        clearUnorderedListMarkerClasses(element);
+    }
     
     // Process each paragraph
     elementsToProcess.forEach(elem => {

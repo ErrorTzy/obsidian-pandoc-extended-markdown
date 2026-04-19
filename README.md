@@ -26,6 +26,7 @@ Render Pandoc-style superscripts and subscripts:
 ### Unordered Lists
 - **Depth-based marker cycling**: Indenting with Tab cycles unordered markers by nesting depth: `-`, `+`, `*`, then repeats. Outdenting restores the marker for the shallower level.
 - **Source-aware marker rendering**: `-` keeps Obsidian's default filled circle, `+` renders as a square, and `*` renders as a hollow circle in Live Preview and Reading mode.
+- Both unordered list behaviors have independent settings toggles.
 
 ### Example Lists with Cross-References
 Create numbered examples that can be referenced throughout your document:
@@ -297,6 +298,8 @@ The plugin provides a settings tab where you can configure:
   - Definition lists
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references
+  - Depth-based unordered list marker cycling
+  - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Custom label lists should be used together with `lua_filter/CustomLabelList.lua` for Pandoc output
   - When strict mode is enabled, custom label blocks still require blank lines before/after
 

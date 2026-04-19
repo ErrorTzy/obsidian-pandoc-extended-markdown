@@ -110,6 +110,18 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         );
         this.createFeatureToggle(
             containerEl,
+            SETTINGS_UI.UNORDERED_LIST_MARKER_CYCLING.NAME,
+            SETTINGS_UI.UNORDERED_LIST_MARKER_CYCLING.DESCRIPTION,
+            'enableUnorderedListMarkerCycling'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.UNORDERED_LIST_MARKER_STYLES.NAME,
+            SETTINGS_UI.UNORDERED_LIST_MARKER_STYLES.DESCRIPTION,
+            'enableUnorderedListMarkerStyles'
+        );
+        this.createFeatureToggle(
+            containerEl,
             SETTINGS_UI.SUPERSCRIPT.NAME,
             SETTINGS_UI.SUPERSCRIPT.DESCRIPTION,
             'enableSuperscript'
@@ -158,6 +170,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings[settingKey] = value;
                     await this.plugin.saveSettings();
+                    this.app.workspace.updateOptions();
                     this.refreshListPanels();
                     this.display();
                 }));

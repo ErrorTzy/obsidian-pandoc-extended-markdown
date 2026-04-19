@@ -25,6 +25,10 @@ function clearMarkerClasses(item: HTMLElement): void {
     item.classList.remove(...getAllUnorderedMarkerClasses());
 }
 
+export function clearUnorderedListMarkerClasses(element: HTMLElement): void {
+    getUnorderedListItems(element).forEach(clearMarkerClasses);
+}
+
 export function applyUnorderedListMarkerClasses(
     element: HTMLElement,
     context: MarkdownPostProcessorContext

@@ -1,12 +1,17 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
 import { ListPatterns } from '../../../shared/patterns';
-import { PandocExtendedMarkdownSettings } from '../../../core/settings';
 import { getCurrentLineInfo } from '../utils/lineInfo';
 import { detectListMarker } from '../utils/markerDetection';
 import { handleEmptyListSpecialCases, handleEmptyListItem } from './emptyListHandler';
 import { handleNonEmptyListItem } from './listItemHandler';
 import { handleContinuationLine } from './continuationHandler';
-import { EmptyListHandlingConfig, ContinuationLineConfig, NewListItemConfig } from '../types';
+import {
+    EmptyListHandlingConfig,
+    ContinuationLineConfig,
+    NewListItemConfig,
+    SettingsProvider,
+    resolveSettings
+} from '../types';
 
 /**
  * Creates the Enter key handler for list autocompletion.
@@ -14,10 +19,11 @@ import { EmptyListHandlingConfig, ContinuationLineConfig, NewListItemConfig } fr
  * @param settings - Plugin settings
  * @returns KeyBinding for Enter key
  */
-export function createEnterHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
+export function createEnterHandler(settingsProvider: SettingsProvider): KeyBinding {
     return {
         key: 'Enter',
         run: (view: EditorView): boolean => {
+            const settings = resolveSettings(settingsProvider);
             // Get current line information
             const currentLine = getCurrentLineInfo(view);
 

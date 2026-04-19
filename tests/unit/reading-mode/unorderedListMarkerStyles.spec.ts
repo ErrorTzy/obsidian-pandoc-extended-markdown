@@ -1,6 +1,8 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
+import { processReadingMode } from '../../../src/reading-mode/processor';
 import { applyUnorderedListMarkerClasses } from '../../../src/reading-mode/parsers/unorderedListMarkerParser';
+import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
 
 describe('unordered list marker reading mode styles', () => {
     const createContext = (text: string): MarkdownPostProcessorContext => ({
@@ -58,5 +60,31 @@ describe('unordered list marker reading mode styles', () => {
 
         expect(orderedItem.classList.contains('pem-unordered-list-marker-dash')).toBe(false);
         expect(unorderedItem.classList.contains('pem-unordered-list-marker-dash')).toBe(true);
+    });
+
+    it('skips reading mode marker classes when unordered marker rendering is disabled', () => {
+        const element = document.createElement('div');
+        element.innerHTML = `
+            <ul>
+                <li class="pem-unordered-list-marker pem-unordered-list-marker-dash">dash</li>
+                <li class="pem-unordered-list-marker pem-unordered-list-marker-plus">plus</li>
+                <li class="pem-unordered-list-marker pem-unordered-list-marker-star">star</li>
+            </ul>
+        `;
+        const config: ProcessorConfig = {
+            strictLineBreaks: false,
+            strictPandocMode: false,
+            enableUnorderedListMarkerStyles: false
+        };
+
+        processReadingMode(
+            element,
+            createContext('- dash\n+ plus\n* star'),
+            config
+        );
+
+        const items = Array.from(element.querySelectorAll('li'));
+
+        expect(items.some(item => item.classList.contains('pem-unordered-list-marker'))).toBe(false);
     });
 });

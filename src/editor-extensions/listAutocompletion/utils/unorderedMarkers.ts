@@ -1,4 +1,8 @@
 import { INDENTATION, LIST_MARKERS } from '../../../core/constants';
+import {
+    PandocExtendedMarkdownSettings,
+    isSyntaxFeatureEnabled
+} from '../../../shared/types/settingsTypes';
 
 const UNORDERED_MARKER_CYCLE = [
     LIST_MARKERS.UNORDERED_DASH,
@@ -22,8 +26,16 @@ export function getUnorderedMarkerForIndent(indent: string): string {
     return UNORDERED_MARKER_CYCLE[getIndentDepth(indent) % UNORDERED_MARKER_CYCLE.length];
 }
 
-export function getMarkerForIndent(marker: string, indent: string): string {
+export function getMarkerForIndent(
+    marker: string,
+    indent: string,
+    settings: Partial<PandocExtendedMarkdownSettings>
+): string {
     if (!isUnorderedMarker(marker)) {
+        return marker;
+    }
+
+    if (!isSyntaxFeatureEnabled(settings, 'enableUnorderedListMarkerCycling')) {
         return marker;
     }
 

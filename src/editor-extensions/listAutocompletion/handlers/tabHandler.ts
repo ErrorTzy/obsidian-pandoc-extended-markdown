@@ -7,6 +7,7 @@ import { ListPatterns } from '../../../shared/patterns';
 import { removeIndentLevel } from '../utils/indentation';
 import { isExtendedList } from '../utils/markerDetection';
 import { getMarkerForIndent } from '../utils/unorderedMarkers';
+import { resolveSettings, SettingsProvider } from '../types';
 
 function getTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
     if (ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE.test(lineText)) {
@@ -33,10 +34,11 @@ function getShiftTabListMatch(lineText: string, settings: PandocExtendedMarkdown
  *
  * @returns KeyBinding for Tab key
  */
-export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
+export function createTabHandler(settingsProvider: SettingsProvider): KeyBinding {
     return {
         key: 'Tab',
         run: (view: EditorView): boolean => {
+            const settings = resolveSettings(settingsProvider);
             const state = view.state;
             const selection = state.selection.main;
 
@@ -56,7 +58,7 @@ export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyB
                 if (selection.from === line.from + markerEnd && selection.to === selection.from) {
                     // Add indentation (4 spaces or 1 tab based on user preference)
                     const newIndent = currentIndent + INDENTATION.FOUR_SPACES; // Using 4 spaces
-                    const newMarker = getMarkerForIndent(marker, newIndent);
+                    const newMarker = getMarkerForIndent(marker, newIndent, settings);
                     const newLine = newIndent + newMarker + space + lineText.substring(markerEnd);
 
                     const changes = {
@@ -85,10 +87,11 @@ export function createTabHandler(settings: PandocExtendedMarkdownSettings): KeyB
  *
  * @returns KeyBinding for Shift+Tab key
  */
-export function createShiftTabHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
+export function createShiftTabHandler(settingsProvider: SettingsProvider): KeyBinding {
     return {
         key: 'Shift-Tab',
         run: (view: EditorView): boolean => {
+            const settings = resolveSettings(settingsProvider);
             const state = view.state;
             const selection = state.selection.main;
 
@@ -106,7 +109,7 @@ export function createShiftTabHandler(settings: PandocExtendedMarkdownSettings):
 
                 // Remove indentation level
                 const newIndent = removeIndentLevel(currentIndent);
-                const newMarker = getMarkerForIndent(marker, newIndent);
+                const newMarker = getMarkerForIndent(marker, newIndent, settings);
                 const newLine = newIndent + newMarker + space + lineText.substring(markerEnd);
 
                 const changes = {

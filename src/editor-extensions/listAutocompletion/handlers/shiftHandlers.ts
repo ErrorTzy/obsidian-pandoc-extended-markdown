@@ -1,17 +1,18 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
 import { isExtendedList } from '../utils/markerDetection';
-import { PandocExtendedMarkdownSettings } from '../../../core/settings';
+import { resolveSettings, SettingsProvider } from '../types';
 
 /**
  * Creates the Shift+Enter key handler for list continuation.
  *
  * @returns KeyBinding for Shift+Enter key
  */
-export function createShiftEnterHandler(settings: PandocExtendedMarkdownSettings): KeyBinding {
+export function createShiftEnterHandler(settingsProvider: SettingsProvider): KeyBinding {
     return {
         key: 'Shift-Enter',
         run: (view: EditorView): boolean => {
+            const settings = resolveSettings(settingsProvider);
             const state = view.state;
             const selection = state.selection.main;
 

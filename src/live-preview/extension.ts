@@ -33,8 +33,8 @@ const pandocExtendedMarkdownPlugin = (
             // Register structural processors
             this.pipeline.registerStructuralProcessor(new HashListProcessor());
             this.pipeline.registerStructuralProcessor(new FancyListProcessor());
-            // StandardListProcessor is registered but disabled (always returns false in canProcess)
-            // to preserve Obsidian's default rendering for *, +, - lists
+            // StandardListProcessor only adds source-marker classes; Obsidian keeps
+            // ownership of native unordered list rendering and editing behavior.
             this.pipeline.registerStructuralProcessor(new StandardListProcessor());
             this.pipeline.registerStructuralProcessor(new ExampleListProcessor());
             this.pipeline.registerStructuralProcessor(new CustomLabelProcessor());

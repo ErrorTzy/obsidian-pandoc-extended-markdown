@@ -27,6 +27,7 @@ export interface ProcessorConfig {
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
     enableCustomLabelLists?: boolean;
+    enableUnorderedListMarkerStyles?: boolean;
 }
 
 /**
@@ -48,6 +49,7 @@ export function createProcessorConfig(
             || isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
         enableSuperscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript'),
         enableSubscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
-        enableCustomLabelLists: isSyntaxFeatureEnabled(pluginSettings, 'enableCustomLabelLists')
+        enableCustomLabelLists: isSyntaxFeatureEnabled(pluginSettings, 'enableCustomLabelLists'),
+        enableUnorderedListMarkerStyles: isSyntaxFeatureEnabled(pluginSettings, 'enableUnorderedListMarkerStyles')
     };
 }

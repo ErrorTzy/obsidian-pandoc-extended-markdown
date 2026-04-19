@@ -54,6 +54,8 @@ export interface PandocExtendedMarkdownSettings {
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
     enableCustomLabelLists?: boolean;
+    enableUnorderedListMarkerCycling?: boolean;
+    enableUnorderedListMarkerStyles?: boolean;
     enableListPanel: boolean;
     panelOrder: string[];
 }
@@ -69,6 +71,8 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableSuperscript: true,
     enableSubscript: true,
     enableCustomLabelLists: false,
+    enableUnorderedListMarkerCycling: true,
+    enableUnorderedListMarkerStyles: true,
     enableListPanel: true,
     panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'footnotes']
 };
@@ -80,7 +84,9 @@ export type SyntaxFeatureSettingKey =
     | 'enableDefinitionLists'
     | 'enableSuperscript'
     | 'enableSubscript'
-    | 'enableCustomLabelLists';
+    | 'enableCustomLabelLists'
+    | 'enableUnorderedListMarkerCycling'
+    | 'enableUnorderedListMarkerStyles';
 
 export function isSyntaxFeatureEnabled(
     settings: Partial<PandocExtendedMarkdownSettings>,
@@ -116,6 +122,8 @@ export function normalizeSettings(
     normalized.enableSuperscript = isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript');
     normalized.enableSubscript = isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript');
     normalized.enableCustomLabelLists = isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists');
+    normalized.enableUnorderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerCycling');
+    normalized.enableUnorderedListMarkerStyles = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerStyles');
     normalized.moreExtendedSyntax = normalized.enableCustomLabelLists;
 
     return normalized;

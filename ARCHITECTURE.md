@@ -62,6 +62,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
    - Syntax enable/disable state is centralized in `shared/types/settingsTypes.ts`
    - `normalizeSettings()` keeps persisted settings consistent and preserves legacy `moreExtendedSyntax` compatibility
    - `isSyntaxFeatureEnabled()` is the shared gate for live preview, reading mode, editor suggestions, autocompletion, and panel visibility
+   - Unordered list marker cycling and source-aware marker rendering are separate settings so keyboard behavior and visual styling can be enabled independently
 
 6. **Error Handling**
    - Centralized error handling with `errorHandler.ts`
@@ -111,7 +112,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | **FancyListProcessor** | 20 | Letter/Roman lists | `^\s*[A-Za-z0-9]+[.)]` | BaseStructuralProcessor |
 | **DefinitionProcessor** | 20 | Definition list items | `^:\s` or `^~\s` | StructuralProcessor |
 | **ExampleListProcessor** | 30 | Example lists `(@label)` | `^\s*\(@` | BaseStructuralProcessor |
-| **StandardListProcessor** | 25 | Adds source-marker classes to standard unordered lists while preserving native rendering | `^\s*[-*+]\s+` | StructuralProcessor |
+| **StandardListProcessor** | 25 | Adds source-marker classes to standard unordered lists when distinct marker rendering is enabled while preserving native rendering | `^\s*[-*+]\s+` | StructuralProcessor |
 | **ListContinuationProcessor** | 100 | Indented continuations | Indented non-empty lines | StructuralProcessor |
 
 #### Inline Processors (`/live-preview/pipeline/inline/`)
@@ -160,7 +161,7 @@ All widgets extend `BaseWidget` which provides:
 | **exampleListParser** | `(@label)` syntax | Numbers with tooltips |
 | **definitionListParser** | `:` and `~` definitions | Styled definition lists |
 | **customLabelListParser** | `{::LABEL}` syntax | Two-pass processing |
-| **unorderedListMarkerParser** | `-`, `+`, `*` unordered markers | Adds source-marker classes to rendered list items |
+| **unorderedListMarkerParser** | `-`, `+`, `*` unordered markers | Adds or clears source-marker classes on rendered list items based on the marker rendering setting |
 | **superSubParser** | `^` and `~` formatting | Super/subscript elements |
 
 ### Panel Modules (`/views/panels/modules/`)

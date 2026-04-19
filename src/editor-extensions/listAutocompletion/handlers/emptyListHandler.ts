@@ -15,7 +15,7 @@ import { ListPatterns } from '../../../shared/patterns';
 import { isEmptyListItem } from '../../../shared/utils/listHelpers';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import { calculateIndentation } from '../utils/indentation';
-import { getUnorderedMarkerForIndent } from '../utils/unorderedMarkers';
+import { getMarkerForIndent } from '../utils/unorderedMarkers';
 
 /**
  * Handles special cases for empty example and custom label lists.
@@ -94,8 +94,9 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
         const unorderedMatch = lineText.match(ListPatterns.EMPTY_UNORDERED_LIST);
 
         if (unorderedMatch) {
+            const marker = unorderedMatch[2];
             const spaces = unorderedMatch[3] || ' ';
-            const newLine = `${newIndent}${getUnorderedMarkerForIndent(newIndent)}${spaces}`;
+            const newLine = `${newIndent}${getMarkerForIndent(marker, newIndent, config.settings)}${spaces}`;
             const changes = {
                 from: line.from,
                 to: line.to,

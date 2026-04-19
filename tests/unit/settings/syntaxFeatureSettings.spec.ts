@@ -37,4 +37,25 @@ describe('Syntax feature settings', () => {
         expect(config.enableSuperscript).toBe(false);
         expect(config.enableSubscript).toBe(true);
     });
+
+    it('enables unordered list enhancements by default', () => {
+        const settings = normalizeSettings({});
+        const config = createProcessorConfig({ strictLineBreaks: false }, settings);
+
+        expect(settings.enableUnorderedListMarkerCycling).toBe(true);
+        expect(settings.enableUnorderedListMarkerStyles).toBe(true);
+        expect(config.enableUnorderedListMarkerStyles).toBe(true);
+    });
+
+    it('preserves disabled unordered list enhancement settings', () => {
+        const settings = normalizeSettings({
+            enableUnorderedListMarkerCycling: false,
+            enableUnorderedListMarkerStyles: false
+        });
+        const config = createProcessorConfig({ strictLineBreaks: false }, settings);
+
+        expect(settings.enableUnorderedListMarkerCycling).toBe(false);
+        expect(settings.enableUnorderedListMarkerStyles).toBe(false);
+        expect(config.enableUnorderedListMarkerStyles).toBe(false);
+    });
 });

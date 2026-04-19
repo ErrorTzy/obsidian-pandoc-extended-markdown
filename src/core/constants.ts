@@ -116,6 +116,14 @@ export const SETTINGS_UI = {
         NAME: 'Custom label lists',
         DESCRIPTION: 'Enable `{::LABEL}` custom label lists and references. Use together with `CustomLabelList.lua` for Pandoc output. In strict mode, custom label lists must be surrounded by blank lines.'
     },
+    UNORDERED_LIST_MARKER_CYCLING: {
+        NAME: 'Cycle unordered list markers',
+        DESCRIPTION: 'When indenting or outdenting unordered list items, choose `-`, `+`, or `*` from the final nesting depth.'
+    },
+    UNORDERED_LIST_MARKER_STYLES: {
+        NAME: 'Distinct unordered list markers',
+        DESCRIPTION: 'Render `+` unordered list markers as squares and `*` markers as hollow circles in Live Preview and Reading mode.'
+    },
     LIST_PANEL: {
         NAME: 'List panel',
         DESCRIPTION: 'Enable the list panel view and its ribbon icon in the sidebar.'

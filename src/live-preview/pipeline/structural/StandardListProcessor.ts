@@ -7,6 +7,7 @@ import { CSS_CLASSES } from '../../../core/constants';
 
 import { ListPatterns } from '../../../shared/patterns';
 
+import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { getUnorderedMarkerClass } from '../../../shared/utils/unorderedListMarkers';
 
 /**
@@ -17,11 +18,16 @@ export class StandardListProcessor implements StructuralProcessor {
     name = 'standard-list';
     priority = 25; // Process after fancy lists but before definition lists
     
-    canProcess(line: Line, _context: ProcessingContext): boolean {
-        return ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE.test(line.text);
+    canProcess(line: Line, context: ProcessingContext): boolean {
+        return isSyntaxFeatureEnabled(context.settings, 'enableUnorderedListMarkerStyles') &&
+            ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE.test(line.text);
     }
     
     process(line: Line, context: ProcessingContext): StructuralResult {
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableUnorderedListMarkerStyles')) {
+            return { decorations: [] };
+        }
+
         if (context.settings.strictPandocMode && context.invalidLines.has(line.number)) {
             return { decorations: [] };
         }

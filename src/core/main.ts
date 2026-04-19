@@ -94,7 +94,9 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         ));
         
         // Register list autocompletion keymap with highest priority
-        this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(this.settings))));
+        this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(
+            () => this.settings
+        ))));
     }
 
     private registerPostProcessor(): void {
