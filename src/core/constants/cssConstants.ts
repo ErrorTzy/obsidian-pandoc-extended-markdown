@@ -57,6 +57,10 @@ export const CSS_CLASSES = {
     PANDOC_LIST_MARKER: 'pem-list-marker',
     PANDOC_LIST_LINE_INDENT: 'pem-list-line-indent',
     PANDOC_LIST_LINE: 'pem-list-line',
+    UNORDERED_LIST_MARKER: 'pem-unordered-list-marker',
+    UNORDERED_LIST_MARKER_DASH: 'pem-unordered-list-marker-dash',
+    UNORDERED_LIST_MARKER_PLUS: 'pem-unordered-list-marker-plus',
+    UNORDERED_LIST_MARKER_STAR: 'pem-unordered-list-marker-star',
     DEFINITION_MARKER_CURSOR: 'cm-pem-definition-marker-cursor',
     LIST_CONTINUATION_WIDGET: 'pem-list-continuation-widget',
 

@@ -16,6 +16,7 @@ import { ReadingModeParser, ExampleListData } from './parsers/parser';
 import { ReadingModeRenderer, RenderContext } from './renderer';
 import { processSuperSub } from './parsers/superSubParser';
 import { processCustomLabelLists } from './parsers/customLabelListParser';
+import { applyUnorderedListMarkerClasses } from './parsers/unorderedListMarkerParser';
 import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting, ValidationContext } from '../editor-extensions/pandocValidator';
 
@@ -40,6 +41,8 @@ export function processReadingMode(
             validationLines = sectionInfo.text.split('\n');
         }
     }
+
+    applyUnorderedListMarkerClasses(element, context);
     
     // Process each paragraph
     elementsToProcess.forEach(elem => {

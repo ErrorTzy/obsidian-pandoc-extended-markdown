@@ -111,7 +111,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | **FancyListProcessor** | 20 | Letter/Roman lists | `^\s*[A-Za-z0-9]+[.)]` | BaseStructuralProcessor |
 | **DefinitionProcessor** | 20 | Definition list items | `^:\s` or `^~\s` | StructuralProcessor |
 | **ExampleListProcessor** | 30 | Example lists `(@label)` | `^\s*\(@` | BaseStructuralProcessor |
-| **StandardListProcessor** | 40 | Standard markdown lists | `^\s*[-*+]` or `^\s*\d+\.` | StructuralProcessor |
+| **StandardListProcessor** | 25 | Adds source-marker classes to standard unordered lists while preserving native rendering | `^\s*[-*+]\s+` | StructuralProcessor |
 | **ListContinuationProcessor** | 100 | Indented continuations | Indented non-empty lines | StructuralProcessor |
 
 #### Inline Processors (`/live-preview/pipeline/inline/`)
@@ -160,6 +160,7 @@ All widgets extend `BaseWidget` which provides:
 | **exampleListParser** | `(@label)` syntax | Numbers with tooltips |
 | **definitionListParser** | `:` and `~` definitions | Styled definition lists |
 | **customLabelListParser** | `{::LABEL}` syntax | Two-pass processing |
+| **unorderedListMarkerParser** | `-`, `+`, `*` unordered markers | Adds source-marker classes to rendered list items |
 | **superSubParser** | `^` and `~` formatting | Super/subscript elements |
 
 ### Panel Modules (`/views/panels/modules/`)

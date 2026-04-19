@@ -3,6 +3,61 @@
     cursor: text;
 }
 
+/* Source-aware unordered list marker styles */
+.HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-plus .cm-formatting-list-ul:not(:has(.list-bullet)),
+.HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-star .cm-formatting-list-ul:not(:has(.list-bullet)) {
+    color: transparent;
+    font-size: 0;
+}
+
+.HyperMD-list-line.pem-unordered-list-marker-plus .cm-formatting-list-ul .list-bullet,
+.HyperMD-list-line.pem-unordered-list-marker-star .cm-formatting-list-ul .list-bullet {
+    color: transparent !important;
+}
+
+.HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-plus .cm-formatting-list-ul:not(:has(.list-bullet))::before,
+.HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-star .cm-formatting-list-ul:not(:has(.list-bullet))::before {
+    content: "";
+    display: inline-block;
+    font-size: var(--font-text-size, 16px);
+    width: var(--list-bullet-size);
+    min-width: 6px;
+    height: var(--list-bullet-size);
+    min-height: 6px;
+    margin-inline-end: var(--list-bullet-end-padding);
+    vertical-align: middle;
+}
+
+.HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-plus .cm-formatting-list-ul:not(:has(.list-bullet))::before,
+.HyperMD-list-line.pem-unordered-list-marker-plus .cm-formatting-list-ul .list-bullet::after {
+    content: "";
+    display: inline-block;
+    background-color: var(--list-marker-color, var(--text-muted, #8a8a8a));
+    border-radius: 1px;
+}
+
+.HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-star .cm-formatting-list-ul:not(:has(.list-bullet))::before,
+.HyperMD-list-line.pem-unordered-list-marker-star .cm-formatting-list-ul .list-bullet::after {
+    content: "";
+    display: inline-block;
+    background-color: transparent;
+    border: 1px solid var(--list-marker-color, var(--text-muted, #8a8a8a));
+    border-radius: 50%;
+    box-sizing: border-box;
+}
+
+.markdown-preview-view li.pem-unordered-list-marker-dash {
+    list-style-type: disc;
+}
+
+.markdown-preview-view li.pem-unordered-list-marker-plus {
+    list-style-type: square;
+}
+
+.markdown-preview-view li.pem-unordered-list-marker-star {
+    list-style-type: circle;
+}
+
 /* Custom Label Placeholder Styles */
 .pem-custom-label-placeholder {
     text-decoration: underline;

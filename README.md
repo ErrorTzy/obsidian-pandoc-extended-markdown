@@ -23,6 +23,10 @@ Render Pandoc-style superscripts and subscripts:
 - **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
 - **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
 
+### Unordered Lists
+- **Depth-based marker cycling**: Indenting with Tab cycles unordered markers by nesting depth: `-`, `+`, `*`, then repeats. Outdenting restores the marker for the shallower level.
+- **Source-aware marker rendering**: `-` keeps Obsidian's default filled circle, `+` renders as a square, and `*` renders as a hollow circle in Live Preview and Reading mode.
+
 ### Example Lists with Cross-References
 Create numbered examples that can be referenced throughout your document:
 ```markdown
