@@ -274,8 +274,8 @@ For each line (top to bottom):
      - CustomLabelProcessor (15)
      - FancyListProcessor (20)
      - DefinitionProcessor (20)
+     - StandardListProcessor (25)
      - ExampleListProcessor (30)
-     - StandardListProcessor (40)
      - ListContinuationProcessor (100)
   3. First matching processor:
      - Creates structural decorations
