@@ -287,30 +287,29 @@ The plugin provides a settings tab where you can configure:
   - Capital letters with periods require double spacing
   - Invalid lists are displayed as plain text
 
-- **Auto-renumber lists**: Toggle automatic renumbering of list items
-  - When enabled, inserting a new list item automatically renumbers all subsequent items
-  - Ensures proper sequential ordering of fancy lists (A, B, C... or i, ii, iii...)
-  - Only affects alphabetic and roman numeral lists, not hash (#.) or example (@) lists
-
 - **Syntax features**: Toggle individual Pandoc syntaxes on or off
   - Hash auto-number lists (`#.`)
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
+  - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references
-  - Depth-based unordered list marker cycling
-  - Distinct unordered list marker rendering for `-`, `+`, and `*`
-  - Depth-based ordered list marker cycling for `1.`, `1)`, `a.`, `a)`, `A.`, `A)`, `i.`, `i)`, `I.`, and `I)`
   - Custom label lists should be used together with `lua_filter/CustomLabelList.lua` for Pandoc output
   - When strict mode is enabled, custom label blocks still require blank lines before/after
 
-- **List panel**: Toggle the list panel view in the sidebar
-  - When disabled, the list panel view and its ribbon icon are hidden
+- **List auto-completion**: Configure automatic list editing behavior
+  - Auto-renumber lists when inserting new list items
+  - Depth-based unordered list marker cycling
+  - Depth-based ordered list marker cycling for `1.`, `1)`, `a.`, `a)`, `A.`, `A)`, `i.`, `i)`, `I.`, and `I)`
+  - Unordered list marker order for cycling between `-`, `+`, and `*`
+  - Ordered list marker order for cycling between non-auto ordered markers
 
-- **Unordered list marker order**: Choose the nesting-depth order used by unordered marker cycling. The available markers are `-`, `+`, and `*`.
+- **Panel features**: Configure the list panel view in the sidebar
+  - Toggle whether the list panel view and its ribbon icon are available
+  - Edit the order of enabled panel tabs
 
-- **Ordered list marker order**: Choose the nesting-depth order used by ordered marker cycling. Hash auto-number lists (`#.`) are not included because they are already auto-numbered.
+Hash auto-number lists (`#.`) are not included in ordered marker cycling because they are already auto-numbered.
 
 ## Commands
 

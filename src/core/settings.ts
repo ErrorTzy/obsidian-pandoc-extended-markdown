@@ -61,9 +61,9 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         this.plugin.settings = normalizeSettings(this.plugin.settings);
 
         this.renderGeneralSettings(containerEl);
-        this.renderUnorderedListMarkerOrderSettings(containerEl);
-        this.renderOrderedListMarkerOrderSettings(containerEl);
-        this.renderPanelOrderSettings(containerEl);
+        this.renderSyntaxFeatureSettings(containerEl);
+        this.renderListAutocompletionSettings(containerEl);
+        this.renderPanelFeatureSettings(containerEl);
     }
 
     private renderGeneralSettings(containerEl: HTMLElement): void {
@@ -76,17 +76,9 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     this.plugin.settings.strictPandocMode = value;
                     await this.plugin.saveSettings();
                 }));
+    }
 
-        new Setting(containerEl)
-            .setName(SETTINGS_UI.AUTO_RENUMBER.NAME)
-            .setDesc(SETTINGS_UI.AUTO_RENUMBER.DESCRIPTION)
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoRenumberLists)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoRenumberLists = value;
-                    await this.plugin.saveSettings();
-                }));
-
+    private renderSyntaxFeatureSettings(containerEl: HTMLElement): void {
         new Setting(containerEl)
             .setName(SETTINGS_UI.SYNTAX_FEATURES.NAME)
             .setDesc(SETTINGS_UI.SYNTAX_FEATURES.DESCRIPTION)
@@ -118,21 +110,9 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         );
         this.createFeatureToggle(
             containerEl,
-            SETTINGS_UI.UNORDERED_LIST_MARKER_CYCLING.NAME,
-            SETTINGS_UI.UNORDERED_LIST_MARKER_CYCLING.DESCRIPTION,
-            'enableUnorderedListMarkerCycling'
-        );
-        this.createFeatureToggle(
-            containerEl,
             SETTINGS_UI.UNORDERED_LIST_MARKER_STYLES.NAME,
             SETTINGS_UI.UNORDERED_LIST_MARKER_STYLES.DESCRIPTION,
             'enableUnorderedListMarkerStyles'
-        );
-        this.createFeatureToggle(
-            containerEl,
-            SETTINGS_UI.ORDERED_LIST_MARKER_CYCLING.NAME,
-            SETTINGS_UI.ORDERED_LIST_MARKER_CYCLING.DESCRIPTION,
-            'enableOrderedListMarkerCycling'
         );
         this.createFeatureToggle(
             containerEl,
@@ -158,6 +138,46 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     this.refreshListPanels();
                     this.refreshPanelOrderList();
                 }));
+    }
+
+    private renderListAutocompletionSettings(containerEl: HTMLElement): void {
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.LIST_AUTOCOMPLETION.NAME)
+            .setDesc(SETTINGS_UI.LIST_AUTOCOMPLETION.DESCRIPTION)
+            .setHeading();
+
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.AUTO_RENUMBER.NAME)
+            .setDesc(SETTINGS_UI.AUTO_RENUMBER.DESCRIPTION)
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoRenumberLists)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoRenumberLists = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.UNORDERED_LIST_MARKER_CYCLING.NAME,
+            SETTINGS_UI.UNORDERED_LIST_MARKER_CYCLING.DESCRIPTION,
+            'enableUnorderedListMarkerCycling'
+        );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.ORDERED_LIST_MARKER_CYCLING.NAME,
+            SETTINGS_UI.ORDERED_LIST_MARKER_CYCLING.DESCRIPTION,
+            'enableOrderedListMarkerCycling'
+        );
+
+        this.renderUnorderedListMarkerOrderSettings(containerEl);
+        this.renderOrderedListMarkerOrderSettings(containerEl);
+    }
+
+    private renderPanelFeatureSettings(containerEl: HTMLElement): void {
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.PANEL_FEATURES.NAME)
+            .setDesc(SETTINGS_UI.PANEL_FEATURES.DESCRIPTION)
+            .setHeading();
 
         new Setting(containerEl)
             .setName(SETTINGS_UI.LIST_PANEL.NAME)
@@ -169,6 +189,8 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.updateListPanelAvailability();
                 }));
+
+        this.renderPanelOrderSettings(containerEl);
     }
 
     private renderUnorderedListMarkerOrderSettings(containerEl: HTMLElement): void {

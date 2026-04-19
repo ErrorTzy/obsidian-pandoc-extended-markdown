@@ -83,6 +83,14 @@ export const SETTINGS_UI = {
         NAME: 'Syntax features',
         DESCRIPTION: 'Choose which Pandoc syntaxes the plugin should recognize and render.'
     },
+    LIST_AUTOCOMPLETION: {
+        NAME: 'List auto-completion',
+        DESCRIPTION: 'Configure automatic list editing behavior.'
+    },
+    PANEL_FEATURES: {
+        NAME: 'Panel features',
+        DESCRIPTION: 'Configure sidebar panel visibility and ordering.'
+    },
     STRICT_MODE: {
         NAME: 'Strict Pandoc mode',
         DESCRIPTION: 'Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'

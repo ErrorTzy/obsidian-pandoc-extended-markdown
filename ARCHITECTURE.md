@@ -62,6 +62,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
    - Syntax enable/disable state is centralized in `shared/types/settingsTypes.ts`
    - `normalizeSettings()` keeps persisted settings consistent and preserves legacy `moreExtendedSyntax` compatibility
    - `isSyntaxFeatureEnabled()` is the shared gate for live preview, reading mode, editor suggestions, autocompletion, and panel visibility
+   - Settings UI groups syntax toggles separately from list auto-completion controls and sidebar panel controls
    - Unordered list marker cycling and source-aware marker rendering are separate settings so keyboard behavior and visual styling can be enabled independently
    - Unordered list marker cycling has a configurable nesting-depth order for `-`, `+`, and `*`
    - Ordered list marker cycling is a keyboard-only setting with a configurable nesting-depth order for supported non-auto ordered markers: decimal, alpha, and roman variants using `.` or `)`

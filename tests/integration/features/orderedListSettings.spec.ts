@@ -68,6 +68,34 @@ describe('Ordered list marker settings', () => {
         expect(plugin.saveSettings).toHaveBeenCalled();
     });
 
+    it('groups syntax, list auto-completion, and panel settings separately', () => {
+        const { tab } = createSettingTab();
+
+        tab.display();
+
+        const headings = Array.from(tab.containerEl.querySelectorAll<HTMLElement>('.setting-item-heading'))
+            .map(heading => heading.querySelector('.setting-item-name')?.textContent);
+        const settingItems = Array.from(tab.containerEl.querySelectorAll<HTMLElement>('.setting-item'));
+        const indexOfSetting = (text: string) => settingItems.findIndex(item => item.textContent?.includes(text));
+
+        expect(headings).toEqual([
+            'Syntax features',
+            'List auto-completion',
+            'Unordered list marker order',
+            'Ordered list marker order',
+            'Panel features',
+            'Panel Order'
+        ]);
+        expect(indexOfSetting('Hash auto-number lists')).toBeGreaterThan(indexOfSetting('Syntax features'));
+        expect(indexOfSetting('Hash auto-number lists')).toBeLessThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Auto-renumber lists')).toBeGreaterThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Cycle unordered list markers')).toBeGreaterThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Cycle ordered list markers')).toBeGreaterThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Cycle ordered list markers')).toBeLessThan(indexOfSetting('Unordered list marker order'));
+        expect(indexOfSetting('List panel')).toBeGreaterThan(indexOfSetting('Panel features'));
+        expect(indexOfSetting('List panel')).toBeLessThan(indexOfSetting('Panel Order'));
+    });
+
     it('toggles syntax features without rebuilding the settings tab', async () => {
         const { app, plugin, tab } = createSettingTab();
 
