@@ -97,7 +97,7 @@ export class ContentProcessorRegistry {
                 
                 return content.replace(
                     ListPatterns.EXAMPLE_REFERENCE,
-                    (match, label) => {
+                    (match: string, label: string) => {
                         const number = context.exampleLabels!.get(label);
                         return number !== undefined ? `(${number})` : match;
                     }
@@ -113,7 +113,7 @@ export class ContentProcessorRegistry {
                 
                 return content.replace(
                     ListPatterns.CUSTOM_LABEL_REFERENCE,
-                    (match, label) => {
+                    (match: string, label: string) => {
                         const processed = context.rawToProcessed!.get(label);
                         return processed !== undefined ? processed : match;
                     }

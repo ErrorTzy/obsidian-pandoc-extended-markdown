@@ -17,7 +17,7 @@ export function processPlaceholders(label: string): string {
     const placeholderMap = new Map<string, number>();
     let nextNumber = 1;
     
-    return label.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
+    return label.replace(ListPatterns.PLACEHOLDER_PATTERN, (_match: string, name: string) => {
         if (!placeholderMap.has(name)) {
             placeholderMap.set(name, nextNumber++);
         }
@@ -47,7 +47,7 @@ export class PlaceholderContext {
             return this.processedLabels.get(rawLabel)!;
         }
         
-        const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
+        const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (_match: string, name: string) => {
             if (!this.placeholderMap.has(name)) {
                 this.placeholderMap.set(name, this.nextNumber++);
             }
@@ -112,7 +112,7 @@ export class PlaceholderContext {
         }
         
         // Process the label with known placeholders
-        const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match, name) => {
+        const processedLabel = rawLabel.replace(ListPatterns.PLACEHOLDER_PATTERN, (match: string, name: string) => {
             return this.placeholderMap.get(name)?.toString() || match;
         });
         

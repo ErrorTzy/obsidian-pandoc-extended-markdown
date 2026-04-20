@@ -21,7 +21,8 @@ import {
     clearUnorderedListMarkerClasses
 } from './parsers/unorderedListMarkerParser';
 import { pluginStateManager } from '../core/state/pluginStateManager';
-import { isStrictPandocFormatting, ValidationContext } from '../editor-extensions/pandocValidator';
+import { isStrictPandocFormatting } from '../editor-extensions/pandocValidator';
+import { ValidationContext } from '../shared/types/listTypes';
 
 export function processReadingMode(
     element: HTMLElement, 

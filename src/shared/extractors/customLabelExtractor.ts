@@ -8,6 +8,7 @@ import { withErrorBoundary } from '../utils/errorHandler';
 export interface CustomLabel {
     label: string;          // Rendered label (e.g., "(P1)")
     rawLabel: string;       // Raw label text (e.g., "{::P(#a)}")
+    processedLabel: string; // Label after placeholder processing
     content: string;        // List content (raw markdown)
     renderedContent?: string; // Rendered content (with processed references)
     lineNumber: number;     // 0-indexed line number
@@ -46,7 +47,7 @@ export function extractCustomLabels(content: string, moreExtendedSyntax: boolean
                 // Process content to replace references with rendered forms
                 let renderedContent = restOfLine.trim();
                 // Replace custom label references in content
-                renderedContent = renderedContent.replace(ListPatterns.CUSTOM_LABEL_REFERENCE, (match, ref) => {
+                renderedContent = renderedContent.replace(ListPatterns.CUSTOM_LABEL_REFERENCE, (_match: string, ref: string) => {
                     const processedRef = rawToProcessed.get(ref) || ref;
                     return processedRef;
                 });
@@ -54,6 +55,7 @@ export function extractCustomLabels(content: string, moreExtendedSyntax: boolean
                 labels.push({
                     label: renderedLabel,
                     rawLabel: fullMarker,
+                    processedLabel,
                     content: restOfLine.trim(),
                     renderedContent: renderedContent,
                     lineNumber: i,

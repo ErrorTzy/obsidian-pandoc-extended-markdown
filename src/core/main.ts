@@ -1,5 +1,5 @@
 // External libraries
-import { Plugin, Notice, Editor, MarkdownView, WorkspaceLeaf, addIcon } from 'obsidian';
+import { Plugin, Notice, Editor, MarkdownView, WorkspaceLeaf, addIcon, Component } from 'obsidian';
 import { Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 
@@ -103,10 +103,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         // Register markdown post-processor for reading mode
         this.registerMarkdownPostProcessor((element, context) => {
             // Create processor config from current settings
-            const config = createProcessorConfig(
-                { strictLineBreaks: this.app.vault.getConfig('strictLineBreaks') },
-                this.settings
-            );
+            const vault = this.app.vault as typeof this.app.vault & {
+                getConfig(key: 'strictLineBreaks'): boolean;
+            };
+            const config = createProcessorConfig({ strictLineBreaks: vault.getConfig('strictLineBreaks') }, this.settings);
             processReadingMode(element, context, config);
         });
     }
@@ -287,7 +287,8 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     }
     
     async loadSettings() {
-        this.settings = normalizeSettings(Object.assign({}, DEFAULT_SETTINGS, await this.loadData()));
+        const loadedSettings = await this.loadData() as Partial<PandocExtendedMarkdownSettings> | null;
+        this.settings = normalizeSettings({ ...DEFAULT_SETTINGS, ...loadedSettings });
     }
 
     async saveSettings() {

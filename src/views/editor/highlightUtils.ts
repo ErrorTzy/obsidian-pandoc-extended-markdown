@@ -111,7 +111,7 @@ function findClosestLine(editorDom: HTMLElement, editor: ExtendedEditor): HTMLEl
         const relativeTop = rect.top - editorRect.top;
         const distance = Math.abs(relativeTop - coords.top);
         
-        if (distance < minDistance && line instanceof HTMLElement) {
+        if (distance < minDistance && line.instanceOf(HTMLElement)) {
             minDistance = distance;
             targetLine = line;
         }

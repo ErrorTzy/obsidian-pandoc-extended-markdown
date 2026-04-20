@@ -1,5 +1,4 @@
-// External libraries
-import { getSectionInfo } from 'obsidian';
+import { getSectionInfo } from '../../shared/types/obsidian-extended';
 
 /**
  * Extract lines of text from the section containing the given element

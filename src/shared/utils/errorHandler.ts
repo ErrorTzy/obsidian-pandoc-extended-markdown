@@ -87,7 +87,8 @@ export function validateApiMethod<T>(
 ): (...args: unknown[]) => T {
     const candidate = obj?.[methodName];
     if (typeof candidate === 'function') {
-        return (...args: unknown[]) => (candidate as (...innerArgs: unknown[]) => T).apply(obj, args);
+        const method = candidate.bind(obj) as (...innerArgs: unknown[]) => T;
+        return (...args: unknown[]) => method(...args);
     }
     
     return fallback;
@@ -136,7 +137,8 @@ export function errorHandler(context: string) {
         
         descriptor.value = function (...args: unknown[]) {
             try {
-                const result = originalMethod.apply(this, args);
+                const method = originalMethod.bind(this) as (...innerArgs: unknown[]) => unknown;
+                const result = method(...args);
                 
                 // Handle async methods
                 if (result instanceof Promise) {

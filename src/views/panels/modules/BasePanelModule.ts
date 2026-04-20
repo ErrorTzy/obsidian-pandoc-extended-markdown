@@ -1,7 +1,7 @@
 import { MarkdownView } from 'obsidian';
 import { PanelModule } from './PanelTypes';
 import { PandocExtendedMarkdownPlugin } from '../../../core/main';
-import { CSS_CLASSES, MESSAGES } from '../../../core/constants';
+import { MESSAGES } from '../../../core/constants';
 import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
 import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
@@ -104,8 +104,7 @@ export abstract class BasePanelModule implements PanelModule {
         if (!this.containerEl) return;
 
         this.containerEl.createEl('div', {
-            text: MESSAGES.NO_FILE,
-            cls: CSS_CLASSES.NO_FILE_MESSAGE
+            text: MESSAGES.NO_ACTIVE_FILE
         });
     }
 
@@ -120,9 +119,10 @@ export abstract class BasePanelModule implements PanelModule {
         if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableExampleLists')) {
             const exampleItems = extractExampleLists(content);
             exampleItems.forEach(item => {
-                if (item.label) {
-                    exampleLabels.set(item.label, item.number);
-                    exampleContent.set(item.label, item.content.trim());
+                const label = item.rawLabel.substring(1);
+                if (label) {
+                    exampleLabels.set(label, item.renderedNumber);
+                    exampleContent.set(label, item.content.trim());
                 }
             });
         }

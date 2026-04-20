@@ -33,7 +33,7 @@ export function applyUnorderedListMarkerClasses(
     element: HTMLElement,
     context: MarkdownPostProcessorContext
 ): void {
-    const section = element.closest('.markdown-preview-section') as HTMLElement | null;
+    const section = element.closest('.markdown-preview-section');
     const sectionInfo = context.getSectionInfo(element) ??
         (section ? context.getSectionInfo(section) : null);
 

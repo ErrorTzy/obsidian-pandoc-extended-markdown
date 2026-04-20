@@ -53,5 +53,5 @@ export function extractExampleLists(content: string): ExampleListItem[] {
         }
         
         return items;
-    }, 'Extract example lists', []);
+    }, [], 'ExampleListExtractor.extractExampleLists');
 }

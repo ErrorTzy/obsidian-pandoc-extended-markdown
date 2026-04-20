@@ -92,7 +92,7 @@ export function processFancyLists(element: HTMLElement, context: MarkdownPostPro
     const lists = element.querySelectorAll('ol, ul');
     
     lists.forEach((list) => {
-        if (list instanceof HTMLOListElement) {
+        if (list.instanceOf(HTMLOListElement)) {
             processFancyOrderedList(list);
         }
     });

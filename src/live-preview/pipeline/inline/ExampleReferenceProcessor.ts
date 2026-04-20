@@ -54,7 +54,8 @@ export class ExampleReferenceProcessor implements InlineProcessor {
     }
     
     createDecoration(match: InlineMatch, context: ProcessingContext): Decoration {
-        const { label, region } = match.data;
+        const label = typeof match.data.label === 'string' ? match.data.label : '';
+        const region = match.data.region as ContentRegion | undefined;
         const number = context.exampleLabels.get(label) || 0;
         const content = context.exampleContent.get(label) || '';
         const absolutePosition = match.from + (region?.from || 0);

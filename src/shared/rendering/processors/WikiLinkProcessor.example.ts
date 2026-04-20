@@ -20,7 +20,7 @@ export class WikiLinkProcessor implements ContentProcessor {
         // Example: Replace [[page name]] with a clickable link
         const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
         
-        return content.replace(wikiLinkPattern, (match, pageName) => {
+        return content.replace(wikiLinkPattern, (_match: string, pageName: string) => {
             // In a real implementation, you might check if the page exists
             // and style it differently
             return `[${pageName}](${pageName.replace(/ /g, '%20')}.md)`;
@@ -49,7 +49,7 @@ export class FootnoteProcessor implements ContentProcessor {
         // Replace [^1] with the actual footnote text
         const footnotePattern = /\[\^(\d+)\]/g;
         
-        return content.replace(footnotePattern, (match, num) => {
+        return content.replace(footnotePattern, (match: string, num: string) => {
             const footnoteText = context.footnotes?.get(num);
             return footnoteText ? `[${num}: ${footnoteText}]` : match;
         });
