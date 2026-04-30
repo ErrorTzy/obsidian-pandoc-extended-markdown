@@ -16,7 +16,6 @@ export interface ProcessorConfig {
     
     // Plugin settings
     strictPandocMode: boolean;
-    moreExtendedSyntax?: boolean;
     
     // Optional features
     enableHashLists?: boolean;
@@ -40,7 +39,6 @@ export function createProcessorConfig(
     return {
         strictLineBreaks: vaultConfig.strictLineBreaks ?? false,
         strictPandocMode: pluginSettings.strictPandocMode ?? false,
-        moreExtendedSyntax: isSyntaxFeatureEnabled(pluginSettings, 'enableCustomLabelLists'),
         enableHashLists: isSyntaxFeatureEnabled(pluginSettings, 'enableHashAutoNumber'),
         enableFancyLists: isSyntaxFeatureEnabled(pluginSettings, 'enableFancyLists'),
         enableExampleLists: isSyntaxFeatureEnabled(pluginSettings, 'enableExampleLists'),

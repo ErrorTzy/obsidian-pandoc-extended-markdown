@@ -58,7 +58,7 @@ Regular text without labels`;
             expect(labels[1].renderedContent).toBe('This follows from P1');
         });
 
-        it('should return empty array when moreExtendedSyntax is false', () => {
+        it('should return empty array when enableCustomLabelLists is false', () => {
             const content = `{::P(#a)} First proposition
 {::P(#b)} Second proposition`;
 

@@ -14,7 +14,7 @@ describe('Custom Label List Autocompletion', () => {
             enableDefinitionLists: true,
             enablePandocExtendedMarkdown: true,
             enableSuperSub: true,
-            moreExtendedSyntax: true,
+            enableCustomLabelLists: true,
             autoRenumberLists: false,
             enableLogging: false
         };

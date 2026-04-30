@@ -115,7 +115,7 @@ export function isStrictPandocHeading(context: ValidationContext, strictMode: bo
  * proper spacing for capital letter lists with periods.
  * 
  * @param content - The raw markdown content to format
- * @param moreExtendedSyntax - Whether to include custom label lists in formatting
+ * @param enableCustomLabelLists - Whether to include custom label lists in formatting
  * @returns The formatted markdown content with proper Pandoc spacing
  * @throws Does not throw exceptions - handles malformed input gracefully
  * @example
@@ -123,7 +123,7 @@ export function isStrictPandocHeading(context: ValidationContext, strictMode: bo
  * const formatted = formatToPandocStandard(content);
  * // Returns: 'Some text\n\nA.  First item\n\nNext paragraph'
  */
-export function formatToPandocStandard(content: string, moreExtendedSyntax: boolean = false): string {
+export function formatToPandocStandard(content: string, enableCustomLabelLists: boolean = false): string {
     const lines = content.split('\n');
     const result: string[] = [];
     let inListBlock = false;
@@ -131,7 +131,7 @@ export function formatToPandocStandard(content: string, moreExtendedSyntax: bool
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const isCurrentLineList = isListItem(line, moreExtendedSyntax);
+        const isCurrentLineList = isListItem(line, enableCustomLabelLists);
         const isCurrentLineHeading = ListPatterns.isHeading(line);
         const isEmpty = line.trim() === '';
         
@@ -211,7 +211,7 @@ export function formatToPandocStandard(content: string, moreExtendedSyntax: bool
  * spacing requirements for capital letter lists.
  * 
  * @param content - The markdown content to analyze for formatting issues
- * @param moreExtendedSyntax - Whether to include custom label lists in validation
+ * @param enableCustomLabelLists - Whether to include custom label lists in validation
  * @returns Array of LintingIssue objects describing formatting problems with line numbers
  * @throws Does not throw exceptions - returns empty array for valid content
  * @example
@@ -219,14 +219,14 @@ export function formatToPandocStandard(content: string, moreExtendedSyntax: bool
  * const issues = checkPandocFormatting(content);
  * // Returns issues for missing empty lines and insufficient spacing
  */
-export function checkPandocFormatting(content: string, moreExtendedSyntax: boolean = false): LintingIssue[] {
+export function checkPandocFormatting(content: string, enableCustomLabelLists: boolean = false): LintingIssue[] {
     const lines = content.split('\n');
     const issues: LintingIssue[] = [];
     let inListBlock = false;
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const isCurrentLineList = isListItem(line, moreExtendedSyntax);
+        const isCurrentLineList = isListItem(line, enableCustomLabelLists);
         const isCurrentLineHeading = ListPatterns.isHeading(line);
         const isEmpty = line.trim() === '';
         

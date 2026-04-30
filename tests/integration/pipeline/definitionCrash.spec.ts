@@ -47,7 +47,7 @@ describe('Definition List Crash Bug', () => {
         const settings: PandocExtendedMarkdownSettings = {
             strictPandocMode: false,
             strictLineBreaks: false,
-            moreExtendedSyntax: false,
+            enableCustomLabelLists: false,
             panelOrder: []
         } as PandocExtendedMarkdownSettings;
         
@@ -63,7 +63,7 @@ describe('Definition List Crash Bug', () => {
         const settings: PandocExtendedMarkdownSettings = {
             strictPandocMode: false,
             strictLineBreaks: false,
-            moreExtendedSyntax: false,
+            enableCustomLabelLists: false,
             panelOrder: []
         } as PandocExtendedMarkdownSettings;
         
@@ -79,7 +79,7 @@ describe('Definition List Crash Bug', () => {
         const settings: PandocExtendedMarkdownSettings = {
             strictPandocMode: false,
             strictLineBreaks: false,
-            moreExtendedSyntax: false,
+            enableCustomLabelLists: false,
             panelOrder: []
         } as PandocExtendedMarkdownSettings;
         
@@ -95,7 +95,7 @@ describe('Definition List Crash Bug', () => {
         const settings: PandocExtendedMarkdownSettings = {
             strictPandocMode: false,
             strictLineBreaks: false,
-            moreExtendedSyntax: false,
+            enableCustomLabelLists: false,
             panelOrder: []
         } as PandocExtendedMarkdownSettings;
         
@@ -111,7 +111,7 @@ describe('Definition List Crash Bug', () => {
         const settings: PandocExtendedMarkdownSettings = {
             strictPandocMode: false,
             strictLineBreaks: false,
-            moreExtendedSyntax: false,
+            enableCustomLabelLists: false,
             panelOrder: []
         } as PandocExtendedMarkdownSettings;
         

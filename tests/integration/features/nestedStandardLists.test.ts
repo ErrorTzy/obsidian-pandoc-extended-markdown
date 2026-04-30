@@ -77,7 +77,7 @@ describe('Nested Standard Lists', () => {
         
         settings = {
             strictPandocMode: false,
-            moreExtendedSyntax: false
+            enableCustomLabelLists: false
         } as PandocExtendedMarkdownSettings;
     });
 

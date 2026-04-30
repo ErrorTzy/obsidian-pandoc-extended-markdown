@@ -17,7 +17,7 @@ describe('Popover Bug Fix - Simple Test', () => {
                 return app.plugins.enablePlugin('pandoc-extended-markdown');
             }
             if (plugin && plugin.settings) {
-                plugin.settings.moreExtendedSyntax = true;
+                plugin.settings.enableCustomLabelLists = true;
                 plugin.saveSettings();
             }
         });

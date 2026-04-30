@@ -5,7 +5,7 @@ describe('Strict Pandoc Mode Validation', () => {
     const settings: PandocExtendedMarkdownSettings = {
         strictPandocMode: true,
         fancyLists: true,
-        moreExtendedSyntax: true
+        enableCustomLabelLists: true
     } as PandocExtendedMarkdownSettings;
 
     describe('Invalid list blocks without blank lines', () => {

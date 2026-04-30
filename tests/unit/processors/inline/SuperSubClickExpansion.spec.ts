@@ -31,7 +31,7 @@ describe('Superscript and Subscript Click Expansion', () => {
         settings: {
             strictPandocMode: false,
             autoRenumberLists: false,
-            moreExtendedSyntax: true,
+            enableCustomLabelLists: true,
             panelOrder: [],
             useNewPipeline: true
         },

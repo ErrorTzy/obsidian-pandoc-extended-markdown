@@ -8,7 +8,7 @@ describe('Example List Integration - ProcessingPipeline scanning', () => {
         strictLineBreaks: false,
         strictPandocMode: false,
         debugMode: false,
-        moreExtendedSyntax: false,
+        enableCustomLabelLists: false,
         toggleDefinitionStyle: false,
         panelOrder: []
     } as PandocExtendedMarkdownSettings;

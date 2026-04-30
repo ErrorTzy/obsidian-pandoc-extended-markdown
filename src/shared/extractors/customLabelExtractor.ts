@@ -15,13 +15,13 @@ export interface CustomLabel {
     position: EditorPosition; // Position in editor
 }
 
-export function extractCustomLabels(content: string, moreExtendedSyntax: boolean): CustomLabel[] {
+export function extractCustomLabels(content: string, enableCustomLabelLists: boolean): CustomLabel[] {
     return withErrorBoundary(() => {
         const lines = content.split('\n');
         const labels: CustomLabel[] = [];
         
         // Check if plugin settings allow custom labels
-        if (!moreExtendedSyntax) {
+        if (!enableCustomLabelLists) {
             return labels;
         }
         

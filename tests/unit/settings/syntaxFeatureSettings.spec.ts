@@ -5,23 +5,22 @@ import {
 } from '../../../src/shared/types/settingsTypes';
 
 describe('Syntax feature settings', () => {
-    it('migrates legacy moreExtendedSyntax into custom label feature settings', () => {
-        const settings = normalizeSettings({
-            moreExtendedSyntax: true
-        });
-
-        expect(settings.enableCustomLabelLists).toBe(true);
-        expect(settings.moreExtendedSyntax).toBe(true);
-        expect(isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists')).toBe(true);
-    });
-
     it('keeps custom labels disabled when only the granular toggle is false', () => {
         const settings = normalizeSettings({
             enableCustomLabelLists: false
         });
 
         expect(settings.enableCustomLabelLists).toBe(false);
-        expect(settings.moreExtendedSyntax).toBe(false);
+    });
+
+    it('ignores unknown saved settings', () => {
+        const settings = normalizeSettings({
+            enableCustomLabelLists: false,
+            unusedSavedFlag: true
+        } as Partial<ReturnType<typeof normalizeSettings>>);
+
+        expect(settings.enableCustomLabelLists).toBe(false);
+        expect(settings).not.toHaveProperty('unusedSavedFlag');
     });
 
     it('preserves split superscript and subscript flags in processor config', () => {

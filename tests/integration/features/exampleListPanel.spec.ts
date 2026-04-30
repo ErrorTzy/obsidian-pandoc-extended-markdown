@@ -14,7 +14,7 @@ jest.mock('obsidian', () => ({
 
 // Mock PandocExtendedMarkdownPlugin  
 class MockPlugin extends Plugin {
-    settings = { moreExtendedSyntax: true };
+    settings = { enableCustomLabelLists: true };
     registerHoverLinkSource() {}
 }
 

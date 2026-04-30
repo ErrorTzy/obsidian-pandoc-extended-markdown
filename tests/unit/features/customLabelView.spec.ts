@@ -9,7 +9,7 @@ jest.mock('obsidian');
 // Mock PandocExtendedMarkdownPlugin  
 class MockPlugin extends Plugin {
     settings = { 
-        moreExtendedSyntax: true,
+        enableCustomLabelLists: true,
         panelOrder: ['custom-labels', 'example-lists']
     };
     registerHoverLinkSource() {}
@@ -32,7 +32,7 @@ describe('ListPanelView', () => {
         
         // Ensure settings are set before creating the view
         plugin.settings = { 
-            moreExtendedSyntax: true,
+            enableCustomLabelLists: true,
             panelOrder: ['custom-labels', 'example-lists']
         };
         

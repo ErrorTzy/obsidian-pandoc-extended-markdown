@@ -26,7 +26,7 @@ describe('ExampleReferenceProcessor', () => {
             settings: {
                 strictPandocMode: false,
                 autoRenumberLists: false,
-                moreExtendedSyntax: false,
+                enableCustomLabelLists: false,
                 panelOrder: [],
                 useNewPipeline: true
             },

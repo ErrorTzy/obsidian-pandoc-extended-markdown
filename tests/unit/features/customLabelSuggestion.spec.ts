@@ -14,7 +14,7 @@ describe('Custom Label Reference Suggestions', () => {
         plugin = {
             app: mockApp,
             settings: {
-                moreExtendedSyntax: true
+                enableCustomLabelLists: true
             }
         } as any;
         

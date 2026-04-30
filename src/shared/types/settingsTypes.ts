@@ -56,7 +56,6 @@ export interface ModeChangeEvent {
 export interface PandocExtendedMarkdownSettings {
     strictPandocMode: boolean;
     autoRenumberLists: boolean;
-    moreExtendedSyntax: boolean;
     enableHashAutoNumber?: boolean;
     enableFancyLists?: boolean;
     enableExampleLists?: boolean;
@@ -76,7 +75,6 @@ export interface PandocExtendedMarkdownSettings {
 export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
     autoRenumberLists: false,
-    moreExtendedSyntax: false,
     enableHashAutoNumber: true,
     enableFancyLists: true,
     enableExampleLists: true,
@@ -109,17 +107,6 @@ export function isSyntaxFeatureEnabled(
     settings: Partial<PandocExtendedMarkdownSettings>,
     key: SyntaxFeatureSettingKey
 ): boolean {
-    if (key === 'enableCustomLabelLists') {
-        if (settings.moreExtendedSyntax === true) {
-            return true;
-        }
-
-        return settings.enableCustomLabelLists
-            ?? settings.moreExtendedSyntax
-            ?? DEFAULT_SETTINGS.enableCustomLabelLists
-            ?? false;
-    }
-
     return settings[key] ?? DEFAULT_SETTINGS[key] ?? false;
 }
 
@@ -128,23 +115,23 @@ export function normalizeSettings(
 ): PandocExtendedMarkdownSettings {
     const sourceSettings = settings ?? {};
     const normalized: PandocExtendedMarkdownSettings = {
-        ...DEFAULT_SETTINGS,
-        ...settings
+        strictPandocMode: sourceSettings.strictPandocMode ?? DEFAULT_SETTINGS.strictPandocMode,
+        autoRenumberLists: sourceSettings.autoRenumberLists ?? DEFAULT_SETTINGS.autoRenumberLists,
+        enableHashAutoNumber: isSyntaxFeatureEnabled(sourceSettings, 'enableHashAutoNumber'),
+        enableFancyLists: isSyntaxFeatureEnabled(sourceSettings, 'enableFancyLists'),
+        enableExampleLists: isSyntaxFeatureEnabled(sourceSettings, 'enableExampleLists'),
+        enableDefinitionLists: isSyntaxFeatureEnabled(sourceSettings, 'enableDefinitionLists'),
+        enableSuperscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript'),
+        enableSubscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript'),
+        enableCustomLabelLists: isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists'),
+        enableUnorderedListMarkerCycling: isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerCycling'),
+        enableUnorderedListMarkerStyles: isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerStyles'),
+        unorderedListMarkerOrder: normalizeUnorderedListMarkerOrder(sourceSettings.unorderedListMarkerOrder),
+        enableOrderedListMarkerCycling: isSyntaxFeatureEnabled(sourceSettings, 'enableOrderedListMarkerCycling'),
+        orderedListMarkerOrder: normalizeOrderedListMarkerOrder(sourceSettings.orderedListMarkerOrder),
+        enableListPanel: sourceSettings.enableListPanel ?? DEFAULT_SETTINGS.enableListPanel,
+        panelOrder: sourceSettings.panelOrder ?? [...DEFAULT_SETTINGS.panelOrder]
     };
-
-    normalized.enableHashAutoNumber = isSyntaxFeatureEnabled(sourceSettings, 'enableHashAutoNumber');
-    normalized.enableFancyLists = isSyntaxFeatureEnabled(sourceSettings, 'enableFancyLists');
-    normalized.enableExampleLists = isSyntaxFeatureEnabled(sourceSettings, 'enableExampleLists');
-    normalized.enableDefinitionLists = isSyntaxFeatureEnabled(sourceSettings, 'enableDefinitionLists');
-    normalized.enableSuperscript = isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript');
-    normalized.enableSubscript = isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript');
-    normalized.enableCustomLabelLists = isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists');
-    normalized.enableUnorderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerCycling');
-    normalized.enableUnorderedListMarkerStyles = isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerStyles');
-    normalized.unorderedListMarkerOrder = normalizeUnorderedListMarkerOrder(sourceSettings.unorderedListMarkerOrder);
-    normalized.enableOrderedListMarkerCycling = isSyntaxFeatureEnabled(sourceSettings, 'enableOrderedListMarkerCycling');
-    normalized.orderedListMarkerOrder = normalizeOrderedListMarkerOrder(sourceSettings.orderedListMarkerOrder);
-    normalized.moreExtendedSyntax = normalized.enableCustomLabelLists;
 
     return normalized;
 }

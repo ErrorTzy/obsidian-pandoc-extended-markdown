@@ -24,7 +24,7 @@ describe('Cross-references in extended lists bug', () => {
             enableFancyLists: true,
             enableHashAutoNumber: true,
             enableDefinitionLists: true,
-            moreExtendedSyntax: true
+            enableCustomLabelLists: true
         };
         
         context = {

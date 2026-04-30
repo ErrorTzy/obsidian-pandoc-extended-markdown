@@ -43,7 +43,7 @@ describe('CustomLabelReferenceProcessor - Reference Validation', () => {
             const context: ProcessingContext = {
                 document: view.state.doc,
                 view: view,
-                settings: { moreExtendedSyntax: true } as any,
+                settings: { enableCustomLabelLists: true } as any,
                 customLabels: new Map(),
                 rawToProcessed: new Map(),
                 placeholderContext: placeholderContext,
@@ -75,7 +75,7 @@ describe('CustomLabelReferenceProcessor - Reference Validation', () => {
             const context: ProcessingContext = {
                 document: view.state.doc,
                 view: view,
-                settings: { moreExtendedSyntax: true } as any,
+                settings: { enableCustomLabelLists: true } as any,
                 customLabels: new Map([
                     ['P1', 'Content for P1'],
                     ['P2', 'Content for P2']
@@ -121,7 +121,7 @@ describe('CustomLabelReferenceProcessor - Reference Validation', () => {
             const context: ProcessingContext = {
                 document: view.state.doc,
                 view: view,
-                settings: { moreExtendedSyntax: true } as any,
+                settings: { enableCustomLabelLists: true } as any,
                 customLabels: new Map([
                     ['P1', 'Content for P1'],
                     ['P2', 'Content for P2']
@@ -164,7 +164,7 @@ describe('CustomLabelReferenceProcessor - Reference Validation', () => {
             const context: ProcessingContext = {
                 document: view.state.doc,
                 view: view,
-                settings: { moreExtendedSyntax: true } as any,
+                settings: { enableCustomLabelLists: true } as any,
                 customLabels: new Map([
                     ['P1', 'First item'],
                     ['P2', 'Second item']

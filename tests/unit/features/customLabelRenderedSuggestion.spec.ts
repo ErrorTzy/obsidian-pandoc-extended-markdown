@@ -19,7 +19,7 @@ describe('Custom Label Rendered Suggestions', () => {
         plugin = {
             app: mockApp,
             settings: {
-                moreExtendedSyntax: true
+                enableCustomLabelLists: true
             }
         } as PandocExtendedMarkdownPlugin;
 

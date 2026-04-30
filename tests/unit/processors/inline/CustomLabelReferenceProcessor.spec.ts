@@ -25,13 +25,13 @@ describe('CustomLabelReferenceProcessor', () => {
         });
     };
     
-    const createContext = (moreExtendedSyntax: boolean = true): ProcessingContext => ({
+    const createContext = (enableCustomLabelLists: boolean = true): ProcessingContext => ({
         document: view.state.doc,
         view,
         settings: {
             strictPandocMode: false,
             autoRenumberLists: false,
-            moreExtendedSyntax,
+            enableCustomLabelLists,
             panelOrder: [],
             useNewPipeline: true
         },
@@ -155,8 +155,8 @@ describe('CustomLabelReferenceProcessor', () => {
             expect(matches[1].data.rawLabel).toBe('Q(#b),(#c)');
         });
         
-        it('should not find matches when moreExtendedSyntax is disabled', () => {
-            context = createContext(false); // Disable moreExtendedSyntax
+        it('should not find matches when enableCustomLabelLists is disabled', () => {
+            context = createContext(false); // Disable enableCustomLabelLists
             const text = 'Text with {::label} reference';
             const region: ContentRegion = {
                 from: 0,

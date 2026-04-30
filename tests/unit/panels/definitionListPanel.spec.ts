@@ -30,7 +30,7 @@ jest.mock('../../../src/views/panels/utils/viewInteractions', () => ({
 
 // Mock PandocExtendedMarkdownPlugin  
 class MockPlugin extends Plugin {
-    settings = { moreExtendedSyntax: true };
+    settings = { enableCustomLabelLists: true };
     registerHoverLinkSource() {}
 }
 

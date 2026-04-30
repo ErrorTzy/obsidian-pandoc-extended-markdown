@@ -25,7 +25,7 @@ describe('Custom label and example reference interaction bug', () => {
             enableFancyLists: true,
             enableHashAutoNumber: true,
             enableDefinitionLists: true,
-            moreExtendedSyntax: true
+            enableCustomLabelLists: true
         };
         
         context = {

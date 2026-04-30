@@ -53,7 +53,7 @@ describe('Widget Editability', () => {
             
             // Process the content
             const decorations = pipeline.process(view, {
-                moreExtendedSyntax: true,
+                enableCustomLabelLists: true,
                 strictPandocMode: false
             });
             
@@ -93,7 +93,7 @@ describe('Widget Editability', () => {
             });
             
             const decorations = pipeline.process(view, {
-                moreExtendedSyntax: true,
+                enableCustomLabelLists: true,
                 strictPandocMode: false
             });
             

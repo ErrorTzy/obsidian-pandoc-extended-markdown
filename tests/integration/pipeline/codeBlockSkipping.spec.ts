@@ -66,7 +66,7 @@ describe('Code Block and Inline Code Skipping', () => {
     beforeEach(() => {
         stateManager = new PluginStateManager();
         settings = { ...DEFAULT_SETTINGS };
-        settings.moreExtendedSyntax = true;
+        settings.enableCustomLabelLists = true;
         pipeline = new ProcessingPipeline(stateManager);
         
         // Register structural processors for list types

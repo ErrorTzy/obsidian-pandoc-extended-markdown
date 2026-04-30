@@ -16,7 +16,7 @@ describe('Math Expression Rendering Bug', () => {
                 return app.plugins.enablePlugin('pandoc-extended-markdown');
             }
             if (plugin && plugin.settings) {
-                plugin.settings.moreExtendedSyntax = true;
+                plugin.settings.enableCustomLabelLists = true;
                 plugin.settings.enableExampleLists = true;
                 plugin.settings.enableFancyLists = true;
                 plugin.settings.enableHashAutoNumber = true;

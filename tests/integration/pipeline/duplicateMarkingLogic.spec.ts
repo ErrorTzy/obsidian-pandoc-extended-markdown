@@ -7,7 +7,7 @@ describe('Duplicate Marking Logic - Only mark 2nd+ occurrences', () => {
         strictLineBreaks: false,
         strictPandocMode: false,
         debugMode: false,
-        moreExtendedSyntax: false,
+        enableCustomLabelLists: false,
         toggleDefinitionStyle: false,
         panelOrder: []
     } as PandocExtendedMarkdownSettings;

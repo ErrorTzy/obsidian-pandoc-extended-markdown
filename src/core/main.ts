@@ -6,7 +6,6 @@ import { keymap } from '@codemirror/view';
 // Types
 import {
     PandocExtendedMarkdownSettings,
-    DEFAULT_SETTINGS,
     PandocExtendedMarkdownSettingTab,
     normalizeSettings,
     isSyntaxFeatureEnabled
@@ -288,7 +287,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     
     async loadSettings() {
         const loadedSettings = await this.loadData() as Partial<PandocExtendedMarkdownSettings> | null;
-        this.settings = normalizeSettings({ ...DEFAULT_SETTINGS, ...loadedSettings });
+        this.settings = normalizeSettings(loadedSettings ?? undefined);
     }
 
     async saveSettings() {

@@ -64,7 +64,7 @@ describe('Cross-references in lists (Pipeline)', () => {
         settings = {
             enableAutoFormatting: true,
             strictPandocMode: false,
-            moreExtendedSyntax: true,
+            enableCustomLabelLists: true,
             panelOrder: [],
             useNewPipeline: true
         } as PandocExtendedMarkdownSettings;

@@ -27,7 +27,7 @@ describe('CustomLabelProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                moreExtendedSyntax: true,
+                enableCustomLabelLists: true,
                 strictPandocMode: false,
                 ...settings
             } as PandocExtendedMarkdownSettings,
@@ -71,8 +71,8 @@ describe('CustomLabelProcessor', () => {
             expect(processor.canProcess(line, context)).toBe(true);
         });
         
-        it('should return false when moreExtendedSyntax is disabled', () => {
-            context = createContext('{::Label} Content', { moreExtendedSyntax: false });
+        it('should return false when enableCustomLabelLists is disabled', () => {
+            context = createContext('{::Label} Content', { enableCustomLabelLists: false });
             const line = context.document.line(1);
             expect(processor.canProcess(line, context)).toBe(false);
         });
