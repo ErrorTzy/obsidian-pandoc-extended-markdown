@@ -59,16 +59,23 @@ export class ReadingModeRenderer {
     ): (HTMLElement | Text)[] {
         const elements: (HTMLElement | Text)[] = [];
 
-        parsedLines.forEach((parsedLine, index) => {
+        for (let index = 0; index < parsedLines.length;) {
+            const definitionList = this.renderDefinitionListAt(parsedLines, index, context);
+
             if (index > 0) {
-                // Add line break if strict line breaks is enabled
                 if (context.strictLineBreaks) {
                     elements.push(document.createElement('br'));
                 }
                 elements.push(document.createTextNode('\n'));
             }
 
-            // Get the appropriate number for numbered lists
+            if (definitionList) {
+                elements.push(definitionList.element);
+                index = definitionList.nextIndex;
+                continue;
+            }
+
+            const parsedLine = parsedLines[index];
             let lineNumber: number | undefined;
             if (numberProvider) {
                 if (parsedLine.type === 'hash') {
@@ -80,7 +87,8 @@ export class ReadingModeRenderer {
 
             const lineElements = this.renderLine(parsedLine, context, lineNumber);
             elements.push(...lineElements);
-        });
+            index++;
+        }
 
         return elements;
     }
@@ -174,6 +182,54 @@ export class ReadingModeRenderer {
         elements.push(...contentElements);
         
         return elements;
+    }
+
+    private renderDefinitionListAt(
+        parsedLines: ParsedLine[],
+        startIndex: number,
+        context: RenderContext
+    ): { element: HTMLElement, nextIndex: number } | null {
+        if (parsedLines[startIndex]?.type !== 'definition-term') {
+            return null;
+        }
+
+        const dl = document.createElement('dl');
+        dl.className = CSS_CLASSES.DEFINITION_LIST;
+        let index = startIndex;
+        let renderedTerms = 0;
+
+        while (this.canRenderDefinitionTerm(parsedLines, index)) {
+            const term = parsedLines[index].metadata as DefinitionData;
+            const dt = document.createElement('dt');
+            dt.className = CSS_CLASSES.DEFINITION_TERM;
+            this.appendContent(dt, term.content, context);
+            dl.appendChild(dt);
+            index++;
+
+            while (parsedLines[index]?.type === 'definition-item') {
+                const definition = parsedLines[index].metadata as DefinitionData;
+                const dd = document.createElement('dd');
+                dd.className = CSS_CLASSES.DEFINITION_DESC;
+                this.appendContent(dd, definition.content, context);
+                dl.appendChild(dd);
+                index++;
+            }
+
+            renderedTerms++;
+        }
+
+        return renderedTerms > 0 ? { element: dl, nextIndex: index } : null;
+    }
+
+    private canRenderDefinitionTerm(parsedLines: ParsedLine[], index: number): boolean {
+        return parsedLines[index]?.type === 'definition-term' &&
+            parsedLines[index + 1]?.type === 'definition-item';
+    }
+
+    private appendContent(element: HTMLElement, content: string, context?: RenderContext): void {
+        this.processContentForReferences(content, context).forEach(child => {
+            element.appendChild(child);
+        });
     }
 
     /**

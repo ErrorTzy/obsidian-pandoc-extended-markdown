@@ -20,6 +20,7 @@ import {
     applyUnorderedListMarkerClasses,
     clearUnorderedListMarkerClasses
 } from './parsers/unorderedListMarkerParser';
+import { normalizeExistingDefinitionLists } from './utils/definitionListDom';
 import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting } from '../editor-extensions/pandocValidator';
 import { ValidationContext } from '../shared/types/listTypes';
@@ -50,6 +51,11 @@ export function processReadingMode(
         applyUnorderedListMarkerClasses(element, context);
     } else {
         clearUnorderedListMarkerClasses(element);
+    }
+
+    if (config.enableDefinitionLists !== false) {
+        const definitionRoot = getDefinitionListNormalizationRoot(element);
+        window.setTimeout(() => normalizeExistingDefinitionLists(definitionRoot), 0);
     }
     
     // Process each paragraph
@@ -86,6 +92,10 @@ export function processReadingMode(
     }
 }
 
+function getDefinitionListNormalizationRoot(element: HTMLElement): HTMLElement {
+    return element.closest('.el-p, .markdown-preview-section') as HTMLElement || element;
+}
+
 /**
  * Processes all text nodes within a DOM element to transform Pandoc syntax into rendered HTML.
  * Uses a tree walker to find text nodes, parses them for Pandoc patterns, validates in strict mode,
@@ -109,6 +119,12 @@ function processElementTextNodes(
     docPath: string,
     validationLines: string[]
 ): void {
+    if (config.enableDefinitionLists !== false &&
+        elem.nodeName === 'P' &&
+        processDefinitionListParagraph(elem, parser, renderer, config, docPath)) {
+        return;
+    }
+
     // Get all text nodes in this element
     const walker = document.createTreeWalker(
         elem,
@@ -210,6 +226,88 @@ function processElementTextNodes(
             parent.removeChild(node);
         }
     });
+}
+
+function processDefinitionListParagraph(
+    elem: Element,
+    parser: ReadingModeParser,
+    renderer: ReadingModeRenderer,
+    config: ProcessorConfig,
+    docPath: string
+): boolean {
+    const text = getTextWithLineBreaks(elem);
+    if (!text.includes('\n')) {
+        return false;
+    }
+
+    const lines = text.split('\n');
+    const parsedLines = parser.parseLines(lines, true, true, config);
+    if (!isStandaloneDefinitionList(parsedLines)) {
+        return false;
+    }
+
+    const renderContext: RenderContext = {
+        strictLineBreaks: config.strictLineBreaks,
+        getExampleNumber: (label: string) =>
+            pluginStateManager.getLabeledExampleNumber(docPath, label),
+        getExampleContent: (label: string) =>
+            pluginStateManager.getLabeledExampleContent(docPath, label)
+    };
+    const rendered = renderer.renderLines(parsedLines, renderContext);
+    elem.replaceChildren(...rendered);
+    return true;
+}
+
+function getTextWithLineBreaks(elem: Element): string {
+    const parts: string[] = [];
+    elem.childNodes.forEach(node => appendNodeText(node, parts));
+    return parts.join('');
+}
+
+function appendNodeText(node: Node, parts: string[]): void {
+    if (node.nodeName === 'BR') {
+        parts.push('\n');
+        return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        parts.push(node.textContent || '');
+        return;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE && !isCodeElement(node as Element)) {
+        node.childNodes.forEach(child => appendNodeText(child, parts));
+    }
+}
+
+function isCodeElement(element: Element): boolean {
+    return element.nodeName === 'CODE' || element.nodeName === 'PRE';
+}
+
+function isStandaloneDefinitionList(parsedLines: ReturnType<ReadingModeParser['parseLines']>): boolean {
+    const lines = parsedLines.filter(line => line.content.trim().length > 0);
+    let index = 0;
+    let hasDefinitionGroup = false;
+
+    while (index < lines.length) {
+        if (lines[index].type !== 'definition-term') {
+            return false;
+        }
+
+        index++;
+        let itemCount = 0;
+        while (lines[index]?.type === 'definition-item') {
+            itemCount++;
+            index++;
+        }
+
+        if (itemCount === 0) {
+            return false;
+        }
+        hasDefinitionGroup = true;
+    }
+
+    return hasDefinitionGroup;
 }
 
 function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {
