@@ -68,6 +68,8 @@ export interface ProcessingContext {
     };
     fencedDivStack?: FencedDivStackItem[];
     fencedDivCounters?: Map<string, number>;
+    fencedDivCanOpenAtCurrentLine?: boolean;
+    fencedDivBoundaryLine?: number;
     
     // Code regions to skip
     codeRegions?: Array<{from: number, to: number, type: string}>;

@@ -113,7 +113,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 * CustomLabelProcessor is modularized into `/customLabel/` subdirectory for better organization
 | **HashListProcessor** | 10 | Auto-number `#.` lists | `^\s*#\.` | BaseStructuralProcessor |
 | **CustomLabelProcessor*** | 15 | Process `{::LABEL}` markers | `^\s*\{::` | StructuralProcessor |
-| **FencedDivProcessor** | 18 | Render Pandoc fenced div open/content/close lines | `^\s*:::` with Pandoc-recognized attributes | BaseStructuralProcessor |
+| **FencedDivProcessor** | 18 | Render Pandoc fenced div open/content/close lines | unindented `:::` with Pandoc-recognized attributes at block boundaries | BaseStructuralProcessor |
 | **FancyListProcessor** | 20 | Letter/Roman lists | `^\s*[A-Za-z0-9]+[.)]` | BaseStructuralProcessor |
 | **DefinitionProcessor** | 20 | Definition list items | `^:\s` or `^~\s` | StructuralProcessor |
 | **ExampleListProcessor** | 30 | Example lists `(@label)` | `^\s*\(@` | BaseStructuralProcessor |

@@ -22,7 +22,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             return false;
         }
 
-        if (parseFencedDivOpening(line.text)) {
+        if (this.canOpenAtCurrentLine(context) && parseFencedDivOpening(line.text)) {
             return true;
         }
 
@@ -31,7 +31,9 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     }
 
     process(line: Line, context: ProcessingContext): StructuralResult {
-        const opening = parseFencedDivOpening(line.text);
+        const opening = this.canOpenAtCurrentLine(context)
+            ? parseFencedDivOpening(line.text)
+            : null;
         if (opening) {
             return this.processOpeningFence(line, context, {
                 label: opening.id,
@@ -66,6 +68,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
 
         context.fencedDivStack = context.fencedDivStack || [];
         context.fencedDivStack.push(activeItem);
+        context.fencedDivBoundaryLine = line.number;
 
         const decorations = [
             this.createFenceLineDecoration(line, 'cm-pem-fenced-div-open', stackItem.classes),
@@ -81,6 +84,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     private processClosingFence(line: Line, context: ProcessingContext): StructuralResult {
         const stack = context.fencedDivStack || [];
         const closingItem = stack.pop();
+        context.fencedDivBoundaryLine = line.number;
         const decorations = [
             this.createFenceLineDecoration(line, 'cm-pem-fenced-div-close', closingItem?.classes || []),
             this.createClosingMarkerDecoration(line, context)
@@ -184,5 +188,9 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     private getActiveItem(context: ProcessingContext): FencedDivStackItem | undefined {
         const stack = context.fencedDivStack || [];
         return stack[stack.length - 1];
+    }
+
+    private canOpenAtCurrentLine(context: ProcessingContext): boolean {
+        return context.fencedDivCanOpenAtCurrentLine ?? true;
     }
 }

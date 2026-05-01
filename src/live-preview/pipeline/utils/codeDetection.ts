@@ -196,6 +196,17 @@ export function isLineInCodeRegion(lineNumber: number, doc: Text, codeRegions: C
     return isLineInCodeBlock(lineNumber, doc, codeRegions);
 }
 
+export function getMarkdownCodeFenceMarker(lineText: string): string | undefined {
+    const match = lineText.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
+    return match?.[1];
+}
+
+export function isMarkdownCodeFenceClosing(lineText: string, openingMarker: string): boolean {
+    const markerChar = openingMarker[0];
+    const closingMatch = lineText.match(new RegExp(`^[ \\t]{0,3}(${markerChar}{3,})[ \\t]*$`));
+    return Boolean(closingMatch?.[1] && closingMatch[1].length >= openingMarker.length);
+}
+
 /**
  * Check if a position range is completely inside a code region
  */

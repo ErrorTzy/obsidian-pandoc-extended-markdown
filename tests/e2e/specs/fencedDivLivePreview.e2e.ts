@@ -20,6 +20,21 @@ interface FenceHitInfo {
     selectionHead?: number;
 }
 
+interface FencedDivRenderState {
+    openLineCount: number;
+    contentLineCount: number;
+    closeLineCount: number;
+    headerTexts: string[];
+    headerLabels: string[];
+    referenceTexts: string[];
+    referenceLabels: string[];
+    invalidLineRendered: boolean;
+    invalidReferenceRendered: boolean;
+    indentedLineRendered: boolean;
+    nestedContentLineClass: string;
+    warningLineClass: string;
+}
+
 describe('Fenced div live preview', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -195,6 +210,64 @@ describe('Fenced div live preview', () => {
 
         await deleteFileIfExists(filePath);
     });
+
+    it('renders Pandoc-valid fenced div syntax and ignores invalid live-preview lookalikes', async () => {
+        const filePath = 'fenced-div-live-preview-comprehensive.md';
+        const content = [
+            '::: {.outer #outer}',
+            '::: {.inner #inner title="Nested \\"label\\""}',
+            'Nested content.',
+            ':::',
+            '::: Warning ::::::',
+            'Warning content.',
+            ':::',
+            ':::',
+            '',
+            'See @outer, @inner, and @missing.',
+            '',
+            'Paragraph before.',
+            '::: {.note #invalid}',
+            'This should remain paragraph text.',
+            ':::',
+            '',
+            ' ::: {.indented #bad}',
+            'Indented text.',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(10);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivRenderState();
+            return state.openLineCount === 3 &&
+                state.closeLineCount === 3 &&
+                state.referenceLabels.includes('outer') &&
+                state.referenceLabels.includes('inner');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected Pandoc-valid fenced divs and references in live preview'
+        });
+
+        const state = await getFencedDivRenderState();
+
+        expect(state.openLineCount).toBe(3);
+        expect(state.closeLineCount).toBe(3);
+        expect(state.contentLineCount).toBe(2);
+        expect(state.headerTexts).toEqual(['Outer 1:', 'Inner 1:', 'Warning 1:']);
+        expect(state.headerLabels).toEqual(['outer', 'inner']);
+        expect(state.referenceTexts).toEqual(['Outer 1', 'Inner 1']);
+        expect(state.referenceLabels).toEqual(['outer', 'inner']);
+        expect(state.invalidLineRendered).toBe(false);
+        expect(state.invalidReferenceRendered).toBe(false);
+        expect(state.indentedLineRendered).toBe(false);
+        expect(state.nestedContentLineClass).toContain('cm-pem-fenced-div-inner');
+        expect(state.warningLineClass).toContain('cm-pem-fenced-div-warning');
+
+        await deleteFileIfExists(filePath);
+    });
 });
 
 async function getActiveFenceTagInfo(): Promise<ActiveFenceTagInfo> {
@@ -220,6 +293,56 @@ async function getActiveFenceTagInfo(): Promise<ActiveFenceTagInfo> {
             tagPointerEvents: tagStyle?.pointerEvents ?? ''
         };
     });
+}
+
+async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
+    return browser.execute((): FencedDivRenderState => {
+        const openLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-open')) as HTMLElement[];
+        const contentLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-content')) as HTMLElement[];
+        const closeLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-close')) as HTMLElement[];
+        const headers = Array.from(document.querySelectorAll('.pem-fenced-div-header')) as HTMLElement[];
+        const references = Array.from(document.querySelectorAll('.pem-fenced-div-reference')) as HTMLElement[];
+        const nestedContentLine = contentLines.find(line => line.textContent?.includes('Nested content.'));
+        const warningLine = openLines.find(line => line.textContent?.includes('Warning'));
+
+        return {
+            openLineCount: openLines.length,
+            contentLineCount: contentLines.length,
+            closeLineCount: closeLines.length,
+            headerTexts: headers.map(header => header.textContent ?? ''),
+            headerLabels: headers
+                .map(header => header.dataset.pandocDivId)
+                .filter((label): label is string => Boolean(label)),
+            referenceTexts: references.map(reference => reference.textContent ?? ''),
+            referenceLabels: references
+                .map(reference => reference.dataset.pandocDivRef)
+                .filter((label): label is string => Boolean(label)),
+            invalidLineRendered: openLines.some(line => line.textContent?.includes('#invalid')),
+            invalidReferenceRendered: references.some(reference => reference.dataset.pandocDivRef === 'invalid'),
+            indentedLineRendered: openLines.some(line => line.textContent?.includes('#bad')),
+            nestedContentLineClass: nestedContentLine?.className ?? '',
+            warningLineClass: warningLine?.className ?? ''
+        };
+    });
+}
+
+async function moveCursorToLine(lineNumber: number): Promise<void> {
+    await browser.execute((targetLineNumber: number) => {
+        // @ts-ignore
+        const leaf = app.workspace.getLeaf();
+        const view = leaf?.view;
+        const cm = view?.editor?.cm;
+        if (!cm) {
+            return;
+        }
+
+        const line = cm.state.doc.line(targetLineNumber);
+        cm.dispatch({
+            selection: { anchor: line.from }
+        });
+        cm.focus();
+    }, lineNumber);
+    await browser.pause(250);
 }
 
 async function activateOpeningFenceId(): Promise<void> {

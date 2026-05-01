@@ -84,7 +84,7 @@ See @thm:label.
 
 The opening fence renders as `Theorem 1`, and `@thm:label` renders as `Theorem 1`.
 
-- Supported syntax follows Pandoc fenced div attributes, including `{.class #id}` and a single unbraced class such as `::: Warning`.
+- Supported syntax follows Pandoc fenced div attributes, including `{.class #id}`, no-space forms like `:::{.class}`, and a single unbraced class such as `::: Warning`.
 - Comma-separated attributes such as `{.theorem, #thm:label}` are not rendered because Pandoc treats them as plain text.
 - This feature currently applies to Live Preview only.
 

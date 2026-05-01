@@ -1,13 +1,42 @@
 import { FencedDivAttributes } from '../../../../shared/types/fencedDivTypes';
 
-const OPENING_FENCE = /^(\s*)(:{3,})(?:[ \t]+(.+?))[ \t]*$/;
-const CLOSING_FENCE = /^\s*:{3,}\s*$/;
-const BRACED_ATTRIBUTES = /^\{([^}]*)\}(?:[ \t]*:{3,})?$/;
-const UNBRACED_CLASS = /^([^{}\s]+)(?:[ \t]+:{3,})?$/;
-const ATTRIBUTE_KEY = /^[A-Za-z_:][A-Za-z0-9_:.-]*$/;
+const OPENING_FENCE = /^(:{3,})(.*)$/;
+const CLOSING_FENCE = /^:{3,}[ \t]*$/;
+const ATTRIBUTE_KEY = /^[A-Za-z:][A-Za-z0-9_:.-]*$/;
+const ATTRIBUTE_ID = /^#[^\s@,=]+$/;
+const ATTRIBUTE_CLASS = /^\.[\p{L}][\p{L}\p{N}_:.-]*$/u;
+const TRAILING_COLONS = /^[ \t]*:+[ \t]*$/;
+const UNBRACED_CLASS = /^(\S+)(?:[ \t]+:+)?$/;
+const HTML_BLOCK_TAGS = new Set([
+    'address', 'article', 'aside', 'base', 'basefont', 'blockquote', 'body',
+    'caption', 'center', 'col', 'colgroup', 'dd', 'details', 'dialog', 'dir',
+    'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure', 'footer', 'form',
+    'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header',
+    'hr', 'html', 'iframe', 'legend', 'li', 'link', 'main', 'menu', 'menuitem',
+    'nav', 'noframes', 'ol', 'optgroup', 'option', 'p', 'param', 'search',
+    'section', 'summary', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead',
+    'title', 'tr', 'track', 'ul'
+]);
+
+interface ParsedAttributeTokens {
+    id?: string;
+    classes: string[];
+    keyValues: Map<string, string>;
+}
 
 export function isFencedDivClosing(lineText: string): boolean {
     return CLOSING_FENCE.test(lineText);
+}
+
+export function allowsFencedDivOpeningAfterLine(lineText: string): boolean {
+    const trimmedLine = lineText.trim();
+    if (!trimmedLine) {
+        return true;
+    }
+
+    return isAtxHeading(trimmedLine) ||
+        isThematicBreak(trimmedLine) ||
+        isSingleLineHtmlBlock(trimmedLine);
 }
 
 export function parseFencedDivOpening(lineText: string): FencedDivAttributes | null {
@@ -16,28 +45,41 @@ export function parseFencedDivOpening(lineText: string): FencedDivAttributes | n
         return null;
     }
 
-    const indent = openingMatch[1] || '';
-    const fence = openingMatch[2] || '';
-    const rawAttributes = openingMatch[3] || '';
-
-    const bracedMatch = rawAttributes.match(BRACED_ATTRIBUTES);
-    if (bracedMatch) {
-        return parseBracedAttributes(indent, fence, rawAttributes, bracedMatch[1] || '');
+    const fence = openingMatch[1] || '';
+    const rawAttributes = (openingMatch[2] || '').trim();
+    if (!rawAttributes) {
+        return null;
     }
 
-    const unbracedMatch = rawAttributes.match(UNBRACED_CLASS);
-    if (!unbracedMatch || hasCommaOutsideQuotes(rawAttributes)) {
+    const parsedAttributes = rawAttributes.startsWith('{')
+        ? parseBracedAttributes(rawAttributes)
+        : parseUnbracedAttributes(rawAttributes);
+    if (!parsedAttributes) {
         return null;
     }
 
     return {
-        indent,
+        indent: '',
         fence,
         rawAttributes,
-        markerText: `${fence} ${rawAttributes}`,
-        classes: [unbracedMatch[1]],
-        keyValues: new Map()
+        markerText: `${fence}${openingMatch[2] || ''}`,
+        ...parsedAttributes
     };
+}
+
+function isAtxHeading(lineText: string): boolean {
+    return /^#{1,6}(?:[ \t]+|$)/.test(lineText);
+}
+
+function isThematicBreak(lineText: string): boolean {
+    return /^(?:\*[ \t]*){3,}$/.test(lineText) ||
+        /^(?:-[ \t]*){3,}$/.test(lineText) ||
+        /^(?:_[ \t]*){3,}$/.test(lineText);
+}
+
+function isSingleLineHtmlBlock(lineText: string): boolean {
+    const match = lineText.match(/^<([A-Za-z][A-Za-z0-9-]*)(?:\s[^>]*)?>.*<\/\1>$/);
+    return Boolean(match?.[1] && HTML_BLOCK_TAGS.has(match[1].toLowerCase()));
 }
 
 export function getFencedDivDisplayName(classes: string[]): string {
@@ -59,49 +101,122 @@ export function getFencedDivCssClass(classes: string[]): string | undefined {
         .replace(/^-+|-+$/g, '') || undefined;
 }
 
-function parseBracedAttributes(
-    indent: string,
-    fence: string,
-    rawAttributes: string,
-    content: string
-): FencedDivAttributes | null {
-    if (hasCommaOutsideQuotes(content)) {
+function parseBracedAttributes(rawAttributes: string): ParsedAttributeTokens | null {
+    const closingBraceIndex = findClosingBrace(rawAttributes);
+    if (closingBraceIndex < 0) {
         return null;
     }
 
+    const trailingText = rawAttributes.slice(closingBraceIndex + 1);
+    if (trailingText && !TRAILING_COLONS.test(trailingText)) {
+        return null;
+    }
+
+    const bracedAttributeText = rawAttributes.slice(0, closingBraceIndex + 1);
+    const content = rawAttributes.slice(1, closingBraceIndex);
     const tokens = splitAttributeTokens(content);
     if (!tokens) {
         return null;
     }
 
+    const parsedTokens = parseAttributeTokens(tokens);
+    if (parsedTokens) {
+        return parsedTokens;
+    }
+
+    return tokens.length === 1
+        ? createUnbracedClass(bracedAttributeText)
+        : null;
+}
+
+function parseUnbracedAttributes(rawAttributes: string): ParsedAttributeTokens | null {
+    const unbracedMatch = rawAttributes.match(UNBRACED_CLASS);
+    if (!unbracedMatch) {
+        return null;
+    }
+
+    return createUnbracedClass(unbracedMatch[1] || '');
+}
+
+function createUnbracedClass(className: string): ParsedAttributeTokens {
+    return {
+        classes: [className],
+        keyValues: new Map()
+    };
+}
+
+function parseAttributeTokens(tokens: string[]): ParsedAttributeTokens | null {
     const classes: string[] = [];
     const keyValues = new Map<string, string>();
     let id: string | undefined;
 
     for (const token of tokens) {
-        if (token.startsWith('#') && token.length > 1) {
+        if (token === '') {
+            continue;
+        }
+
+        if (token.startsWith('-')) {
+            const parsedDashToken = parseDashToken(token);
+            if (!parsedDashToken) {
+                return null;
+            }
+            classes.push(...parsedDashToken.classes);
+            for (const [key, value] of parsedDashToken.keyValues) {
+                keyValues.set(key, value);
+            }
+            continue;
+        }
+
+        if (ATTRIBUTE_ID.test(token)) {
             id = token.slice(1);
-        } else if (token.startsWith('.') && token.length > 1) {
+            continue;
+        }
+
+        if (ATTRIBUTE_CLASS.test(token)) {
             classes.push(token.slice(1));
-        } else if (token.includes('=')) {
+            continue;
+        }
+
+        if (token.includes('=')) {
             const parsedKeyValue = parseKeyValueToken(token);
             if (!parsedKeyValue) {
                 return null;
             }
             keyValues.set(parsedKeyValue.key, parsedKeyValue.value);
-        } else if (token.length > 0) {
-            return null;
+            continue;
         }
+
+        return null;
     }
 
     return {
-        indent,
-        fence,
-        rawAttributes,
-        markerText: `${fence} ${rawAttributes}`,
         id,
         classes,
         keyValues
+    };
+}
+
+function parseDashToken(token: string): ParsedAttributeTokens | null {
+    if (/^-+$/.test(token)) {
+        return {
+            classes: Array.from({ length: token.length }, () => 'unnumbered'),
+            keyValues: new Map()
+        };
+    }
+
+    const dashKeyValueMatch = token.match(/^-([^=]+)=(.*)$/);
+    if (!dashKeyValueMatch) {
+        return null;
+    }
+
+    const key = dashKeyValueMatch[1] || '';
+    if (!ATTRIBUTE_KEY.test(key)) {
+        return null;
+    }
+
+    return {
+        classes: ['unnumbered'],
+        keyValues: new Map([[key, stripQuotes(dashKeyValueMatch[2] || '')]])
     };
 }
 
@@ -109,8 +224,21 @@ function splitAttributeTokens(content: string): string[] | null {
     const tokens: string[] = [];
     let current = '';
     let quote: string | undefined;
+    let escaped = false;
 
     for (const char of content.trim()) {
+        if (escaped) {
+            current += char;
+            escaped = false;
+            continue;
+        }
+
+        if (char === '\\' && quote) {
+            current += char;
+            escaped = true;
+            continue;
+        }
+
         if ((char === '"' || char === "'") && !quote) {
             quote = char;
             current += char;
@@ -134,7 +262,7 @@ function splitAttributeTokens(content: string): string[] | null {
         current += char;
     }
 
-    if (quote) {
+    if (quote || escaped) {
         return null;
     }
 
@@ -161,20 +289,52 @@ function parseKeyValueToken(token: string): { key: string; value: string } | nul
 }
 
 function stripQuotes(value: string): string {
-    if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-    ) {
-        return value.slice(1, -1);
+    if (value.length < 2) {
+        return value;
     }
 
-    return value;
+    const quote = value[0];
+    if ((quote !== '"' && quote !== "'") || value[value.length - 1] !== quote) {
+        return value;
+    }
+
+    let unquoted = '';
+    let escaped = false;
+    for (const char of value.slice(1, -1)) {
+        if (escaped) {
+            unquoted += char;
+            escaped = false;
+            continue;
+        }
+
+        if (char === '\\') {
+            escaped = true;
+            continue;
+        }
+
+        unquoted += char;
+    }
+
+    return escaped ? `${unquoted}\\` : unquoted;
 }
 
-function hasCommaOutsideQuotes(value: string): boolean {
+function findClosingBrace(value: string): number {
     let quote: string | undefined;
+    let escaped = false;
 
-    for (const char of value) {
+    for (let index = 0; index < value.length; index++) {
+        const char = value[index];
+
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+
+        if (char === '\\' && quote) {
+            escaped = true;
+            continue;
+        }
+
         if ((char === '"' || char === "'") && !quote) {
             quote = char;
             continue;
@@ -185,10 +345,10 @@ function hasCommaOutsideQuotes(value: string): boolean {
             continue;
         }
 
-        if (char === ',' && !quote) {
-            return true;
+        if (char === '}' && !quote) {
+            return index;
         }
     }
 
-    return false;
+    return -1;
 }

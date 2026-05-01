@@ -1,0 +1,110 @@
+import {
+    allowsFencedDivOpeningAfterLine,
+    isFencedDivClosing,
+    parseFencedDivOpening
+} from '../../../../src/live-preview/pipeline/structural/fencedDiv/parser';
+
+describe('fenced div parser', () => {
+    describe('valid Pandoc openings', () => {
+        it.each([
+            ['::: {.note}', ['note']],
+            [':::{.note}', ['note']],
+            [':::Warning', ['Warning']],
+            ['::::Warning', ['Warning']],
+            ['::: {.note}::::::', ['note']],
+            ['::: {.note}:', ['note']],
+            ['::: {.note}::', ['note']],
+            ['::: {.note} ::::::', ['note']],
+            ['::: Warning ::::::', ['Warning']]
+        ])('parses %s', (line, classes) => {
+            expect(parseFencedDivOpening(line)?.classes).toEqual(classes);
+        });
+
+        it('parses empty braced attributes', () => {
+            const opening = parseFencedDivOpening('::: {}');
+
+            expect(opening).toMatchObject({
+                id: undefined,
+                classes: []
+            });
+            expect(opening?.keyValues.size).toBe(0);
+        });
+
+        it('parses id-only and key-value-only attribute sets', () => {
+            expect(parseFencedDivOpening('::: {#id}')?.id).toBe('id');
+            expect(parseFencedDivOpening('::: {key=value}')?.keyValues.get('key')).toBe('value');
+        });
+
+        it('uses the last id when Pandoc sees repeated ids', () => {
+            const opening = parseFencedDivOpening('::: {.note #first #second}');
+
+            expect(opening?.id).toBe('second');
+            expect(opening?.classes).toEqual(['note']);
+        });
+
+        it('parses quoted values with spaces and escaped quotes', () => {
+            const opening = parseFencedDivOpening(
+                '::: {.note title="hello world" data-x=\'yes\' escaped="hello \\"world\\""}'
+            );
+
+            expect(opening?.keyValues.get('title')).toBe('hello world');
+            expect(opening?.keyValues.get('data-x')).toBe('yes');
+            expect(opening?.keyValues.get('escaped')).toBe('hello "world"');
+        });
+
+        it('maps Pandoc dash shorthand to the unnumbered class', () => {
+            expect(parseFencedDivOpening('::: {-}')?.classes).toEqual(['unnumbered']);
+            expect(parseFencedDivOpening('::: {- .note}')?.classes).toEqual(['unnumbered', 'note']);
+            expect(parseFencedDivOpening('::: {-key=value}')?.classes).toEqual(['unnumbered']);
+            expect(parseFencedDivOpening('::: {-key=value}')?.keyValues.get('key')).toBe('value');
+        });
+    });
+
+    describe('invalid or fallback Pandoc openings', () => {
+        it.each([
+            ' ::: {.note}',
+            '  ::: {.note}',
+            '\t::: {.note}',
+            '::: {.note, #id}'
+        ])('does not parse %s', line => {
+            expect(parseFencedDivOpening(line)).toBeNull();
+        });
+
+        it.each([
+            ['::: {note}', ['{note}']],
+            ['::: {.123}', ['{.123}']],
+            ['::: {#x@}', ['{#x@}']]
+        ])('parses Pandoc fallback class for %s', (line, classes) => {
+            expect(parseFencedDivOpening(line)?.classes).toEqual(classes);
+        });
+
+        it('does not treat a bare colon fence as an opening', () => {
+            expect(parseFencedDivOpening('::::')).toBeNull();
+        });
+    });
+
+    describe('closing fences', () => {
+        it('accepts only unindented bare colon runs', () => {
+            expect(isFencedDivClosing(':::')).toBe(true);
+            expect(isFencedDivClosing('::::   ')).toBe(true);
+            expect(isFencedDivClosing(' :::')).toBe(false);
+            expect(isFencedDivClosing('::: end')).toBe(false);
+        });
+    });
+
+    describe('block boundary helpers', () => {
+        it('allows openings after complete block lines that Pandoc accepts', () => {
+            expect(allowsFencedDivOpeningAfterLine('')).toBe(true);
+            expect(allowsFencedDivOpeningAfterLine('# Heading')).toBe(true);
+            expect(allowsFencedDivOpeningAfterLine('---')).toBe(true);
+            expect(allowsFencedDivOpeningAfterLine('<div>x</div>')).toBe(true);
+        });
+
+        it('does not allow openings after paragraph-like lines', () => {
+            expect(allowsFencedDivOpeningAfterLine('paragraph')).toBe(false);
+            expect(allowsFencedDivOpeningAfterLine('- list item')).toBe(false);
+            expect(allowsFencedDivOpeningAfterLine('> quote')).toBe(false);
+            expect(allowsFencedDivOpeningAfterLine('<span>x</span>')).toBe(false);
+        });
+    });
+});

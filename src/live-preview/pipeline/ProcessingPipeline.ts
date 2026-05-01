@@ -21,7 +21,14 @@ import { ListPatterns } from '../../shared/patterns';
 // Utils
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 import { handleError } from '../../shared/utils/errorHandler';
-import { detectCodeRegions, isLineInCodeRegion, isRangeInCodeRegion } from './utils/codeDetection';
+import {
+    detectCodeRegions,
+    getMarkdownCodeFenceMarker,
+    isLineInCodeRegion,
+    isMarkdownCodeFenceClosing,
+    isRangeInCodeRegion
+} from './utils/codeDetection';
+import { allowsFencedDivOpeningAfterLine } from './structural/fencedDiv/parser';
 
 // Internal modules
 import { PluginStateManager } from '../../core/state/pluginStateManager';
@@ -71,6 +78,17 @@ function processExampleLine(
         result.exampleLineNumbers.set(lineNum, counter.value);
         counter.value++;
     }
+}
+
+function isCodeRegionEndLine(
+    line: { from: number; to: number },
+    codeRegions: CodeRegion[]
+): boolean {
+    return codeRegions.some(region =>
+        region.type === 'codeblock' &&
+        line.from >= region.from &&
+        line.to === region.to
+    );
 }
 
 // Helper: Create empty example scan result
@@ -236,7 +254,8 @@ export class ProcessingPipeline {
                 pendingBlankLine: false
             },
             fencedDivStack: [],
-            fencedDivCounters: new Map()
+            fencedDivCounters: new Map(),
+            fencedDivCanOpenAtCurrentLine: true
         };
     }
     
@@ -279,17 +298,39 @@ export class ProcessingPipeline {
         const doc = context.document;
         const numLines = doc.lines;
         const codeRegions = context.codeRegions || [];
+        let fencedDivCanOpenAtCurrentLine = true;
+        let fallbackCodeFenceMarker: string | undefined;
         
         for (let lineNum = 1; lineNum <= numLines; lineNum++) {
             const line = doc.line(lineNum);
+            context.fencedDivCanOpenAtCurrentLine = fencedDivCanOpenAtCurrentLine;
             
             // Skip invalid lines in strict mode
             if (context.invalidLines.has(lineNum)) {
+                fencedDivCanOpenAtCurrentLine = false;
                 continue;
             }
             
             // Skip lines that are inside code regions
             if (isLineInCodeRegion(lineNum, doc, codeRegions as CodeRegion[])) {
+                fencedDivCanOpenAtCurrentLine = isCodeRegionEndLine(line, codeRegions as CodeRegion[]);
+                continue;
+            }
+
+            if (fallbackCodeFenceMarker) {
+                if (isMarkdownCodeFenceClosing(line.text, fallbackCodeFenceMarker)) {
+                    fallbackCodeFenceMarker = undefined;
+                    fencedDivCanOpenAtCurrentLine = true;
+                } else {
+                    fencedDivCanOpenAtCurrentLine = false;
+                }
+                continue;
+            }
+
+            const openingCodeFenceMarker = getMarkdownCodeFenceMarker(line.text);
+            if (openingCodeFenceMarker) {
+                fallbackCodeFenceMarker = openingCodeFenceMarker;
+                fencedDivCanOpenAtCurrentLine = false;
                 continue;
             }
             
@@ -328,6 +369,9 @@ export class ProcessingPipeline {
                     type: 'normal'
                 });
             }
+
+            fencedDivCanOpenAtCurrentLine = allowsFencedDivOpeningAfterLine(line.text) ||
+                context.fencedDivBoundaryLine === lineNum;
         }
     }
     
