@@ -18,6 +18,12 @@ export const CSS_CLASSES = {
     DEFINITION_ITEMS: 'pem-definition-items',
     DEFINITION_CONTENT_TEXT: 'pem-definition-content-text',
 
+    // Fenced Div Classes
+    FENCED_DIV_LINE: 'cm-pem-fenced-div-line',
+    FENCED_DIV_HEADER: 'pem-fenced-div-header',
+    FENCED_DIV_CLOSING: 'pem-fenced-div-closing',
+    FENCED_DIV_REFERENCE: 'pem-fenced-div-reference',
+
     // Example List Classes
     EXAMPLE_REF: 'pem-example-reference',
     EXAMPLE_LIST: 'pem-example-list',

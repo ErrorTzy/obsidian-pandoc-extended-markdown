@@ -67,6 +67,7 @@ export const SETTINGS = {
     FANCY_LISTS: 'enableFancyLists',
     EXAMPLE_LISTS: 'enableExampleLists',
     DEFINITION_LISTS: 'enableDefinitionLists',
+    FENCED_DIVS: 'enableFencedDivs',
     SUPERSCRIPT: 'enableSuperscript',
     SUBSCRIPT: 'enableSubscript',
     CUSTOM_LABEL: 'enableCustomLabelLists',
@@ -114,6 +115,10 @@ export const SETTINGS_UI = {
     DEFINITION_LISTS: {
         NAME: 'Definition lists',
         DESCRIPTION: 'Enable Pandoc definition lists with term lines followed by `:` or `~` definitions.'
+    },
+    FENCED_DIVS: {
+        NAME: 'Fenced divs',
+        DESCRIPTION: 'Enable Pandoc fenced div blocks such as `::: {.theorem #thm:label}` and `@thm:label` live-preview references.'
     },
     SUPERSCRIPT: {
         NAME: 'Superscript',

@@ -4,16 +4,17 @@ import { Text, Line } from '@codemirror/state';
 import { App, Component } from 'obsidian';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+import { FencedDivReference, FencedDivStackItem } from '../../shared/types/fencedDivTypes';
 
 /**
  * Represents a region of content that needs inline processing
  */
-type ListStructure = 'hash-list' | 'fancy-list' | 'example-list' | 'custom-label-list' | 'definition' | 'standard-list';
+type ListStructure = 'hash-list' | 'fancy-list' | 'example-list' | 'custom-label-list' | 'definition' | 'standard-list' | 'fenced-div';
 
 export interface ContentRegion {
     from: number;
     to: number;
-    type: 'list-content' | 'definition-content' | 'paragraph' | 'normal';
+    type: 'list-content' | 'definition-content' | 'paragraph' | 'normal' | 'fenced-div-content';
     parentStructure?: ListStructure;
     metadata?: {
         label?: string;
@@ -44,6 +45,7 @@ export interface ProcessingContext {
     rawToProcessed: Map<string, string>;
     duplicateCustomLabels: Set<string>;
     duplicateCustomLineInfo?: Map<string, { firstLine: number; firstContent: string }>;
+    fencedDivLabels?: Map<string, FencedDivReference>;
     placeholderContext: PlaceholderContext;
     invalidLines: Set<number>;
     
@@ -64,6 +66,8 @@ export interface ProcessingContext {
         listLevel: number;
         parentStructure?: ListStructure;
     };
+    fencedDivStack?: FencedDivStackItem[];
+    fencedDivCounters?: Map<string, number>;
     
     // Code regions to skip
     codeRegions?: Array<{from: number, to: number, type: string}>;

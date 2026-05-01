@@ -60,6 +60,7 @@ export interface PandocExtendedMarkdownSettings {
     enableFancyLists?: boolean;
     enableExampleLists?: boolean;
     enableDefinitionLists?: boolean;
+    enableFencedDivs?: boolean;
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
     enableCustomLabelLists?: boolean;
@@ -79,6 +80,7 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableFancyLists: true,
     enableExampleLists: true,
     enableDefinitionLists: true,
+    enableFencedDivs: true,
     enableSuperscript: true,
     enableSubscript: true,
     enableCustomLabelLists: false,
@@ -96,6 +98,7 @@ export type SyntaxFeatureSettingKey =
     | 'enableFancyLists'
     | 'enableExampleLists'
     | 'enableDefinitionLists'
+    | 'enableFencedDivs'
     | 'enableSuperscript'
     | 'enableSubscript'
     | 'enableCustomLabelLists'
@@ -121,6 +124,7 @@ export function normalizeSettings(
         enableFancyLists: isSyntaxFeatureEnabled(sourceSettings, 'enableFancyLists'),
         enableExampleLists: isSyntaxFeatureEnabled(sourceSettings, 'enableExampleLists'),
         enableDefinitionLists: isSyntaxFeatureEnabled(sourceSettings, 'enableDefinitionLists'),
+        enableFencedDivs: isSyntaxFeatureEnabled(sourceSettings, 'enableFencedDivs'),
         enableSuperscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript'),
         enableSubscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript'),
         enableCustomLabelLists: isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists'),

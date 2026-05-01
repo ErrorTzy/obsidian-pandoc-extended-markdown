@@ -8,6 +8,7 @@ export {
 } from './listWidgets';
 
 export { DefinitionBulletWidget } from './definitionWidget';
+export { FencedDivHeaderWidget, FencedDivClosingWidget, FencedDivReferenceWidget } from './fencedDivWidget';
 export { ExampleReferenceWidget } from './referenceWidget';
 export { SuperscriptWidget, SubscriptWidget } from './formatWidgets';
 export { 

@@ -168,6 +168,82 @@
     text-decoration: underline;
 }
 
+.cm-pem-fenced-div-line {
+    --pem-fenced-div-accent: var(--interactive-accent);
+    --pem-fenced-div-bg: var(--background-secondary);
+    background: var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+    padding-inline-start: 1.15em !important;
+    padding-inline-end: 1em;
+}
+
+.cm-pem-fenced-div-open {
+    border-radius: 8px 8px 0 0;
+    padding-top: 0.45em;
+    padding-bottom: 0.05em;
+}
+
+.cm-pem-fenced-div-close {
+    border-radius: 0 0 8px 8px;
+    padding-top: 0.05em;
+    padding-bottom: 0.25em;
+}
+
+.cm-line.cm-pem-fenced-div-close {
+    line-height: 1.1;
+    min-height: 0.9em;
+}
+
+.cm-pem-fenced-div-content {
+    padding-top: 0.1em;
+    padding-bottom: 0.2em;
+}
+
+.pem-fenced-div-header {
+    display: inline-block;
+    color: var(--text-normal);
+    font-weight: 700;
+    font-size: var(--font-ui-medium);
+    line-height: 1.35;
+    margin-inline-start: 0.1em;
+    padding-right: 0.3em;
+}
+
+.pem-fenced-div-closing {
+    display: inline-block;
+    height: 1px;
+    line-height: 1;
+    width: 1px;
+}
+
+.cm-line.cm-pem-fenced-div-open .cm-hashtag,
+.cm-line.cm-pem-fenced-div-open .cm-hashtag-begin,
+.cm-line.cm-pem-fenced-div-open .cm-hashtag-end,
+.cm-line.cm-pem-fenced-div-open [class*="cm-tag-"] {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    cursor: text !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    text-decoration: none !important;
+}
+
+.pem-fenced-div-reference {
+    color: var(--link-color);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.pem-fenced-div-reference:hover {
+    color: var(--link-color-hover);
+    text-decoration: underline;
+}
+
 .cm-line .pem-definition-marker {
     display: none;
 }

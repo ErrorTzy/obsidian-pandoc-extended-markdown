@@ -72,6 +72,22 @@ Term 3
 - **Autocompletion**: Press Enter after `:` or `~` markers to continue with the same marker type
 - **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
 
+### Fenced Divs
+Live Preview renders Pandoc fenced div blocks and references to labeled blocks:
+```markdown
+::: {.theorem #thm:label}
+Every compact metric space is complete.
+:::
+
+See @thm:label.
+```
+
+The opening fence renders as `Theorem 1`, and `@thm:label` renders as `Theorem 1`.
+
+- Supported syntax follows Pandoc fenced div attributes, including `{.class #id}` and a single unbraced class such as `::: Warning`.
+- Comma-separated attributes such as `{.theorem, #thm:label}` are not rendered because Pandoc treats them as plain text.
+- This feature currently applies to Live Preview only.
+
 ### List Panel View
 
 A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types.
@@ -292,6 +308,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
+  - Fenced divs and references (`::: {.theorem #thm:label}` and `@thm:label`) in Live Preview
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references

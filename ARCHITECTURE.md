@@ -27,6 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
+| **Fenced Divs** | `::: {.theorem #id}` with `@id` references | FencedDivProcessor, FencedDivReferenceProcessor (Live Preview only) |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -112,6 +113,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 * CustomLabelProcessor is modularized into `/customLabel/` subdirectory for better organization
 | **HashListProcessor** | 10 | Auto-number `#.` lists | `^\s*#\.` | BaseStructuralProcessor |
 | **CustomLabelProcessor*** | 15 | Process `{::LABEL}` markers | `^\s*\{::` | StructuralProcessor |
+| **FencedDivProcessor** | 18 | Render Pandoc fenced div open/content/close lines | `^\s*:::` with Pandoc-recognized attributes | BaseStructuralProcessor |
 | **FancyListProcessor** | 20 | Letter/Roman lists | `^\s*[A-Za-z0-9]+[.)]` | BaseStructuralProcessor |
 | **DefinitionProcessor** | 20 | Definition list items | `^:\s` or `^~\s` | StructuralProcessor |
 | **ExampleListProcessor** | 30 | Example lists `(@label)` | `^\s*\(@` | BaseStructuralProcessor |
@@ -123,6 +125,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | Processor | Priority | Processes | Regions |
 |-----------|----------|-----------|---------|
 | **ExampleReferenceProcessor** | 10 | `(@ref)` → `(number)` | list-content, definition-content |
+| **FencedDivReferenceProcessor** | 12 | `@id` → `Class n` for labeled fenced divs | normal, fenced-div-content, list-content, definition-content |
 | **SuperscriptProcessor** | 20 | `^text^` → superscript | list-content, definition-content |
 | **SubscriptProcessor** | 20 | `~text~` → subscript | list-content, definition-content |
 | **CustomLabelReferenceProcessor** | 40 | `{::ref}` → processed | list-content, definition-content |
@@ -150,6 +153,9 @@ All widgets extend `BaseWidget` which provides:
 | **CustomLabelReferenceWidget** | BaseWidget | `{::ref}` with hover preview |
 | **DuplicateCustomLabelWidget** | BaseWidget | Error styling for duplicates |
 | **DefinitionBulletWidget** | BaseWidget | Definition list bullets |
+| **FencedDivHeaderWidget** | BaseWidget | Fenced div label heading, e.g. `Theorem 1` |
+| **FencedDivClosingWidget** | BaseWidget | Hidden closing fence placeholder |
+| **FencedDivReferenceWidget** | BaseWidget | `@id` → `Class n` with hover content |
 | **ExampleReferenceWidget** | BaseWidget | `(@ref)` → `(n)` with hover |
 | **SuperscriptWidget** | BaseWidget | Superscript formatting |
 | **SubscriptWidget** | BaseWidget | Subscript formatting |
@@ -259,6 +265,7 @@ listAutocompletion/
 2. Document Scanning
    - Extract example labels → Map<label, number>
    - Extract custom labels → Map<label, processed>
+   - Extract labeled fenced divs → Map<label, display metadata>
    - Skip code regions
 
 3. Validation (Strict Mode)
@@ -278,6 +285,7 @@ For each line (top to bottom):
   2. Try processors by priority:
      - HashListProcessor (10)
      - CustomLabelProcessor (15)
+     - FencedDivProcessor (18)
      - FancyListProcessor (20)
      - DefinitionProcessor (20)
      - StandardListProcessor (25)

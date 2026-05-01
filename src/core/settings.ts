@@ -110,6 +110,12 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         );
         this.createFeatureToggle(
             containerEl,
+            SETTINGS_UI.FENCED_DIVS.NAME,
+            SETTINGS_UI.FENCED_DIVS.DESCRIPTION,
+            'enableFencedDivs'
+        );
+        this.createFeatureToggle(
+            containerEl,
             SETTINGS_UI.UNORDERED_LIST_MARKER_STYLES.NAME,
             SETTINGS_UI.UNORDERED_LIST_MARKER_STYLES.DESCRIPTION,
             'enableUnorderedListMarkerStyles'

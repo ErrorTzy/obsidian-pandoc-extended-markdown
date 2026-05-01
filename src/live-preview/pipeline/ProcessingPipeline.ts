@@ -26,6 +26,7 @@ import { detectCodeRegions, isLineInCodeRegion, isRangeInCodeRegion } from './ut
 // Internal modules
 import { PluginStateManager } from '../../core/state/pluginStateManager';
 import { scanCustomLabels } from '../scanners/customLabelScanner';
+import { scanFencedDivs } from '../scanners/fencedDivScanner';
 import { validateListBlocks } from '../validators/listBlockValidator';
 
 // Helper: Process a single example list line
@@ -198,6 +199,7 @@ export class ProcessingPipeline {
         settings: PandocExtendedMarkdownSettings,
         exampleScanResult: ReturnType<typeof scanExampleLabelsFromDoc>,
         customScanResult: ReturnType<typeof scanCustomLabels>,
+        fencedDivLabels: ReturnType<typeof scanFencedDivs>,
         invalidLines: Set<number>
     ): ProcessingContext {
         return {
@@ -218,6 +220,7 @@ export class ProcessingPipeline {
             rawToProcessed: customScanResult.rawToProcessed,
             duplicateCustomLabels: customScanResult.duplicateLabels,
             duplicateCustomLineInfo: customScanResult.duplicateLineInfo,
+            fencedDivLabels,
             placeholderContext: customScanResult.placeholderContext,
             invalidLines,
             
@@ -231,7 +234,9 @@ export class ProcessingPipeline {
             definitionState: {
                 lastWasItem: false,
                 pendingBlankLine: false
-            }
+            },
+            fencedDivStack: [],
+            fencedDivCounters: new Map()
         };
     }
     
@@ -246,6 +251,7 @@ export class ProcessingPipeline {
         const exampleScanResult = scanExampleLabelsFromDoc(doc, settings, codeRegions);
         const placeholderContext = this.getPlaceholderContext(docPath);
         const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext, codeRegions);
+        const fencedDivLabels = scanFencedDivs(doc, settings, codeRegions);
         const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : new Set<number>();
         
         // Update state manager
@@ -254,7 +260,14 @@ export class ProcessingPipeline {
             counters.placeholderContext = customScanResult.placeholderContext;
         }
         
-        const context = this.buildContext(view, settings, exampleScanResult, customScanResult, invalidLines);
+        const context = this.buildContext(
+            view,
+            settings,
+            exampleScanResult,
+            customScanResult,
+            fencedDivLabels,
+            invalidLines
+        );
         context.codeRegions = codeRegions;
         return context;
     }
