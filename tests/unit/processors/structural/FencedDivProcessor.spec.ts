@@ -128,6 +128,18 @@ describe('FencedDivProcessor', () => {
             expect(result.decorations[1].decoration.spec?.class).toContain('cm-pem-fenced-div-marker-cursor');
         });
 
+        it('does not replace an opening fence when the cursor is at the end of the line', () => {
+            const context = createContext('::: example\ncontent\n:::');
+            const line = context.document.line(1);
+            view.dispatch({ selection: EditorSelection.cursor(line.to) });
+            context.view = view;
+
+            const result = processor.process(line, context);
+
+            expect(result.decorations[1].decoration.spec?.class).toContain('cm-pem-fenced-div-marker-cursor');
+            expect(result.decorations[1].decoration.spec?.widget).toBeUndefined();
+        });
+
         it('marks content lines without blocking other processors', () => {
             const context = createContext('::: {.theorem #thm:label}\ncontent with ^sup^\n:::');
             context.fencedDivStack = [{
@@ -175,6 +187,23 @@ describe('FencedDivProcessor', () => {
             expect(result.decorations[1].decoration.spec?.widget?.constructor.name).toBe('FencedDivClosingWidget');
             expect(result.decorations[1].decoration.spec?.widget?.toDOM().textContent).toBe('');
             expect(context.fencedDivStack).toHaveLength(0);
+        });
+
+        it('does not replace a closing fence when the cursor is at the end of the line', () => {
+            const context = createContext('::: {.theorem #thm:label}\ncontent\n:::');
+            context.fencedDivStack = [{
+                label: 'thm:label',
+                classes: ['theorem'],
+                openingLine: 1
+            }];
+            const line = context.document.line(3);
+            view.dispatch({ selection: EditorSelection.cursor(line.to) });
+            context.view = view;
+
+            const result = processor.process(line, context);
+
+            expect(result.decorations[1].decoration.spec?.class).toContain('cm-pem-fenced-div-marker-cursor');
+            expect(result.decorations[1].decoration.spec?.widget).toBeUndefined();
         });
     });
 

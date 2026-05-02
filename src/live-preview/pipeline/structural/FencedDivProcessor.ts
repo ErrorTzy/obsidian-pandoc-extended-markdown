@@ -108,7 +108,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         displayName: string,
         label?: string
     ): { from: number; to: number; decoration: Decoration } {
-        if (this.isCursorInMarker(line.from, line.to, context)) {
+        if (this.isCursorOnFenceLine(line, context)) {
             return {
                 from: line.from,
                 to: line.to,
@@ -132,7 +132,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         line: Line,
         context: ProcessingContext
     ): { from: number; to: number; decoration: Decoration } {
-        if (this.isCursorInMarker(line.from, line.to, context)) {
+        if (this.isCursorOnFenceLine(line, context)) {
             return {
                 from: line.from,
                 to: line.to,
@@ -174,6 +174,11 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     private getActiveItem(context: ProcessingContext): FencedDivStackItem | undefined {
         const stack = context.fencedDivStack || [];
         return stack[stack.length - 1];
+    }
+
+    private isCursorOnFenceLine(line: Line, context: ProcessingContext): boolean {
+        const cursorPos = context.view.state.selection?.main?.head;
+        return cursorPos !== undefined && cursorPos >= line.from && cursorPos <= line.to;
     }
 
     private canOpenAtCurrentLine(context: ProcessingContext): boolean {
