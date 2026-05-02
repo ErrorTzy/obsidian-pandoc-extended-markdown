@@ -7,28 +7,47 @@ describe('fenced div live-preview styles', () => {
     it('uses a contained callout treatment instead of a bare vertical rule', () => {
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-start:\s*1\.15em\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-start:\s*1\.35em\s*!important/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-end:\s*1em/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*border-left:/s);
     });
 
-    it('rounds the visual container at the opening and closing lines', () => {
-        expect(styles).toMatch(/\.cm-pem-fenced-div-open\s*\{[^}]*border-radius:\s*8px\s+8px\s+0\s+0/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*border-radius:\s*0\s+0\s+8px\s+8px/s);
+    it('uses straight rails without rounded fenced div corners', () => {
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-open\s*\{[^}]*border-radius:/s);
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*border-radius:/s);
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-content-end\s*\{[^}]*border-radius:/s);
     });
 
-    it('keeps the closing fence visible while using compact line styling', () => {
-        expect(styles).not.toMatch(/\.cm-line\.cm-pem-fenced-div-close\s*\{[^}]*height:\s*0\s*!important/s);
-        expect(styles).not.toMatch(/\.cm-line\.cm-pem-fenced-div-close\s*\{[^}]*line-height:\s*0\s*!important/s);
-        expect(styles).not.toMatch(/\.cm-line\.cm-pem-fenced-div-close\s*\{[^}]*min-height:\s*0\s*!important/s);
-        expect(styles).not.toMatch(/\.cm-line\.cm-pem-fenced-div-close\s*\{[^}]*overflow:\s*hidden/s);
-        expect(styles).not.toMatch(/\.pem-fenced-div-closing\s*\{[^}]*height:\s*0/s);
-        expect(styles).not.toMatch(/\.pem-fenced-div-closing\s*\{[^}]*overflow:\s*hidden/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close\s*\{[^}]*line-height:\s*1\.1/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close\s*\{[^}]*min-height:\s*0\.9em/s);
+    it('indents nested fenced div containers', () => {
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*--pem-fenced-div-nest-indent:\s*1\.5em/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*background:\s*[\s\S]*linear-gradient/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*transparent\s+var\(--pem-fenced-div-current-indent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*var\(--pem-fenced-div-accent\)\s+var\(--pem-fenced-div-current-indent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*var\(--pem-fenced-div-inner-bg\)\s+calc\(var\(--pem-fenced-div-current-indent\)\s*\+\s*3px\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*var\(--pem-fenced-div-bg\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*padding-inline-start:\s*calc\(var\(--pem-fenced-div-current-indent\)\s*\+\s*1\.35em\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3\s*\{[^}]*--pem-fenced-div-current-indent:\s*calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3\s*\{[^}]*transparent\s+calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3\s*\{[^}]*transparent\s+var\(--pem-fenced-div-nest-indent\)/s);
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-inner[^{}]*::before/s);
+    });
+
+    it('collapses inactive closing fences while preserving parent surfaces', () => {
+        expect(styles).toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*background:\s*transparent/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*box-shadow:\s*none/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-close\.cm-pem-fenced-div-depth-2\s*\{[^}]*background:\s*var\(--pem-fenced-div-bg\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-close\.cm-pem-fenced-div-depth-2\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-close\.cm-pem-fenced-div-depth-3\s*\{[^}]*linear-gradient/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*height:\s*0\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*line-height:\s*0/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*min-height:\s*0/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*padding-bottom:\s*0\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*padding-top:\s*0\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close\.cm-active\s*\{[^}]*line-height:\s*1\.4/s);
         expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*display:\s*inline-block/s);
-        expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*height:\s*1px/s);
-        expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*width:\s*1px/s);
+        expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*height:\s*0/s);
+        expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*width:\s*0/s);
     });
 
     it('does not style a visible source handle by default', () => {

@@ -33,6 +33,28 @@ interface FencedDivRenderState {
     indentedLineRendered: boolean;
     nestedContentLineClass: string;
     warningLineClass: string;
+    innerLineOffsetPx: number;
+    innerHeaderIndentPx: number;
+    nestedContentPaddingPx: number;
+    warningHeaderIndentPx: number;
+    innerLineKeepsParentBackground: boolean;
+    innerSurfacePainted: boolean;
+    closeLineMaxHeightPx: number;
+    closeLinesStayCompact: boolean;
+}
+
+interface DeepNestedFencedDivRenderState {
+    headerTexts: string[];
+    contentTexts: string[];
+    nestedLineCount: number;
+    deepestContentPaddingPx: number;
+    secondLevelAfterClosePaddingPx: number;
+    firstLevelAfterClosePaddingPx: number;
+    nestedLinesUseBackgroundLayers: boolean;
+    nestedPseudoLayersDisabled: boolean;
+    nestedCloseLinesPaintParentSurfaces: boolean;
+    nestedLinesKeepOuterRail: boolean;
+    nestedCloseLinesKeepOuterRail: boolean;
 }
 
 describe('Fenced div live preview', () => {
@@ -265,6 +287,71 @@ describe('Fenced div live preview', () => {
         expect(state.indentedLineRendered).toBe(false);
         expect(state.nestedContentLineClass).toContain('cm-pem-fenced-div-inner');
         expect(state.warningLineClass).toContain('cm-pem-fenced-div-warning');
+        expect(Math.abs(state.innerLineOffsetPx)).toBeLessThanOrEqual(1);
+        expect(state.innerHeaderIndentPx).toBeGreaterThanOrEqual(18);
+        expect(state.nestedContentPaddingPx).toBeGreaterThanOrEqual(36);
+        expect(state.warningHeaderIndentPx).toBeGreaterThanOrEqual(18);
+        expect(state.innerLineKeepsParentBackground).toBe(true);
+        expect(state.innerSurfacePainted).toBe(true);
+        expect(state.closeLineMaxHeightPx).toBeLessThanOrEqual(1);
+        expect(state.closeLinesStayCompact).toBe(true);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('keeps deeply nested fenced div content visible inside continuous parent backgrounds', async () => {
+        const filePath = 'fenced-div-live-preview-deep-nested.md';
+        const content = [
+            '::: Warning',
+            'This is a warning.',
+            '',
+            '::: Danger',
+            'This is a warning within a warning.',
+            '',
+            '::: Warning2',
+            'This is a warning within a warning within a warning.',
+            ':::',
+            'This is on the 2nd level',
+            ':::',
+            'This is on the 1st level',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(2);
+
+        await browser.waitUntil(async () => {
+            const state = await getDeepNestedFencedDivRenderState();
+            return state.headerTexts.length === 3 &&
+                state.contentTexts.includes('This is a warning within a warning within a warning.') &&
+                state.contentTexts.includes('This is on the 2nd level') &&
+                state.contentTexts.includes('This is on the 1st level');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected deeply nested fenced div content in live preview'
+        });
+
+        const state = await getDeepNestedFencedDivRenderState();
+
+        expect(state.headerTexts).toEqual(['Warning:', 'Danger:', 'Warning2:']);
+        expect(state.contentTexts).toEqual([
+            'This is a warning.',
+            'This is a warning within a warning.',
+            'This is a warning within a warning within a warning.',
+            'This is on the 2nd level',
+            'This is on the 1st level'
+        ]);
+        expect(state.nestedLineCount).toBeGreaterThanOrEqual(4);
+        expect(state.deepestContentPaddingPx).toBeGreaterThanOrEqual(60);
+        expect(state.secondLevelAfterClosePaddingPx).toBeGreaterThanOrEqual(36);
+        expect(state.firstLevelAfterClosePaddingPx).toBeLessThan(state.secondLevelAfterClosePaddingPx);
+        expect(state.nestedLinesUseBackgroundLayers).toBe(true);
+        expect(state.nestedPseudoLayersDisabled).toBe(true);
+        expect(state.nestedCloseLinesPaintParentSurfaces).toBe(true);
+        expect(state.nestedLinesKeepOuterRail).toBe(true);
+        expect(state.nestedCloseLinesKeepOuterRail).toBe(true);
 
         await deleteFileIfExists(filePath);
     });
@@ -302,8 +389,17 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
         const closeLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-close')) as HTMLElement[];
         const headers = Array.from(document.querySelectorAll('.pem-fenced-div-header')) as HTMLElement[];
         const references = Array.from(document.querySelectorAll('.pem-fenced-div-reference')) as HTMLElement[];
+        const outerLine = openLines.find(line => line.textContent?.includes('Outer'));
+        const innerLine = openLines.find(line => line.textContent?.includes('Inner'));
         const nestedContentLine = contentLines.find(line => line.textContent?.includes('Nested content.'));
         const warningLine = openLines.find(line => line.textContent?.includes('Warning'));
+        const outerLeft = outerLine?.getBoundingClientRect().left ?? 0;
+        const outerHeader = outerLine?.querySelector('.pem-fenced-div-header') as HTMLElement | null;
+        const innerHeader = innerLine?.querySelector('.pem-fenced-div-header') as HTMLElement | null;
+        const warningHeader = warningLine?.querySelector('.pem-fenced-div-header') as HTMLElement | null;
+        const outerStyle = outerLine ? window.getComputedStyle(outerLine) : null;
+        const innerStyle = innerLine ? window.getComputedStyle(innerLine) : null;
+        const nestedContentStyle = nestedContentLine ? window.getComputedStyle(nestedContentLine) : null;
 
         return {
             openLineCount: openLines.length,
@@ -321,7 +417,92 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
             invalidReferenceRendered: references.some(reference => reference.dataset.pandocDivRef === 'invalid'),
             indentedLineRendered: openLines.some(line => line.textContent?.includes('#bad')),
             nestedContentLineClass: nestedContentLine?.className ?? '',
-            warningLineClass: warningLine?.className ?? ''
+            warningLineClass: warningLine?.className ?? '',
+            innerLineOffsetPx: innerLine ? innerLine.getBoundingClientRect().left - outerLeft : 0,
+            innerHeaderIndentPx: outerHeader && innerHeader
+                ? innerHeader.getBoundingClientRect().left - outerHeader.getBoundingClientRect().left
+                : 0,
+            nestedContentPaddingPx: nestedContentStyle ? Number.parseFloat(nestedContentStyle.paddingLeft) : 0,
+            warningHeaderIndentPx: outerHeader && warningHeader
+                ? warningHeader.getBoundingClientRect().left - outerHeader.getBoundingClientRect().left
+                : 0,
+            innerLineKeepsParentBackground: Boolean(
+                outerStyle &&
+                innerStyle &&
+                outerStyle.backgroundColor === innerStyle.backgroundColor
+            ),
+            innerSurfacePainted: Boolean(
+                innerStyle &&
+                innerStyle.backgroundImage.includes('linear-gradient')
+            ),
+            closeLineMaxHeightPx: Math.max(...closeLines.map(line => line.getBoundingClientRect().height)),
+            closeLinesStayCompact: closeLines.every(line => line.getBoundingClientRect().height <= 8)
+        };
+    });
+}
+
+async function getDeepNestedFencedDivRenderState(): Promise<DeepNestedFencedDivRenderState> {
+    return browser.execute((): DeepNestedFencedDivRenderState => {
+        const openLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-open')) as HTMLElement[];
+        const contentLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-content')) as HTMLElement[];
+        const nestedLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-inner')) as HTMLElement[];
+        const nestedVisibleLines = nestedLines.filter(line => !line.classList.contains('cm-pem-fenced-div-close'));
+        const nestedCloseLines = nestedLines.filter(line => line.classList.contains('cm-pem-fenced-div-close'));
+        const deepestContentLine = contentLines.find(line =>
+            line.textContent?.includes('within a warning within a warning')
+        );
+        const secondLevelAfterCloseLine = contentLines.find(line =>
+            line.textContent?.includes('2nd level')
+        );
+        const firstLevelAfterCloseLine = contentLines.find(line =>
+            line.textContent?.includes('1st level')
+        );
+        const nestedLineStyles = nestedVisibleLines.map(line => window.getComputedStyle(line));
+        const nestedCloseLineStyles = nestedCloseLines.map(line => window.getComputedStyle(line));
+        const nestedPseudoStyles = nestedVisibleLines.map(line => window.getComputedStyle(line, '::before'));
+        const deepestContentStyle = deepestContentLine
+            ? window.getComputedStyle(deepestContentLine)
+            : null;
+        const secondLevelAfterCloseStyle = secondLevelAfterCloseLine
+            ? window.getComputedStyle(secondLevelAfterCloseLine)
+            : null;
+        const firstLevelAfterCloseStyle = firstLevelAfterCloseLine
+            ? window.getComputedStyle(firstLevelAfterCloseLine)
+            : null;
+
+        return {
+            headerTexts: openLines
+                .map(line => line.querySelector('.pem-fenced-div-header')?.textContent ?? '')
+                .filter(Boolean),
+            contentTexts: contentLines
+                .map(line => line.textContent?.trim() ?? '')
+                .filter(Boolean),
+            nestedLineCount: nestedLines.length,
+            deepestContentPaddingPx: deepestContentStyle
+                ? Number.parseFloat(deepestContentStyle.paddingLeft)
+                : 0,
+            secondLevelAfterClosePaddingPx: secondLevelAfterCloseStyle
+                ? Number.parseFloat(secondLevelAfterCloseStyle.paddingLeft)
+                : 0,
+            firstLevelAfterClosePaddingPx: firstLevelAfterCloseStyle
+                ? Number.parseFloat(firstLevelAfterCloseStyle.paddingLeft)
+                : 0,
+            nestedLinesUseBackgroundLayers: nestedLineStyles.every(style =>
+                style.backgroundImage.includes('linear-gradient')
+            ),
+            nestedPseudoLayersDisabled: nestedPseudoStyles.every(style =>
+                style.content === 'none' || style.content === 'normal'
+            ),
+            nestedCloseLinesPaintParentSurfaces: nestedCloseLineStyles.every(style =>
+                style.backgroundColor !== 'rgba(0, 0, 0, 0)' ||
+                style.backgroundImage.includes('linear-gradient')
+            ),
+            nestedLinesKeepOuterRail: nestedLineStyles.every(style =>
+                style.boxShadow !== 'none'
+            ),
+            nestedCloseLinesKeepOuterRail: nestedCloseLineStyles.every(style =>
+                style.boxShadow !== 'none'
+            )
         };
     });
 }

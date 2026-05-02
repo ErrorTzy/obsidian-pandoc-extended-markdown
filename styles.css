@@ -171,32 +171,336 @@
 .cm-pem-fenced-div-line {
     --pem-fenced-div-accent: var(--interactive-accent);
     --pem-fenced-div-bg: var(--background-secondary);
+    --pem-fenced-div-inner-bg: var(--background-primary-alt, var(--background-primary));
+    --pem-fenced-div-nest-indent: 1.5em;
+    --pem-fenced-div-current-indent: 0px;
     background: var(--pem-fenced-div-bg);
     box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
-    padding-inline-start: 1.15em !important;
+    padding-inline-start: 1.35em !important;
     padding-inline-end: 1em;
 }
 
+.cm-pem-fenced-div-inner {
+    --pem-fenced-div-current-indent: var(--pem-fenced-div-nest-indent);
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-current-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-current-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-current-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-current-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+    padding-inline-start: calc(var(--pem-fenced-div-current-indent) + 1.35em) !important;
+}
+
+.cm-pem-fenced-div-depth-3 {
+    --pem-fenced-div-current-indent: calc(var(--pem-fenced-div-nest-indent) * 2);
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+}
+
+.cm-pem-fenced-div-depth-4 {
+    --pem-fenced-div-current-indent: calc(var(--pem-fenced-div-nest-indent) * 3);
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+}
+
+.cm-pem-fenced-div-depth-5 {
+    --pem-fenced-div-current-indent: calc(var(--pem-fenced-div-nest-indent) * 4);
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 4),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 4),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 4 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 4 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+}
+
+.cm-pem-fenced-div-depth-6 {
+    --pem-fenced-div-current-indent: calc(var(--pem-fenced-div-nest-indent) * 5);
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 5),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 5),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 5 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 5 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 4),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 4),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 4 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 4 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+}
+
 .cm-pem-fenced-div-open {
-    border-radius: 8px 8px 0 0;
-    padding-top: 0.45em;
-    padding-bottom: 0.05em;
+    padding-top: 0.5em;
+    padding-bottom: 0.1em;
 }
 
 .cm-pem-fenced-div-close {
-    border-radius: 0 0 8px 8px;
-    padding-top: 0.05em;
-    padding-bottom: 0.25em;
+    background: transparent;
+    box-shadow: none;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
-.cm-line.cm-pem-fenced-div-close {
-    line-height: 1.1;
-    min-height: 0.9em;
+.cm-pem-fenced-div-close.cm-pem-fenced-div-depth-2 {
+    background: var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+}
+
+.cm-pem-fenced-div-close.cm-pem-fenced-div-depth-3 {
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+}
+
+.cm-pem-fenced-div-close.cm-pem-fenced-div-depth-4 {
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+}
+
+.cm-pem-fenced-div-close.cm-pem-fenced-div-depth-5 {
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+}
+
+.cm-pem-fenced-div-close.cm-pem-fenced-div-depth-6 {
+    background:
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 4),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 4),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 4 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 4 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 3 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) * 2 + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        linear-gradient(
+            to right,
+            transparent 0,
+            transparent var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) var(--pem-fenced-div-nest-indent),
+            var(--pem-fenced-div-accent) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) calc(var(--pem-fenced-div-nest-indent) + 3px),
+            var(--pem-fenced-div-inner-bg) 100%
+        ),
+        var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+}
+
+.cm-line.cm-pem-fenced-div-close:not(.cm-active) {
+    font-size: 0;
+    height: 0 !important;
+    line-height: 0;
+    min-height: 0;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+}
+
+.cm-line.cm-pem-fenced-div-close.cm-active {
+    background: var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+    line-height: 1.4;
+    min-height: 1.4em;
 }
 
 .cm-pem-fenced-div-content {
     padding-top: 0.1em;
     padding-bottom: 0.2em;
+}
+
+.cm-pem-fenced-div-content-end {
+    padding-bottom: 0.5em;
 }
 
 .pem-fenced-div-header {
@@ -211,9 +515,9 @@
 
 .pem-fenced-div-closing {
     display: inline-block;
-    height: 1px;
+    height: 0;
     line-height: 1;
-    width: 1px;
+    width: 0;
 }
 
 .cm-line.cm-pem-fenced-div-open .cm-hashtag,

@@ -155,6 +155,23 @@ describe('FencedDivProcessor', () => {
             expect(result.skipFurtherProcessing).toBe(false);
         });
 
+        it('adds nested depth classes to inner fenced div lines', () => {
+            const context = createContext('::: {.outer}\n::: {.inner}\ncontent\n:::\n:::');
+
+            const outerOpen = processor.process(context.document.line(1), context);
+            const innerOpen = processor.process(context.document.line(2), context);
+            const innerContent = processor.process(context.document.line(3), context);
+            const innerClose = processor.process(context.document.line(4), context);
+            const outerClose = processor.process(context.document.line(5), context);
+
+            expect(outerOpen.decorations[0].decoration.spec?.class).not.toContain('cm-pem-fenced-div-inner');
+            expect(innerOpen.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-inner');
+            expect(innerOpen.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-depth-2');
+            expect(innerContent.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-depth-2');
+            expect(innerClose.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-depth-2');
+            expect(outerClose.decorations[0].decoration.spec?.class).not.toContain('cm-pem-fenced-div-inner');
+        });
+
         it('treats blank content lines as normal fenced div content', () => {
             const context = createContext('::: {.theorem #thm:label}\n\nEvery compact metric space is complete.\n\n:::');
             context.fencedDivStack = [{
@@ -171,6 +188,19 @@ describe('FencedDivProcessor', () => {
             expect(afterOpening.decorations[0].decoration.spec?.class).not.toContain('cm-pem-fenced-div-blank');
             expect(beforeClosing.decorations[0].decoration.spec?.class).not.toContain('cm-pem-fenced-div-blank');
             expect(afterOpening.skipFurtherProcessing).toBe(false);
+        });
+
+        it('marks the final visible content line before a closing fence', () => {
+            const context = createContext('::: {.theorem #thm:label}\ncontent\n:::');
+            context.fencedDivStack = [{
+                label: 'thm:label',
+                classes: ['theorem'],
+                openingLine: 1
+            }];
+
+            const result = processor.process(context.document.line(2), context);
+
+            expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-content-end');
         });
 
         it('replaces a closing fence and pops the active fenced div', () => {

@@ -16,6 +16,7 @@ import { FencedDivClosingWidget, FencedDivHeaderWidget } from '../../widgets';
 export class FencedDivProcessor extends BaseStructuralProcessor {
     name = 'fenced-div';
     priority = 18;
+    private readonly maxDepthClass = 6;
 
     canProcess(line: Line, context: ProcessingContext): boolean {
         if (!isSyntaxFeatureEnabled(context.settings, 'enableFencedDivs')) {
@@ -64,8 +65,9 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         context.fencedDivStack.push(activeItem);
         context.fencedDivBoundaryLine = line.number;
 
+        const renderDepth = context.fencedDivStack.length;
         const decorations = [
-            this.createFenceLineDecoration(line, 'cm-pem-fenced-div-open', stackItem.classes),
+            this.createFenceLineDecoration(line, 'cm-pem-fenced-div-open', stackItem.classes, renderDepth),
             this.createOpeningMarkerDecoration(line, context, displayName, stackItem.label)
         ];
 
@@ -77,10 +79,11 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
 
     private processClosingFence(line: Line, context: ProcessingContext): StructuralResult {
         const stack = context.fencedDivStack || [];
+        const renderDepth = stack.length;
         const closingItem = stack.pop();
         context.fencedDivBoundaryLine = line.number;
         const decorations = [
-            this.createFenceLineDecoration(line, 'cm-pem-fenced-div-close', closingItem?.classes || []),
+            this.createFenceLineDecoration(line, 'cm-pem-fenced-div-close', closingItem?.classes || [], renderDepth),
             this.createClosingMarkerDecoration(line, context)
         ];
 
@@ -92,8 +95,12 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
 
     private processContentLine(line: Line, context: ProcessingContext): StructuralResult {
         const activeItem = this.getActiveItem(context);
+        const renderDepth = (context.fencedDivStack || []).length;
+        const stateClass = this.isBeforeClosingFence(line, context)
+            ? 'cm-pem-fenced-div-content cm-pem-fenced-div-content-end'
+            : 'cm-pem-fenced-div-content';
         const decorations = [
-            this.createFenceLineDecoration(line, 'cm-pem-fenced-div-content', activeItem?.classes || [])
+            this.createFenceLineDecoration(line, stateClass, activeItem?.classes || [], renderDepth)
         ];
 
         return {
@@ -155,12 +162,16 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     private createFenceLineDecoration(
         line: Line,
         stateClass: string,
-        classes: string[]
+        classes: string[],
+        renderDepth: number
     ): { from: number; to: number; decoration: Decoration } {
         const primaryClass = getFencedDivCssClass(classes);
+        const depthClass = Math.min(renderDepth, this.maxDepthClass);
         const className = [
             CSS_CLASSES.FENCED_DIV_LINE,
             stateClass,
+            renderDepth > 1 ? 'cm-pem-fenced-div-inner' : undefined,
+            renderDepth > 1 ? `cm-pem-fenced-div-depth-${depthClass}` : undefined,
             primaryClass ? `cm-pem-fenced-div-${primaryClass}` : undefined
         ].filter(Boolean).join(' ');
 
@@ -183,5 +194,13 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
 
     private canOpenAtCurrentLine(context: ProcessingContext): boolean {
         return context.fencedDivCanOpenAtCurrentLine ?? true;
+    }
+
+    private isBeforeClosingFence(line: Line, context: ProcessingContext): boolean {
+        if (line.number >= context.document.lines) {
+            return false;
+        }
+
+        return isFencedDivClosing(context.document.line(line.number + 1).text);
     }
 }
