@@ -84,8 +84,12 @@ See @thm:label.
 
 The opening fence renders as `Theorem`, and `@thm:label` renders as `Theorem`.
 
-- Supported syntax follows Pandoc fenced div attributes, including `{.class #id}`, no-space forms like `:::{.class}`, and a single unbraced class such as `::: Warning`.
-- Comma-separated attributes such as `{.theorem, #thm:label}` are not rendered because Pandoc treats them as plain text.
+- Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
+  - Braced attributes: `::: {.theorem #thm:label key="value"}` or `:::{.theorem}`.
+  - A single unbraced class shortcut: `::: Warning` or `:::Warning`.
+- Optional visual trailing colons are allowed after the attributes, as in `::: {.warning} ::::::`.
+- Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
+- Comma-separated attributes such as `{.theorem, #thm:label}` are also plain text in Pandoc and are not rendered.
 - This feature currently applies to Live Preview only.
 
 ### List Panel View
