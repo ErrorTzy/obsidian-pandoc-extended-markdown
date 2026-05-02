@@ -11,7 +11,6 @@ export interface FencedDivAttributes {
 export interface FencedDivReference {
     label: string;
     displayName: string;
-    number: number;
     lineNumber: number;
     classes: string[];
     content: string;
@@ -22,5 +21,4 @@ export interface FencedDivStackItem {
     classes: string[];
     openingLine: number;
     displayName?: string;
-    number?: number;
 }

@@ -254,7 +254,6 @@ export class ProcessingPipeline {
                 pendingBlankLine: false
             },
             fencedDivStack: [],
-            fencedDivCounters: new Map(),
             fencedDivCanOpenAtCurrentLine: true
         };
     }

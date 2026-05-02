@@ -53,7 +53,6 @@ describe('FencedDivProcessor', () => {
                 ['thm:label', {
                     label: 'thm:label',
                     displayName: 'Theorem',
-                    number: 1,
                     lineNumber: 1,
                     classes: ['theorem'],
                     content: 'content'
@@ -112,9 +111,9 @@ describe('FencedDivProcessor', () => {
 
             expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-open');
             expect(result.decorations[1].decoration.spec?.widget?.constructor.name).toBe('FencedDivHeaderWidget');
-            expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem 1:');
+            expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem:');
             expect(headerDom?.querySelector('.pem-fenced-div-source-handle')).toBeNull();
-            expect(headerDom?.textContent).toBe('Theorem 1:');
+            expect(headerDom?.textContent).toBe('Theorem:');
             expect(context.fencedDivStack).toHaveLength(1);
             expect(context.fencedDivStack?.[0].label).toBe('thm:label');
         });

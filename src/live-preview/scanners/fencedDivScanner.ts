@@ -29,7 +29,6 @@ export function scanFencedDivs(
         return labels;
     }
 
-    const counters = new Map<string, number>();
     const stack: ActiveFencedDiv[] = [];
     let canOpenAtCurrentLine = true;
     let fallbackCodeFenceMarker: string | undefined;
@@ -66,13 +65,10 @@ export function scanFencedDivs(
 
         if (opening) {
             const displayName = getFencedDivDisplayName(opening.classes);
-            const number = (counters.get(displayName) || 0) + 1;
-            counters.set(displayName, number);
 
             const activeDiv: ActiveFencedDiv = {
                 label: opening.id || '',
                 displayName,
-                number,
                 lineNumber: lineNum,
                 classes: opening.classes,
                 content: '',

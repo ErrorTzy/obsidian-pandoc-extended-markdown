@@ -55,15 +55,9 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         stackItem: FencedDivStackItem
     ): StructuralResult {
         const displayName = getFencedDivDisplayName(stackItem.classes);
-        const number = this.nextNumber(context, displayName);
-        const labelInfo = stackItem.label
-            ? context.fencedDivLabels?.get(stackItem.label)
-            : undefined;
-        const effectiveNumber = labelInfo?.number || number;
         const activeItem = {
             ...stackItem,
-            displayName,
-            number: effectiveNumber
+            displayName
         };
 
         context.fencedDivStack = context.fencedDivStack || [];
@@ -72,7 +66,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
 
         const decorations = [
             this.createFenceLineDecoration(line, 'cm-pem-fenced-div-open', stackItem.classes),
-            this.createOpeningMarkerDecoration(line, context, displayName, effectiveNumber, stackItem.label)
+            this.createOpeningMarkerDecoration(line, context, displayName, stackItem.label)
         ];
 
         return {
@@ -112,7 +106,6 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         line: Line,
         context: ProcessingContext,
         displayName: string,
-        number: number,
         label?: string
     ): { from: number; to: number; decoration: Decoration } {
         if (this.isCursorInMarker(line.from, line.to, context)) {
@@ -129,7 +122,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             from: line.from,
             to: line.to,
             decoration: Decoration.replace({
-                widget: new FencedDivHeaderWidget(displayName, number, label, context.view, line.from),
+                widget: new FencedDivHeaderWidget(displayName, label, context.view, line.from),
                 inclusive: false
             })
         };
@@ -176,13 +169,6 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             to: line.from,
             decoration: Decoration.line({ class: className })
         };
-    }
-
-    private nextNumber(context: ProcessingContext, displayName: string): number {
-        context.fencedDivCounters = context.fencedDivCounters || new Map();
-        const nextValue = (context.fencedDivCounters.get(displayName) || 0) + 1;
-        context.fencedDivCounters.set(displayName, nextValue);
-        return nextValue;
     }
 
     private getActiveItem(context: ProcessingContext): FencedDivStackItem | undefined {

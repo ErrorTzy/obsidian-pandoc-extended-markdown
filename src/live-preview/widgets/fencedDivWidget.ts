@@ -6,7 +6,6 @@ import { BaseWidget } from './BaseWidget';
 export class FencedDivHeaderWidget extends BaseWidget {
     constructor(
         public displayName: string,
-        public number?: number,
         public label?: string,
         view?: EditorView,
         pos?: number
@@ -22,10 +21,7 @@ export class FencedDivHeaderWidget extends BaseWidget {
     }
 
     protected setContent(element: HTMLElement): void {
-        const title = this.number
-            ? `${this.displayName} ${this.number}`
-            : this.displayName;
-        const titleElement = this.createElement('span', 'pem-fenced-div-title', `${title}:`);
+        const titleElement = this.createElement('span', 'pem-fenced-div-title', `${this.displayName}:`);
 
         element.appendChild(titleElement);
     }
@@ -38,7 +34,6 @@ export class FencedDivHeaderWidget extends BaseWidget {
 
     eq(other: FencedDivHeaderWidget): boolean {
         return other.displayName === this.displayName &&
-               other.number === this.number &&
                other.label === this.label &&
                other.pos === this.pos;
     }
@@ -65,7 +60,6 @@ export class FencedDivClosingWidget extends BaseWidget {
 export class FencedDivReferenceWidget extends BaseWidget {
     constructor(
         public displayName: string,
-        public number: number,
         public label: string,
         private content?: string,
         view?: EditorView,
@@ -82,7 +76,7 @@ export class FencedDivReferenceWidget extends BaseWidget {
     }
 
     protected setContent(element: HTMLElement): void {
-        element.textContent = `${this.displayName} ${this.number}`;
+        element.textContent = this.displayName;
     }
 
     protected setupTooltip(element: HTMLElement): void {
@@ -106,7 +100,6 @@ export class FencedDivReferenceWidget extends BaseWidget {
 
     eq(other: FencedDivReferenceWidget): boolean {
         return other.displayName === this.displayName &&
-               other.number === this.number &&
                other.label === this.label &&
                other.content === this.content &&
                other.pos === this.pos;

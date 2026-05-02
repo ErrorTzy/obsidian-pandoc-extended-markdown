@@ -67,7 +67,6 @@ export interface ProcessingContext {
         parentStructure?: ListStructure;
     };
     fencedDivStack?: FencedDivStackItem[];
-    fencedDivCounters?: Map<string, number>;
     fencedDivCanOpenAtCurrentLine?: boolean;
     fencedDivBoundaryLine?: number;
     

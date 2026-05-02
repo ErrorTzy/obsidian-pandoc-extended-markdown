@@ -256,9 +256,9 @@ describe('Fenced div live preview', () => {
         expect(state.openLineCount).toBe(3);
         expect(state.closeLineCount).toBe(3);
         expect(state.contentLineCount).toBe(2);
-        expect(state.headerTexts).toEqual(['Outer 1:', 'Inner 1:', 'Warning 1:']);
+        expect(state.headerTexts).toEqual(['Outer:', 'Inner:', 'Warning:']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
-        expect(state.referenceTexts).toEqual(['Outer 1', 'Inner 1']);
+        expect(state.referenceTexts).toEqual(['Outer', 'Inner']);
         expect(state.referenceLabels).toEqual(['outer', 'inner']);
         expect(state.invalidLineRendered).toBe(false);
         expect(state.invalidReferenceRendered).toBe(false);

@@ -24,7 +24,7 @@ describe('scanFencedDivs', () => {
         expect([...labels.keys()]).toEqual(['outer', 'inner', 'sibling']);
         expect(labels.get('outer')?.content).toContain('Nested content.');
         expect(labels.get('inner')?.displayName).toBe('Inner');
-        expect(labels.get('sibling')?.number).toBe(1);
+        expect(labels.get('sibling')?.displayName).toBe('Sibling');
     });
 
     it('does not collect labels from openings that Pandoc treats as paragraph text', () => {

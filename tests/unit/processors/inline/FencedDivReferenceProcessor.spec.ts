@@ -48,7 +48,6 @@ describe('FencedDivReferenceProcessor', () => {
                 ['thm:label', {
                     label: 'thm:label',
                     displayName: 'Theorem',
-                    number: 1,
                     lineNumber: 1,
                     classes: ['theorem'],
                     content: 'content'
@@ -93,7 +92,7 @@ describe('FencedDivReferenceProcessor', () => {
         expect(matches).toHaveLength(0);
     });
 
-    it('creates a reference widget with the resolved theorem number', () => {
+    it('creates a reference widget with the resolved fenced div name', () => {
         const decoration = processor.createDecoration({
             from: 4,
             to: 14,
@@ -104,7 +103,6 @@ describe('FencedDivReferenceProcessor', () => {
         const widget = decoration.spec?.widget;
         expect(widget?.constructor.name).toBe('FencedDivReferenceWidget');
         expect(widget?.displayName).toBe('Theorem');
-        expect(widget?.number).toBe(1);
     });
 
     it('supports normal and fenced-div content regions', () => {
