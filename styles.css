@@ -163,6 +163,40 @@
     text-decoration: underline;
 }
 
+.pem-fenced-div {
+    --pem-fenced-div-accent: var(--interactive-accent);
+    --pem-fenced-div-bg: var(--background-secondary);
+    --pem-fenced-div-inner-bg: var(--background-primary-alt, var(--background-primary));
+    --pem-fenced-div-nest-indent: 1.5em;
+    background: var(--pem-fenced-div-bg);
+    box-shadow: inset 3px 0 0 var(--pem-fenced-div-accent);
+    margin: 1em 0;
+    padding: 0.55em 1em 0.7em 1.35em;
+}
+
+.pem-fenced-div .pem-fenced-div {
+    background: var(--pem-fenced-div-inner-bg);
+    margin-bottom: 0.4em;
+    margin-top: 0.5em;
+}
+
+.pem-fenced-div-inner {
+    margin-inline-start: var(--pem-fenced-div-nest-indent);
+}
+
+.pem-fenced-div > .pem-fenced-div-header {
+    display: block;
+    margin-bottom: 0.35em;
+}
+
+.pem-fenced-div-content > :first-child {
+    margin-top: 0;
+}
+
+.pem-fenced-div-content > :last-child {
+    margin-bottom: 0;
+}
+
 /* CodeMirror-specific definition term styling */
 .cm-pem-definition-term {
     text-decoration: underline;

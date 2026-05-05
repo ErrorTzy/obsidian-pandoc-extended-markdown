@@ -22,6 +22,7 @@ export interface ProcessorConfig {
     enableFancyLists?: boolean;
     enableExampleLists?: boolean;
     enableDefinitionLists?: boolean;
+    enableFencedDivs?: boolean;
     enableSuperSubscripts?: boolean;
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
@@ -43,6 +44,7 @@ export function createProcessorConfig(
         enableFancyLists: isSyntaxFeatureEnabled(pluginSettings, 'enableFancyLists'),
         enableExampleLists: isSyntaxFeatureEnabled(pluginSettings, 'enableExampleLists'),
         enableDefinitionLists: isSyntaxFeatureEnabled(pluginSettings, 'enableDefinitionLists'),
+        enableFencedDivs: isSyntaxFeatureEnabled(pluginSettings, 'enableFencedDivs'),
         enableSuperSubscripts: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript')
             || isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
         enableSuperscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript'),

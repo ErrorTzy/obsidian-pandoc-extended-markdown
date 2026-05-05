@@ -12,6 +12,7 @@ import {
     UnorderedListMarker,
     normalizeUnorderedListMarkerOrder
 } from './unorderedListTypes';
+import { FencedDivReference } from './fencedDivTypes';
 
 /**
  * View modes supported by the plugin
@@ -29,6 +30,7 @@ export interface DocumentCounters {
     placeholderContext: PlaceholderContext; // Context for placeholder auto-numbering
     customLabels?: Map<string, string>;   // Maps processed custom labels to content
     rawToProcessed?: Map<string, string>; // Maps raw labels to processed labels
+    fencedDivLabels: Map<string, FencedDivReference>; // Maps fenced div ids to display metadata
 }
 
 /**

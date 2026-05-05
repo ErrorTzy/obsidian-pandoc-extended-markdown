@@ -169,6 +169,7 @@ All widgets extend `BaseWidget` which provides:
 | **fancyListParser** | Letter/Roman markers | Adds proper styling |
 | **exampleListParser** | `(@label)` syntax | Numbers with tooltips |
 | **definitionListParser** | `:` and `~` definitions | Styled definition lists |
+| **fencedDivParser** | Pandoc `:::` fenced div blocks and `@id` refs | Styled nested div blocks with label references |
 | **customLabelListParser** | `{::LABEL}` syntax | Two-pass processing |
 | **unorderedListMarkerParser** | `-`, `+`, `*` unordered markers | Adds or clears source-marker classes on rendered list items based on the marker rendering setting |
 | **superSubParser** | `^` and `~` formatting | Super/subscript elements |
@@ -325,8 +326,9 @@ For each content region from Phase 1:
 
 ```typescript
 1. Post-processor triggered by Obsidian
-2. Find all <p> and <li> elements
-3. For each element:
+2. Normalize source-aware block features such as unordered list markers, definition lists, and fenced divs
+3. Find all <p> and <li> elements
+4. For each element:
    - Check if already processed (WeakMap)
    - Parse text for Pandoc syntax
    - Get/update counters from StateManager

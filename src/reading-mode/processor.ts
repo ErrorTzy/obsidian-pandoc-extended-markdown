@@ -20,6 +20,7 @@ import {
     applyUnorderedListMarkerClasses,
     clearUnorderedListMarkerClasses
 } from './parsers/unorderedListMarkerParser';
+import { scheduleFencedDivProcessing } from './parsers/fencedDivParser';
 import { normalizeExistingDefinitionLists } from './utils/definitionListDom';
 import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting } from '../editor-extensions/pandocValidator';
@@ -33,9 +34,6 @@ export function processReadingMode(
     const docPath = context.sourcePath || 'unknown';
     const parser = new ReadingModeParser();
     const renderer = new ReadingModeRenderer();
-    
-    // Process only paragraphs and list items, not headings or other elements
-    const elementsToProcess = element.querySelectorAll('p, li');
     
     // Get section info for validation if needed
     let validationLines: string[] = [];
@@ -57,6 +55,11 @@ export function processReadingMode(
         const definitionRoot = getDefinitionListNormalizationRoot(element);
         window.setTimeout(() => normalizeExistingDefinitionLists(definitionRoot), 0);
     }
+
+    scheduleFencedDivProcessing(element, docPath, config);
+
+    // Process only paragraphs and list items, not headings or other elements
+    const elementsToProcess = element.querySelectorAll('p, li');
     
     // Process each paragraph
     elementsToProcess.forEach(elem => {

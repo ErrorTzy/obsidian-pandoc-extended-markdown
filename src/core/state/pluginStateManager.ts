@@ -71,6 +71,7 @@ export class PluginStateManager {
             counters.exampleContent.clear();
             counters.hashCounter = 0;
             counters.placeholderContext.reset();
+            counters.fencedDivLabels.clear();
         }
         // Mark that this document needs reprocessing
         this.documentsNeedingReprocess.add(docPath);
@@ -147,6 +148,7 @@ export class PluginStateManager {
                     counters.exampleMap.clear();
                     counters.exampleContent.clear();
                     counters.hashCounter = 0;
+                    counters.fencedDivLabels.clear();
                     // DON'T reset placeholderContext
                 }
                 // Mark that this document needs reprocessing
@@ -326,7 +328,8 @@ export class PluginStateManager {
             hashCounter: 0,
             placeholderContext: new PlaceholderContext(),
             customLabels: new Map(),
-            rawToProcessed: new Map()
+            rawToProcessed: new Map(),
+            fencedDivLabels: new Map()
         };
     }
 

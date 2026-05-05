@@ -73,7 +73,7 @@ Term 3
 - **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
 
 ### Fenced Divs
-Live Preview renders Pandoc fenced div blocks and references to labeled blocks:
+Live Preview and Reading mode render Pandoc fenced div blocks and references to labeled blocks:
 ```markdown
 ::: {.theorem #thm:label}
 Every compact metric space is complete.
@@ -90,7 +90,7 @@ The opening fence renders as `Theorem`, and `@thm:label` renders as `Theorem`.
 - Optional visual trailing colons are allowed after the attributes, as in `::: {.warning} ::::::`.
 - Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
 - Comma-separated attributes such as `{.theorem, #thm:label}` are also plain text in Pandoc and are not rendered.
-- This feature currently applies to Live Preview only.
+- Reading mode support applies to rendered paragraph/list-item blocks that Obsidian exposes to the post-processor.
 
 ### List Panel View
 
@@ -312,7 +312,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
-  - Fenced divs and references (`::: {.theorem #thm:label}` and `@thm:label`) in Live Preview
+  - Fenced divs and references (`::: {.theorem #thm:label}` and `@thm:label`) in Live Preview and Reading mode
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references
