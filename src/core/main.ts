@@ -23,6 +23,7 @@ import { pandocExtendedMarkdownExtension } from '../live-preview/extension';
 import { processReadingMode } from '../reading-mode/processor';
 import { ExampleReferenceSuggest } from '../editor-extensions/suggestions/exampleReferenceSuggest';
 import { CustomLabelReferenceSuggest } from '../editor-extensions/suggestions/customLabelReferenceSuggest';
+import { FencedDivReferenceSuggest } from '../editor-extensions/suggestions/fencedDivReferenceSuggest';
 import { formatToPandocStandard, checkPandocFormatting } from '../editor-extensions/pandocValidator';
 import { createListAutocompletionKeymap } from '../editor-extensions/listAutocompletion';
 import { pluginStateManager } from './state/pluginStateManager';
@@ -31,6 +32,7 @@ import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelVi
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;
     private customLabelSuggester: CustomLabelReferenceSuggest;
+    private fencedDivSuggester: FencedDivReferenceSuggest;
     private listPanelRibbonIcon: HTMLElement | null = null;
     settings: PandocExtendedMarkdownSettings;
 
@@ -57,6 +59,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         // Register custom label reference suggester
         this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
         this.registerEditorSuggest(this.customLabelSuggester);
+
+        // Register fenced div reference suggester
+        this.fencedDivSuggester = new FencedDivReferenceSuggest(this);
+        this.registerEditorSuggest(this.fencedDivSuggester);
         
         // Register list panel view
         this.registerView(

@@ -16,6 +16,13 @@ export interface FencedDivReference {
     content: string;
 }
 
+export interface FencedDivSuggestion {
+    label: string;
+    displayName: string;
+    previewText: string;
+    lineNumber: number;
+}
+
 export interface FencedDivStackItem {
     label?: string;
     classes: string[];

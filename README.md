@@ -75,7 +75,7 @@ Term 3
 ### Fenced Divs
 Live Preview and Reading mode render Pandoc fenced div blocks and references to labeled blocks:
 ```markdown
-::: {.theorem #thm:label}
+::: {.theorem #thm}
 Every compact metric space is complete.
 :::
 
@@ -85,11 +85,11 @@ See @thm:label.
 The opening fence renders as `Theorem`, and `@thm:label` renders as `Theorem`.
 
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
-  - Braced attributes: `::: {.theorem #thm:label key="value"}` or `:::{.theorem}`.
+  - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
   - A single unbraced class shortcut: `::: Warning` or `:::Warning`.
 - Optional visual trailing colons are allowed after the attributes, as in `::: {.warning} ::::::`.
 - Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
-- Comma-separated attributes such as `{.theorem, #thm:label}` are also plain text in Pandoc and are not rendered.
+- Comma-separated attributes such as `{.theorem, #thm}` are also plain text in Pandoc and are not rendered.
 - Reading mode support applies to rendered paragraph/list-item blocks that Obsidian exposes to the post-processor.
 
 ### List Panel View
@@ -312,7 +312,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
-  - Fenced divs and references (`::: {.theorem #thm:label}` and `@thm:label`) in Live Preview and Reading mode
+  - Fenced divs and references (`::: {.theorem #thm}` and `@thm:label`) in Live Preview and Reading mode
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references
