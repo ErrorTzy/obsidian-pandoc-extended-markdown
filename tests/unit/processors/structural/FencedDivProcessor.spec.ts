@@ -111,11 +111,20 @@ describe('FencedDivProcessor', () => {
 
             expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-open');
             expect(result.decorations[1].decoration.spec?.widget?.constructor.name).toBe('FencedDivHeaderWidget');
-            expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem:');
+            expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem');
             expect(headerDom?.querySelector('.pem-fenced-div-source-handle')).toBeNull();
-            expect(headerDom?.textContent).toBe('Theorem:');
+            expect(headerDom?.textContent).toBe('Theorem');
             expect(context.fencedDivStack).toHaveLength(1);
             expect(context.fencedDivStack?.[0].label).toBe('thm:label');
+        });
+
+        it('renders an unbraced fenced div shortcut label without punctuation', () => {
+            const context = createContext('::: Label\nThis is an example\n:::');
+            const result = processor.process(context.document.line(1), context);
+            const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
+
+            expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Label');
+            expect(headerDom?.textContent).toBe('Label');
         });
 
         it('does not replace an opening fence while the cursor is editing it', () => {

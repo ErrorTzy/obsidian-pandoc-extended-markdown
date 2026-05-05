@@ -21,7 +21,7 @@ export class FencedDivHeaderWidget extends BaseWidget {
     }
 
     protected setContent(element: HTMLElement): void {
-        const titleElement = this.createElement('span', 'pem-fenced-div-title', `${this.displayName}:`);
+        const titleElement = this.createElement('span', 'pem-fenced-div-title', this.displayName);
 
         element.appendChild(titleElement);
     }

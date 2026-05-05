@@ -41,6 +41,7 @@ interface FencedDivRenderState {
     innerSurfacePainted: boolean;
     closeLineMaxHeightPx: number;
     closeLinesStayCompact: boolean;
+    closeLinesKeepSurface: boolean;
 }
 
 interface DeepNestedFencedDivRenderState {
@@ -55,6 +56,7 @@ interface DeepNestedFencedDivRenderState {
     nestedCloseLinesPaintParentSurfaces: boolean;
     nestedLinesKeepOuterRail: boolean;
     nestedCloseLinesKeepOuterRail: boolean;
+    nestedCloseRailCounts: Array<{ depth: number; railCount: number }>;
 }
 
 describe('Fenced div live preview', () => {
@@ -278,7 +280,7 @@ describe('Fenced div live preview', () => {
         expect(state.openLineCount).toBe(3);
         expect(state.closeLineCount).toBe(3);
         expect(state.contentLineCount).toBe(2);
-        expect(state.headerTexts).toEqual(['Outer:', 'Inner:', 'Warning:']);
+        expect(state.headerTexts).toEqual(['Outer', 'Inner', 'Warning']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
         expect(state.referenceTexts).toEqual(['Outer', 'Inner']);
         expect(state.referenceLabels).toEqual(['outer', 'inner']);
@@ -293,8 +295,10 @@ describe('Fenced div live preview', () => {
         expect(state.warningHeaderIndentPx).toBeGreaterThanOrEqual(18);
         expect(state.innerLineKeepsParentBackground).toBe(true);
         expect(state.innerSurfacePainted).toBe(true);
-        expect(state.closeLineMaxHeightPx).toBeLessThanOrEqual(1);
+        expect(state.closeLineMaxHeightPx).toBeGreaterThan(0);
+        expect(state.closeLineMaxHeightPx).toBeLessThanOrEqual(14);
         expect(state.closeLinesStayCompact).toBe(true);
+        expect(state.closeLinesKeepSurface).toBe(true);
 
         await deleteFileIfExists(filePath);
     });
@@ -335,7 +339,7 @@ describe('Fenced div live preview', () => {
 
         const state = await getDeepNestedFencedDivRenderState();
 
-        expect(state.headerTexts).toEqual(['Warning:', 'Danger:', 'Warning2:']);
+        expect(state.headerTexts).toEqual(['Warning', 'Danger', 'Warning2']);
         expect(state.contentTexts).toEqual([
             'This is a warning.',
             'This is a warning within a warning.',
@@ -352,6 +356,10 @@ describe('Fenced div live preview', () => {
         expect(state.nestedCloseLinesPaintParentSurfaces).toBe(true);
         expect(state.nestedLinesKeepOuterRail).toBe(true);
         expect(state.nestedCloseLinesKeepOuterRail).toBe(true);
+        expect(state.nestedCloseRailCounts).toEqual([
+            { depth: 3, railCount: 3 },
+            { depth: 2, railCount: 2 }
+        ]);
 
         await deleteFileIfExists(filePath);
     });
@@ -400,6 +408,7 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
         const outerStyle = outerLine ? window.getComputedStyle(outerLine) : null;
         const innerStyle = innerLine ? window.getComputedStyle(innerLine) : null;
         const nestedContentStyle = nestedContentLine ? window.getComputedStyle(nestedContentLine) : null;
+        const closeLineStyles = closeLines.map(line => window.getComputedStyle(line));
 
         return {
             openLineCount: openLines.length,
@@ -436,7 +445,14 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
                 innerStyle.backgroundImage.includes('linear-gradient')
             ),
             closeLineMaxHeightPx: Math.max(...closeLines.map(line => line.getBoundingClientRect().height)),
-            closeLinesStayCompact: closeLines.every(line => line.getBoundingClientRect().height <= 8)
+            closeLinesStayCompact: closeLines.every(line => line.getBoundingClientRect().height <= 14),
+            closeLinesKeepSurface: closeLineStyles.every(style =>
+                (
+                    style.backgroundColor !== 'rgba(0, 0, 0, 0)' ||
+                    style.backgroundImage.includes('linear-gradient')
+                ) &&
+                style.boxShadow !== 'none'
+            )
         };
     });
 }
@@ -469,6 +485,18 @@ async function getDeepNestedFencedDivRenderState(): Promise<DeepNestedFencedDivR
         const firstLevelAfterCloseStyle = firstLevelAfterCloseLine
             ? window.getComputedStyle(firstLevelAfterCloseLine)
             : null;
+        const getDepth = (line: HTMLElement): number => {
+            const depthClass = Array.from(line.classList)
+                .find(className => className.startsWith('cm-pem-fenced-div-depth-'));
+            return depthClass
+                ? Number.parseInt(depthClass.replace('cm-pem-fenced-div-depth-', ''), 10)
+                : 1;
+        };
+        const countRailLayers = (style: CSSStyleDeclaration): number => {
+            const gradientCount = style.backgroundImage.match(/linear-gradient/g)?.length ?? 0;
+            const boxShadowCount = style.boxShadow === 'none' ? 0 : 1;
+            return gradientCount + boxShadowCount;
+        };
 
         return {
             headerTexts: openLines
@@ -502,7 +530,11 @@ async function getDeepNestedFencedDivRenderState(): Promise<DeepNestedFencedDivR
             ),
             nestedCloseLinesKeepOuterRail: nestedCloseLineStyles.every(style =>
                 style.boxShadow !== 'none'
-            )
+            ),
+            nestedCloseRailCounts: nestedCloseLines.map((line, index) => ({
+                depth: getDepth(line),
+                railCount: countRailLayers(nestedCloseLineStyles[index])
+            }))
         };
     });
 }
