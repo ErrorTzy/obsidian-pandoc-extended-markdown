@@ -79,10 +79,10 @@ Live Preview and Reading mode render Pandoc fenced div blocks and references to 
 Every compact metric space is complete.
 :::
 
-See @thm:label.
+See @thm.
 ```
 
-The opening fence renders as `Theorem`, and `@thm:label` renders as `Theorem`.
+The opening fence renders as `Theorem`, and `@thm` renders as `Theorem`.
 
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
   - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
@@ -128,7 +128,7 @@ A modular sidebar panel displays various list-related content from the active do
 - Displays all Pandoc fenced div blocks from the current document
 - Three-column layout: title, cross-reference label, and content
 - Title and label columns are empty when a block does not define them
-- Click labels to copy cross-reference syntax (e.g., `@thm:label`) to clipboard
+- Click labels to copy cross-reference syntax (e.g., `@thm`) to clipboard
 - Click content to navigate to the fenced div content in the editor
 
 **Footnotes Panel** `[^]`
@@ -319,7 +319,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
-  - Fenced divs and references (`::: {.theorem #thm}` and `@thm:label`) in Live Preview and Reading mode
+  - Fenced divs and references (`::: {.theorem #thm}` and `@thm`) in Live Preview and Reading mode
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references
