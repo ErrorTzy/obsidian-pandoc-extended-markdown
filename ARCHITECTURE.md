@@ -27,7 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
-| **Fenced Divs** | `::: {.theorem #id}` with `@id` references | FencedDivProcessor, FencedDivReferenceProcessor (Live Preview only) |
+| **Fenced Divs** | `::: {.theorem #id}` with `@id` references | FencedDivProcessor, FencedDivReferenceProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -89,7 +89,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Strategy** | Select processor per syntax | Processor.canProcess() |
 | **Observer** | React to mode changes | StateManager.onModeChange() |
 | **Registry** | Extensible content processing | ContentProcessorRegistry |
-| **Chain of Responsibility** | Process lines sequentially | ProcessingPipeline |
+| **Chain of Responsibility** | Process lines or DOM features sequentially | ProcessingPipeline, ReadingModePipeline |
 
 ## Component Inventory
 
@@ -162,17 +162,46 @@ All widgets extend `BaseWidget` which provides:
 
 ### Reading Mode Components
 
-#### Parsers (`/reading-mode/parsers/`)
+Reading mode uses a small processor pipeline around rendered preview DOM. The public entrypoint remains `processReadingMode(element, context, config, app?)`; it builds a `ReadingModeContext` and runs the default registry from `/reading-mode/pipeline/registry.ts`.
 
-| Parser | Detects | Transforms |
-|--------|---------|------------|
-| **fancyListParser** | Letter/Roman markers | Adds proper styling |
-| **exampleListParser** | `(@label)` syntax | Numbers with tooltips |
-| **definitionListParser** | `:` and `~` definitions | Styled definition lists |
-| **fencedDivParser** | Pandoc `:::` fenced div blocks and `@id` refs | Styled nested div blocks with label references |
-| **customLabelListParser** | `{::LABEL}` syntax | Two-pass processing |
-| **unorderedListMarkerParser** | `-`, `+`, `*` unordered markers | Adds or clears source-marker classes on rendered list items based on the marker rendering setting |
-| **superSubParser** | `^` and `~` formatting | Super/subscript elements |
+#### Pipeline Core (`/reading-mode/pipeline/`)
+
+| File | Purpose |
+|------|---------|
+| **ReadingModePipeline.ts** | Registers processors and runs enabled processors in priority order |
+| **types.ts** | Defines `ReadingModeContext`, `ReadingModeProcessor`, `BlockDomProcessor`, `InlineTextProcessor`, and Obsidian app adapter types |
+| **registry.ts** | Builds the default processor set and shared context |
+
+`ReadingModeContext` contains the rendered root element, Obsidian post-processor context, preview section and section info, source path, optional full source, processor config, render context, document counters, app adapter, and strict-mode validation lines.
+
+#### Block/DOM Processors (`/reading-mode/pipeline/processors/`)
+
+| Processor | Priority | Purpose |
+|-----------|----------|---------|
+| **UnorderedListMarkerProcessor** | 20 | Adds or clears source-marker classes on rendered unordered list items |
+| **DefinitionListNormalizationProcessor** | 40 | Schedules delayed normalization/rebuild of rendered definition lists, using full source when available |
+| **FencedDivBlockProcessor** | 60 | Schedules section-scoped fenced div block rendering |
+| **ExtendedListBlockProcessor** | 120 | Preserves existing rendered behavior for hash, fancy, example, and source-backed definition list paragraphs |
+| **InlineTextEngineProcessor** | 300 | Runs registered inline processors through the shared text-node replacement engine |
+| **CustomLabelListProcessor** | 400 | Runs the existing two-pass custom label list processor after other replacements |
+
+#### Inline Text Processors (`/reading-mode/pipeline/inline/`)
+
+Inline processors report text-node matches and create replacement nodes. They do not walk the DOM themselves; `textReplacementEngine.ts` collects text nodes once, applies shared skip rules, sorts matches, drops overlaps deterministically, and replaces each text node once.
+
+| Processor | Purpose |
+|-----------|---------|
+| **ExampleReferenceInlineProcessor** | `(@ref)` → resolved example number with tooltip |
+| **FencedDivReferenceInlineProcessor** | `@id` → fenced div display label with tooltip |
+| **SuperscriptInlineProcessor** | `^text^` → `<sup class="pem-superscript">` |
+| **SubscriptInlineProcessor** | `~text~` → `<sub class="pem-subscript">` |
+| **CustomLabelReferenceInlineProcessor** | `{::ref}` → processed custom label reference |
+
+The shared inline walker skips code, preformatted blocks, headings, math containers, already rendered spans, fenced div headers, and plugin-rendered references/markers.
+
+#### Legacy Parser Helpers (`/reading-mode/parsers/`)
+
+The parser files remain as feature-specific helpers used by reading-mode processors and tests. They are no longer the reading-mode extension point. New reading-mode behavior should be added as a pipeline processor and registered in `registry.ts`, using parser helpers only when useful.
 
 ### Panel Modules (`/views/panels/modules/`)
 
@@ -252,7 +281,9 @@ listAutocompletion/
 
 | Utility | Purpose | Used For |
 |---------|---------|----------|
-| **domUtils** | DOM traversal helpers | Reading mode parsers |
+| **domUtils** | DOM traversal helpers | Reading mode processors and parser helpers |
+| **definitionListBlocks** | Source block extraction helpers | Definition list normalization |
+| **definitionListDom** | Rendered DOM normalization helpers | DefinitionListNormalizationProcessor |
 
 ## Processing Pipeline Details
 
@@ -306,6 +337,7 @@ For each line (top to bottom):
 For each content region from Phase 1:
   1. All processors find matches:
      - ExampleReferenceProcessor
+     - FencedDivReferenceProcessor
      - SuperscriptProcessor
      - SubscriptProcessor
      - CustomLabelReferenceProcessor
@@ -327,15 +359,23 @@ For each content region from Phase 1:
 ### Reading Mode Processing Flow
 
 ```typescript
-1. Post-processor triggered by Obsidian
-2. Normalize source-aware block features such as unordered list markers, definition lists, and fenced divs
-3. Find all <p> and <li> elements
-4. For each element:
-   - Check if already processed (WeakMap)
-   - Parse text for Pandoc syntax
-   - Get/update counters from StateManager
-   - Create DOM replacements
-   - Mark as processed
+1. Obsidian calls processReadingMode(element, context, config, app?)
+2. createReadingModeContext() builds one shared context:
+   - rendered root element and preview section
+   - source path and section info
+   - ProcessorConfig and RenderContext
+   - document counters and label maps from PluginStateManager
+   - strict-mode validation lines
+3. createDefaultReadingModePipeline() registers block and inline processors
+4. ReadingModePipeline runs enabled processors by priority:
+   - source-aware marker classes
+   - delayed definition list normalization
+   - section-scoped fenced div rendering
+   - extended list paragraph rendering
+   - shared inline text replacement
+   - custom label list post-pass
+5. Processors own any required scheduling or source lookup
+6. Idempotency is enforced with processed-element state and inline skip rules
 ```
 
 ### State Management Flow
@@ -359,7 +399,7 @@ graph TB
 
 ## Implementation Patterns
 
-### Pattern 1: Adding a New List Type
+### Pattern 1: Adding a Live Preview List Type
 
 **Already Implemented**: FancyListProcessor, ExampleListProcessor, CustomLabelProcessor
 
@@ -407,7 +447,7 @@ class NewListWidget extends BaseWidget {
 pipeline.registerStructuralProcessor(new NewListProcessor());
 ```
 
-### Pattern 2: Adding Inline Syntax
+### Pattern 2: Adding Live Preview Inline Syntax
 
 **Already Implemented**: ExampleReferenceProcessor, SuperscriptProcessor
 
@@ -426,6 +466,53 @@ class NewInlineProcessor implements InlineProcessor {
 // 2. Register in extension.ts
 pipeline.registerInlineProcessor(new NewInlineProcessor());
 ```
+
+### Pattern 2b: Adding Reading Mode Syntax
+
+Reading mode has its own processor interface because it works against rendered DOM and partially available source text, not CodeMirror document offsets.
+
+```typescript
+// 1. Create a block/DOM processor when the syntax changes structure
+class NewReadingBlockProcessor implements BlockDomProcessor {
+    name = 'new-reading-block';
+    phase = 'block';
+    priority = 150;
+
+    isEnabled(context: ReadingModeContext): boolean {
+        return context.config.enableYourFeature !== false;
+    }
+
+    process(context: ReadingModeContext): void {
+        // Read context.element, context.sectionInfo, context.counters, etc.
+        // Own any delayed scheduling here if Obsidian rendering is not settled.
+    }
+}
+
+// 2. Or create an inline text processor when the syntax replaces text nodes
+class NewReadingInlineProcessor implements InlineTextProcessor {
+    name = 'new-reading-inline';
+    phase = 'inline';
+    priority = 350;
+
+    findMatches(text: string, node: Text, context: ReadingModeContext): InlineTextMatch[] {
+        // Return non-overlapping candidate ranges relative to this text node.
+    }
+
+    createReplacement(match: InlineTextMatch, context: ReadingModeContext): Node {
+        // Return a DOM node or nodes. The shared engine handles replacement.
+    }
+}
+
+// 3. Register in /reading-mode/pipeline/registry.ts
+pipeline.registerProcessor(new NewReadingBlockProcessor());
+
+const inlineProcessors = [
+    // ...
+    new NewReadingInlineProcessor()
+];
+```
+
+Keep reading-mode processors DOM/source-oriented. Do not port CodeMirror decorations, document offsets, or cursor editing behavior into reading mode.
 
 ### Pattern 3: Adding a Panel Module
 
@@ -545,13 +632,14 @@ async function myAsyncFunction() {
 
 | Feature Type | Location | Extend/Implement | Register In |
 |--------------|----------|------------------|-------------|
-| New list syntax | `/pipeline/structural/` | StructuralProcessor | extension.ts |
-| Inline formatting | `/pipeline/inline/` | InlineProcessor | extension.ts |
-| Reference type | `/pipeline/inline/` | InlineProcessor | extension.ts |
+| Live preview list syntax | `/live-preview/pipeline/structural/` | StructuralProcessor | extension.ts |
+| Live preview inline formatting | `/live-preview/pipeline/inline/` | InlineProcessor | extension.ts |
+| Live preview reference type | `/live-preview/pipeline/inline/` | InlineProcessor | extension.ts |
 | Widget display | `/widgets/` | BaseWidget | Used by processor |
 | Panel content | `/panels/modules/` | BasePanelModule | ListPanelView.ts |
 | Data extraction | `/shared/extractors/` | Function | Used by panels |
-| Reading mode | `/reading-mode/parsers/` | Parser function | parser.ts |
+| Reading mode block behavior | `/reading-mode/pipeline/processors/` | BlockDomProcessor | reading-mode/pipeline/registry.ts |
+| Reading mode inline behavior | `/reading-mode/pipeline/inline/` | InlineTextProcessor | reading-mode/pipeline/registry.ts |
 
 ### Common Tasks
 
@@ -602,7 +690,10 @@ async function myAsyncFunction() {
     /inline/           → Inline processors
   /widgets/             → DOM decorations
 /reading-mode/          → Post-processing
-  /parsers/             → HTML parsers
+  /pipeline/            → DOM/source processor pipeline
+    /processors/        → Block and orchestration processors
+    /inline/            → Inline text processors and replacement engine
+  /parsers/             → Feature parser helpers used by processors/tests
   /utils/               → DOM utilities
 /views/panels/          → Sidebar panels
 /shared/                → Cross-mode utilities
@@ -625,6 +716,20 @@ interface InlineProcessor {
 interface PanelModule {
     onActivate(containerEl: HTMLElement, activeView: MarkdownView | null): void;
     onUpdate(activeView: MarkdownView | null): void;
+}
+
+interface ReadingModeProcessor {
+    name: string;
+    phase: 'setup' | 'block' | 'inline' | 'cleanup';
+    priority: number;
+    isEnabled?(context: ReadingModeContext): boolean;
+    process(context: ReadingModeContext): void;
+}
+
+interface InlineTextProcessor extends ReadingModeProcessor {
+    phase: 'inline';
+    findMatches(text: string, node: Text, context: ReadingModeContext): InlineTextMatch[];
+    createReplacement(match: InlineTextMatch, context: ReadingModeContext): Node | Node[];
 }
 ```
 
