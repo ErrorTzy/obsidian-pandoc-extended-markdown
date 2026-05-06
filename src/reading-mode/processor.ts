@@ -26,14 +26,18 @@ import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting } from '../editor-extensions/pandocValidator';
 import { ValidationContext } from '../shared/types/listTypes';
 
+const DEFINITION_LIST_NORMALIZATION_DELAY_MS = 50;
+
 export function processReadingMode(
     element: HTMLElement, 
     context: MarkdownPostProcessorContext, 
-    config: ProcessorConfig
+    config: ProcessorConfig,
+    app?: ObsidianAppLike
 ) {
     const docPath = context.sourcePath || 'unknown';
     const parser = new ReadingModeParser();
     const renderer = new ReadingModeRenderer();
+    const renderContext = createRenderContext(config, docPath);
     
     // Get section info for validation if needed
     let validationLines: string[] = [];
@@ -53,7 +57,13 @@ export function processReadingMode(
 
     if (config.enableDefinitionLists !== false) {
         const definitionRoot = getDefinitionListNormalizationRoot(element);
-        window.setTimeout(() => normalizeExistingDefinitionLists(definitionRoot), 0);
+        window.setTimeout(() => {
+            if (app) {
+                void normalizeDefinitionListsWithFullSource(definitionRoot, context, config, renderContext, app);
+            } else {
+                normalizeExistingDefinitionLists(definitionRoot, context, config, renderContext);
+            }
+        }, DEFINITION_LIST_NORMALIZATION_DELAY_MS);
     }
 
     scheduleFencedDivProcessing(element, docPath, config);
@@ -74,7 +84,7 @@ export function processReadingMode(
         }
         
         // Process text nodes in the element
-        processElementTextNodes(elem, parser, renderer, config, docPath, validationLines);
+        processElementTextNodes(elem, parser, renderer, config, docPath, validationLines, renderContext);
         
         // Mark element as processed
         pluginStateManager.markElementProcessed(elem, 'pem-processed', true);
@@ -96,7 +106,81 @@ export function processReadingMode(
 }
 
 function getDefinitionListNormalizationRoot(element: HTMLElement): HTMLElement {
-    return element.closest('.el-p, .markdown-preview-section') as HTMLElement || element;
+    return element.closest('.markdown-preview-section') as HTMLElement ||
+        element.closest('.el-p') as HTMLElement ||
+        element;
+}
+
+function createRenderContext(config: ProcessorConfig, docPath: string): RenderContext {
+    return {
+        strictLineBreaks: config.strictLineBreaks,
+        getExampleNumber: (label: string) =>
+            pluginStateManager.getLabeledExampleNumber(docPath, label),
+        getExampleContent: (label: string) =>
+            pluginStateManager.getLabeledExampleContent(docPath, label)
+    };
+}
+
+async function normalizeDefinitionListsWithFullSource(
+    definitionRoot: HTMLElement,
+    context: MarkdownPostProcessorContext,
+    config: ProcessorConfig,
+    renderContext: RenderContext,
+    app?: ObsidianAppLike
+): Promise<void> {
+    const fullSourceText = await readFullSourceText(context.sourcePath, app);
+    normalizeExistingDefinitionLists(definitionRoot, context, config, renderContext, fullSourceText);
+}
+
+async function readFullSourceText(
+    sourcePath?: string,
+    suppliedApp?: ObsidianAppLike
+): Promise<string | undefined> {
+    const app = suppliedApp ?? getObsidianApp();
+    const vault = app?.vault;
+    const activeFile = app?.workspace?.getActiveFile?.();
+    const path = sourcePath ?? activeFile?.path;
+
+    if (!path) {
+        return undefined;
+    }
+
+    const file = activeFile?.path === path
+        ? activeFile
+        : vault?.getAbstractFileByPath(path);
+    if (!file || typeof vault?.cachedRead !== 'function') {
+        return undefined;
+    }
+
+    try {
+        return await vault.cachedRead(file);
+    } catch {
+        return undefined;
+    }
+}
+
+function getObsidianApp(): ObsidianAppLike | undefined {
+    const globalWindow = window as Window & {
+        app?: ObsidianAppLike;
+    };
+
+    return globalWindow.app;
+}
+
+interface ObsidianAppLike {
+    vault?: ObsidianVaultLike;
+    workspace?: {
+        getActiveFile?(): ObsidianFileLike | null;
+    };
+}
+
+interface ObsidianVaultLike {
+    getAbstractFileByPath(path: string): ObsidianFileLike | null;
+    cachedRead(file: ObsidianFileLike): Promise<string>;
+}
+
+interface ObsidianFileLike {
+    path: string;
 }
 
 /**
@@ -120,11 +204,12 @@ function processElementTextNodes(
     renderer: ReadingModeRenderer,
     config: ProcessorConfig,
     docPath: string,
-    validationLines: string[]
+    validationLines: string[],
+    renderContext: RenderContext
 ): void {
     if (config.enableDefinitionLists !== false &&
         elem.nodeName === 'P' &&
-        processDefinitionListParagraph(elem, parser, renderer, config, docPath)) {
+        processDefinitionListParagraph(elem, parser, renderer, config, renderContext)) {
         return;
     }
 
@@ -181,15 +266,6 @@ function processElementTextNodes(
             });
         }
         
-        // Create render context with state access
-        const renderContext: RenderContext = {
-            strictLineBreaks: config.strictLineBreaks,
-            getExampleNumber: (label: string) => 
-                pluginStateManager.getLabeledExampleNumber(docPath, label),
-            getExampleContent: (label: string) => 
-                pluginStateManager.getLabeledExampleContent(docPath, label)
-        };
-        
         // Number provider for counters
         const numberProvider = (type: string, index: number): number => {
             const parsedLine = parsedLines[index];
@@ -236,7 +312,7 @@ function processDefinitionListParagraph(
     parser: ReadingModeParser,
     renderer: ReadingModeRenderer,
     config: ProcessorConfig,
-    docPath: string
+    renderContext: RenderContext
 ): boolean {
     const text = getTextWithLineBreaks(elem);
     if (!text.includes('\n')) {
@@ -249,13 +325,6 @@ function processDefinitionListParagraph(
         return false;
     }
 
-    const renderContext: RenderContext = {
-        strictLineBreaks: config.strictLineBreaks,
-        getExampleNumber: (label: string) =>
-            pluginStateManager.getLabeledExampleNumber(docPath, label),
-        getExampleContent: (label: string) =>
-            pluginStateManager.getLabeledExampleContent(docPath, label)
-    };
     const rendered = renderer.renderLines(parsedLines, renderContext);
     elem.replaceChildren(...rendered);
     return true;

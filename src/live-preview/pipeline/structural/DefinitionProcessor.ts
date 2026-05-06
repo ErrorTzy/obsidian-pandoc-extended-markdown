@@ -100,13 +100,10 @@ export class DefinitionProcessor implements StructuralProcessor {
             return { decorations };
         }
         
-        // Check if cursor is within the marker area
-        const selection = context.view.state.selection;
-        const cursorPos = selection?.main?.from;
-        const cursorInMarker = cursorPos !== undefined && cursorPos >= markerStart && cursorPos < markerEnd;
+        const showSourceMarker = this.shouldShowSourceMarker(context, markerStart, markerEnd);
         
         // Always create the decoration, but only replace if cursor is not within it
-        if (!cursorInMarker) {
+        if (!showSourceMarker) {
             try {
                 decorations.push({
                     from: markerStart,
@@ -148,6 +145,25 @@ export class DefinitionProcessor implements StructuralProcessor {
             contentRegion,
             skipFurtherProcessing: true
         };
+    }
+
+    private shouldShowSourceMarker(
+        context: ProcessingContext,
+        markerStart: number,
+        markerEnd: number
+    ): boolean {
+        const ranges = context.view.state.selection?.ranges;
+        if (!ranges) {
+            return false;
+        }
+
+        return ranges.some(range => {
+            if (range.from === range.to) {
+                return range.from >= markerStart && range.from < markerEnd;
+            }
+
+            return range.from < markerEnd && range.to > markerStart;
+        });
     }
     
     private processDefinitionTerm(line: Line, context: ProcessingContext): StructuralResult {

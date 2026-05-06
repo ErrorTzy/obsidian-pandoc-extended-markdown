@@ -152,6 +152,26 @@ describe('DefinitionProcessor', () => {
                 // When cursor is in marker, we create a mark decoration instead of replace
                 expect(result.decorations[0].decoration.spec?.class).toBe('cm-pem-definition-marker-cursor');
             });
+
+            it('should not replace marker when any selection range includes it', () => {
+                context = createContext(': Definition');
+                view.dispatch({
+                    selection: {
+                        main: { head: 8, from: 8, to: 8 },
+                        ranges: [
+                            { from: 0, to: 2 },
+                            { from: 8, to: 8 }
+                        ]
+                    }
+                });
+                context.view = view;
+
+                const line = context.document.line(1);
+                const result = processor.process(line, context);
+
+                expect(result.decorations).toHaveLength(1);
+                expect(result.decorations[0].decoration.spec?.class).toBe('cm-pem-definition-marker-cursor');
+            });
             
             it('should update definition state', () => {
                 context = createContext(': Definition');

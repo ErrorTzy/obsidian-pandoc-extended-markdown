@@ -41,6 +41,8 @@ export interface ExampleListData {
 
 export interface DefinitionData {
     content: string;
+    indent: string;
+    marker: string;
 }
 
 export interface ReferenceData {
@@ -125,20 +127,25 @@ export class ReadingModeParser {
                 type: 'definition-item',
                 content: line,
                 metadata: {
-                    content: defMarker.content
+                    content: defMarker.content,
+                    indent: defMarker.indent,
+                    marker: defMarker.marker
                 } as DefinitionData
             };
         }
 
         // Check if this is a definition term (followed by definition marker)
         if (config?.enableDefinitionLists !== false &&
+            line.trim().length > 0 &&
             context?.nextLine &&
             ListPatterns.isDefinitionMarker(context.nextLine)) {
             return {
                 type: 'definition-term',
                 content: line,
                 metadata: {
-                    content: line.trim()
+                    content: line.trim(),
+                    indent: '',
+                    marker: ''
                 } as DefinitionData
             };
         }
@@ -173,11 +180,21 @@ export class ReadingModeParser {
         config?: ProcessorConfig
     ): ParsedLine[] {
         return lines.map((line, index) => {
-            const nextLine = index < lines.length - 1 ? lines[index + 1] : undefined;
+            const nextLine = this.findNextNonBlankLine(lines, index + 1);
             // Only the first line is at paragraph start, unless there are explicit line breaks
             const isLineAtStart = index === 0 ? isAtParagraphStart : true;
             return this.parseLine(line, { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart }, config);
         });
+    }
+
+    private findNextNonBlankLine(lines: string[], startIndex: number): string | undefined {
+        for (let index = startIndex; index < lines.length; index++) {
+            if (lines[index].trim().length > 0) {
+                return lines[index];
+            }
+        }
+
+        return undefined;
     }
 
     /**

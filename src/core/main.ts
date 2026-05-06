@@ -112,7 +112,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
                 getConfig(key: 'strictLineBreaks'): boolean;
             };
             const config = createProcessorConfig({ strictLineBreaks: vault.getConfig('strictLineBreaks') }, this.settings);
-            processReadingMode(element, context, config);
+            processReadingMode(element, context, config, this.app);
         });
     }
 
