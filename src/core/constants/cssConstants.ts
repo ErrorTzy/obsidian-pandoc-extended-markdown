@@ -23,6 +23,12 @@ export const CSS_CLASSES = {
     FENCED_DIV_HEADER: 'pem-fenced-div-header',
     FENCED_DIV_CLOSING: 'pem-fenced-div-closing',
     FENCED_DIV_REFERENCE: 'pem-fenced-div-reference',
+    FENCED_DIV_PANEL_CONTAINER: 'pem-fenced-div-panel-container',
+    FENCED_DIV_PANEL_ROW: 'pem-fenced-div-panel-row',
+    FENCED_DIV_PANEL_TITLE: 'pem-fenced-div-panel-title',
+    FENCED_DIV_PANEL_LABEL: 'pem-fenced-div-panel-label',
+    FENCED_DIV_PANEL_CONTENT: 'pem-fenced-div-panel-content',
+    FENCED_DIV_PANEL_EMPTY: 'pem-fenced-div-panel-empty',
 
     // Example List Classes
     EXAMPLE_REF: 'pem-example-reference',
@@ -107,6 +113,7 @@ export const CSS_CLASSES = {
     LIST_PANEL_ICON_CUSTOM_LABEL: 'pem-icon-custom-label',
     LIST_PANEL_ICON_EXAMPLE_LIST: 'pem-icon-example-list',
     LIST_PANEL_ICON_DEFINITION_LIST: 'pem-icon-definition-list',
+    LIST_PANEL_ICON_FENCED_DIV: 'pem-icon-fenced-div',
     LIST_PANEL_ICON_FOOTNOTE: 'pem-icon-footnote',
     LIST_PANEL_SEPARATOR: 'pem-list-panel-separator',
     LIST_PANEL_CONTENT_CONTAINER: 'pem-list-panel-content-container',

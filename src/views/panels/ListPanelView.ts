@@ -16,6 +16,7 @@ import { CustomLabelPanelModule } from './modules/CustomLabelPanelModule';
 import { ExampleListPanelModule } from './modules/ExampleListPanelModule';
 import { DefinitionListPanelModule } from './modules/DefinitionListPanelModule';
 import { FootnotePanelModule } from './modules/FootnotePanelModule';
+import { FencedDivPanelModule } from './modules/FencedDivPanelModule';
 import { PandocExtendedMarkdownPlugin } from '../../core/main';
 
 export const VIEW_TYPE_LIST_PANEL = 'list-panel-view';
@@ -77,6 +78,16 @@ export class ListPanelView extends ItemView {
             });
         }
 
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs')) {
+            const fencedDivModule = new FencedDivPanelModule(this.plugin);
+            availablePanels.push({
+                id: fencedDivModule.id,
+                displayName: fencedDivModule.displayName,
+                icon: fencedDivModule.icon,
+                module: fencedDivModule
+            });
+        }
+
         const footnoteModule = new FootnotePanelModule(this.plugin);
         availablePanels.push({
             id: footnoteModule.id,
@@ -86,7 +97,7 @@ export class ListPanelView extends ItemView {
         });
         
         // Sort panels according to settings order
-        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists', 'definition-lists', 'footnotes'];
+        const panelOrder = this.plugin.settings.panelOrder || ['custom-labels', 'example-lists', 'definition-lists', 'fenced-divs', 'footnotes'];
         this.panels = [];
         
         // First, add panels in the specified order
@@ -211,6 +222,11 @@ export class ListPanelView extends ItemView {
                 iconContainer.createSpan({
                     cls: CSS_CLASSES.LIST_PANEL_ICON_DEFINITION_LIST,
                     text: 'DL:'
+                });
+            } else if (panel.id === 'fenced-divs') {
+                iconContainer.createSpan({
+                    cls: CSS_CLASSES.LIST_PANEL_ICON_FENCED_DIV,
+                    text: ':::'
                 });
             } else if (panel.id === 'footnotes') {
                 iconContainer.createSpan({

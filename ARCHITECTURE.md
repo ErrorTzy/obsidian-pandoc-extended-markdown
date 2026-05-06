@@ -187,6 +187,7 @@ All panels extend `BasePanelModule` which provides:
 | **ExampleListPanelModule** | example-lists | Three columns: number, label, content |
 | **CustomLabelPanelModule** | custom-labels | Two columns: processed label, content |
 | **DefinitionListPanelModule** | definition-lists | Two columns: term, definitions |
+| **FencedDivPanelModule** | fenced-divs | Three columns: title, cross-reference label, content |
 | **FootnotePanelModule** | footnotes | Two columns: footnote label, rendered content |
 
 ### Editor Extensions
@@ -231,6 +232,7 @@ listAutocompletion/
 | **exampleListExtractor** | ExampleListItem[] | Panels, context building |
 | **customLabelExtractor** | CustomLabel[] | Panels, processing |
 | **definitionListExtractor** | DefinitionListItem[] | Definition panel |
+| **fencedDivExtractor** | FencedDivPanelItem[] | Fenced div panel, scanner context |
 | **footnoteExtractor** | FootnotePanelItem[] | Footnote panel, cursor positioning |
 
 #### Utilities (`/shared/utils/`)

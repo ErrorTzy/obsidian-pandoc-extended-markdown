@@ -92,7 +92,7 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableOrderedListMarkerCycling: true,
     orderedListMarkerOrder: [...DEFAULT_ORDERED_LIST_MARKER_ORDER],
     enableListPanel: true,
-    panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'footnotes']
+    panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'fenced-divs', 'footnotes']
 };
 
 export type SyntaxFeatureSettingKey =

@@ -38,12 +38,14 @@ export const MESSAGES = {
     NO_CUSTOM_LABELS: 'No custom labels found',
     NO_EXAMPLE_LISTS: 'No example lists found',
     NO_DEFINITION_LISTS: 'No definition lists found',
+    NO_FENCED_DIVS: 'No fenced divs found',
     NO_FOOTNOTES: 'No footnotes found',
     FOOTNOTE_REFERENCE_NOT_FOUND: 'No matching footnote reference found',
     LIST_PANEL_DISABLED: 'List panel is disabled in settings',
     CUSTOM_LABELS_VIEW_TITLE: 'Custom Labels',
     EXAMPLE_LISTS_VIEW_TITLE: 'Example Lists',
     DEFINITION_LISTS_VIEW_TITLE: 'Definition Lists',
+    FENCED_DIVS_VIEW_TITLE: 'Fenced Divs',
     FOOTNOTE_VIEW_TITLE: 'Footnotes',
 
     // Formatting issue messages
@@ -281,6 +283,17 @@ export const ICONS = {
             [^]
         </text>
     </svg>`,
+    FENCED_DIV_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+        <text x="50" y="55"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-family="monospace"
+              font-size="62"
+              font-weight="bold"
+              fill="currentColor">
+            :::
+        </text>
+    </svg>`,
     LIST_PANEL_SVG: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
         <g fill="currentColor" font-family="monospace" font-weight="bold">
             <!-- 2x2 grid of Pandoc list markers for better visibility -->
@@ -318,6 +331,11 @@ export const PANEL_SETTINGS = {
             id: 'definition-lists',
             displayName: 'Definition Lists',
             icon: ICONS.DEFINITION_LIST_SVG
+        },
+        {
+            id: 'fenced-divs',
+            displayName: 'Fenced Divs',
+            icon: ICONS.FENCED_DIV_SVG
         },
         {
             id: 'footnotes',

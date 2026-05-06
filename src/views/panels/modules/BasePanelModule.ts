@@ -3,8 +3,10 @@ import { PanelModule } from './PanelTypes';
 import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 import { MESSAGES } from '../../../core/constants';
 import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
+import { FencedDivReference } from '../../../shared/types/fencedDivTypes';
 import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
+import { extractFencedDivs } from '../../../shared/extractors/fencedDivExtractor';
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 
 /**
@@ -140,11 +142,30 @@ export abstract class BasePanelModule implements PanelModule {
             });
         }
 
+        const fencedDivLabels = new Map<string, FencedDivReference>();
+        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs')) {
+            const fencedDivs = extractFencedDivs(content, this.plugin.settings);
+            fencedDivs.forEach(item => {
+                if (!item.label || fencedDivLabels.has(item.label)) {
+                    return;
+                }
+
+                fencedDivLabels.set(item.label, {
+                    label: item.label,
+                    displayName: item.title || 'Div',
+                    lineNumber: item.lineNumber + 1,
+                    classes: item.classes,
+                    content: item.content
+                });
+            });
+        }
+
         this.currentContext = {
             exampleLabels,
             exampleContent,
             customLabels: customLabelMap,
-            rawToProcessed
+            rawToProcessed,
+            fencedDivLabels
         };
     }
 

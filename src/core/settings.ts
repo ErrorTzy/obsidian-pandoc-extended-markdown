@@ -551,6 +551,10 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             return isSyntaxFeatureEnabled(this.plugin.settings, 'enableDefinitionLists');
         }
 
+        if (panelId === 'fenced-divs') {
+            return isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs');
+        }
+
         return true;
     }
 

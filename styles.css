@@ -673,6 +673,7 @@ sub.pem-subscript {
 .pem-icon-custom-label,
 .pem-icon-example-list,
 .pem-icon-definition-list,
+.pem-icon-fenced-div,
 .pem-icon-footnote {
     font-family: var(--font-monospace);
     font-weight: bold;
@@ -684,6 +685,7 @@ sub.pem-subscript {
 .pem-list-panel-icon-button.is-active .pem-icon-custom-label,
 .pem-list-panel-icon-button.is-active .pem-icon-example-list,
 .pem-list-panel-icon-button.is-active .pem-icon-definition-list,
+.pem-list-panel-icon-button.is-active .pem-icon-fenced-div,
 .pem-list-panel-icon-button.is-active .pem-icon-footnote {
     color: var(--text-on-accent);
 }
@@ -691,6 +693,7 @@ sub.pem-subscript {
 .pem-list-panel-icon-button:hover .pem-icon-custom-label,
 .pem-list-panel-icon-button:hover .pem-icon-example-list,
 .pem-list-panel-icon-button:hover .pem-icon-definition-list,
+.pem-list-panel-icon-button:hover .pem-icon-fenced-div,
 .pem-list-panel-icon-button:hover .pem-icon-footnote {
     color: var(--text-normal);
 }
@@ -1071,6 +1074,105 @@ td.pem-definition-list-view-definitions:hover {
 }
 
 .pem-definition-list-view-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Fenced Div Panel Styles */
+table.pem-fenced-div-panel-container {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+tr.pem-fenced-div-panel-row {
+    border-bottom: 1px solid var(--background-modifier-border-hover);
+    transition: background-color 0.15s ease;
+}
+
+tr.pem-fenced-div-panel-row:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+td.pem-fenced-div-panel-title {
+    width: 1%;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--text-normal);
+    cursor: default;
+    padding: 6px 8px;
+    vertical-align: top;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+td.pem-fenced-div-panel-label {
+    width: 1%;
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+    color: var(--text-accent);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 3px;
+    vertical-align: top;
+    white-space: nowrap;
+    overflow: visible;
+    transition: background-color 0.15s ease;
+}
+
+td.pem-fenced-div-panel-label:empty {
+    cursor: default;
+}
+
+td.pem-fenced-div-panel-label:not(:empty):hover {
+    background-color: var(--background-modifier-hover);
+}
+
+td.pem-fenced-div-panel-content {
+    width: auto;
+    font-size: 0.9em;
+    color: var(--text-normal);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 3px;
+    vertical-align: top;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.3;
+    transition: background-color 0.15s ease;
+}
+
+td.pem-fenced-div-panel-content p {
+    margin: 0;
+    line-height: 1.3;
+}
+
+td.pem-fenced-div-panel-content p:not(:last-child) {
+    margin-bottom: 0.3em;
+}
+
+td.pem-fenced-div-panel-content ul,
+td.pem-fenced-div-panel-content ol {
+    margin: 0;
+    padding-left: 1.2em;
+    line-height: 1.3;
+}
+
+td.pem-fenced-div-panel-content li {
+    margin: 0;
+    line-height: 1.3;
+}
+
+td.pem-fenced-div-panel-content:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-accent);
+}
+
+.pem-fenced-div-panel-empty {
     display: flex;
     align-items: center;
     justify-content: center;

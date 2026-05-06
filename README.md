@@ -124,6 +124,13 @@ A modular sidebar panel displays various list-related content from the active do
 - Smart truncation: terms (100 chars), definitions (300 chars)
 - Hover previews for truncated content with full rendering
 
+**Fenced Divs Panel** `:::`
+- Displays all Pandoc fenced div blocks from the current document
+- Three-column layout: title, cross-reference label, and content
+- Title and label columns are empty when a block does not define them
+- Click labels to copy cross-reference syntax (e.g., `@thm:label`) to clipboard
+- Click content to navigate to the fenced div content in the editor
+
 **Footnotes Panel** `[^]`
 - Lists every footnote definition detected in the document
 - Two-column layout: footnote label and fully rendered content (markdown, math, references)

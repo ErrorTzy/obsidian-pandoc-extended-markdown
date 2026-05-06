@@ -1,4 +1,8 @@
 import { ListPatterns } from '../patterns';
+import { FencedDivReference } from '../types/fencedDivTypes';
+
+const PANDOC_CITATION_REFERENCE = /@([^\s,;)\]}]+)/g;
+const TRAILING_REFERENCE_PUNCTUATION = /[.!?]+$/;
 
 /**
  * Context for content processing containing all necessary data
@@ -8,6 +12,7 @@ export interface ProcessingContext {
     exampleContent?: Map<string, string>;
     customLabels?: Map<string, string>;
     rawToProcessed?: Map<string, string>;
+    fencedDivLabels?: Map<string, FencedDivReference>;
     footnotes?: Map<string, string>; // For footnote processor example
     // Add more specific context fields as needed for new processors
 }
@@ -120,6 +125,22 @@ export class ContentProcessorRegistry {
                 );
             }
         });
+
+        this.registerProcessor({
+            id: 'fenced-div-references',
+            process: (content: string, context: ProcessingContext): string => {
+                if (!context.fencedDivLabels) return content;
+
+                return content.replace(
+                    PANDOC_CITATION_REFERENCE,
+                    (match: string, rawLabel: string) => {
+                        const label = resolveFencedDivLabel(rawLabel, context.fencedDivLabels!);
+                        const reference = label ? context.fencedDivLabels!.get(label) : undefined;
+                        return reference ? reference.displayName : match;
+                    }
+                );
+            }
+        });
     }
     
     /**
@@ -143,4 +164,20 @@ export class ContentProcessorRegistry {
  */
 export function processContent(content: string, context: ProcessingContext): string {
     return ContentProcessorRegistry.getInstance().processContent(content, context);
+}
+
+function resolveFencedDivLabel(
+    rawLabel: string,
+    labels: Map<string, FencedDivReference>
+): string | undefined {
+    if (labels.has(rawLabel)) {
+        return rawLabel;
+    }
+
+    const trimmedLabel = rawLabel.replace(TRAILING_REFERENCE_PUNCTUATION, '');
+    if (trimmedLabel !== rawLabel && labels.has(trimmedLabel)) {
+        return trimmedLabel;
+    }
+
+    return undefined;
 }
