@@ -22,6 +22,8 @@ import {
 } from './parsers/unorderedListMarkerParser';
 import { scheduleFencedDivProcessing } from './parsers/fencedDivParser';
 import { normalizeExistingDefinitionLists } from './utils/definitionListDom';
+import { findPandocDefinitionListBlocks } from './pandocDefinitionListParser';
+import { renderPandocDefinitionSource } from './pandocDefinitionListRenderer';
 import { pluginStateManager } from '../core/state/pluginStateManager';
 import { isStrictPandocFormatting } from '../editor-extensions/pandocValidator';
 import { ValidationContext } from '../shared/types/listTypes';
@@ -209,7 +211,7 @@ function processElementTextNodes(
 ): void {
     if (config.enableDefinitionLists !== false &&
         elem.nodeName === 'P' &&
-        processDefinitionListParagraph(elem, parser, renderer, config, renderContext)) {
+        processDefinitionListParagraph(elem, renderer, config, renderContext)) {
         return;
     }
 
@@ -309,7 +311,6 @@ function processElementTextNodes(
 
 function processDefinitionListParagraph(
     elem: Element,
-    parser: ReadingModeParser,
     renderer: ReadingModeRenderer,
     config: ProcessorConfig,
     renderContext: RenderContext
@@ -319,14 +320,20 @@ function processDefinitionListParagraph(
         return false;
     }
 
-    const lines = text.split('\n');
-    const parsedLines = parser.parseLines(lines, true, true, config);
-    if (!isStandaloneDefinitionList(parsedLines)) {
+    if (findPandocDefinitionListBlocks(text).length === 0) {
         return false;
     }
 
-    const rendered = renderer.renderLines(parsedLines, renderContext);
-    elem.replaceChildren(...rendered);
+    const rendered = renderPandocDefinitionSource(
+        text,
+        renderContext,
+        (target, content, context) => renderer.appendContent(target, content, context)
+    );
+    if (elem.parentNode) {
+        elem.replaceWith(...rendered);
+    } else {
+        elem.replaceChildren(...rendered);
+    }
     return true;
 }
 
@@ -354,32 +361,6 @@ function appendNodeText(node: Node, parts: string[]): void {
 
 function isCodeElement(element: Element): boolean {
     return element.nodeName === 'CODE' || element.nodeName === 'PRE';
-}
-
-function isStandaloneDefinitionList(parsedLines: ReturnType<ReadingModeParser['parseLines']>): boolean {
-    const lines = parsedLines.filter(line => line.content.trim().length > 0);
-    let index = 0;
-    let hasDefinitionGroup = false;
-
-    while (index < lines.length) {
-        if (lines[index].type !== 'definition-term') {
-            return false;
-        }
-
-        index++;
-        let itemCount = 0;
-        while (lines[index]?.type === 'definition-item') {
-            itemCount++;
-            index++;
-        }
-
-        if (itemCount === 0) {
-            return false;
-        }
-        hasDefinitionGroup = true;
-    }
-
-    return hasDefinitionGroup;
 }
 
 function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {

@@ -192,7 +192,7 @@ export class ReadingModeRenderer {
         return elements;
     }
 
-    private appendContent(element: HTMLElement, content: string, context: RenderContext): void {
+    appendContent(element: HTMLElement, content: string, context: RenderContext): void {
         this.processContentForReferences(content, context).forEach(child => {
             element.appendChild(child);
         });

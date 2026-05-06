@@ -1,4 +1,5 @@
 import { browser, expect } from '@wdio/globals';
+import { execFileSync } from 'child_process';
 
 describe('Definition list semantic HTML in reading mode', () => {
     before(async () => {
@@ -224,7 +225,185 @@ Another Term
 
         await deleteFileIfExists(path);
     });
+
+    it('matches Pandoc HTML structure for representative definition lists', async () => {
+        const fixtures = [
+            {
+                name: 'multiple-dd',
+                markdown: `Description Term
+: details1
+: details2
+: details3`
+            },
+            {
+                name: 'blank-separated-terms',
+                markdown: `Description Term
+: details1
+
+Another Term
+: another detail1`
+            },
+            {
+                name: 'alternate-markers',
+                markdown: `apple
+: red fruit
+~ computer`
+            },
+            {
+                name: 'blank-after-term',
+                markdown: `Term
+
+: only`
+            },
+            {
+                name: 'continuation-lines',
+                markdown: `Term
+: first line
+  continuation line
+: second
+  continuation`
+            },
+            {
+                name: 'nested-definition-in-bullet',
+                markdown: `Description Term
+: details1
+: - bullet
+    : indented`
+            },
+            {
+                name: 'ordered-and-task-lists',
+                markdown: `Term
+: 1. ordered
+: - [x] checked
+: - [ ] unchecked`
+            },
+            {
+                name: 'inline-markdown',
+                markdown: `*apple*
+: **red** fruit
+: \`computer\``
+            }
+        ];
+
+        for (const fixture of fixtures) {
+            const path = `definition-list-pandoc-parity-${fixture.name}.md`;
+            await createOrReplaceFile(path, fixture.markdown);
+            await openFileInActiveLeaf(path);
+            await ensureReadingMode();
+            await waitForAnyDefinitionList();
+
+            const parity = await getPandocParity(fixture.markdown);
+
+            expect(parity.actual).toEqual(parity.expected);
+            await deleteFileIfExists(path);
+        }
+    });
 });
+
+async function waitForAnyDefinitionList(): Promise<void> {
+    await browser.waitUntil(async () => {
+        const structure = await getDefinitionListStructure();
+        return structure.listCount > 0;
+    }, {
+        timeout: 5000,
+        timeoutMsg: 'Expected at least one rendered definition list'
+    });
+}
+
+async function getPandocParity(markdown: string): Promise<{
+    expected: NormalizedDefinitionNode[];
+    actual: NormalizedDefinitionNode[];
+    pandocHtml: string;
+    previewHtml: string;
+}> {
+    const pandocHtml = execFileSync(
+        'pandoc',
+        ['-f', 'markdown+task_lists', '-t', 'html'],
+        { input: markdown, encoding: 'utf8' }
+    );
+
+    return browser.execute((expectedHtml: string) => {
+        type BrowserNormalizedNode = {
+            tag: string;
+            text?: string;
+            attrs?: Record<string, string | boolean>;
+            children?: BrowserNormalizedNode[];
+        };
+
+        const parser = new DOMParser();
+        const expectedDoc = parser.parseFromString(`<main>${expectedHtml}</main>`, 'text/html');
+        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
+
+        const normalizeTopLevelDefinitionLists = (root: ParentNode, selector: string): BrowserNormalizedNode[] =>
+            Array.from(root.querySelectorAll(selector))
+                .filter(list => !list.parentElement?.closest('dl'))
+                .map(list => normalizeElement(list));
+
+        const normalizeElement = (element: Element): BrowserNormalizedNode => {
+            const tag = element.tagName.toLowerCase();
+            const attrs = getComparableAttributes(element);
+            const children = Array.from(element.childNodes)
+                .map(node => normalizeNode(node))
+                .filter((node): node is BrowserNormalizedNode => node !== null);
+
+            return {
+                tag,
+                ...(Object.keys(attrs).length > 0 ? { attrs } : {}),
+                ...(children.length > 0 ? { children } : {})
+            };
+        };
+
+        const normalizeNode = (node: Node): BrowserNormalizedNode | null => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = normalizeText(node.textContent ?? '');
+                return text ? { tag: '#text', text } : null;
+            }
+
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                return normalizeElement(node as Element);
+            }
+
+            return null;
+        };
+
+        const getComparableAttributes = (element: Element): Record<string, string | boolean> => {
+            const attrs: Record<string, string | boolean> = {};
+            const tag = element.tagName.toLowerCase();
+
+            if (tag === 'input') {
+                const input = element as HTMLInputElement;
+                attrs.type = input.type;
+                attrs.checked = input.checked;
+            }
+
+            if (tag === 'ol' && element.getAttribute('type')) {
+                attrs.type = element.getAttribute('type') ?? '';
+            }
+
+            if (tag === 'ul' && element.classList.contains('task-list')) {
+                attrs.class = 'task-list';
+            }
+
+            return attrs;
+        };
+
+        const normalizeText = (text: string): string => text.replace(/\s+/g, ' ').trim();
+
+        return {
+            expected: normalizeTopLevelDefinitionLists(expectedDoc, 'dl'),
+            actual: preview ? normalizeTopLevelDefinitionLists(preview, 'dl.pem-definition-list') : [],
+            pandocHtml: expectedHtml,
+            previewHtml: preview?.innerHTML ?? ''
+        };
+    }, pandocHtml);
+}
+
+interface NormalizedDefinitionNode {
+    tag: string;
+    text?: string;
+    attrs?: Record<string, string | boolean>;
+    children?: NormalizedDefinitionNode[];
+}
 
 async function createOrReplaceFile(path: string, content: string): Promise<void> {
     await browser.execute(async (filePath: string, data: string) => {

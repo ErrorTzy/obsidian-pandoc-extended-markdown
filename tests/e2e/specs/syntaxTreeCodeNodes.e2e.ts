@@ -1,7 +1,5 @@
 import { browser, expect } from '@wdio/globals';
-import path from 'path';
-
-describe('Syntax tree code nodes', () => {
+describe('Code region detection in live preview', () => {
     before(async () => {
         await browser.reloadObsidian({
             vault: './tests/e2e/vaults/test-vault'
@@ -21,19 +19,16 @@ describe('Syntax tree code nodes', () => {
         });
     });
 
-    it('reports code and math nodes from the syntax tree', async () => {
+    it('skips inline and fenced code while processing matching syntax outside code', async () => {
         const filePath = 'syntax-tree-code-nodes.md';
         const content = [
-            'Here is `inline` code.',
+            '{::LABEL} Defined label',
             '',
-            'Inline math: $x^2$ and $y_{1}$.',
-            '',
-            '$$',
-            'E = mc^2',
-            '$$',
+            'Outside reference {::LABEL}.',
+            'Inline code `{::LABEL}` should stay raw.',
             '',
             '```js',
-            'const x = 1;',
+            'inside fenced {::LABEL}',
             '```',
             ''
         ].join('\n');
@@ -42,86 +37,31 @@ describe('Syntax tree code nodes', () => {
         await openFileInActiveLeaf(filePath);
         await ensureSourceMode();
 
-        const modulePath = path.resolve(process.cwd(), 'node_modules/@codemirror/language');
-        const treeInfo = await browser.execute((languagePath: string) => {
-            const requireFunc = (window as unknown as { require?: (path: string) => any }).require;
-            if (!requireFunc) {
-                return { error: 'require-not-available' };
-            }
+        const state = await browser.execute(() => {
+            const content = document.querySelector('.markdown-source-view.mod-cm6 .cm-content');
+            const lines = Array.from(content?.querySelectorAll('.cm-line') ?? []) as HTMLElement[];
+            const lineContaining = (text: string): HTMLElement | undefined =>
+                lines.find(line => line.textContent?.includes(text));
 
-            let languageModule: any;
-            try {
-                languageModule = requireFunc('@codemirror/language');
-            } catch (error) {
-                try {
-                    languageModule = requireFunc(languagePath);
-                } catch (innerError) {
-                    return { error: 'require-failed' };
-                }
-            }
-
-            const { syntaxTree, ensureSyntaxTree } = languageModule;
-            // @ts-ignore
-            const leaves = app.workspace.getLeavesOfType('markdown');
-            if (!leaves.length) {
-                return { error: 'no-markdown-leaf' };
-            }
-
-            const view = leaves[0].view as any;
-            const cm = view?.editor?.cm || view?.editor?.cm6 || view?.cm;
-            if (!cm) {
-                return { error: 'no-codemirror' };
-            }
-
-            const docLength = cm.state.doc.length;
-            let tree = null;
-            if (ensureSyntaxTree) {
-                tree = ensureSyntaxTree(cm.state, docLength, 1000);
-            }
-            if (!tree && syntaxTree) {
-                tree = syntaxTree(cm.state);
-            }
-            if (!tree) {
-                return { error: 'no-tree' };
-            }
-
-            const names: string[] = [];
-            tree.iterate({
-                enter: (node: { type: { name: string } }) => {
-                    names.push(node.type.name);
-                }
-            });
-
-            const uniqueNames = Array.from(new Set(names));
-            const lowerNames = uniqueNames.map(name => name.toLowerCase());
-            const hasInlineCode = lowerNames.some(name => name.includes('inline') && name.includes('code'));
-            const hasCodeBlock = lowerNames.some(name =>
-                name.includes('codeblock') ||
-                name.includes('fenced') ||
-                (name.includes('code') && name.includes('block'))
-            );
-            const mathNames = uniqueNames.filter(name => name.toLowerCase().includes('math'));
-            const hasMath = mathNames.length > 0;
+            const selector = '.pem-custom-label-reference-processed, [data-custom-label-ref]';
+            const outsideLine = lineContaining('Outside reference');
+            const inlineLine = lineContaining('Inline code');
+            const fencedLine = lineContaining('inside fenced');
 
             return {
-                names: uniqueNames,
-                hasInlineCode,
-                hasCodeBlock,
-                hasMath,
-                mathNames,
-                docLength
+                outsideReferenceCount: outsideLine?.querySelectorAll(selector).length ?? 0,
+                inlineCodeReferenceCount: inlineLine?.querySelectorAll(selector).length ?? 0,
+                fencedReferenceCount: fencedLine?.querySelectorAll(selector).length ?? 0,
+                inlineCodeText: inlineLine?.textContent ?? '',
+                fencedText: fencedLine?.textContent ?? ''
             };
-        }, modulePath);
+        });
 
-        if ('error' in treeInfo) {
-            throw new Error(`syntaxTree probe failed: ${treeInfo.error}`);
-        }
-
-        console.log('Syntax tree node names:', treeInfo.names);
-        console.log('Syntax tree math node names:', treeInfo.mathNames);
-
-        expect(treeInfo.hasInlineCode).toBe(true);
-        expect(treeInfo.hasCodeBlock).toBe(true);
+        expect(state.outsideReferenceCount).toBeGreaterThan(0);
+        expect(state.inlineCodeReferenceCount).toBe(0);
+        expect(state.fencedReferenceCount).toBe(0);
+        expect(state.inlineCodeText).toContain('{::LABEL}');
+        expect(state.fencedText).toContain('{::LABEL}');
 
         await deleteFileIfExists(filePath);
     });

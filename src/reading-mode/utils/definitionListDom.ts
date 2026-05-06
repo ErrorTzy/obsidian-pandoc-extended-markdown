@@ -4,13 +4,15 @@ import { CSS_CLASSES } from '../../core/constants';
 import { getSectionInfo } from '../../shared/types/obsidian-extended';
 import { ProcessorConfig } from '../../shared/types/processorConfig';
 
-import { ReadingModeParser } from '../parsers/parser';
 import { ReadingModeRenderer, RenderContext } from '../renderer';
 import {
-    DefinitionListBlock,
-    findDefinitionListBlocks,
-    isStandaloneDefinitionList
-} from './definitionListBlocks';
+    findPandocDefinitionListBlocks,
+    isStandalonePandocDefinitionList,
+    PandocDefinitionListBlock
+} from '../pandocDefinitionListParser';
+import {
+    renderPandocDefinitionListBlock
+} from '../pandocDefinitionListRenderer';
 
 export function normalizeExistingDefinitionLists(
     element: HTMLElement,
@@ -39,9 +41,7 @@ function normalizeDefinitionListsFromSource(
     }
 
     const sectionInfo = getSourceSectionInfo(element, context);
-    const parser = new ReadingModeParser();
-    const parsedLines = parser.parseLines(sourceText.split('\n'), true, true, config);
-    const blocks = findDefinitionListBlocks(parsedLines);
+    const blocks = findPandocDefinitionListBlocks(sourceText);
     if (blocks.length === 0) {
         return false;
     }
@@ -52,8 +52,12 @@ function normalizeDefinitionListsFromSource(
         strictLineBreaks: config.strictLineBreaks
     };
 
-    if (fullSourceText && isStandaloneDefinitionList(parsedLines, blocks)) {
-        const rendered = renderer.renderLines(parsedLines, effectiveRenderContext);
+    if (fullSourceText && isStandalonePandocDefinitionList(sourceText, blocks)) {
+        const rendered = blocks.map(block => renderPandocDefinitionListBlock(
+            block,
+            effectiveRenderContext,
+            (target, content, context) => renderer.appendContent(target, content, context)
+        ));
         replacement.replaceChildren(...rendered);
         return true;
     }
@@ -61,7 +65,11 @@ function normalizeDefinitionListsFromSource(
     if (fullSourceText || sectionInfo?.text) {
         const usedCandidates = new Set<HTMLElement>();
         blocks.forEach(block => {
-            const rendered = renderer.renderLines(block.lines, effectiveRenderContext);
+            const rendered = [renderPandocDefinitionListBlock(
+                block,
+                effectiveRenderContext,
+                (target, content, context) => renderer.appendContent(target, content, context)
+            )];
             replaceDefinitionListContent(replacement, rendered, block, usedCandidates);
         });
     }
@@ -133,7 +141,7 @@ function getDefinitionLists(element: HTMLElement): HTMLElement[] {
 function replaceDefinitionListContent(
     root: HTMLElement,
     replacementNodes: Node[],
-    block: DefinitionListBlock,
+    block: PandocDefinitionListBlock,
     usedCandidates: Set<HTMLElement>
 ): void {
     const candidates = getDefinitionListBlockCandidates(root, block, usedCandidates);
@@ -155,7 +163,7 @@ function replaceDefinitionListContent(
 
 function getDefinitionListBlockCandidates(
     root: HTMLElement,
-    block: DefinitionListBlock,
+    block: PandocDefinitionListBlock,
     usedCandidates: Set<HTMLElement>
 ): HTMLElement[] {
     const candidates = getDefinitionCandidateElements(root, block)
@@ -174,7 +182,7 @@ function getDefinitionListBlockCandidates(
     return group;
 }
 
-function getDefinitionCandidateElements(root: HTMLElement, block: DefinitionListBlock): HTMLElement[] {
+function getDefinitionCandidateElements(root: HTMLElement, block: PandocDefinitionListBlock): HTMLElement[] {
     const candidates = getDefinitionListCandidates(root, block);
     getDefinitionMarkerCandidates(root, block).forEach(candidate => {
         addUniqueCandidate(candidates, candidate);
@@ -182,7 +190,7 @@ function getDefinitionCandidateElements(root: HTMLElement, block: DefinitionList
     return sortCandidatesByDocumentOrder(candidates);
 }
 
-function getDefinitionListCandidates(root: HTMLElement, block: DefinitionListBlock): HTMLElement[] {
+function getDefinitionListCandidates(root: HTMLElement, block: PandocDefinitionListBlock): HTMLElement[] {
     const candidates: HTMLElement[] = [];
     getDefinitionLists(root).forEach(list => {
         if (matchesDefinitionBlockText(list, block)) {
@@ -192,7 +200,7 @@ function getDefinitionListCandidates(root: HTMLElement, block: DefinitionListBlo
     return candidates;
 }
 
-function getDefinitionMarkerCandidates(root: HTMLElement, block: DefinitionListBlock): HTMLElement[] {
+function getDefinitionMarkerCandidates(root: HTMLElement, block: PandocDefinitionListBlock): HTMLElement[] {
     const candidates: HTMLElement[] = [];
     root.querySelectorAll<HTMLElement>('.el-p, p, li').forEach(element => {
         if (element.querySelector(`dl.${CSS_CLASSES.DEFINITION_LIST}`)) {
@@ -238,7 +246,7 @@ function sortCandidatesByDocumentOrder(candidates: HTMLElement[]): HTMLElement[]
     });
 }
 
-function matchesDefinitionBlockText(element: HTMLElement, block: DefinitionListBlock): boolean {
+function matchesDefinitionBlockText(element: HTMLElement, block: PandocDefinitionListBlock): boolean {
     const text = normalizeCandidateText(element.textContent ?? '');
     return block.termTexts.some(term => text.includes(normalizeCandidateText(term))) ||
         block.definitionTexts.some(definition => text.includes(normalizeCandidateText(definition)));
