@@ -43,16 +43,18 @@ describe('Inline custom label reference breaks example reference', () => {
         
         // Verify setup
         expect(pluginStateManager.getLabeledExampleNumber(docPath, 'a')).toBe(1);
-        const setupText = setup.textContent || '';
-        expect(setupText).toContain('(1) Example list');
-        expect(setupText).toContain('(P1) Custom label list');
+        expect(setup.querySelector('ol.example li')?.textContent).toBe('Example list');
+        expect(setup.querySelector('ol.example li')?.getAttribute('data-example-number')).toBe('1');
+        const customLabelParagraph = setup.querySelector('p strong')?.closest('p');
+        expect(customLabelParagraph?.querySelector('strong')?.textContent).toBe('(P1)');
+        expect(customLabelParagraph?.textContent).toContain('Custom label list');
         
         // Test case: Lines with inline custom label references
         const testCases = [
             {
                 name: 'Fancy list with both refs',
                 html: '<p>A. crossref in fancy list (@a) and {::P(#a)}</p>',
-                expected: 'A. crossref in fancy list (1) and (P1)'
+                expected: 'crossref in fancy list (1) and (P1)'
             },
             {
                 name: 'Plain paragraph with both refs',

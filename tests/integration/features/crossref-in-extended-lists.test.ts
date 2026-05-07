@@ -65,8 +65,9 @@ describe('Cross-references in extended lists bug', () => {
         expect(text).toContain('(1)');
         expect(text).not.toContain('(@a)');
         
-        // The 'A.' marker should still be there
-        expect(element.innerHTML).toContain('pem-list-fancy');
+        const list = element.querySelector('ol[type="A"]');
+        expect(list).toBeTruthy();
+        expect(list?.querySelector('li')?.textContent).toContain('crossref in fancy list (1)');
     });
     
     it('should handle unlabeled example list (@) with reference (@a)', () => {
@@ -81,9 +82,9 @@ describe('Cross-references in extended lists bug', () => {
         expect(counterAfter).toBe(counterBefore + 1);
         expect(counterAfter).toBe(2);
         
-        // The list should show as (2) and reference should show as (1)
-        const text = element.textContent || '';
-        expect(text).toMatch(/^\(2\).*\(1\)/); // (2) at start, (1) later
+        const item = element.querySelector('ol.example li');
+        expect(item?.getAttribute('data-example-number')).toBe('2');
+        expect(item?.textContent).toContain('crossref in example list (1)');
     });
     
     it('should show correct reference in hash list', () => {
@@ -102,10 +103,8 @@ describe('Cross-references in extended lists bug', () => {
         const hashCounter = pluginStateManager.getDocumentCounters(docPath).hashCounter;
         expect(hashCounter).toBe(1);
         
-        // Should show hash number and reference (1)
-        const text = element.textContent || '';
-        expect(text).toMatch(/^1\./); // Hash list shows as "1."
-        expect(text).toContain('(1)'); // Reference to (@a)
+        const item = element.querySelector('ol li');
+        expect(item?.textContent).toContain('crossref in hash list (1)');
     });
     
     it('should handle custom label list with reference', () => {
@@ -143,9 +142,8 @@ describe('Cross-references in extended lists bug', () => {
         // Counter should NOT increment - (@something) in middle of text is not an example list
         expect(counterAfter).toBe(counterBefore);
         
-        const text = element.textContent || '';
-        // Should still have the fancy list marker
-        expect(text).toMatch(/^A\./);
+        const item = element.querySelector('ol[type="A"] li');
+        expect(item?.textContent).toBe('Some text with (@something) in the middle');
     });
     
     it('BUG: should maintain correct numbering for (@a) when {::P(#a)} is on the same line', () => {

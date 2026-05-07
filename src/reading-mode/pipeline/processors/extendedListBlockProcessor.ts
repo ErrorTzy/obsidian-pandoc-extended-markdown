@@ -8,6 +8,7 @@ import { renderPandocDefinitionSource } from '../../pandocDefinitionListRenderer
 import { ReadingModeParser, ExampleListData } from '../../parsers/parser';
 import { ReadingModeRenderer } from '../../renderer';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
+import { tryRenderSemanticListParagraph } from './semanticListBlockRenderer';
 
 export class ExtendedListBlockProcessor implements BlockDomProcessor {
     name = 'extended-list-blocks';
@@ -18,7 +19,7 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
     private readonly renderer = new ReadingModeRenderer();
 
     process(context: ReadingModeContext): void {
-        const elementsToProcess = context.element.querySelectorAll('p, li');
+        const elementsToProcess = getCandidateTextContainers(context.element);
 
         elementsToProcess.forEach(element => {
             if (shouldSkipElement(element, context.sourcePath)) {
@@ -34,6 +35,10 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
         if (context.config.enableDefinitionLists !== false &&
             elem.nodeName === 'P' &&
             this.processDefinitionListParagraph(elem, context)) {
+            return;
+        }
+
+        if (elem.nodeName === 'P' && this.processExtendedListParagraph(elem, context)) {
             return;
         }
 
@@ -143,6 +148,23 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
         }
         return true;
     }
+
+    private processExtendedListParagraph(
+        elem: Element,
+        context: ReadingModeContext
+    ): boolean {
+        const text = getTextWithLineBreaks(elem);
+        return tryRenderSemanticListParagraph(elem, context, this.parser, this.renderer, text);
+    }
+}
+
+function getCandidateTextContainers(element: HTMLElement): Element[] {
+    const descendants = Array.from(element.querySelectorAll('p, li'));
+    if (element.matches('p, li')) {
+        return [element, ...descendants];
+    }
+
+    return descendants;
 }
 
 function shouldSkipElement(element: Element, sourcePath: string): boolean {

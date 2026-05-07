@@ -4,19 +4,8 @@ import { ListPatterns } from '../../shared/patterns';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 import { CustomLabelInfo } from '../../shared/types/listTypes';
 import { createTextNodeWalker } from '../utils/domUtils';
+import { processCustomLabelDefinitionParagraph } from './customLabelDefinitionRenderer';
 
-/**
- * Parses a custom label list marker from a line of text and extracts label information.
- * Custom labels use the syntax {::LABEL} and can contain placeholders like {::P(#a)}.
- * 
- * @param line - The text line to parse for custom label markers
- * @param placeholderContext - Optional context for processing placeholder syntax in labels
- * @returns CustomLabelInfo object with parsed label data, or null if no valid marker found
- * @throws Does not throw exceptions - returns null for invalid input
- * @example
- * const info = parseCustomLabelMarker('  {::example} Some content');
- * // Returns: { indent: '  ', originalMarker: '{::example}', label: 'example' }
- */
 export function parseCustomLabelMarker(line: string, placeholderContext?: PlaceholderContext): CustomLabelInfo | null {
     const match = ListPatterns.isCustomLabelList(line);
     
@@ -64,20 +53,6 @@ export function isValidCustomLabel(label: string): boolean {
     return ListPatterns.VALID_CUSTOM_LABEL_SIMPLE.test(label);
 }
 
-/**
- * Process custom label lists in reading mode using a two-pass algorithm.
- * First pass scans all labels to build complete context, second pass processes
- * the elements with full reference resolution. Handles both single-line and multi-line blocks.
- * 
- * @param element - The HTML element containing custom label lists to process
- * @param context - Markdown post-processor context from Obsidian
- * @param placeholderContext - Optional context for processing placeholders and maintaining label state
- * @throws Does not throw exceptions - skips invalid elements gracefully
- * @example
- * // Processes elements like: {::theorem} This is a theorem
- * // And references like: See {::theorem} for details
- * processCustomLabelLists(paragraphElement, context, placeholderContext);
- */
 export function processCustomLabelLists(element: HTMLElement, context: MarkdownPostProcessorContext, placeholderContext?: PlaceholderContext) {
     // Skip if element has no text content with custom labels
     if (!element.textContent || !element.textContent.includes('{::')) {
@@ -87,7 +62,7 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
     // First pass: Scan all custom label list markers to build the context
     // This ensures the placeholder context knows about all labels before processing references
     if (placeholderContext) {
-        const allElements = element.querySelectorAll('p, li');
+        const allElements = getCandidateTextContainers(element);
         allElements.forEach(elem => {
             const text = elem.textContent || '';
             // Split into lines to check each line
@@ -105,13 +80,18 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
     }
     
     // Second pass: Process paragraphs and list items with the complete context
-    const paragraphs = element.querySelectorAll('p');
+    const paragraphs = getCandidateTextContainers(element)
+        .filter((candidate): candidate is HTMLParagraphElement => candidate.tagName === 'P');
     paragraphs.forEach(p => {
+        if (processCustomLabelDefinitionParagraph(p, placeholderContext, processReferencesInText)) {
+            return;
+        }
         processElement(p, placeholderContext);
     });
     
     // Process list items
-    const listItems = element.querySelectorAll('li');
+    const listItems = getCandidateTextContainers(element)
+        .filter((candidate): candidate is HTMLLIElement => candidate.tagName === 'LI');
     listItems.forEach(li => {
         processElement(li, placeholderContext);
         // Add class if it contains a custom label list marker
@@ -119,6 +99,15 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
             li.classList.add('pem-custom-label-item');
         }
     });
+}
+
+function getCandidateTextContainers(element: HTMLElement): Element[] {
+    const descendants = Array.from(element.querySelectorAll('p, li'));
+    if (element.matches('p, li')) {
+        return [element, ...descendants];
+    }
+
+    return descendants;
 }
 
 function processTextNode(node: Node, container: HTMLElement, placeholderContext?: PlaceholderContext): void {
@@ -194,23 +183,6 @@ function processReferencesInText(text: string, container: HTMLElement, placehold
     }
 }
 
-/**
- * Recursively processes a DOM element to transform custom label syntax into rendered HTML.
- * Transforms {::LABEL} markers into styled spans and {::reference} into clickable references.
- * Preserves line breaks and handles nested elements correctly.
- * 
- * @param elem - The DOM element to process for custom label transformations
- * @param placeholderContext - Optional context for resolving label placeholders and references
- * @throws Does not throw exceptions - skips processing for invalid elements
- * @example
- * // Transforms: {::eq1} E = mc^2
- * // Into: <span class="pem-list-marker">(1)</span> E = mc^2
- * processElement(paragraphElement, placeholderContext);
- */
-/**
- * Process an element for custom labels while preserving existing processed spans.
- * This is used when an element already contains processed example references.
- */
 function processElementPreservingSpans(elem: Element, placeholderContext?: PlaceholderContext): void {
     // Walk through text nodes only and process custom label references
     const walker = createTextNodeWalker(elem, (node) => {

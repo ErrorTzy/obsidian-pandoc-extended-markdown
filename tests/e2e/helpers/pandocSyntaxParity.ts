@@ -3,6 +3,8 @@ import { execFileSync } from 'child_process';
 
 export type ActualSyntaxKind =
     | 'fenced-div'
+    | 'ordered-list'
+    | 'custom-label-list'
     | 'super-sub';
 
 export type NormalizedNode = {
@@ -18,6 +20,7 @@ export interface SyntaxParityFixture {
     waitForSelector: string;
     expectedSelector: string;
     actualKind: ActualSyntaxKind;
+    expectedHtml?: string;
     pandocArgs?: string[];
 }
 
@@ -46,7 +49,7 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
     pandocHtml: string;
     previewHtml: string;
 }> {
-    const pandocHtml = renderPandocHtml(fixture.markdown, fixture.pandocArgs);
+    const pandocHtml = fixture.expectedHtml ?? renderPandocHtml(fixture.markdown, fixture.pandocArgs);
 
     return browser.execute((
         expectedHtml: string,
@@ -74,6 +77,15 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
                     return Array.from(root.querySelectorAll('.pem-fenced-div'))
                         .filter(div => !div.parentElement?.closest('.pem-fenced-div'))
                         .map(div => normalizeFencedDiv(div as HTMLElement));
+                case 'ordered-list':
+                    return Array.from(root.querySelectorAll('ol, p'))
+                        .filter(element => !element.parentElement?.closest('ol, ul'))
+                        .filter(element => element.tagName !== 'P' || !element.querySelector('ol, dl'))
+                        .map(element => normalizeElement(element));
+                case 'custom-label-list':
+                    return Array.from(root.querySelectorAll('p'))
+                        .filter(element => hasCustomLabelParagraphContent(element))
+                        .map(element => normalizeElement(element));
                 case 'super-sub':
                     return [normalizeParagraphWithText(root, 'Water is')];
             }
@@ -104,6 +116,11 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
             const paragraph = Array.from(root.querySelectorAll('p'))
                 .find(candidate => candidate.textContent?.includes(text));
             return paragraph ? normalizeElement(paragraph) : { tag: 'p' };
+        }
+
+        function hasCustomLabelParagraphContent(element: Element): boolean {
+            const text = normalizeText(element.textContent ?? '');
+            return text.includes('(P1) custom labeled item') || text === 'See (P1).';
         }
 
         function normalizeElement(element: Element): BrowserNormalizedNode {
@@ -175,6 +192,7 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
             if (tag === 'ol') {
                 if (element.classList.contains('example')) attrs.class = 'example';
                 if (element.getAttribute('type')) attrs.type = element.getAttribute('type') ?? '';
+                if (element.getAttribute('start')) attrs.start = element.getAttribute('start') ?? '';
             }
             if (tag === 'input') {
                 const input = element as HTMLInputElement;
@@ -211,14 +229,23 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
 }
 
 export async function waitForSyntax(selector: string): Promise<void> {
-    await browser.waitUntil(async () => {
-        return browser.execute((targetSelector: string) =>
-            Boolean(document.querySelector(`.markdown-preview-view ${targetSelector}`)),
-        selector);
-    }, {
-        timeout: 5000,
-        timeoutMsg: `Expected reading mode syntax selector: ${selector}`
-    });
+    try {
+        await browser.waitUntil(async () => {
+            return browser.execute((targetSelector: string) =>
+                Boolean(document.querySelector(`.markdown-preview-view ${targetSelector}`)),
+            selector);
+        }, {
+            timeout: 5000,
+            timeoutMsg: `Expected reading mode syntax selector: ${selector}`
+        });
+    } catch (error) {
+        const previewHtml = await browser.execute(() =>
+            document.querySelector('.markdown-preview-view')?.innerHTML ?? ''
+        );
+        throw new Error(`Expected reading mode syntax selector: ${selector}\nPreview HTML: ${previewHtml}`, {
+            cause: error
+        });
+    }
 }
 
 export async function createOrReplaceFile(path: string, content: string): Promise<void> {

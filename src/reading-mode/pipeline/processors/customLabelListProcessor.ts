@@ -5,7 +5,7 @@ import { BlockDomProcessor, ReadingModeContext } from '../types';
 export class CustomLabelListProcessor implements BlockDomProcessor {
     name = 'custom-label-lists';
     phase = 'block' as const;
-    priority = 400;
+    priority = 130;
 
     isEnabled(context: ReadingModeContext): boolean {
         return Boolean(context.config.enableCustomLabelLists);

@@ -1,7 +1,6 @@
 import { browser, expect } from '@wdio/globals';
 
 import {
-    PANDOC_MARKDOWN_FORMAT,
     SyntaxParityFixture,
     createOrReplaceFile,
     deleteFileIfExists,
@@ -11,15 +10,6 @@ import {
     renderPandocHtml,
     waitForSyntax
 } from '../helpers/pandocSyntaxParity';
-
-const CUSTOM_LABEL_PANDOC_ARGS = [
-    '-f',
-    PANDOC_MARKDOWN_FORMAT,
-    '-t',
-    'html',
-    '--lua-filter',
-    'lua_filter/CustomLabelList.lua'
-];
 
 describe('Pandoc extended syntax reading-mode parity', () => {
     before(async () => {
@@ -52,6 +42,49 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                 waitForSelector: 'sub.pem-subscript',
                 expectedSelector: 'p',
                 actualKind: 'super-sub'
+            },
+            {
+                name: 'upper-alpha-fancy-list',
+                markdown: [
+                    'A.  aaa',
+                    'B.  aaa'
+                ].join('\n'),
+                waitForSelector: 'ol[type="A"] > li',
+                expectedSelector: 'ol',
+                actualKind: 'ordered-list'
+            },
+            {
+                name: 'hash-list',
+                markdown: [
+                    '#. auto numbered item',
+                    '#. second'
+                ].join('\n'),
+                waitForSelector: 'ol > li',
+                expectedSelector: 'ol',
+                actualKind: 'ordered-list'
+            },
+            {
+                name: 'example-cross-reference',
+                markdown: [
+                    '(@ex) labeled example',
+                    '',
+                    'See (@ex).'
+                ].join('\n'),
+                waitForSelector: 'ol.example > li',
+                expectedSelector: 'ol.example, p',
+                actualKind: 'ordered-list'
+            },
+            {
+                name: 'custom-label-cross-reference',
+                markdown: [
+                    '{::P(#a)} custom labeled item',
+                    '',
+                    'See {::P(#a)}.'
+                ].join('\n'),
+                waitForSelector: 'p strong .pem-list-marker',
+                expectedSelector: 'p',
+                actualKind: 'custom-label-list',
+                expectedHtml: '<p><strong>(P1)</strong>\tcustom labeled item</p><p>See (P1).</p>'
             }
         ];
 
@@ -104,59 +137,6 @@ describe('Pandoc extended syntax reading-mode parity', () => {
         await deleteFileIfExists('pandoc-invalid-fenced-shortcut.md');
     });
 
-    it('documents syntaxes that render as marker spans instead of Pandoc DOM', async () => {
-        const fixtures = [
-            {
-                name: 'hash-list',
-                markdown: '#. auto numbered item',
-                waitForSelector: '.pem-list-fancy-hash',
-                markerSelector: '.pem-list-fancy-hash',
-                pandocSelector: 'ol'
-            },
-            {
-                name: 'example-cross-reference',
-                markdown: [
-                    '(@ex) labeled example',
-                    '',
-                    'See (@ex).'
-                ].join('\n'),
-                waitForSelector: '.pem-example-reference',
-                markerSelector: '.pem-example-list',
-                pandocSelector: 'ol.example'
-            },
-            {
-                name: 'custom-label-cross-reference',
-                markdown: [
-                    '{::P(#a)} custom labeled item',
-                    '',
-                    'See {::P(#a)}.'
-                ].join('\n'),
-                waitForSelector: '.pem-custom-label-reference-processed',
-                markerSelector: '.pem-list-marker',
-                pandocSelector: 'dl',
-                pandocArgs: CUSTOM_LABEL_PANDOC_ARGS
-            }
-        ];
-
-        for (const fixture of fixtures) {
-            const path = `pandoc-marker-renderer-audit-${fixture.name}.md`;
-            await createOrReplaceFile(path, fixture.markdown);
-            await openFileInActiveLeaf(path);
-            await ensureReadingMode();
-            await waitForSyntax(fixture.waitForSelector);
-
-            const audit = await getMarkerRendererAudit(fixture.markerSelector);
-            const pandocHasStructure = pandocHtmlHasSelector(
-                renderPandocHtml(fixture.markdown, fixture.pandocArgs),
-                fixture.pandocSelector
-            );
-
-            expect(pandocHasStructure).toBe(true);
-            expect(audit.markerCount).toBeGreaterThan(0);
-            expect(audit.nativeOrderedLists + audit.nativeDefinitionLists).toBe(0);
-            await deleteFileIfExists(path);
-        }
-    });
 });
 
 async function enableAllSyntaxes(): Promise<void> {
@@ -204,22 +184,6 @@ async function getFencedDivState(): Promise<{
     });
 }
 
-async function getMarkerRendererAudit(markerSelector: string): Promise<{
-    markerCount: number;
-    nativeOrderedLists: number;
-    nativeDefinitionLists: number;
-}> {
-    return browser.execute((selector: string) => {
-        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
-
-        return {
-            markerCount: preview?.querySelectorAll(selector).length ?? 0,
-            nativeOrderedLists: preview?.querySelectorAll('ol').length ?? 0,
-            nativeDefinitionLists: preview?.querySelectorAll('dl:not(.pem-definition-list)').length ?? 0
-        };
-    }, markerSelector);
-}
-
 async function waitForPreviewText(text: string): Promise<void> {
     await browser.waitUntil(async () => {
         return browser.execute((expectedText: string) =>
@@ -229,18 +193,4 @@ async function waitForPreviewText(text: string): Promise<void> {
         timeout: 5000,
         timeoutMsg: `Expected reading mode text: ${text}`
     });
-}
-
-function pandocHtmlHasSelector(html: string, selector: string): boolean {
-    if (selector === 'ol') {
-        return /<ol(?:\s|>)/.test(html);
-    }
-    if (selector === 'ol.example') {
-        return /<ol[^>]*class="example"/.test(html);
-    }
-    if (selector === 'dl') {
-        return /<dl(?:\s|>)/.test(html);
-    }
-
-    return false;
 }

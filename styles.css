@@ -107,20 +107,28 @@
 }
 
 /* Definition Lists Styles */
-.pem-definition-list {
+.markdown-preview-view .pem-definition-list {
     margin: 1em 0;
 }
 
-.pem-definition-term {
+.markdown-preview-view .pem-definition-term {
     font-weight: bold;
     text-decoration: underline;
     margin-top: 0.5em;
     margin-bottom: 0.25em;
 }
 
-.pem-list-definition-desc {
+.markdown-preview-view .pem-list-definition-desc {
     margin-left: 2em;
     margin-bottom: 0.25em;
+    position: relative;
+}
+
+.markdown-preview-view .pem-list-definition-desc::before {
+    color: var(--list-marker-color, var(--text-muted));
+    content: "•";
+    left: -1em;
+    position: absolute;
 }
 
 .pem-definition-items {
@@ -464,19 +472,35 @@
 }
 
 /* Example Lists Styles */
-.pem-example-list {
-    counter-reset: none;
+.markdown-preview-view ol.pem-example-list {
+    list-style-position: outside;
+    list-style-type: decimal;
+    padding-inline-start: var(--list-indent, 2em);
 }
 
-li.pem-example-item {
-    list-style: none;
-    position: relative;
+.markdown-preview-view ol.pem-example-list > li.pem-example-item {
+    display: list-item;
+    margin: var(--list-spacing, 0.075em) 0;
 }
 
-li.pem-example-item::before {
+.markdown-preview-view ol.pem-example-list > li.pem-example-item::marker {
+    color: var(--list-marker-color, var(--text-muted));
     content: "(" attr(data-example-number) ") ";
-    position: absolute;
-    left: -3em;
+}
+
+.markdown-preview-view p.pem-custom-label-item {
+    margin: var(--p-spacing, 1rem) 0;
+}
+
+.markdown-preview-view p.pem-custom-label-item > strong:first-child {
+    color: var(--text-normal);
+    display: inline-block;
+    margin-inline-end: 0.35em;
+    min-width: 2.5em;
+}
+
+.markdown-preview-view p.pem-custom-label-item .pem-list-marker {
+    color: var(--text-normal);
 }
 
 .pem-example-reference {

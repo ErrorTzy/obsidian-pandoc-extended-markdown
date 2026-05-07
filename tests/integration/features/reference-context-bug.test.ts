@@ -49,22 +49,22 @@ describe('Reference context preservation', () => {
             {
                 name: 'Fancy list A.',
                 html: '<p>A. Reference in fancy list (@a)</p>',
-                expected: 'A. Reference in fancy list (1)'
+                expected: 'Reference in fancy list (1)'
             },
             {
                 name: 'Hash list',
                 html: '<p>#. Reference in hash list (@a)</p>',
-                expected: '1. Reference in hash list (1)'
+                expected: 'Reference in hash list (1)'
             },
             {
                 name: 'Another example list',
                 html: '<p>(@b) Another example with ref (@a)</p>',
-                expected: '(2) Another example with ref (1)'
+                expected: 'Another example with ref (1)'
             },
             {
                 name: 'Custom label list',
                 html: '<p>{::TEST} Custom label with ref (@a)</p>',
-                expected: '(TEST) Custom label with ref (1)'
+                expected: '(TEST)\tCustom label with ref (1)'
             }
         ];
         

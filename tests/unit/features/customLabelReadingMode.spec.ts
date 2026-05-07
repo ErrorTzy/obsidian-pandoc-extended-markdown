@@ -30,7 +30,8 @@ describe('Custom Label Reading Mode', () => {
       expect(span?.textContent).toBe('(P)');
       
       const paragraph = element.querySelector('p');
-      expect(paragraph?.textContent).toBe('(P) All humans are mortal.');
+      expect(paragraph?.querySelector('strong')?.textContent).toBe('(P)');
+      expect(paragraph?.textContent).toContain('All humans are mortal.');
     });
 
     it('should process custom label with prime', () => {
@@ -227,7 +228,8 @@ describe('Custom Label Reading Mode', () => {
       processCustomLabelLists(element, context);
       
       const paragraph = element.querySelector('p');
-      expect(paragraph?.textContent).toBe('    (P) Indented text.');
+      expect(paragraph?.querySelector('strong')?.textContent).toBe('(P)');
+      expect(paragraph?.textContent).toContain('Indented text.');
     });
   });
 });

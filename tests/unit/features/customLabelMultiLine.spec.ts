@@ -93,12 +93,9 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    // Count br tags - should still be 1
-    const brTags = element.querySelectorAll('br');
-    expect(brTags).toHaveLength(1);
-    
     const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(2);
+    expect(element.querySelectorAll('p strong')).toHaveLength(2);
   });
 
   it('should preserve line break structure', () => {
@@ -108,12 +105,8 @@ describe('Custom Label Multi-Line Reading Mode', () => {
     
     processCustomLabelLists(element, context);
     
-    // Should have same number of br tags as original
-    const brTags = element.querySelectorAll('br');
-    expect(brTags).toHaveLength(2);
-    
-    // Should have processed the markers
     const markers = element.querySelectorAll('span.pem-list-marker');
     expect(markers).toHaveLength(3);
+    expect(element.querySelectorAll('p strong')).toHaveLength(3);
   });
 });
