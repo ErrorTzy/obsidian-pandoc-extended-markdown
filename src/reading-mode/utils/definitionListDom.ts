@@ -157,8 +157,31 @@ function replaceDefinitionListContent(
 
     const [firstCandidate, ...extraCandidates] = candidates;
     candidates.forEach(candidate => usedCandidates.add(candidate));
-    firstCandidate.replaceWith(...replacementNodes);
+    replaceDefinitionListCandidate(firstCandidate, replacementNodes);
     extraCandidates.forEach(candidate => candidate.remove());
+}
+
+function replaceDefinitionListCandidate(candidate: HTMLElement, replacementNodes: Node[]): void {
+    if (candidate.classList.contains('el-p')) {
+        candidate.replaceChildren(...replacementNodes);
+        return;
+    }
+
+    firstLayoutWrapper(candidate)?.replaceChildren(...replacementNodes);
+    if (!candidate.isConnected) {
+        return;
+    }
+
+    candidate.replaceWith(...replacementNodes);
+}
+
+function firstLayoutWrapper(candidate: HTMLElement): HTMLElement | null {
+    const parent = candidate.parentElement;
+    if (!parent?.classList.contains('el-p')) {
+        return null;
+    }
+
+    return parent;
 }
 
 function getDefinitionListBlockCandidates(

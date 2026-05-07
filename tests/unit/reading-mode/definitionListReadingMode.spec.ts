@@ -151,6 +151,38 @@ describe('definition list reading mode rendering', () => {
             .toEqual(['details1', 'details2', 'details3']);
     });
 
+    it('preserves Obsidian block wrappers when rebuilding a definition list', () => {
+        jest.useFakeTimers();
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = `
+            <div class="el-p">
+                <p>
+                    <dl class="pem-definition-list">
+                        <dt class="pem-definition-term">Description Termdetails1</dt>
+                        <dd class="pem-list-definition-desc">details2</dd>
+                    </dl>
+                </p>
+            </div>
+        `;
+
+        processReadingMode(
+            section,
+            createContext('Description Term\n: details1\n: details2'),
+            config
+        );
+        jest.runOnlyPendingTimers();
+
+        const wrapper = section.querySelector('.el-p') as HTMLElement;
+        const list = wrapper.querySelector(':scope > dl.pem-definition-list') as HTMLElement;
+
+        expect(wrapper).not.toBeNull();
+        expect(list).not.toBeNull();
+        expect(Array.from(section.children).map(child => child.className)).toEqual(['el-p']);
+        expect(directChildren(list, 'DD').map(def => def.textContent))
+            .toEqual(['details1', 'details2']);
+    });
+
     it('rebuilds consecutive malformed definition lists as one dl from source lines', () => {
         jest.useFakeTimers();
         const section = document.createElement('div');
