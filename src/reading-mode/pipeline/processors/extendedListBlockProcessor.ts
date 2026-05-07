@@ -3,7 +3,10 @@ import { isStrictPandocFormatting } from '../../../editor-extensions/pandocValid
 import { ListPatterns } from '../../../shared/patterns';
 import { ProcessorConfig } from '../../../shared/types/processorConfig';
 import { ValidationContext } from '../../../shared/types/listTypes';
-import { findPandocDefinitionListBlocks } from '../../pandocDefinitionListParser';
+import {
+    findPandocDefinitionListBlocks,
+    isStandalonePandocDefinitionList
+} from '../../pandocDefinitionListParser';
 import { renderPandocDefinitionSource } from '../../pandocDefinitionListRenderer';
 import { ReadingModeParser, ExampleListData } from '../../parsers/parser';
 import { ReadingModeRenderer } from '../../renderer';
@@ -130,17 +133,28 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
         context: ReadingModeContext
     ): boolean {
         const text = getTextWithLineBreaks(elem);
-        if (!text.includes('\n') || findPandocDefinitionListBlocks(text).length === 0) {
+        const sourceText = getStandaloneDefinitionListSource(text, context);
+
+        if (!sourceText.includes('\n') || findPandocDefinitionListBlocks(sourceText).length === 0) {
             return false;
         }
 
         const rendered = renderPandocDefinitionSource(
-            text,
+            sourceText,
             context.renderContext,
             (target, content, renderContext) => {
                 this.renderer.appendContent(target, content, renderContext);
             }
         );
+
+        if (sourceText !== text) {
+            const blockContainer = elem.closest('.el-p');
+            if (blockContainer) {
+                blockContainer.replaceChildren(...rendered);
+                return true;
+            }
+        }
+
         if (elem.parentNode) {
             elem.replaceWith(...rendered);
         } else {
@@ -165,6 +179,35 @@ function getCandidateTextContainers(element: HTMLElement): Element[] {
     }
 
     return descendants;
+}
+
+function getStandaloneDefinitionListSource(text: string, context: ReadingModeContext): string {
+    const sectionText = context.sectionInfo?.text;
+    if (!sectionText || sectionText === text) {
+        return text;
+    }
+
+    const blocks = findPandocDefinitionListBlocks(sectionText);
+    if (!isStandalonePandocDefinitionList(sectionText, blocks)) {
+        return text;
+    }
+
+    return matchesDefinitionListSection(text, blocks) ? sectionText : text;
+}
+
+function matchesDefinitionListSection(
+    text: string,
+    blocks: ReturnType<typeof findPandocDefinitionListBlocks>
+): boolean {
+    const normalizedText = normalizeCandidateText(text);
+    return blocks.some(block =>
+        block.termTexts.some(term => normalizedText.includes(normalizeCandidateText(term))) ||
+        block.definitionTexts.some(definition => normalizedText.includes(normalizeCandidateText(definition)))
+    );
+}
+
+function normalizeCandidateText(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
 }
 
 function shouldSkipElement(element: Element, sourcePath: string): boolean {

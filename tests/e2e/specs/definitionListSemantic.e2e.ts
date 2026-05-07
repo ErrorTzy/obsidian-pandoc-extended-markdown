@@ -77,6 +77,31 @@ describe('Definition list semantic HTML in reading mode', () => {
         await deleteFileIfExists(path);
     });
 
+    it('keeps multiple definition lines rendered after switching through live preview', async () => {
+        const path = 'definition-list-mode-switch-multiple-dd-e2e.md';
+        const markdown = `Description Term
+: details1
+: details2
+: details3`;
+        const expectedChildren = [
+            { tag: 'DT', text: 'Description Term' },
+            { tag: 'DD', text: 'details1' },
+            { tag: 'DD', text: 'details2' },
+            { tag: 'DD', text: 'details3' }
+        ];
+
+        await createOrReplaceFile(path, markdown);
+        await openFileInActiveLeaf(path);
+        await ensureReadingMode();
+        await waitForDefinitionDirectChildren(1, expectedChildren);
+
+        await ensureLivePreviewMode();
+        await ensureReadingMode();
+        await waitForDefinitionDirectChildren(1, expectedChildren);
+
+        await deleteFileIfExists(path);
+    });
+
     it('renders a definition-list block before regular trailing text', async () => {
         const path = 'definition-list-with-trailing-text-e2e.md';
         const markdown = `Description Term
@@ -445,6 +470,26 @@ async function ensureReadingMode(): Promise<void> {
             Boolean(document.querySelector('.markdown-preview-view'))
         );
         return hasPreview;
+    }, { timeout: 5000 });
+    await browser.pause(500);
+}
+
+async function ensureLivePreviewMode(): Promise<void> {
+    await browser.execute(async () => {
+        // @ts-ignore
+        const leaf = app.workspace.getLeaf();
+        // @ts-ignore
+        const state = leaf.getViewState();
+        state.state.mode = 'source';
+        state.state.source = false;
+        // @ts-ignore
+        await leaf.setViewState(state);
+    });
+    await browser.waitUntil(async () => {
+        const hasLivePreview = await browser.execute(() =>
+            Boolean(document.querySelector('.markdown-source-view.mod-cm6 .cm-content'))
+        );
+        return hasLivePreview;
     }, { timeout: 5000 });
     await browser.pause(500);
 }
