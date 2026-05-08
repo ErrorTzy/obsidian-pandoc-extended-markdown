@@ -36,13 +36,16 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                 waitForSelector: '.pem-fenced-div .pem-fenced-div-note',
                 expectedSelector: 'div.outer',
                 actualKind: 'fenced-div',
-                pandocArgs: [
-                    '-f',
-                    PANDOC_MARKDOWN_FORMAT,
-                    '-t',
-                    'html',
-                    '--lua-filter=lua_filter/FencedDivExtendedSyntax.lua'
-                ]
+                expectedHtml: [
+                    '<div id="outer" class="outer">',
+                    '<div class="pem-fenced-div-title">Outer</div>',
+                    '<p>Outer</p>',
+                    '<div id="inner" class="note">',
+                    '<div class="pem-fenced-div-title">Note</div>',
+                    '<p>Inner</p>',
+                    '</div>',
+                    '</div>'
+                ].join('')
             },
             {
                 name: 'superscript-and-subscript',
@@ -97,11 +100,11 @@ describe('Pandoc extended syntax reading-mode parity', () => {
             {
                 name: 'fenced-div-cross-reference',
                 markdown: [
-                    '::: {.proposition #prop:a}',
+                    '::: {.proposition #prop:a title="Proposition &"}',
                     'A proposition.',
                     ':::',
                     '',
-                    '::: {.logic-block #prem:a title="Premise"}',
+                    '::: {.logic-block #prem:a title="Premise &"}',
                     'A premise.',
                     ':::',
                     '',
@@ -110,13 +113,17 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                 waitForSelector: '.pem-fenced-div-reference',
                 expectedSelector: 'div.proposition, div.logic-block, p',
                 actualKind: 'fenced-div-cross-reference',
-                pandocArgs: [
-                    '-f',
-                    PANDOC_MARKDOWN_FORMAT,
-                    '-t',
-                    'html',
-                    '--lua-filter=lua_filter/FencedDivExtendedSyntax.lua'
-                ]
+                expectedHtml: [
+                    '<div id="prop:a" class="proposition">',
+                    '<div class="pem-fenced-div-title">Proposition 1</div>',
+                    '<p>A proposition.</p>',
+                    '</div>',
+                    '<div id="prem:a" class="logic-block">',
+                    '<div class="pem-fenced-div-title">Premise 1</div>',
+                    '<p>A premise.</p>',
+                    '</div>',
+                    '<p>See Proposition 1 and Premise 1.</p>'
+                ].join('')
             }
         ];
 
@@ -141,7 +148,7 @@ describe('Pandoc extended syntax reading-mode parity', () => {
             ':::'
         ].join('\n');
         const invalidMixedSyntax = [
-            '::: Warning {.danger}',
+            '::: {.warning, #bad}',
             'invalid body',
             ':::'
         ].join('\n');
@@ -160,12 +167,12 @@ describe('Pandoc extended syntax reading-mode parity', () => {
         await createOrReplaceFile('pandoc-invalid-fenced-shortcut.md', invalidMixedSyntax);
         await openFileInActiveLeaf('pandoc-invalid-fenced-shortcut.md');
         await ensureReadingMode();
-        await waitForPreviewText('::: Warning {.danger}');
+        await waitForPreviewText('::: {.warning, #bad}');
 
         const invalidState = await getFencedDivState();
         expect(invalidState.blockCount).toBe(0);
-        expect(invalidState.previewText).toContain('::: Warning {.danger}');
-        expect(renderPandocHtml(invalidMixedSyntax)).toContain('<p>::: Warning {.danger} invalid body :::</p>');
+        expect(invalidState.previewText).toContain('::: {.warning, #bad}');
+        expect(renderPandocHtml(invalidMixedSyntax)).toContain('<p>::: {.warning, #bad} invalid body :::</p>');
         await deleteFileIfExists('pandoc-invalid-fenced-shortcut.md');
     });
 

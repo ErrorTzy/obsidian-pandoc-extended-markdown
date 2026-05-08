@@ -73,15 +73,15 @@ describe('Fenced Div Reference Suggestions', () => {
     describe('getSuggestions', () => {
         it('returns indexed fenced div labels with reference text and previews', () => {
             mockEditor.getValue = jest.fn().mockReturnValue([
-                '::: {.theorem #thm:pythagoras}',
+                '::: {.theorem #thm:pythagoras title="Theorem &"}',
                 'For a right triangle, a^2 + b^2 = c^2.',
                 ':::',
                 '',
-                '::: Warning #warn',
+                '::: Warning #warn title="Warning &"',
                 'Readable shorthand opener.',
                 ':::',
                 '',
-                '::: {.lemma #lem:compact}',
+                '::: {.lemma #lem:compact title="Lemma &"}',
                 'Every compact metric space is complete.',
                 ':::'
             ].join('\n'));

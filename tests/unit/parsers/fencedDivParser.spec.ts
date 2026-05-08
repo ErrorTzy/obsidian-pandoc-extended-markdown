@@ -74,6 +74,20 @@ describe('fenced div parser', () => {
 
             expect(parsed?.classes).toEqual(['Theorem', 'thm', 'compact']);
             expect(parsed?.id).toBeUndefined();
+            expect(parsed?.keyValues.get('title')).toBe('Theorem');
+        });
+
+        it('synthesizes title templates from readable numbering classes', () => {
+            const nested = parseFencedDivOpening('::: Case &.& #case:nested');
+            const front = parseFencedDivOpening('::: & Note #note:front');
+            const classEmbedded = parseFencedDivOpening('::: Case_&.& #case:embedded');
+
+            expect(nested?.classes).toEqual(['Case', '&.&']);
+            expect(nested?.keyValues.get('title')).toBe('Case &.&');
+            expect(front?.classes).toEqual(['&', 'Note']);
+            expect(front?.keyValues.get('title')).toBe('& Note');
+            expect(classEmbedded?.classes).toEqual(['Case_&.&']);
+            expect(classEmbedded?.keyValues.get('title')).toBe('Case &.&');
         });
 
         it('parses quoted values and trailing visual colons', () => {

@@ -27,6 +27,8 @@ export interface FencedDivPanelItem {
     typeLabel: string;
     typeKey: string;
     number: number;
+    numberParts: number[];
+    numberingEnabled: boolean;
     referenceText: string;
     blockTitleText: string;
     lineNumber: number;
@@ -93,16 +95,7 @@ export function extractFencedDivsFromDoc(
 
         if (opening) {
             const title = getFencedDivTitle(opening);
-            const metadata = opening.id || title || opening.classes.length > 0
-                ? createFencedDivReferenceMetadata(title, opening.classes, typeCounters)
-                : {
-                    title,
-                    typeLabel: title || '',
-                    typeKey: '',
-                    number: 0,
-                    referenceText: '',
-                    blockTitleText: ''
-                };
+            const metadata = createFencedDivReferenceMetadata(title, opening.classes, typeCounters);
             const activeDiv: ActiveFencedDiv = {
                 title: metadata.title,
                 label: opening.id || '',
@@ -111,6 +104,8 @@ export function extractFencedDivsFromDoc(
                 typeLabel: metadata.typeLabel,
                 typeKey: metadata.typeKey,
                 number: metadata.number,
+                numberParts: metadata.numberParts,
+                numberingEnabled: metadata.numberingEnabled,
                 referenceText: metadata.referenceText,
                 blockTitleText: metadata.blockTitleText,
                 lineNumber: lineNum - 1,

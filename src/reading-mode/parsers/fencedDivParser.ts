@@ -24,6 +24,7 @@ import {
 const MAX_DEPTH_CLASS = 6;
 const pendingSectionProcessing = new WeakMap<HTMLElement, number>();
 const chunkStacks = new Map<string, ActiveFencedDiv[]>();
+const documentTypeCounters = new Map<string, FencedDivTypeCounters>();
 
 interface ActiveFencedDiv {
     contentElement: HTMLElement;
@@ -86,11 +87,11 @@ export function processFencedDivs(
         ? getChunkStack(docPath)
         : [];
     const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
-    const hasRenderedFencedDivs = Boolean(element.querySelector('.pem-fenced-div'));
-    if ((!preserveStack || stack.length === 0) && !hasRenderedFencedDivs) {
+    if (shouldResetDocumentCounters(element, preserveStack, stack)) {
         labels.clear();
+        documentTypeCounters.set(docPath, new Map());
     }
-    const typeCounters: FencedDivTypeCounters = new Map();
+    const typeCounters = getDocumentTypeCounters(docPath);
     const candidates = Array.from(element.querySelectorAll('p, li'));
 
     for (const candidate of candidates) {
@@ -168,6 +169,36 @@ function getChunkStack(docPath: string): ActiveFencedDiv[] {
     }
 
     return stack;
+}
+
+function getDocumentTypeCounters(docPath: string): FencedDivTypeCounters {
+    let counters = documentTypeCounters.get(docPath);
+    if (!counters) {
+        counters = new Map();
+        documentTypeCounters.set(docPath, counters);
+    }
+
+    return counters;
+}
+
+function shouldResetDocumentCounters(
+    element: HTMLElement,
+    preserveStack: boolean,
+    stack: ActiveFencedDiv[]
+): boolean {
+    if (preserveStack || stack.length > 0) {
+        return false;
+    }
+
+    const section = element.classList.contains('markdown-preview-section')
+        ? element
+        : element.closest<HTMLElement>('.markdown-preview-section');
+    if (!section) {
+        return true;
+    }
+
+    const previousSection = section.previousElementSibling;
+    return !previousSection?.classList.contains('markdown-preview-section');
 }
 
 function processMultilineCandidate(
@@ -415,18 +446,7 @@ function createOpeningMetadata(
     typeCounters: FencedDivTypeCounters
 ): FencedDivReferenceMetadata {
     const title = getFencedDivTitle(opening);
-    if (opening.id || title || opening.classes.length > 0) {
-        return createFencedDivReferenceMetadata(title, opening.classes, typeCounters);
-    }
-
-    return {
-        title,
-        typeLabel: '',
-        typeKey: '',
-        number: 0,
-        referenceText: '',
-        blockTitleText: ''
-    };
+    return createFencedDivReferenceMetadata(title, opening.classes, typeCounters);
 }
 
 function createFencedDivReferenceFromMetadata(
@@ -437,10 +457,13 @@ function createFencedDivReferenceFromMetadata(
     return {
         label,
         title: metadata.title,
+        titleTemplate: metadata.titleTemplate,
         displayName: metadata.referenceText,
         typeLabel: metadata.typeLabel,
         typeKey: metadata.typeKey,
         number: metadata.number,
+        numberParts: metadata.numberParts,
+        numberingEnabled: metadata.numberingEnabled,
         referenceText: metadata.referenceText,
         blockTitleText: metadata.blockTitleText,
         lineNumber: 0,

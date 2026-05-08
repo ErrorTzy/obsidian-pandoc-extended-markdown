@@ -53,12 +53,12 @@ describe('FencedDivProcessor', () => {
                 ['thm:label', {
                     label: 'thm:label',
                     title: '',
-                    displayName: 'Theorem 1',
+                    displayName: 'Theorem',
                     typeLabel: 'Theorem',
                     typeKey: 'theorem',
-                    number: 1,
-                    referenceText: 'Theorem 1',
-                    blockTitleText: 'Theorem 1',
+                    number: 0,
+                    referenceText: 'Theorem',
+                    blockTitleText: 'Theorem',
                     lineNumber: 1,
                     classes: ['theorem'],
                     content: 'content'
@@ -66,12 +66,12 @@ describe('FencedDivProcessor', () => {
                 ['thm', {
                     label: 'thm',
                     title: '',
-                    displayName: 'Theorem 1',
+                    displayName: 'Theorem',
                     typeLabel: 'Theorem',
                     typeKey: 'theorem',
-                    number: 1,
-                    referenceText: 'Theorem 1',
-                    blockTitleText: 'Theorem 1',
+                    number: 0,
+                    referenceText: 'Theorem',
+                    blockTitleText: 'Theorem',
                     lineNumber: 1,
                     classes: ['Theorem'],
                     content: 'content'
@@ -145,7 +145,7 @@ describe('FencedDivProcessor', () => {
             expect(result.decorations[1].decoration.spec?.widget?.constructor.name).toBe('FencedDivHeaderWidget');
             expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
             expect(headerDom?.querySelector('.pem-fenced-div-source-handle')).toBeNull();
-            expect(headerDom?.textContent).toBe('Theorem 1');
+            expect(headerDom?.textContent).toBe('Theorem');
             expect(context.fencedDivStack).toHaveLength(1);
             expect(context.fencedDivStack?.[0].label).toBe('thm:label');
         });
@@ -156,7 +156,7 @@ describe('FencedDivProcessor', () => {
             const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
 
             expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
-            expect(headerDom?.textContent).toBe('Label 1');
+            expect(headerDom?.textContent).toBe('Label');
         });
 
         it('renders readable shorthand with a reference label', () => {
@@ -166,8 +166,18 @@ describe('FencedDivProcessor', () => {
 
             expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
             expect(headerDom?.dataset.pandocDivId).toBe('thm');
-            expect(headerDom?.textContent).toBe('Theorem 1');
+            expect(headerDom?.textContent).toBe('Theorem');
             expect(context.fencedDivStack?.[0].label).toBe('thm');
+        });
+
+        it('renders title placeholders with generated number text', () => {
+            const context = createContext('::: {.theorem #thm:label title="Theorem &"}\ncontent\n:::');
+            context.fencedDivLabels = new Map();
+            const result = processor.process(context.document.line(1), context);
+            const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
+
+            expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
+            expect(headerDom?.textContent).toBe('Theorem 1');
         });
 
         it('does not replace an opening fence while the cursor is editing it', () => {

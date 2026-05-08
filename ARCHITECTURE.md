@@ -27,7 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
-| **Fenced Divs** | `::: {.theorem #id}` renders `Theorem 1`; `@id` → `Theorem 1` | FencedDivProcessor + FencedDivReferenceProcessor |
+| **Fenced Divs** | `::: {.theorem #id title="Theorem &"}` or readable `::: Theorem & #id` renders `Theorem 1`; `@id` → `Theorem 1` | FencedDivProcessor + FencedDivReferenceProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -125,7 +125,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | Processor | Priority | Processes | Regions |
 |-----------|----------|-----------|---------|
 | **ExampleReferenceProcessor** | 10 | `(@ref)` → `(number)` | list-content, definition-content |
-| **FencedDivReferenceProcessor** | 12 | `@id` → fenced-div `referenceText` such as `Proposition 1` | normal, fenced-div-content, list-content, definition-content |
+| **FencedDivReferenceProcessor** | 12 | `@id` → fenced-div `referenceText` such as `Proposition 1` or `Warning` | normal, fenced-div-content, list-content, definition-content |
 | **SuperscriptProcessor** | 20 | `^text^` → superscript | list-content, definition-content |
 | **SubscriptProcessor** | 20 | `~text~` → subscript | list-content, definition-content |
 | **CustomLabelReferenceProcessor** | 40 | `{::ref}` → processed | list-content, definition-content |
@@ -155,7 +155,7 @@ All widgets extend `BaseWidget` which provides:
 | **DefinitionBulletWidget** | BaseWidget | Definition list bullets |
 | **FencedDivHeaderWidget** | BaseWidget | Fenced div opener placeholder with generated theorem-style title text and optional id tooltip |
 | **FencedDivClosingWidget** | BaseWidget | Hidden closing fence placeholder |
-| **FencedDivReferenceWidget** | BaseWidget | `@id` → numbered fenced-div reference with hover preview |
+| **FencedDivReferenceWidget** | BaseWidget | `@id` → rendered fenced-div reference with hover preview |
 | **ExampleReferenceWidget** | BaseWidget | `(@ref)` → `(n)` with hover |
 | **SuperscriptWidget** | BaseWidget | Superscript formatting |
 | **SubscriptWidget** | BaseWidget | Subscript formatting |
@@ -299,7 +299,7 @@ listAutocompletion/
 2. Document Scanning
    - Extract example labels → Map<label, number>
    - Extract custom labels → Map<label, processed>
-   - Extract labeled fenced divs, including non-strict readable shorthand → Map<label, reference metadata>
+   - Extract labeled fenced divs, including non-strict readable shorthand title templates → Map<label, reference metadata>
    - Skip code regions
 
 3. Validation (Strict Mode)

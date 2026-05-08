@@ -1,6 +1,7 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
 import { processReadingMode } from '../../../src/reading-mode/processor';
+import { processFencedDivs } from '../../../src/reading-mode/parsers/fencedDivParser';
 import { CSS_CLASSES } from '../../../src/core/constants';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
 
@@ -37,7 +38,7 @@ describe('fenced div reading mode rendering', () => {
     it('renders a Pandoc fenced div block and later @id citations', () => {
         const element = document.createElement('div');
         element.innerHTML = [
-            '<p>::: {.theorem #thm:pythagoras}</p>',
+            '<p>::: {.theorem #thm:pythagoras title="Theorem &"}</p>',
             '<p>For a right triangle, a^2^ + b^2^ = c^2^.</p>',
             '<p>:::</p>',
             '<p>See @thm:pythagoras for the result.</p>'
@@ -46,7 +47,7 @@ describe('fenced div reading mode rendering', () => {
         processReadingMode(
             element,
             createContext([
-                '::: {.theorem #thm:pythagoras}',
+                '::: {.theorem #thm:pythagoras title="Theorem &"}',
                 'For a right triangle, a^2^ + b^2^ = c^2^.',
                 ':::',
                 '',
@@ -75,12 +76,12 @@ describe('fenced div reading mode rendering', () => {
     it('renders adjacent and nested fenced divs without leaking fence markers', () => {
         const element = document.createElement('div');
         element.innerHTML = [
-            '<p>::: {.outer #outer}</p>',
+            '<p>::: {.outer #outer title="Outer &"}</p>',
             '<p>Outer opening content.</p>',
-            '<p>::: {.inner #inner}</p>',
+            '<p>::: {.inner #inner title="Inner &"}</p>',
             '<p>Nested content.</p>',
             '<p>:::</p>',
-            '<p>::: {.warning #warn}</p>',
+            '<p>::: {.warning #warn title="Warning &"}</p>',
             '<p>Sibling warning.</p>',
             '<p>:::</p>',
             '<p>:::</p>',
@@ -90,13 +91,13 @@ describe('fenced div reading mode rendering', () => {
         processReadingMode(
             element,
             createContext([
-                '::: {.outer #outer}',
+                '::: {.outer #outer title="Outer &"}',
                 'Outer opening content.',
                 '',
-                '::: {.inner #inner}',
+                '::: {.inner #inner title="Inner &"}',
                 'Nested content.',
                 ':::',
-                '::: {.warning #warn}',
+                '::: {.warning #warn title="Warning &"}',
                 'Sibling warning.',
                 ':::',
                 ':::',
@@ -126,7 +127,7 @@ describe('fenced div reading mode rendering', () => {
     it('renders readable shorthand and later @id citations in non-strict mode', () => {
         const element = document.createElement('div');
         element.innerHTML = [
-            '<p>::: Theorem #thm data=1</p>',
+            '<p>::: Theorem #thm title="Theorem &" data=1</p>',
             '<p>Readable content.</p>',
             '<p>:::</p>',
             '<p>See @thm.</p>'
@@ -134,7 +135,7 @@ describe('fenced div reading mode rendering', () => {
 
         processReadingMode(
             element,
-            createContext('::: Theorem #thm data=1\nReadable content.\n:::\n\nSee @thm.'),
+            createContext('::: Theorem #thm title="Theorem &" data=1\nReadable content.\n:::\n\nSee @thm.'),
             createConfig()
         );
 
@@ -150,10 +151,10 @@ describe('fenced div reading mode rendering', () => {
     it('renders explicit title shorthand and later @id citations in non-strict mode', () => {
         const element = document.createElement('div');
         element.innerHTML = [
-            '<p>::: {.logic #logic:a} explicit title after attributes</p>',
+            '<p>::: {.logic #logic:a} explicit title after attributes &</p>',
             '<p>Readable content.</p>',
             '<p>:::</p>',
-            '<p>::: explicit title before attributes {.logic #logic:b}</p>',
+            '<p>::: explicit title before attributes & {.logic #logic:b}</p>',
             '<p>More readable content.</p>',
             '<p>:::</p>',
             '<p>See @logic:a and @logic:b.</p>'
@@ -162,10 +163,10 @@ describe('fenced div reading mode rendering', () => {
         processReadingMode(
             element,
             createContext([
-                '::: {.logic #logic:a} explicit title after attributes',
+                '::: {.logic #logic:a} explicit title after attributes &',
                 'Readable content.',
                 ':::',
-                '::: explicit title before attributes {.logic #logic:b}',
+                '::: explicit title before attributes & {.logic #logic:b}',
                 'More readable content.',
                 ':::',
                 '',
@@ -190,6 +191,46 @@ describe('fenced div reading mode rendering', () => {
         ]);
         expect(element.textContent).not.toContain('@logic:a');
         expect(element.textContent).not.toContain('@logic:b');
+    });
+
+    it('continues generated counters across reading-mode preview sections', () => {
+        const preview = document.createElement('div');
+        preview.className = 'markdown-preview-view';
+        const firstSection = document.createElement('div');
+        firstSection.className = 'markdown-preview-section';
+        firstSection.innerHTML = [
+            '<p>::: {.case title="Case &"}</p>',
+            '<p>Top-level case.</p>',
+            '<p>:::</p>',
+            '<p>::: {.case title="Case &.&"}</p>',
+            '<p>Nested case.</p>',
+            '<p>:::</p>'
+        ].join('');
+        const secondSection = document.createElement('div');
+        secondSection.className = 'markdown-preview-section';
+        secondSection.innerHTML = [
+            '<p>::: Case & {.case}</p>',
+            '<p>Top-level case shortcut.</p>',
+            '<p>:::</p>',
+            '<p>::: Case &.& {.case}</p>',
+            '<p>Nested case shortcut.</p>',
+            '<p>:::</p>'
+        ].join('');
+        preview.append(firstSection, secondSection);
+        document.body.appendChild(preview);
+
+        processFencedDivs(firstSection, docPath, createConfig());
+        processFencedDivs(secondSection, docPath, createConfig());
+
+        const titles = Array.from(preview.querySelectorAll('.pem-fenced-div-title'))
+            .map(title => title.textContent);
+
+        expect(titles).toEqual([
+            'Case 1',
+            'Case 1.1',
+            'Case 2',
+            'Case 2.1'
+        ]);
     });
 
     it('leaves readable shorthand untouched in strict mode', () => {

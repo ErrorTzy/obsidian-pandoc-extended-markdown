@@ -286,9 +286,9 @@ describe('Fenced div live preview', () => {
         expect(state.openLineCount).toBe(3);
         expect(state.closeLineCount).toBe(3);
         expect(state.contentLineCount).toBe(2);
-        expect(state.headerTexts).toEqual(['Outer 1', 'Nested "label" 1', 'Warning 1']);
+        expect(state.headerTexts).toEqual(['Outer', 'Nested "label"', 'Warning']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
-        expect(state.referenceTexts).toEqual(['Outer 1', 'Nested "label" 1']);
+        expect(state.referenceTexts).toEqual(['Outer', 'Nested "label"']);
         expect(state.referenceLabels).toEqual(['outer', 'inner']);
         expect(state.invalidLineRendered).toBe(false);
         expect(state.invalidReferenceRendered).toBe(false);
@@ -312,19 +312,19 @@ describe('Fenced div live preview', () => {
     it('renders generic fenced div cross-references with Pandoc-aligned labels', async () => {
         const filePath = 'fenced-div-live-preview-crossrefs.md';
         const content = [
-            '::: {.proposition #prop:a}',
+            '::: {.proposition #prop:a title="Proposition &"}',
             'A proposition.',
             ':::',
             '',
-            '::: {.remark #rem:a}',
+            '::: {.remark #rem:a title="Remark &"}',
             'A remark.',
             ':::',
             '',
-            '::: {.proposition #prop:b}',
+            '::: {.proposition #prop:b title="Proposition &"}',
             'Another proposition.',
             ':::',
             '',
-            '::: {.logic-block #prem:a title="Premise"}',
+            '::: {.logic-block #prem:a title="Premise &"}',
             'A premise.',
             ':::',
             '',
@@ -363,7 +363,7 @@ describe('Fenced div live preview', () => {
             'Remark 1',
             'Proposition 2',
             'Premise 1',
-            'Div 1'
+            'Div'
         ]);
         expect(state.referenceLabels).toEqual([
             'prop:a',
@@ -373,7 +373,7 @@ describe('Fenced div live preview', () => {
             'misc:a'
         ]);
         expect(state.referenceLineText).toContain(
-            'Refs Proposition 1 Remark 1 Proposition 2 Premise 1 Div 1 @missing.'
+            'Refs Proposition 1 Remark 1 Proposition 2 Premise 1 Div @missing.'
         );
         expect(state.rawMissingPreserved).toBe(true);
 
@@ -415,7 +415,7 @@ describe('Fenced div live preview', () => {
 
         const state = await getDeepNestedFencedDivRenderState();
 
-        expect(state.headerTexts).toEqual(['Warning 1', 'Danger 1', 'Warning2 1']);
+        expect(state.headerTexts).toEqual(['Warning', 'Danger', 'Warning2']);
         expect(state.contentTexts).toEqual([
             'This is a warning.',
             'This is a warning within a warning.',

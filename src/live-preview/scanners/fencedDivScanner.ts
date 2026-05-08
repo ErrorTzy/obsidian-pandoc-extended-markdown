@@ -21,10 +21,13 @@ export function scanFencedDivs(
         labels.set(item.label, {
             label: item.label,
             title: item.title,
+            titleTemplate: item.title,
             displayName: item.referenceText,
             typeLabel: item.typeLabel,
             typeKey: item.typeKey,
             number: item.number,
+            numberParts: item.numberParts,
+            numberingEnabled: item.numberingEnabled,
             referenceText: item.referenceText,
             blockTitleText: item.blockTitleText,
             lineNumber: item.lineNumber + 1,

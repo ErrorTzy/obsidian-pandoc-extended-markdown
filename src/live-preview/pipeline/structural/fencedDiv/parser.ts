@@ -1,4 +1,8 @@
 import { FencedDivAttributes } from '../../../../shared/types/fencedDivTypes';
+import {
+    getFencedDivTitleClass,
+    synthesizeFencedDivTitleFromClasses
+} from '../../../../shared/utils/fencedDivReferenceMetadata';
 
 const OPENING_FENCE = /^(:{3,})(.*)$/;
 const CLOSING_FENCE = /^:{3,}[ \t]*$/;
@@ -113,7 +117,7 @@ function isSingleLineHtmlBlock(lineText: string): boolean {
 }
 
 export function getFencedDivCssClass(classes: string[]): string | undefined {
-    const primaryClass = classes[0];
+    const primaryClass = getFencedDivTitleClass(classes);
     if (!primaryClass) {
         return undefined;
     }
@@ -286,7 +290,7 @@ function parseReadableShorthandAttributes(rawAttributes: string): ParsedAttribut
     return {
         id,
         classes,
-        keyValues
+        keyValues: withSynthesizedTitle(keyValues, classes)
     };
 }
 
@@ -441,6 +445,21 @@ function parseKeyValueToken(token: string): { key: string; value: string } | nul
     };
 }
 
+function withSynthesizedTitle(
+    keyValues: Map<string, string>,
+    classes: string[]
+): Map<string, string> {
+    if (keyValues.has('title')) {
+        return keyValues;
+    }
+
+    const title = synthesizeFencedDivTitleFromClasses(classes);
+    if (title) {
+        keyValues.set('title', title);
+    }
+    return keyValues;
+}
+
 function stripQuotes(value: string): string {
     if (value.length < 2) {
         return value;
@@ -455,7 +474,9 @@ function stripQuotes(value: string): string {
     let escaped = false;
     for (const char of value.slice(1, -1)) {
         if (escaped) {
-            unquoted += char;
+            unquoted += char === '&'
+                ? `\\${char}`
+                : char;
             escaped = false;
             continue;
         }

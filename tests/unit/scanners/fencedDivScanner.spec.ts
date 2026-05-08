@@ -11,11 +11,11 @@ describe('scanFencedDivs', () => {
 
     it('collects labels from adjacent and nested Pandoc fenced divs', () => {
         const labels = scan([
-            '::: {.outer #outer}',
-            '::: {.inner #inner}',
+            '::: {.outer #outer title="Outer &"}',
+            '::: {.inner #inner title="Inner &"}',
             'Nested content.',
             ':::',
-            '::: {.sibling #sibling}',
+            '::: {.sibling #sibling title="Sibling &"}',
             'Sibling content.',
             ':::',
             ':::'
@@ -29,7 +29,7 @@ describe('scanFencedDivs', () => {
 
     it('collects labels from readable shorthand in non-strict mode', () => {
         const labels = scan([
-            '::: Theorem #thm data=1',
+            '::: Theorem #thm title="Theorem &"',
             'Readable content.',
             ':::',
             '',
@@ -40,7 +40,7 @@ describe('scanFencedDivs', () => {
         expect(labels.get('thm')?.content).toBe('Readable content.');
     });
 
-    it('numbers arbitrary fenced div classes independently', () => {
+    it('renders arbitrary fenced div classes without implicit numbering', () => {
         const labels = scan([
             '::: {.proposition #prop:a}',
             'A proposition.',
@@ -55,14 +55,14 @@ describe('scanFencedDivs', () => {
             ':::'
         ].join('\n'));
 
-        expect(labels.get('prop:a')?.referenceText).toBe('Proposition 1');
-        expect(labels.get('rem:a')?.referenceText).toBe('Remark 1');
-        expect(labels.get('prop:b')?.referenceText).toBe('Proposition 2');
+        expect(labels.get('prop:a')?.referenceText).toBe('Proposition');
+        expect(labels.get('rem:a')?.referenceText).toBe('Remark');
+        expect(labels.get('prop:b')?.referenceText).toBe('Proposition');
     });
 
-    it('uses title as the reference type label before falling back to class or Div', () => {
+    it('uses title as the reference type label before falling back to class or unnumbered Div', () => {
         const labels = scan([
-            '::: {.logic-block #prem:a title="Premise"}',
+            '::: {.logic-block #prem:a title="Premise &"}',
             'Premise content.',
             ':::',
             '',
@@ -76,16 +76,91 @@ describe('scanFencedDivs', () => {
         ].join('\n'));
 
         expect(labels.get('prem:a')).toMatchObject({
-            title: 'Premise',
+            title: 'Premise &',
+            titleTemplate: 'Premise &',
             typeLabel: 'Premise',
             typeKey: 'premise',
             number: 1,
+            numberParts: [1],
+            numberingEnabled: true,
             referenceText: 'Premise 1',
             blockTitleText: 'Premise 1',
             classes: ['logic-block']
         });
-        expect(labels.get('pre:a')?.referenceText).toBe('Presupposition 1');
-        expect(labels.get('misc:a')?.referenceText).toBe('Div 1');
+        expect(labels.get('pre:a')?.referenceText).toBe('Presupposition');
+        expect(labels.get('misc:a')?.referenceText).toBe('Div');
+    });
+
+    it('supports front placeholders, multi-part counters, and no-num literals', () => {
+        const labels = scan([
+            '::: {.case #c1 title="Case &"}',
+            ':::',
+            '',
+            '::: {.case #c1a title="Case &.&"}',
+            ':::',
+            '',
+            '::: {.case #c1b title="Case &.&"}',
+            ':::',
+            '',
+            '::: {.case #c2 title="Case &"}',
+            ':::',
+            '',
+            '::: {.case #c2a title="Case &.&.&"}',
+            ':::',
+            '',
+            '::: {.note #front title="& Note"}',
+            ':::',
+            '',
+            '::: {.warning #literal .no-num title="AT&T Warning"}',
+            ':::'
+        ].join('\n'));
+
+        expect(labels.get('c1')?.referenceText).toBe('Case 1');
+        expect(labels.get('c1a')?.referenceText).toBe('Case 1.1');
+        expect(labels.get('c1b')?.referenceText).toBe('Case 1.2');
+        expect(labels.get('c2')?.referenceText).toBe('Case 2');
+        expect(labels.get('c2a')?.referenceText).toBe('Case 2.1.1');
+        expect(labels.get('front')?.referenceText).toBe('1 Note');
+        expect(labels.get('literal')?.referenceText).toBe('AT&T Warning');
+    });
+
+    it('numbers readable shorthand placeholder classes through synthesized titles', () => {
+        const labels = scan([
+            '::: Case & #c1',
+            'Top-level case.',
+            ':::',
+            '',
+            '::: Case &.& #c1a',
+            'Nested case.',
+            ':::',
+            '',
+            '::: & Note #n1',
+            'Front-numbered note.',
+            ':::',
+            '',
+            '::: Case_&.& #c1b',
+            'Embedded placeholder class.',
+            ':::',
+            '',
+            '::: Case & #literal no-num',
+            'Numbering disabled.',
+            ':::'
+        ].join('\n'));
+
+        expect(labels.get('c1')).toMatchObject({
+            classes: ['Case', '&'],
+            title: 'Case &',
+            referenceText: 'Case 1',
+            blockTitleText: 'Case 1'
+        });
+        expect(labels.get('c1a')?.referenceText).toBe('Case 1.1');
+        expect(labels.get('n1')?.referenceText).toBe('1 Note');
+        expect(labels.get('c1b')).toMatchObject({
+            classes: ['Case_&.&'],
+            title: 'Case &.&',
+            referenceText: 'Case 1.2'
+        });
+        expect(labels.get('literal')?.referenceText).toBe('Case &');
     });
 
     it('does not collect labels from readable shorthand in strict mode', () => {

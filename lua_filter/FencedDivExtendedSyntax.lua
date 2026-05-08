@@ -17,6 +17,11 @@ local FENCED_DIV_CLASS = 'pem-fenced-div'
 local FENCED_DIV_TITLE_CLASS = 'pem-fenced-div-title'
 local FENCED_DIV_DOCX_STYLE = 'PEM Fenced Div'
 local FENCED_DIV_TITLE_DOCX_STYLE = 'PEM Fenced Div Title'
+local PLACEHOLDER_DOT_TOKEN = 'PEMPLACEHOLDERDOT'
+local NUMBERING_ESCAPE_CLASSES = {
+    ['no-num'] = true,
+    ['unnumbered'] = true,
+}
 
 local HTML_STYLE_BLOCK = [[
 <style>
@@ -109,7 +114,11 @@ local function strip_quotes(value)
     for index = 2, #value - 1 do
         local char = value:sub(index, index)
         if escaped then
-            result = result .. char
+            if char == '&' then
+                result = result .. '\\' .. char
+            else
+                result = result .. char
+            end
             escaped = false
         elseif char == '\\' then
             escaped = true
@@ -168,6 +177,138 @@ end
 
 local function is_readable_class(token)
     return token:match('^[^%s#={},]+$') ~= nil and token:match('^:+$') == nil
+end
+
+local function is_numbering_escape_class(class_name)
+    return NUMBERING_ESCAPE_CLASSES[(class_name or ''):lower()] == true
+end
+
+local function find_first_placeholder_group(value)
+    local escaped = false
+
+    for index = 1, #value do
+        local char = value:sub(index, index)
+        if escaped then
+            escaped = false
+        elseif char == '\\' then
+            escaped = true
+        elseif char == '&' then
+            local group_end = index
+            local depth = 1
+            while value:sub(group_end + 1, group_end + 1) == '.' and
+                value:sub(group_end + 2, group_end + 2) == '&' do
+                depth = depth + 1
+                group_end = group_end + 2
+            end
+            return {
+                start = index,
+                finish = group_end,
+                depth = depth,
+            }
+        end
+    end
+
+    return nil
+end
+
+local function is_placeholder_only_title(value)
+    local placeholder_group = find_first_placeholder_group(value or '')
+    return placeholder_group ~= nil and
+        placeholder_group.start == 1 and
+        placeholder_group.finish == #value
+end
+
+local function preserve_placeholder_dots(value)
+    local result = ''
+    for index = 1, #value do
+        local char = value:sub(index, index)
+        if char == '.' and value:sub(index - 1, index - 1) == '&' and value:sub(index + 1, index + 1) == '&' then
+            result = result .. PLACEHOLDER_DOT_TOKEN
+        else
+            result = result .. char
+        end
+    end
+    return result
+end
+
+local function humanize_class_name(class_name)
+    local text = preserve_placeholder_dots(class_name or '')
+        :gsub('[_:%-]+', ' ')
+        :gsub('%.', ' ')
+        :gsub('%s+', ' ')
+        :gsub(PLACEHOLDER_DOT_TOKEN, '.')
+    text = trim(text)
+    if text == '' then
+        return ''
+    end
+    return (text:gsub('(%f[%a]%a)', string.upper))
+end
+
+local function synthesize_title_from_classes(classes)
+    local title_parts = {}
+    for _, class_name in ipairs(classes or {}) do
+        if not is_numbering_escape_class(class_name) then
+            table.insert(title_parts, humanize_class_name(class_name))
+        end
+    end
+
+    if #title_parts == 0 then
+        return ''
+    end
+
+    local placeholder_index = nil
+    for index, part in ipairs(title_parts) do
+        if find_first_placeholder_group(part) then
+            placeholder_index = index
+            break
+        end
+    end
+
+    if not placeholder_index then
+        return title_parts[1] or ''
+    end
+
+    if not is_placeholder_only_title(title_parts[placeholder_index]) then
+        return title_parts[placeholder_index] or ''
+    end
+
+    local title_index = nil
+    for index, part in ipairs(title_parts) do
+        if not is_placeholder_only_title(part) then
+            title_index = index
+            break
+        end
+    end
+
+    if not title_index then
+        return title_parts[placeholder_index] or ''
+    end
+
+    if placeholder_index < title_index then
+        return title_parts[placeholder_index] .. ' ' .. title_parts[title_index]
+    end
+    return title_parts[title_index] .. ' ' .. title_parts[placeholder_index]
+end
+
+local function has_title_key(key_values)
+    for _, pair in ipairs(key_values or {}) do
+        if pair[1] == 'title' then
+            return true
+        end
+    end
+    return false
+end
+
+local function with_synthesized_title(opening)
+    if has_title_key(opening.key_values) then
+        return opening
+    end
+
+    local title = synthesize_title_from_classes(opening.classes)
+    if title ~= '' then
+        table.insert(opening.key_values, {'title', title})
+    end
+    return opening
 end
 
 local function parse_key_value(token)
@@ -310,11 +451,11 @@ local function parse_readable_opening(text)
         end
     end
 
-    return {
+    return with_synthesized_title({
         id = id,
         classes = classes,
         key_values = key_values,
-    }
+    })
 end
 
 local function is_readable_closing(text)
@@ -464,31 +605,82 @@ local function title_for_div(div)
     return ''
 end
 
-local function humanize_class_name(class_name)
-    local text = trim((class_name or ''):gsub('[_:%.%-]+', ' '):gsub('%s+', ' '))
-    if text == '' then
-        return ''
-    end
-    return text:gsub('(%f[%a]%a)', string.upper)
-end
-
-local function type_label_for_div(div)
-    local title = title_for_div(div)
-    if title ~= '' then
-        return title
-    end
-
-    if div.classes and #div.classes > 0 then
-        local label = humanize_class_name(div.classes[1])
-        if label ~= '' then
-            return label
+local function has_numbering_escape_class(div)
+    for _, class_name in ipairs(div.classes or {}) do
+        if is_numbering_escape_class(class_name) then
+            return true
         end
     end
-    return 'Div'
+    return false
+end
+
+local function title_stem(title)
+    local placeholder_group = find_first_placeholder_group(title or '')
+    local stem = title or ''
+    if placeholder_group then
+        stem = stem:sub(1, placeholder_group.start - 1) .. stem:sub(placeholder_group.finish + 1)
+    end
+    stem = stem:gsub('\\&', '&')
+    return trim(stem:gsub('[^%w%s]+', ' '):gsub('%s+', ' '))
+end
+
+local function class_label_for_div(div)
+    for _, class_name in ipairs(div.classes or {}) do
+        if not is_numbering_escape_class(class_name) and not is_placeholder_only_title(humanize_class_name(class_name)) then
+            return humanize_class_name(class_name)
+        end
+    end
+    return ''
+end
+
+local function title_template_for_div(div)
+    return title_for_div(div)
+end
+
+local function should_number_div(div)
+    local title = title_template_for_div(div)
+    return find_first_placeholder_group(title) ~= nil and not has_numbering_escape_class(div)
+end
+
+local function render_numbered_title(title, number_parts)
+    local placeholder_group = find_first_placeholder_group(title or '')
+    if not placeholder_group then
+        return (title or ''):gsub('\\&', '&')
+    end
+
+    local index = 0
+    local group = title:sub(placeholder_group.start, placeholder_group.finish):gsub('&', function()
+        index = index + 1
+        return tostring(number_parts[index] or 0)
+    end)
+    return (
+        title:sub(1, placeholder_group.start - 1) ..
+        group ..
+        title:sub(placeholder_group.finish + 1)
+    ):gsub('\\&', '&')
+end
+
+local function type_label_for_div(div, numbering_enabled)
+    local title = title_template_for_div(div)
+    if title ~= '' then
+        return numbering_enabled and title_stem(title) or title:gsub('\\&', '&')
+    end
+
+    local class_label = class_label_for_div(div)
+    return class_label ~= '' and class_label or 'Div'
 end
 
 local function should_render_block_title(div)
-    return title_for_div(div) ~= '' or (div.classes and #div.classes > 0)
+    if title_for_div(div) ~= '' then
+        return true
+    end
+
+    for _, class_name in ipairs(div.classes or {}) do
+        if not is_numbering_escape_class(class_name) and not is_placeholder_only_title(humanize_class_name(class_name)) then
+            return true
+        end
+    end
+    return false
 end
 
 local function type_key_for_label(label)
@@ -526,18 +718,35 @@ local function title_block(reference)
 end
 
 local function register_div(div, state)
-    local type_label = type_label_for_div(div)
+    local title_template = title_template_for_div(div)
+    local numbering_enabled = should_number_div(div)
+    local type_label = type_label_for_div(div, numbering_enabled)
     local type_key = type_key_for_label(type_label)
-    local number = (state.counters[type_key] or 0) + 1
-    state.counters[type_key] = number
+    local number_parts = {}
+    local number = 0
+    local reference_text = type_label
+
+    if numbering_enabled then
+        local depth = find_first_placeholder_group(title_template).depth
+        local current_parts = state.counters[type_key] or {}
+        for index = 1, depth - 1 do
+            number_parts[index] = current_parts[index] or 1
+        end
+        number_parts[depth] = (current_parts[depth] or 0) + 1
+        state.counters[type_key] = number_parts
+        number = number_parts[#number_parts] or 0
+        reference_text = render_numbered_title(title_template, number_parts)
+    end
 
     local reference = {
         type_label = type_label,
         type_key = type_key,
         number = number,
-        reference_text = type_label .. ' ' .. tostring(number),
+        number_parts = number_parts,
+        numbering_enabled = numbering_enabled,
+        reference_text = reference_text,
         block_title_text = should_render_block_title(div) and
-            type_label .. ' ' .. tostring(number) or ''
+            reference_text or ''
     }
     table.insert(state.div_metadata, reference)
 

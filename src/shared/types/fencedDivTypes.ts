@@ -11,10 +11,13 @@ export interface FencedDivAttributes {
 export interface FencedDivReference {
     label: string;
     title: string;
+    titleTemplate?: string;
     displayName: string;
     typeLabel: string;
     typeKey: string;
     number: number;
+    numberParts?: number[];
+    numberingEnabled?: boolean;
     referenceText: string;
     blockTitleText: string;
     lineNumber: number;

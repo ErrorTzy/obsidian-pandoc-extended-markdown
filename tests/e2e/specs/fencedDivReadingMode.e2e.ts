@@ -40,7 +40,7 @@ describe('Fenced div reading mode', () => {
     it('renders Pandoc fenced div blocks and @id citations in reading mode', async () => {
         const filePath = 'fenced-div-reading-mode-e2e.md';
         const content = [
-            '::: {.theorem #thm:reading}',
+            '::: {.theorem #thm:reading title="Theorem &"}',
             'Every compact metric space is complete.',
             ':::',
             '',
@@ -75,7 +75,7 @@ describe('Fenced div reading mode', () => {
         expect(state.blockTexts[0]).toContain('Every compact metric space is complete.');
         expect(state.referenceTexts).toEqual(['Theorem 1']);
         expect(state.referenceLabels).toEqual(['thm:reading']);
-        expect(state.rawText).not.toContain('::: {.theorem #thm:reading}');
+        expect(state.rawText).not.toContain('::: {.theorem #thm:reading title="Theorem &"}');
         expect(state.rawText).not.toContain('@thm:reading');
 
         await deleteFileIfExists(filePath);
@@ -105,8 +105,8 @@ describe('Fenced div reading mode', () => {
             await browser.waitUntil(async () => {
                 const state = await getReadingModeFencedDivState();
                 return state.blockCount === 3 &&
-                    state.headerTexts.join('|') === 'Outer 1|Inner 1|Warning 1' &&
-                    state.referenceTexts.join('|') === 'Outer 1|Inner 1|Warning 1';
+                    state.headerTexts.join('|') === 'Outer|Inner|Warning' &&
+                    state.referenceTexts.join('|') === 'Outer|Inner|Warning';
             }, {
                 timeout: 5000,
                 timeoutMsg: 'Expected adjacent and nested fenced divs in reading mode'
@@ -119,14 +119,14 @@ describe('Fenced div reading mode', () => {
         const state = await getReadingModeFencedDivState();
 
         expect(state.blockCount).toBe(3);
-        expect(state.headerTexts).toEqual(['Outer 1', 'Inner 1', 'Warning 1']);
+        expect(state.headerTexts).toEqual(['Outer', 'Inner', 'Warning']);
         expect(state.blockLabels).toEqual(['outer', 'inner', 'warn']);
         expect(state.blockClasses[1]).toContain('pem-fenced-div-inner');
         expect(state.blockClasses[2]).toContain('pem-fenced-div-inner');
         expect(state.blockTexts[0]).toContain('Outer opening content.');
         expect(state.blockTexts[0]).toContain('Nested content.');
         expect(state.blockTexts[2]).toContain('Sibling warning.');
-        expect(state.referenceTexts).toEqual(['Outer 1', 'Inner 1', 'Warning 1']);
+        expect(state.referenceTexts).toEqual(['Outer', 'Inner', 'Warning']);
         expect(state.referenceLabels).toEqual(['outer', 'inner', 'warn']);
         expect(state.rawText).not.toContain(':::');
         expect(state.rawText).not.toContain('@outer');
@@ -162,7 +162,7 @@ describe('Fenced div reading mode', () => {
             await browser.waitUntil(async () => {
                 const state = await getReadingModeFencedDivState();
                 return state.blockCount === 3 &&
-                    state.headerTexts.join('|') === 'Warning 1|Danger 1|Warning2 1' &&
+                    state.headerTexts.join('|') === 'Warning|Danger|Warning2' &&
                     !state.rawText.includes(':::');
             }, {
                 timeout: 5000,
@@ -176,7 +176,7 @@ describe('Fenced div reading mode', () => {
         const state = await getReadingModeFencedDivState();
 
         expect(state.blockCount).toBe(3);
-        expect(state.headerTexts).toEqual(['Warning 1', 'Danger 1', 'Warning2 1']);
+        expect(state.headerTexts).toEqual(['Warning', 'Danger', 'Warning2']);
         expect(state.blockTexts[0]).toContain('This is a warning.');
         expect(state.blockTexts[0]).toContain('This is on the 1st level');
         expect(state.blockTexts[1]).toContain('This is a warning within a warning.');

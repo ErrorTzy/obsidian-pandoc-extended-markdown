@@ -75,21 +75,21 @@ Term 3
 ### Fenced Divs
 Live Preview and Reading mode render Pandoc fenced div blocks and generic `@id` cross-references:
 ```markdown
-::: {.theorem #thm}
+::: {.theorem #thm title="Theorem &"}
 Every compact metric space is complete.
 :::
 
 See @thm.
 ```
 
-Labeled fenced divs render a theorem-style title line, and known `@id` citations render the same `Title number` text. The title label comes from `title="..."` first, then the first class, then `Div`. Numbering is independent per type, so propositions, remarks, and premises each get their own sequence.
+Labeled fenced divs render a theorem-style title line, and known `@id` citations render the same text. Numbering is opt-in: put `&` in the title template where the generated counter should appear. Titles without `&` render exactly as written. If there is no title, the first class is used as an unnumbered label; id-only blocks reference as `Div` without inventing a number.
 
 ```markdown
-::: {.proposition #prop:a}
+::: {.proposition #prop:a title="Proposition &"}
 A proposition.
 :::
 
-::: {.logic-block #prem:a title="Premise"}
+::: {.logic-block #prem:a title="Premise &"}
 A premise.
 :::
 
@@ -98,10 +98,56 @@ See @prop:a and @prem:a.
 
 The block titles and references render as `Proposition 1` and `Premise 1`; unknown citations remain unchanged.
 
+You can place the counter at the front or use multiple placeholders for manual depth:
+
+```markdown
+::: {.case #c1 title="Case &"}
+Top-level case.
+:::
+
+::: {.case #c1a title="Case &.&"}
+Nested case.
+:::
+
+::: {.note #n1 title="& Note"}
+Front-numbered note.
+:::
+```
+
+These render as `Case 1`, `Case 1.1`, and `1 Note`. Deeper counters reset when a shallower placeholder pattern advances in the same title family.
+
+In readable shorthand, bare class tokens can synthesize the same title template. Prefer separated placeholder tokens so CSS can still target the semantic class:
+
+```markdown
+::: Case & #c1
+Top-level case.
+:::
+
+::: Case &.& #c1a
+Nested case.
+:::
+
+::: & Note #n1
+Front-numbered note.
+:::
+```
+
+These are treated like title templates `Case &`, `Case &.&`, and `& Note`, while preserving classes such as `Case` and `Note`. `::: Case_&.&` also renders as `Case 1.1`, but its class is `Case_&.&`, so `Case &.&` is recommended.
+
+Use `.no-num` when a title contains a literal ampersand or when placeholder text should be shown literally:
+
+```markdown
+::: {.warning #warn .no-num title="AT&T Warning"}
+Literal ampersand, no numbering.
+:::
+```
+
+Escape literal ampersands inside numbered titles with `\&`, as in `title="AT\&T-&.&"` for `AT&T-1.1`. Pandoc export of native braced attributes may require the backslash itself to be escaped in Markdown (`title="AT\\&T-&.&"`).
+
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
   - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
   - A single unbraced class shortcut: `::: Warning` or `:::Warning`.
-- In non-strict mode, the plugin also accepts readable shorthand: `::: Theorem #thm key="value"`. Bare tokens become classes, `#id` becomes the reference label, and `key=value` pairs are preserved as attributes.
+- In non-strict mode, the plugin also accepts readable shorthand: `::: Theorem #thm key="value"`. Bare tokens become classes, `#id` becomes the reference label, `key=value` pairs are preserved as attributes, and bare class tokens synthesize a title when no explicit `title` is present.
 - Strict Pandoc mode disables readable shorthand. In strict mode, `::: Theorem #thm` remains plain Markdown text and does not create a reference target.
 - Optional visual trailing colons are allowed after the attributes, as in `::: {.warning} ::::::`.
 - Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
@@ -144,7 +190,7 @@ A modular sidebar panel displays various list-related content from the active do
 **Fenced Divs Panel** `:::`
 - Displays all fenced div blocks from the current document, including readable shorthand when strict Pandoc mode is off
 - Three-column layout: title metadata, citation label, and content
-- `title="..."` is metadata for cross-reference labels and the generated theorem-style block title
+- `title="..."` or readable shorthand class tokens provide metadata for cross-reference labels and the generated theorem-style block title; include `&` to opt into generated numbering
 - Click labels to copy citation syntax (e.g., `@thm`) to clipboard
 - Click content to navigate to the fenced div content in the editor
 
@@ -336,7 +382,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
-  - Fenced divs (`::: {.theorem #thm}`) and fenced-div cross-references (`@thm`)
+  - Fenced divs (`::: {.theorem #thm title="Theorem &"}`) and fenced-div cross-references (`@thm`)
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references

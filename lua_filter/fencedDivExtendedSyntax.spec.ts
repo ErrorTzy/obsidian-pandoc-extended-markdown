@@ -78,7 +78,7 @@ describe('FencedDivExtendedSyntax.lua', () => {
         expect((blocks[0].c as unknown[])[0]).toEqual([
             'thm',
             ['Theorem', 'pem-fenced-div'],
-            [['data', '1']]
+            [['data', '1'], ['title', 'Theorem']]
         ]);
     });
 
@@ -121,12 +121,16 @@ describe('FencedDivExtendedSyntax.lua', () => {
             return attr[0] === 'inner';
         });
 
-        expect(divAttr(blocks[0])).toEqual(['outer', ['Outer', 'pem-fenced-div'], []]);
+        expect(divAttr(blocks[0])).toEqual([
+            'outer',
+            ['Outer', 'pem-fenced-div'],
+            [['title', 'Outer']]
+        ]);
         expect(inner?.t).toBe('Div');
         expect(inner ? divAttr(inner) : undefined).toEqual([
             'inner',
             ['Inner', 'pem-fenced-div'],
-            []
+            [['title', 'Inner']]
         ]);
     });
 
@@ -145,15 +149,15 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
     it('replaces native fenced div citations with independently numbered reference text', () => {
         const blocks = renderBlocks([
-            '::: {.proposition #prop:a}',
+            '::: {.proposition #prop:a title="Proposition &"}',
             'A proposition.',
             ':::',
             '',
-            '::: {.remark #rem:a}',
+            '::: {.remark #rem:a title="Remark &"}',
             'A remark.',
             ':::',
             '',
-            '::: {.proposition #prop:b}',
+            '::: {.proposition #prop:b title="Proposition &"}',
             'Another proposition.',
             ':::',
             '',
@@ -171,7 +175,7 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
     it('uses title attributes before class and uses Div for id-only references', () => {
         const blocks = renderBlocks([
-            '::: {.logic-block #prem:a title="Premise"}',
+            '::: {.logic-block #prem:a title="Premise &"}',
             'A premise.',
             ':::',
             '',
@@ -187,7 +191,42 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
         expect(JSON.stringify(premiseContent[0])).toContain('Premise 1');
         expect(JSON.stringify(miscContent[0])).not.toContain('pem-fenced-div-title');
-        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise 1 and Div 1.');
+        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise 1 and Div.');
+    });
+
+    it('supports hierarchical placeholders and no-num ampersand literals', () => {
+        const blocks = renderBlocks([
+            '::: {.case #c1 title="Case &"}',
+            'First case.',
+            ':::',
+            '',
+            '::: {.case #c1a title="Case &.&"}',
+            'First subcase.',
+            ':::',
+            '',
+            '::: {.case #c1b title="Case &.&"}',
+            'Second subcase.',
+            ':::',
+            '',
+            '::: {.case #c2 title="Case &"}',
+            'Second case.',
+            ':::',
+            '',
+            '::: {.case #c2a title="Case &.&"}',
+            'Nested under second case.',
+            ':::',
+            '',
+            '::: {.warning #warn .no-num title="AT&T Warning"}',
+            'Literal ampersand.',
+            ':::',
+            '',
+            'See @c1 @c1a @c1b @c2 @c2a @warn.'
+        ].join('\n'));
+        const lastPara = blocks[blocks.length - 1];
+
+        expect(inlineText(lastPara.c as PandocInline[])).toBe(
+            'See Case 1 Case 1.1 Case 1.2 Case 2 Case 2.1 AT&T Warning.'
+        );
     });
 
     it('resolves readable shorthand references after internal normalization', () => {
@@ -202,16 +241,74 @@ describe('FencedDivExtendedSyntax.lua', () => {
         ].join('\n'));
         const lastPara = blocks[blocks.length - 1];
 
-        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise 1.');
+        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise.');
+    });
+
+    it('numbers readable shorthand placeholder classes through synthesized titles', () => {
+        const blocks = renderBlocks([
+            '::: Case & #c1',
+            'Top-level case.',
+            ':::',
+            '',
+            '::: Case &.& #c1a',
+            'Nested case.',
+            ':::',
+            '',
+            '::: & Note #n1',
+            'Front-numbered note.',
+            ':::',
+            '',
+            '::: Case_&.& #c1b',
+            'Embedded placeholder class.',
+            ':::',
+            '',
+            '::: Case & #literal no-num',
+            'Numbering disabled.',
+            ':::',
+            '',
+            'See @c1 @c1a @n1 @c1b @literal.'
+        ].join('\n'));
+        const lastPara = blocks[blocks.length - 1];
+
+        expect(divAttr(blocks[0])).toEqual([
+            'c1',
+            ['Case', '&', 'pem-fenced-div'],
+            [['title', 'Case &']]
+        ]);
+        expect(divAttr(blocks[1])).toEqual([
+            'c1a',
+            ['Case', '&.&', 'pem-fenced-div'],
+            [['title', 'Case &.&']]
+        ]);
+        expect(inlineText(lastPara.c as PandocInline[])).toBe(
+            'See Case 1 Case 1.1 1 Note Case 1.2 Case &.'
+        );
+    });
+
+    it('honors escaped ampersands and only numbers the first placeholder group', () => {
+        const blocks = renderBlocks([
+            '::: {.case #escaped title="AT\\\\&T-&.&"}',
+            'Escaped ampersand.',
+            ':::',
+            '',
+            '::: {.case #first title="&-&"}',
+            'First group only.',
+            ':::',
+            '',
+            'See @escaped and @first.'
+        ].join('\n'));
+        const lastPara = blocks[blocks.length - 1];
+
+        expect(inlineText(lastPara.c as PandocInline[])).toBe('See AT&T-1.1 and 1-&.');
     });
 
     it('uses explicit titles from readable braced title shorthand', () => {
         const blocks = renderBlocks([
-            '::: {.logic #logic:a} explicit title after attributes',
+            '::: {.logic #logic:a} explicit title after attributes &',
             'Readable logic.',
             ':::',
             '',
-            '::: explicit title before attributes {.logic #logic:b}',
+            '::: explicit title before attributes & {.logic #logic:b}',
             'More readable logic.',
             ':::',
             '',
@@ -226,11 +323,11 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
     it('renders Div titles only when a title attribute or class is present', () => {
         const blocks = renderBlocks([
-            '::: title before attributes {.theorem}',
+            '::: title before attributes & {.theorem}',
             'No-id theorem.',
             ':::',
             '',
-            '::: {.theorem} title after attributes',
+            '::: {.theorem} title after attributes &',
             'Another no-id theorem.',
             ':::',
             '',
@@ -254,15 +351,15 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
         expect(rendered).toContain('title before attributes 1');
         expect(rendered).toContain('title after attributes 1');
-        expect(rendered).toContain('Classname 1');
-        expect(rendered).toContain('titlename 1');
+        expect(rendered).toContain('Classname');
+        expect(rendered).toContain('titlename');
         expect(JSON.stringify(bareDivContent[0])).not.toContain('pem-fenced-div-title');
-        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Div 1.');
+        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Div.');
     });
 
     it('preserves unknown citations for citeproc or other filters', () => {
         const blocks = renderBlocks([
-            '::: {.proposition #prop:a}',
+            '::: {.proposition #prop:a title="Proposition &"}',
             'A proposition.',
             ':::',
             '',
@@ -277,7 +374,7 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
     it('adds restrained default styling for HTML export', () => {
         const html = renderFormat([
-            '::: {.theorem #thm}',
+            '::: {.theorem #thm title="Theorem &"}',
             'A theorem.',
             ':::',
             '',
@@ -296,7 +393,7 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
     it('wraps LaTeX fenced div export with a no-fill left-rule block', () => {
         const latex = renderFormat([
-            '::: {.theorem #thm}',
+            '::: {.theorem #thm title="Theorem &"}',
             'A theorem.',
             ':::',
             '',
@@ -320,7 +417,7 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
         try {
             const result = runPandoc([
-                '::: {.theorem #thm}',
+                '::: {.theorem #thm title="Theorem &"}',
                 'A theorem.',
                 ':::',
                 '',
@@ -342,12 +439,12 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
     it('preserves semantic fenced div classes and bold titles for generic writers', () => {
         const markdown = renderFormat([
-            '::: {.theorem #thm}',
+            '::: {.theorem #thm title="Theorem &"}',
             'A theorem.',
             ':::'
         ].join('\n'), 'markdown');
 
-        expect(markdown).toContain('{#thm .theorem .pem-fenced-div}');
+        expect(markdown).toContain('{#thm .theorem .pem-fenced-div title="Theorem &"}');
         expect(markdown).toContain('::: pem-fenced-div-title');
         expect(markdown).toContain('**Theorem 1**');
     });
@@ -358,7 +455,7 @@ describe('FencedDivExtendedSyntax.lua', () => {
 
         try {
             const result = runPandoc([
-                '::: {.theorem #thm}',
+                '::: {.theorem #thm title="Theorem &"}',
                 'A theorem.',
                 ':::'
             ].join('\n'), ['-t', 'odt', '-o', outputPath]);
