@@ -74,7 +74,7 @@ Term 3
 
 ### Fenced Divs
 
-**Most of the features described here are plugin specific. To use pandoc for similar output, apply lua filter in lua_filter/FencedDivExtendedSyntax.lua for pandoc export. If you only want native pandoc fenced_divs, turn on strict pandoc mode**
+*Warning: Most of the features described here are plugin-specific. To use pandoc for similar output, apply lua filter in lua_filter/FencedDivExtendedSyntax.lua for pandoc export. If you only want native pandoc fenced_divs, turn on strict pandoc mode*
 
 Live Preview and Reading mode render Pandoc fenced div blocks and generic `@id` cross-references:
 ```markdown
