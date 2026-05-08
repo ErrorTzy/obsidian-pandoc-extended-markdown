@@ -51,6 +51,25 @@ describe('extractFencedDivs', () => {
         });
     });
 
+    it('provides rendered panel titles for numbered titles and class-only blocks', () => {
+        const items = extractFencedDivs([
+            '::: {.theorem #thm title="Theorem &"}',
+            'Theorem content.',
+            ':::',
+            '',
+            '::: {.lemma #lem}',
+            'Lemma content.',
+            ':::',
+            '',
+            '::: {#standalone}',
+            'No title content.',
+            ':::'
+        ].join('\n'), settings);
+
+        expect(items.map(item => item.title)).toEqual(['Theorem &', 'Lemma', '']);
+        expect(items.map(item => item.blockTitleText)).toEqual(['Theorem 1', 'Lemma', '']);
+    });
+
     it('renders native and shorthand placeholder titles consistently', () => {
         const items = extractFencedDivs([
             '::: {.case title="Case &"}',

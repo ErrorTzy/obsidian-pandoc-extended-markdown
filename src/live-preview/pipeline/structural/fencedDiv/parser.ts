@@ -239,7 +239,7 @@ function parseUnbracedAttributes(rawAttributes: string): ParsedAttributeTokens |
         return null;
     }
 
-    return createUnbracedClass(unbracedMatch[1] || '');
+    return createUnbracedClassWithTitle(unbracedMatch[1] || '');
 }
 
 function createUnbracedClass(className: string): ParsedAttributeTokens {
@@ -247,6 +247,12 @@ function createUnbracedClass(className: string): ParsedAttributeTokens {
         classes: [className],
         keyValues: new Map()
     };
+}
+
+function createUnbracedClassWithTitle(className: string): ParsedAttributeTokens {
+    const attributes = createUnbracedClass(className);
+    attributes.keyValues = withSynthesizedTitle(attributes.keyValues, attributes.classes);
+    return attributes;
 }
 
 function parseReadableShorthandAttributes(rawAttributes: string): ParsedAttributeTokens | null {
@@ -349,7 +355,7 @@ function parseAttributeTokens(tokens: string[]): ParsedAttributeTokens | null {
     return {
         id,
         classes,
-        keyValues
+        keyValues: withSynthesizedTitle(keyValues, classes)
     };
 }
 

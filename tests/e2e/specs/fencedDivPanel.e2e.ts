@@ -66,6 +66,10 @@ describe('Fenced div list panel', () => {
             'A labeled block without a class title.',
             ':::',
             '',
+            '::: {.proposition #prop:numbered title="Proposition &"}',
+            'A numbered proposition.',
+            ':::',
+            '',
             '::: Warning',
             'Admonition content without a citation label.',
             ':::'
@@ -78,9 +82,9 @@ describe('Fenced div list panel', () => {
 
         const rows = await getPanelRows();
 
-        expect(rows).toHaveLength(3);
+        expect(rows).toHaveLength(4);
         expect(rows[0]).toEqual({
-            title: '',
+            title: 'Theorem',
             label: '@thm:compact',
             content: 'Every compact metric space is complete.'
         });
@@ -90,6 +94,11 @@ describe('Fenced div list panel', () => {
             content: 'A labeled block without a class title.'
         });
         expect(rows[2]).toEqual({
+            title: 'Proposition 1',
+            label: '@prop:numbered',
+            content: 'A numbered proposition.'
+        });
+        expect(rows[3]).toEqual({
             title: 'Warning',
             label: '',
             content: 'Admonition content without a citation label.'

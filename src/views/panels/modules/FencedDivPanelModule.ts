@@ -68,7 +68,7 @@ export class FencedDivPanelModule extends BasePanelModule {
         const titleEl = row.createEl('td', {
             cls: CSS_CLASSES.FENCED_DIV_PANEL_TITLE
         });
-        titleEl.textContent = item.title;
+        titleEl.textContent = item.blockTitleText;
 
         const labelEl = row.createEl('td', {
             cls: CSS_CLASSES.FENCED_DIV_PANEL_LABEL

@@ -42,6 +42,12 @@ describe('fenced div parser', () => {
             expect(opening?.classes).toEqual(['note']);
         });
 
+        it('synthesizes titles for class-only Pandoc attributes', () => {
+            expect(parseFencedDivOpening('::: {.note}')?.keyValues.get('title')).toBe('Note');
+            expect(parseFencedDivOpening('::: {.logic-block #id}')?.keyValues.get('title')).toBe('Logic Block');
+            expect(parseFencedDivOpening('::: {#id}')?.keyValues.has('title')).toBe(false);
+        });
+
         it('parses quoted values with spaces and escaped quotes', () => {
             const opening = parseFencedDivOpening(
                 '::: {.note title="hello world" data-x=\'yes\' escaped="hello \\"world\\""}'
@@ -75,6 +81,7 @@ describe('fenced div parser', () => {
                 'thm',
                 'compact'
             ]);
+            expect(parseFencedDivOpening('::: Theorem thm compact')?.keyValues.get('title')).toBe('Theorem');
         });
 
         it('parses quoted values and trailing visual colons', () => {
