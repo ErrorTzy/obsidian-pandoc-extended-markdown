@@ -16,6 +16,7 @@ export interface FencedDivReference {
     typeKey: string;
     number: number;
     referenceText: string;
+    blockTitleText: string;
     lineNumber: number;
     classes: string[];
     content: string;

@@ -103,6 +103,7 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
         }
 
         function normalizeFencedDiv(div: HTMLElement): BrowserNormalizedNode {
+            const title = div.querySelector(':scope > .pem-fenced-div-title') as HTMLElement | null;
             const content = div.querySelector(':scope > .pem-fenced-div-content') as HTMLElement | null;
             const className = Array.from(div.classList)
                 .find(name => name.startsWith('pem-fenced-div-') &&
@@ -117,8 +118,10 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
             return {
                 tag: 'div',
                 ...(Object.keys(attrs).length > 0 ? { attrs } : {}),
-                children: Array.from(content?.childNodes ?? [])
-                    .map(node => normalizeNode(node))
+                children: [
+                    ...(title ? [normalizeElement(title)] : []),
+                    ...Array.from(content?.childNodes ?? []).map(node => normalizeNode(node))
+                ]
                     .filter((node): node is BrowserNormalizedNode => node !== null && !isEmptyElement(node))
             };
         }

@@ -1,10 +1,10 @@
 --[[
   Fenced div cross-reference filter for Pandoc.
 
-  Collects native Div blocks with identifiers and replaces matching citation
-  nodes such as @prop:a with independently numbered reference text such as
-  "Proposition 1". Unknown citations are left untouched for citeproc or other
-  filters.
+  Collects native Div blocks with identifiers, adds a generated title block,
+  and replaces matching citation nodes such as @prop:a with independently
+  numbered reference text such as "Proposition 1". Unknown citations are left
+  untouched for citeproc or other filters.
 --]]
 
 local pandoc = require 'pandoc'
@@ -64,8 +64,23 @@ local function register_div(div)
         type_label = type_label,
         type_key = type_key,
         number = number,
-        reference_text = type_label .. ' ' .. tostring(number)
+        reference_text = type_label .. ' ' .. tostring(number),
+        block_title_text = type_label .. ' ' .. tostring(number)
     }
+end
+
+local function is_generated_title_block(block)
+    return block and
+        block.t == 'Div' and
+        block.classes and
+        block.classes:includes('pem-fenced-div-title')
+end
+
+local function title_block(reference)
+    return pandoc.Div(
+        { pandoc.Plain({ pandoc.Str(reference.block_title_text) }) },
+        pandoc.Attr('', { 'pem-fenced-div-title' }, {})
+    )
 end
 
 local function scan_blocks(blocks)
@@ -113,12 +128,26 @@ local function cite(cite_node)
     return pandoc.Str(reference.reference_text)
 end
 
+local function div(div_node)
+    local reference = references[div_node.identifier]
+    if not reference then
+        return nil
+    end
+
+    if not is_generated_title_block(div_node.content[1]) then
+        div_node.content:insert(1, title_block(reference))
+    end
+
+    return div_node
+end
+
 function Pandoc(doc)
     references = {}
     counters = {}
     scan_blocks(doc.blocks)
 
     return doc:walk({
-        Cite = cite
+        Cite = cite,
+        Div = div
     })
 end

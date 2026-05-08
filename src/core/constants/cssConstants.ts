@@ -21,6 +21,7 @@ export const CSS_CLASSES = {
     // Fenced Div Classes
     FENCED_DIV_LINE: 'cm-pem-fenced-div-line',
     FENCED_DIV_HEADER: 'pem-fenced-div-header',
+    FENCED_DIV_TITLE: 'pem-fenced-div-title',
     FENCED_DIV_CLOSING: 'pem-fenced-div-closing',
     FENCED_DIV_REFERENCE: 'pem-fenced-div-reference',
     FENCED_DIV_PANEL_CONTAINER: 'pem-fenced-div-panel-container',

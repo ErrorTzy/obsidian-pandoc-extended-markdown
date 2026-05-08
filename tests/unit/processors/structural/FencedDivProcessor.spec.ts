@@ -58,8 +58,22 @@ describe('FencedDivProcessor', () => {
                     typeKey: 'theorem',
                     number: 1,
                     referenceText: 'Theorem 1',
+                    blockTitleText: 'Theorem 1',
                     lineNumber: 1,
                     classes: ['theorem'],
+                    content: 'content'
+                }],
+                ['thm', {
+                    label: 'thm',
+                    title: '',
+                    displayName: 'Theorem 1',
+                    typeLabel: 'Theorem',
+                    typeKey: 'theorem',
+                    number: 1,
+                    referenceText: 'Theorem 1',
+                    blockTitleText: 'Theorem 1',
+                    lineNumber: 1,
+                    classes: ['Theorem'],
                     content: 'content'
                 }]
             ]),
@@ -129,9 +143,9 @@ describe('FencedDivProcessor', () => {
 
             expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-open');
             expect(result.decorations[1].decoration.spec?.widget?.constructor.name).toBe('FencedDivHeaderWidget');
-            expect(headerDom?.querySelector('.pem-fenced-div-title')).toBeNull();
+            expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
             expect(headerDom?.querySelector('.pem-fenced-div-source-handle')).toBeNull();
-            expect(headerDom?.textContent).toBe('');
+            expect(headerDom?.textContent).toBe('Theorem 1');
             expect(context.fencedDivStack).toHaveLength(1);
             expect(context.fencedDivStack?.[0].label).toBe('thm:label');
         });
@@ -150,8 +164,9 @@ describe('FencedDivProcessor', () => {
             const result = processor.process(context.document.line(1), context);
             const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
 
-            expect(headerDom?.querySelector('.pem-fenced-div-title')).toBeNull();
+            expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
             expect(headerDom?.dataset.pandocDivId).toBe('thm');
+            expect(headerDom?.textContent).toBe('Theorem 1');
             expect(context.fencedDivStack?.[0].label).toBe('thm');
         });
 

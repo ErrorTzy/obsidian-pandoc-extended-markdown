@@ -6,6 +6,7 @@ import { BaseWidget } from './BaseWidget';
 export class FencedDivHeaderWidget extends BaseWidget {
     constructor(
         public label?: string,
+        public titleText: string = '',
         view?: EditorView,
         pos?: number
     ) {
@@ -13,14 +14,17 @@ export class FencedDivHeaderWidget extends BaseWidget {
     }
 
     protected applyStyles(element: HTMLElement): void {
-        element.className = CSS_CLASSES.FENCED_DIV_HEADER;
+        element.className = [
+            CSS_CLASSES.FENCED_DIV_HEADER,
+            this.titleText ? CSS_CLASSES.FENCED_DIV_TITLE : undefined
+        ].filter(Boolean).join(' ');
         if (this.label) {
             element.dataset.pandocDivId = this.label;
         }
     }
 
     protected setContent(element: HTMLElement): void {
-        element.textContent = '';
+        element.textContent = this.titleText;
     }
 
     protected setupTooltip(element: HTMLElement): void {
@@ -31,6 +35,7 @@ export class FencedDivHeaderWidget extends BaseWidget {
 
     eq(other: FencedDivHeaderWidget): boolean {
         return other.label === this.label &&
+               other.titleText === this.titleText &&
                other.pos === this.pos;
     }
 }

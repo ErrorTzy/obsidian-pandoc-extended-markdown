@@ -81,6 +81,7 @@ describe('scanFencedDivs', () => {
             typeKey: 'premise',
             number: 1,
             referenceText: 'Premise 1',
+            blockTitleText: 'Premise 1',
             classes: ['logic-block']
         });
         expect(labels.get('pre:a')?.referenceText).toBe('Presupposition 1');

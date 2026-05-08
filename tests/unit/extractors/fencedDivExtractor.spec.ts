@@ -22,7 +22,8 @@ describe('extractFencedDivs', () => {
             classes: ['Theorem'],
             typeLabel: 'Theorem',
             number: 1,
-            referenceText: 'Theorem 1'
+            referenceText: 'Theorem 1',
+            blockTitleText: 'Theorem 1'
         });
     });
 
@@ -41,7 +42,8 @@ describe('extractFencedDivs', () => {
             typeLabel: 'Premise',
             typeKey: 'premise',
             number: 1,
-            referenceText: 'Premise 1'
+            referenceText: 'Premise 1',
+            blockTitleText: 'Premise 1'
         });
     });
 

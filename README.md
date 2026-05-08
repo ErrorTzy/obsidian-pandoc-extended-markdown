@@ -82,7 +82,7 @@ Every compact metric space is complete.
 See @thm.
 ```
 
-The opening fence renders without generated title text, matching Pandoc's fenced div output. Known `@id` citations render as `Title number` using `title="..."` first, then the first class, then `Div`. Numbering is independent per type, so propositions, remarks, and premises each get their own sequence.
+Labeled fenced divs render a theorem-style title line, and known `@id` citations render the same `Title number` text. The title label comes from `title="..."` first, then the first class, then `Div`. Numbering is independent per type, so propositions, remarks, and premises each get their own sequence.
 
 ```markdown
 ::: {.proposition #prop:a}
@@ -96,7 +96,7 @@ A premise.
 See @prop:a and @prem:a.
 ```
 
-The references render as `Proposition 1` and `Premise 1`; unknown citations remain unchanged.
+The block titles and references render as `Proposition 1` and `Premise 1`; unknown citations remain unchanged.
 
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
   - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
@@ -144,7 +144,7 @@ A modular sidebar panel displays various list-related content from the active do
 **Fenced Divs Panel** `:::`
 - Displays all fenced div blocks from the current document, including readable shorthand when strict Pandoc mode is off
 - Three-column layout: title metadata, citation label, and content
-- `title="..."` is metadata for cross-reference labels; it is not rendered as an in-block heading
+- `title="..."` is metadata for cross-reference labels and the generated theorem-style block title
 - Click labels to copy citation syntax (e.g., `@thm`) to clipboard
 - Click content to navigate to the fenced div content in the editor
 

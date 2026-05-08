@@ -74,7 +74,7 @@ describe('Readable fenced div shorthand rendering', () => {
         const state = await getLivePreviewState();
 
         expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual(['', '', '', '', '']);
+        expect(state.headerTexts).toEqual(['', 'Class 1', 'Class 2', 'Class 3', '']);
         expect(state.blockLabels).toEqual(['id1', 'id2', 'id3']);
         expect(state.referenceTexts).toEqual(['Class 1', 'Class 2', 'Class 3']);
         expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3']);
@@ -120,7 +120,7 @@ describe('Readable fenced div shorthand rendering', () => {
         const state = await getReadingModeState();
 
         expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual(['', '', '', '', '']);
+        expect(state.headerTexts).toEqual(['', 'Class 1', 'Class 2', 'Class 3', '']);
         expect(state.blockLabels).toEqual(['', 'id1', 'id2', 'id3', '']);
         expect(state.referenceTexts).toEqual(['Class 1', 'Class 2', 'Class 3']);
         expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3']);
@@ -259,7 +259,9 @@ async function getReadingModeState(): Promise<ReadableFencedDivState> {
             headerTexts: blocks.map(block => block.querySelector('.pem-fenced-div-title')?.textContent ?? ''),
             blockLabels: blocks.map(block => block.dataset.pandocDivId ?? ''),
             blockClasses: blocks.map(block => block.className),
-            blockTexts: blocks.map(block => block.textContent ?? ''),
+            blockTexts: blocks.map(block =>
+                block.querySelector('.pem-fenced-div-content')?.textContent ?? ''
+            ),
             referenceTexts: references.map(reference => reference.textContent ?? ''),
             referenceLabels: references.map(reference => reference.dataset.pandocDivRef ?? ''),
             rawText: preview?.textContent ?? '',

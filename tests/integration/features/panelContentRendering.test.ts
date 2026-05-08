@@ -49,6 +49,7 @@ describe('Panel Content Rendering', () => {
                     typeKey: 'proposition',
                     number: 1,
                     referenceText: 'Proposition 1',
+                    blockTitleText: 'Proposition 1',
                     lineNumber: 1,
                     classes: ['proposition'],
                     content: 'Proposition content.'

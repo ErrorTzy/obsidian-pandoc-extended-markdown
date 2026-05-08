@@ -63,9 +63,8 @@ describe('fenced div reading mode rendering', () => {
         expect(fencedDiv?.textContent).toContain('For a right triangle');
         expect(fencedDiv?.textContent).not.toContain(':::');
 
-        const header = fencedDiv?.querySelector(`.${CSS_CLASSES.FENCED_DIV_HEADER}`);
-        expect(header?.querySelector('.pem-fenced-div-title')).toBeNull();
-        expect(header?.textContent).toBe('');
+        const title = fencedDiv?.querySelector(`.${CSS_CLASSES.FENCED_DIV_TITLE}`);
+        expect(title?.textContent).toBe('Theorem 1');
 
         const reference = element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`) as HTMLElement | null;
         expect(reference?.dataset.pandocDivRef).toBe('thm:pythagoras');
@@ -109,11 +108,11 @@ describe('fenced div reading mode rendering', () => {
 
         const blocks = Array.from(element.querySelectorAll('.pem-fenced-div'));
         expect(blocks).toHaveLength(3);
-        expect(blocks[0].querySelector(':scope > .pem-fenced-div-content > .pem-fenced-div .pem-fenced-div-title')).toBeNull();
-        expect(blocks.map(block => block.querySelector('.pem-fenced-div-title'))).toEqual([
-            null,
-            null,
-            null
+        expect(blocks[0].querySelector(':scope > .pem-fenced-div-content > .pem-fenced-div .pem-fenced-div-title')?.textContent).toBe('Inner 1');
+        expect(blocks.map(block => block.querySelector('.pem-fenced-div-title')?.textContent)).toEqual([
+            'Outer 1',
+            'Inner 1',
+            'Warning 1'
         ]);
         expect(element.textContent).not.toContain(':::');
 
@@ -141,7 +140,7 @@ describe('fenced div reading mode rendering', () => {
 
         const fencedDiv = element.querySelector('.pem-fenced-div') as HTMLElement | null;
         expect(fencedDiv?.dataset.pandocDivId).toBe('thm');
-        expect(fencedDiv?.querySelector('.pem-fenced-div-title')).toBeNull();
+        expect(fencedDiv?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem 1');
         const reference = element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`) as HTMLElement | null;
         expect(reference?.dataset.pandocDivRef).toBe('thm');
         expect(reference?.textContent).toBe('Theorem 1');

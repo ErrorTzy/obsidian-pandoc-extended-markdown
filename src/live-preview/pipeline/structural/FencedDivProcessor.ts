@@ -35,10 +35,14 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             ? parseFencedDivOpening(line.text, context.settings)
             : null;
         if (opening) {
+            const reference = opening.id
+                ? context.fencedDivLabels?.get(opening.id)
+                : undefined;
             return this.processOpeningFence(line, context, {
                 label: opening.id,
                 classes: opening.classes,
-                openingLine: line.number
+                openingLine: line.number,
+                displayName: reference?.blockTitleText
             });
         }
 
@@ -61,7 +65,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         const renderDepth = context.fencedDivStack.length;
         const decorations = [
             this.createFenceLineDecoration(line, 'cm-pem-fenced-div-open', stackItem.classes, renderDepth),
-            this.createOpeningMarkerDecoration(line, context, stackItem.label)
+            this.createOpeningMarkerDecoration(line, context, stackItem.label, stackItem.displayName || '')
         ];
 
         return {
@@ -105,7 +109,8 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     private createOpeningMarkerDecoration(
         line: Line,
         context: ProcessingContext,
-        label?: string
+        label: string | undefined,
+        titleText: string
     ): { from: number; to: number; decoration: Decoration } {
         if (this.isCursorOnFenceLine(line, context)) {
             return {
@@ -121,7 +126,12 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             from: line.from,
             to: line.to,
             decoration: Decoration.replace({
-                widget: new FencedDivHeaderWidget(label, context.view, line.from),
+                widget: new FencedDivHeaderWidget(
+                    label,
+                    titleText,
+                    context.view,
+                    line.from
+                ),
                 inclusive: false
             })
         };

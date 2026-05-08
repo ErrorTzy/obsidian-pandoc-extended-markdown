@@ -8,6 +8,7 @@ export interface FencedDivReferenceMetadata {
     typeKey: string;
     number: number;
     referenceText: string;
+    blockTitleText: string;
 }
 
 export type FencedDivTypeCounters = Map<string, number>;
@@ -30,6 +31,7 @@ export function createFencedDivReference(
         typeKey: metadata.typeKey,
         number: metadata.number,
         referenceText: metadata.referenceText,
+        blockTitleText: metadata.blockTitleText,
         lineNumber,
         classes,
         content
@@ -52,7 +54,8 @@ export function createFencedDivReferenceMetadata(
         typeLabel,
         typeKey,
         number,
-        referenceText: `${typeLabel} ${number}`
+        referenceText: `${typeLabel} ${number}`,
+        blockTitleText: `${typeLabel} ${number}`
     };
 }
 

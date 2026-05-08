@@ -28,6 +28,7 @@ export interface FencedDivPanelItem {
     typeKey: string;
     number: number;
     referenceText: string;
+    blockTitleText: string;
     lineNumber: number;
     contentLineNumber: number;
     position: { line: number; ch: number };
@@ -99,7 +100,8 @@ export function extractFencedDivsFromDoc(
                     typeLabel: title || '',
                     typeKey: '',
                     number: 0,
-                    referenceText: ''
+                    referenceText: '',
+                    blockTitleText: ''
                 };
             const activeDiv: ActiveFencedDiv = {
                 title: metadata.title,
@@ -110,6 +112,7 @@ export function extractFencedDivsFromDoc(
                 typeKey: metadata.typeKey,
                 number: metadata.number,
                 referenceText: metadata.referenceText,
+                blockTitleText: metadata.blockTitleText,
                 lineNumber: lineNum - 1,
                 contentLineNumber: lineNum - 1,
                 position: { line: lineNum - 1, ch: 0 },

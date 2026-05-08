@@ -104,21 +104,24 @@ export function processFencedDivs(
         const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
             const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
-            const reference = shouldRegister
-                ? createFencedDivReference(
-                    opening.id || '',
-                    getFencedDivTitle(opening),
-                    opening.classes,
-                    0,
-                    '',
-                    typeCounters
-                )
-                : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
+            const reference = opening.id && labels.has(opening.id)
+                ? labels.get(opening.id) as FencedDivReference
+                : shouldRegister
+                    ? createFencedDivReference(
+                        opening.id || '',
+                        getFencedDivTitle(opening),
+                        opening.classes,
+                        0,
+                        '',
+                        typeCounters
+                    )
+                    : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
             const fencedDiv = createFencedDivElement(
                 opening.id,
                 opening.classes,
                 stack.length + 1,
-                getFencedDivTitle(opening)
+                getFencedDivTitle(opening),
+                reference.blockTitleText
             );
 
             if (opening.id && shouldRegister) {
@@ -191,21 +194,24 @@ function processMultilineCandidate(
         const opening = parseFencedDivOpening(line, config);
         if (opening) {
             const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
-            const reference = shouldRegister
-                ? createFencedDivReference(
-                    opening.id || '',
-                    getFencedDivTitle(opening),
-                    opening.classes,
-                    0,
-                    '',
-                    typeCounters
-                )
-                : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
+            const reference = opening.id && labels.has(opening.id)
+                ? labels.get(opening.id) as FencedDivReference
+                : shouldRegister
+                    ? createFencedDivReference(
+                        opening.id || '',
+                        getFencedDivTitle(opening),
+                        opening.classes,
+                        0,
+                        '',
+                        typeCounters
+                    )
+                    : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
             const fencedDiv = createFencedDivElement(
                 opening.id,
                 opening.classes,
                 stack.length + 1,
-                getFencedDivTitle(opening)
+                getFencedDivTitle(opening),
+                reference.blockTitleText
             );
 
             if (opening.id && shouldRegister) {
@@ -246,7 +252,8 @@ function createFencedDivElement(
     label: string | undefined,
     classes: string[],
     depth: number,
-    title: string = ''
+    title: string = '',
+    blockTitleText: string = ''
 ): { block: HTMLElement, content: HTMLElement } {
     const block = document.createElement('div');
     const primaryClass = getFencedDivCssClass(classes);
@@ -261,21 +268,27 @@ function createFencedDivElement(
     if (label) {
         block.dataset.pandocDivId = label;
     }
+    if (classes.length > 0) {
+        block.dataset.pandocDivClasses = classes.join(' ');
+    }
     if (title) {
         block.setAttribute('title', title);
     }
 
-    const header = document.createElement('div');
-    header.className = CSS_CLASSES.FENCED_DIV_HEADER;
-    if (label) {
-        header.dataset.pandocDivId = label;
-        setTooltip(header, `#${label}`, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+    if (blockTitleText) {
+        const titleElement = document.createElement('div');
+        titleElement.className = CSS_CLASSES.FENCED_DIV_TITLE;
+        titleElement.textContent = blockTitleText;
+        if (label) {
+            titleElement.dataset.pandocDivId = label;
+            setTooltip(titleElement, `#${label}`, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
+        }
+        block.appendChild(titleElement);
     }
 
     const content = document.createElement('div');
     content.className = 'pem-fenced-div-content';
 
-    block.appendChild(header);
     block.appendChild(content);
 
     return { block, content };
@@ -357,24 +370,50 @@ function hydrateRenderedFencedDivLabels(
     const typeCounters = createFencedDivTypeCounters(labels.values());
     for (const block of blocks) {
         const label = block.dataset.pandocDivId;
-        if (!label || labels.has(label)) {
+        if (!label) {
+            continue;
+        }
+
+        const existing = labels.get(label);
+        if (existing) {
+            ensureFencedDivTitleElement(block, existing);
             continue;
         }
 
         const content = block.querySelector('.pem-fenced-div-content')?.textContent?.trim() ?? '';
-
-        labels.set(
+        const reference = createFencedDivReference(
             label,
-            createFencedDivReference(
-                label,
-                block.getAttribute('title') || '',
-                getRenderedFencedDivClasses(block),
-                0,
-                content,
-                typeCounters
-            )
+            block.getAttribute('title') || '',
+            getRenderedFencedDivClasses(block),
+            0,
+            content,
+            typeCounters
         );
+
+        labels.set(label, reference);
+        ensureFencedDivTitleElement(block, reference);
     }
+}
+
+function ensureFencedDivTitleElement(
+    block: HTMLElement,
+    reference: FencedDivReference
+): void {
+    if (!reference.blockTitleText) {
+        return;
+    }
+
+    let titleElement = block.querySelector<HTMLElement>(':scope > .pem-fenced-div-title');
+    if (!titleElement) {
+        titleElement = document.createElement('div');
+        titleElement.className = CSS_CLASSES.FENCED_DIV_TITLE;
+        const content = block.querySelector(':scope > .pem-fenced-div-content');
+        block.insertBefore(titleElement, content || block.firstChild);
+    }
+
+    titleElement.textContent = reference.blockTitleText;
+    titleElement.dataset.pandocDivId = reference.label;
+    setTooltip(titleElement, `#${reference.label}`, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
 }
 
 function createUnregisteredFencedDivReference(
@@ -389,6 +428,7 @@ function createUnregisteredFencedDivReference(
         typeKey: 'div',
         number: 0,
         referenceText: 'Div',
+        blockTitleText: '',
         lineNumber: 0,
         classes,
         content: ''
@@ -422,6 +462,11 @@ function processHydratedFencedDivReferences(
 }
 
 function getRenderedFencedDivClasses(block: HTMLElement): string[] {
+    const storedClasses = block.dataset.pandocDivClasses?.split(/\s+/).filter(Boolean);
+    if (storedClasses?.length) {
+        return storedClasses;
+    }
+
     return Array.from(block.classList)
         .filter(className =>
             className.startsWith('pem-fenced-div-') &&

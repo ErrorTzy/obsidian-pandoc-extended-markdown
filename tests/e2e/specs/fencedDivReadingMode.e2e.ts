@@ -55,7 +55,7 @@ describe('Fenced div reading mode', () => {
             await browser.waitUntil(async () => {
                 const state = await getReadingModeFencedDivState();
                 return state.blockCount === 1 &&
-                    state.headerTexts.every(text => text === '') &&
+                    state.headerTexts.includes('Theorem 1') &&
                     state.referenceTexts.includes('Theorem 1');
             }, {
                 timeout: 5000,
@@ -69,7 +69,7 @@ describe('Fenced div reading mode', () => {
         const state = await getReadingModeFencedDivState();
 
         expect(state.blockCount).toBe(1);
-        expect(state.headerTexts).toEqual(['']);
+        expect(state.headerTexts).toEqual(['Theorem 1']);
         expect(state.blockLabels).toEqual(['thm:reading']);
         expect(state.blockClasses[0]).toContain('pem-fenced-div-theorem');
         expect(state.blockTexts[0]).toContain('Every compact metric space is complete.');
@@ -101,20 +101,25 @@ describe('Fenced div reading mode', () => {
         await openFileInActiveLeaf(filePath);
         await ensureReadingMode();
 
-        await browser.waitUntil(async () => {
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeFencedDivState();
+                return state.blockCount === 3 &&
+                    state.headerTexts.join('|') === 'Outer 1|Inner 1|Warning 1' &&
+                    state.referenceTexts.join('|') === 'Outer 1|Inner 1|Warning 1';
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected adjacent and nested fenced divs in reading mode'
+            });
+        } catch (error) {
             const state = await getReadingModeFencedDivState();
-            return state.blockCount === 3 &&
-                state.headerTexts.join('|') === '||' &&
-                state.referenceTexts.join('|') === 'Outer 1|Inner 1|Warning 1';
-        }, {
-            timeout: 5000,
-            timeoutMsg: 'Expected adjacent and nested fenced divs in reading mode'
-        });
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
 
         const state = await getReadingModeFencedDivState();
 
         expect(state.blockCount).toBe(3);
-        expect(state.headerTexts).toEqual(['', '', '']);
+        expect(state.headerTexts).toEqual(['Outer 1', 'Inner 1', 'Warning 1']);
         expect(state.blockLabels).toEqual(['outer', 'inner', 'warn']);
         expect(state.blockClasses[1]).toContain('pem-fenced-div-inner');
         expect(state.blockClasses[2]).toContain('pem-fenced-div-inner');

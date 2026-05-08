@@ -55,6 +55,11 @@ describe('fenced div live-preview styles', () => {
         expect(styles).not.toMatch(/\.pem-fenced-div-source-handle\s*\{/s);
     });
 
+    it('styles generated fenced div titles as theorem-style block headers', () => {
+        expect(styles).toMatch(/\.pem-fenced-div\s*>\s*\.pem-fenced-div-title\s*\{[^}]*display:\s*block/s);
+        expect(styles).toMatch(/\.pem-fenced-div-header,\s*\.pem-fenced-div-title\s*\{[^}]*font-weight:\s*700/s);
+    });
+
     it('does not compact intentional blank spacer lines inside the div', () => {
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-blank\s*\{/s);
     });

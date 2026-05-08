@@ -35,7 +35,14 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                 ].join('\n'),
                 waitForSelector: '.pem-fenced-div .pem-fenced-div-note',
                 expectedSelector: 'div.outer',
-                actualKind: 'fenced-div'
+                actualKind: 'fenced-div',
+                pandocArgs: [
+                    '-f',
+                    PANDOC_MARKDOWN_FORMAT,
+                    '-t',
+                    'html',
+                    '--lua-filter=lua_filter/FencedDivCrossRef.lua'
+                ]
             },
             {
                 name: 'superscript-and-subscript',

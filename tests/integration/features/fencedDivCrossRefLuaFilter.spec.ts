@@ -49,6 +49,10 @@ function inlineText(inlines: PandocInline[]): string {
     }).join('');
 }
 
+function divContent(block: PandocBlock): PandocBlock[] {
+    return (block.c as [unknown, PandocBlock[]])[1];
+}
+
 describe('FencedDivCrossRef.lua', () => {
     it('replaces native fenced div citations with independently numbered reference text', () => {
         const blocks = renderBlocks([
@@ -67,7 +71,11 @@ describe('FencedDivCrossRef.lua', () => {
             'See @prop:a, @rem:a, and @prop:b.'
         ].join('\n'));
         const lastPara = blocks[blocks.length - 1];
+        const firstDivContent = divContent(blocks[0]);
 
+        expect(firstDivContent[0].t).toBe('Div');
+        expect(JSON.stringify(firstDivContent[0])).toContain('pem-fenced-div-title');
+        expect(JSON.stringify(firstDivContent[0])).toContain('Proposition 1');
         expect(lastPara.t).toBe('Para');
         expect(inlineText(lastPara.c as PandocInline[])).toBe(
             'See Proposition 1, Remark 1, and Proposition 2.'
@@ -87,7 +95,11 @@ describe('FencedDivCrossRef.lua', () => {
             'See @prem:a and @misc:a.'
         ].join('\n'));
         const lastPara = blocks[blocks.length - 1];
+        const premiseDivContent = divContent(blocks[0]);
+        const miscDivContent = divContent(blocks[1]);
 
+        expect(JSON.stringify(premiseDivContent[0])).toContain('Premise 1');
+        expect(JSON.stringify(miscDivContent[0])).toContain('Div 1');
         expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise 1 and Div 1.');
     });
 

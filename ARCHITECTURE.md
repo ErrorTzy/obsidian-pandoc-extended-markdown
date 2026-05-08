@@ -27,7 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
-| **Fenced Divs** | `::: {.theorem #id}` and non-strict `::: Theorem #id`; `@id` → `Theorem 1` | FencedDivProcessor + FencedDivReferenceProcessor |
+| **Fenced Divs** | `::: {.theorem #id}` renders `Theorem 1`; `@id` → `Theorem 1` | FencedDivProcessor + FencedDivReferenceProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -153,7 +153,7 @@ All widgets extend `BaseWidget` which provides:
 | **CustomLabelReferenceWidget** | BaseWidget | `{::ref}` with hover preview |
 | **DuplicateCustomLabelWidget** | BaseWidget | Error styling for duplicates |
 | **DefinitionBulletWidget** | BaseWidget | Definition list bullets |
-| **FencedDivHeaderWidget** | BaseWidget | Empty fenced div opener placeholder with optional id tooltip |
+| **FencedDivHeaderWidget** | BaseWidget | Fenced div opener placeholder with generated theorem-style title text and optional id tooltip |
 | **FencedDivClosingWidget** | BaseWidget | Hidden closing fence placeholder |
 | **FencedDivReferenceWidget** | BaseWidget | `@id` → numbered fenced-div reference with hover preview |
 | **ExampleReferenceWidget** | BaseWidget | `(@ref)` → `(n)` with hover |

@@ -45,6 +45,7 @@ interface FencedDivRenderState {
 }
 
 interface FencedDivReferenceState {
+    headerTexts: string[];
     referenceTexts: string[];
     referenceLabels: string[];
     referenceLineText: string;
@@ -285,7 +286,7 @@ describe('Fenced div live preview', () => {
         expect(state.openLineCount).toBe(3);
         expect(state.closeLineCount).toBe(3);
         expect(state.contentLineCount).toBe(2);
-        expect(state.headerTexts).toEqual(['', '', '']);
+        expect(state.headerTexts).toEqual(['Outer 1', 'Nested "label" 1', '']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
         expect(state.referenceTexts).toEqual(['Outer 1', 'Nested "label" 1']);
         expect(state.referenceLabels).toEqual(['outer', 'inner']);
@@ -337,7 +338,7 @@ describe('Fenced div live preview', () => {
         await createOrReplaceFile(filePath, content);
         await openFileInActiveLeaf(filePath);
         await ensureLivePreviewMode();
-        await moveCursorToLine(1);
+        await moveCursorToLine(21);
 
         await browser.waitUntil(async () => {
             const state = await getFencedDivReferenceState();
@@ -350,6 +351,13 @@ describe('Fenced div live preview', () => {
 
         const state = await getFencedDivReferenceState();
 
+        expect(state.headerTexts).toEqual([
+            'Proposition 1',
+            'Remark 1',
+            'Proposition 2',
+            'Premise 1',
+            'Div 1'
+        ]);
         expect(state.referenceTexts).toEqual([
             'Proposition 1',
             'Remark 1',
@@ -527,11 +535,13 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
 
 async function getFencedDivReferenceState(): Promise<FencedDivReferenceState> {
     return browser.execute((): FencedDivReferenceState => {
+        const headers = Array.from(document.querySelectorAll('.pem-fenced-div-header')) as HTMLElement[];
         const references = Array.from(document.querySelectorAll('.pem-fenced-div-reference')) as HTMLElement[];
         const referenceLine = Array.from(document.querySelectorAll('.cm-line'))
             .find(line => line.textContent?.includes('Refs')) as HTMLElement | undefined;
 
         return {
+            headerTexts: headers.map(header => header.textContent ?? ''),
             referenceTexts: references.map(reference => reference.textContent ?? ''),
             referenceLabels: references
                 .map(reference => reference.dataset.pandocDivRef)

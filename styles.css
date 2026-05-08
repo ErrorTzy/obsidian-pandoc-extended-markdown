@@ -192,7 +192,7 @@
     margin-inline-start: var(--pem-fenced-div-nest-indent);
 }
 
-.pem-fenced-div > .pem-fenced-div-header {
+.pem-fenced-div > .pem-fenced-div-title {
     display: block;
     margin-bottom: 0.35em;
 }
@@ -422,7 +422,8 @@
     padding-bottom: 0.5em;
 }
 
-.pem-fenced-div-header {
+.pem-fenced-div-header,
+.pem-fenced-div-title {
     display: inline-block;
     color: var(--text-normal);
     font-weight: 700;

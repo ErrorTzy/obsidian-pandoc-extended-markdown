@@ -53,6 +53,7 @@ describe('FencedDivReferenceProcessor', () => {
                     typeKey: 'theorem',
                     number: 1,
                     referenceText: 'Theorem 1',
+                    blockTitleText: 'Theorem 1',
                     lineNumber: 1,
                     classes: ['theorem'],
                     content: 'content'
