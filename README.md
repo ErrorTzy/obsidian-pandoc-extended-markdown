@@ -107,7 +107,7 @@ The block titles and references render as `Proposition 1` and `Premise 1`; unkno
 - Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
 - Comma-separated attributes such as `{.theorem, #thm}` are also plain text in Pandoc and are not rendered.
 - Reading mode support applies to rendered paragraph/list-item blocks that Obsidian exposes to the post-processor.
-- For Pandoc export, readable shorthand can be normalized to native Div blocks with `lua_filter/ReadableFencedDiv.lua`, and fenced-div references can be rendered with `lua_filter/FencedDivCrossRef.lua`.
+- For Pandoc export, readable shorthand and fenced-div references can be rendered with `lua_filter/FencedDivExtendedSyntax.lua`. The filter adds semantic `pem-fenced-div` and `pem-fenced-div-title` classes for portable fallback output. It also adds restrained default export styling for supported writer families: HTML exports receive a left rule, padding, spacing, and bold generated titles; LaTeX/PDF exports use a no-fill `tcolorbox` wrapper with a left rule; DOCX/ODT exports receive `PEM Fenced Div` and `PEM Fenced Div Title` custom-style attributes that can be refined in a Pandoc reference document.
 
 ### List Panel View
 
