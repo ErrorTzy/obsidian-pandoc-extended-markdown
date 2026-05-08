@@ -41,7 +41,7 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                     PANDOC_MARKDOWN_FORMAT,
                     '-t',
                     'html',
-                    '--lua-filter=lua_filter/FencedDivCrossRef.lua'
+                    '--lua-filter=lua_filter/FencedDivExtendedSyntax.lua'
                 ]
             },
             {
@@ -115,7 +115,7 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                     PANDOC_MARKDOWN_FORMAT,
                     '-t',
                     'html',
-                    '--lua-filter=lua_filter/FencedDivCrossRef.lua'
+                    '--lua-filter=lua_filter/FencedDivExtendedSyntax.lua'
                 ]
             }
         ];

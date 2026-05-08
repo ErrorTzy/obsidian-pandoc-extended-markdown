@@ -20,7 +20,7 @@
 - TypeScript-first; follow ESLint rules in `eslint.config.mjs`.
 - Use 4-space indentation, single quotes, and semicolons as seen in `src/`.
 - Import order follows the architecture guide: External → Types → Constants → Patterns → Utils → Internal.
-- Keep files ≤400 lines and functions ≤50 lines (see `ARCHITECTURE.md`).
+- Keep typescript files ≤400 lines and functions ≤50 lines (see `ARCHITECTURE.md`).
 - Naming: `PascalCase` for classes/types, `camelCase` for functions/vars, `UPPER_SNAKE_CASE` for constants.
 
 ## Testing Guidelines
@@ -29,10 +29,12 @@
 - Naming: most tests use `.spec.ts`; some feature tests use `.test.ts`—match the local folder pattern. E2E uses `.e2e.ts`.
 - Reuse mocks in `__mocks__/` where possible.
 
-## Fenced Div Citation Notes
-- Pandoc fenced divs render ids/classes on the div but do not render class names as titles.
-- Pandoc parses `@id` after a fenced div as citation syntax, not as a built-in cross-reference to that div; current preview/reading mode should preserve `@id` text.
-- Keep the existing fenced-div citation/autocomplete scaffolding for future custom Lua-filter-backed cross-reference support: `FencedDivReferenceSuggest`, `FencedDivReferenceProcessor`, `FencedDivReferenceInlineProcessor`, `FencedDivReferenceWidget`, and `fencedDivReferenceContentProcessor`.
+## Fenced Div Cross-Reference Notes
+- Pandoc fenced divs render ids/classes on the div but do not render class names as titles by default.
+- Live Preview and Reading mode resolve known fenced-div citations such as `@id` into generated reference text; unknown citations remain raw/preserved for other citation processors.
+- Fenced-div block titles render when a `title` attribute is present or when at least one class is present. If neither `title` nor class is present, the block has no visible title, though an id-only reference still uses `Div` as its reference type.
+- `lua_filter/ReadableFencedDiv.lua` normalizes readable fenced-div shorthand for Pandoc export, and `lua_filter/FencedDivCrossRef.lua` wires fenced-div titles and cross-references in exported output.
+- Keep fenced-div citation/autocomplete support aligned across `FencedDivReferenceSuggest`, `FencedDivReferenceProcessor`, `FencedDivReferenceInlineProcessor`, `FencedDivReferenceWidget`, and `fencedDivReferenceContentProcessor`.
 
 ## Commit & Pull Request Guidelines
 - Recent commits are short, imperative, one-line summaries (e.g., “Fix…”, “Add…”, “Address…”); follow that style and avoid scopes unless needed.

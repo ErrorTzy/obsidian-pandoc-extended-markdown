@@ -20,6 +20,7 @@ export default defineConfig([
             'esbuild.config.mjs',
             'wdio.conf.mts',
             'tests/**',
+            'lua_filter/**/*.spec.ts',
             '__mocks__/**',
         ],
     },
