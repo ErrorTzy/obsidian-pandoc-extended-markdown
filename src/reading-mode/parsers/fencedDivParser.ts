@@ -17,7 +17,7 @@ import {
     createFencedDivReference,
     createFencedDivTypeCounters,
     createFencedDivReferenceMetadata,
-    FencedDivReferenceMetadata,
+    createFencedDivReferenceFromMetadata,
     getFencedDivTitle
 } from '../../shared/utils/fencedDivReferenceMetadata';
 
@@ -29,6 +29,12 @@ const documentTypeCounters = new Map<string, FencedDivTypeCounters>();
 interface ActiveFencedDiv {
     contentElement: HTMLElement;
     contentLines: string[];
+    reference: FencedDivReference;
+}
+
+interface PreparedFencedDiv {
+    block: HTMLElement;
+    contentElement: HTMLElement;
     reference: FencedDivReference;
 }
 
@@ -106,32 +112,13 @@ export function processFencedDivs(
 
         const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
-            const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
-            const metadata = createOpeningMetadata(opening, typeCounters);
-            const reference = opening.id && labels.has(opening.id)
-                ? labels.get(opening.id) as FencedDivReference
-                : createFencedDivReferenceFromMetadata(
-                    opening.id || '',
-                    opening.classes,
-                    metadata
-                );
-            const fencedDiv = createFencedDivElement(
-                opening.id,
-                opening.classes,
-                stack.length + 1,
-                getFencedDivTitle(opening),
-                reference.blockTitleText
-            );
-
-            if (opening.id && shouldRegister) {
-                labels.set(opening.id, reference);
-            }
+            const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters);
 
             insertFencedDiv(candidate, fencedDiv.block, stack);
             stack.push({
-                contentElement: fencedDiv.content,
+                contentElement: fencedDiv.contentElement,
                 contentLines: [],
-                reference
+                reference: fencedDiv.reference
             });
             continue;
         }
@@ -222,32 +209,13 @@ function processMultilineCandidate(
     for (const line of lines) {
         const opening = parseFencedDivOpening(line, config);
         if (opening) {
-            const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
-            const metadata = createOpeningMetadata(opening, typeCounters);
-            const reference = opening.id && labels.has(opening.id)
-                ? labels.get(opening.id) as FencedDivReference
-                : createFencedDivReferenceFromMetadata(
-                    opening.id || '',
-                    opening.classes,
-                    metadata
-                );
-            const fencedDiv = createFencedDivElement(
-                opening.id,
-                opening.classes,
-                stack.length + 1,
-                getFencedDivTitle(opening),
-                reference.blockTitleText
-            );
-
-            if (opening.id && shouldRegister) {
-                labels.set(opening.id, reference);
-            }
+            const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters);
 
             appendRenderedLineNode(fencedDiv.block, fragments, stack);
             stack.push({
-                contentElement: fencedDiv.content,
+                contentElement: fencedDiv.contentElement,
                 contentLines: [],
-                reference
+                reference: fencedDiv.reference
             });
             continue;
         }
@@ -271,6 +239,47 @@ function processMultilineCandidate(
 
     replaceCandidateWithFragments(candidate, fragments);
     return true;
+}
+
+function prepareFencedDivOpening(
+    opening: FencedDivAttributes,
+    stack: ActiveFencedDiv[],
+    labels: Map<string, FencedDivReference>,
+    typeCounters: FencedDivTypeCounters
+): PreparedFencedDiv {
+    const title = getFencedDivTitle(opening);
+    const metadata = createFencedDivReferenceMetadata(
+        title,
+        opening.classes,
+        typeCounters
+    );
+    const existingReference = opening.id
+        ? labels.get(opening.id)
+        : undefined;
+    const reference = existingReference || createFencedDivReferenceFromMetadata(
+        opening.id || '',
+        opening.classes,
+        0,
+        '',
+        metadata
+    );
+    const fencedDiv = createFencedDivElement(
+        opening.id,
+        opening.classes,
+        stack.length + 1,
+        title,
+        reference.blockTitleText
+    );
+
+    if (opening.id && !existingReference) {
+        labels.set(opening.id, reference);
+    }
+
+    return {
+        block: fencedDiv.block,
+        contentElement: fencedDiv.content,
+        reference
+    };
 }
 
 function createFencedDivElement(
@@ -439,37 +448,6 @@ function ensureFencedDivTitleElement(
     titleElement.textContent = reference.blockTitleText;
     titleElement.dataset.pandocDivId = reference.label;
     setTooltip(titleElement, `#${reference.label}`, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-}
-
-function createOpeningMetadata(
-    opening: FencedDivAttributes,
-    typeCounters: FencedDivTypeCounters
-): FencedDivReferenceMetadata {
-    const title = getFencedDivTitle(opening);
-    return createFencedDivReferenceMetadata(title, opening.classes, typeCounters);
-}
-
-function createFencedDivReferenceFromMetadata(
-    label: string,
-    classes: string[],
-    metadata: FencedDivReferenceMetadata
-): FencedDivReference {
-    return {
-        label,
-        title: metadata.title,
-        titleTemplate: metadata.titleTemplate,
-        displayName: metadata.referenceText,
-        typeLabel: metadata.typeLabel,
-        typeKey: metadata.typeKey,
-        number: metadata.number,
-        numberParts: metadata.numberParts,
-        numberingEnabled: metadata.numberingEnabled,
-        referenceText: metadata.referenceText,
-        blockTitleText: metadata.blockTitleText,
-        lineNumber: 0,
-        classes,
-        content: ''
-    };
 }
 
 function processHydratedFencedDivReferences(

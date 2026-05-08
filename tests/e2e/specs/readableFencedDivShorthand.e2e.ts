@@ -19,6 +19,8 @@ interface ReadableFencedDivState {
     atTextNodes: string[];
 }
 
+type RenderMode = 'live' | 'reading';
+
 const shorthandContent = [
     '::: class1 class2 class3',
     'Multiple classes',
@@ -157,6 +159,68 @@ const visiblePlaceholderContent = [
     ':::'
 ].join('\n');
 
+const renderModes: RenderMode[] = ['live', 'reading'];
+const shorthandHeaders = [
+    'Class1',
+    'Class',
+    'Class',
+    'Class',
+    '',
+    'explicit title with space',
+    'explicit title before attributes'
+];
+const shorthandReferences = [
+    'Class',
+    'Class',
+    'Class',
+    'explicit title with space',
+    'explicit title before attributes'
+];
+const shorthandBlockTexts = [
+    'Multiple classes',
+    'class and id',
+    'class, data and id',
+    'id, class and data',
+    'multiple data, no class',
+    'title after braced attributes',
+    'title before braced attributes'
+];
+const titleRenderingHeaders = [
+    'title before attributes 1',
+    'title after attributes 1',
+    'Classname',
+    'titlename',
+    ''
+];
+const titleRenderingBlockTexts = [
+    'title before content',
+    'title after content',
+    'class-only content',
+    'title-only content',
+    'id-only content'
+];
+const placeholderReferences = [
+    'Case 1',
+    'Case 1.1',
+    '1 Note',
+    'Case 2',
+    'Case 2.1',
+    'Case &',
+    '& Note'
+];
+const visiblePlaceholderHeaders = [
+    'Case 1',
+    'Case 1.1',
+    '1 Note',
+    'Case 2',
+    'Case 2.1',
+    '2 Note',
+    'Case 3',
+    'Case 3.1',
+    '4 Case &',
+    'Case &'
+];
+
 describe('Readable fenced div shorthand rendering', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -165,443 +229,105 @@ describe('Readable fenced div shorthand rendering', () => {
         await enableReadableFencedDivs();
     });
 
-    it('renders shorthand cases and fenced-div references in Live Preview', async () => {
-        const filePath = 'readable-fenced-div-shorthand-live.md';
+    for (const mode of renderModes) {
+        it(`renders shorthand cases and fenced-div references in ${renderModeName(mode)}`, async () => {
+            const filePath = `readable-fenced-div-shorthand-${mode}.md`;
 
-        await createOrReplaceFile(filePath, shorthandContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureLivePreviewMode();
-        await moveCursorToLine(9);
+            await openReadableFixture(filePath, shorthandContent, mode, 9);
+            await waitForReadableState(
+                mode,
+                state => state.blockCount === 7 &&
+                    state.referenceTexts.join('|') === shorthandReferences.join('|'),
+                `Expected readable shorthand fenced divs in ${renderModeName(mode)}`
+            );
 
-        await browser.waitUntil(async () => {
-            const state = await getLivePreviewState();
-            return state.blockCount === 7 &&
-                state.referenceTexts.includes('explicit title with space') &&
-                state.referenceTexts.includes('explicit title before attributes');
-        }, {
-            timeout: 5000,
-            timeoutMsg: 'Expected readable shorthand fenced divs in Live Preview'
+            const state = await getReadableState(mode);
+
+            expect(state.blockCount).toBe(7);
+            expect(state.headerTexts).toEqual(shorthandHeaders);
+            expect(state.blockLabels).toEqual(mode === 'live'
+                ? ['id1', 'id2', 'id3', 'id4', 'id5']
+                : ['', 'id1', 'id2', 'id3', '', 'id4', 'id5']);
+            expect(state.referenceTexts).toEqual(shorthandReferences);
+            expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
+            expect(state.blockClasses[0]).toContain(`${classPrefix(mode)}class1`);
+            for (const index of [1, 2, 3, 5, 6]) {
+                expect(state.blockClasses[index]).toContain(`${classPrefix(mode)}class`);
+            }
+            expect(state.blockTexts).toEqual(shorthandBlockTexts);
+            if (mode === 'reading') {
+                expect(state.rawText).not.toContain('::: class1 class2 class3');
+            }
+            expectRenderedReferencesRemoved(state.rawText, ['id1', 'id2', 'id3', 'id4', 'id5']);
+
+            await deleteFileIfExists(filePath);
         });
 
-        const state = await getLivePreviewState();
+        it(`renders fenced-div titles independently of reference labels in ${renderModeName(mode)}`, async () => {
+            const filePath = `readable-fenced-div-title-rendering-${mode}.md`;
 
-        expect(state.blockCount).toBe(7);
-        expect(state.headerTexts).toEqual([
-            'Class1',
-            'Class',
-            'Class',
-            'Class',
-            '',
-            'explicit title with space',
-            'explicit title before attributes'
-        ]);
-        expect(state.blockLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
-        expect(state.referenceTexts).toEqual([
-            'Class',
-            'Class',
-            'Class',
-            'explicit title with space',
-            'explicit title before attributes'
-        ]);
-        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
-        expect(state.blockClasses[0]).toContain('cm-pem-fenced-div-class1');
-        expect(state.blockClasses[1]).toContain('cm-pem-fenced-div-class');
-        expect(state.blockClasses[2]).toContain('cm-pem-fenced-div-class');
-        expect(state.blockClasses[3]).toContain('cm-pem-fenced-div-class');
-        expect(state.blockClasses[5]).toContain('cm-pem-fenced-div-class');
-        expect(state.blockClasses[6]).toContain('cm-pem-fenced-div-class');
-        expect(state.blockTexts).toEqual([
-            'Multiple classes',
-            'class and id',
-            'class, data and id',
-            'id, class and data',
-            'multiple data, no class',
-            'title after braced attributes',
-            'title before braced attributes'
-        ]);
-        expect(state.rawText).not.toContain('@id1');
-        expect(state.rawText).not.toContain('@id2');
-        expect(state.rawText).not.toContain('@id3');
-        expect(state.rawText).not.toContain('@id4');
-        expect(state.rawText).not.toContain('@id5');
+            await openReadableFixture(filePath, titleRenderingContent, mode, 2);
+            await waitForReadableState(
+                mode,
+                state => state.blockCount === 5 &&
+                    state.headerTexts.join('|') === titleRenderingHeaders.join('|') &&
+                    state.referenceTexts.join('|') === 'Div',
+                `Expected fenced div titles to render in ${renderModeName(mode)}`
+            );
 
-        await deleteFileIfExists(filePath);
-    });
+            const state = await getReadableState(mode);
 
-    it('renders fenced-div titles independently of reference labels in Live Preview', async () => {
-        const filePath = 'readable-fenced-div-title-rendering-live.md';
+            expect(state.blockCount).toBe(5);
+            expect(state.headerTexts).toEqual(titleRenderingHeaders);
+            expect(state.blockLabels).toEqual(mode === 'live'
+                ? ['bare']
+                : ['', '', '', '', 'bare']);
+            expect(state.referenceTexts).toEqual(['Div']);
+            expect(state.referenceLabels).toEqual(['bare']);
+            expect(state.blockTexts).toEqual(titleRenderingBlockTexts);
 
-        await createOrReplaceFile(filePath, titleRenderingContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureLivePreviewMode();
-        await moveCursorToLine(2);
-
-        await browser.waitUntil(async () => {
-            const state = await getLivePreviewState();
-            return state.blockCount === 5 &&
-                state.headerTexts.join('|') === [
-                    'title before attributes 1',
-                    'title after attributes 1',
-                    'Classname',
-                    'titlename',
-                    ''
-                ].join('|') &&
-                state.referenceTexts.join('|') === 'Div';
-        }, {
-            timeout: 5000,
-            timeoutMsg: 'Expected fenced div titles to render in Live Preview'
+            await deleteFileIfExists(filePath);
         });
 
-        const state = await getLivePreviewState();
+        it(`renders shorthand placeholder titles in ${renderModeName(mode)}`, async () => {
+            const filePath = `readable-fenced-div-placeholder-${mode}.md`;
 
-        expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual([
-            'title before attributes 1',
-            'title after attributes 1',
-            'Classname',
-            'titlename',
-            ''
-        ]);
-        expect(state.blockLabels).toEqual(['bare']);
-        expect(state.referenceTexts).toEqual(['Div']);
-        expect(state.referenceLabels).toEqual(['bare']);
-        expect(state.blockTexts).toEqual([
-            'title before content',
-            'title after content',
-            'class-only content',
-            'title-only content',
-            'id-only content'
-        ]);
+            await openReadableFixture(filePath, placeholderShorthandContent, mode, 29);
+            await waitForReadableState(
+                mode,
+                state => state.blockCount === 7 &&
+                    state.referenceTexts.join('|') === placeholderReferences.join('|'),
+                `Expected shorthand placeholder fenced divs in ${renderModeName(mode)}`
+            );
 
-        await deleteFileIfExists(filePath);
-    });
+            const state = await getReadableState(mode);
 
-    it('renders shorthand placeholder titles in Live Preview', async () => {
-        const filePath = 'readable-fenced-div-placeholder-live.md';
+            expect(state.headerTexts).toEqual(placeholderReferences);
+            expect(state.referenceTexts).toEqual(placeholderReferences);
+            expect(state.blockClasses[0]).toContain(`${classPrefix(mode)}case`);
+            expect(state.blockClasses[2]).toContain(`${classPrefix(mode)}note`);
 
-        await createOrReplaceFile(filePath, placeholderShorthandContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureLivePreviewMode();
-        await moveCursorToLine(29);
-
-        await browser.waitUntil(async () => {
-            const state = await getLivePreviewState();
-            return state.blockCount === 7 &&
-                state.referenceTexts.join('|') === [
-                    'Case 1',
-                    'Case 1.1',
-                    '1 Note',
-                    'Case 2',
-                    'Case 2.1',
-                    'Case &',
-                    '& Note'
-                ].join('|');
-        }, {
-            timeout: 5000,
-            timeoutMsg: 'Expected shorthand placeholder fenced divs in Live Preview'
+            await deleteFileIfExists(filePath);
         });
 
-        const state = await getLivePreviewState();
+        it(`renders visible no-id placeholder block titles in ${renderModeName(mode)}`, async () => {
+            const filePath = `readable-fenced-div-visible-placeholders-${mode}.md`;
 
-        expect(state.headerTexts).toEqual([
-            'Case 1',
-            'Case 1.1',
-            '1 Note',
-            'Case 2',
-            'Case 2.1',
-            'Case &',
-            '& Note'
-        ]);
-        expect(state.referenceTexts).toEqual([
-            'Case 1',
-            'Case 1.1',
-            '1 Note',
-            'Case 2',
-            'Case 2.1',
-            'Case &',
-            '& Note'
-        ]);
-        expect(state.blockClasses[0]).toContain('cm-pem-fenced-div-case');
-        expect(state.blockClasses[2]).toContain('cm-pem-fenced-div-note');
+            await openReadableFixture(filePath, visiblePlaceholderContent, mode, 38);
+            await waitForReadableState(
+                mode,
+                state => state.blockCount === 10 &&
+                    state.headerTexts.join('|') === visiblePlaceholderHeaders.join('|'),
+                `Expected visible no-id shorthand placeholder titles in ${renderModeName(mode)}`
+            );
 
-        await deleteFileIfExists(filePath);
-    });
+            const state = await getReadableState(mode);
 
-    it('renders visible no-id placeholder block titles in Live Preview', async () => {
-        const filePath = 'readable-fenced-div-visible-placeholders-live.md';
+            expect(state.headerTexts).toEqual(visiblePlaceholderHeaders);
 
-        await createOrReplaceFile(filePath, visiblePlaceholderContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureLivePreviewMode();
-        await moveCursorToLine(38);
-
-        await browser.waitUntil(async () => {
-            const state = await getLivePreviewState();
-            return state.blockCount === 10 &&
-                state.headerTexts.join('|') === [
-                    'Case 1',
-                    'Case 1.1',
-                    '1 Note',
-                    'Case 2',
-                    'Case 2.1',
-                    '2 Note',
-                    'Case 3',
-                    'Case 3.1',
-                    '4 Case &',
-                    'Case &'
-                ].join('|');
-        }, {
-            timeout: 5000,
-            timeoutMsg: 'Expected visible no-id shorthand placeholder titles in Live Preview'
+            await deleteFileIfExists(filePath);
         });
-
-        const state = await getLivePreviewState();
-
-        expect(state.headerTexts).toEqual([
-            'Case 1',
-            'Case 1.1',
-            '1 Note',
-            'Case 2',
-            'Case 2.1',
-            '2 Note',
-            'Case 3',
-            'Case 3.1',
-            '4 Case &',
-            'Case &'
-        ]);
-
-        await deleteFileIfExists(filePath);
-    });
-
-    it('renders shorthand cases and fenced-div references in Reading mode', async () => {
-        const filePath = 'readable-fenced-div-shorthand-reading.md';
-
-        await createOrReplaceFile(filePath, shorthandContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureReadingMode();
-
-        try {
-            await browser.waitUntil(async () => {
-                const state = await getReadingModeState();
-                return state.blockCount === 7 &&
-                    state.referenceTexts.join('|') === [
-                        'Class',
-                        'Class',
-                        'Class',
-                        'explicit title with space',
-                        'explicit title before attributes'
-                    ].join('|');
-            }, {
-                timeout: 5000,
-                timeoutMsg: 'Expected readable shorthand fenced divs in Reading mode'
-            });
-        } catch (error) {
-            const state = await getReadingModeState();
-            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
-        }
-
-        const state = await getReadingModeState();
-
-        expect(state.blockCount).toBe(7);
-        expect(state.headerTexts).toEqual([
-            'Class1',
-            'Class',
-            'Class',
-            'Class',
-            '',
-            'explicit title with space',
-            'explicit title before attributes'
-        ]);
-        expect(state.blockLabels).toEqual(['', 'id1', 'id2', 'id3', '', 'id4', 'id5']);
-        expect(state.referenceTexts).toEqual([
-            'Class',
-            'Class',
-            'Class',
-            'explicit title with space',
-            'explicit title before attributes'
-        ]);
-        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
-        expect(state.blockClasses[0]).toContain('pem-fenced-div-class1');
-        expect(state.blockClasses[1]).toContain('pem-fenced-div-class');
-        expect(state.blockClasses[2]).toContain('pem-fenced-div-class');
-        expect(state.blockClasses[3]).toContain('pem-fenced-div-class');
-        expect(state.blockClasses[5]).toContain('pem-fenced-div-class');
-        expect(state.blockClasses[6]).toContain('pem-fenced-div-class');
-        expect(state.blockTexts).toEqual([
-            'Multiple classes',
-            'class and id',
-            'class, data and id',
-            'id, class and data',
-            'multiple data, no class',
-            'title after braced attributes',
-            'title before braced attributes'
-        ]);
-        expect(state.rawText).not.toContain('::: class1 class2 class3');
-        expect(state.rawText).not.toContain('@id1');
-        expect(state.rawText).not.toContain('@id2');
-        expect(state.rawText).not.toContain('@id3');
-        expect(state.rawText).not.toContain('@id4');
-        expect(state.rawText).not.toContain('@id5');
-
-        await deleteFileIfExists(filePath);
-    });
-
-    it('renders fenced-div titles independently of reference labels in Reading mode', async () => {
-        const filePath = 'readable-fenced-div-title-rendering-reading.md';
-
-        await createOrReplaceFile(filePath, titleRenderingContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureReadingMode();
-
-        try {
-            await browser.waitUntil(async () => {
-                const state = await getReadingModeState();
-                return state.blockCount === 5 &&
-                    state.headerTexts.join('|') === [
-                        'title before attributes 1',
-                        'title after attributes 1',
-                        'Classname',
-                        'titlename',
-                        ''
-                    ].join('|') &&
-                    state.referenceTexts.join('|') === 'Div';
-            }, {
-                timeout: 5000,
-                timeoutMsg: 'Expected fenced div titles to render in Reading mode'
-            });
-        } catch (error) {
-            const state = await getReadingModeState();
-            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
-        }
-
-        const state = await getReadingModeState();
-
-        expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual([
-            'title before attributes 1',
-            'title after attributes 1',
-            'Classname',
-            'titlename',
-            ''
-        ]);
-        expect(state.blockLabels).toEqual(['', '', '', '', 'bare']);
-        expect(state.referenceTexts).toEqual(['Div']);
-        expect(state.referenceLabels).toEqual(['bare']);
-        expect(state.blockTexts).toEqual([
-            'title before content',
-            'title after content',
-            'class-only content',
-            'title-only content',
-            'id-only content'
-        ]);
-
-        await deleteFileIfExists(filePath);
-    });
-
-    it('renders shorthand placeholder titles in Reading mode', async () => {
-        const filePath = 'readable-fenced-div-placeholder-reading.md';
-
-        await createOrReplaceFile(filePath, placeholderShorthandContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureReadingMode();
-
-        try {
-            await browser.waitUntil(async () => {
-                const state = await getReadingModeState();
-                return state.blockCount === 7 &&
-                    state.referenceTexts.join('|') === [
-                        'Case 1',
-                        'Case 1.1',
-                        '1 Note',
-                        'Case 2',
-                        'Case 2.1',
-                        'Case &',
-                        '& Note'
-                    ].join('|');
-            }, {
-                timeout: 5000,
-                timeoutMsg: 'Expected shorthand placeholder fenced divs in Reading mode'
-            });
-        } catch (error) {
-            const state = await getReadingModeState();
-            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
-        }
-
-        const state = await getReadingModeState();
-
-        expect(state.headerTexts).toEqual([
-            'Case 1',
-            'Case 1.1',
-            '1 Note',
-            'Case 2',
-            'Case 2.1',
-            'Case &',
-            '& Note'
-        ]);
-        expect(state.referenceTexts).toEqual([
-            'Case 1',
-            'Case 1.1',
-            '1 Note',
-            'Case 2',
-            'Case 2.1',
-            'Case &',
-            '& Note'
-        ]);
-        expect(state.blockClasses[0]).toContain('pem-fenced-div-case');
-        expect(state.blockClasses[2]).toContain('pem-fenced-div-note');
-
-        await deleteFileIfExists(filePath);
-    });
-
-    it('renders visible no-id placeholder block titles in Reading mode', async () => {
-        const filePath = 'readable-fenced-div-visible-placeholders-reading.md';
-
-        await createOrReplaceFile(filePath, visiblePlaceholderContent);
-        await openFileInActiveLeaf(filePath);
-        await ensureReadingMode();
-
-        try {
-            await browser.waitUntil(async () => {
-                const state = await getReadingModeState();
-                return state.blockCount === 10 &&
-                    state.headerTexts.join('|') === [
-                        'Case 1',
-                        'Case 1.1',
-                        '1 Note',
-                        'Case 2',
-                        'Case 2.1',
-                        '2 Note',
-                        'Case 3',
-                        'Case 3.1',
-                        '4 Case &',
-                        'Case &'
-                    ].join('|');
-            }, {
-                timeout: 5000,
-                timeoutMsg: 'Expected visible no-id shorthand placeholder titles in Reading mode'
-            });
-        } catch (error) {
-            const state = await getReadingModeState();
-            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
-        }
-
-        const state = await getReadingModeState();
-
-        expect(state.headerTexts).toEqual([
-            'Case 1',
-            'Case 1.1',
-            '1 Note',
-            'Case 2',
-            'Case 2.1',
-            '2 Note',
-            'Case 3',
-            'Case 3.1',
-            '4 Case &',
-            'Case &'
-        ]);
-
-        await deleteFileIfExists(filePath);
-    });
+    }
 });
 
 async function enableReadableFencedDivs(): Promise<void> {
@@ -623,6 +349,66 @@ async function enableReadableFencedDivs(): Promise<void> {
             app.workspace.updateOptions();
         }
     });
+}
+
+async function openReadableFixture(
+    filePath: string,
+    content: string,
+    mode: RenderMode,
+    cursorLine?: number
+): Promise<void> {
+    await createOrReplaceFile(filePath, content);
+    await openFileInActiveLeaf(filePath);
+
+    if (mode === 'live') {
+        await ensureLivePreviewMode();
+        if (cursorLine !== undefined) {
+            await moveCursorToLine(cursorLine);
+        }
+        return;
+    }
+
+    await ensureReadingMode();
+}
+
+async function waitForReadableState(
+    mode: RenderMode,
+    predicate: (state: ReadableFencedDivState) => boolean,
+    timeoutMsg: string
+): Promise<void> {
+    try {
+        await browser.waitUntil(async () => predicate(await getReadableState(mode)), {
+            timeout: 5000,
+            timeoutMsg
+        });
+    } catch (error) {
+        const state = await getReadableState(mode);
+        throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+    }
+}
+
+async function getReadableState(mode: RenderMode): Promise<ReadableFencedDivState> {
+    return mode === 'live'
+        ? getLivePreviewState()
+        : getReadingModeState();
+}
+
+function renderModeName(mode: RenderMode): string {
+    return mode === 'live'
+        ? 'Live Preview'
+        : 'Reading mode';
+}
+
+function classPrefix(mode: RenderMode): string {
+    return mode === 'live'
+        ? 'cm-pem-fenced-div-'
+        : 'pem-fenced-div-';
+}
+
+function expectRenderedReferencesRemoved(rawText: string, labels: string[]): void {
+    for (const label of labels) {
+        expect(rawText).not.toContain(`@${label}`);
+    }
 }
 
 async function ensureLivePreviewMode(): Promise<void> {

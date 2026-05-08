@@ -35,6 +35,22 @@ export function createFencedDivReference(
 ): FencedDivReference {
     const metadata = createFencedDivReferenceMetadata(title, classes, counters);
 
+    return createFencedDivReferenceFromMetadata(
+        label,
+        classes,
+        lineNumber,
+        content,
+        metadata
+    );
+}
+
+export function createFencedDivReferenceFromMetadata(
+    label: string,
+    classes: string[],
+    lineNumber: number,
+    content: string,
+    metadata: FencedDivReferenceMetadata
+): FencedDivReference {
     return {
         label,
         title: metadata.title,
