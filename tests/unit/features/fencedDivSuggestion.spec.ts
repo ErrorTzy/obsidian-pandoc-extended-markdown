@@ -71,7 +71,7 @@ describe('Fenced Div Reference Suggestions', () => {
     });
 
     describe('getSuggestions', () => {
-        it('returns indexed fenced div labels with display names and previews', () => {
+        it('returns indexed fenced div labels with generic display names and previews', () => {
             mockEditor.getValue = jest.fn().mockReturnValue([
                 '::: {.theorem #thm:pythagoras}',
                 'For a right triangle, a^2 + b^2 = c^2.',
@@ -94,19 +94,19 @@ describe('Fenced Div Reference Suggestions', () => {
             expect(suggestions).toHaveLength(3);
             expect(suggestions[0]).toEqual({
                 label: 'lem:compact',
-                displayName: 'Lemma',
+                displayName: 'Div',
                 previewText: 'Every compact metric space is ...',
                 lineNumber: 9
             });
             expect(suggestions[1]).toEqual({
                 label: 'thm:pythagoras',
-                displayName: 'Theorem',
+                displayName: 'Div',
                 previewText: 'For a right triangle, a^2 + b^...',
                 lineNumber: 1
             });
             expect(suggestions[2]).toEqual({
                 label: 'warn',
-                displayName: 'Warning',
+                displayName: 'Div',
                 previewText: 'Readable shorthand opener.',
                 lineNumber: 5
             });
@@ -132,7 +132,7 @@ describe('Fenced Div Reference Suggestions', () => {
             expect(suggestions.map(suggestion => suggestion.label)).toEqual(['lem']);
         });
 
-        it('filters suggestions by label and display name', () => {
+        it('filters suggestions by label', () => {
             mockEditor.getValue = jest.fn().mockReturnValue([
                 '::: {.theorem #thm:pythagoras}',
                 'Theorem content.',
@@ -147,13 +147,8 @@ describe('Fenced Div Reference Suggestions', () => {
                 editor: mockEditor,
                 query: 'thm'
             } as any);
-            const displayNameMatches = suggest.getSuggestions({
-                editor: mockEditor,
-                query: 'lem'
-            } as any);
 
             expect(labelMatches.map(suggestion => suggestion.label)).toEqual(['thm:pythagoras']);
-            expect(displayNameMatches.map(suggestion => suggestion.label)).toEqual(['lem:compact']);
         });
 
         it('skips fenced div labels inside markdown code fences', () => {
@@ -183,13 +178,13 @@ describe('Fenced Div Reference Suggestions', () => {
 
             suggest.renderSuggestion({
                 label: 'thm:pythagoras',
-                displayName: 'Theorem',
+                displayName: 'Div',
                 previewText: 'For a right triangle.',
                 lineNumber: 1
             }, root);
 
             expect(root.textContent).toContain('@thm:pythagoras');
-            expect(root.textContent).toContain('Theorem');
+            expect(root.textContent).toContain('Div');
             expect(root.textContent).toContain('For a right triangle.');
         });
     });
@@ -206,7 +201,7 @@ describe('Fenced Div Reference Suggestions', () => {
 
             suggest.selectSuggestion({
                 label: 'thm:pythagoras',
-                displayName: 'Theorem',
+                displayName: 'Div',
                 previewText: 'For a right triangle.',
                 lineNumber: 1
             }, {} as any);

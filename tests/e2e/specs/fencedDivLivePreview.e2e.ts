@@ -267,12 +267,10 @@ describe('Fenced div live preview', () => {
         await browser.waitUntil(async () => {
             const state = await getFencedDivRenderState();
             return state.openLineCount === 3 &&
-                state.closeLineCount === 3 &&
-                state.referenceLabels.includes('outer') &&
-                state.referenceLabels.includes('inner');
+                state.closeLineCount === 3;
         }, {
             timeout: 5000,
-            timeoutMsg: 'Expected Pandoc-valid fenced divs and references in live preview'
+            timeoutMsg: 'Expected Pandoc-valid fenced divs in live preview'
         });
 
         const state = await getFencedDivRenderState();
@@ -280,10 +278,10 @@ describe('Fenced div live preview', () => {
         expect(state.openLineCount).toBe(3);
         expect(state.closeLineCount).toBe(3);
         expect(state.contentLineCount).toBe(2);
-        expect(state.headerTexts).toEqual(['Outer', 'Inner', 'Warning']);
+        expect(state.headerTexts).toEqual(['', '', '']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
-        expect(state.referenceTexts).toEqual(['Outer', 'Inner']);
-        expect(state.referenceLabels).toEqual(['outer', 'inner']);
+        expect(state.referenceTexts).toEqual([]);
+        expect(state.referenceLabels).toEqual([]);
         expect(state.invalidLineRendered).toBe(false);
         expect(state.invalidReferenceRendered).toBe(false);
         expect(state.indentedLineRendered).toBe(false);
@@ -328,8 +326,7 @@ describe('Fenced div live preview', () => {
 
         await browser.waitUntil(async () => {
             const state = await getDeepNestedFencedDivRenderState();
-            return state.headerTexts.length === 3 &&
-                state.contentTexts.includes('This is a warning within a warning within a warning.') &&
+            return state.contentTexts.includes('This is a warning within a warning within a warning.') &&
                 state.contentTexts.includes('This is on the 2nd level') &&
                 state.contentTexts.includes('This is on the 1st level');
         }, {
@@ -339,7 +336,7 @@ describe('Fenced div live preview', () => {
 
         const state = await getDeepNestedFencedDivRenderState();
 
-        expect(state.headerTexts).toEqual(['Warning', 'Danger', 'Warning2']);
+        expect(state.headerTexts).toEqual([]);
         expect(state.contentTexts).toEqual([
             'This is a warning.',
             'This is a warning within a warning.',
@@ -397,10 +394,10 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
         const closeLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-close')) as HTMLElement[];
         const headers = Array.from(document.querySelectorAll('.pem-fenced-div-header')) as HTMLElement[];
         const references = Array.from(document.querySelectorAll('.pem-fenced-div-reference')) as HTMLElement[];
-        const outerLine = openLines.find(line => line.textContent?.includes('Outer'));
-        const innerLine = openLines.find(line => line.textContent?.includes('Inner'));
+        const outerLine = openLines.find(line => line.classList.contains('cm-pem-fenced-div-outer'));
+        const innerLine = openLines.find(line => line.classList.contains('cm-pem-fenced-div-inner'));
         const nestedContentLine = contentLines.find(line => line.textContent?.includes('Nested content.'));
-        const warningLine = openLines.find(line => line.textContent?.includes('Warning'));
+        const warningLine = openLines.find(line => line.classList.contains('cm-pem-fenced-div-warning'));
         const outerLeft = outerLine?.getBoundingClientRect().left ?? 0;
         const outerHeader = outerLine?.querySelector('.pem-fenced-div-header') as HTMLElement | null;
         const innerHeader = innerLine?.querySelector('.pem-fenced-div-header') as HTMLElement | null;

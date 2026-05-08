@@ -34,7 +34,7 @@ describe('fenced div reading mode rendering', () => {
         document.body.innerHTML = '';
     });
 
-    it('renders a Pandoc fenced div block and later @id references', () => {
+    it('renders a Pandoc fenced div block and leaves later @id citations unchanged', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: {.theorem #thm:pythagoras}</p>',
@@ -59,17 +59,16 @@ describe('fenced div reading mode rendering', () => {
         expect(fencedDiv).toBeTruthy();
         expect(fencedDiv?.classList.contains('pem-fenced-div-theorem')).toBe(true);
         expect(fencedDiv?.dataset.pandocDivId).toBe('thm:pythagoras');
-        expect(fencedDiv?.textContent).toContain('Theorem:');
+        expect(fencedDiv?.textContent).not.toContain('Theorem:');
         expect(fencedDiv?.textContent).toContain('For a right triangle');
         expect(fencedDiv?.textContent).not.toContain(':::');
 
         const header = fencedDiv?.querySelector(`.${CSS_CLASSES.FENCED_DIV_HEADER}`);
-        expect(header?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem:');
+        expect(header?.querySelector('.pem-fenced-div-title')).toBeNull();
+        expect(header?.textContent).toBe('');
 
-        const reference = element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`) as HTMLElement | null;
-        expect(reference?.textContent).toBe('Theorem');
-        expect(reference?.dataset.pandocDivRef).toBe('thm:pythagoras');
-        expect(element.textContent).not.toContain('@thm:pythagoras');
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
+        expect(element.textContent).toContain('@thm:pythagoras');
     });
 
     it('renders adjacent and nested fenced divs without leaking fence markers', () => {
@@ -108,19 +107,19 @@ describe('fenced div reading mode rendering', () => {
 
         const blocks = Array.from(element.querySelectorAll('.pem-fenced-div'));
         expect(blocks).toHaveLength(3);
-        expect(blocks[0].querySelector(':scope > .pem-fenced-div-content > .pem-fenced-div .pem-fenced-div-title')?.textContent).toBe('Inner:');
-        expect(blocks.map(block => block.querySelector('.pem-fenced-div-title')?.textContent)).toEqual([
-            'Outer:',
-            'Inner:',
-            'Warning:'
+        expect(blocks[0].querySelector(':scope > .pem-fenced-div-content > .pem-fenced-div .pem-fenced-div-title')).toBeNull();
+        expect(blocks.map(block => block.querySelector('.pem-fenced-div-title'))).toEqual([
+            null,
+            null,
+            null
         ]);
         expect(element.textContent).not.toContain(':::');
 
-        const references = Array.from(element.querySelectorAll(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`));
-        expect(references.map(reference => reference.textContent)).toEqual(['Outer', 'Inner', 'Warning']);
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
+        expect(element.textContent).toContain('@outer @inner @warn');
     });
 
-    it('renders readable shorthand and later @id references in non-strict mode', () => {
+    it('renders readable shorthand and leaves later @id citations unchanged in non-strict mode', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: Theorem #thm data=1</p>',
@@ -137,8 +136,9 @@ describe('fenced div reading mode rendering', () => {
 
         const fencedDiv = element.querySelector('.pem-fenced-div') as HTMLElement | null;
         expect(fencedDiv?.dataset.pandocDivId).toBe('thm');
-        expect(fencedDiv?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem:');
-        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)?.textContent).toBe('Theorem');
+        expect(fencedDiv?.querySelector('.pem-fenced-div-title')).toBeNull();
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
+        expect(element.textContent).toContain('@thm');
     });
 
     it('leaves readable shorthand untouched in strict mode', () => {

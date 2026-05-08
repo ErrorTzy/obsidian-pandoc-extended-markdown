@@ -23,8 +23,8 @@ describe('scanFencedDivs', () => {
 
         expect([...labels.keys()]).toEqual(['outer', 'inner', 'sibling']);
         expect(labels.get('outer')?.content).toContain('Nested content.');
-        expect(labels.get('inner')?.displayName).toBe('Inner');
-        expect(labels.get('sibling')?.displayName).toBe('Sibling');
+        expect(labels.get('inner')?.displayName).toBe('Div');
+        expect(labels.get('sibling')?.displayName).toBe('Div');
     });
 
     it('collects labels from readable shorthand in non-strict mode', () => {
@@ -36,7 +36,7 @@ describe('scanFencedDivs', () => {
             'See @thm.'
         ].join('\n'));
 
-        expect(labels.get('thm')?.displayName).toBe('Theorem');
+        expect(labels.get('thm')?.displayName).toBe('Div');
         expect(labels.get('thm')?.content).toBe('Readable content.');
     });
 

@@ -35,6 +35,22 @@ export interface ContentProcessor {
     process(content: string, context: ProcessingContext): string;
 }
 
+export const fencedDivReferenceContentProcessor: ContentProcessor = {
+    id: 'fenced-div-references',
+    process: (content: string, context: ProcessingContext): string => {
+        if (!context.fencedDivLabels) return content;
+
+        return content.replace(
+            PANDOC_CITATION_REFERENCE,
+            (match: string, rawLabel: string) => {
+                const label = resolveFencedDivLabel(rawLabel, context.fencedDivLabels!);
+                const reference = label ? context.fencedDivLabels!.get(label) : undefined;
+                return reference ? reference.displayName : match;
+            }
+        );
+    }
+};
+
 /**
  * Registry for content processors that can be extended with new processors
  */
@@ -126,21 +142,6 @@ export class ContentProcessorRegistry {
             }
         });
 
-        this.registerProcessor({
-            id: 'fenced-div-references',
-            process: (content: string, context: ProcessingContext): string => {
-                if (!context.fencedDivLabels) return content;
-
-                return content.replace(
-                    PANDOC_CITATION_REFERENCE,
-                    (match: string, rawLabel: string) => {
-                        const label = resolveFencedDivLabel(rawLabel, context.fencedDivLabels!);
-                        const reference = label ? context.fencedDivLabels!.get(label) : undefined;
-                        return reference ? reference.displayName : match;
-                    }
-                );
-            }
-        });
     }
     
     /**

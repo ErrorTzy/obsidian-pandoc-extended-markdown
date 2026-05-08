@@ -60,7 +60,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         this.customLabelSuggester = new CustomLabelReferenceSuggest(this);
         this.registerEditorSuggest(this.customLabelSuggester);
 
-        // Register fenced div reference suggester
+        // Register fenced div citation suggester
         this.fencedDivSuggester = new FencedDivReferenceSuggest(this);
         this.registerEditorSuggest(this.fencedDivSuggester);
         

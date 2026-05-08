@@ -29,6 +29,11 @@
 - Naming: most tests use `.spec.ts`; some feature tests use `.test.ts`—match the local folder pattern. E2E uses `.e2e.ts`.
 - Reuse mocks in `__mocks__/` where possible.
 
+## Fenced Div Citation Notes
+- Pandoc fenced divs render ids/classes on the div but do not render class names as titles.
+- Pandoc parses `@id` after a fenced div as citation syntax, not as a built-in cross-reference to that div; current preview/reading mode should preserve `@id` text.
+- Keep the existing fenced-div citation/autocomplete scaffolding for future custom Lua-filter-backed cross-reference support: `FencedDivReferenceSuggest`, `FencedDivReferenceProcessor`, `FencedDivReferenceInlineProcessor`, `FencedDivReferenceWidget`, and `fencedDivReferenceContentProcessor`.
+
 ## Commit & Pull Request Guidelines
 - Recent commits are short, imperative, one-line summaries (e.g., “Fix…”, “Add…”, “Address…”); follow that style and avoid scopes unless needed.
 - Before every commit, run `npm run lint` and resolve all reported errors.

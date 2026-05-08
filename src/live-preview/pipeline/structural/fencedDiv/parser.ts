@@ -110,13 +110,6 @@ function isSingleLineHtmlBlock(lineText: string): boolean {
     return Boolean(match?.[1] && HTML_BLOCK_TAGS.has(match[1].toLowerCase()));
 }
 
-export function getFencedDivDisplayName(classes: string[]): string {
-    const primaryClass = classes[0] || 'div';
-    return primaryClass
-        .replace(/[-_]+/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase());
-}
-
 export function getFencedDivCssClass(classes: string[]): string | undefined {
     const primaryClass = classes[0];
     if (!primaryClass) {

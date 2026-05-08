@@ -47,7 +47,7 @@ describe('FencedDivReferenceProcessor', () => {
             fencedDivLabels: new Map([
                 ['thm:label', {
                     label: 'thm:label',
-                    displayName: 'Theorem',
+                    displayName: 'Div',
                     lineNumber: 1,
                     classes: ['theorem'],
                     content: 'content'
@@ -102,7 +102,7 @@ describe('FencedDivReferenceProcessor', () => {
 
         const widget = decoration.spec?.widget;
         expect(widget?.constructor.name).toBe('FencedDivReferenceWidget');
-        expect(widget?.displayName).toBe('Theorem');
+        expect(widget?.displayName).toBe('Div');
     });
 
     it('supports normal and fenced-div content regions', () => {

@@ -73,7 +73,7 @@ Term 3
 - **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
 
 ### Fenced Divs
-Live Preview and Reading mode render Pandoc fenced div blocks and references to labeled blocks:
+Live Preview and Reading mode render Pandoc fenced div blocks while preserving `@id` citation text:
 ```markdown
 ::: {.theorem #thm}
 Every compact metric space is complete.
@@ -82,7 +82,7 @@ Every compact metric space is complete.
 See @thm.
 ```
 
-The opening fence renders as `Theorem`, and `@thm` renders as `Theorem`.
+The opening fence renders without generated title text, matching Pandoc's fenced div output. `@thm` remains citation/source text for now; Pandoc treats it as citation syntax, not a built-in fenced-div cross-reference.
 
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
   - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
@@ -129,9 +129,9 @@ A modular sidebar panel displays various list-related content from the active do
 
 **Fenced Divs Panel** `:::`
 - Displays all fenced div blocks from the current document, including readable shorthand when strict Pandoc mode is off
-- Three-column layout: title, cross-reference label, and content
-- Title and label columns are empty when a block does not define them
-- Click labels to copy cross-reference syntax (e.g., `@thm`) to clipboard
+- Three-column layout: empty title column, citation label, and content
+- The title column is always empty because Pandoc fenced divs do not render class names as titles
+- Click labels to copy citation syntax (e.g., `@thm`) to clipboard
 - Click content to navigate to the fenced div content in the editor
 
 **Footnotes Panel** `[^]`
@@ -322,7 +322,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
-  - Fenced divs and references (`::: {.theorem #thm}` and `@thm`) in Live Preview and Reading mode
+  - Fenced divs (`::: {.theorem #thm}`); `@thm` citation text is preserved for future cross-reference support
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references

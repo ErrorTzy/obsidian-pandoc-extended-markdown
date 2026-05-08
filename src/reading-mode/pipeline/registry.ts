@@ -3,7 +3,6 @@ import { pluginStateManager } from '../../core/state/pluginStateManager';
 import { ReadingModePipeline } from './ReadingModePipeline';
 import { CustomLabelReferenceInlineProcessor } from './inline/customLabelReferenceInlineProcessor';
 import { ExampleReferenceInlineProcessor } from './inline/exampleReferenceInlineProcessor';
-import { FencedDivReferenceInlineProcessor } from './inline/fencedDivReferenceInlineProcessor';
 import {
     SubscriptInlineProcessor,
     SuperscriptInlineProcessor
@@ -20,7 +19,8 @@ export function createDefaultReadingModePipeline(): ReadingModePipeline {
     const pipeline = new ReadingModePipeline();
     const inlineProcessors = [
         new ExampleReferenceInlineProcessor(),
-        new FencedDivReferenceInlineProcessor(),
+        // FencedDivReferenceInlineProcessor is intentionally not registered yet:
+        // Pandoc treats @id as citation syntax, not a built-in div cross-reference.
         new SuperscriptInlineProcessor(),
         new SubscriptInlineProcessor(),
         new CustomLabelReferenceInlineProcessor()

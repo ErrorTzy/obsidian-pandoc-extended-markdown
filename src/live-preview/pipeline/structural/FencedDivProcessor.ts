@@ -7,7 +7,6 @@ import { ProcessingContext, StructuralResult } from '../types';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 import {
     getFencedDivCssClass,
-    getFencedDivDisplayName,
     isFencedDivClosing,
     parseFencedDivOpening
 } from './fencedDiv/parser';
@@ -55,20 +54,14 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         context: ProcessingContext,
         stackItem: FencedDivStackItem
     ): StructuralResult {
-        const displayName = getFencedDivDisplayName(stackItem.classes);
-        const activeItem = {
-            ...stackItem,
-            displayName
-        };
-
         context.fencedDivStack = context.fencedDivStack || [];
-        context.fencedDivStack.push(activeItem);
+        context.fencedDivStack.push(stackItem);
         context.fencedDivBoundaryLine = line.number;
 
         const renderDepth = context.fencedDivStack.length;
         const decorations = [
             this.createFenceLineDecoration(line, 'cm-pem-fenced-div-open', stackItem.classes, renderDepth),
-            this.createOpeningMarkerDecoration(line, context, displayName, stackItem.label)
+            this.createOpeningMarkerDecoration(line, context, stackItem.label)
         ];
 
         return {
@@ -112,7 +105,6 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     private createOpeningMarkerDecoration(
         line: Line,
         context: ProcessingContext,
-        displayName: string,
         label?: string
     ): { from: number; to: number; decoration: Decoration } {
         if (this.isCursorOnFenceLine(line, context)) {
@@ -129,7 +121,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             from: line.from,
             to: line.to,
             decoration: Decoration.replace({
-                widget: new FencedDivHeaderWidget(displayName, label, context.view, line.from),
+                widget: new FencedDivHeaderWidget(label, context.view, line.from),
                 inclusive: false
             })
         };

@@ -120,7 +120,7 @@ export const SETTINGS_UI = {
     },
     FENCED_DIVS: {
         NAME: 'Fenced divs',
-        DESCRIPTION: 'Enable Pandoc fenced div blocks such as `::: {.theorem #thm:label}` and `@thm:label` references in Live Preview and Reading mode.'
+        DESCRIPTION: 'Enable Pandoc fenced div blocks such as `::: {.theorem #thm:label}` in Live Preview and Reading mode.'
     },
     SUPERSCRIPT: {
         NAME: 'Superscript',

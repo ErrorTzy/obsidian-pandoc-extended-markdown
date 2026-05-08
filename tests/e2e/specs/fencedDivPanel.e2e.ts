@@ -55,7 +55,7 @@ describe('Fenced div list panel', () => {
         });
     });
 
-    it('shows fenced div title, cross-reference label, and content columns', async () => {
+    it('shows empty title, citation label, and content columns', async () => {
         const filePath = 'fenced-div-panel-layout.md';
         const content = [
             '::: {.theorem #thm:compact}',
@@ -67,7 +67,7 @@ describe('Fenced div list panel', () => {
             ':::',
             '',
             '::: Warning',
-            'Admonition content without a cross-reference label.',
+            'Admonition content without a citation label.',
             ':::'
         ].join('\n');
 
@@ -80,7 +80,7 @@ describe('Fenced div list panel', () => {
 
         expect(rows).toHaveLength(3);
         expect(rows[0]).toEqual({
-            title: 'Theorem',
+            title: '',
             label: '@thm:compact',
             content: 'Every compact metric space is complete.'
         });
@@ -90,9 +90,9 @@ describe('Fenced div list panel', () => {
             content: 'A labeled block without a class title.'
         });
         expect(rows[2]).toEqual({
-            title: 'Warning',
+            title: '',
             label: '',
-            content: 'Admonition content without a cross-reference label.'
+            content: 'Admonition content without a citation label.'
         });
 
         const layout = await getFirstRowLayout();

@@ -2,7 +2,6 @@ import { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { ProcessingPipeline } from '../../../src/live-preview/pipeline/ProcessingPipeline';
 import { FencedDivProcessor } from '../../../src/live-preview/pipeline/structural/FencedDivProcessor';
-import { FencedDivReferenceProcessor } from '../../../src/live-preview/pipeline/inline/FencedDivReferenceProcessor';
 import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 import { PluginStateManager } from '../../../src/core/state/pluginStateManager';
 
@@ -24,13 +23,13 @@ const pandocRejectedShortcutDocuments: Array<[string, string]> = pandocRejectedS
     ]
 );
 
-const pandocValidFencedDivDocuments: Array<[string, string, boolean]> = [
-    ['braced class and id', '::: {.attr #valid_attr}\ncontent\n:::\n\nsee @valid_attr.', true],
-    ['unspaced braced class and id', ':::{.attr #valid_unspaced}\ncontent\n:::\n\nsee @valid_unspaced.', true],
-    ['unbraced shortcut class', '::: validShortcut\ncontent\n:::', false],
-    ['unspaced unbraced shortcut class', ':::validShortcut\ncontent\n:::', false],
-    ['id-only braced attributes', '::: {#valid_id}\ncontent\n:::\n\nsee @valid_id.', true],
-    ['visual trailing colons', '::: {.attr #valid_visual} ::::::\ncontent\n:::\n\nsee @valid_visual.', true]
+const pandocValidFencedDivDocuments: Array<[string, string]> = [
+    ['braced class and id', '::: {.attr #valid_attr}\ncontent\n:::\n\nsee @valid_attr.'],
+    ['unspaced braced class and id', ':::{.attr #valid_unspaced}\ncontent\n:::\n\nsee @valid_unspaced.'],
+    ['unbraced shortcut class', '::: validShortcut\ncontent\n:::'],
+    ['unspaced unbraced shortcut class', ':::validShortcut\ncontent\n:::'],
+    ['id-only braced attributes', '::: {#valid_id}\ncontent\n:::\n\nsee @valid_id.'],
+    ['visual trailing colons', '::: {.attr #valid_visual} ::::::\ncontent\n:::\n\nsee @valid_visual.']
 ];
 
 describe('fenced div live-preview pipeline', () => {
@@ -48,7 +47,6 @@ describe('fenced div live-preview pipeline', () => {
         });
         pipeline = new ProcessingPipeline(new PluginStateManager());
         pipeline.registerStructuralProcessor(new FencedDivProcessor());
-        pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
         settings = {
             strictPandocMode: false,
             autoRenumberLists: false,
@@ -87,24 +85,24 @@ describe('fenced div live-preview pipeline', () => {
             .map(widget => (widget as { constructor: { name: string } }).constructor.name);
     };
 
-    it('renders Pandoc fenced div blocks and @id references', () => {
+    it('renders Pandoc fenced div blocks and leaves @id citations as source text', () => {
         updateView('::: {.theorem #thm:label}\ncontent\n:::\n\nsee @thm:label.');
 
         const widgetNames = getWidgetNames();
 
         expect(widgetNames).toContain('FencedDivHeaderWidget');
         expect(widgetNames).toContain('FencedDivClosingWidget');
-        expect(widgetNames).toContain('FencedDivReferenceWidget');
+        expect(widgetNames).not.toContain('FencedDivReferenceWidget');
     });
 
-    it('renders readable shorthand blocks and @id references in non-strict mode', () => {
+    it('renders readable shorthand blocks and leaves @id citations as source text in non-strict mode', () => {
         updateView('::: Theorem #thm data=1\ncontent\n:::\n\nsee @thm.');
 
         const widgetNames = getWidgetNames();
 
         expect(widgetNames).toContain('FencedDivHeaderWidget');
         expect(widgetNames).toContain('FencedDivClosingWidget');
-        expect(widgetNames).toContain('FencedDivReferenceWidget');
+        expect(widgetNames).not.toContain('FencedDivReferenceWidget');
     });
 
     it('leaves readable shorthand unrendered in strict mode', () => {
@@ -127,7 +125,7 @@ describe('fenced div live-preview pipeline', () => {
         expect(widgetNames).not.toContain('FencedDivReferenceWidget');
     });
 
-    it.each(pandocValidFencedDivDocuments)('renders documented valid fenced div form: %s', (_name, doc, hasReference) => {
+    it.each(pandocValidFencedDivDocuments)('renders documented valid fenced div form: %s', (_name, doc) => {
         updateView(doc);
 
         const widgetNames = getWidgetNames();
@@ -136,7 +134,7 @@ describe('fenced div live-preview pipeline', () => {
 
         expect(countWidgets('FencedDivHeaderWidget')).toBe(1);
         expect(countWidgets('FencedDivClosingWidget')).toBe(1);
-        expect(countWidgets('FencedDivReferenceWidget')).toBe(hasReference ? 1 : 0);
+        expect(countWidgets('FencedDivReferenceWidget')).toBe(0);
     });
 
     it.each(pandocRejectedShortcutDocuments)('does not render Pandoc-rejected %s', (_name, doc) => {

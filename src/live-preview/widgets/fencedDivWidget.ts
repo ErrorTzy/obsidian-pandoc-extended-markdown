@@ -5,7 +5,6 @@ import { BaseWidget } from './BaseWidget';
 
 export class FencedDivHeaderWidget extends BaseWidget {
     constructor(
-        public displayName: string,
         public label?: string,
         view?: EditorView,
         pos?: number
@@ -21,9 +20,7 @@ export class FencedDivHeaderWidget extends BaseWidget {
     }
 
     protected setContent(element: HTMLElement): void {
-        const titleElement = this.createElement('span', 'pem-fenced-div-title', this.displayName);
-
-        element.appendChild(titleElement);
+        element.textContent = '';
     }
 
     protected setupTooltip(element: HTMLElement): void {
@@ -33,8 +30,7 @@ export class FencedDivHeaderWidget extends BaseWidget {
     }
 
     eq(other: FencedDivHeaderWidget): boolean {
-        return other.displayName === this.displayName &&
-               other.label === this.label &&
+        return other.label === this.label &&
                other.pos === this.pos;
     }
 }

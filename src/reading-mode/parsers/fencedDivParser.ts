@@ -6,13 +6,10 @@ import { FencedDivReference } from '../../shared/types/fencedDivTypes';
 import { ProcessorConfig } from '../../shared/types/processorConfig';
 import {
     getFencedDivCssClass,
-    getFencedDivDisplayName,
     isFencedDivClosing,
     parseFencedDivOpening
 } from '../../live-preview/pipeline/structural/fencedDiv/parser';
 
-const PANDOC_CITATION_REFERENCE = /@([^\s,;)\]}]+)/g;
-const TRAILING_REFERENCE_PUNCTUATION = /[.!?]+$/;
 const MAX_DEPTH_CLASS = 6;
 const pendingSectionProcessing = new WeakMap<HTMLElement, number>();
 const chunkStacks = new Map<string, ActiveFencedDiv[]>();
@@ -35,7 +32,7 @@ export function scheduleFencedDivProcessing(
     const section = element.closest('.markdown-preview-section');
     if (!section) {
         processFencedDivs(element, docPath, config, true);
-        scheduleFencedDivReferenceProcessing(element, docPath);
+        scheduleFencedDivLabelHydration(element, docPath);
         return;
     }
 
@@ -47,20 +44,19 @@ export function scheduleFencedDivProcessing(
     const timeout = window.setTimeout(() => {
         pendingSectionProcessing.delete(section);
         processFencedDivs(section, docPath, config);
-        scheduleFencedDivReferenceProcessing(section, docPath);
+        scheduleFencedDivLabelHydration(section, docPath);
     }, 0);
 
     pendingSectionProcessing.set(section, timeout);
 }
 
-function scheduleFencedDivReferenceProcessing(
+function scheduleFencedDivLabelHydration(
     element: HTMLElement,
     docPath: string
 ): void {
     window.setTimeout(() => {
         const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
         hydrateRenderedFencedDivLabels(element, labels);
-        processFencedDivReferences(element, labels);
     }, 0);
 }
 
@@ -96,15 +92,14 @@ export function processFencedDivs(
 
         const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
-            const displayName = getFencedDivDisplayName(opening.classes);
             const reference: FencedDivReference = {
                 label: opening.id || '',
-                displayName,
+                displayName: 'Div',
                 lineNumber: 0,
                 classes: opening.classes,
                 content: ''
             };
-            const fencedDiv = createFencedDivElement(displayName, opening.id, opening.classes, stack.length + 1);
+            const fencedDiv = createFencedDivElement(opening.id, opening.classes, stack.length + 1);
 
             if (opening.id && !labels.has(opening.id)) {
                 labels.set(opening.id, reference);
@@ -138,7 +133,6 @@ export function processFencedDivs(
     }
 
     hydrateRenderedFencedDivLabels(element, labels);
-    processFencedDivReferences(element, labels);
 
     if (preserveStack && stack.length === 0) {
         chunkStacks.delete(docPath);
@@ -175,15 +169,14 @@ function processMultilineCandidate(
     for (const line of lines) {
         const opening = parseFencedDivOpening(line, config);
         if (opening) {
-            const displayName = getFencedDivDisplayName(opening.classes);
             const reference: FencedDivReference = {
                 label: opening.id || '',
-                displayName,
+                displayName: 'Div',
                 lineNumber: 0,
                 classes: opening.classes,
                 content: ''
             };
-            const fencedDiv = createFencedDivElement(displayName, opening.id, opening.classes, stack.length + 1);
+            const fencedDiv = createFencedDivElement(opening.id, opening.classes, stack.length + 1);
 
             if (opening.id && !labels.has(opening.id)) {
                 labels.set(opening.id, reference);
@@ -220,7 +213,6 @@ function processMultilineCandidate(
 }
 
 function createFencedDivElement(
-    displayName: string,
     label: string | undefined,
     classes: string[],
     depth: number
@@ -245,11 +237,6 @@ function createFencedDivElement(
         header.dataset.pandocDivId = label;
         setTooltip(header, `#${label}`, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
     }
-
-    const title = document.createElement('span');
-    title.className = 'pem-fenced-div-title';
-    title.textContent = `${displayName}:`;
-    header.appendChild(title);
 
     const content = document.createElement('div');
     content.className = 'pem-fenced-div-content';
@@ -328,36 +315,6 @@ function insertFencedDiv(
     sourceElement.remove();
 }
 
-function processFencedDivReferences(
-    element: HTMLElement,
-    labels: Map<string, FencedDivReference>
-): void {
-    const walker = document.createTreeWalker(
-        element,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode(node) {
-                const parent = node.parentElement;
-                if (!parent || isCodeElement(parent) || parent.closest(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)) {
-                    return NodeFilter.FILTER_REJECT;
-                }
-                return node.textContent?.includes('@')
-                    ? NodeFilter.FILTER_ACCEPT
-                    : NodeFilter.FILTER_REJECT;
-            }
-        }
-    );
-    const nodes: Text[] = [];
-
-    while (walker.nextNode()) {
-        nodes.push(walker.currentNode as Text);
-    }
-
-    for (const node of nodes) {
-        replaceReferencesInTextNode(node, labels);
-    }
-}
-
 function hydrateRenderedFencedDivLabels(
     element: HTMLElement,
     labels: Map<string, FencedDivReference>
@@ -369,12 +326,11 @@ function hydrateRenderedFencedDivLabels(
             continue;
         }
 
-        const title = block.querySelector('.pem-fenced-div-title')?.textContent ?? 'Div';
         const content = block.querySelector('.pem-fenced-div-content')?.textContent?.trim() ?? '';
 
         labels.set(label, {
             label,
-            displayName: title.replace(/:\s*$/, '') || 'Div',
+            displayName: 'Div',
             lineNumber: 0,
             classes: getRenderedFencedDivClasses(block),
             content
@@ -390,86 +346,6 @@ function getRenderedFencedDivClasses(block: HTMLElement): string[] {
             !className.startsWith('pem-fenced-div-depth-')
         )
         .map(className => className.replace('pem-fenced-div-', ''));
-}
-
-function replaceReferencesInTextNode(
-    node: Text,
-    labels: Map<string, FencedDivReference>
-): void {
-    const text = node.textContent || '';
-    const replacements: (Text | HTMLElement)[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    PANDOC_CITATION_REFERENCE.lastIndex = 0;
-    while ((match = PANDOC_CITATION_REFERENCE.exec(text)) !== null) {
-        const label = resolveLabel(match[1], labels);
-        if (!label) {
-            continue;
-        }
-
-        const startIndex = match.index;
-        const endIndex = startIndex + label.length + 1;
-        if (startIndex > lastIndex) {
-            replacements.push(document.createTextNode(text.substring(lastIndex, startIndex)));
-        }
-        replacements.push(createReferenceElement(label, labels.get(label)));
-        lastIndex = endIndex;
-    }
-
-    if (lastIndex === 0) {
-        return;
-    }
-
-    if (lastIndex < text.length) {
-        replacements.push(document.createTextNode(text.substring(lastIndex)));
-    }
-
-    const parent = node.parentNode;
-    if (!parent) {
-        return;
-    }
-
-    for (const replacement of replacements) {
-        parent.insertBefore(replacement, node);
-    }
-    parent.removeChild(node);
-}
-
-function createReferenceElement(
-    label: string,
-    reference: FencedDivReference | undefined
-): HTMLElement {
-    const span = document.createElement('span');
-    span.className = CSS_CLASSES.FENCED_DIV_REFERENCE;
-    span.dataset.pandocDivRef = label;
-    span.textContent = reference?.displayName || 'Div';
-
-    if (reference?.content) {
-        setTooltip(span, reference.content, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
-    }
-
-    return span;
-}
-
-function resolveLabel(
-    rawLabel: string | undefined,
-    labels: Map<string, FencedDivReference>
-): string | undefined {
-    if (!rawLabel) {
-        return undefined;
-    }
-
-    if (labels.has(rawLabel)) {
-        return rawLabel;
-    }
-
-    const trimmedLabel = rawLabel.replace(TRAILING_REFERENCE_PUNCTUATION, '');
-    if (trimmedLabel !== rawLabel && labels.has(trimmedLabel)) {
-        return trimmedLabel;
-    }
-
-    return undefined;
 }
 
 function getTextWithLineBreaks(elem: Element): string {

@@ -27,7 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
-| **Fenced Divs** | `::: {.theorem #id}` and non-strict `::: Theorem #id` with `@id` references | FencedDivProcessor, FencedDivReferenceProcessor |
+| **Fenced Divs** | `::: {.theorem #id}` and non-strict `::: Theorem #id`; `@id` citation text is preserved for now | FencedDivProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -125,7 +125,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | Processor | Priority | Processes | Regions |
 |-----------|----------|-----------|---------|
 | **ExampleReferenceProcessor** | 10 | `(@ref)` → `(number)` | list-content, definition-content |
-| **FencedDivReferenceProcessor** | 12 | `@id` → `Class n` for labeled fenced divs | normal, fenced-div-content, list-content, definition-content |
+| **FencedDivReferenceProcessor** | 12 | Dormant future support for `@id` fenced-div citation rendering | normal, fenced-div-content, list-content, definition-content |
 | **SuperscriptProcessor** | 20 | `^text^` → superscript | list-content, definition-content |
 | **SubscriptProcessor** | 20 | `~text~` → subscript | list-content, definition-content |
 | **CustomLabelReferenceProcessor** | 40 | `{::ref}` → processed | list-content, definition-content |
@@ -153,9 +153,9 @@ All widgets extend `BaseWidget` which provides:
 | **CustomLabelReferenceWidget** | BaseWidget | `{::ref}` with hover preview |
 | **DuplicateCustomLabelWidget** | BaseWidget | Error styling for duplicates |
 | **DefinitionBulletWidget** | BaseWidget | Definition list bullets |
-| **FencedDivHeaderWidget** | BaseWidget | Fenced div label heading, e.g. `Theorem 1` |
+| **FencedDivHeaderWidget** | BaseWidget | Empty fenced div opener placeholder with optional id tooltip |
 | **FencedDivClosingWidget** | BaseWidget | Hidden closing fence placeholder |
-| **FencedDivReferenceWidget** | BaseWidget | `@id` → `Class n` with hover content |
+| **FencedDivReferenceWidget** | BaseWidget | Dormant future fenced-div citation replacement widget |
 | **ExampleReferenceWidget** | BaseWidget | `(@ref)` → `(n)` with hover |
 | **SuperscriptWidget** | BaseWidget | Superscript formatting |
 | **SubscriptWidget** | BaseWidget | Subscript formatting |
@@ -192,7 +192,7 @@ Inline processors report text-node matches and create replacement nodes. They do
 | Processor | Purpose |
 |-----------|---------|
 | **ExampleReferenceInlineProcessor** | `(@ref)` → resolved example number with tooltip |
-| **FencedDivReferenceInlineProcessor** | `@id` → fenced div display label with tooltip |
+| **FencedDivReferenceInlineProcessor** | Dormant future support for `@id` fenced-div citation rendering |
 | **SuperscriptInlineProcessor** | `^text^` → `<sup class="pem-superscript">` |
 | **SubscriptInlineProcessor** | `~text~` → `<sub class="pem-subscript">` |
 | **CustomLabelReferenceInlineProcessor** | `{::ref}` → processed custom label reference |
@@ -216,7 +216,7 @@ All panels extend `BasePanelModule` which provides:
 | **ExampleListPanelModule** | example-lists | Three columns: number, label, content |
 | **CustomLabelPanelModule** | custom-labels | Two columns: processed label, content |
 | **DefinitionListPanelModule** | definition-lists | Two columns: term, definitions |
-| **FencedDivPanelModule** | fenced-divs | Three columns: title, cross-reference label, content |
+| **FencedDivPanelModule** | fenced-divs | Three columns: empty title, citation label, content |
 | **FootnotePanelModule** | footnotes | Two columns: footnote label, rendered content |
 
 ### Editor Extensions
@@ -337,7 +337,6 @@ For each line (top to bottom):
 For each content region from Phase 1:
   1. All processors find matches:
      - ExampleReferenceProcessor
-     - FencedDivReferenceProcessor
      - SuperscriptProcessor
      - SubscriptProcessor
      - CustomLabelReferenceProcessor

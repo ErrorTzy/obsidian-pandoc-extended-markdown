@@ -55,7 +55,7 @@ describe('Readable fenced div shorthand rendering', () => {
         await enableReadableFencedDivs();
     });
 
-    it('renders shorthand cases and references in Live Preview', async () => {
+    it('renders shorthand cases and preserves citation text in Live Preview', async () => {
         const filePath = 'readable-fenced-div-shorthand-live.md';
 
         await createOrReplaceFile(filePath, shorthandContent);
@@ -65,8 +65,7 @@ describe('Readable fenced div shorthand rendering', () => {
 
         await browser.waitUntil(async () => {
             const state = await getLivePreviewState();
-            return state.blockCount === 5 &&
-                state.referenceLabels.join('|') === 'id1|id2|id3';
+            return state.blockCount === 5;
         }, {
             timeout: 5000,
             timeoutMsg: 'Expected readable shorthand fenced divs in Live Preview'
@@ -75,10 +74,10 @@ describe('Readable fenced div shorthand rendering', () => {
         const state = await getLivePreviewState();
 
         expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual(['Class1', 'Class', 'Class', 'Class', 'Div']);
+        expect(state.headerTexts).toEqual(['', '', '', '', '']);
         expect(state.blockLabels).toEqual(['id1', 'id2', 'id3']);
-        expect(state.referenceTexts).toEqual(['Class', 'Class', 'Class']);
-        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3']);
+        expect(state.referenceTexts).toEqual([]);
+        expect(state.referenceLabels).toEqual([]);
         expect(state.blockClasses[0]).toContain('cm-pem-fenced-div-class1');
         expect(state.blockClasses[1]).toContain('cm-pem-fenced-div-class');
         expect(state.blockClasses[2]).toContain('cm-pem-fenced-div-class');
@@ -90,14 +89,14 @@ describe('Readable fenced div shorthand rendering', () => {
             'id, class and data',
             'multiple data, no class'
         ]);
-        expect(state.rawText).not.toContain('@id1');
-        expect(state.rawText).not.toContain('@id2');
-        expect(state.rawText).not.toContain('@id3');
+        expect(state.rawText).toContain('@id1');
+        expect(state.rawText).toContain('@id2');
+        expect(state.rawText).toContain('@id3');
 
         await deleteFileIfExists(filePath);
     });
 
-    it('renders shorthand cases and references in Reading mode', async () => {
+    it('renders shorthand cases and preserves citation text in Reading mode', async () => {
         const filePath = 'readable-fenced-div-shorthand-reading.md';
 
         await createOrReplaceFile(filePath, shorthandContent);
@@ -108,7 +107,9 @@ describe('Readable fenced div shorthand rendering', () => {
             await browser.waitUntil(async () => {
                 const state = await getReadingModeState();
                 return state.blockCount === 5 &&
-                    state.referenceLabels.join('|') === 'id1|id2|id3';
+                    state.rawText.includes('@id1') &&
+                    state.rawText.includes('@id2') &&
+                    state.rawText.includes('@id3');
             }, {
                 timeout: 5000,
                 timeoutMsg: 'Expected readable shorthand fenced divs in Reading mode'
@@ -121,25 +122,25 @@ describe('Readable fenced div shorthand rendering', () => {
         const state = await getReadingModeState();
 
         expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual(['Class1:', 'Class:', 'Class:', 'Class:', 'Div:']);
+        expect(state.headerTexts).toEqual(['', '', '', '', '']);
         expect(state.blockLabels).toEqual(['', 'id1', 'id2', 'id3', '']);
-        expect(state.referenceTexts).toEqual(['Class', 'Class', 'Class']);
-        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3']);
+        expect(state.referenceTexts).toEqual([]);
+        expect(state.referenceLabels).toEqual([]);
         expect(state.blockClasses[0]).toContain('pem-fenced-div-class1');
         expect(state.blockClasses[1]).toContain('pem-fenced-div-class');
         expect(state.blockClasses[2]).toContain('pem-fenced-div-class');
         expect(state.blockClasses[3]).toContain('pem-fenced-div-class');
         expect(state.blockTexts).toEqual([
-            'Class1:Multiple classes',
-            'Class:class and id',
-            'Class:class, data and id',
-            'Class:id, class and data',
-            'Div:multiple data, no class'
+            'Multiple classes',
+            'class and id',
+            'class, data and id',
+            'id, class and data',
+            'multiple data, no class'
         ]);
         expect(state.rawText).not.toContain('::: class1 class2 class3');
-        expect(state.rawText).not.toContain('@id1');
-        expect(state.rawText).not.toContain('@id2');
-        expect(state.rawText).not.toContain('@id3');
+        expect(state.rawText).toContain('@id1');
+        expect(state.rawText).toContain('@id2');
+        expect(state.rawText).toContain('@id3');
 
         await deleteFileIfExists(filePath);
     });

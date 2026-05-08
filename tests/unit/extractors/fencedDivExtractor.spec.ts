@@ -16,7 +16,7 @@ describe('extractFencedDivs', () => {
 
         expect(items).toHaveLength(1);
         expect(items[0]).toMatchObject({
-            title: 'Theorem',
+            title: '',
             label: 'thm',
             content: 'Panel content.',
             classes: ['Theorem']

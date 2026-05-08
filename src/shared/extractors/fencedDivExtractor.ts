@@ -5,7 +5,6 @@ import { isSyntaxFeatureEnabled } from '../types/settingsTypes';
 import { CodeRegion } from '../types/codeTypes';
 import {
     allowsFencedDivOpeningAfterLine,
-    getFencedDivDisplayName,
     isFencedDivClosing,
     parseFencedDivOpening
 } from '../../live-preview/pipeline/structural/fencedDiv/parser';
@@ -83,7 +82,7 @@ export function extractFencedDivsFromDoc(
 
         if (opening) {
             const activeDiv: ActiveFencedDiv = {
-                title: opening.classes.length > 0 ? getFencedDivDisplayName(opening.classes) : '',
+                title: '',
                 label: opening.id || '',
                 content: '',
                 classes: opening.classes,
