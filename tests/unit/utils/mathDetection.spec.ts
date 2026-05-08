@@ -71,6 +71,25 @@ describe('Code region detection (syntax tree)', () => {
         expect(mathRegion?.to).toBe(mathTo);
     });
 
+    it('does not also classify math block nodes as code blocks', () => {
+        const content = [
+            '$$',
+            '\\tt{mathblock}',
+            '$$'
+        ].join('\n');
+        const state = new EditorState(content);
+        const doc = state.doc as unknown as Text;
+
+        setMockSyntaxTreeNodes([
+            { name: 'HyperMD-mathblock', from: 0, to: content.length }
+        ]);
+
+        const regions = detectCodeRegions(doc, state);
+
+        expect(regions.some(region => region.type === 'math')).toBe(true);
+        expect(regions.some(region => region.type === 'codeblock')).toBe(false);
+    });
+
     it('marks ranges that overlap detected code regions', () => {
         const content = 'Plain `code` inline\n\n```\nblock\n```';
         const state = new EditorState(content);

@@ -63,4 +63,15 @@ describe('fenced div live-preview styles', () => {
     it('does not compact intentional blank spacer lines inside the div', () => {
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-blank\s*\{/s);
     });
+
+    it('keeps rendered live-preview math blocks transparent inside fenced div lines', () => {
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-bg\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*background:\s*var\(--pem-fenced-div-bg\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*\.cm-embed-block/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*\.markdown-rendered/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*mjx-container/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*\),\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*:is\([^)]*\)\s*\{[^}]*background:\s*transparent\s*!important/s);
+    });
 });

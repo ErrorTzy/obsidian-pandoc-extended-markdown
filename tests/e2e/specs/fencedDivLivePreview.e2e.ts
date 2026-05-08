@@ -69,6 +69,18 @@ interface DeepNestedFencedDivRenderState {
     nestedCloseRailCounts: Array<{ depth: number; railCount: number }>;
 }
 
+interface FencedDivMathBlockState {
+    plainLineBackground: string;
+    plainLinePaddingLeftPx: number;
+    mathBlockFound: boolean;
+    mathBlockBackground: string;
+    mathBlockBoxShadow: string;
+    mathBlockPaddingLeftPx: number;
+    mathBlockPreviousSiblingClass: string;
+    mathBlockNextSiblingClass: string;
+    childMathBackgrounds: string[];
+}
+
 describe('Fenced div live preview', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -308,6 +320,42 @@ describe('Fenced div live preview', () => {
         expect(state.closeLineMaxHeightPx).toBeLessThanOrEqual(14);
         expect(state.closeLinesStayCompact).toBe(true);
         expect(state.closeLinesKeepSurface).toBe(true);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('keeps block math visually inside fenced div content', async () => {
+        const filePath = 'fenced-div-live-preview-math-block.md';
+        const content = [
+            '::: title',
+            'Plain content',
+            '$$\\tt{mathblock}$$',
+            'Plain content',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(2);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivMathBlockState();
+            return state.mathBlockFound;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected block math widget inside fenced div live preview content'
+        });
+
+        const state = await getFencedDivMathBlockState();
+
+        expect(state.mathBlockFound).toBe(true);
+        expect(state.mathBlockPreviousSiblingClass).toContain('cm-pem-fenced-div-content');
+        expect(state.mathBlockNextSiblingClass).toContain('cm-pem-fenced-div-content');
+        expect(state.mathBlockBackground).toBe(state.plainLineBackground);
+        expect(state.mathBlockBoxShadow).not.toBe('none');
+        expect(state.mathBlockPaddingLeftPx).toBeGreaterThanOrEqual(state.plainLinePaddingLeftPx);
+        expect(state.childMathBackgrounds.every(background => background === 'rgba(0, 0, 0, 0)')).toBe(true);
 
         await deleteFileIfExists(filePath);
     });
@@ -684,6 +732,35 @@ async function getDeepNestedFencedDivRenderState(): Promise<DeepNestedFencedDivR
                 depth: getDepth(line),
                 railCount: countRailLayers(nestedCloseLineStyles[index])
             }))
+        };
+    });
+}
+
+async function getFencedDivMathBlockState(): Promise<FencedDivMathBlockState> {
+    return browser.execute((): FencedDivMathBlockState => {
+        const contentLines = Array.from(
+            document.querySelectorAll('.cm-line.cm-pem-fenced-div-content')
+        ) as HTMLElement[];
+        const plainLine = contentLines.find(line => line.textContent?.includes('Plain content'));
+        const mathBlock = document.querySelector<HTMLElement>(
+            '.cm-content > .math.math-block.cm-embed-block'
+        );
+        const plainLineStyle = plainLine ? window.getComputedStyle(plainLine) : null;
+        const mathBlockStyle = mathBlock ? window.getComputedStyle(mathBlock) : null;
+        const childMathBackgrounds = Array.from(
+            mathBlock?.querySelectorAll<HTMLElement>('.markdown-rendered, .math, .cm-math, mjx-container') ?? []
+        ).map(element => window.getComputedStyle(element).backgroundColor);
+
+        return {
+            plainLineBackground: plainLineStyle?.backgroundColor ?? '',
+            plainLinePaddingLeftPx: plainLineStyle ? Number.parseFloat(plainLineStyle.paddingLeft) : 0,
+            mathBlockFound: Boolean(mathBlock),
+            mathBlockBackground: mathBlockStyle?.backgroundColor ?? '',
+            mathBlockBoxShadow: mathBlockStyle?.boxShadow ?? '',
+            mathBlockPaddingLeftPx: mathBlockStyle ? Number.parseFloat(mathBlockStyle.paddingLeft) : 0,
+            mathBlockPreviousSiblingClass: (mathBlock?.previousElementSibling as HTMLElement | null)?.className ?? '',
+            mathBlockNextSiblingClass: (mathBlock?.nextElementSibling as HTMLElement | null)?.className ?? '',
+            childMathBackgrounds
         };
     });
 }

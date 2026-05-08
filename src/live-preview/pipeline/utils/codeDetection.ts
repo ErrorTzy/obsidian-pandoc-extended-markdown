@@ -79,15 +79,21 @@ function isInlineCodeNode(name: string): boolean {
 }
 
 function isCodeBlockStartNode(name: string): boolean {
+    if (name.includes('math')) {
+        return false;
+    }
     return name.includes('codeblock-begin');
 }
 
 function isCodeBlockEndNode(name: string): boolean {
+    if (name.includes('math')) {
+        return false;
+    }
     return name.includes('codeblock-end');
 }
 
 function isCodeBlockNode(name: string): boolean {
-    if (name.includes('inline-code')) {
+    if (name.includes('inline-code') || name.includes('math')) {
         return false;
     }
     return (
