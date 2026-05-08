@@ -119,6 +119,17 @@ Front-numbered note.
 
 These render as `Case 1`, `Case 1.1`, and `1 Note`. Deeper counters reset when a shallower placeholder pattern advances in the same title family.
 
+Escape literal ampersands inside numbered titles with `\&`, as in `title="AT\&T-&.&"` for `AT&T-1.1`. Pandoc export of native braced attributes may require the backslash itself to be escaped in Markdown (`title="AT\\&T-&.&"`).
+
+Use `.no-num` when a title contains a literal ampersand or when placeholder text should be shown literally:
+
+```markdown
+::: {.warning #warn .no-num title="AT&T Warning"}
+Literal ampersand, no numbering.
+:::
+
+#### Readable shorthand
+
 In readable shorthand, bare class tokens can synthesize the same title template. Prefer separated placeholder tokens so CSS can still target the semantic class:
 
 ```markdown
@@ -126,7 +137,7 @@ In readable shorthand, bare class tokens can synthesize the same title template.
 Top-level case.
 :::
 
-::: Case &.& #c1a
+::: Case &.& #c1a key=value
 Nested case.
 :::
 
@@ -137,26 +148,17 @@ Front-numbered note.
 
 These are treated like title templates `Case &`, `Case &.&`, and `& Note`, while preserving classes such as `Case` and `Note`. `::: Case_&.&` also renders as `Case 1.1`, but its class is `Case_&.&`, so `Case &.&` is recommended.
 
-Use `.no-num` when a title contains a literal ampersand or when placeholder text should be shown literally:
+The shorthand above is inconvenient when there are space in the title. Therefore, an alternative shorthand is
 
 ```markdown
-::: {.warning #warn .no-num title="AT&T Warning"}
-Literal ampersand, no numbering.
+::: title with space {.case #a1}
+title with space
+:::
+
+::: {.case #b1} title with space until linebreak
+title with space
 :::
 ```
-
-Escape literal ampersands inside numbered titles with `\&`, as in `title="AT\&T-&.&"` for `AT&T-1.1`. Pandoc export of native braced attributes may require the backslash itself to be escaped in Markdown (`title="AT\\&T-&.&"`).
-
-- Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
-  - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
-  - A single unbraced class shortcut: `::: Warning` or `:::Warning`.
-- In non-strict mode, the plugin also accepts readable shorthand: `::: Theorem #thm key="value"`. Bare tokens become classes, `#id` becomes the reference label, `key=value` pairs are preserved as attributes, and bare class tokens synthesize a title when no explicit `title` is present.
-- Strict Pandoc mode disables readable shorthand. In strict mode, `::: Theorem #thm` remains plain Markdown text and does not create a reference target.
-- Optional visual trailing colons are allowed after the attributes, as in `::: {.warning} ::::::`.
-- Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
-- Comma-separated attributes such as `{.theorem, #thm}` are also plain text in Pandoc and are not rendered.
-- Reading mode support applies to rendered paragraph/list-item blocks that Obsidian exposes to the post-processor.
-- For Pandoc export, readable shorthand and fenced-div references can be rendered with `lua_filter/FencedDivExtendedSyntax.lua`. The filter adds semantic `pem-fenced-div` and `pem-fenced-div-title` classes for portable fallback output. It also adds restrained default export styling for supported writer families: HTML exports receive a left rule, padding, spacing, and bold generated titles; LaTeX/PDF exports use a no-fill `tcolorbox` wrapper with a left rule; DOCX/ODT exports receive `PEM Fenced Div` and `PEM Fenced Div Title` custom-style attributes that can be refined in a Pandoc reference document.
 
 ### List Panel View
 
