@@ -44,7 +44,43 @@ const shorthandContent = [
     '',
     '::: dataA=1 dataB=1',
     'multiple data, no class',
-    ':::'
+    ':::',
+    '',
+    '::: {.class #id4} explicit title with space',
+    'title after braced attributes',
+    ':::',
+    '',
+    'Reference to @id4',
+    '',
+    '::: explicit title before attributes {.class #id5}',
+    'title before braced attributes',
+    ':::',
+    '',
+    'Reference to @id5'
+].join('\n');
+
+const titleRenderingContent = [
+    '::: title before attributes {.theorem}',
+    'title before content',
+    ':::',
+    '',
+    '::: {.theorem} title after attributes',
+    'title after content',
+    ':::',
+    '',
+    '::: classname',
+    'class-only content',
+    ':::',
+    '',
+    '::: title="titlename"',
+    'title-only content',
+    ':::',
+    '',
+    '::: {#bare}',
+    'id-only content',
+    ':::',
+    '',
+    'Reference to @bare'
 ].join('\n');
 
 describe('Readable fenced div shorthand rendering', () => {
@@ -65,7 +101,9 @@ describe('Readable fenced div shorthand rendering', () => {
 
         await browser.waitUntil(async () => {
             const state = await getLivePreviewState();
-            return state.blockCount === 5;
+            return state.blockCount === 7 &&
+                state.referenceTexts.includes('explicit title with space 1') &&
+                state.referenceTexts.includes('explicit title before attributes 1');
         }, {
             timeout: 5000,
             timeoutMsg: 'Expected readable shorthand fenced divs in Live Preview'
@@ -73,25 +111,93 @@ describe('Readable fenced div shorthand rendering', () => {
 
         const state = await getLivePreviewState();
 
-        expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual(['', 'Class 1', 'Class 2', 'Class 3', '']);
-        expect(state.blockLabels).toEqual(['id1', 'id2', 'id3']);
-        expect(state.referenceTexts).toEqual(['Class 1', 'Class 2', 'Class 3']);
-        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3']);
+        expect(state.blockCount).toBe(7);
+        expect(state.headerTexts).toEqual([
+            'Class1 1',
+            'Class 1',
+            'Class 2',
+            'Class 3',
+            '',
+            'explicit title with space 1',
+            'explicit title before attributes 1'
+        ]);
+        expect(state.blockLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
+        expect(state.referenceTexts).toEqual([
+            'Class 1',
+            'Class 2',
+            'Class 3',
+            'explicit title with space 1',
+            'explicit title before attributes 1'
+        ]);
+        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
         expect(state.blockClasses[0]).toContain('cm-pem-fenced-div-class1');
         expect(state.blockClasses[1]).toContain('cm-pem-fenced-div-class');
         expect(state.blockClasses[2]).toContain('cm-pem-fenced-div-class');
         expect(state.blockClasses[3]).toContain('cm-pem-fenced-div-class');
+        expect(state.blockClasses[5]).toContain('cm-pem-fenced-div-class');
+        expect(state.blockClasses[6]).toContain('cm-pem-fenced-div-class');
         expect(state.blockTexts).toEqual([
             'Multiple classes',
             'class and id',
             'class, data and id',
             'id, class and data',
-            'multiple data, no class'
+            'multiple data, no class',
+            'title after braced attributes',
+            'title before braced attributes'
         ]);
         expect(state.rawText).not.toContain('@id1');
         expect(state.rawText).not.toContain('@id2');
         expect(state.rawText).not.toContain('@id3');
+        expect(state.rawText).not.toContain('@id4');
+        expect(state.rawText).not.toContain('@id5');
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('renders fenced-div titles independently of reference labels in Live Preview', async () => {
+        const filePath = 'readable-fenced-div-title-rendering-live.md';
+
+        await createOrReplaceFile(filePath, titleRenderingContent);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(2);
+
+        await browser.waitUntil(async () => {
+            const state = await getLivePreviewState();
+            return state.blockCount === 5 &&
+                state.headerTexts.join('|') === [
+                    'title before attributes 1',
+                    'title after attributes 1',
+                    'Classname 1',
+                    'titlename 1',
+                    ''
+                ].join('|') &&
+                state.referenceTexts.join('|') === 'Div 1';
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div titles to render in Live Preview'
+        });
+
+        const state = await getLivePreviewState();
+
+        expect(state.blockCount).toBe(5);
+        expect(state.headerTexts).toEqual([
+            'title before attributes 1',
+            'title after attributes 1',
+            'Classname 1',
+            'titlename 1',
+            ''
+        ]);
+        expect(state.blockLabels).toEqual(['bare']);
+        expect(state.referenceTexts).toEqual(['Div 1']);
+        expect(state.referenceLabels).toEqual(['bare']);
+        expect(state.blockTexts).toEqual([
+            'title before content',
+            'title after content',
+            'class-only content',
+            'title-only content',
+            'id-only content'
+        ]);
 
         await deleteFileIfExists(filePath);
     });
@@ -106,8 +212,14 @@ describe('Readable fenced div shorthand rendering', () => {
         try {
             await browser.waitUntil(async () => {
                 const state = await getReadingModeState();
-                return state.blockCount === 5 &&
-                    state.referenceTexts.join('|') === 'Class 1|Class 2|Class 3';
+                return state.blockCount === 7 &&
+                    state.referenceTexts.join('|') === [
+                        'Class 1',
+                        'Class 2',
+                        'Class 3',
+                        'explicit title with space 1',
+                        'explicit title before attributes 1'
+                    ].join('|');
             }, {
                 timeout: 5000,
                 timeoutMsg: 'Expected readable shorthand fenced divs in Reading mode'
@@ -119,26 +231,98 @@ describe('Readable fenced div shorthand rendering', () => {
 
         const state = await getReadingModeState();
 
-        expect(state.blockCount).toBe(5);
-        expect(state.headerTexts).toEqual(['', 'Class 1', 'Class 2', 'Class 3', '']);
-        expect(state.blockLabels).toEqual(['', 'id1', 'id2', 'id3', '']);
-        expect(state.referenceTexts).toEqual(['Class 1', 'Class 2', 'Class 3']);
-        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3']);
+        expect(state.blockCount).toBe(7);
+        expect(state.headerTexts).toEqual([
+            'Class1 1',
+            'Class 1',
+            'Class 2',
+            'Class 3',
+            '',
+            'explicit title with space 1',
+            'explicit title before attributes 1'
+        ]);
+        expect(state.blockLabels).toEqual(['', 'id1', 'id2', 'id3', '', 'id4', 'id5']);
+        expect(state.referenceTexts).toEqual([
+            'Class 1',
+            'Class 2',
+            'Class 3',
+            'explicit title with space 1',
+            'explicit title before attributes 1'
+        ]);
+        expect(state.referenceLabels).toEqual(['id1', 'id2', 'id3', 'id4', 'id5']);
         expect(state.blockClasses[0]).toContain('pem-fenced-div-class1');
         expect(state.blockClasses[1]).toContain('pem-fenced-div-class');
         expect(state.blockClasses[2]).toContain('pem-fenced-div-class');
         expect(state.blockClasses[3]).toContain('pem-fenced-div-class');
+        expect(state.blockClasses[5]).toContain('pem-fenced-div-class');
+        expect(state.blockClasses[6]).toContain('pem-fenced-div-class');
         expect(state.blockTexts).toEqual([
             'Multiple classes',
             'class and id',
             'class, data and id',
             'id, class and data',
-            'multiple data, no class'
+            'multiple data, no class',
+            'title after braced attributes',
+            'title before braced attributes'
         ]);
         expect(state.rawText).not.toContain('::: class1 class2 class3');
         expect(state.rawText).not.toContain('@id1');
         expect(state.rawText).not.toContain('@id2');
         expect(state.rawText).not.toContain('@id3');
+        expect(state.rawText).not.toContain('@id4');
+        expect(state.rawText).not.toContain('@id5');
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('renders fenced-div titles independently of reference labels in Reading mode', async () => {
+        const filePath = 'readable-fenced-div-title-rendering-reading.md';
+
+        await createOrReplaceFile(filePath, titleRenderingContent);
+        await openFileInActiveLeaf(filePath);
+        await ensureReadingMode();
+
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeState();
+                return state.blockCount === 5 &&
+                    state.headerTexts.join('|') === [
+                        'title before attributes 1',
+                        'title after attributes 1',
+                        'Classname 1',
+                        'titlename 1',
+                        ''
+                    ].join('|') &&
+                    state.referenceTexts.join('|') === 'Div 1';
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected fenced div titles to render in Reading mode'
+            });
+        } catch (error) {
+            const state = await getReadingModeState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getReadingModeState();
+
+        expect(state.blockCount).toBe(5);
+        expect(state.headerTexts).toEqual([
+            'title before attributes 1',
+            'title after attributes 1',
+            'Classname 1',
+            'titlename 1',
+            ''
+        ]);
+        expect(state.blockLabels).toEqual(['', '', '', '', 'bare']);
+        expect(state.referenceTexts).toEqual(['Div 1']);
+        expect(state.referenceLabels).toEqual(['bare']);
+        expect(state.blockTexts).toEqual([
+            'title before content',
+            'title after content',
+            'class-only content',
+            'title-only content',
+            'id-only content'
+        ]);
 
         await deleteFileIfExists(filePath);
     });

@@ -1,11 +1,6 @@
 import { pluginStateManager } from '../../core/state/pluginStateManager';
 import { extractFencedDivs } from '../../shared/extractors/fencedDivExtractor';
 import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
-import {
-    FencedDivTypeCounters,
-    createFencedDivReference,
-    createFencedDivTypeCounters
-} from '../../shared/utils/fencedDivReferenceMetadata';
 
 import { ReadingModePipeline } from './ReadingModePipeline';
 import { CustomLabelReferenceInlineProcessor } from './inline/customLabelReferenceInlineProcessor';
@@ -89,23 +84,24 @@ function hydrateFencedDivLabelsFromSource(
     }
 
     const items = extractFencedDivs(source, config);
-    const typeCounters: FencedDivTypeCounters = createFencedDivTypeCounters(labels.values());
 
     for (const item of items) {
         if (!item.label || labels.has(item.label)) {
             continue;
         }
 
-        labels.set(
-            item.label,
-            createFencedDivReference(
-                item.label,
-                item.title,
-                item.classes,
-                item.lineNumber + 1,
-                item.content,
-                typeCounters
-            )
-        );
+        labels.set(item.label, {
+            label: item.label,
+            title: item.title,
+            displayName: item.referenceText,
+            typeLabel: item.typeLabel,
+            typeKey: item.typeKey,
+            number: item.number,
+            referenceText: item.referenceText,
+            blockTitleText: item.blockTitleText,
+            lineNumber: item.lineNumber + 1,
+            classes: item.classes,
+            content: item.content
+        });
     }
 }

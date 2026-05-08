@@ -47,6 +47,9 @@ export function createFencedDivReferenceMetadata(
     const typeLabel = getFencedDivTypeLabel(normalizedTitle, classes);
     const typeKey = getFencedDivTypeKey(typeLabel);
     const number = (counters.get(typeKey) || 0) + 1;
+    const blockTitleText = shouldRenderFencedDivBlockTitle(normalizedTitle, classes)
+        ? `${typeLabel} ${number}`
+        : '';
     counters.set(typeKey, number);
 
     return {
@@ -55,7 +58,7 @@ export function createFencedDivReferenceMetadata(
         typeKey,
         number,
         referenceText: `${typeLabel} ${number}`,
-        blockTitleText: `${typeLabel} ${number}`
+        blockTitleText
     };
 }
 
@@ -98,6 +101,10 @@ export function createFencedDivTypeCounters(
 
 function normalizeTitle(title: string | undefined): string {
     return (title || '').trim();
+}
+
+function shouldRenderFencedDivBlockTitle(title: string, classes: string[]): boolean {
+    return Boolean(title || classes.length > 0);
 }
 
 function humanizeClassName(className: string): string {

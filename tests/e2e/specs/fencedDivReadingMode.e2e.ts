@@ -162,7 +162,7 @@ describe('Fenced div reading mode', () => {
             await browser.waitUntil(async () => {
                 const state = await getReadingModeFencedDivState();
                 return state.blockCount === 3 &&
-                    state.headerTexts.join('|') === '||' &&
+                    state.headerTexts.join('|') === 'Warning 1|Danger 1|Warning2 1' &&
                     !state.rawText.includes(':::');
             }, {
                 timeout: 5000,
@@ -176,7 +176,7 @@ describe('Fenced div reading mode', () => {
         const state = await getReadingModeFencedDivState();
 
         expect(state.blockCount).toBe(3);
-        expect(state.headerTexts).toEqual(['', '', '']);
+        expect(state.headerTexts).toEqual(['Warning 1', 'Danger 1', 'Warning2 1']);
         expect(state.blockTexts[0]).toContain('This is a warning.');
         expect(state.blockTexts[0]).toContain('This is on the 1st level');
         expect(state.blockTexts[1]).toContain('This is a warning within a warning.');

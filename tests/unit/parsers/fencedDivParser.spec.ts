@@ -1,25 +1,20 @@
 import { parseFencedDivOpening, isFencedDivClosing } from '../../../src/live-preview/pipeline/structural/fencedDiv/parser';
 
 const pandocRejectedShortcutCombinationCases: Array<[string, string]> = [
-    ['example 1 block', '::: example_1 {.attr}'],
     ['example 2 block', ':::example_2 {.attr}'],
-    ['example 3 block', '::: example_3 {#id3}'],
     ['example 4 block', ':::example_4 {#id4}'],
-    ['example 5 block', '::: {.attr} example_5'],
     ['example 6 block', ':::{.attr} example_6'],
     ['example 7 block', '::: {example_7, .attr}'],
     ['example 1 text on opener', '::: example_1 {.attr} This is example 1'],
     ['example 2 text on opener', ':::example_2 {.attr} This is example 2'],
     ['example 3 text on opener', '::: example_3 {#id3} This is example 3'],
     ['example 4 text on opener', ':::example_4 {#id4} This is example 4'],
-    ['example 5 text on opener', '::: {.attr} example_5 This is example 5'],
     ['example 6 text on opener', ':::{.attr} example_6 This is example 6'],
     ['example 7 text on opener', '::: {example_7, .attr} This is example 7'],
     ['example 1 one-line div', '::: example_1 {.attr} This is example 1 :::'],
     ['example 2 one-line div', ':::example_2 {.attr} This is example 2 :::'],
     ['example 3 one-line div', '::: example_3 {#id3} This is example 3 :::'],
     ['example 4 one-line div', ':::example_4 {#id4} This is example 4 :::'],
-    ['example 5 one-line div', '::: {.attr} example_5 This is example 5 :::'],
     ['example 6 one-line div', ':::{.attr} example_6 This is example 6 :::'],
     ['example 7 one-line div', '::: {example_7, .attr} This is example 7 :::']
 ];
@@ -95,6 +90,33 @@ describe('fenced div parser', () => {
 
             expect(parsed?.id).toBe('second');
             expect(parsed?.classes).toEqual(['Theorem']);
+        });
+
+        it('parses title text after braced attributes', () => {
+            const parsed = parseFencedDivOpening('::: {.class #id} explicit title with space');
+
+            expect(parsed?.classes).toEqual(['class']);
+            expect(parsed?.id).toBe('id');
+            expect(parsed?.keyValues.get('title')).toBe('explicit title with space');
+        });
+
+        it('parses title text before braced attributes', () => {
+            const parsed = parseFencedDivOpening('::: explicit title before attributes {.class #id}');
+
+            expect(parsed?.classes).toEqual(['class']);
+            expect(parsed?.id).toBe('id');
+            expect(parsed?.keyValues.get('title')).toBe('explicit title before attributes');
+        });
+
+        it('keeps braced title shorthand disabled in strict mode', () => {
+            expect(parseFencedDivOpening(
+                '::: {.class #id} explicit title with space',
+                { strictPandocMode: true }
+            )).toBeNull();
+            expect(parseFencedDivOpening(
+                '::: explicit title before attributes {.class #id}',
+                { strictPandocMode: true }
+            )).toBeNull();
         });
 
         it('does not parse readable shorthand in strict mode', () => {

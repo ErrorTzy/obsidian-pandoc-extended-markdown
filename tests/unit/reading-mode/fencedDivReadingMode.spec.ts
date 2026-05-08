@@ -147,6 +147,51 @@ describe('fenced div reading mode rendering', () => {
         expect(element.textContent).not.toContain('@thm');
     });
 
+    it('renders explicit title shorthand and later @id citations in non-strict mode', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: {.logic #logic:a} explicit title after attributes</p>',
+            '<p>Readable content.</p>',
+            '<p>:::</p>',
+            '<p>::: explicit title before attributes {.logic #logic:b}</p>',
+            '<p>More readable content.</p>',
+            '<p>:::</p>',
+            '<p>See @logic:a and @logic:b.</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext([
+                '::: {.logic #logic:a} explicit title after attributes',
+                'Readable content.',
+                ':::',
+                '::: explicit title before attributes {.logic #logic:b}',
+                'More readable content.',
+                ':::',
+                '',
+                'See @logic:a and @logic:b.'
+            ].join('\n')),
+            createConfig()
+        );
+
+        const titles = Array.from(element.querySelectorAll('.pem-fenced-div-title'))
+            .map(title => title.textContent);
+        expect(titles).toEqual([
+            'explicit title after attributes 1',
+            'explicit title before attributes 1'
+        ]);
+
+        const references = Array.from(
+            element.querySelectorAll(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)
+        ).map(reference => reference.textContent);
+        expect(references).toEqual([
+            'explicit title after attributes 1',
+            'explicit title before attributes 1'
+        ]);
+        expect(element.textContent).not.toContain('@logic:a');
+        expect(element.textContent).not.toContain('@logic:b');
+    });
+
     it('leaves readable shorthand untouched in strict mode', () => {
         const element = document.createElement('div');
         element.innerHTML = [

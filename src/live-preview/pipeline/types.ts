@@ -4,6 +4,7 @@ import { Text, Line } from '@codemirror/state';
 import { App, Component } from 'obsidian';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+import { FencedDivTypeCounters } from '../../shared/utils/fencedDivReferenceMetadata';
 import { FencedDivReference, FencedDivStackItem } from '../../shared/types/fencedDivTypes';
 
 /**
@@ -67,6 +68,7 @@ export interface ProcessingContext {
         parentStructure?: ListStructure;
     };
     fencedDivStack?: FencedDivStackItem[];
+    fencedDivTypeCounters?: FencedDivTypeCounters;
     fencedDivCanOpenAtCurrentLine?: boolean;
     fencedDivBoundaryLine?: number;
     

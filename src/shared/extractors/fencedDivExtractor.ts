@@ -93,7 +93,7 @@ export function extractFencedDivsFromDoc(
 
         if (opening) {
             const title = getFencedDivTitle(opening);
-            const metadata = opening.id
+            const metadata = opening.id || title || opening.classes.length > 0
                 ? createFencedDivReferenceMetadata(title, opening.classes, typeCounters)
                 : {
                     title,

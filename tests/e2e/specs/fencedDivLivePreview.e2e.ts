@@ -286,7 +286,7 @@ describe('Fenced div live preview', () => {
         expect(state.openLineCount).toBe(3);
         expect(state.closeLineCount).toBe(3);
         expect(state.contentLineCount).toBe(2);
-        expect(state.headerTexts).toEqual(['Outer 1', 'Nested "label" 1', '']);
+        expect(state.headerTexts).toEqual(['Outer 1', 'Nested "label" 1', 'Warning 1']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
         expect(state.referenceTexts).toEqual(['Outer 1', 'Nested "label" 1']);
         expect(state.referenceLabels).toEqual(['outer', 'inner']);
@@ -356,7 +356,7 @@ describe('Fenced div live preview', () => {
             'Remark 1',
             'Proposition 2',
             'Premise 1',
-            'Div 1'
+            ''
         ]);
         expect(state.referenceTexts).toEqual([
             'Proposition 1',
@@ -415,7 +415,7 @@ describe('Fenced div live preview', () => {
 
         const state = await getDeepNestedFencedDivRenderState();
 
-        expect(state.headerTexts).toEqual([]);
+        expect(state.headerTexts).toEqual(['Warning 1', 'Danger 1', 'Warning2 1']);
         expect(state.contentTexts).toEqual([
             'This is a warning.',
             'This is a warning within a warning.',

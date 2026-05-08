@@ -150,13 +150,13 @@ describe('FencedDivProcessor', () => {
             expect(context.fencedDivStack?.[0].label).toBe('thm:label');
         });
 
-        it('renders an unbraced fenced div shortcut without title text', () => {
+        it('renders an unbraced fenced div shortcut with class-derived title text', () => {
             const context = createContext('::: Label\nThis is an example\n:::');
             const result = processor.process(context.document.line(1), context);
             const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
 
-            expect(headerDom?.querySelector('.pem-fenced-div-title')).toBeNull();
-            expect(headerDom?.textContent).toBe('');
+            expect(headerDom?.classList.contains('pem-fenced-div-title')).toBe(true);
+            expect(headerDom?.textContent).toBe('Label 1');
         });
 
         it('renders readable shorthand with a reference label', () => {

@@ -2,7 +2,7 @@ import { setTooltip } from 'obsidian';
 
 import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
 import { pluginStateManager } from '../../core/state/pluginStateManager';
-import { FencedDivReference } from '../../shared/types/fencedDivTypes';
+import { FencedDivAttributes, FencedDivReference } from '../../shared/types/fencedDivTypes';
 import { ProcessorConfig } from '../../shared/types/processorConfig';
 import { processInlineTextNodes } from '../pipeline/inline/textReplacementEngine';
 import { FencedDivReferenceInlineProcessor } from '../pipeline/inline/fencedDivReferenceInlineProcessor';
@@ -16,6 +16,8 @@ import {
     FencedDivTypeCounters,
     createFencedDivReference,
     createFencedDivTypeCounters,
+    createFencedDivReferenceMetadata,
+    FencedDivReferenceMetadata,
     getFencedDivTitle
 } from '../../shared/utils/fencedDivReferenceMetadata';
 
@@ -88,7 +90,7 @@ export function processFencedDivs(
     if ((!preserveStack || stack.length === 0) && !hasRenderedFencedDivs) {
         labels.clear();
     }
-    const typeCounters = createFencedDivTypeCounters(labels.values());
+    const typeCounters: FencedDivTypeCounters = new Map();
     const candidates = Array.from(element.querySelectorAll('p, li'));
 
     for (const candidate of candidates) {
@@ -104,18 +106,14 @@ export function processFencedDivs(
         const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
             const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
+            const metadata = createOpeningMetadata(opening, typeCounters);
             const reference = opening.id && labels.has(opening.id)
                 ? labels.get(opening.id) as FencedDivReference
-                : shouldRegister
-                    ? createFencedDivReference(
-                        opening.id || '',
-                        getFencedDivTitle(opening),
-                        opening.classes,
-                        0,
-                        '',
-                        typeCounters
-                    )
-                    : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
+                : createFencedDivReferenceFromMetadata(
+                    opening.id || '',
+                    opening.classes,
+                    metadata
+                );
             const fencedDiv = createFencedDivElement(
                 opening.id,
                 opening.classes,
@@ -194,18 +192,14 @@ function processMultilineCandidate(
         const opening = parseFencedDivOpening(line, config);
         if (opening) {
             const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
+            const metadata = createOpeningMetadata(opening, typeCounters);
             const reference = opening.id && labels.has(opening.id)
                 ? labels.get(opening.id) as FencedDivReference
-                : shouldRegister
-                    ? createFencedDivReference(
-                        opening.id || '',
-                        getFencedDivTitle(opening),
-                        opening.classes,
-                        0,
-                        '',
-                        typeCounters
-                    )
-                    : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
+                : createFencedDivReferenceFromMetadata(
+                    opening.id || '',
+                    opening.classes,
+                    metadata
+                );
             const fencedDiv = createFencedDivElement(
                 opening.id,
                 opening.classes,
@@ -416,19 +410,39 @@ function ensureFencedDivTitleElement(
     setTooltip(titleElement, `#${reference.label}`, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });
 }
 
-function createUnregisteredFencedDivReference(
+function createOpeningMetadata(
+    opening: FencedDivAttributes,
+    typeCounters: FencedDivTypeCounters
+): FencedDivReferenceMetadata {
+    const title = getFencedDivTitle(opening);
+    if (opening.id || title || opening.classes.length > 0) {
+        return createFencedDivReferenceMetadata(title, opening.classes, typeCounters);
+    }
+
+    return {
+        title,
+        typeLabel: '',
+        typeKey: '',
+        number: 0,
+        referenceText: '',
+        blockTitleText: ''
+    };
+}
+
+function createFencedDivReferenceFromMetadata(
     label: string,
-    classes: string[]
+    classes: string[],
+    metadata: FencedDivReferenceMetadata
 ): FencedDivReference {
     return {
         label,
-        title: '',
-        displayName: 'Div',
-        typeLabel: 'Div',
-        typeKey: 'div',
-        number: 0,
-        referenceText: 'Div',
-        blockTitleText: '',
+        title: metadata.title,
+        displayName: metadata.referenceText,
+        typeLabel: metadata.typeLabel,
+        typeKey: metadata.typeKey,
+        number: metadata.number,
+        referenceText: metadata.referenceText,
+        blockTitleText: metadata.blockTitleText,
         lineNumber: 0,
         classes,
         content: ''

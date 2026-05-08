@@ -82,7 +82,7 @@ describe('FencedDivCrossRef.lua', () => {
         );
     });
 
-    it('uses title attributes before class and Div fallbacks', () => {
+    it('uses title attributes before class and uses Div for id-only references', () => {
         const blocks = renderBlocks([
             '::: {.logic-block #prem:a title="Premise"}',
             'A premise.',
@@ -99,7 +99,7 @@ describe('FencedDivCrossRef.lua', () => {
         const miscDivContent = divContent(blocks[1]);
 
         expect(JSON.stringify(premiseDivContent[0])).toContain('Premise 1');
-        expect(JSON.stringify(miscDivContent[0])).toContain('Div 1');
+        expect(JSON.stringify(miscDivContent[0])).not.toContain('pem-fenced-div-title');
         expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise 1 and Div 1.');
     });
 
@@ -116,6 +116,61 @@ describe('FencedDivCrossRef.lua', () => {
         const lastPara = blocks[blocks.length - 1];
 
         expect(inlineText(lastPara.c as PandocInline[])).toBe('See Premise 1.');
+    });
+
+    it('uses explicit titles from readable braced title shorthand', () => {
+        const blocks = renderBlocks([
+            '::: {.logic #logic:a} explicit title after attributes',
+            'Readable logic.',
+            ':::',
+            '',
+            '::: explicit title before attributes {.logic #logic:b}',
+            'More readable logic.',
+            ':::',
+            '',
+            'See @logic:a and @logic:b.'
+        ].join('\n'), [readableFilterPath, crossRefFilterPath]);
+        const lastPara = blocks[blocks.length - 1];
+
+        expect(inlineText(lastPara.c as PandocInline[])).toBe(
+            'See explicit title after attributes 1 and explicit title before attributes 1.'
+        );
+    });
+
+    it('renders Div titles only when a title attribute or class is present', () => {
+        const blocks = renderBlocks([
+            '::: title before attributes {.theorem}',
+            'No-id theorem.',
+            ':::',
+            '',
+            '::: {.theorem} title after attributes',
+            'Another no-id theorem.',
+            ':::',
+            '',
+            '::: classname',
+            'Class-only content.',
+            ':::',
+            '',
+            '::: title="titlename"',
+            'Title-only content.',
+            ':::',
+            '',
+            '::: {#bare}',
+            'Id-only content.',
+            ':::',
+            '',
+            'See @bare.'
+        ].join('\n'), [readableFilterPath, crossRefFilterPath]);
+        const rendered = JSON.stringify(blocks);
+        const lastPara = blocks[blocks.length - 1];
+        const bareDivContent = divContent(blocks[4]);
+
+        expect(rendered).toContain('title before attributes 1');
+        expect(rendered).toContain('title after attributes 1');
+        expect(rendered).toContain('Classname 1');
+        expect(rendered).toContain('titlename 1');
+        expect(JSON.stringify(bareDivContent[0])).not.toContain('pem-fenced-div-title');
+        expect(inlineText(lastPara.c as PandocInline[])).toBe('See Div 1.');
     });
 
     it('preserves unknown citations for citeproc or other filters', () => {

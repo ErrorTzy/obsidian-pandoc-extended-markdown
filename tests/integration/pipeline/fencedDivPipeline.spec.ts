@@ -7,11 +7,8 @@ import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 import { PluginStateManager } from '../../../src/core/state/pluginStateManager';
 
 const pandocRejectedShortcutOpenings: Array<[string, string]> = [
-    ['example_1', '::: example_1 {.attr}'],
     ['example_2', ':::example_2 {.attr}'],
-    ['example_3', '::: example_3 {#id3}'],
     ['example_4', ':::example_4 {#id4}'],
-    ['example_5', '::: {.attr} example_5'],
     ['example_6', ':::{.attr} example_6'],
     ['example_7', '::: {example_7, .attr}']
 ];
@@ -30,7 +27,9 @@ const pandocValidFencedDivDocuments: Array<[string, string]> = [
     ['unbraced shortcut class', '::: validShortcut\ncontent\n:::'],
     ['unspaced unbraced shortcut class', ':::validShortcut\ncontent\n:::'],
     ['id-only braced attributes', '::: {#valid_id}\ncontent\n:::\n\nsee @valid_id.'],
-    ['visual trailing colons', '::: {.attr #valid_visual} ::::::\ncontent\n:::\n\nsee @valid_visual.']
+    ['visual trailing colons', '::: {.attr #valid_visual} ::::::\ncontent\n:::\n\nsee @valid_visual.'],
+    ['readable title after braced attributes', '::: {.attr #valid_title_after} explicit title after attributes\ncontent\n:::\n\nsee @valid_title_after.'],
+    ['readable title before braced attributes', '::: explicit title before attributes {.attr #valid_title_before}\ncontent\n:::\n\nsee @valid_title_before.']
 ];
 
 describe('fenced div live-preview pipeline', () => {

@@ -98,6 +98,14 @@ local function is_readable_class(token)
     return token:match('^[^%s#={},]+$') ~= nil and token:match('^:+$') == nil
 end
 
+local function trim(value)
+    return (value or ''):gsub('^%s+', ''):gsub('%s+$', '')
+end
+
+local function strip_trailing_visual_colons(value)
+    return (value or ''):gsub('%s+:+%s*$', '')
+end
+
 local function parse_key_value(token)
     local separator = token:find('=', 1, true)
     if not separator then
@@ -112,15 +120,100 @@ local function parse_key_value(token)
     return key, strip_quotes(token:sub(separator + 1))
 end
 
+local function find_closing_brace(value, start_index)
+    local quote = nil
+    local escaped = false
+    for index = start_index, #value do
+        local char = value:sub(index, index)
+        if escaped then
+            escaped = false
+        elseif char == '\\' and quote then
+            escaped = true
+        elseif (char == '"' or char == "'") and not quote then
+            quote = char
+        elseif char == quote then
+            quote = nil
+        elseif char == '}' and not quote then
+            return index
+        end
+    end
+    return nil
+end
+
+local function parse_native_braced_attributes(braced_text)
+    local ok, doc = pcall(pandoc.read, '::: ' .. braced_text .. '\n:::', 'markdown')
+    if not ok or not doc.blocks or #doc.blocks ~= 1 or doc.blocks[1].t ~= 'Div' then
+        return nil
+    end
+
+    local div = doc.blocks[1]
+    local key_values = {}
+    for key, value in pairs(div.attributes or {}) do
+        table.insert(key_values, {key, value})
+    end
+    return {
+        id = div.identifier or '',
+        classes = div.classes or {},
+        key_values = key_values,
+    }
+end
+
+local function with_title(opening, title)
+    table.insert(opening.key_values, {'title', title})
+    return opening
+end
+
+local function parse_braced_title_after_attributes(attributes)
+    if attributes:sub(1, 1) ~= '{' then
+        return nil
+    end
+    local closing_brace = find_closing_brace(attributes, 1)
+    if not closing_brace then
+        return nil
+    end
+    local title = trim(attributes:sub(closing_brace + 1))
+    if title == '' then
+        return nil
+    end
+    local opening = parse_native_braced_attributes(attributes:sub(1, closing_brace))
+    return opening and with_title(opening, title) or nil
+end
+
+local function parse_braced_title_before_attributes(attributes)
+    if attributes:sub(-1) ~= '}' then
+        return nil
+    end
+    for index = 1, #attributes do
+        if attributes:sub(index, index) == '{' then
+            local closing_brace = find_closing_brace(attributes, index)
+            if closing_brace == #attributes then
+                local title = trim(attributes:sub(1, index - 1))
+                if title == '' then
+                    return nil
+                end
+                local opening = parse_native_braced_attributes(attributes:sub(index, closing_brace))
+                return opening and with_title(opening, title) or nil
+            end
+        end
+    end
+    return nil
+end
+
 local function parse_readable_opening(text)
     local attributes = text:match('^:::+%s+(.+)$')
     if not attributes then
         return nil
     end
 
-    attributes = attributes:gsub('%s+:+%s*$', '')
+    attributes = strip_trailing_visual_colons(attributes)
     if attributes == '' then
         return nil
+    end
+
+    local braced_opening = parse_braced_title_after_attributes(attributes) or
+        parse_braced_title_before_attributes(attributes)
+    if braced_opening then
+        return braced_opening
     end
 
     local tokens = split_attribute_tokens(attributes)

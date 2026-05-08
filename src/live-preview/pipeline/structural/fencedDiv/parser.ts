@@ -84,11 +84,13 @@ function parseOpeningAttributes(
     settings?: FencedDivParserSettings
 ): ParsedAttributeTokens | null {
     if (rawAttributes.startsWith('{')) {
-        return parseBracedAttributes(rawAttributes);
+        return parseBracedAttributes(rawAttributes) ||
+            parseReadableBracedTitleAfterAttributes(rawAttributes, rawTextAfterFence, settings);
     }
 
     if (!settings?.strictPandocMode && /^[ \t]+/.test(rawTextAfterFence)) {
-        return parseReadableShorthandAttributes(rawAttributes) ||
+        return parseReadableBracedTitleBeforeAttributes(rawAttributes) ||
+            parseReadableShorthandAttributes(rawAttributes) ||
             parseUnbracedAttributes(rawAttributes);
     }
 
@@ -148,6 +150,83 @@ function parseBracedAttributes(rawAttributes: string): ParsedAttributeTokens | n
     return tokens.length === 1
         ? createUnbracedClass(bracedAttributeText)
         : null;
+}
+
+function parseReadableBracedTitleAfterAttributes(
+    rawAttributes: string,
+    rawTextAfterFence: string,
+    settings?: FencedDivParserSettings
+): ParsedAttributeTokens | null {
+    if (settings?.strictPandocMode || !/^[ \t]+/.test(rawTextAfterFence)) {
+        return null;
+    }
+
+    const closingBraceIndex = findClosingBrace(rawAttributes);
+    if (closingBraceIndex < 0) {
+        return null;
+    }
+
+    const title = stripTrailingVisualColons(rawAttributes.slice(closingBraceIndex + 1)).trim();
+    if (!title) {
+        return null;
+    }
+
+    const parsedAttributes = parseBracedAttributeSlice(rawAttributes, 0, closingBraceIndex);
+    return parsedAttributes
+        ? withTitle(parsedAttributes, title)
+        : null;
+}
+
+function parseReadableBracedTitleBeforeAttributes(rawAttributes: string): ParsedAttributeTokens | null {
+    const attributeText = stripTrailingVisualColons(rawAttributes).trim();
+    const closingBraceIndex = attributeText.length - 1;
+    if (attributeText[closingBraceIndex] !== '}') {
+        return null;
+    }
+
+    for (let index = 0; index < attributeText.length; index++) {
+        if (attributeText[index] !== '{') {
+            continue;
+        }
+
+        const localClosingBraceIndex = findClosingBrace(attributeText.slice(index));
+        if (localClosingBraceIndex < 0 || index + localClosingBraceIndex !== closingBraceIndex) {
+            continue;
+        }
+
+        const title = attributeText.slice(0, index).trim();
+        if (!title) {
+            return null;
+        }
+
+        const parsedAttributes = parseBracedAttributeSlice(
+            attributeText,
+            index,
+            closingBraceIndex
+        );
+        return parsedAttributes
+            ? withTitle(parsedAttributes, title)
+            : null;
+    }
+
+    return null;
+}
+
+function parseBracedAttributeSlice(
+    text: string,
+    openingBraceIndex: number,
+    closingBraceIndex: number
+): ParsedAttributeTokens | null {
+    const content = text.slice(openingBraceIndex + 1, closingBraceIndex);
+    const tokens = splitAttributeTokens(content);
+    return tokens
+        ? parseAttributeTokens(tokens)
+        : null;
+}
+
+function withTitle(attributes: ParsedAttributeTokens, title: string): ParsedAttributeTokens {
+    attributes.keyValues.set('title', title);
+    return attributes;
 }
 
 function parseUnbracedAttributes(rawAttributes: string): ParsedAttributeTokens | null {
@@ -213,6 +292,10 @@ function parseReadableShorthandAttributes(rawAttributes: string): ParsedAttribut
 
 function isReadableClassToken(token: string): boolean {
     return READABLE_CLASS.test(token) && !/^:+$/.test(token);
+}
+
+function stripTrailingVisualColons(text: string): string {
+    return text.replace(TRAILING_VISUAL_COLONS, '');
 }
 
 function parseAttributeTokens(tokens: string[]): ParsedAttributeTokens | null {

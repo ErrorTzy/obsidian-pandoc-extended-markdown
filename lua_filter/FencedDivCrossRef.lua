@@ -9,11 +9,42 @@
 
 local pandoc = require 'pandoc'
 
+local TEMP_INDEX_ATTRIBUTE = 'data-pem-crossref-index'
 local references = {}
+local div_metadata = {}
 local counters = {}
 
 local function trim(value)
     return (value or ''):gsub('^%s+', ''):gsub('%s+$', '')
+end
+
+local function strip_quotes(value)
+    if #value < 2 then
+        return value
+    end
+
+    local quote = value:sub(1, 1)
+    if (quote ~= '"' and quote ~= "'") or value:sub(-1) ~= quote then
+        return value
+    end
+
+    return value:sub(2, -2)
+end
+
+local function title_for_div(div)
+    local title = trim(div.attributes and div.attributes.title or '')
+    if title ~= '' then
+        return title
+    end
+
+    for _, class_name in ipairs(div.classes or {}) do
+        local raw_title = class_name:match('^title=(.+)$')
+        if raw_title then
+            return trim(strip_quotes(raw_title))
+        end
+    end
+
+    return ''
 end
 
 local function humanize_class_name(class_name)
@@ -26,7 +57,7 @@ local function humanize_class_name(class_name)
 end
 
 local function type_label_for_div(div)
-    local title = trim(div.attributes and div.attributes.title or '')
+    local title = title_for_div(div)
     if title ~= '' then
         return title
     end
@@ -41,6 +72,10 @@ local function type_label_for_div(div)
     return 'Div'
 end
 
+local function should_render_block_title(div)
+    return title_for_div(div) ~= '' or (div.classes and #div.classes > 0)
+end
+
 local function type_key_for_label(label)
     local key = label:lower():gsub('[^a-z0-9]+', '-'):gsub('^-+', ''):gsub('-+$', '')
     if key == '' then
@@ -51,22 +86,27 @@ local function type_key_for_label(label)
 end
 
 local function register_div(div)
-    local id = div.identifier
-    if not id or id == '' or references[id] then
-        return
-    end
-
     local type_label = type_label_for_div(div)
     local type_key = type_key_for_label(type_label)
     local number = (counters[type_key] or 0) + 1
     counters[type_key] = number
-    references[id] = {
+    local reference = {
         type_label = type_label,
         type_key = type_key,
         number = number,
         reference_text = type_label .. ' ' .. tostring(number),
-        block_title_text = type_label .. ' ' .. tostring(number)
+        block_title_text = should_render_block_title(div)
+            and type_label .. ' ' .. tostring(number)
+            or ''
     }
+    table.insert(div_metadata, reference)
+
+    local id = div.identifier
+    if id and id ~= '' and not references[id] then
+        references[id] = reference
+    end
+
+    div.attributes[TEMP_INDEX_ATTRIBUTE] = tostring(#div_metadata)
 end
 
 local function is_generated_title_block(block)
@@ -86,7 +126,9 @@ end
 local function scan_blocks(blocks)
     for _, block in ipairs(blocks) do
         if block.t == 'Div' then
-            register_div(block)
+            if not is_generated_title_block(block) then
+                register_div(block)
+            end
             scan_blocks(block.content)
         elseif block.t == 'BlockQuote' then
             scan_blocks(block.content)
@@ -129,12 +171,14 @@ local function cite(cite_node)
 end
 
 local function div(div_node)
-    local reference = references[div_node.identifier]
+    local index = tonumber(div_node.attributes[TEMP_INDEX_ATTRIBUTE] or '')
+    div_node.attributes[TEMP_INDEX_ATTRIBUTE] = nil
+    local reference = index and div_metadata[index] or nil
     if not reference then
         return nil
     end
 
-    if not is_generated_title_block(div_node.content[1]) then
+    if reference.block_title_text ~= '' and not is_generated_title_block(div_node.content[1]) then
         div_node.content:insert(1, title_block(reference))
     end
 
@@ -143,6 +187,7 @@ end
 
 function Pandoc(doc)
     references = {}
+    div_metadata = {}
     counters = {}
     scan_blocks(doc.blocks)
 

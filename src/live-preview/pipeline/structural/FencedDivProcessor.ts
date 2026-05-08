@@ -11,6 +11,10 @@ import {
     parseFencedDivOpening
 } from './fencedDiv/parser';
 import { FencedDivClosingWidget, FencedDivHeaderWidget } from '../../widgets';
+import {
+    createFencedDivReferenceMetadata,
+    getFencedDivTitle
+} from '../../../shared/utils/fencedDivReferenceMetadata';
 
 export class FencedDivProcessor extends BaseStructuralProcessor {
     name = 'fenced-div';
@@ -35,6 +39,15 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             ? parseFencedDivOpening(line.text, context.settings)
             : null;
         if (opening) {
+            context.fencedDivTypeCounters = context.fencedDivTypeCounters || new Map();
+            const title = getFencedDivTitle(opening);
+            const metadata = opening.id || title || opening.classes.length > 0
+                ? createFencedDivReferenceMetadata(
+                    title,
+                    opening.classes,
+                    context.fencedDivTypeCounters
+                )
+                : undefined;
             const reference = opening.id
                 ? context.fencedDivLabels?.get(opening.id)
                 : undefined;
@@ -42,7 +55,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
                 label: opening.id,
                 classes: opening.classes,
                 openingLine: line.number,
-                displayName: reference?.blockTitleText
+                displayName: reference?.blockTitleText ?? metadata?.blockTitleText
             });
         }
 
