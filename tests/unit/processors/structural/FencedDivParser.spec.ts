@@ -60,6 +60,40 @@ describe('fenced div parser', () => {
         });
     });
 
+    describe('readable shorthand openings', () => {
+        it('parses a class, id, and key-value attribute', () => {
+            const opening = parseFencedDivOpening('::: Theorem #thm data=1');
+
+            expect(opening?.classes).toEqual(['Theorem']);
+            expect(opening?.id).toBe('thm');
+            expect(opening?.keyValues.get('data')).toBe('1');
+        });
+
+        it('parses multiple bare tokens as classes', () => {
+            expect(parseFencedDivOpening('::: Theorem thm compact')?.classes).toEqual([
+                'Theorem',
+                'thm',
+                'compact'
+            ]);
+        });
+
+        it('parses quoted values and trailing visual colons', () => {
+            const opening = parseFencedDivOpening('::: Theorem #thm title="hello world" data-x=\'yes\' ::::::');
+
+            expect(opening?.classes).toEqual(['Theorem']);
+            expect(opening?.id).toBe('thm');
+            expect(opening?.keyValues.get('title')).toBe('hello world');
+            expect(opening?.keyValues.get('data-x')).toBe('yes');
+        });
+
+        it('does not parse readable shorthand in strict mode', () => {
+            expect(parseFencedDivOpening(
+                '::: Theorem #thm data=1',
+                { strictPandocMode: true }
+            )).toBeNull();
+        });
+    });
+
     describe('invalid or fallback Pandoc openings', () => {
         it.each([
             ' ::: {.note}',

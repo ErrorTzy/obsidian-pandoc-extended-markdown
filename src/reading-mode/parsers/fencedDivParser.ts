@@ -35,6 +35,7 @@ export function scheduleFencedDivProcessing(
     const section = element.closest('.markdown-preview-section');
     if (!section) {
         processFencedDivs(element, docPath, config, true);
+        scheduleFencedDivReferenceProcessing(element, docPath);
         return;
     }
 
@@ -46,9 +47,21 @@ export function scheduleFencedDivProcessing(
     const timeout = window.setTimeout(() => {
         pendingSectionProcessing.delete(section);
         processFencedDivs(section, docPath, config);
+        scheduleFencedDivReferenceProcessing(section, docPath);
     }, 0);
 
     pendingSectionProcessing.set(section, timeout);
+}
+
+function scheduleFencedDivReferenceProcessing(
+    element: HTMLElement,
+    docPath: string
+): void {
+    window.setTimeout(() => {
+        const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
+        hydrateRenderedFencedDivLabels(element, labels);
+        processFencedDivReferences(element, labels);
+    }, 0);
 }
 
 export function processFencedDivs(
@@ -61,10 +74,14 @@ export function processFencedDivs(
         return;
     }
 
-    const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
     const stack = preserveStack
         ? getChunkStack(docPath)
         : [];
+    const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
+    const hasRenderedFencedDivs = Boolean(element.querySelector('.pem-fenced-div'));
+    if ((!preserveStack || stack.length === 0) && !hasRenderedFencedDivs) {
+        labels.clear();
+    }
     const candidates = Array.from(element.querySelectorAll('p, li'));
 
     for (const candidate of candidates) {
@@ -73,11 +90,11 @@ export function processFencedDivs(
         }
 
         const lineText = getTextWithLineBreaks(candidate);
-        if (processMultilineCandidate(candidate, lineText, stack, labels)) {
+        if (processMultilineCandidate(candidate, lineText, stack, labels, config)) {
             continue;
         }
 
-        const opening = parseFencedDivOpening(lineText);
+        const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
             const displayName = getFencedDivDisplayName(opening.classes);
             const reference: FencedDivReference = {
@@ -120,6 +137,7 @@ export function processFencedDivs(
         }
     }
 
+    hydrateRenderedFencedDivLabels(element, labels);
     processFencedDivReferences(element, labels);
 
     if (preserveStack && stack.length === 0) {
@@ -141,20 +159,21 @@ function processMultilineCandidate(
     candidate: Element,
     text: string,
     stack: ActiveFencedDiv[],
-    labels: Map<string, FencedDivReference>
+    labels: Map<string, FencedDivReference>,
+    config: ProcessorConfig
 ): boolean {
     if (!text.includes('\n')) {
         return false;
     }
 
     const lines = text.split('\n');
-    if (!lines.some(line => parseFencedDivOpening(line) || isFencedDivClosing(line))) {
+    if (!lines.some(line => parseFencedDivOpening(line, config) || isFencedDivClosing(line))) {
         return false;
     }
 
     const fragments: Node[] = [];
     for (const line of lines) {
-        const opening = parseFencedDivOpening(line);
+        const opening = parseFencedDivOpening(line, config);
         if (opening) {
             const displayName = getFencedDivDisplayName(opening.classes);
             const reference: FencedDivReference = {
@@ -337,6 +356,40 @@ function processFencedDivReferences(
     for (const node of nodes) {
         replaceReferencesInTextNode(node, labels);
     }
+}
+
+function hydrateRenderedFencedDivLabels(
+    element: HTMLElement,
+    labels: Map<string, FencedDivReference>
+): void {
+    const blocks = Array.from(element.querySelectorAll<HTMLElement>('.pem-fenced-div[data-pandoc-div-id]'));
+    for (const block of blocks) {
+        const label = block.dataset.pandocDivId;
+        if (!label || labels.has(label)) {
+            continue;
+        }
+
+        const title = block.querySelector('.pem-fenced-div-title')?.textContent ?? 'Div';
+        const content = block.querySelector('.pem-fenced-div-content')?.textContent?.trim() ?? '';
+
+        labels.set(label, {
+            label,
+            displayName: title.replace(/:\s*$/, '') || 'Div',
+            lineNumber: 0,
+            classes: getRenderedFencedDivClasses(block),
+            content
+        });
+    }
+}
+
+function getRenderedFencedDivClasses(block: HTMLElement): string[] {
+    return Array.from(block.classList)
+        .filter(className =>
+            className.startsWith('pem-fenced-div-') &&
+            className !== 'pem-fenced-div-inner' &&
+            !className.startsWith('pem-fenced-div-depth-')
+        )
+        .map(className => className.replace('pem-fenced-div-', ''));
 }
 
 function replaceReferencesInTextNode(

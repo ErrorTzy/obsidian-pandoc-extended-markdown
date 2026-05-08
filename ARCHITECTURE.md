@@ -27,7 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
-| **Fenced Divs** | `::: {.theorem #id}` with `@id` references | FencedDivProcessor, FencedDivReferenceProcessor |
+| **Fenced Divs** | `::: {.theorem #id}` and non-strict `::: Theorem #id` with `@id` references | FencedDivProcessor, FencedDivReferenceProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -113,7 +113,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 * CustomLabelProcessor is modularized into `/customLabel/` subdirectory for better organization
 | **HashListProcessor** | 10 | Auto-number `#.` lists | `^\s*#\.` | BaseStructuralProcessor |
 | **CustomLabelProcessor*** | 15 | Process `{::LABEL}` markers | `^\s*\{::` | StructuralProcessor |
-| **FencedDivProcessor** | 18 | Render Pandoc fenced div open/content/close lines | unindented `:::` with Pandoc-recognized attributes at block boundaries | BaseStructuralProcessor |
+| **FencedDivProcessor** | 18 | Render fenced div open/content/close lines | unindented `:::` with Pandoc-recognized attributes, plus readable shorthand when strict mode is off, at block boundaries | BaseStructuralProcessor |
 | **FancyListProcessor** | 20 | Letter/Roman lists | `^\s*[A-Za-z0-9]+[.)]` | BaseStructuralProcessor |
 | **DefinitionProcessor** | 20 | Definition list items | `^:\s` or `^~\s` | StructuralProcessor |
 | **ExampleListProcessor** | 30 | Example lists `(@label)` | `^\s*\(@` | BaseStructuralProcessor |
@@ -299,7 +299,7 @@ listAutocompletion/
 2. Document Scanning
    - Extract example labels → Map<label, number>
    - Extract custom labels → Map<label, processed>
-   - Extract labeled fenced divs → Map<label, display metadata>
+   - Extract labeled fenced divs, including non-strict readable shorthand → Map<label, display metadata>
    - Skip code regions
 
 3. Validation (Strict Mode)

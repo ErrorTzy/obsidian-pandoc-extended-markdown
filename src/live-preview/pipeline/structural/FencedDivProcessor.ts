@@ -23,7 +23,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             return false;
         }
 
-        if (this.canOpenAtCurrentLine(context) && parseFencedDivOpening(line.text)) {
+        if (this.canOpenAtCurrentLine(context) && parseFencedDivOpening(line.text, context.settings)) {
             return true;
         }
 
@@ -33,7 +33,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
 
     process(line: Line, context: ProcessingContext): StructuralResult {
         const opening = this.canOpenAtCurrentLine(context)
-            ? parseFencedDivOpening(line.text)
+            ? parseFencedDivOpening(line.text, context.settings)
             : null;
         if (opening) {
             return this.processOpeningFence(line, context, {

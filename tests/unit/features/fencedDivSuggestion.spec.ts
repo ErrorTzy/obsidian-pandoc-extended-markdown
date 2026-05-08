@@ -77,8 +77,8 @@ describe('Fenced Div Reference Suggestions', () => {
                 'For a right triangle, a^2 + b^2 = c^2.',
                 ':::',
                 '',
-                '::: Warning #invalid',
-                'Invalid Pandoc opener.',
+                '::: Warning #warn',
+                'Readable shorthand opener.',
                 ':::',
                 '',
                 '::: {.lemma #lem:compact}',
@@ -91,7 +91,7 @@ describe('Fenced Div Reference Suggestions', () => {
                 query: ''
             } as any);
 
-            expect(suggestions).toHaveLength(2);
+            expect(suggestions).toHaveLength(3);
             expect(suggestions[0]).toEqual({
                 label: 'lem:compact',
                 displayName: 'Lemma',
@@ -104,6 +104,32 @@ describe('Fenced Div Reference Suggestions', () => {
                 previewText: 'For a right triangle, a^2 + b^...',
                 lineNumber: 1
             });
+            expect(suggestions[2]).toEqual({
+                label: 'warn',
+                displayName: 'Warning',
+                previewText: 'Readable shorthand opener.',
+                lineNumber: 5
+            });
+        });
+
+        it('skips readable shorthand labels in strict mode', () => {
+            plugin.settings.strictPandocMode = true;
+            mockEditor.getValue = jest.fn().mockReturnValue([
+                '::: Theorem #thm',
+                'Readable shorthand content.',
+                ':::',
+                '',
+                '::: {.lemma #lem}',
+                'Pandoc content.',
+                ':::'
+            ].join('\n'));
+
+            const suggestions = suggest.getSuggestions({
+                editor: mockEditor,
+                query: ''
+            } as any);
+
+            expect(suggestions.map(suggestion => suggestion.label)).toEqual(['lem']);
         });
 
         it('filters suggestions by label and display name', () => {

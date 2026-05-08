@@ -85,6 +85,19 @@ describe('FencedDivProcessor', () => {
             expect(processor.canProcess(context.document.line(1), context)).toBe(true);
         });
 
+        it('recognizes readable shorthand in non-strict mode', () => {
+            const context = createContext('::: Theorem #thm data=1\ncontent\n:::');
+            expect(processor.canProcess(context.document.line(1), context)).toBe(true);
+        });
+
+        it('does not recognize readable shorthand in strict mode', () => {
+            const context = createContext(
+                '::: Theorem #thm data=1\ncontent\n:::',
+                { strictPandocMode: true }
+            );
+            expect(processor.canProcess(context.document.line(1), context)).toBe(false);
+        });
+
         it('does not recognize comma-separated attributes rejected by Pandoc', () => {
             const context = createContext('::: {.theorem, #thm:label}\ncontent\n:::');
             expect(processor.canProcess(context.document.line(1), context)).toBe(false);
@@ -125,6 +138,16 @@ describe('FencedDivProcessor', () => {
 
             expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Label');
             expect(headerDom?.textContent).toBe('Label');
+        });
+
+        it('renders readable shorthand with a reference label', () => {
+            const context = createContext('::: Theorem #thm data=1\nThis is an example\n:::');
+            const result = processor.process(context.document.line(1), context);
+            const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
+
+            expect(headerDom?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem');
+            expect(headerDom?.dataset.pandocDivId).toBe('thm');
+            expect(context.fencedDivStack?.[0].label).toBe('thm');
         });
 
         it('does not replace an opening fence while the cursor is editing it', () => {

@@ -65,6 +65,46 @@ describe('fenced div parser', () => {
         });
     });
 
+    describe('readable shorthand openings', () => {
+        it('parses classes, id, and key-values in non-strict mode', () => {
+            const parsed = parseFencedDivOpening('::: Theorem #thm data=1');
+
+            expect(parsed?.classes).toEqual(['Theorem']);
+            expect(parsed?.id).toBe('thm');
+            expect(parsed?.keyValues.get('data')).toBe('1');
+        });
+
+        it('treats additional bare tokens as classes', () => {
+            const parsed = parseFencedDivOpening('::: Theorem thm compact');
+
+            expect(parsed?.classes).toEqual(['Theorem', 'thm', 'compact']);
+            expect(parsed?.id).toBeUndefined();
+        });
+
+        it('parses quoted values and trailing visual colons', () => {
+            const parsed = parseFencedDivOpening('::: Theorem #thm title="hello world" data-x=\'yes\' ::::::');
+
+            expect(parsed?.classes).toEqual(['Theorem']);
+            expect(parsed?.id).toBe('thm');
+            expect(parsed?.keyValues.get('title')).toBe('hello world');
+            expect(parsed?.keyValues.get('data-x')).toBe('yes');
+        });
+
+        it('uses the last repeated id', () => {
+            const parsed = parseFencedDivOpening('::: Theorem #first #second');
+
+            expect(parsed?.id).toBe('second');
+            expect(parsed?.classes).toEqual(['Theorem']);
+        });
+
+        it('does not parse readable shorthand in strict mode', () => {
+            expect(parseFencedDivOpening(
+                '::: Theorem #thm data=1',
+                { strictPandocMode: true }
+            )).toBeNull();
+        });
+    });
+
     describe('Pandoc-rejected shortcut and inline-content combinations', () => {
         it.each(pandocRejectedShortcutCombinationCases)('does not parse %s', (_name, line) => {
             expect(parseFencedDivOpening(line)).toBeNull();

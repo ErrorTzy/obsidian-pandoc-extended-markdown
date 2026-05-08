@@ -78,7 +78,7 @@ export function extractFencedDivsFromDoc(
         }
 
         const opening = canOpenAtCurrentLine
-            ? parseFencedDivOpening(line.text)
+            ? parseFencedDivOpening(line.text, settings)
             : null;
 
         if (opening) {

@@ -27,6 +27,35 @@ describe('scanFencedDivs', () => {
         expect(labels.get('sibling')?.displayName).toBe('Sibling');
     });
 
+    it('collects labels from readable shorthand in non-strict mode', () => {
+        const labels = scan([
+            '::: Theorem #thm data=1',
+            'Readable content.',
+            ':::',
+            '',
+            'See @thm.'
+        ].join('\n'));
+
+        expect(labels.get('thm')?.displayName).toBe('Theorem');
+        expect(labels.get('thm')?.content).toBe('Readable content.');
+    });
+
+    it('does not collect labels from readable shorthand in strict mode', () => {
+        const labels = scanFencedDivs(
+            Text.of([
+                '::: Theorem #thm data=1',
+                'Readable content.',
+                ':::'
+            ]),
+            {
+                ...settings,
+                strictPandocMode: true
+            }
+        );
+
+        expect(labels.has('thm')).toBe(false);
+    });
+
     it('does not collect labels from openings that Pandoc treats as paragraph text', () => {
         const labels = scan([
             'Paragraph before.',

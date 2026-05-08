@@ -87,10 +87,13 @@ The opening fence renders as `Theorem`, and `@thm` renders as `Theorem`.
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
   - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
   - A single unbraced class shortcut: `::: Warning` or `:::Warning`.
+- In non-strict mode, the plugin also accepts readable shorthand: `::: Theorem #thm key="value"`. Bare tokens become classes, `#id` becomes the reference label, and `key=value` pairs are preserved as attributes.
+- Strict Pandoc mode disables readable shorthand. In strict mode, `::: Theorem #thm` remains plain Markdown text and does not create a reference target.
 - Optional visual trailing colons are allowed after the attributes, as in `::: {.warning} ::::::`.
 - Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
 - Comma-separated attributes such as `{.theorem, #thm}` are also plain text in Pandoc and are not rendered.
 - Reading mode support applies to rendered paragraph/list-item blocks that Obsidian exposes to the post-processor.
+- For Pandoc export, readable shorthand can be normalized to native Div blocks with `lua_filter/ReadableFencedDiv.lua`.
 
 ### List Panel View
 
@@ -125,7 +128,7 @@ A modular sidebar panel displays various list-related content from the active do
 - Hover previews for truncated content with full rendering
 
 **Fenced Divs Panel** `:::`
-- Displays all Pandoc fenced div blocks from the current document
+- Displays all fenced div blocks from the current document, including readable shorthand when strict Pandoc mode is off
 - Three-column layout: title, cross-reference label, and content
 - Title and label columns are empty when a block does not define them
 - Click labels to copy cross-reference syntax (e.g., `@thm`) to clipboard

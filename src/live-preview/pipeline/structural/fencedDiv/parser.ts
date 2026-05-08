@@ -6,7 +6,9 @@ const ATTRIBUTE_KEY = /^[A-Za-z:][A-Za-z0-9_:.-]*$/;
 const ATTRIBUTE_ID = /^#[^\s@,=]+$/;
 const ATTRIBUTE_CLASS = /^\.[\p{L}][\p{L}\p{N}_:.-]*$/u;
 const TRAILING_COLONS = /^[ \t]*:+[ \t]*$/;
+const TRAILING_VISUAL_COLONS = /[ \t]+:+[ \t]*$/;
 const UNBRACED_CLASS = /^(\S+)(?:[ \t]+:+)?$/;
+const READABLE_CLASS = /^[^\s#={},]+$/;
 const HTML_BLOCK_TAGS = new Set([
     'address', 'article', 'aside', 'base', 'basefont', 'blockquote', 'body',
     'caption', 'center', 'col', 'colgroup', 'dd', 'details', 'dialog', 'dir',
@@ -24,6 +26,10 @@ interface ParsedAttributeTokens {
     keyValues: Map<string, string>;
 }
 
+interface FencedDivParserSettings {
+    strictPandocMode?: boolean;
+}
+
 export function isFencedDivClosing(lineText: string): boolean {
     return CLOSING_FENCE.test(lineText);
 }
@@ -39,7 +45,10 @@ export function allowsFencedDivOpeningAfterLine(lineText: string): boolean {
         isSingleLineHtmlBlock(trimmedLine);
 }
 
-export function parseFencedDivOpening(lineText: string): FencedDivAttributes | null {
+export function parseFencedDivOpening(
+    lineText: string,
+    settings?: FencedDivParserSettings
+): FencedDivAttributes | null {
     const openingMatch = lineText.match(OPENING_FENCE);
     if (!openingMatch) {
         return null;
@@ -51,9 +60,11 @@ export function parseFencedDivOpening(lineText: string): FencedDivAttributes | n
         return null;
     }
 
-    const parsedAttributes = rawAttributes.startsWith('{')
-        ? parseBracedAttributes(rawAttributes)
-        : parseUnbracedAttributes(rawAttributes);
+    const parsedAttributes = parseOpeningAttributes(
+        rawAttributes,
+        openingMatch[2] || '',
+        settings
+    );
     if (!parsedAttributes) {
         return null;
     }
@@ -65,6 +76,23 @@ export function parseFencedDivOpening(lineText: string): FencedDivAttributes | n
         markerText: `${fence}${openingMatch[2] || ''}`,
         ...parsedAttributes
     };
+}
+
+function parseOpeningAttributes(
+    rawAttributes: string,
+    rawTextAfterFence: string,
+    settings?: FencedDivParserSettings
+): ParsedAttributeTokens | null {
+    if (rawAttributes.startsWith('{')) {
+        return parseBracedAttributes(rawAttributes);
+    }
+
+    if (!settings?.strictPandocMode && /^[ \t]+/.test(rawTextAfterFence)) {
+        return parseReadableShorthandAttributes(rawAttributes) ||
+            parseUnbracedAttributes(rawAttributes);
+    }
+
+    return parseUnbracedAttributes(rawAttributes);
 }
 
 function isAtxHeading(lineText: string): boolean {
@@ -143,6 +171,55 @@ function createUnbracedClass(className: string): ParsedAttributeTokens {
         classes: [className],
         keyValues: new Map()
     };
+}
+
+function parseReadableShorthandAttributes(rawAttributes: string): ParsedAttributeTokens | null {
+    const attributeText = rawAttributes.replace(TRAILING_VISUAL_COLONS, '').trim();
+    if (!attributeText) {
+        return null;
+    }
+
+    const tokens = splitAttributeTokens(attributeText);
+    if (!tokens || tokens.length === 0) {
+        return null;
+    }
+
+    const classes: string[] = [];
+    const keyValues = new Map<string, string>();
+    let id: string | undefined;
+
+    for (const token of tokens) {
+        if (ATTRIBUTE_ID.test(token)) {
+            id = token.slice(1);
+            continue;
+        }
+
+        if (token.includes('=')) {
+            const parsedKeyValue = parseKeyValueToken(token);
+            if (!parsedKeyValue) {
+                return null;
+            }
+            keyValues.set(parsedKeyValue.key, parsedKeyValue.value);
+            continue;
+        }
+
+        if (isReadableClassToken(token)) {
+            classes.push(token);
+            continue;
+        }
+
+        return null;
+    }
+
+    return {
+        id,
+        classes,
+        keyValues
+    };
+}
+
+function isReadableClassToken(token: string): boolean {
+    return READABLE_CLASS.test(token) && !/^:+$/.test(token);
 }
 
 function parseAttributeTokens(tokens: string[]): ParsedAttributeTokens | null {

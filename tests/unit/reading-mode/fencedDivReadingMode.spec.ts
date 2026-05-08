@@ -120,6 +120,47 @@ describe('fenced div reading mode rendering', () => {
         expect(references.map(reference => reference.textContent)).toEqual(['Outer', 'Inner', 'Warning']);
     });
 
+    it('renders readable shorthand and later @id references in non-strict mode', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: Theorem #thm data=1</p>',
+            '<p>Readable content.</p>',
+            '<p>:::</p>',
+            '<p>See @thm.</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext('::: Theorem #thm data=1\nReadable content.\n:::\n\nSee @thm.'),
+            createConfig()
+        );
+
+        const fencedDiv = element.querySelector('.pem-fenced-div') as HTMLElement | null;
+        expect(fencedDiv?.dataset.pandocDivId).toBe('thm');
+        expect(fencedDiv?.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem:');
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)?.textContent).toBe('Theorem');
+    });
+
+    it('leaves readable shorthand untouched in strict mode', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: Theorem #thm data=1</p>',
+            '<p>Readable content.</p>',
+            '<p>:::</p>',
+            '<p>See @thm.</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext('::: Theorem #thm data=1\nReadable content.\n:::\n\nSee @thm.'),
+            createConfig({ strictPandocMode: true })
+        );
+
+        expect(element.querySelector('.pem-fenced-div')).toBeNull();
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
+        expect(element.textContent).toContain('::: Theorem #thm data=1');
+    });
+
     it('leaves fenced div syntax untouched when the feature is disabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [
