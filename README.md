@@ -4,9 +4,9 @@ This plugin enables Obsidian to render [Pandoc extended markdown syntax](https:/
 
 ## Current Features
 
-Pandoc extended markdown syntax is a huge superset of obsidian markdown. Therefore I cannot implement every single one of them. For now I have implement the ones I found the most useful. Mainly, it's lists and super/subscripts. I am not planning to implement pandoc markdown extended table feature because I think using tables in markdown is painful anyway. 
+Pandoc extended Markdown is a large superset of Obsidian Markdown, so this plugin focuses on the syntax that is most useful in daily notes: lists, fenced divs, superscripts, and subscripts. I do not plan to implement Pandoc's extended table syntax because Markdown tables are difficult to edit comfortably in plain text.
 
-In addition, live preview mode is the first class citizen. The current reading mode support might need a complete rewrite.
+Live Preview is the primary editing surface. Reading mode is supported for the implemented syntax, but its implementation is more constrained by Obsidian's rendered HTML.
 
 ### Superscripts and Subscripts
 Render Pandoc-style superscripts and subscripts:
@@ -249,7 +249,7 @@ This feature:
 
 #### Custom Label Lists
 
-*Warning: This is a plugin-specific markdown flavor. Within obsidian, it works out of the box with this plugin. But if you want to you pandoc to do conversion, you need to pass lua filter to pandoc. The lua filter is in /lua_filter/CustomLabelList.lua*
+*Warning: This is a plugin-specific Markdown flavor. In Obsidian, it works out of the box with this plugin. For Pandoc conversion, pass `lua_filter/CustomLabelList.lua` to Pandoc as a Lua filter.*
 
 When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
 

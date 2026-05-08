@@ -55,7 +55,7 @@ describe('Fenced div list panel', () => {
         });
     });
 
-    it('shows empty title, citation label, and content columns', async () => {
+    it('shows title metadata, citation label, and content columns', async () => {
         const filePath = 'fenced-div-panel-layout.md';
         const content = [
             '::: {.theorem #thm:compact}',
@@ -90,7 +90,7 @@ describe('Fenced div list panel', () => {
             content: 'A labeled block without a class title.'
         });
         expect(rows[2]).toEqual({
-            title: '',
+            title: 'Warning',
             label: '',
             content: 'Admonition content without a citation label.'
         });

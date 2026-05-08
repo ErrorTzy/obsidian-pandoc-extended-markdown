@@ -272,6 +272,7 @@ listAutocompletion/
 | **mathRenderer** | LaTeX → Unicode conversion | Panel displays |
 | **hoverPopovers** | Hover preview creation | References, tooltips |
 | **contentTruncator** | Smart content truncation | Panel displays |
+| **fencedDivReferenceMetadata** | Fenced-div title, numbering, and reference metadata | Live Preview, Reading mode, panels, export parity tests |
 | **listHelpers** | List manipulation | Autocompletion |
 | **placeholderProcessor** | Process `#a`, `#b` | Custom labels |
 | **cursorUtils** | Cursor position calculations | Inline processors |
@@ -337,6 +338,7 @@ For each line (top to bottom):
 For each content region from Phase 1:
   1. All processors find matches:
      - ExampleReferenceProcessor
+     - FencedDivReferenceProcessor
      - SuperscriptProcessor
      - SubscriptProcessor
      - CustomLabelReferenceProcessor
