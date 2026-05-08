@@ -314,7 +314,7 @@ Which renders as:
 
 ## Installation
 
-### From Obsidian Community Plugins (Coming Soon)
+### From Obsidian Community Plugins
 1. Open Settings → Community plugins
 2. Search for "Pandoc Extended Markdown"
 3. Click Install and Enable
@@ -338,9 +338,9 @@ With spaces: P~a\ cat~ subscript example
 
 ### Fancy Lists
 ```markdown
-A. First major point
-B. Second major point
-C. Third major point
+A.  First major point
+B.  Second major point
+C.  Third major point
 
 i. First sub-item
 ii. Second sub-item
@@ -381,40 +381,6 @@ Plugin
 - **Reading Mode**: Lists are fully rendered with enhanced styling
 - **Source Mode**: Original markdown syntax is always preserved without any rendering
 - **Strict Mode**: When enabled, only lists conforming to Pandoc standards are rendered
-
-## Settings
-
-The plugin provides a settings tab where you can configure:
-
-- **Strict Pandoc Mode**: Toggle to enforce Pandoc formatting standards
-  - When enabled, lists must have proper empty lines before/after blocks
-  - Capital letters with periods require double spacing
-  - Invalid lists are displayed as plain text
-
-- **Syntax features**: Toggle individual Pandoc syntaxes on or off
-  - Hash auto-number lists (`#.`)
-  - Fancy lists (`A.`, `i.`, etc.)
-  - Example lists and example references (`(@label)`)
-  - Definition lists
-  - Fenced divs (`::: {.theorem #thm title="Theorem &"}`) and fenced-div cross-references (`@thm`)
-  - Distinct unordered list marker rendering for `-`, `+`, and `*`
-  - Superscript and subscript
-  - Custom label lists (`{::LABEL}`) and custom label references
-  - Custom label lists should be used together with `lua_filter/CustomLabelList.lua` for Pandoc output
-  - When strict mode is enabled, custom label blocks still require blank lines before/after
-
-- **List auto-completion**: Configure automatic list editing behavior
-  - Auto-renumber lists when inserting new list items
-  - Depth-based unordered list marker cycling
-  - Depth-based ordered list marker cycling for `1.`, `1)`, `a.`, `a)`, `A.`, `A)`, `i.`, `i)`, `I.`, and `I)`
-  - Unordered list marker order for cycling between `-`, `+`, and `*`
-  - Ordered list marker order for cycling between non-auto ordered markers
-
-- **Panel features**: Configure the list panel view in the sidebar
-  - Toggle whether the list panel view and its ribbon icon are available
-  - Edit the order of enabled panel tabs
-
-Hash auto-number lists (`#.`) are not included in ordered marker cycling because they are already auto-numbered.
 
 ## Commands
 
