@@ -127,6 +127,15 @@ Use `.no-num` when a title contains a literal ampersand or when placeholder text
 ::: {.warning #warn .no-num title="AT&T Warning"}
 Literal ampersand, no numbering.
 :::
+```
+
+You can also escape a `&` in the title which keeping other `&`:
+
+```
+::: {.warning #warn title="AT\&T-&.&"}
+Literal ampersand, no numbering.
+:::
+```
 
 #### Readable shorthand
 
