@@ -50,7 +50,7 @@ export function scheduleFencedDivProcessing(
     const section = element.closest('.markdown-preview-section');
     if (!section) {
         processFencedDivs(element, docPath, config, true);
-        scheduleFencedDivLabelHydration(element, docPath);
+        scheduleFencedDivLabelHydration(element, docPath, config);
         return;
     }
 
@@ -62,7 +62,7 @@ export function scheduleFencedDivProcessing(
     const timeout = window.setTimeout(() => {
         pendingSectionProcessing.delete(section);
         processFencedDivs(section, docPath, config);
-        scheduleFencedDivLabelHydration(section, docPath);
+        scheduleFencedDivLabelHydration(section, docPath, config);
     }, 0);
 
     pendingSectionProcessing.set(section, timeout);
@@ -70,8 +70,13 @@ export function scheduleFencedDivProcessing(
 
 function scheduleFencedDivLabelHydration(
     element: HTMLElement,
-    docPath: string
+    docPath: string,
+    config: ProcessorConfig
 ): void {
+    if (config.strictPandocMode) {
+        return;
+    }
+
     window.setTimeout(() => {
         const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
         hydrateRenderedFencedDivLabels(element, labels);
@@ -112,7 +117,7 @@ export function processFencedDivs(
 
         const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
-            const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters);
+            const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
             insertFencedDiv(candidate, fencedDiv.block, stack);
             stack.push({
@@ -141,7 +146,9 @@ export function processFencedDivs(
         }
     }
 
-    hydrateRenderedFencedDivLabels(element, labels);
+    if (!config.strictPandocMode) {
+        hydrateRenderedFencedDivLabels(element, labels);
+    }
 
     if (preserveStack && stack.length === 0) {
         chunkStacks.delete(docPath);
@@ -209,7 +216,7 @@ function processMultilineCandidate(
     for (const line of lines) {
         const opening = parseFencedDivOpening(line, config);
         if (opening) {
-            const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters);
+            const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
             appendRenderedLineNode(fencedDiv.block, fragments, stack);
             stack.push({
@@ -245,12 +252,14 @@ function prepareFencedDivOpening(
     opening: FencedDivAttributes,
     stack: ActiveFencedDiv[],
     labels: Map<string, FencedDivReference>,
-    typeCounters: FencedDivTypeCounters
+    typeCounters: FencedDivTypeCounters,
+    config: ProcessorConfig
 ): PreparedFencedDiv {
+    const renderExtendedTitle = !config.strictPandocMode;
     const title = getFencedDivTitle(opening);
     const metadata = createFencedDivReferenceMetadata(
-        title,
-        opening.classes,
+        renderExtendedTitle ? title : '',
+        renderExtendedTitle ? opening.classes : [],
         typeCounters
     );
     const existingReference = opening.id
@@ -268,7 +277,7 @@ function prepareFencedDivOpening(
         opening.classes,
         stack.length + 1,
         title,
-        reference.blockTitleText
+        renderExtendedTitle ? reference.blockTitleText : ''
     );
 
     if (opening.id && !existingReference) {

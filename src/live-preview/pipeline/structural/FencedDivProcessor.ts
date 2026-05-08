@@ -40,8 +40,9 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             : null;
         if (opening) {
             context.fencedDivTypeCounters = context.fencedDivTypeCounters || new Map();
-            const title = getFencedDivTitle(opening);
-            const metadata = opening.id || title || opening.classes.length > 0
+            const renderExtendedTitle = !context.settings.strictPandocMode;
+            const title = renderExtendedTitle ? getFencedDivTitle(opening) : '';
+            const metadata = renderExtendedTitle && (opening.id || title || opening.classes.length > 0)
                 ? createFencedDivReferenceMetadata(
                     title,
                     opening.classes,
@@ -55,7 +56,9 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
                 label: opening.id,
                 classes: opening.classes,
                 openingLine: line.number,
-                displayName: reference?.blockTitleText ?? metadata?.blockTitleText
+                displayName: renderExtendedTitle
+                    ? reference?.blockTitleText ?? metadata?.blockTitleText
+                    : undefined
             });
         }
 

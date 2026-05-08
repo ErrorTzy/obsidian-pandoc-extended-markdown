@@ -12,7 +12,8 @@ export class FencedDivReferenceInlineProcessor implements InlineTextProcessor {
     priority = 315;
 
     isEnabled(context: ReadingModeContext): boolean {
-        return context.config.enableFencedDivs !== false;
+        return context.config.enableFencedDivs !== false &&
+            !context.config.strictPandocMode;
     }
 
     findMatches(text: string, _node: Text, context: ReadingModeContext): InlineTextMatch[] {

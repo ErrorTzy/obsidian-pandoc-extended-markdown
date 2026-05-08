@@ -45,7 +45,9 @@ interface FencedDivRenderState {
 }
 
 interface FencedDivReferenceState {
+    strictPandocMode: boolean | null;
     headerTexts: string[];
+    titleElementCount: number;
     referenceTexts: string[];
     referenceLabels: string[];
     referenceLineText: string;
@@ -81,6 +83,7 @@ describe('Fenced div live preview', () => {
                 return app.plugins.enablePlugin('pandoc-extended-markdown');
             }
             if (plugin && plugin.settings) {
+                plugin.settings.strictPandocMode = false;
                 plugin.settings.enableFencedDivs = true;
                 plugin.saveSettings();
                 // @ts-ignore
@@ -380,6 +383,53 @@ describe('Fenced div live preview', () => {
         await deleteFileIfExists(filePath);
     });
 
+    it('keeps strict Pandoc mode from rendering lua-filter fenced div titles or cross-references', async () => {
+        const filePath = 'fenced-div-live-preview-strict-crossrefs.md';
+        const content = [
+            '::: {.theorem #thm:strict title="Theorem &"}',
+            'Strict-mode content.',
+            ':::',
+            '',
+            'See @thm:strict for the result.'
+        ].join('\n');
+
+        await setStrictPandocMode(true);
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureLivePreviewMode();
+            await moveCursorToLine(5);
+
+            try {
+                await browser.waitUntil(async () => {
+                    const state = await getFencedDivReferenceState();
+                    return state.strictPandocMode === true &&
+                        state.headerTexts.length === 1 &&
+                        state.titleElementCount === 0 &&
+                        state.referenceTexts.length === 0 &&
+                        state.referenceLineText.includes('@thm:strict');
+                }, {
+                    timeout: 5000,
+                    timeoutMsg: 'Expected strict Pandoc live preview to preserve raw fenced-div citation text'
+                });
+            } catch (error) {
+                const state = await getFencedDivReferenceState();
+                throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+            }
+
+            const state = await getFencedDivReferenceState();
+
+            expect(state.headerTexts).toEqual(['']);
+            expect(state.titleElementCount).toBe(0);
+            expect(state.referenceTexts).toEqual([]);
+            expect(state.referenceLabels).toEqual([]);
+            expect(state.referenceLineText).toContain('See @thm:strict for the result.');
+        } finally {
+            await setStrictPandocMode(false);
+            await deleteFileIfExists(filePath);
+        }
+    });
+
     it('keeps deeply nested fenced div content visible inside continuous parent backgrounds', async () => {
         const filePath = 'fenced-div-live-preview-deep-nested.md';
         const content = [
@@ -535,13 +585,17 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
 
 async function getFencedDivReferenceState(): Promise<FencedDivReferenceState> {
     return browser.execute((): FencedDivReferenceState => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         const headers = Array.from(document.querySelectorAll('.pem-fenced-div-header')) as HTMLElement[];
         const references = Array.from(document.querySelectorAll('.pem-fenced-div-reference')) as HTMLElement[];
         const referenceLine = Array.from(document.querySelectorAll('.cm-line'))
-            .find(line => line.textContent?.includes('Refs')) as HTMLElement | undefined;
+            .find(line => line.textContent?.includes('Refs') || line.textContent?.includes('See')) as HTMLElement | undefined;
 
         return {
+            strictPandocMode: plugin?.settings?.strictPandocMode ?? null,
             headerTexts: headers.map(header => header.textContent ?? ''),
+            titleElementCount: document.querySelectorAll('.pem-fenced-div-title').length,
             referenceTexts: references.map(reference => reference.textContent ?? ''),
             referenceLabels: references
                 .map(reference => reference.dataset.pandocDivRef)
@@ -734,6 +788,20 @@ async function ensureLivePreviewMode(): Promise<void> {
         }
     });
     await browser.pause(500);
+}
+
+async function setStrictPandocMode(value: boolean): Promise<void> {
+    await browser.execute(async (strictPandocMode: boolean) => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        if (plugin?.settings) {
+            plugin.settings.strictPandocMode = strictPandocMode;
+            await plugin.saveSettings();
+            // @ts-ignore
+            app.workspace.updateOptions();
+        }
+    }, value);
+    await browser.pause(250);
 }
 
 async function deleteFileIfExists(path: string): Promise<void> {

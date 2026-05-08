@@ -14,7 +14,8 @@ export class FencedDivReferenceProcessor implements InlineProcessor {
 
     findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[] {
         const matches: InlineMatch[] = [];
-        if (!isSyntaxFeatureEnabled(context.settings, 'enableFencedDivs')) {
+        if (!isSyntaxFeatureEnabled(context.settings, 'enableFencedDivs') ||
+            context.settings.strictPandocMode) {
             return matches;
         }
 

@@ -1,8 +1,10 @@
 import { browser, expect } from '@wdio/globals';
 
 interface ReadingModeFencedDivState {
+    strictPandocMode: boolean | null;
     blockCount: number;
     headerTexts: string[];
+    titleElementCount: number;
     blockLabels: string[];
     blockClasses: string[];
     blockTexts: string[];
@@ -29,6 +31,7 @@ describe('Fenced div reading mode', () => {
             // @ts-ignore
             const enabledPlugin = app.plugins.plugins['pandoc-extended-markdown'];
             if (enabledPlugin?.settings) {
+                enabledPlugin.settings.strictPandocMode = false;
                 enabledPlugin.settings.enableFencedDivs = true;
                 await enabledPlugin.saveSettings();
                 // @ts-ignore
@@ -136,6 +139,58 @@ describe('Fenced div reading mode', () => {
         await deleteFileIfExists(filePath);
     });
 
+    it('keeps strict Pandoc mode from rendering lua-filter fenced div titles or @id references in reading mode', async () => {
+        const filePath = 'fenced-div-reading-mode-strict-e2e.md';
+        const content = [
+            '::: {.theorem #thm:strict title="Theorem &"}',
+            'Strict-mode content.',
+            ':::',
+            '',
+            'See @thm:strict for the result.'
+        ].join('\n');
+
+        await setStrictPandocMode(true);
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureReadingMode();
+
+            try {
+                await browser.waitUntil(async () => {
+                    const state = await getReadingModeFencedDivState();
+                    return state.strictPandocMode === true &&
+                        state.blockCount === 1 &&
+                        state.titleElementCount === 0 &&
+                        state.referenceTexts.length === 0 &&
+                        state.rawText.includes('@thm:strict');
+                }, {
+                    timeout: 5000,
+                    timeoutMsg: 'Expected strict Pandoc reading mode to preserve raw fenced-div citation text'
+                });
+            } catch (error) {
+                const state = await getReadingModeFencedDivState();
+                throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+            }
+
+            const state = await getReadingModeFencedDivState();
+
+            expect(state.blockCount).toBe(1);
+            expect(state.headerTexts).toEqual(['']);
+            expect(state.titleElementCount).toBe(0);
+            expect(state.blockLabels).toEqual(['thm:strict']);
+            expect(state.blockClasses[0]).toContain('pem-fenced-div-theorem');
+            expect(state.blockTexts[0]).toContain('Strict-mode content.');
+            expect(state.blockTexts[0]).not.toContain('Theorem 1');
+            expect(state.referenceTexts).toEqual([]);
+            expect(state.referenceLabels).toEqual([]);
+            expect(state.rawText).toContain('@thm:strict');
+            expect(state.rawText).not.toContain('::: {.theorem #thm:strict title="Theorem &"}');
+        } finally {
+            await setStrictPandocMode(false);
+            await deleteFileIfExists(filePath);
+        }
+    });
+
     it('keeps nested fenced divs open across blank-line reading-mode paragraphs', async () => {
         const filePath = 'fenced-div-reading-mode-blank-nested-e2e.md';
         const content = [
@@ -190,13 +245,17 @@ describe('Fenced div reading mode', () => {
 
 async function getReadingModeFencedDivState(): Promise<ReadingModeFencedDivState> {
     return browser.execute((): ReadingModeFencedDivState => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
         const blocks = Array.from(preview?.querySelectorAll('.pem-fenced-div') ?? []) as HTMLElement[];
         const references = Array.from(preview?.querySelectorAll('.pem-fenced-div-reference') ?? []) as HTMLElement[];
 
         return {
+            strictPandocMode: plugin?.settings?.strictPandocMode ?? null,
             blockCount: blocks.length,
             headerTexts: blocks.map(block => block.querySelector('.pem-fenced-div-title')?.textContent ?? ''),
+            titleElementCount: preview?.querySelectorAll('.pem-fenced-div-title').length ?? 0,
             blockLabels: blocks.map(block => block.dataset.pandocDivId ?? ''),
             blockClasses: blocks.map(block => block.className),
             blockTexts: blocks.map(block => block.textContent ?? ''),
@@ -257,6 +316,20 @@ async function ensureReadingMode(): Promise<void> {
         timeoutMsg: 'Expected reading mode preview to be visible'
     });
     await browser.pause(500);
+}
+
+async function setStrictPandocMode(value: boolean): Promise<void> {
+    await browser.execute(async (strictPandocMode: boolean) => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        if (plugin?.settings) {
+            plugin.settings.strictPandocMode = strictPandocMode;
+            await plugin.saveSettings();
+            // @ts-ignore
+            app.workspace.updateOptions();
+        }
+    }, value);
+    await browser.pause(250);
 }
 
 async function deleteFileIfExists(path: string): Promise<void> {
