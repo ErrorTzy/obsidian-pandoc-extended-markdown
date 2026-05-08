@@ -44,7 +44,7 @@ export class FencedDivReferenceInlineProcessor implements InlineTextProcessor {
         const span = document.createElement('span');
         span.className = CSS_CLASSES.FENCED_DIV_REFERENCE;
         span.dataset.pandocDivRef = label;
-        span.textContent = reference?.displayName || 'Div';
+        span.textContent = reference?.referenceText || 'Div';
 
         if (reference?.content) {
             setTooltip(span, reference.content, { delay: DECORATION_STYLES.TOOLTIP_DELAY_MS });

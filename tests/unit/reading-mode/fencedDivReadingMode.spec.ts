@@ -34,7 +34,7 @@ describe('fenced div reading mode rendering', () => {
         document.body.innerHTML = '';
     });
 
-    it('renders a Pandoc fenced div block and leaves later @id citations unchanged', () => {
+    it('renders a Pandoc fenced div block and later @id citations', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: {.theorem #thm:pythagoras}</p>',
@@ -67,8 +67,10 @@ describe('fenced div reading mode rendering', () => {
         expect(header?.querySelector('.pem-fenced-div-title')).toBeNull();
         expect(header?.textContent).toBe('');
 
-        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
-        expect(element.textContent).toContain('@thm:pythagoras');
+        const reference = element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`) as HTMLElement | null;
+        expect(reference?.dataset.pandocDivRef).toBe('thm:pythagoras');
+        expect(reference?.textContent).toBe('Theorem 1');
+        expect(element.textContent).not.toContain('@thm:pythagoras');
     });
 
     it('renders adjacent and nested fenced divs without leaking fence markers', () => {
@@ -115,11 +117,14 @@ describe('fenced div reading mode rendering', () => {
         ]);
         expect(element.textContent).not.toContain(':::');
 
-        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
-        expect(element.textContent).toContain('@outer @inner @warn');
+        const references = Array.from(
+            element.querySelectorAll(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)
+        ).map(reference => reference.textContent);
+        expect(references).toEqual(['Outer 1', 'Inner 1', 'Warning 1']);
+        expect(element.textContent).not.toContain('@outer @inner @warn');
     });
 
-    it('renders readable shorthand and leaves later @id citations unchanged in non-strict mode', () => {
+    it('renders readable shorthand and later @id citations in non-strict mode', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: Theorem #thm data=1</p>',
@@ -137,8 +142,10 @@ describe('fenced div reading mode rendering', () => {
         const fencedDiv = element.querySelector('.pem-fenced-div') as HTMLElement | null;
         expect(fencedDiv?.dataset.pandocDivId).toBe('thm');
         expect(fencedDiv?.querySelector('.pem-fenced-div-title')).toBeNull();
-        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
-        expect(element.textContent).toContain('@thm');
+        const reference = element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`) as HTMLElement | null;
+        expect(reference?.dataset.pandocDivRef).toBe('thm');
+        expect(reference?.textContent).toBe('Theorem 1');
+        expect(element.textContent).not.toContain('@thm');
     });
 
     it('leaves readable shorthand untouched in strict mode', () => {

@@ -52,7 +52,12 @@ describe('FencedDivProcessor', () => {
             fencedDivLabels: new Map([
                 ['thm:label', {
                     label: 'thm:label',
-                    displayName: 'Theorem',
+                    title: '',
+                    displayName: 'Theorem 1',
+                    typeLabel: 'Theorem',
+                    typeKey: 'theorem',
+                    number: 1,
+                    referenceText: 'Theorem 1',
                     lineNumber: 1,
                     classes: ['theorem'],
                     content: 'content'

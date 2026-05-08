@@ -4,11 +4,20 @@ import { CSS_CLASSES, DECORATION_STYLES } from '../../core/constants';
 import { pluginStateManager } from '../../core/state/pluginStateManager';
 import { FencedDivReference } from '../../shared/types/fencedDivTypes';
 import { ProcessorConfig } from '../../shared/types/processorConfig';
+import { processInlineTextNodes } from '../pipeline/inline/textReplacementEngine';
+import { FencedDivReferenceInlineProcessor } from '../pipeline/inline/fencedDivReferenceInlineProcessor';
+import { ReadingModeContext } from '../pipeline/types';
 import {
     getFencedDivCssClass,
     isFencedDivClosing,
     parseFencedDivOpening
 } from '../../live-preview/pipeline/structural/fencedDiv/parser';
+import {
+    FencedDivTypeCounters,
+    createFencedDivReference,
+    createFencedDivTypeCounters,
+    getFencedDivTitle
+} from '../../shared/utils/fencedDivReferenceMetadata';
 
 const MAX_DEPTH_CLASS = 6;
 const pendingSectionProcessing = new WeakMap<HTMLElement, number>();
@@ -57,6 +66,7 @@ function scheduleFencedDivLabelHydration(
     window.setTimeout(() => {
         const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
         hydrateRenderedFencedDivLabels(element, labels);
+        processHydratedFencedDivReferences(element, docPath);
     }, 0);
 }
 
@@ -78,6 +88,7 @@ export function processFencedDivs(
     if ((!preserveStack || stack.length === 0) && !hasRenderedFencedDivs) {
         labels.clear();
     }
+    const typeCounters = createFencedDivTypeCounters(labels.values());
     const candidates = Array.from(element.querySelectorAll('p, li'));
 
     for (const candidate of candidates) {
@@ -86,22 +97,31 @@ export function processFencedDivs(
         }
 
         const lineText = getTextWithLineBreaks(candidate);
-        if (processMultilineCandidate(candidate, lineText, stack, labels, config)) {
+        if (processMultilineCandidate(candidate, lineText, stack, labels, config, typeCounters)) {
             continue;
         }
 
         const opening = parseFencedDivOpening(lineText, config);
         if (opening) {
-            const reference: FencedDivReference = {
-                label: opening.id || '',
-                displayName: 'Div',
-                lineNumber: 0,
-                classes: opening.classes,
-                content: ''
-            };
-            const fencedDiv = createFencedDivElement(opening.id, opening.classes, stack.length + 1);
+            const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
+            const reference = shouldRegister
+                ? createFencedDivReference(
+                    opening.id || '',
+                    getFencedDivTitle(opening),
+                    opening.classes,
+                    0,
+                    '',
+                    typeCounters
+                )
+                : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
+            const fencedDiv = createFencedDivElement(
+                opening.id,
+                opening.classes,
+                stack.length + 1,
+                getFencedDivTitle(opening)
+            );
 
-            if (opening.id && !labels.has(opening.id)) {
+            if (opening.id && shouldRegister) {
                 labels.set(opening.id, reference);
             }
 
@@ -154,7 +174,8 @@ function processMultilineCandidate(
     text: string,
     stack: ActiveFencedDiv[],
     labels: Map<string, FencedDivReference>,
-    config: ProcessorConfig
+    config: ProcessorConfig,
+    typeCounters: FencedDivTypeCounters
 ): boolean {
     if (!text.includes('\n')) {
         return false;
@@ -169,16 +190,25 @@ function processMultilineCandidate(
     for (const line of lines) {
         const opening = parseFencedDivOpening(line, config);
         if (opening) {
-            const reference: FencedDivReference = {
-                label: opening.id || '',
-                displayName: 'Div',
-                lineNumber: 0,
-                classes: opening.classes,
-                content: ''
-            };
-            const fencedDiv = createFencedDivElement(opening.id, opening.classes, stack.length + 1);
+            const shouldRegister = Boolean(opening.id && !labels.has(opening.id));
+            const reference = shouldRegister
+                ? createFencedDivReference(
+                    opening.id || '',
+                    getFencedDivTitle(opening),
+                    opening.classes,
+                    0,
+                    '',
+                    typeCounters
+                )
+                : createUnregisteredFencedDivReference(opening.id || '', opening.classes);
+            const fencedDiv = createFencedDivElement(
+                opening.id,
+                opening.classes,
+                stack.length + 1,
+                getFencedDivTitle(opening)
+            );
 
-            if (opening.id && !labels.has(opening.id)) {
+            if (opening.id && shouldRegister) {
                 labels.set(opening.id, reference);
             }
 
@@ -215,7 +245,8 @@ function processMultilineCandidate(
 function createFencedDivElement(
     label: string | undefined,
     classes: string[],
-    depth: number
+    depth: number,
+    title: string = ''
 ): { block: HTMLElement, content: HTMLElement } {
     const block = document.createElement('div');
     const primaryClass = getFencedDivCssClass(classes);
@@ -229,6 +260,9 @@ function createFencedDivElement(
 
     if (label) {
         block.dataset.pandocDivId = label;
+    }
+    if (title) {
+        block.setAttribute('title', title);
     }
 
     const header = document.createElement('div');
@@ -320,6 +354,7 @@ function hydrateRenderedFencedDivLabels(
     labels: Map<string, FencedDivReference>
 ): void {
     const blocks = Array.from(element.querySelectorAll<HTMLElement>('.pem-fenced-div[data-pandoc-div-id]'));
+    const typeCounters = createFencedDivTypeCounters(labels.values());
     for (const block of blocks) {
         const label = block.dataset.pandocDivId;
         if (!label || labels.has(label)) {
@@ -328,14 +363,62 @@ function hydrateRenderedFencedDivLabels(
 
         const content = block.querySelector('.pem-fenced-div-content')?.textContent?.trim() ?? '';
 
-        labels.set(label, {
+        labels.set(
             label,
-            displayName: 'Div',
-            lineNumber: 0,
-            classes: getRenderedFencedDivClasses(block),
-            content
-        });
+            createFencedDivReference(
+                label,
+                block.getAttribute('title') || '',
+                getRenderedFencedDivClasses(block),
+                0,
+                content,
+                typeCounters
+            )
+        );
     }
+}
+
+function createUnregisteredFencedDivReference(
+    label: string,
+    classes: string[]
+): FencedDivReference {
+    return {
+        label,
+        title: '',
+        displayName: 'Div',
+        typeLabel: 'Div',
+        typeKey: 'div',
+        number: 0,
+        referenceText: 'Div',
+        lineNumber: 0,
+        classes,
+        content: ''
+    };
+}
+
+function processHydratedFencedDivReferences(
+    element: HTMLElement,
+    docPath: string
+): void {
+    const counters = pluginStateManager.getDocumentCounters(docPath);
+    if (counters.fencedDivLabels.size === 0) {
+        return;
+    }
+
+    processInlineTextNodes(
+        element,
+        {
+            element,
+            postProcessorContext: {} as ReadingModeContext['postProcessorContext'],
+            section: element.closest<HTMLElement>('.markdown-preview-section'),
+            sectionInfo: null,
+            sourcePath: docPath,
+            config: { strictLineBreaks: false, strictPandocMode: false, enableFencedDivs: true },
+            renderContext: {},
+            counters,
+            validationLines: []
+        },
+        [new FencedDivReferenceInlineProcessor()]
+    );
 }
 
 function getRenderedFencedDivClasses(block: HTMLElement): string[] {

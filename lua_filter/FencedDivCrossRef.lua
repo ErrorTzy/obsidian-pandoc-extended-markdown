@@ -1,0 +1,124 @@
+--[[
+  Fenced div cross-reference filter for Pandoc.
+
+  Collects native Div blocks with identifiers and replaces matching citation
+  nodes such as @prop:a with independently numbered reference text such as
+  "Proposition 1". Unknown citations are left untouched for citeproc or other
+  filters.
+--]]
+
+local pandoc = require 'pandoc'
+
+local references = {}
+local counters = {}
+
+local function trim(value)
+    return (value or ''):gsub('^%s+', ''):gsub('%s+$', '')
+end
+
+local function humanize_class_name(class_name)
+    local text = trim((class_name or ''):gsub('[_:%.%-]+', ' '):gsub('%s+', ' '))
+    if text == '' then
+        return ''
+    end
+
+    return text:gsub('(%f[%a]%a)', string.upper)
+end
+
+local function type_label_for_div(div)
+    local title = trim(div.attributes and div.attributes.title or '')
+    if title ~= '' then
+        return title
+    end
+
+    if div.classes and #div.classes > 0 then
+        local label = humanize_class_name(div.classes[1])
+        if label ~= '' then
+            return label
+        end
+    end
+
+    return 'Div'
+end
+
+local function type_key_for_label(label)
+    local key = label:lower():gsub('[^a-z0-9]+', '-'):gsub('^-+', ''):gsub('-+$', '')
+    if key == '' then
+        return 'div'
+    end
+
+    return key
+end
+
+local function register_div(div)
+    local id = div.identifier
+    if not id or id == '' or references[id] then
+        return
+    end
+
+    local type_label = type_label_for_div(div)
+    local type_key = type_key_for_label(type_label)
+    local number = (counters[type_key] or 0) + 1
+    counters[type_key] = number
+    references[id] = {
+        type_label = type_label,
+        type_key = type_key,
+        number = number,
+        reference_text = type_label .. ' ' .. tostring(number)
+    }
+end
+
+local function scan_blocks(blocks)
+    for _, block in ipairs(blocks) do
+        if block.t == 'Div' then
+            register_div(block)
+            scan_blocks(block.content)
+        elseif block.t == 'BlockQuote' then
+            scan_blocks(block.content)
+        elseif block.t == 'BulletList' or block.t == 'OrderedList' then
+            for _, item in ipairs(block.content) do
+                scan_blocks(item)
+            end
+        elseif block.t == 'DefinitionList' then
+            for _, item in ipairs(block.content) do
+                local definitions = item[2]
+                for _, definition in ipairs(definitions) do
+                    scan_blocks(definition)
+                end
+            end
+        end
+    end
+end
+
+local function has_affixes(citation)
+    return (citation.prefix and #citation.prefix > 0) or
+        (citation.suffix and #citation.suffix > 0)
+end
+
+local function cite(cite_node)
+    if #cite_node.citations ~= 1 then
+        return nil
+    end
+
+    local citation = cite_node.citations[1]
+    if has_affixes(citation) then
+        return nil
+    end
+
+    local reference = references[citation.id]
+    if not reference then
+        return nil
+    end
+
+    return pandoc.Str(reference.reference_text)
+end
+
+function Pandoc(doc)
+    references = {}
+    counters = {}
+    scan_blocks(doc.blocks)
+
+    return doc:walk({
+        Cite = cite
+    })
+end

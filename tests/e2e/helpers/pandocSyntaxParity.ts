@@ -3,6 +3,7 @@ import { execFileSync } from 'child_process';
 
 export type ActualSyntaxKind =
     | 'fenced-div'
+    | 'fenced-div-cross-reference'
     | 'ordered-list'
     | 'custom-label-list'
     | 'super-sub';
@@ -77,6 +78,16 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
                     return Array.from(root.querySelectorAll('.pem-fenced-div'))
                         .filter(div => !div.parentElement?.closest('.pem-fenced-div'))
                         .map(div => normalizeFencedDiv(div as HTMLElement));
+                case 'fenced-div-cross-reference':
+                    return Array.from(root.querySelectorAll('.pem-fenced-div, p'))
+                        .filter(element => !element.parentElement?.closest('.pem-fenced-div'))
+                        .filter(element =>
+                            element.matches('.pem-fenced-div') ||
+                            Boolean(element.querySelector('.pem-fenced-div-reference'))
+                        )
+                        .map(element => element.matches('.pem-fenced-div')
+                            ? normalizeFencedDiv(element as HTMLElement)
+                            : normalizeElement(element));
                 case 'ordered-list':
                     return Array.from(root.querySelectorAll('ol, p'))
                         .filter(element => !element.parentElement?.closest('ol, ul'))
@@ -125,6 +136,13 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
 
         function normalizeElement(element: Element): BrowserNormalizedNode {
             const tag = element.tagName.toLowerCase();
+            if (tag === 'p' && element.querySelector('.pem-fenced-div-reference')) {
+                return {
+                    tag,
+                    children: [{ tag: '#text', text: normalizeText(element.textContent ?? '') }]
+                };
+            }
+
             const attrs = getComparableAttributes(element);
             const children = coalesceTextNodes(Array.from(element.childNodes)
                 .map(node => normalizeNode(node))
@@ -179,6 +197,7 @@ export async function getSyntaxParity(fixture: SyntaxParityFixture): Promise<{
             return element.matches([
                 '.pem-example-reference',
                 '.pem-custom-label-reference-processed',
+                '.pem-fenced-div-reference',
                 '.pem-list-marker'
             ].join(','));
         }

@@ -10,7 +10,12 @@ export interface FencedDivAttributes {
 
 export interface FencedDivReference {
     label: string;
+    title: string;
     displayName: string;
+    typeLabel: string;
+    typeKey: string;
+    number: number;
+    referenceText: string;
     lineNumber: number;
     classes: string[];
     content: string;

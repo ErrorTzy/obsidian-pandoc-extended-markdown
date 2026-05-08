@@ -27,7 +27,7 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 | **Example Lists** | `(@label)` with references | ExampleListProcessor |
 | **Custom Labels** | `{::LABEL}` with placeholders | CustomLabelProcessor |
 | **Definition Lists** | `: definition`, `~ definition` | DefinitionProcessor |
-| **Fenced Divs** | `::: {.theorem #id}` and non-strict `::: Theorem #id`; `@id` citation text is preserved for now | FencedDivProcessor |
+| **Fenced Divs** | `::: {.theorem #id}` and non-strict `::: Theorem #id`; `@id` → `Theorem 1` | FencedDivProcessor + FencedDivReferenceProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
 
@@ -125,7 +125,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | Processor | Priority | Processes | Regions |
 |-----------|----------|-----------|---------|
 | **ExampleReferenceProcessor** | 10 | `(@ref)` → `(number)` | list-content, definition-content |
-| **FencedDivReferenceProcessor** | 12 | Dormant future support for `@id` fenced-div citation rendering | normal, fenced-div-content, list-content, definition-content |
+| **FencedDivReferenceProcessor** | 12 | `@id` → fenced-div `referenceText` such as `Proposition 1` | normal, fenced-div-content, list-content, definition-content |
 | **SuperscriptProcessor** | 20 | `^text^` → superscript | list-content, definition-content |
 | **SubscriptProcessor** | 20 | `~text~` → subscript | list-content, definition-content |
 | **CustomLabelReferenceProcessor** | 40 | `{::ref}` → processed | list-content, definition-content |
@@ -155,7 +155,7 @@ All widgets extend `BaseWidget` which provides:
 | **DefinitionBulletWidget** | BaseWidget | Definition list bullets |
 | **FencedDivHeaderWidget** | BaseWidget | Empty fenced div opener placeholder with optional id tooltip |
 | **FencedDivClosingWidget** | BaseWidget | Hidden closing fence placeholder |
-| **FencedDivReferenceWidget** | BaseWidget | Dormant future fenced-div citation replacement widget |
+| **FencedDivReferenceWidget** | BaseWidget | `@id` → numbered fenced-div reference with hover preview |
 | **ExampleReferenceWidget** | BaseWidget | `(@ref)` → `(n)` with hover |
 | **SuperscriptWidget** | BaseWidget | Superscript formatting |
 | **SubscriptWidget** | BaseWidget | Subscript formatting |
@@ -192,7 +192,7 @@ Inline processors report text-node matches and create replacement nodes. They do
 | Processor | Purpose |
 |-----------|---------|
 | **ExampleReferenceInlineProcessor** | `(@ref)` → resolved example number with tooltip |
-| **FencedDivReferenceInlineProcessor** | Dormant future support for `@id` fenced-div citation rendering |
+| **FencedDivReferenceInlineProcessor** | `@id` → numbered fenced-div reference with tooltip |
 | **SuperscriptInlineProcessor** | `^text^` → `<sup class="pem-superscript">` |
 | **SubscriptInlineProcessor** | `~text~` → `<sub class="pem-subscript">` |
 | **CustomLabelReferenceInlineProcessor** | `{::ref}` → processed custom label reference |
@@ -216,7 +216,7 @@ All panels extend `BasePanelModule` which provides:
 | **ExampleListPanelModule** | example-lists | Three columns: number, label, content |
 | **CustomLabelPanelModule** | custom-labels | Two columns: processed label, content |
 | **DefinitionListPanelModule** | definition-lists | Two columns: term, definitions |
-| **FencedDivPanelModule** | fenced-divs | Three columns: empty title, citation label, content |
+| **FencedDivPanelModule** | fenced-divs | Three columns: title metadata, citation label, content |
 | **FootnotePanelModule** | footnotes | Two columns: footnote label, rendered content |
 
 ### Editor Extensions
@@ -299,7 +299,7 @@ listAutocompletion/
 2. Document Scanning
    - Extract example labels → Map<label, number>
    - Extract custom labels → Map<label, processed>
-   - Extract labeled fenced divs, including non-strict readable shorthand → Map<label, display metadata>
+   - Extract labeled fenced divs, including non-strict readable shorthand → Map<label, reference metadata>
    - Skip code regions
 
 3. Validation (Strict Mode)

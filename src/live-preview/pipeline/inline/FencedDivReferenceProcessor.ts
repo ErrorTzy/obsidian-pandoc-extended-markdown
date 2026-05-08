@@ -57,7 +57,7 @@ export class FencedDivReferenceProcessor implements InlineProcessor {
 
         return Decoration.replace({
             widget: new FencedDivReferenceWidget(
-                reference?.displayName || 'Div',
+                reference?.referenceText || 'Div',
                 label,
                 reference?.content,
                 context.view,

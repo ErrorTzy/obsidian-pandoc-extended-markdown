@@ -45,7 +45,7 @@ export const fencedDivReferenceContentProcessor: ContentProcessor = {
             (match: string, rawLabel: string) => {
                 const label = resolveFencedDivLabel(rawLabel, context.fencedDivLabels!);
                 const reference = label ? context.fencedDivLabels!.get(label) : undefined;
-                return reference ? reference.displayName : match;
+                return reference ? reference.referenceText : match;
             }
         );
     }
@@ -142,6 +142,7 @@ export class ContentProcessorRegistry {
             }
         });
 
+        this.registerProcessor(fencedDivReferenceContentProcessor);
     }
     
     /**

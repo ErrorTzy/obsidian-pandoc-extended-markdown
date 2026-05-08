@@ -37,6 +37,27 @@ describe('Panel Content Rendering', () => {
             const result = processPopoverContent(content, context);
             expect(result).toBe('See (42) and L1 for details');
         });
+
+        it('should replace known fenced div citations with reference text', () => {
+            const content = 'See @prop:a and @missing.';
+            const context = {
+                fencedDivLabels: new Map([['prop:a', {
+                    label: 'prop:a',
+                    title: '',
+                    displayName: 'Proposition 1',
+                    typeLabel: 'Proposition',
+                    typeKey: 'proposition',
+                    number: 1,
+                    referenceText: 'Proposition 1',
+                    lineNumber: 1,
+                    classes: ['proposition'],
+                    content: 'Proposition content.'
+                }]])
+            };
+
+            const result = processPopoverContent(content, context);
+            expect(result).toBe('See Proposition 1 and @missing.');
+        });
     });
     
     describe('Extensible content processor', () => {

@@ -37,7 +37,7 @@ describe('Fenced div reading mode', () => {
         });
     });
 
-    it('renders Pandoc fenced div blocks and leaves @id citations unchanged in reading mode', async () => {
+    it('renders Pandoc fenced div blocks and @id citations in reading mode', async () => {
         const filePath = 'fenced-div-reading-mode-e2e.md';
         const content = [
             '::: {.theorem #thm:reading}',
@@ -56,7 +56,7 @@ describe('Fenced div reading mode', () => {
                 const state = await getReadingModeFencedDivState();
                 return state.blockCount === 1 &&
                     state.headerTexts.every(text => text === '') &&
-                    state.rawText.includes('@thm:reading');
+                    state.referenceTexts.includes('Theorem 1');
             }, {
                 timeout: 5000,
                 timeoutMsg: 'Expected fenced div block and reference in reading mode'
@@ -73,10 +73,10 @@ describe('Fenced div reading mode', () => {
         expect(state.blockLabels).toEqual(['thm:reading']);
         expect(state.blockClasses[0]).toContain('pem-fenced-div-theorem');
         expect(state.blockTexts[0]).toContain('Every compact metric space is complete.');
-        expect(state.referenceTexts).toEqual([]);
-        expect(state.referenceLabels).toEqual([]);
+        expect(state.referenceTexts).toEqual(['Theorem 1']);
+        expect(state.referenceLabels).toEqual(['thm:reading']);
         expect(state.rawText).not.toContain('::: {.theorem #thm:reading}');
-        expect(state.rawText).toContain('@thm:reading');
+        expect(state.rawText).not.toContain('@thm:reading');
 
         await deleteFileIfExists(filePath);
     });
@@ -105,7 +105,7 @@ describe('Fenced div reading mode', () => {
             const state = await getReadingModeFencedDivState();
             return state.blockCount === 3 &&
                 state.headerTexts.join('|') === '||' &&
-                state.rawText.includes('@outer @inner @warn');
+                state.referenceTexts.join('|') === 'Outer 1|Inner 1|Warning 1';
         }, {
             timeout: 5000,
             timeoutMsg: 'Expected adjacent and nested fenced divs in reading mode'
@@ -121,12 +121,12 @@ describe('Fenced div reading mode', () => {
         expect(state.blockTexts[0]).toContain('Outer opening content.');
         expect(state.blockTexts[0]).toContain('Nested content.');
         expect(state.blockTexts[2]).toContain('Sibling warning.');
-        expect(state.referenceTexts).toEqual([]);
-        expect(state.referenceLabels).toEqual([]);
+        expect(state.referenceTexts).toEqual(['Outer 1', 'Inner 1', 'Warning 1']);
+        expect(state.referenceLabels).toEqual(['outer', 'inner', 'warn']);
         expect(state.rawText).not.toContain(':::');
-        expect(state.rawText).toContain('@outer');
-        expect(state.rawText).toContain('@inner');
-        expect(state.rawText).toContain('@warn');
+        expect(state.rawText).not.toContain('@outer');
+        expect(state.rawText).not.toContain('@inner');
+        expect(state.rawText).not.toContain('@warn');
 
         await deleteFileIfExists(filePath);
     });

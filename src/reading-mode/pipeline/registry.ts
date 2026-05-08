@@ -1,8 +1,16 @@
 import { pluginStateManager } from '../../core/state/pluginStateManager';
+import { extractFencedDivs } from '../../shared/extractors/fencedDivExtractor';
+import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
+import {
+    FencedDivTypeCounters,
+    createFencedDivReference,
+    createFencedDivTypeCounters
+} from '../../shared/utils/fencedDivReferenceMetadata';
 
 import { ReadingModePipeline } from './ReadingModePipeline';
 import { CustomLabelReferenceInlineProcessor } from './inline/customLabelReferenceInlineProcessor';
 import { ExampleReferenceInlineProcessor } from './inline/exampleReferenceInlineProcessor';
+import { FencedDivReferenceInlineProcessor } from './inline/fencedDivReferenceInlineProcessor';
 import {
     SubscriptInlineProcessor,
     SuperscriptInlineProcessor
@@ -19,8 +27,7 @@ export function createDefaultReadingModePipeline(): ReadingModePipeline {
     const pipeline = new ReadingModePipeline();
     const inlineProcessors = [
         new ExampleReferenceInlineProcessor(),
-        // FencedDivReferenceInlineProcessor is intentionally not registered yet:
-        // Pandoc treats @id as citation syntax, not a built-in div cross-reference.
+        new FencedDivReferenceInlineProcessor(),
         new SuperscriptInlineProcessor(),
         new SubscriptInlineProcessor(),
         new CustomLabelReferenceInlineProcessor()
@@ -48,6 +55,7 @@ export function createReadingModeContext(
         (section ? postProcessorContext.getSectionInfo?.(section) : null) ??
         null;
     const counters = pluginStateManager.getDocumentCounters(sourcePath);
+    hydrateFencedDivLabelsFromSource(sectionInfo?.text || '', config, counters.fencedDivLabels);
 
     return {
         element,
@@ -69,4 +77,35 @@ export function createReadingModeContext(
                 pluginStateManager.getLabeledExampleContent(sourcePath, label)
         }
     };
+}
+
+function hydrateFencedDivLabelsFromSource(
+    source: string,
+    config: ReadingModeContext['config'],
+    labels: ReadingModeContext['counters']['fencedDivLabels']
+): void {
+    if (!source || !isSyntaxFeatureEnabled(config, 'enableFencedDivs')) {
+        return;
+    }
+
+    const items = extractFencedDivs(source, config);
+    const typeCounters: FencedDivTypeCounters = createFencedDivTypeCounters(labels.values());
+
+    for (const item of items) {
+        if (!item.label || labels.has(item.label)) {
+            continue;
+        }
+
+        labels.set(
+            item.label,
+            createFencedDivReference(
+                item.label,
+                item.title,
+                item.classes,
+                item.lineNumber + 1,
+                item.content,
+                typeCounters
+            )
+        );
+    }
 }

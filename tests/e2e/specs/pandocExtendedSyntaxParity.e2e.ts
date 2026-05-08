@@ -1,6 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 
 import {
+    PANDOC_MARKDOWN_FORMAT,
     SyntaxParityFixture,
     createOrReplaceFile,
     deleteFileIfExists,
@@ -85,6 +86,30 @@ describe('Pandoc extended syntax reading-mode parity', () => {
                 expectedSelector: 'p',
                 actualKind: 'custom-label-list',
                 expectedHtml: '<p><strong>(P1)</strong>\tcustom labeled item</p><p>See (P1).</p>'
+            },
+            {
+                name: 'fenced-div-cross-reference',
+                markdown: [
+                    '::: {.proposition #prop:a}',
+                    'A proposition.',
+                    ':::',
+                    '',
+                    '::: {.logic-block #prem:a title="Premise"}',
+                    'A premise.',
+                    ':::',
+                    '',
+                    'See @prop:a and @prem:a.'
+                ].join('\n'),
+                waitForSelector: '.pem-fenced-div-reference',
+                expectedSelector: 'div.proposition, div.logic-block, p',
+                actualKind: 'fenced-div-cross-reference',
+                pandocArgs: [
+                    '-f',
+                    PANDOC_MARKDOWN_FORMAT,
+                    '-t',
+                    'html',
+                    '--lua-filter=lua_filter/FencedDivCrossRef.lua'
+                ]
             }
         ];
 

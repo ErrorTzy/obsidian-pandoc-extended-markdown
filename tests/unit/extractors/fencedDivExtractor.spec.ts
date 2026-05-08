@@ -19,7 +19,29 @@ describe('extractFencedDivs', () => {
             title: '',
             label: 'thm',
             content: 'Panel content.',
-            classes: ['Theorem']
+            classes: ['Theorem'],
+            typeLabel: 'Theorem',
+            number: 1,
+            referenceText: 'Theorem 1'
+        });
+    });
+
+    it('extracts title metadata without rendering it as content', () => {
+        const items = extractFencedDivs([
+            '::: {.logic-block #prem:a title="Premise"}',
+            'Panel content.',
+            ':::'
+        ].join('\n'), settings);
+
+        expect(items[0]).toMatchObject({
+            title: 'Premise',
+            label: 'prem:a',
+            content: 'Panel content.',
+            classes: ['logic-block'],
+            typeLabel: 'Premise',
+            typeKey: 'premise',
+            number: 1,
+            referenceText: 'Premise 1'
         });
     });
 

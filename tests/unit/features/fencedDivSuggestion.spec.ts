@@ -71,7 +71,7 @@ describe('Fenced Div Reference Suggestions', () => {
     });
 
     describe('getSuggestions', () => {
-        it('returns indexed fenced div labels with generic display names and previews', () => {
+        it('returns indexed fenced div labels with reference text and previews', () => {
             mockEditor.getValue = jest.fn().mockReturnValue([
                 '::: {.theorem #thm:pythagoras}',
                 'For a right triangle, a^2 + b^2 = c^2.',
@@ -94,19 +94,19 @@ describe('Fenced Div Reference Suggestions', () => {
             expect(suggestions).toHaveLength(3);
             expect(suggestions[0]).toEqual({
                 label: 'lem:compact',
-                displayName: 'Div',
+                displayName: 'Lemma 1',
                 previewText: 'Every compact metric space is ...',
                 lineNumber: 9
             });
             expect(suggestions[1]).toEqual({
                 label: 'thm:pythagoras',
-                displayName: 'Div',
+                displayName: 'Theorem 1',
                 previewText: 'For a right triangle, a^2 + b^...',
                 lineNumber: 1
             });
             expect(suggestions[2]).toEqual({
                 label: 'warn',
-                displayName: 'Div',
+                displayName: 'Warning 1',
                 previewText: 'Readable shorthand opener.',
                 lineNumber: 5
             });
@@ -178,13 +178,13 @@ describe('Fenced Div Reference Suggestions', () => {
 
             suggest.renderSuggestion({
                 label: 'thm:pythagoras',
-                displayName: 'Div',
+                displayName: 'Theorem 1',
                 previewText: 'For a right triangle.',
                 lineNumber: 1
             }, root);
 
             expect(root.textContent).toContain('@thm:pythagoras');
-            expect(root.textContent).toContain('Div');
+            expect(root.textContent).toContain('Theorem 1');
             expect(root.textContent).toContain('For a right triangle.');
         });
     });
@@ -201,7 +201,7 @@ describe('Fenced Div Reference Suggestions', () => {
 
             suggest.selectSuggestion({
                 label: 'thm:pythagoras',
-                displayName: 'Div',
+                displayName: 'Theorem 1',
                 previewText: 'For a right triangle.',
                 lineNumber: 1
             }, {} as any);

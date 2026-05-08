@@ -13,12 +13,21 @@ import {
     isLineInCodeRegion,
     isMarkdownCodeFenceClosing
 } from '../../live-preview/pipeline/utils/codeDetection';
+import {
+    FencedDivTypeCounters,
+    createFencedDivReferenceMetadata,
+    getFencedDivTitle
+} from '../utils/fencedDivReferenceMetadata';
 
 export interface FencedDivPanelItem {
     title: string;
     label: string;
     content: string;
     classes: string[];
+    typeLabel: string;
+    typeKey: string;
+    number: number;
+    referenceText: string;
     lineNumber: number;
     contentLineNumber: number;
     position: { line: number; ch: number };
@@ -50,6 +59,7 @@ export function extractFencedDivsFromDoc(
     const stack: ActiveFencedDiv[] = [];
     let canOpenAtCurrentLine = true;
     let fallbackCodeFenceMarker: string | undefined;
+    const typeCounters: FencedDivTypeCounters = new Map();
 
     for (let lineNum = 1; lineNum <= doc.lines; lineNum++) {
         const line = doc.line(lineNum);
@@ -81,11 +91,25 @@ export function extractFencedDivsFromDoc(
             : null;
 
         if (opening) {
+            const title = getFencedDivTitle(opening);
+            const metadata = opening.id
+                ? createFencedDivReferenceMetadata(title, opening.classes, typeCounters)
+                : {
+                    title,
+                    typeLabel: title || '',
+                    typeKey: '',
+                    number: 0,
+                    referenceText: ''
+                };
             const activeDiv: ActiveFencedDiv = {
-                title: '',
+                title: metadata.title,
                 label: opening.id || '',
                 content: '',
                 classes: opening.classes,
+                typeLabel: metadata.typeLabel,
+                typeKey: metadata.typeKey,
+                number: metadata.number,
+                referenceText: metadata.referenceText,
                 lineNumber: lineNum - 1,
                 contentLineNumber: lineNum - 1,
                 position: { line: lineNum - 1, ch: 0 },

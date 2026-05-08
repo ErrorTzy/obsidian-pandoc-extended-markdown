@@ -7,7 +7,7 @@ import { pluginStateManager } from '../core/state/pluginStateManager';
 // Pipeline imports
 import { ProcessingPipeline } from './pipeline/ProcessingPipeline';
 import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor, FencedDivProcessor, StandardListProcessor, ListContinuationProcessor } from './pipeline/structural';
-import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor } from './pipeline/inline';
+import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor, FencedDivReferenceProcessor } from './pipeline/inline';
 
 // Main view plugin for rendering Pandoc extended markdown
 const pandocExtendedMarkdownPlugin = (
@@ -45,8 +45,7 @@ const pandocExtendedMarkdownPlugin = (
             
             // Register inline processors
             this.pipeline.registerInlineProcessor(new ExampleReferenceProcessor());
-            // FencedDivReferenceProcessor is intentionally not registered yet:
-            // Pandoc treats @id as citation syntax, not a built-in div cross-reference.
+            this.pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
             this.pipeline.registerInlineProcessor(new SuperscriptProcessor());
             this.pipeline.registerInlineProcessor(new SubscriptProcessor());
             this.pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());

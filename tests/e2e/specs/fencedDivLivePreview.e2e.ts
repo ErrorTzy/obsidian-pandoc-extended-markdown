@@ -44,6 +44,13 @@ interface FencedDivRenderState {
     closeLinesKeepSurface: boolean;
 }
 
+interface FencedDivReferenceState {
+    referenceTexts: string[];
+    referenceLabels: string[];
+    referenceLineText: string;
+    rawMissingPreserved: boolean;
+}
+
 interface DeepNestedFencedDivRenderState {
     headerTexts: string[];
     contentTexts: string[];
@@ -280,8 +287,8 @@ describe('Fenced div live preview', () => {
         expect(state.contentLineCount).toBe(2);
         expect(state.headerTexts).toEqual(['', '', '']);
         expect(state.headerLabels).toEqual(['outer', 'inner']);
-        expect(state.referenceTexts).toEqual([]);
-        expect(state.referenceLabels).toEqual([]);
+        expect(state.referenceTexts).toEqual(['Outer 1', 'Nested "label" 1']);
+        expect(state.referenceLabels).toEqual(['outer', 'inner']);
         expect(state.invalidLineRendered).toBe(false);
         expect(state.invalidReferenceRendered).toBe(false);
         expect(state.indentedLineRendered).toBe(false);
@@ -297,6 +304,70 @@ describe('Fenced div live preview', () => {
         expect(state.closeLineMaxHeightPx).toBeLessThanOrEqual(14);
         expect(state.closeLinesStayCompact).toBe(true);
         expect(state.closeLinesKeepSurface).toBe(true);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('renders generic fenced div cross-references with Pandoc-aligned labels', async () => {
+        const filePath = 'fenced-div-live-preview-crossrefs.md';
+        const content = [
+            '::: {.proposition #prop:a}',
+            'A proposition.',
+            ':::',
+            '',
+            '::: {.remark #rem:a}',
+            'A remark.',
+            ':::',
+            '',
+            '::: {.proposition #prop:b}',
+            'Another proposition.',
+            ':::',
+            '',
+            '::: {.logic-block #prem:a title="Premise"}',
+            'A premise.',
+            ':::',
+            '',
+            '::: {#misc:a}',
+            'Misc content.',
+            ':::',
+            '',
+            'Refs @prop:a @rem:a @prop:b @prem:a @misc:a @missing.'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(1);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivReferenceState();
+            return state.referenceTexts.length === 5 &&
+                state.referenceLineText.includes('Proposition 2');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected generic fenced div cross-references in live preview'
+        });
+
+        const state = await getFencedDivReferenceState();
+
+        expect(state.referenceTexts).toEqual([
+            'Proposition 1',
+            'Remark 1',
+            'Proposition 2',
+            'Premise 1',
+            'Div 1'
+        ]);
+        expect(state.referenceLabels).toEqual([
+            'prop:a',
+            'rem:a',
+            'prop:b',
+            'prem:a',
+            'misc:a'
+        ]);
+        expect(state.referenceLineText).toContain(
+            'Refs Proposition 1 Remark 1 Proposition 2 Premise 1 Div 1 @missing.'
+        );
+        expect(state.rawMissingPreserved).toBe(true);
 
         await deleteFileIfExists(filePath);
     });
@@ -450,6 +521,23 @@ async function getFencedDivRenderState(): Promise<FencedDivRenderState> {
                 ) &&
                 style.boxShadow !== 'none'
             )
+        };
+    });
+}
+
+async function getFencedDivReferenceState(): Promise<FencedDivReferenceState> {
+    return browser.execute((): FencedDivReferenceState => {
+        const references = Array.from(document.querySelectorAll('.pem-fenced-div-reference')) as HTMLElement[];
+        const referenceLine = Array.from(document.querySelectorAll('.cm-line'))
+            .find(line => line.textContent?.includes('Refs')) as HTMLElement | undefined;
+
+        return {
+            referenceTexts: references.map(reference => reference.textContent ?? ''),
+            referenceLabels: references
+                .map(reference => reference.dataset.pandocDivRef)
+                .filter((label): label is string => Boolean(label)),
+            referenceLineText: referenceLine?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+            rawMissingPreserved: Boolean(referenceLine?.textContent?.includes('@missing'))
         };
     });
 }

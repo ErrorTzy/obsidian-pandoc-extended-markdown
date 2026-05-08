@@ -73,7 +73,7 @@ Term 3
 - **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
 
 ### Fenced Divs
-Live Preview and Reading mode render Pandoc fenced div blocks while preserving `@id` citation text:
+Live Preview and Reading mode render Pandoc fenced div blocks and generic `@id` cross-references:
 ```markdown
 ::: {.theorem #thm}
 Every compact metric space is complete.
@@ -82,7 +82,21 @@ Every compact metric space is complete.
 See @thm.
 ```
 
-The opening fence renders without generated title text, matching Pandoc's fenced div output. `@thm` remains citation/source text for now; Pandoc treats it as citation syntax, not a built-in fenced-div cross-reference.
+The opening fence renders without generated title text, matching Pandoc's fenced div output. Known `@id` citations render as `Title number` using `title="..."` first, then the first class, then `Div`. Numbering is independent per type, so propositions, remarks, and premises each get their own sequence.
+
+```markdown
+::: {.proposition #prop:a}
+A proposition.
+:::
+
+::: {.logic-block #prem:a title="Premise"}
+A premise.
+:::
+
+See @prop:a and @prem:a.
+```
+
+The references render as `Proposition 1` and `Premise 1`; unknown citations remain unchanged.
 
 - Valid Pandoc fenced div openers use a colon fence followed by exactly one attribute form:
   - Braced attributes: `::: {.theorem #thm key="value"}` or `:::{.theorem}`.
@@ -93,7 +107,7 @@ The opening fence renders without generated title text, matching Pandoc's fenced
 - Do not combine the unbraced shortcut with braced attributes. Pandoc treats `::: Warning {.danger}` and `::: {.danger} Warning` as plain paragraph text, not fenced divs.
 - Comma-separated attributes such as `{.theorem, #thm}` are also plain text in Pandoc and are not rendered.
 - Reading mode support applies to rendered paragraph/list-item blocks that Obsidian exposes to the post-processor.
-- For Pandoc export, readable shorthand can be normalized to native Div blocks with `lua_filter/ReadableFencedDiv.lua`.
+- For Pandoc export, readable shorthand can be normalized to native Div blocks with `lua_filter/ReadableFencedDiv.lua`, and fenced-div references can be rendered with `lua_filter/FencedDivCrossRef.lua`.
 
 ### List Panel View
 
@@ -129,8 +143,8 @@ A modular sidebar panel displays various list-related content from the active do
 
 **Fenced Divs Panel** `:::`
 - Displays all fenced div blocks from the current document, including readable shorthand when strict Pandoc mode is off
-- Three-column layout: empty title column, citation label, and content
-- The title column is always empty because Pandoc fenced divs do not render class names as titles
+- Three-column layout: title metadata, citation label, and content
+- `title="..."` is metadata for cross-reference labels; it is not rendered as an in-block heading
 - Click labels to copy citation syntax (e.g., `@thm`) to clipboard
 - Click content to navigate to the fenced div content in the editor
 
@@ -322,7 +336,7 @@ The plugin provides a settings tab where you can configure:
   - Fancy lists (`A.`, `i.`, etc.)
   - Example lists and example references (`(@label)`)
   - Definition lists
-  - Fenced divs (`::: {.theorem #thm}`); `@thm` citation text is preserved for future cross-reference support
+  - Fenced divs (`::: {.theorem #thm}`) and fenced-div cross-references (`@thm`)
   - Distinct unordered list marker rendering for `-`, `+`, and `*`
   - Superscript and subscript
   - Custom label lists (`{::LABEL}`) and custom label references

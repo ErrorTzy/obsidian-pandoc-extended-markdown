@@ -8,6 +8,7 @@ import { extractExampleLists } from '../../../shared/extractors/exampleListExtra
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
 import { extractFencedDivs } from '../../../shared/extractors/fencedDivExtractor';
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import { FencedDivTypeCounters, createFencedDivReference } from '../../../shared/utils/fencedDivReferenceMetadata';
 
 /**
  * Base class for all panel modules.
@@ -145,18 +146,23 @@ export abstract class BasePanelModule implements PanelModule {
         const fencedDivLabels = new Map<string, FencedDivReference>();
         if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs')) {
             const fencedDivs = extractFencedDivs(content, this.plugin.settings);
+            const typeCounters: FencedDivTypeCounters = new Map();
             fencedDivs.forEach(item => {
                 if (!item.label || fencedDivLabels.has(item.label)) {
                     return;
                 }
 
-                fencedDivLabels.set(item.label, {
-                    label: item.label,
-                    displayName: item.title || 'Div',
-                    lineNumber: item.lineNumber + 1,
-                    classes: item.classes,
-                    content: item.content
-                });
+                fencedDivLabels.set(
+                    item.label,
+                    createFencedDivReference(
+                        item.label,
+                        item.title,
+                        item.classes,
+                        item.lineNumber + 1,
+                        item.content,
+                        typeCounters
+                    )
+                );
             });
         }
 

@@ -2,6 +2,7 @@ import { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { ProcessingPipeline } from '../../../src/live-preview/pipeline/ProcessingPipeline';
 import { FencedDivProcessor } from '../../../src/live-preview/pipeline/structural/FencedDivProcessor';
+import { FencedDivReferenceProcessor } from '../../../src/live-preview/pipeline/inline/FencedDivReferenceProcessor';
 import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 import { PluginStateManager } from '../../../src/core/state/pluginStateManager';
 
@@ -47,6 +48,7 @@ describe('fenced div live-preview pipeline', () => {
         });
         pipeline = new ProcessingPipeline(new PluginStateManager());
         pipeline.registerStructuralProcessor(new FencedDivProcessor());
+        pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
         settings = {
             strictPandocMode: false,
             autoRenumberLists: false,
@@ -85,24 +87,24 @@ describe('fenced div live-preview pipeline', () => {
             .map(widget => (widget as { constructor: { name: string } }).constructor.name);
     };
 
-    it('renders Pandoc fenced div blocks and leaves @id citations as source text', () => {
+    it('renders Pandoc fenced div blocks and known @id citations', () => {
         updateView('::: {.theorem #thm:label}\ncontent\n:::\n\nsee @thm:label.');
 
         const widgetNames = getWidgetNames();
 
         expect(widgetNames).toContain('FencedDivHeaderWidget');
         expect(widgetNames).toContain('FencedDivClosingWidget');
-        expect(widgetNames).not.toContain('FencedDivReferenceWidget');
+        expect(widgetNames).toContain('FencedDivReferenceWidget');
     });
 
-    it('renders readable shorthand blocks and leaves @id citations as source text in non-strict mode', () => {
+    it('renders readable shorthand blocks and known @id citations in non-strict mode', () => {
         updateView('::: Theorem #thm data=1\ncontent\n:::\n\nsee @thm.');
 
         const widgetNames = getWidgetNames();
 
         expect(widgetNames).toContain('FencedDivHeaderWidget');
         expect(widgetNames).toContain('FencedDivClosingWidget');
-        expect(widgetNames).not.toContain('FencedDivReferenceWidget');
+        expect(widgetNames).toContain('FencedDivReferenceWidget');
     });
 
     it('leaves readable shorthand unrendered in strict mode', () => {
@@ -134,7 +136,7 @@ describe('fenced div live-preview pipeline', () => {
 
         expect(countWidgets('FencedDivHeaderWidget')).toBe(1);
         expect(countWidgets('FencedDivClosingWidget')).toBe(1);
-        expect(countWidgets('FencedDivReferenceWidget')).toBe(0);
+        expect(countWidgets('FencedDivReferenceWidget')).toBe(doc.includes('@valid') ? 1 : 0);
     });
 
     it.each(pandocRejectedShortcutDocuments)('does not render Pandoc-rejected %s', (_name, doc) => {
