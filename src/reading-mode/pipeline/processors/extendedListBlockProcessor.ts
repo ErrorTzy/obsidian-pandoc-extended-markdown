@@ -6,12 +6,12 @@ import { ValidationContext } from '../../../shared/types/listTypes';
 import {
     findPandocDefinitionListBlocks,
     isStandalonePandocDefinitionList
-} from '../../pandocDefinitionListParser';
-import { renderPandocDefinitionSource } from '../../pandocDefinitionListRenderer';
-import { ReadingModeParser, ExampleListData } from '../../parsers/parser';
-import { ReadingModeRenderer } from '../../renderer';
+} from '../../features/definition-lists/sourceParser';
+import { renderPandocDefinitionSource } from '../../features/definition-lists/sourceRenderer';
+import { ReadingModeParser, ExampleListData } from '../../features/extended-lists/lineParser';
+import { ReadingModeRenderer } from '../../features/extended-lists/lineRenderer';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
-import { tryRenderSemanticListParagraph } from './semanticListBlockRenderer';
+import { tryRenderSemanticListParagraph } from '../../features/extended-lists/semanticBlockRenderer';
 
 export class ExtendedListBlockProcessor implements BlockDomProcessor {
     name = 'extended-list-blocks';

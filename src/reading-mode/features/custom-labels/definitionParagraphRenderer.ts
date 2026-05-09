@@ -1,6 +1,6 @@
-import { CSS_CLASSES } from '../../core/constants';
-import { ListPatterns } from '../../shared/patterns';
-import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+import { CSS_CLASSES } from '../../../core/constants';
+import { ListPatterns } from '../../../shared/patterns';
+import { PlaceholderContext } from '../../../shared/utils/placeholderProcessor';
 
 export type CustomLabelReferenceAppender = (
     text: string,

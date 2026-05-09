@@ -1,10 +1,11 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
-import { CSS_CLASSES } from '../../core/constants';
-import { ListPatterns } from '../../shared/patterns';
-import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
-import { CustomLabelInfo } from '../../shared/types/listTypes';
-import { createTextNodeWalker } from '../utils/domUtils';
-import { processCustomLabelDefinitionParagraph } from './customLabelDefinitionRenderer';
+import { CSS_CLASSES } from '../../../core/constants';
+import { ListPatterns } from '../../../shared/patterns';
+import { PlaceholderContext } from '../../../shared/utils/placeholderProcessor';
+import { CustomLabelInfo } from '../../../shared/types/listTypes';
+import { createTextNodeWalker } from '../../utils/domUtils';
+
+import { processCustomLabelDefinitionParagraph } from './definitionParagraphRenderer';
 
 export function parseCustomLabelMarker(line: string, placeholderContext?: PlaceholderContext): CustomLabelInfo | null {
     const match = ListPatterns.isCustomLabelList(line);

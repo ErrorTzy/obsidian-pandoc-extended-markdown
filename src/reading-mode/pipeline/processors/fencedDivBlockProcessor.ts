@@ -1,4 +1,4 @@
-import { scheduleFencedDivProcessing } from '../../parsers/fencedDivParser';
+import { scheduleFencedDivProcessing } from '../../features/fenced-divs/processor';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
 
 export class FencedDivBlockProcessor implements BlockDomProcessor {

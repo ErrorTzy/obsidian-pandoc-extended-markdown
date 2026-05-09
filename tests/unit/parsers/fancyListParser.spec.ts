@@ -1,4 +1,4 @@
-import { parseFancyListMarker } from '../../../src/reading-mode/parsers/fancyListParser';
+import { parseFancyListMarker } from '../../../src/reading-mode/features/extended-lists/fancyListMarker';
 
 describe('FancyListParser', () => {
   describe('parseFancyListMarker', () => {

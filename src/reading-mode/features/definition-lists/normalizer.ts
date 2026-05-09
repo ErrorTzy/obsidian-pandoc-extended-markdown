@@ -1,18 +1,18 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
-import { CSS_CLASSES } from '../../core/constants';
-import { getSectionInfo } from '../../shared/types/obsidian-extended';
-import { ProcessorConfig } from '../../shared/types/processorConfig';
+import { CSS_CLASSES } from '../../../core/constants';
+import { getSectionInfo } from '../../../shared/types/obsidian-extended';
+import { ProcessorConfig } from '../../../shared/types/processorConfig';
 
-import { ReadingModeRenderer, RenderContext } from '../renderer';
+import { ReadingModeRenderer, RenderContext } from '../extended-lists/lineRenderer';
 import {
     findPandocDefinitionListBlocks,
     isStandalonePandocDefinitionList,
     PandocDefinitionListBlock
-} from '../pandocDefinitionListParser';
+} from './sourceParser';
 import {
     renderPandocDefinitionListBlock
-} from '../pandocDefinitionListRenderer';
+} from './sourceRenderer';
 
 export function normalizeExistingDefinitionLists(
     element: HTMLElement,

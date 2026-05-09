@@ -61,7 +61,7 @@ Start here if you want more than the quick start:
 - [List panel](docs/list-panel.md)
 - [Pandoc export](docs/pandoc-export.md)
 - [Development](docs/development.md)
-- [Architecture](ARCHITECTURE.md)
+- [Architecture](docs/architecture.md)
 
 ## Modes And Settings
 

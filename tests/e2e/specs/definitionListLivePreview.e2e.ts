@@ -545,7 +545,9 @@ async function getDefinitionListCssState(mode: DefinitionListRenderMode): Promis
         const previewList = document.querySelector('.markdown-preview-view .pem-definition-list') as HTMLElement | null;
         const previewTerm = previewList?.querySelector('.pem-definition-term') as HTMLElement | null;
         const previewDefinition = previewList?.querySelector('.pem-list-definition-desc') as HTMLElement | null;
-        const previewMarker = previewDefinition?.querySelector('.pem-definition-desc-item') as HTMLElement | null;
+        const previewMarker = previewDefinition?.matches('.pem-definition-desc-item')
+            ? previewDefinition
+            : previewDefinition?.querySelector('.pem-definition-desc-item') as HTMLElement | null;
         const liveTerm = document.querySelector('.cm-line.cm-pem-definition-term') as HTMLElement | null;
         const liveDefinition = document.querySelector('.cm-line.cm-pem-definition-paragraph') as HTMLElement | null;
         const liveMarker = liveDefinition?.querySelector('.pem-list-marker') as HTMLElement | null;

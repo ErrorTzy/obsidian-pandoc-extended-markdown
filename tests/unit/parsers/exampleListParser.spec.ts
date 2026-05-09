@@ -1,4 +1,4 @@
-import { parseExampleListMarker } from '../../../src/reading-mode/parsers/exampleListParser';
+import { parseExampleListMarker } from '../../../src/reading-mode/features/extended-lists/exampleListMarker';
 
 describe('ExampleListParser', () => {
   describe('parseExampleListMarker', () => {

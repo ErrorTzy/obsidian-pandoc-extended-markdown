@@ -153,6 +153,7 @@ Definition lists support these CSS variables:
 - `--pem-definition-desc-font-weight`: definition font weight
 - `--pem-definition-desc-text-decoration`: definition underline/decoration
 - `--pem-definition-desc-align`: definition text alignment
+- `--pem-definition-desc-indent`: Reading mode definition marker/text indent
 - `--pem-definition-desc-marker-color`: generated marker color
 - `--pem-definition-desc-marker-content`: Reading mode generated marker content
 

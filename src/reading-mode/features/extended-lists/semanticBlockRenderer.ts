@@ -9,9 +9,10 @@ import {
     HashListData,
     ParsedLine,
     ReadingModeParser
-} from '../../parsers/parser';
-import { ReadingModeRenderer } from '../../renderer';
-import { ReadingModeContext } from '../types';
+} from './lineParser';
+import { ReadingModeRenderer } from './lineRenderer';
+
+import { ReadingModeContext } from '../../pipeline/types';
 
 export function tryRenderSemanticListParagraph(
     elem: Element,

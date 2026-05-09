@@ -125,6 +125,7 @@
     --pem-definition-desc-font-size: inherit;
     --pem-definition-desc-font-style: normal;
     --pem-definition-desc-font-weight: inherit;
+    --pem-definition-desc-indent: 3ch;
     --pem-definition-desc-marker-color: var(--list-marker-color, var(--text-muted));
     --pem-definition-desc-marker-content: "•";
     --pem-definition-desc-text-decoration: none;
@@ -151,11 +152,14 @@
 
 .markdown-preview-view .pem-list-definition-desc {
     color: var(--pem-definition-desc-color);
+    display: list-item;
     font-size: var(--pem-definition-desc-font-size);
     font-style: var(--pem-definition-desc-font-style);
     font-weight: var(--pem-definition-desc-font-weight);
+    list-style-position: outside;
+    list-style-type: disc;
     margin-bottom: 0.25em;
-    margin-inline-start: 0;
+    margin-inline-start: var(--pem-definition-desc-indent);
     text-align: var(--pem-definition-desc-align);
     text-decoration: var(--pem-definition-desc-text-decoration);
 }

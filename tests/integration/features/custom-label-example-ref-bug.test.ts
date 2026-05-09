@@ -6,7 +6,7 @@
 import { processReadingMode } from '../../../src/reading-mode/processor';
 import { pluginStateManager } from '../../../src/core/state/pluginStateManager';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
-import { processCustomLabelLists } from '../../../src/reading-mode/parsers/customLabelListParser';
+import { processCustomLabelLists } from '../../../src/reading-mode/features/custom-labels/listProcessor';
 
 describe('Custom label and example reference interaction bug', () => {
     const docPath = 'test.md';

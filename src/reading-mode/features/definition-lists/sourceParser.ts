@@ -1,4 +1,4 @@
-import { ListPatterns } from '../shared/patterns';
+import { ListPatterns } from '../../../shared/patterns';
 
 export interface PandocDefinitionListBlock {
     startLine: number;

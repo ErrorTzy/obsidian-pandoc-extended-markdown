@@ -10,8 +10,8 @@ This folder holds the detailed documentation for Pandoc Extended Markdown. The r
 - [List panel](list-panel.md): how the sidebar panel works and what each panel shows.
 - [Pandoc export](pandoc-export.md): how to use the bundled Lua filters with Pandoc.
 
-## Maintainers
+## Development
 
 - [Development](development.md): repository layout, commands, and testing workflow.
-- [Architecture](../ARCHITECTURE.md): broader code architecture.
+- [Architecture](architecture.md): broader code architecture and module boundaries.
 - [Tests](../tests/README.md): test structure and examples.

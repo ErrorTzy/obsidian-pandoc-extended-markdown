@@ -1,4 +1,4 @@
-import { CSS_CLASSES } from '../core/constants';
+import { CSS_CLASSES } from '../../../core/constants';
 
 import {
     findPandocDefinitionListBlocks,
@@ -8,8 +8,8 @@ import {
     parseIndentedDefinitionMarker,
     parseMarkdownListItem,
     trimOuterBlankLines
-} from './pandocDefinitionListParser';
-import type { RenderContext } from './renderer';
+} from './sourceParser';
+import type { RenderContext } from '../extended-lists/lineRenderer';
 
 type ContentAppender = (element: HTMLElement, content: string, context: RenderContext) => void;
 
@@ -29,7 +29,7 @@ export function renderPandocDefinitionListBlock(
 
         item.definitions.forEach(definition => {
             const dd = document.createElement('dd');
-            dd.className = CSS_CLASSES.DEFINITION_DESC;
+            dd.className = `${CSS_CLASSES.DEFINITION_DESC} ${CSS_CLASSES.DEFINITION_DESC_ITEM}`;
             appendDefinitionDescription(dd, definition, context, appendContent);
             dl.appendChild(dd);
         });
@@ -80,12 +80,13 @@ function appendDefinitionDescription(
 
     const content = normalizePlainText(lines);
     if (definition.wrapParagraph) {
-        const paragraph = createDefinitionDescriptionItem(dd);
+        const paragraph = document.createElement('p');
         appendInlineContent(paragraph, content, context, appendContent);
+        dd.appendChild(paragraph);
         return;
     }
 
-    appendInlineContent(createDefinitionDescriptionItem(dd), content, context, appendContent);
+    appendInlineContent(dd, content, context, appendContent);
 }
 
 function appendParagraphs(
@@ -240,16 +241,6 @@ function appendInlineContent(
         appendContent(child, segment.content, context);
         element.appendChild(child);
     });
-}
-
-function createDefinitionDescriptionItem(dd: HTMLElement): HTMLElement {
-    const list = document.createElement('ul');
-    const item = document.createElement('li');
-    list.className = CSS_CLASSES.DEFINITION_DESC_LIST;
-    item.className = CSS_CLASSES.DEFINITION_DESC_ITEM;
-    list.appendChild(item);
-    dd.appendChild(list);
-    return item;
 }
 
 function splitInlineMarkdown(content: string): Array<{ type: 'text' | 'strong' | 'em' | 'code', content: string }> {

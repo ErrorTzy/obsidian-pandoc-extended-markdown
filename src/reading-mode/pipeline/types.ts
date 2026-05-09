@@ -4,7 +4,7 @@ import { ProcessorConfig } from '../../shared/types/processorConfig';
 import { DocumentCounters } from '../../shared/types/settingsTypes';
 import { SectionInfo } from '../../shared/types/obsidian-extended';
 
-import { RenderContext } from '../renderer';
+import { RenderContext } from '../features/extended-lists/lineRenderer';
 
 export type ReadingModePhase = 'setup' | 'block' | 'inline' | 'cleanup';
 

@@ -1,4 +1,4 @@
-import { parseDefinitionListMarker } from '../../../src/reading-mode/parsers/definitionListParser';
+import { parseDefinitionListMarker } from '../../../src/reading-mode/features/extended-lists/definitionListMarker';
 
 describe('DefinitionListParser', () => {
   describe('parseDefinitionListMarker', () => {

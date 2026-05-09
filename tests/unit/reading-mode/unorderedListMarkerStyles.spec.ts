@@ -1,7 +1,7 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
 import { processReadingMode } from '../../../src/reading-mode/processor';
-import { applyUnorderedListMarkerClasses } from '../../../src/reading-mode/parsers/unorderedListMarkerParser';
+import { applyUnorderedListMarkerClasses } from '../../../src/reading-mode/features/unordered-lists/markerClasses';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
 
 describe('unordered list marker reading mode styles', () => {

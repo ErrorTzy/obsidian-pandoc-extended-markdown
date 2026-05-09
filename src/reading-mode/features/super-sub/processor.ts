@@ -1,11 +1,11 @@
 // Constants
-import { CSS_CLASSES } from '../../core/constants';
+import { CSS_CLASSES } from '../../../core/constants';
 
 // Patterns
-import { ListPatterns } from '../../shared/patterns';
+import { ListPatterns } from '../../../shared/patterns';
 
 // Utils
-import { createSmartTextNodeWalker } from '../utils/domUtils';
+import { createSmartTextNodeWalker } from '../../utils/domUtils';
 
 export interface SuperSubMatch {
     index: number;

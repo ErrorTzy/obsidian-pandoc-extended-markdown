@@ -1,7 +1,7 @@
 import {
     applyUnorderedListMarkerClasses,
     clearUnorderedListMarkerClasses
-} from '../../parsers/unorderedListMarkerParser';
+} from '../../features/unordered-lists/markerClasses';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
 
 export class UnorderedListMarkerProcessor implements BlockDomProcessor {

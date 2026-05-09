@@ -4,8 +4,8 @@
  * are properly processed when they appear in list content
  */
 
-import { ReadingModeParser } from '../../../src/reading-mode/parsers/parser';
-import { ReadingModeRenderer, RenderContext } from '../../../src/reading-mode/renderer';
+import { ReadingModeParser } from '../../../src/reading-mode/features/extended-lists/lineParser';
+import { ReadingModeRenderer, RenderContext } from '../../../src/reading-mode/features/extended-lists/lineRenderer';
 import { pluginStateManager } from '../../../src/core/state/pluginStateManager';
 
 describe('Cross-references in list content', () => {

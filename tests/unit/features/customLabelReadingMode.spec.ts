@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { processCustomLabelLists } from '../../../src/reading-mode/parsers/customLabelListParser';
+import { processCustomLabelLists } from '../../../src/reading-mode/features/custom-labels/listProcessor';
 import { MarkdownPostProcessorContext } from 'obsidian';
 
 describe('Custom Label Reading Mode', () => {

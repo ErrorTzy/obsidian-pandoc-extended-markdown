@@ -1,4 +1,4 @@
-import { parseCustomLabelMarker, isValidCustomLabel } from '../../../src/reading-mode/parsers/customLabelListParser';
+import { parseCustomLabelMarker, isValidCustomLabel } from '../../../src/reading-mode/features/custom-labels/listProcessor';
 
 describe('CustomLabelListParser', () => {
   describe('parseCustomLabelMarker', () => {

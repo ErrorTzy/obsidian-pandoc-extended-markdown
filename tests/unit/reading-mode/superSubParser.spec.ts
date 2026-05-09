@@ -1,4 +1,4 @@
-import { processSuperSub } from '../../../src/reading-mode/parsers/superSubParser';
+import { processSuperSub } from '../../../src/reading-mode/features/super-sub/processor';
 import { CSS_CLASSES } from '../../../src/core/constants';
 
 describe('super/sub processing in reading mode', () => {

@@ -1,13 +1,13 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
-import { CSS_CLASSES } from '../../core/constants';
+import { CSS_CLASSES } from '../../../core/constants';
 
-import { ListPatterns } from '../../shared/patterns';
+import { ListPatterns } from '../../../shared/patterns';
 
 import {
     getAllUnorderedMarkerClasses,
     getUnorderedMarkerClass
-} from '../../shared/utils/unorderedListMarkers';
+} from '../../../shared/utils/unorderedListMarkers';
 
 function getSourceMarkers(sectionText: string): string[] {
     return sectionText

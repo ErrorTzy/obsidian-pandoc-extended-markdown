@@ -48,9 +48,9 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 
 3. **Centralized Configuration**
    - Constants organized in modular structure:
-     - `/core/constants.ts`: Main index file (354 lines)
-     - `/core/constants/listConstants.ts`: LIST_MARKERS, LIST_TYPES, INDENTATION (35 lines)
-     - `/core/constants/cssConstants.ts`: CSS_CLASSES, COMPOSITE_CSS, DECORATION_STYLES (130 lines)
+     - `/core/constants.ts`: Main constants and re-export surface
+     - `/core/constants/listConstants.ts`: LIST_MARKERS, LIST_TYPES, INDENTATION
+     - `/core/constants/cssConstants.ts`: CSS_CLASSES, COMPOSITE_CSS, DECORATION_STYLES
    - All patterns in `ListPatterns` class (`/shared/patterns.ts`)
    - All types in `/shared/types/` directory
 
@@ -199,9 +199,37 @@ Inline processors report text-node matches and create replacement nodes. They do
 
 The shared inline walker skips code, preformatted blocks, headings, math containers, already rendered spans, fenced div headers, and plugin-rendered references/markers.
 
-#### Legacy Parser Helpers (`/reading-mode/parsers/`)
+#### Feature Implementations (`/reading-mode/features/`)
 
-The parser files remain as feature-specific helpers used by reading-mode processors and tests. They are no longer the reading-mode extension point. New reading-mode behavior should be added as a pipeline processor and registered in `registry.ts`, using parser helpers only when useful.
+Pipeline processors should orchestrate work only. Feature-specific parsing, rendering, DOM repair, and source matching live under `/reading-mode/features/`, grouped by the syntax they own. New reading-mode behavior should be added as a pipeline processor and registered in `registry.ts`; reusable feature logic belongs in the matching feature folder.
+
+| Feature Folder | Purpose |
+|----------------|---------|
+| **extended-lists/** | Parses and renders hash, fancy, example, and parsed-line definition-list content |
+| **definition-lists/** | Owns source-backed Pandoc definition-list parsing, rendering, parsed-line adaptation, and DOM normalization |
+| **fenced-divs/** | Owns fenced-div scheduling, source-opening validation, DOM candidate splitting, block rendering, label hydration, and reference hydration |
+| **custom-labels/** | Owns custom-label list parsing, marker rendering, definition paragraph rendering, and reference replacement |
+| **super-sub/** | Provides the legacy whole-element superscript/subscript processor used by focused tests and compatibility paths |
+| **unordered-lists/** | Maps source unordered-list markers to rendered reading-mode list item classes |
+
+Definition-list file names describe their data flow:
+
+| File | Purpose |
+|------|---------|
+| **sourceParser.ts** | Parses markdown source text into Pandoc definition-list blocks |
+| **sourceRenderer.ts** | Renders parsed source blocks and surrounding paragraph content |
+| **parsedLineAdapter.ts** | Adapts `ParsedLine[]` blocks into the canonical source-backed renderer |
+| **normalizer.ts** | Rebuilds malformed rendered definition-list DOM from source when needed |
+
+Fenced-div file names describe their ownership:
+
+| File | Purpose |
+|------|---------|
+| **processor.ts** | Coordinates scheduling and block processing |
+| **candidateDom.ts** | Splits and replaces rendered paragraph/list-item DOM candidates |
+| **sourceOpenings.ts** | Validates which rendered openers are allowed by source block boundaries |
+| **rendering.ts** | Creates fenced-div DOM, hydrates labels, and hydrates references |
+| **types.ts** | Shares fenced-div reading-mode implementation types |
 
 ### Panel Modules (`/views/panels/modules/`)
 
@@ -282,9 +310,7 @@ listAutocompletion/
 
 | Utility | Purpose | Used For |
 |---------|---------|----------|
-| **domUtils** | DOM traversal helpers | Reading mode processors and parser helpers |
-| **definitionListBlocks** | Source block extraction helpers | Definition list normalization |
-| **definitionListDom** | Rendered DOM normalization helpers | DefinitionListNormalizationProcessor |
+| **domUtils** | DOM traversal helpers | Reading mode processors and feature implementations |
 
 ## Processing Pipeline Details
 
@@ -561,7 +587,7 @@ availablePanels.push({...});
 
 ### Pattern 5: Modular File Organization
 
-**Already Implemented**: listAutocompletion module, CustomLabelProcessor
+**Already Implemented**: listAutocompletion module, CustomLabelProcessor, reading-mode feature folders
 
 **Pattern for breaking down large files (>400 lines):**
 
@@ -570,29 +596,29 @@ availablePanels.push({...});
 // Original: single file with all handlers
 // Refactored:
 listAutocompletion/
-├── index.ts        # Main export (23 lines)
-├── types.ts        # Interfaces (52 lines)
+├── index.ts        # Main export
+├── types.ts        # Interfaces
 ├── handlers/       # Event handlers
-│   └── *.ts       # Each <135 lines
+│   └── *.ts
 └── utils/          # Utilities
-    └── *.ts       # Each <83 lines
+    └── *.ts
 
 // Example 2: CustomLabelProcessor refactoring
-// Original: CustomLabelProcessor.ts (513 lines)
+// Original: one large processor
 // Refactored:
-CustomLabelProcessor.ts  # Main processor (91 lines)
+CustomLabelProcessor.ts  # Main processor
 customLabel/
-├── types.ts        # Interfaces (35 lines)
-├── parser.ts       # Parsing logic (112 lines)
-└── decorations.ts  # Decoration creation (275 lines)
+├── types.ts        # Interfaces
+├── parser.ts       # Parsing logic
+└── decorations.ts  # Decoration creation
 
-// Example 3: constants.ts refactoring
-// Original: constants.ts (484 lines)
+// Example 3: reading-mode feature refactoring
+// Original: mixed parser/renderer/normalizer files
 // Refactored:
-constants.ts        # Main index (354 lines)
-constants/
-├── listConstants.ts  # List-related (35 lines)
-└── cssConstants.ts   # CSS classes (130 lines)
+reading-mode/
+├── pipeline/       # Orchestration and inline engine
+├── features/       # Feature-owned implementation modules
+└── utils/          # Shared DOM utilities
 ```
 
 **Refactoring Techniques Applied:**
@@ -636,8 +662,8 @@ async function myAsyncFunction() {
 | Live preview list syntax | `/live-preview/pipeline/structural/` | StructuralProcessor | extension.ts |
 | Live preview inline formatting | `/live-preview/pipeline/inline/` | InlineProcessor | extension.ts |
 | Live preview reference type | `/live-preview/pipeline/inline/` | InlineProcessor | extension.ts |
-| Widget display | `/widgets/` | BaseWidget | Used by processor |
-| Panel content | `/panels/modules/` | BasePanelModule | ListPanelView.ts |
+| Widget display | `/live-preview/widgets/` | BaseWidget | Used by processor |
+| Panel content | `/views/panels/modules/` | BasePanelModule | ListPanelView.ts |
 | Data extraction | `/shared/extractors/` | Function | Used by panels |
 | Reading mode block behavior | `/reading-mode/pipeline/processors/` | BlockDomProcessor | reading-mode/pipeline/registry.ts |
 | Reading mode inline behavior | `/reading-mode/pipeline/inline/` | InlineTextProcessor | reading-mode/pipeline/registry.ts |
@@ -656,7 +682,7 @@ async function myAsyncFunction() {
 3. See `CustomLabelReferenceWidget` for example
 
 #### Task: Process Content with Math
-1. Use `renderContentWithMath()` from `viewInteractions.ts`
+1. Use `renderContentWithMath()` from `views/panels/utils/viewInteractions.ts`
 2. It handles markdown, math, and references
 3. See panel modules for examples
 
@@ -675,7 +701,7 @@ async function myAsyncFunction() {
 /core/main.ts           → Plugin entry, lifecycle
 /core/settings.ts       → User preferences
 /core/state/            → State management
-/core/constants.ts      → Constants index file
+/core/constants.ts      → Constants aggregate and re-export surface
 /core/constants/        → Split constant modules
   listConstants.ts      → List markers, types, indentation
   cssConstants.ts       → CSS classes, styles
@@ -694,7 +720,7 @@ async function myAsyncFunction() {
   /pipeline/            → DOM/source processor pipeline
     /processors/        → Block and orchestration processors
     /inline/            → Inline text processors and replacement engine
-  /parsers/             → Feature parser helpers used by processors/tests
+  /features/            → Feature-owned parsing, rendering, DOM repair, and source matching
   /utils/               → DOM utilities
 /views/panels/          → Sidebar panels
 /shared/                → Cross-mode utilities

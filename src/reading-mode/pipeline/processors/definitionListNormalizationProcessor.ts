@@ -1,4 +1,4 @@
-import { normalizeExistingDefinitionLists } from '../../utils/definitionListDom';
+import { normalizeExistingDefinitionLists } from '../../features/definition-lists/normalizer';
 import { BlockDomProcessor, ObsidianAppLike, ReadingModeContext } from '../types';
 
 const DOM_SETTLED_FRAME_COUNT = 2;

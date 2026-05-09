@@ -5,7 +5,7 @@
 - `src/`: plugin source.
 - `src/core/`: plugin entry points, settings, constants, and state.
 - `src/live-preview/`: CodeMirror rendering pipeline and widgets.
-- `src/reading-mode/`: Reading mode post-processors and parsers.
+- `src/reading-mode/`: Reading mode post-processors, inline processors, and feature implementations.
 - `src/editor-extensions/`: editor commands, validation, suggestions, and list editing behavior.
 - `src/views/`: sidebar panel UI.
 - `src/shared/`: shared patterns, extractors, rendering utilities, types, and helpers.
@@ -44,4 +44,4 @@ The rendering flow is split by Obsidian mode:
 - Reading mode uses Markdown post-processing over rendered HTML.
 - Source mode is left as plain Markdown.
 
-For detailed architecture and module boundaries, see [ARCHITECTURE.md](../ARCHITECTURE.md).
+For detailed architecture and module boundaries, see [architecture.md](architecture.md).

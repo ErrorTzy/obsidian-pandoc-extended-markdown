@@ -5,8 +5,8 @@
  * instead of just showing the reference to the existing example.
  */
 
-import { ReadingModeParser } from '../../../src/reading-mode/parsers/parser';
-import { ReadingModeRenderer, RenderContext } from '../../../src/reading-mode/renderer';
+import { ReadingModeParser } from '../../../src/reading-mode/features/extended-lists/lineParser';
+import { ReadingModeRenderer, RenderContext } from '../../../src/reading-mode/features/extended-lists/lineRenderer';
 import { pluginStateManager } from '../../../src/core/state/pluginStateManager';
 import { processReadingMode } from '../../../src/reading-mode/processor';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';

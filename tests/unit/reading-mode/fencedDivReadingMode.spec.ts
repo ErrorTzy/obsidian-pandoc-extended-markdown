@@ -1,7 +1,7 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
 
 import { processReadingMode } from '../../../src/reading-mode/processor';
-import { processFencedDivs } from '../../../src/reading-mode/parsers/fencedDivParser';
+import { processFencedDivs } from '../../../src/reading-mode/features/fenced-divs/processor';
 import { CSS_CLASSES } from '../../../src/core/constants';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
 

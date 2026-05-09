@@ -6,10 +6,11 @@
  */
 
 import { setTooltip } from 'obsidian';
-import { ParsedLine, HashListData, FancyListData, ExampleListData, DefinitionData, ReferenceData } from './parsers/parser';
-import { CSS_CLASSES, DECORATION_STYLES } from '../core/constants';
-import { ListPatterns } from '../shared/patterns';
-import { renderDefinitionListAt } from './definitionListRenderer';
+import { CSS_CLASSES, DECORATION_STYLES } from '../../../core/constants';
+import { ListPatterns } from '../../../shared/patterns';
+import { renderDefinitionListAt } from '../definition-lists/parsedLineAdapter';
+
+import { ParsedLine, HashListData, FancyListData, ExampleListData, DefinitionData, ReferenceData } from './lineParser';
 
 export interface RenderContext {
     strictLineBreaks: boolean;

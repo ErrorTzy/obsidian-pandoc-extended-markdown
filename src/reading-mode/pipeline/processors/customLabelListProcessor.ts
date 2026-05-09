@@ -1,5 +1,5 @@
 import { pluginStateManager } from '../../../core/state/pluginStateManager';
-import { processCustomLabelLists } from '../../parsers/customLabelListParser';
+import { processCustomLabelLists } from '../../features/custom-labels/listProcessor';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
 
 export class CustomLabelListProcessor implements BlockDomProcessor {
