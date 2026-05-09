@@ -1,6 +1,6 @@
 # Pandoc Extended Markdown
 
-Pandoc Extended Markdown is an Obsidian plugin that makes common Pandoc Markdown extensions readable in Live Preview and Reading mode while preserving the original Markdown source.
+Pandoc Extended Markdown is an Obsidian plugin that makes common [Pandoc Markdown extensions](https://pandoc.org/MANUAL.html#pandocs-markdown) readable in Live Preview and Reading mode while preserving the original Markdown source.
 
 It focuses on syntax that is useful while writing notes: fancy lists, definition lists, example lists, fenced divs, custom label lists, superscripts, subscripts, list editing helpers, and an optional sidebar panel for navigating structured list-like content.
 
