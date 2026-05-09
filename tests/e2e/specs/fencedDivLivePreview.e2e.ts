@@ -81,6 +81,16 @@ interface FencedDivMathBlockState {
     childMathBackgrounds: string[];
 }
 
+interface NestedFencedDivMathRailState {
+    headerTexts: string[];
+    mathBlockCount: number;
+    mathBlockRailCounts: number[];
+    mathBlockPreviousSiblingClasses: string[];
+    mathBlockNextSiblingClasses: string[];
+    deepestMathPaddingLeftPx: number;
+    deepestContentPaddingLeftPx: number;
+}
+
 describe('Fenced div live preview', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -356,6 +366,70 @@ describe('Fenced div live preview', () => {
         expect(state.mathBlockBoxShadow).not.toBe('none');
         expect(state.mathBlockPaddingLeftPx).toBeGreaterThanOrEqual(state.plainLinePaddingLeftPx);
         expect(state.childMathBackgrounds.every(background => background === 'rgba(0, 0, 0, 0)')).toBe(true);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('keeps nested block math aligned with every fenced div rail in live preview', async () => {
+        const filePath = 'fenced-div-live-preview-nested-math-blocks.md';
+        const content = [
+            '::: title',
+            '',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{math block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: nested',
+            '',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: Nested Again {}',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: Nested Yet Again {}',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            ':::',
+            ':::',
+            ':::',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(3);
+
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getNestedFencedDivMathRailState();
+                return state.headerTexts.join('|') === 'Title|Nested|Nested Again|Nested Yet Again' &&
+                    state.mathBlockCount === 4;
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected nested fenced div math blocks in live preview'
+            });
+        } catch (error) {
+            const state = await getNestedFencedDivMathRailState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getNestedFencedDivMathRailState();
+
+        expect(state.headerTexts).toEqual(['Title', 'Nested', 'Nested Again', 'Nested Yet Again']);
+        expect(state.mathBlockCount).toBe(4);
+        expect(state.mathBlockRailCounts).toEqual([1, 2, 3, 4]);
+        expect(state.mathBlockPreviousSiblingClasses[2]).toContain('cm-pem-fenced-div-depth-3');
+        expect(state.mathBlockPreviousSiblingClasses[3]).toContain('cm-pem-fenced-div-depth-4');
+        expect(state.mathBlockNextSiblingClasses.every(className =>
+            className.includes('cm-pem-fenced-div-content')
+        )).toBe(true);
+        expect(state.deepestMathPaddingLeftPx).toBeGreaterThanOrEqual(state.deepestContentPaddingLeftPx);
 
         await deleteFileIfExists(filePath);
     });
@@ -761,6 +835,43 @@ async function getFencedDivMathBlockState(): Promise<FencedDivMathBlockState> {
             mathBlockPreviousSiblingClass: (mathBlock?.previousElementSibling as HTMLElement | null)?.className ?? '',
             mathBlockNextSiblingClass: (mathBlock?.nextElementSibling as HTMLElement | null)?.className ?? '',
             childMathBackgrounds
+        };
+    });
+}
+
+async function getNestedFencedDivMathRailState(): Promise<NestedFencedDivMathRailState> {
+    return browser.execute((): NestedFencedDivMathRailState => {
+        const headers = Array.from(document.querySelectorAll('.pem-fenced-div-header')) as HTMLElement[];
+        const mathBlocks = Array.from(
+            document.querySelectorAll('.cm-content > .math.math-block.cm-embed-block')
+        ) as HTMLElement[];
+        const deepestContentLine = Array.from(
+            document.querySelectorAll('.cm-line.cm-pem-fenced-div-depth-4.cm-pem-fenced-div-content')
+        )[0] as HTMLElement | undefined;
+        const deepestMathBlock = mathBlocks[3];
+        const countRailLayers = (element: HTMLElement): number => {
+            const style = window.getComputedStyle(element);
+            const gradientCount = style.backgroundImage.match(/linear-gradient/g)?.length ?? 0;
+            const boxShadowCount = style.boxShadow === 'none' ? 0 : 1;
+            return gradientCount + boxShadowCount;
+        };
+
+        return {
+            headerTexts: headers.map(header => header.textContent ?? ''),
+            mathBlockCount: mathBlocks.length,
+            mathBlockRailCounts: mathBlocks.map(countRailLayers),
+            mathBlockPreviousSiblingClasses: mathBlocks.map(block =>
+                (block.previousElementSibling as HTMLElement | null)?.className ?? ''
+            ),
+            mathBlockNextSiblingClasses: mathBlocks.map(block =>
+                (block.nextElementSibling as HTMLElement | null)?.className ?? ''
+            ),
+            deepestMathPaddingLeftPx: deepestMathBlock
+                ? Number.parseFloat(window.getComputedStyle(deepestMathBlock).paddingLeft)
+                : 0,
+            deepestContentPaddingLeftPx: deepestContentLine
+                ? Number.parseFloat(window.getComputedStyle(deepestContentLine).paddingLeft)
+                : 0
         };
     });
 }

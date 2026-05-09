@@ -124,6 +124,39 @@ describe('fenced div reading mode rendering', () => {
         expect(element.textContent).not.toContain('@outer @inner @warn');
     });
 
+    it('preserves rendered math nodes when splitting multiline fenced div paragraphs', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: title</p>',
+            '<p>',
+            'Plain content and <span class="math math-inline">inline math</span><br>',
+            '<span class="math math-block">math block</span>Plain content and <span class="math math-inline">inline math</span><br>',
+            '::: nested<br>',
+            'Plain content and <span class="math math-inline is-loaded">nested inline math</span><br>',
+            '<span class="math math-block is-loaded">nested block</span>Plain content and <span class="math math-inline is-loaded">nested inline math</span><br>',
+            ':::<br>',
+            ':::',
+            '</p>'
+        ].join('');
+        const originalNestedInline = element.querySelector('.math-inline.is-loaded');
+        const originalNestedBlock = element.querySelector('.math-block.is-loaded');
+
+        processFencedDivs(element, docPath, createConfig());
+
+        const fencedDiv = element.querySelector('.pem-fenced-div') as HTMLElement | null;
+        const nestedFencedDiv = fencedDiv?.querySelector('.pem-fenced-div-inner') as HTMLElement | null;
+
+        expect(fencedDiv).toBeTruthy();
+        expect(nestedFencedDiv).toBeTruthy();
+        expect(fencedDiv?.querySelectorAll('.math-inline')).toHaveLength(4);
+        expect(fencedDiv?.querySelectorAll('.math-block')).toHaveLength(2);
+        expect(nestedFencedDiv?.querySelectorAll('.math-inline')).toHaveLength(2);
+        expect(nestedFencedDiv?.querySelectorAll('.math-block')).toHaveLength(1);
+        expect(nestedFencedDiv?.querySelector('.math-inline.is-loaded')).toBe(originalNestedInline);
+        expect(nestedFencedDiv?.querySelector('.math-block.is-loaded')).toBe(originalNestedBlock);
+        expect(element.textContent).not.toContain(':::');
+    });
+
     it('renders readable shorthand and later @id citations in non-strict mode', () => {
         const element = document.createElement('div');
         element.innerHTML = [

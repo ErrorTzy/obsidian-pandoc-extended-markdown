@@ -3,6 +3,19 @@ import { browser, expect } from '@wdio/globals';
 interface ReadingModeFencedDivState {
     strictPandocMode: boolean | null;
     blockCount: number;
+    fencedDivInlineMathCount: number;
+    fencedDivBlockMathCount: number;
+    fencedDivLoadedMathCount: number;
+    fencedDivMathHtml: string[];
+    nestedInlineMathCount: number;
+    nestedBlockMathCount: number;
+    nestedLoadedMathCount: number;
+    nestedMathDirectText: string;
+    nestedTextOutsideMath: string;
+    blockWidths: number[];
+    blockParentClasses: string[];
+    blockParentIndices: number[];
+    previewWidth: number;
     headerTexts: string[];
     titleElementCount: number;
     blockLabels: string[];
@@ -241,6 +254,150 @@ describe('Fenced div reading mode', () => {
 
         await deleteFileIfExists(filePath);
     });
+
+    it('preserves rendered math inside nested fenced divs in reading mode', async () => {
+        const filePath = 'fenced-div-reading-mode-math-e2e.md';
+        const content = [
+            '::: title',
+            '',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{math block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: nested',
+            '',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            ':::',
+            ':::',
+            '',
+            '::: normal',
+            'Normal',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureReadingMode();
+
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeFencedDivState();
+                return state.blockCount === 3 &&
+                    state.fencedDivInlineMathCount === 4 &&
+                    state.fencedDivBlockMathCount === 2 &&
+                    state.fencedDivLoadedMathCount === 6 &&
+                    state.nestedInlineMathCount === 2 &&
+                    state.nestedBlockMathCount === 1 &&
+                    state.nestedLoadedMathCount === 3 &&
+                    !state.rawText.includes(':::');
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected rendered inline and block math inside reading-mode fenced divs'
+            });
+        } catch (error) {
+            const state = await getReadingModeFencedDivState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getReadingModeFencedDivState();
+        const outerWidth = state.blockWidths[0];
+        const normalWidth = state.blockWidths[2];
+
+        expect(state.blockCount).toBe(3);
+        expect(state.headerTexts).toEqual(['Title', 'Nested', 'Normal']);
+        expect(state.fencedDivInlineMathCount).toBe(4);
+        expect(state.fencedDivBlockMathCount).toBe(2);
+        expect(state.fencedDivLoadedMathCount).toBe(6);
+        expect(state.nestedInlineMathCount).toBe(2);
+        expect(state.nestedBlockMathCount).toBe(1);
+        expect(state.nestedLoadedMathCount).toBe(3);
+        expect(state.nestedTextOutsideMath).not.toContain('\\tt{inline math}');
+        expect(state.nestedTextOutsideMath).not.toContain('\\tt{block}');
+        expect(state.nestedTextOutsideMath).not.toContain('tt{inline math}');
+        expect(state.nestedTextOutsideMath).not.toContain('tt{block}');
+        expect(state.nestedMathDirectText).not.toContain('\\tt{inline math}');
+        expect(state.nestedMathDirectText).not.toContain('\\tt{block}');
+        expect(state.nestedMathDirectText).not.toContain('tt{inline math}');
+        expect(state.nestedMathDirectText).not.toContain('tt{block}');
+        if (outerWidth < normalWidth * 0.95) {
+            throw new Error(`Expected multiline fenced div width to match normal fenced div width\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+        expect(state.blockTexts[0]).toContain('Plain content and');
+        expect(state.rawText).not.toContain(':::');
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('preserves deeply nested fenced div structure around rendered math in reading mode', async () => {
+        const filePath = 'fenced-div-reading-mode-deep-math-e2e.md';
+        const content = [
+            '::: title',
+            '',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{math block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: nested',
+            '',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: Nested Again {}',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            '',
+            '::: Nested Yet Again {}',
+            'Plain content and $\\tt{inline math}$',
+            '$$\\tt{block}$$',
+            'Plain content and $\\tt{inline math}$',
+            ':::',
+            ':::',
+            ':::',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureReadingMode();
+
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeFencedDivState();
+                return state.blockCount === 4 &&
+                    state.headerTexts.join('|') === 'Title|Nested|Nested Again|Nested Yet Again' &&
+                    state.fencedDivInlineMathCount === 8 &&
+                    state.fencedDivBlockMathCount === 4 &&
+                    !state.rawText.includes(':::');
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected deeply nested reading-mode fenced divs around rendered math'
+            });
+        } catch (error) {
+            const state = await getReadingModeFencedDivState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getReadingModeFencedDivState();
+
+        expect(state.blockCount).toBe(4);
+        expect(state.headerTexts).toEqual(['Title', 'Nested', 'Nested Again', 'Nested Yet Again']);
+        expect(state.blockClasses.slice(1).every(className =>
+            className.includes('pem-fenced-div-inner')
+        )).toBe(true);
+        expect(state.blockParentIndices).toEqual([-1, 0, 1, 2]);
+        expect(state.fencedDivInlineMathCount).toBe(8);
+        expect(state.fencedDivBlockMathCount).toBe(4);
+        expect(state.fencedDivLoadedMathCount).toBe(12);
+        expect(state.nestedTextOutsideMath).not.toContain('\\tt{inline math}');
+        expect(state.nestedTextOutsideMath).not.toContain('\\tt{block}');
+        expect(state.rawText).not.toContain(':::');
+
+        await deleteFileIfExists(filePath);
+    });
 });
 
 async function getReadingModeFencedDivState(): Promise<ReadingModeFencedDivState> {
@@ -250,12 +407,31 @@ async function getReadingModeFencedDivState(): Promise<ReadingModeFencedDivState
         const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
         const blocks = Array.from(preview?.querySelectorAll('.pem-fenced-div') ?? []) as HTMLElement[];
         const references = Array.from(preview?.querySelectorAll('.pem-fenced-div-reference') ?? []) as HTMLElement[];
+        const fencedDivMath = Array.from(preview?.querySelectorAll('.pem-fenced-div .math') ?? []) as HTMLElement[];
+        const nestedBlock = preview?.querySelector('.pem-fenced-div-nested') as HTMLElement | null;
+        const previewRect = preview?.getBoundingClientRect();
 
         return {
             strictPandocMode: plugin?.settings?.strictPandocMode ?? null,
             blockCount: blocks.length,
+            fencedDivInlineMathCount: preview?.querySelectorAll('.pem-fenced-div .math-inline').length ?? 0,
+            fencedDivBlockMathCount: preview?.querySelectorAll('.pem-fenced-div .math-block').length ?? 0,
+            fencedDivLoadedMathCount: preview?.querySelectorAll('.pem-fenced-div .math.is-loaded').length ?? 0,
+            fencedDivMathHtml: fencedDivMath.map(math => math.outerHTML),
+            nestedInlineMathCount: nestedBlock?.querySelectorAll('.math-inline').length ?? 0,
+            nestedBlockMathCount: nestedBlock?.querySelectorAll('.math-block').length ?? 0,
+            nestedLoadedMathCount: nestedBlock?.querySelectorAll('.math.is-loaded').length ?? 0,
+            nestedMathDirectText: getMathDirectText(nestedBlock),
+            nestedTextOutsideMath: getTextOutsideMath(nestedBlock),
+            blockWidths: blocks.map(block => block.getBoundingClientRect().width),
+            blockParentClasses: blocks.map(block => (block.parentElement as HTMLElement | null)?.className ?? ''),
+            blockParentIndices: blocks.map(block => {
+                const parentBlock = block.parentElement?.closest('.pem-fenced-div') as HTMLElement | null;
+                return parentBlock ? blocks.indexOf(parentBlock) : -1;
+            }),
+            previewWidth: previewRect?.width ?? 0,
             headerTexts: blocks.map(block => block.querySelector('.pem-fenced-div-title')?.textContent ?? ''),
-            titleElementCount: preview?.querySelectorAll('.pem-fenced-div-title').length ?? 0,
+            titleElementCount: preview?.querySelectorAll('.pem-fenced-div > .pem-fenced-div-title').length ?? 0,
             blockLabels: blocks.map(block => block.dataset.pandocDivId ?? ''),
             blockClasses: blocks.map(block => block.className),
             blockTexts: blocks.map(block => block.textContent ?? ''),
@@ -265,6 +441,22 @@ async function getReadingModeFencedDivState(): Promise<ReadingModeFencedDivState
             paragraphHtml: Array.from(preview?.querySelectorAll('.el-p') ?? [])
                 .map(element => element.innerHTML)
         };
+
+        function getTextOutsideMath(root: HTMLElement | null): string {
+            if (!root) return '';
+            const clone = root.cloneNode(true) as HTMLElement;
+            clone.querySelectorAll('.math, mjx-container').forEach(element => element.remove());
+            return clone.textContent ?? '';
+        }
+
+        function getMathDirectText(root: HTMLElement | null): string {
+            if (!root) return '';
+            return Array.from(root.querySelectorAll('.math'))
+                .flatMap(math => Array.from(math.childNodes))
+                .filter(node => node.nodeType === Node.TEXT_NODE)
+                .map(node => node.textContent ?? '')
+                .join(' ');
+        }
     });
 }
 

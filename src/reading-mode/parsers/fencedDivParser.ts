@@ -38,6 +38,11 @@ interface PreparedFencedDiv {
     reference: FencedDivReference;
 }
 
+interface CandidateLine {
+    text: string;
+    nodes: Node[];
+}
+
 export function scheduleFencedDivProcessing(
     element: HTMLElement,
     docPath: string,
@@ -207,14 +212,14 @@ function processMultilineCandidate(
         return false;
     }
 
-    const lines = text.split('\n');
-    if (!lines.some(line => parseFencedDivOpening(line, config) || isFencedDivClosing(line))) {
+    const lines = splitCandidateIntoLines(candidate);
+    if (!lines.some(line => parseFencedDivOpening(line.text, config) || isFencedDivClosing(line.text))) {
         return false;
     }
 
     const fragments: Node[] = [];
     for (const line of lines) {
-        const opening = parseFencedDivOpening(line, config);
+        const opening = parseFencedDivOpening(line.text, config);
         if (opening) {
             const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
@@ -227,7 +232,7 @@ function processMultilineCandidate(
             continue;
         }
 
-        if (isFencedDivClosing(line) && stack.length > 0) {
+        if (isFencedDivClosing(line.text) && stack.length > 0) {
             const closed = stack.pop();
             if (closed) {
                 closed.reference.content = closed.contentLines.join('\n').trim();
@@ -338,16 +343,21 @@ function createFencedDivElement(
 }
 
 function appendContentLine(
-    line: string,
+    line: string | CandidateLine,
     fragments: Node[],
     stack: ActiveFencedDiv[]
 ): void {
     const paragraph = document.createElement('p');
-    paragraph.textContent = line;
+    const text = typeof line === 'string' ? line : line.text;
+    if (typeof line === 'string') {
+        paragraph.textContent = line;
+    } else {
+        paragraph.append(...line.nodes);
+    }
 
     if (stack.length > 0) {
         for (const active of stack) {
-            active.contentLines.push(line);
+            active.contentLines.push(text);
             active.reference.content = active.contentLines.join('\n').trim();
         }
     }
@@ -504,6 +514,53 @@ function getTextWithLineBreaks(elem: Element): string {
     const parts: string[] = [];
     elem.childNodes.forEach(node => appendNodeText(node, parts));
     return parts.join('');
+}
+
+function splitCandidateIntoLines(candidate: Element): CandidateLine[] {
+    const lines: CandidateLine[] = [createCandidateLine()];
+
+    Array.from(candidate.childNodes).forEach(node => appendNodeToCandidateLines(node, lines));
+
+    return lines;
+}
+
+function appendNodeToCandidateLines(node: Node, lines: CandidateLine[]): void {
+    if (node.nodeName === 'BR') {
+        lines.push(createCandidateLine());
+        return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        appendTextToCandidateLines(node.textContent || '', lines);
+        return;
+    }
+
+    const currentLine = lines[lines.length - 1];
+    currentLine.text += getTextWithLineBreaks(node as Element);
+    currentLine.nodes.push(node);
+}
+
+function appendTextToCandidateLines(text: string, lines: CandidateLine[]): void {
+    const parts = text.split('\n');
+    for (const [index, part] of parts.entries()) {
+        if (index > 0) {
+            lines.push(createCandidateLine());
+        }
+        if (!part) {
+            continue;
+        }
+
+        const currentLine = lines[lines.length - 1];
+        currentLine.text += part;
+        currentLine.nodes.push(document.createTextNode(part));
+    }
+}
+
+function createCandidateLine(): CandidateLine {
+    return {
+        text: '',
+        nodes: []
+    };
 }
 
 function appendNodeText(node: Node, parts: string[]): void {

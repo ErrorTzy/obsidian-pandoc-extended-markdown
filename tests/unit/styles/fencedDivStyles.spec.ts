@@ -5,8 +5,8 @@ describe('fenced div live-preview styles', () => {
     const styles = readFileSync(join(process.cwd(), 'styles.css'), 'utf8');
 
     it('uses a contained callout treatment instead of a bare vertical rule', () => {
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-surface\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-start:\s*1\.35em\s*!important/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-end:\s*1em/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*border-left:/s);
@@ -19,23 +19,23 @@ describe('fenced div live-preview styles', () => {
     });
 
     it('indents nested fenced div containers', () => {
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*--pem-fenced-div-nest-indent:\s*1\.5em/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*background:\s*[\s\S]*linear-gradient/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*transparent\s+var\(--pem-fenced-div-current-indent\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*var\(--pem-fenced-div-accent\)\s+var\(--pem-fenced-div-current-indent\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*var\(--pem-fenced-div-inner-bg\)\s+calc\(var\(--pem-fenced-div-current-indent\)\s*\+\s*3px\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*var\(--pem-fenced-div-bg\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*--pem-fenced-div-nest-indent:\s*1\.5em/s);
+        expect(styles).toMatch(/--pem-fenced-div-rail-1:\s*linear-gradient/s);
+        expect(styles).toMatch(/--pem-fenced-div-rail-1:[\s\S]*transparent\s+var\(--pem-fenced-div-nest-indent\)/s);
+        expect(styles).toMatch(/--pem-fenced-div-rail-1:[\s\S]*var\(--pem-fenced-div-accent\)\s+var\(--pem-fenced-div-nest-indent\)/s);
+        expect(styles).toMatch(/--pem-fenced-div-rail-1:[\s\S]*var\(--pem-fenced-div-inner-bg\)\s+calc\(var\(--pem-fenced-div-nest-indent\)\s*\+\s*3px\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-inner\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*--pem-fenced-div-surface:\s*var\(--pem-fenced-div-rail-1\),\s*var\(--pem-fenced-div-bg\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*padding-inline-start:\s*calc\(var\(--pem-fenced-div-current-indent\)\s*\+\s*1\.35em\)\s*!important/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3\s*\{[^}]*--pem-fenced-div-current-indent:\s*calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3\s*\{[^}]*transparent\s+calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3\s*\{[^}]*transparent\s+var\(--pem-fenced-div-nest-indent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-depth-3\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*--pem-fenced-div-current-indent:\s*calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
+        expect(styles).toMatch(/--pem-fenced-div-rail-2:[\s\S]*transparent\s+calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-depth-3\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*var\(--pem-fenced-div-rail-2\),\s*var\(--pem-fenced-div-rail-1\)/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-inner[^{}]*::before/s);
     });
 
     it('compacts inactive closing fences while preserving fenced div surfaces', () => {
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-bg\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-surface\)/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*background:/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*box-shadow:/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\.cm-pem-fenced-div-depth-[2-6]\s*\{/s);
@@ -57,7 +57,8 @@ describe('fenced div live-preview styles', () => {
 
     it('styles generated fenced div titles as theorem-style block headers', () => {
         expect(styles).toMatch(/\.pem-fenced-div\s*>\s*\.pem-fenced-div-title\s*\{[^}]*display:\s*block/s);
-        expect(styles).toMatch(/\.pem-fenced-div-header,\s*\.pem-fenced-div-title\s*\{[^}]*font-weight:\s*700/s);
+        expect(styles).toMatch(/\.pem-fenced-div-header,\s*\.pem-fenced-div\s*>\s*\.pem-fenced-div-title\s*\{[^}]*font-weight:\s*700/s);
+        expect(styles).not.toMatch(/\.pem-fenced-div-header,\s*\.pem-fenced-div-title\s*\{/s);
     });
 
     it('does not compact intentional blank spacer lines inside the div', () => {
@@ -65,10 +66,12 @@ describe('fenced div live-preview styles', () => {
     });
 
     it('keeps rendered live-preview math blocks transparent inside fenced div lines', () => {
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-bg\)\s*!important/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)\s*!important/s);
-        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*background:\s*var\(--pem-fenced-div-bg\)\s*!important/s);
-        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-surface\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+3px\s+0\s+0\s+var\(--pem-fenced-div-accent\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*background:\s*var\(--pem-fenced-div-surface\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-depth-4,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-depth-4\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*var\(--pem-fenced-div-rail-3\),\s*var\(--pem-fenced-div-rail-2\),\s*var\(--pem-fenced-div-rail-1\)/s);
+        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*padding-bottom:\s*0\.2em\s*!important/s);
+        expect(styles).toMatch(/\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*padding-top:\s*0\.1em\s*!important/s);
         expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*\.cm-embed-block/s);
         expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*\.markdown-rendered/s);
         expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-line\s*:is\([^)]*mjx-container/s);
