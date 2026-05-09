@@ -17,8 +17,6 @@ It focuses on syntax that is useful while writing notes: fancy lists, definition
 | List editing helpers | Enter, Tab, Shift+Tab | Continues lists, cycles marker styles by depth, and can renumber affected list items. |
 | List panel | Command: `Open list panel` | Shows custom labels, examples, definition lists, fenced divs, and footnotes from the active note. |
 
-Custom label lists are a core plugin extension. They are enabled by default and need the bundled Lua filter for matching Pandoc export.
-
 ## Quick Start
 
 Paste this into a note and switch to Live Preview.
