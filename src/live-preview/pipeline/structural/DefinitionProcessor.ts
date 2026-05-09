@@ -81,6 +81,14 @@ export class DefinitionProcessor implements StructuralProcessor {
         if (context.settings.strictPandocMode && context.invalidLines.has(lineNum - 1)) {
             return { decorations };
         }
+
+        decorations.push({
+            from: line.from,
+            to: line.from,
+            decoration: Decoration.line({
+                class: CSS_CLASSES.DEFINITION_PARAGRAPH
+            })
+        });
         
         const indent = defItemMatch[1] || '';
         const marker = defItemMatch[2] || '';
@@ -168,6 +176,14 @@ export class DefinitionProcessor implements StructuralProcessor {
     
     private processDefinitionTerm(line: Line, context: ProcessingContext): StructuralResult {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
+
+        decorations.push({
+            from: line.from,
+            to: line.from,
+            decoration: Decoration.line({
+                class: CSS_CLASSES.DEFINITION_TERM_DECORATION
+            })
+        });
         
         // Mark the entire line as a definition term
         decorations.push({

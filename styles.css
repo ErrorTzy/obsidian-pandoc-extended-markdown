@@ -107,28 +107,69 @@
 }
 
 /* Definition Lists Styles */
+:where(.pem-definition-list, .cm-pem-definition-term, .cm-pem-definition-paragraph) {
+    --pem-definition-list-bg: transparent;
+    --pem-definition-list-border-color: transparent;
+    --pem-definition-list-border-radius: 0;
+    --pem-definition-list-border-style: solid;
+    --pem-definition-list-border-width: 0;
+    --pem-definition-list-padding: 0;
+    --pem-definition-term-align: inherit;
+    --pem-definition-term-color: inherit;
+    --pem-definition-term-font-size: inherit;
+    --pem-definition-term-font-style: normal;
+    --pem-definition-term-font-weight: bold;
+    --pem-definition-term-text-decoration: underline;
+    --pem-definition-desc-align: inherit;
+    --pem-definition-desc-color: inherit;
+    --pem-definition-desc-font-size: inherit;
+    --pem-definition-desc-font-style: normal;
+    --pem-definition-desc-font-weight: inherit;
+    --pem-definition-desc-marker-color: var(--list-marker-color, var(--text-muted));
+    --pem-definition-desc-marker-content: "•";
+    --pem-definition-desc-text-decoration: none;
+}
+
 .markdown-preview-view .pem-definition-list {
+    background: var(--pem-definition-list-bg);
+    border: var(--pem-definition-list-border-width) var(--pem-definition-list-border-style) var(--pem-definition-list-border-color);
+    border-radius: var(--pem-definition-list-border-radius);
     margin: 1em 0;
+    padding: var(--pem-definition-list-padding);
 }
 
 .markdown-preview-view .pem-definition-term {
-    font-weight: bold;
-    text-decoration: underline;
+    color: var(--pem-definition-term-color);
+    font-size: var(--pem-definition-term-font-size);
+    font-style: var(--pem-definition-term-font-style);
+    font-weight: var(--pem-definition-term-font-weight);
     margin-top: 0.5em;
     margin-bottom: 0.25em;
+    text-align: var(--pem-definition-term-align);
+    text-decoration: var(--pem-definition-term-text-decoration);
 }
 
 .markdown-preview-view .pem-list-definition-desc {
+    color: var(--pem-definition-desc-color);
+    font-size: var(--pem-definition-desc-font-size);
+    font-style: var(--pem-definition-desc-font-style);
+    font-weight: var(--pem-definition-desc-font-weight);
     margin-left: 2em;
     margin-bottom: 0.25em;
     position: relative;
+    text-align: var(--pem-definition-desc-align);
+    text-decoration: var(--pem-definition-desc-text-decoration);
 }
 
 .markdown-preview-view .pem-list-definition-desc::before {
-    color: var(--list-marker-color, var(--text-muted));
-    content: "•";
+    color: var(--pem-definition-desc-marker-color);
+    content: var(--pem-definition-desc-marker-content);
     left: -1em;
     position: absolute;
+}
+
+.cm-pem-definition-paragraph .pem-list-marker {
+    color: var(--pem-definition-desc-marker-color);
 }
 
 .pem-definition-items {
@@ -144,6 +185,17 @@
 /* Definition content paragraphs - override Obsidian's indented text styling */
 .cm-pem-definition-paragraph {
     /* No extra padding - indentation handled by spaces/tabs */
+    background: var(--pem-definition-list-bg);
+    border-color: var(--pem-definition-list-border-color);
+    border-radius: var(--pem-definition-list-border-radius);
+    border-style: var(--pem-definition-list-border-style);
+    border-width: var(--pem-definition-list-border-width);
+    color: var(--pem-definition-desc-color);
+    font-size: var(--pem-definition-desc-font-size);
+    font-style: var(--pem-definition-desc-font-style);
+    font-weight: var(--pem-definition-desc-font-weight);
+    text-align: var(--pem-definition-desc-align);
+    text-decoration: var(--pem-definition-desc-text-decoration);
     text-indent: 0 !important;
 }
 
@@ -167,8 +219,11 @@
 
 /* In live preview mode */
 .cm-line .pem-definition-term {
-    font-weight: bold;
-    text-decoration: underline;
+    color: var(--pem-definition-term-color);
+    font-size: var(--pem-definition-term-font-size);
+    font-style: var(--pem-definition-term-font-style);
+    font-weight: var(--pem-definition-term-font-weight);
+    text-decoration: var(--pem-definition-term-text-decoration);
 }
 
 :where(.pem-fenced-div),
@@ -219,7 +274,17 @@
 
 /* CodeMirror-specific definition term styling */
 .cm-pem-definition-term {
-    text-decoration: underline;
+    background: var(--pem-definition-list-bg);
+    border-color: var(--pem-definition-list-border-color);
+    border-radius: var(--pem-definition-list-border-radius);
+    border-style: var(--pem-definition-list-border-style);
+    border-width: var(--pem-definition-list-border-width);
+    color: var(--pem-definition-term-color);
+    font-size: var(--pem-definition-term-font-size);
+    font-style: var(--pem-definition-term-font-style);
+    font-weight: var(--pem-definition-term-font-weight);
+    text-align: var(--pem-definition-term-align);
+    text-decoration: var(--pem-definition-term-text-decoration);
 }
 
 .cm-pem-fenced-div-line,
