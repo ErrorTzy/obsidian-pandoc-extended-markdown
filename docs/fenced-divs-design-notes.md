@@ -2,12 +2,12 @@
 
 This is maintainer-facing documentation for fenced div design and implementation
 details in Pandoc Extended Markdown. For user-facing syntax documentation, see
-the Fenced Divs section in `README.md`.
+`docs/fenced-divs.md`.
 
-This document is intentionally more detailed than the README. It records the
-design philosophy, supported syntax, current implementation, and edge cases that
-future fenced-div changes should keep aligned across Live Preview, Reading mode,
-and Pandoc export.
+This document is intentionally more detailed than the user-facing guide. It
+records the design philosophy, supported syntax, current implementation, and
+edge cases that future fenced-div changes should keep aligned across Live
+Preview, Reading mode, and Pandoc export.
 
 ## Design Philosophy
 

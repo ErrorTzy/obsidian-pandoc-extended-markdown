@@ -1,549 +1,118 @@
-# Pandoc Extended Markdown Plugin for Obsidian
+# Pandoc Extended Markdown
 
-This plugin enables Obsidian to render [Pandoc extended markdown syntax](https://pandoc.org/MANUAL.html#pandocs-markdown), bringing powerful formatting capabilities including advanced lists, superscripts, subscripts, and more to your notes.
+Pandoc Extended Markdown is an Obsidian plugin that makes common Pandoc Markdown extensions readable in Live Preview and Reading mode while preserving the original Markdown source.
 
-## Current Features
+It focuses on syntax that is useful while writing notes: fancy lists, definition lists, example lists, fenced divs, custom label lists, superscripts, subscripts, list editing helpers, and an optional sidebar panel for navigating structured list-like content.
 
-Pandoc extended Markdown is a large superset of Obsidian Markdown, so this plugin focuses on the syntax that is most useful in daily notes: lists, fenced divs, superscripts, and subscripts. I do not plan to implement Pandoc's extended table syntax because Markdown tables are difficult to edit comfortably in plain text.
+## Highlights
 
-Live Preview is the primary editing surface. Reading mode is supported for the implemented syntax, but its implementation is more constrained by Obsidian's rendered HTML.
+| Feature | Example | What it does |
+| --- | --- | --- |
+| Superscript and subscript | `2^10^`, `H~2~O` | Renders Pandoc-style inline super/subscripts. |
+| Fancy lists | `A.`, `a)`, `iv.`, `#.` | Renders alphabetic, Roman numeral, and hash auto-numbered lists. |
+| Definition lists | `Term` followed by `: definition` | Renders Pandoc definition lists in Live Preview and Reading mode. |
+| Example lists | `(@label) Example` and `(@label)` | Numbers examples and resolves local example references. |
+| Fenced divs | `::: {.theorem #thm title="Theorem &"}` | Renders Pandoc fenced divs with optional titles, numbering, and local `@id` references. |
+| Custom label lists | `{::P} Premise` | Adds custom labels, references, and placeholder numbering. |
+| List editing helpers | Enter, Tab, Shift+Tab | Continues lists, cycles marker styles by depth, and can renumber affected list items. |
+| List panel | Command: `Open list panel` | Shows custom labels, examples, definition lists, fenced divs, and footnotes from the active note. |
 
-### Superscripts and Subscripts
-Render Pandoc-style superscripts and subscripts:
-- **Superscript**: `^text^` renders as superscript (e.g., `2^10^` → 2¹⁰)
-- **Subscript**: `~text~` renders as subscript (e.g., `H~2~O` → H₂O)
-- **Escaped Spaces**: Use `\` to include spaces (e.g., `P~a\ cat~` → P_a cat_)
-- Works in all contexts: paragraphs, lists, definition lists, etc.
+Custom label lists are a core plugin extension. They are disabled by default because they are plugin-specific and need the bundled Lua filter for matching Pandoc export.
 
-### Fancy Lists
-- **Uppercase Letters**: `A.` `B.` `C.` (In strict mode, there must be two spaces after `A.`)
-- **Lowercase Letters**: `a)` `b)` `c)`  
-- **Roman Numerals**: `I.` `II.` `III.` or `i)` `ii)` `iii)`
-- **Hash Auto-numbering**: `#.` automatically numbers items sequentially
-- **Autocompletion**: Press Enter after a fancy list item to automatically continue with the next marker
-- **Auto-renumbering**: When enabled, automatically renumbers all list items when inserting new items
-- **Depth-based ordered marker cycling**: Indenting with Tab cycles ordered markers by nesting depth. Supported non-auto markers are decimal, lowercase letters, uppercase letters, lowercase roman numerals, and uppercase roman numerals with either `.` or `)`.
+## Quick Start
 
-### Unordered Lists
-- **Depth-based marker cycling**: Indenting with Tab cycles unordered markers by nesting depth using the configured marker order. The default order is `-`, `+`, `*`, then repeats. Outdenting restores the marker for the shallower level.
-- **Source-aware marker rendering**: `-` keeps Obsidian's default filled circle, `+` renders as a square, and `*` renders as a hollow circle in Live Preview and Reading mode.
-- Both unordered list behaviors have independent settings toggles.
-
-### Example Lists with Cross-References
-Create numbered examples that can be referenced throughout your document:
-```markdown
-(@good) This is a good example.
-(@bad) This is a bad example.
-
-Later in the document, refer to (@good) and (@bad).
-```
-The references will automatically render the correct example numbers:
+Paste this into a note and switch to Live Preview. Enable `Custom label lists` in settings to render the `{::P}` lines.
 
 ```markdown
-(1) This is a good example.
-(2) This is a bad example.
+Water is H~2~O, and 2^10^ is 1024.
 
-Later in the document, refer to (1) and (2).
-```
+A.  First point
+B.  Second point
 
-### Definition Lists
-Create structured term-definition pairs with enhanced support:
-```markdown
-Term 1
-:   Definition of term 1
-    
-    Indented paragraphs are part of the definition
+#. Auto-numbering list
 
-Term 2
+Term
+:   A definition list item.
 
-~   Alternative definition syntax
-~   Can have multiple definitions
+(@intro) This is a numbered example.
 
-Direct Term
-: Definition can directly follow term (no empty line needed)
+{::P} A custom-labeled premise.
+{::Q(#step)} A custom label with placeholder numbering.
 
-Term 3
+See example (@intro), premise {::P}, and step {::Q(#step)}.
 
-  ~ You can also have spaces before the marker
-
-```
-
-- Definitions appear as bullet points
-- **Autocompletion**: Press Enter after `:` or `~` markers to continue with the same marker type
-- **Enhanced Formatting**: Supports superscripts, subscripts, bold (`**text**`), and italic (`*text*`) within definition content
-
-### Fenced Divs
-
-Fenced div support has two layers:
-- Native Pandoc fenced div syntax.
-- Plugin rendering and readable shorthand syntax, enabled when strict Pandoc mode is off.
-
-Most rendering and shorthand features below are plugin-specific. For matching Pandoc export, use `lua_filter/FencedDivExtendedSyntax.lua`. If you only want native Pandoc fenced div behavior in Obsidian, enable strict Pandoc mode.
-
-#### Native Pandoc fenced divs
-
-Pandoc accepts braced attributes:
-
-```markdown
-::: {.classname #id title="titlename"}
-Content
-:::
-```
-
-Pandoc creates a `Div` with class `classname`, identifier `id`, and attribute `title="titlename"`. Native Pandoc does not render the `title` attribute as a visible title, and it does not treat `@id` as a div cross-reference.
-
-Pandoc also accepts one unbraced class token:
-
-```markdown
-::: classname
-Content
-:::
-```
-
-This is equivalent to:
-
-```markdown
-::: {.classname}
-Content
-:::
-```
-
-Native Pandoc does not support multi-token shortcuts such as `::: classname1 classname2`, `::: classname #id`, or `::: classname {#id}`.
-
-#### Plugin rendering
-
-When fenced divs are enabled and strict Pandoc mode is off, Live Preview and Reading mode render visible block titles and document-local `@id` references:
-
-```markdown
-::: {.theorem #thm title="Theorem &"}
+::: {.theorem #compact title="Theorem &"}
 Every compact metric space is complete.
 :::
 
-See @thm.
+See @compact.
 ```
 
-A fenced div renders a theorem-style title line when it has a `title` attribute or at least one non-control class. Known `@id` citations render the same title text. Unknown citations are left unchanged for other citation processors.
+Preview:
 
-Title rules:
-- Explicit `title="..."` wins.
-- Without `title`, the first non-control class is humanized, so `.logic-block` renders as `Logic Block`.
-- Control classes such as `.no-num`, `.unnumbered`, and placeholder-only classes such as `&` or `&.&` do not become titles.
-- An id-only div such as `::: {#misc}` has no visible block title; `@misc` renders as `Div`.
+![Rendering preview](docs/assets/rendering-preview.png)
 
-#### Numbering
+## Documentation
 
-Numbering is opt-in. Put `&` in the title template where the generated counter should appear. Titles without `&` are not numbered.
+Start here if you want more than the quick start:
 
-```markdown
-::: {.proposition #prop:a title="Proposition &"}
-A proposition.
-:::
+- [Documentation index](docs/README.md)
+- [Syntax reference](docs/syntax-reference.md)
+- [Fenced divs](docs/fenced-divs.md)
+- [List panel](docs/list-panel.md)
+- [Pandoc export](docs/pandoc-export.md)
+- [Development](docs/development.md)
+- [Architecture](ARCHITECTURE.md)
 
-::: {.logic-block #prem:a title="Premise &"}
-A premise.
-:::
+Maintainer-facing fenced-div implementation notes live in [docs/fenced-divs-design-notes.md](docs/fenced-divs-design-notes.md).
 
-See @prop:a and @prem:a.
+## Modes And Settings
+
+- Live Preview is the main editing surface.
+- Reading mode renders the implemented syntax after Obsidian has produced its HTML.
+- Source mode preserves plain Markdown.
+- Strict Pandoc mode disables plugin-specific fenced-div shorthand and applies stricter Pandoc list spacing rules.
+
+The plugin settings let you enable or disable individual syntax families, list marker cycling, auto-renumbering, distinct unordered-list marker rendering, and the sidebar list panel.
+
+## Pandoc Export
+
+For exporting from inside Obsidian, consider using [Obsidian Enhancing Export](https://github.com/mokeyish/obsidian-enhancing-export), a Pandoc-based export plugin for formats such as Markdown, HTML, docx, and LaTeX.
+
+Obsidian rendering does not automatically change Pandoc CLI output. For plugin-specific export behavior, use the bundled Lua filters:
+
+```bash
+pandoc input.md --lua-filter=lua_filter/FencedDivExtendedSyntax.lua -o output.docx
+pandoc input.md --lua-filter=lua_filter/CustomLabelList.lua -o output.docx
 ```
 
-The block titles and references render as `Proposition 1` and `Premise 1`.
-
-Only the first unescaped placeholder group is replaced. A group is `&`, `&.&`, `&.&.&`, and so on. The number of `&` tokens controls counter depth. Numbering is grouped by title stem, not by physical nesting.
-
-```markdown
-::: {.case #c1 title="Case &"}
-Top-level case.
-:::
-
-::: {.case #c1a title="Case &.&"}
-Nested case.
-:::
-
-::: {.note #n1 title="& Note"}
-Front-numbered note.
-:::
-```
-
-These render as `Case 1`, `Case 1.1`, and `1 Note`. Deeper counters use the current shallower counter in the same title family.
-
-Escape literal ampersands inside numbered titles with `\&` at the title-template layer. In Markdown source for native braced attributes, Pandoc consumes a single backslash before the Lua filter sees it, so write `\\&` when you need the escaped ampersand to survive:
-
-```markdown
-::: {.case #escaped title="AT\\&T-&.&"}
-Content
-:::
-```
-
-This renders/references as `AT&T-1.1`. A single source backslash, `title="AT\&T-&.&"`, is parsed by Pandoc as `AT&T-&.&`; the first `&` in `AT&T` becomes the numbering position and renders like `AT1T-&.&`.
-
-Use `.no-num` or `.unnumbered` when all ampersands/placeholders should stay literal:
-
-```markdown
-::: {.warning #warn .no-num title="AT&T Warning"}
-Literal ampersand, no numbering.
-:::
-```
-
-#### Readable shorthand
-
-Non-strict mode accepts a readable token shorthand:
-
-```markdown
-::: classname1 classname2 #id title="xxx"
-Content
-:::
-```
-
-This is interpreted like:
-
-```markdown
-::: {.classname1 .classname2 #id title="xxx"}
-Content
-:::
-```
-
-Supported tokens are `#id`, bare classes, and `key=value` pairs, including quoted values like `title="hello world"`. If no explicit title is present, the first relevant class token supplies the title. When numbering placeholders are split into separate tokens, the title template is synthesized from the semantic class plus the placeholder:
-
-```markdown
-::: Case & #c1
-Top-level case.
-:::
-
-::: Case &.& #c1a key=value
-Nested case.
-:::
-
-::: & Note #n1
-Front-numbered note.
-:::
-```
-
-These are treated like title templates `Case &`, `Case &.&`, and `& Note`, while preserving classes such as `Case` and `Note`. Prefer separated placeholder tokens so CSS can still target the semantic class. `::: Case_&.&` also renders as `Case 1.1`, but its class is literally `Case_&.&`.
-
-For titles with spaces, put title text outside the braced attributes. The `{...}` part may come before or after the title text:
-
-```markdown
-::: title with space {.case #a1}
-Content
-:::
-
-::: {.case #b1} title with space until linebreak
-Content
-:::
-```
-
-These are interpreted as `title="title with space"` and `title="title with space until linebreak"`.
-
-One intentionally plugin-specific special case is:
-
-```markdown
-::: title="titlename"
-Content
-:::
-```
-
-Native Pandoc treats this as one literal class token, not as a title attribute. In non-strict plugin mode and with the Lua filter, it is treated as readable title shorthand and renders as `titlename`.
-
-#### Boundaries, nesting, and strict mode
-
-Fenced div openers follow Pandoc-style block boundaries. An opener is accepted at the start of a document, after a blank line, after a heading/thematic break/supported single-line HTML block, after another fenced-div boundary, or inside an already-open fenced div when the previous line allows a block start. It is not accepted immediately after paragraph-like text:
-
-```markdown
-Paragraph before.
-::: {.note #invalid}
-This is paragraph text, not a fenced div.
-:::
-```
-
-Add a blank line to start a fenced div:
-
-```markdown
-Paragraph before.
-
-::: {.note #valid}
-This is a fenced div.
-:::
-```
-
-Fenced divs can be nested, and adjacent fenced divs do not require a blank line between the closing fence and the next opener.
-
-Strict Pandoc mode disables readable shorthand, visible plugin-generated titles, and fenced-div `@id` reference rendering. Native fenced div structure is still recognized internally where needed, but the rendered view should stay close to native Pandoc output.
-
-For Pandoc export with plugin-like behavior, apply `lua_filter/FencedDivExtendedSyntax.lua`. The Lua filter normalizes readable shorthand, inserts generated titles, replaces known simple `@id` citations, preserves unknown citations, and follows the same `\\&` source-escaping rule for native braced attributes.
-
-### List Panel View
-
-A modular sidebar panel displays various list-related content from the active document. The panel features an icon toolbar for switching between different list types.
-
-#### Available Panels
-
-**Custom Label Lists Panel** `{::}`
-- Displays all custom label lists from the current document
-- Two-column layout: processed labels and their content
-- Click labels to copy raw syntax to clipboard
-- Click content to navigate to the label in the editor
-- Hover previews for truncated content with rendered math
-
-**Example Lists Panel** `(@)`
-- Displays all example lists from the current document
-- Three-column layout: rendered numbers, raw labels, and content
-- Rendered numbers show sequential numbering (truncated at 3rd digit)
-- Click labels to copy raw syntax (e.g., `(@a)`) to clipboard
-- Click content to navigate to the example in the editor
-- Hover previews for truncated items with full content
-- Math rendering support in content column
-
-**Definition Lists Panel** `DL:`
-- Displays all definition lists from the current document
-- Two-column layout: terms and their definitions
-- Terms support full markdown rendering (bold, italic, math, references)
-- Multiple definitions per term shown as bullet list
-- Continuation lines automatically merged with definitions
-- Click definitions to navigate to the term in the editor
-- Smart truncation: terms (100 chars), definitions (300 chars)
-- Hover previews for truncated content with full rendering
-
-**Fenced Divs Panel** `:::`
-- Displays all fenced div blocks from the current document, including readable shorthand when strict Pandoc mode is off
-- Three-column layout: title metadata, citation label, and content
-- `title="..."` or readable shorthand class tokens provide metadata for cross-reference labels and the generated theorem-style block title; include `&` to opt into generated numbering
-- Click labels to copy citation syntax (e.g., `@thm`) to clipboard
-- Click content to navigate to the fenced div content in the editor
-
-**Footnotes Panel** `[^]`
-- Lists every footnote definition detected in the document
-- Two-column layout: footnote label and fully rendered content (markdown, math, references)
-- Clicking a label focuses the editor and positions the cursor immediately after the corresponding `[^label]` reference
-- Clicking content jumps to the footnote definition block and highlights the line
-- Uses the shared rendering pipeline for consistent formatting across panels
-
-### Auto-Renumbering Lists
-
-The plugin can automatically renumber list items when you insert new items in the middle of a list:
-
-**Without auto-renumbering:**
-```markdown
-A. First item
-[Press Enter here]
-B. Second item
-```
-Result:
-```markdown
-A. First item
-B. [new item]
-B. Second item  # Duplicate marker
-```
-
-**With auto-renumbering enabled:**
-```markdown
-A. First item
-[Press Enter here]
-B. Second item
-```
-Result:
-```markdown
-A. First item
-B. [new item]
-C. Second item  # Automatically renumbered
-```
-
-This feature:
-- Works with alphabetic lists (A, B, C or a, b, c)
-- Works with roman numerals (i, ii, iii or I, II, III)
-- Maintains proper sequence even with incorrectly ordered lists
-- Respects indentation levels (only renumbers items at the same level)
-- Preserves nested list numbering independently
-
-### Strict Pandoc Mode
-
-- **Format Command**: Auto-format document to meet Pandoc standards
-- **Toggle Setting**: Enable strict Pandoc formatting requirements
-- **Validation**: Only renders lists that conform to Pandoc standards
-- **Check Command**: Scan document for formatting issues
-
-### Beyond Pandoc Extended Syntax!!!
-
-#### Custom Label Lists
-
-*Warning: This is a plugin-specific Markdown flavor. In Obsidian, it works out of the box with this plugin. For Pandoc conversion, pass `lua_filter/CustomLabelList.lua` to Pandoc as a Lua filter.*
-
-When "More extended syntax" is enabled in settings, you can use custom label lists with the `{::LABEL}` syntax:
-
-```markdown
-{::P} All humans are mortal.
-{::Q} Socrates is human.
-{::R} Therefore, Socrates is mortal.
-```
-
-This renders as:
-
-```
-(P) All humans are mortal.
-(Q) Socrates is human.
-(R) Therefore, Socrates is mortal.
-```
-
-##### Auto-numbering with Placeholders
-
-Custom labels support auto-numbering through placeholder syntax `(#name)`. Each unique placeholder gets a sequential number:
-
-```markdown
-{::P(#first)} First premise
-{::P(#second)} Second premise  
-{::P(#first)'} Variation of first premise
-
-From {::P(#first)} and {::P(#second)}, we derive...
-```
-
-This renders as:
-- (P1) First premise
-- (P2) Second premise
-- (P1') Variation of first premise
-- From (P1) and (P2), we derive...
-
-You can also use pure placeholder expressions:
-
-```markdown
-{::(#premise)} A premise
-{::(#conclusion)} A conclusion
-{::(#premise)+(#conclusion)} Combined expression
-```
-
-Which renders as:
-- (1) A premise  
-- (2) A conclusion
-- (1+2) Combined expression
-
-## Installation
-
-### From Obsidian Community Plugins
-1. Open Settings → Community plugins
-2. Search for "Pandoc Extended Markdown"
-3. Click Install and Enable
-
-### Manual Installation
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown/releases)
-2. Create a folder named `pandoc-extended-markdown` in your vault's `.obsidian/plugins/` directory
-3. Copy the downloaded files into the `pandoc-extended-markdown` folder
-4. Reload Obsidian
-5. Enable the plugin in Settings → Community plugins
-
-## Usage Examples
-
-### Superscripts and Subscripts
-```markdown
-Water formula: H~2~O is essential for life.
-Einstein's equation: E = mc^2^ revolutionized physics.
-Chemical notation: Ca^2+^ + SO~4~^2-^ → CaSO~4~
-With spaces: P~a\ cat~ subscript example
-```
-
-### Fancy Lists
-```markdown
-A.  First major point
-B.  Second major point
-C.  Third major point
-
-i. First sub-item
-ii. Second sub-item
-iii. Third sub-item
-
-#. Auto-numbered item one
-#. Auto-numbered item two
-#. Auto-numbered item three
-```
-
-### Example Lists
-```markdown
-(@intro) This introduces the concept.
-(@) This example doesn't need a label.
-(@conclusion) This concludes our examples.
-
-As shown in example (@intro), the concept is straightforward.
-Example (@conclusion) wraps everything up.
-```
-
-### Definition Lists
-```markdown
-Markdown
-:   A lightweight markup language
-
-Obsidian
-:   A powerful knowledge base application
-:   Uses local Markdown files
-
-Plugin
-~   Extends Obsidian functionality
-~   Can be installed from Community Plugins
-```
-
-## How It Works
-
-- **Live Preview Mode**: Lists are rendered with proper formatting. When the cursor is within a list marker, it shows the raw markdown for editing
-- **Reading Mode**: Lists are fully rendered with enhanced styling
-- **Source Mode**: Original markdown syntax is always preserved without any rendering
-- **Strict Mode**: When enabled, only lists conforming to Pandoc standards are rendered
-
-## Commands
-
-The plugin adds the following commands to the command palette:
-
-- **Check pandoc formatting**: Scans the current document and reports any formatting issues
-- **Format document to pandoc standard**: Automatically formats lists to conform to Pandoc standards
-- **Toggle definition list bold style**: Toggles all definition terms between explicit (`**Term**`) and implicit (styled) bold formatting
-  - If any term has explicit bold, removes bold from all terms
-  - If no terms have explicit bold, adds bold to all terms
-- **Toggle definition list underline style**: Toggles all definition terms between explicit (`<span class="underline">Term</span>`) and implicit (styled) underline formatting
-  - If any term has explicit underline, removes underline from all terms
-  - If no terms have explicit underline, adds underline to all terms
-
-## Compatibility
-
-- Requires Obsidian v1.4.0 or higher
-- Works on desktop and mobile versions
-- Compatible with other Obsidian plugins
+See [Pandoc export](docs/pandoc-export.md) for details.
 
 ## Development
 
-### Building from Source
-
 ```bash
-# Clone the repository
-git clone https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown
-
-# Install dependencies
 npm install
-
-# Build the plugin
-npm run build
-
-# Run tests
-npm test
-
-# Development mode with hot reload
 npm run dev
+npm run build
+npm run lint
+npm test
 ```
 
-### Architecture Overview
+See [Development](docs/development.md) and [tests/README.md](tests/README.md) for repository layout and test guidance.
 
-For detailed information about the plugin's architecture, implementation details, and development workflow, please see [ARCHITECTURE.md](ARCHITECTURE.md).
+## Requirements
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+- Obsidian 1.4.0 or newer.
+- Desktop and mobile are supported.
 
 ## Support
 
-If you encounter any issues or have feature requests, please file them on the [GitHub Issues](https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown/issues) page.
+Report bugs and feature requests in [GitHub Issues](https://github.com/ErrorTzy/obsidian-pandoc-extended-markdown/issues).
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
-
-## Acknowledgments
-
-- This plugin is built with Claude Code.
+MIT. See [LICENSE](LICENSE).
 
 ## Author
 
-Created by [Scott Tang](https://github.com/ErrorTzy)
+Created by [Scott Tang](https://github.com/ErrorTzy).

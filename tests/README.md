@@ -58,8 +58,6 @@ npm run test:e2e
 # Run specific test file
 npm test -- tests/unit/parsers/definitionListParser.spec.ts
 
-# Run with coverage
-npm run test:coverage
 ```
 
 ## Test Naming Convention
