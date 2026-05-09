@@ -6,7 +6,7 @@ import { FencedDivStackItem } from '../../../shared/types/fencedDivTypes';
 import { ProcessingContext, StructuralResult } from '../types';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 import {
-    getFencedDivCssClass,
+    getFencedDivCssClasses,
     isFencedDivClosing,
     parseFencedDivOpening
 } from './fencedDiv/parser';
@@ -183,14 +183,15 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         classes: string[],
         renderDepth: number
     ): { from: number; to: number; decoration: Decoration } {
-        const primaryClass = getFencedDivCssClass(classes);
+        const semanticClasses = getFencedDivCssClasses(classes)
+            .map(className => `cm-pem-fenced-div-${className}`);
         const depthClass = Math.min(renderDepth, this.maxDepthClass);
         const className = [
             CSS_CLASSES.FENCED_DIV_LINE,
             stateClass,
             renderDepth > 1 ? 'cm-pem-fenced-div-inner' : undefined,
             renderDepth > 1 ? `cm-pem-fenced-div-depth-${depthClass}` : undefined,
-            primaryClass ? `cm-pem-fenced-div-${primaryClass}` : undefined
+            ...semanticClasses
         ].filter(Boolean).join(' ');
 
         return {

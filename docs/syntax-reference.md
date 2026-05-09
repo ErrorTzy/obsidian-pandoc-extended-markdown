@@ -109,6 +109,8 @@ See @compact.
 
 Fenced divs support native Pandoc attributes and, when strict Pandoc mode is off, plugin rendering for visible titles, generated numbering, readable shorthand, and document-local `@id` references.
 
+Fenced div CSS can be customized in Obsidian snippets with cross-mode hooks such as `cm-pem-fenced-div-theorem` for Live Preview and `pem-fenced-div-theorem` for Reading mode. See [Customizing CSS](customizing-css.md) for snippet examples.
+
 See [Fenced divs](fenced-divs.md) for the full guide.
 
 ## Custom Label Lists

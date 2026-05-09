@@ -5,6 +5,7 @@ This folder holds the detailed documentation for Pandoc Extended Markdown. The r
 ## Start Here
 
 - [Syntax reference](syntax-reference.md): all supported Markdown syntax, settings, and commands.
+- [Customizing CSS](customizing-css.md): CSS snippet hooks and examples for rendered plugin syntax.
 - [Fenced divs](fenced-divs.md): detailed guide for fenced div titles, shorthand, numbering, and references.
 - [List panel](list-panel.md): how the sidebar panel works and what each panel shows.
 - [Pandoc export](pandoc-export.md): how to use the bundled Lua filters with Pandoc.

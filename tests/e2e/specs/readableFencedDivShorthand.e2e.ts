@@ -19,7 +19,42 @@ interface ReadableFencedDivState {
     atTextNodes: string[];
 }
 
+interface FencedDivCssHookState {
+    blockCount: number;
+    blockClasses: string[];
+    styles: Array<{
+        accent: string;
+        background: string;
+        backgroundColor: string;
+        borderBottomColor: string;
+        borderBottomWidth: string;
+        borderLeftColor: string;
+        borderLeftWidth: string;
+        borderRadiusVar: string;
+        borderRadius: string;
+        borderRightColor: string;
+        borderRightWidth: string;
+        borderTopColor: string;
+        borderTopWidth: string;
+        borderWidthVar: string;
+        boxShadow: string;
+        railWidth: string;
+    }>;
+    closeStyles: Array<{
+        borderBottomColor: string;
+        borderBottomWidth: string;
+        borderWidthVar: string;
+    }>;
+    contentStyles: Array<{
+        background: string;
+        backgroundColor: string;
+    }>;
+}
+
 type RenderMode = 'live' | 'reading';
+
+const cssSnippetName = 'pem-e2e-fenced-div-css-hooks';
+const cssSnippetPath = `.obsidian/snippets/${cssSnippetName}.css`;
 
 const shorthandContent = [
     '::: class1 class2 class3',
@@ -220,6 +255,27 @@ const visiblePlaceholderHeaders = [
     '4 Case &',
     'Case &'
 ];
+const cssHookContent = [
+    '::: {.theorem .transparent .framed #native}',
+    'Native theorem classes.',
+    ':::',
+    '',
+    '::: axiom transparent #readable',
+    'Readable axiom classes.',
+    ':::',
+    '',
+    '::: {.lemma .transparent #after} title after attributes',
+    'Title-after lemma classes.',
+    ':::',
+    '',
+    '::: title before attributes {.claim .theorem #before}',
+    'Title-before claim classes.',
+    ':::',
+    '',
+    '::: Case & transparent #placeholder',
+    'Placeholder classes.',
+    ':::'
+].join('\n');
 
 describe('Readable fenced div shorthand rendering', () => {
     before(async () => {
@@ -327,6 +383,82 @@ describe('Readable fenced div shorthand rendering', () => {
 
             await deleteFileIfExists(filePath);
         });
+
+        it(`exposes every semantic fenced-div class as a custom CSS hook in ${renderModeName(mode)}`, async () => {
+            const filePath = `readable-fenced-div-css-hooks-${mode}.md`;
+
+            try {
+                await openReadableFixture(filePath, cssHookContent, mode, cssHookCursorLine(mode));
+                await enableCssHookSnippet(mode);
+                await waitForCssHookState(
+                    mode,
+                    state => state.blockCount === 5 &&
+                        hasColor(state.styles[0]?.boxShadow, '0, 128, 0') &&
+                        state.styles[0]?.railWidth === '5px' &&
+                        hasColor(state.styles[0]?.borderLeftColor, '255, 165, 0') &&
+                        hasColor(state.styles[0]?.borderRightColor, '255, 165, 0') &&
+                        hasColor(state.styles[0]?.borderTopColor, '255, 165, 0') &&
+                        state.styles[0]?.borderWidthVar === '2px' &&
+                        state.styles[0]?.borderRadiusVar === '6px' &&
+                        hasVisibleBorderWidth(state.styles[0]?.borderLeftWidth) &&
+                        hasVisibleBorderWidth(state.styles[0]?.borderRightWidth) &&
+                        hasVisibleBorderWidth(state.styles[0]?.borderTopWidth) &&
+                        state.styles[0]?.borderRadius.includes('6px') &&
+                        hasBottomFrame(mode, state) &&
+                        hasColor(state.styles[1]?.boxShadow, '0, 0, 0') &&
+                        hasColor(state.styles[2]?.boxShadow, '128, 0, 128') &&
+                        hasColor(state.styles[3]?.boxShadow, '0, 0, 255') &&
+                        isTransparentBackground(state.styles[4]) &&
+                        hasTransparentContentLine(mode, state),
+                    `Expected every fenced-div source class to be available to custom CSS in ${renderModeName(mode)}`
+                );
+
+                const state = await getCssHookState(mode);
+
+                expect(state.blockClasses[0]).toContain(`${classPrefix(mode)}theorem`);
+                expect(state.blockClasses[0]).toContain(`${classPrefix(mode)}transparent`);
+                expect(state.blockClasses[0]).toContain(`${classPrefix(mode)}framed`);
+                expect(state.blockClasses[1]).toContain(`${classPrefix(mode)}axiom`);
+                expect(state.blockClasses[1]).toContain(`${classPrefix(mode)}transparent`);
+                expect(state.blockClasses[2]).toContain(`${classPrefix(mode)}lemma`);
+                expect(state.blockClasses[2]).toContain(`${classPrefix(mode)}transparent`);
+                expect(state.blockClasses[3]).toContain(`${classPrefix(mode)}claim`);
+                expect(state.blockClasses[3]).toContain(`${classPrefix(mode)}theorem`);
+                expect(state.blockClasses[4]).toContain(`${classPrefix(mode)}case`);
+                expect(state.blockClasses[4]).toContain(`${classPrefix(mode)}transparent`);
+                expect(hasColor(state.styles[0].boxShadow, '0, 128, 0')).toBe(true);
+                expect(state.styles[0].railWidth).toBe('5px');
+                expect(hasColor(state.styles[0].borderLeftColor, '255, 165, 0')).toBe(true);
+                expect(hasColor(state.styles[0].borderRightColor, '255, 165, 0')).toBe(true);
+                expect(hasColor(state.styles[0].borderTopColor, '255, 165, 0')).toBe(true);
+                expect(state.styles[0].borderWidthVar).toBe('2px');
+                expect(state.styles[0].borderRadiusVar).toBe('6px');
+                expect(hasVisibleBorderWidth(state.styles[0].borderLeftWidth)).toBe(true);
+                expect(hasVisibleBorderWidth(state.styles[0].borderRightWidth)).toBe(true);
+                expect(hasVisibleBorderWidth(state.styles[0].borderTopWidth)).toBe(true);
+                expect(state.styles[0].borderRadius).toContain('6px');
+                expect(hasBottomFrame(mode, state)).toBe(true);
+                expect(hasColor(state.styles[1].boxShadow, '0, 0, 0')).toBe(true);
+                expect(hasColor(state.styles[2].boxShadow, '128, 0, 128')).toBe(true);
+                expect(hasColor(state.styles[3].boxShadow, '0, 0, 255')).toBe(true);
+                expect(isTransparentBackground(state.styles[0])).toBe(true);
+                expect(isTransparentBackground(state.styles[1])).toBe(true);
+                expect(isTransparentBackground(state.styles[2])).toBe(true);
+                expect(isTransparentBackground(state.styles[4])).toBe(true);
+                expect(hasTransparentContentLine(mode, state)).toBe(true);
+
+                if (mode === 'reading') {
+                    expect(state.blockClasses[0].split(/\s+/)).toEqual(expect.arrayContaining(['theorem', 'transparent', 'framed']));
+                    expect(state.blockClasses[1].split(/\s+/)).toEqual(expect.arrayContaining(['axiom', 'transparent']));
+                    expect(state.blockClasses[2].split(/\s+/)).toEqual(expect.arrayContaining(['lemma', 'transparent']));
+                    expect(state.blockClasses[3].split(/\s+/)).toEqual(expect.arrayContaining(['claim', 'theorem']));
+                    expect(state.blockClasses[4].split(/\s+/)).toEqual(expect.arrayContaining(['Case', '&', 'transparent']));
+                }
+            } finally {
+                await disableCssHookSnippet();
+                await deleteFileIfExists(filePath);
+            }
+        });
     }
 });
 
@@ -387,6 +519,22 @@ async function waitForReadableState(
     }
 }
 
+async function waitForCssHookState(
+    mode: RenderMode,
+    predicate: (state: FencedDivCssHookState) => boolean,
+    timeoutMsg: string
+): Promise<void> {
+    try {
+        await browser.waitUntil(async () => predicate(await getCssHookState(mode)), {
+            timeout: 5000,
+            timeoutMsg
+        });
+    } catch (error) {
+        const state = await getCssHookState(mode);
+        throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+    }
+}
+
 async function getReadableState(mode: RenderMode): Promise<ReadableFencedDivState> {
     return mode === 'live'
         ? getLivePreviewState()
@@ -403,6 +551,46 @@ function classPrefix(mode: RenderMode): string {
     return mode === 'live'
         ? 'cm-pem-fenced-div-'
         : 'pem-fenced-div-';
+}
+
+function cssHookCursorLine(mode: RenderMode): number | undefined {
+    return mode === 'live'
+        ? 1
+        : undefined;
+}
+
+function hasColor(value: string | undefined, colorFragment: string): boolean {
+    return Boolean(value?.includes(colorFragment));
+}
+
+function isTransparentBackground(style: { background: string; backgroundColor: string } | undefined): boolean {
+    return style?.background === 'transparent' &&
+        /^(rgba\(0,\s*0,\s*0,\s*0\)|transparent)$/.test(style.backgroundColor);
+}
+
+function hasVisibleBorderWidth(width: string | undefined): boolean {
+    return Number.parseFloat(width ?? '0') > 0;
+}
+
+function hasBottomFrame(mode: RenderMode, state: FencedDivCssHookState): boolean {
+    if (mode === 'live') {
+        const closeStyle = state.closeStyles[0];
+        return hasColor(closeStyle?.borderBottomColor, '255, 165, 0') &&
+            closeStyle?.borderWidthVar === '2px' &&
+            hasVisibleBorderWidth(closeStyle?.borderBottomWidth);
+    }
+
+    return hasColor(state.styles[0]?.borderBottomColor, '255, 165, 0') &&
+        state.styles[0]?.borderWidthVar === '2px' &&
+        hasVisibleBorderWidth(state.styles[0]?.borderBottomWidth);
+}
+
+function hasTransparentContentLine(mode: RenderMode, state: FencedDivCssHookState): boolean {
+    if (mode === 'reading') {
+        return true;
+    }
+
+    return isTransparentBackground(state.contentStyles[0]);
 }
 
 function expectRenderedReferencesRemoved(rawText: string, labels: string[]): void {
@@ -484,6 +672,114 @@ async function getLivePreviewState(): Promise<ReadableFencedDivState> {
             atTextNodes: []
         };
     });
+}
+
+async function enableCssHookSnippet(mode: RenderMode): Promise<void> {
+    await browser.execute(async (
+        renderMode: RenderMode,
+        snippetName: string,
+        snippetPath: string
+    ) => {
+        const selector = (className: string): string => renderMode === 'live'
+            ? `.cm-pem-fenced-div-${className}`
+            : `.pem-fenced-div-${className}`;
+        const snippetCss = [
+            `${selector('theorem')} { --pem-fenced-div-accent: rgb(0, 128, 0); }`,
+            `${selector('axiom')} { --pem-fenced-div-accent: rgb(0, 0, 0); }`,
+            `${selector('lemma')} { --pem-fenced-div-accent: rgb(128, 0, 128); }`,
+            `${selector('claim')} { --pem-fenced-div-accent: rgb(0, 0, 255); }`,
+            `${selector('framed')} { --pem-fenced-div-border-color: rgb(255, 165, 0); --pem-fenced-div-border-radius: 6px; --pem-fenced-div-border-width: 2px; --pem-fenced-div-rail-width: 5px; }`,
+            `${selector('transparent')} { --pem-fenced-div-bg: transparent; --pem-fenced-div-inner-bg: transparent; }`
+        ].join('\n');
+
+        // @ts-ignore
+        if (!await app.vault.adapter.exists('.obsidian')) {
+            // @ts-ignore
+            await app.vault.adapter.mkdir('.obsidian');
+        }
+        // @ts-ignore
+        if (!await app.vault.adapter.exists('.obsidian/snippets')) {
+            // @ts-ignore
+            await app.vault.adapter.mkdir('.obsidian/snippets');
+        }
+        // @ts-ignore
+        await app.vault.adapter.write(snippetPath, snippetCss);
+
+        // @ts-ignore Obsidian's public typings do not expose the custom CSS manager.
+        const customCss = app.customCss;
+        customCss?.setCssEnabledStatus?.(snippetName, true);
+        await customCss?.requestLoadSnippets?.();
+    }, mode, cssSnippetName, cssSnippetPath);
+}
+
+async function disableCssHookSnippet(): Promise<void> {
+    await browser.execute(async (snippetName: string, snippetPath: string) => {
+        // @ts-ignore Obsidian's public typings do not expose the custom CSS manager.
+        const customCss = app.customCss;
+        customCss?.setCssEnabledStatus?.(snippetName, false);
+        await customCss?.requestLoadSnippets?.();
+
+        // @ts-ignore
+        if (await app.vault.adapter.exists(snippetPath)) {
+            // @ts-ignore
+            await app.vault.adapter.remove(snippetPath);
+        }
+    }, cssSnippetName, cssSnippetPath);
+}
+
+async function getCssHookState(mode: RenderMode): Promise<FencedDivCssHookState> {
+    return browser.execute((renderMode: RenderMode): FencedDivCssHookState => {
+        const blocks = renderMode === 'live'
+            ? Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-open')) as HTMLElement[]
+            : Array.from(document.querySelectorAll('.markdown-preview-view .pem-fenced-div')) as HTMLElement[];
+        const closeBlocks = renderMode === 'live'
+            ? Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-close')) as HTMLElement[]
+            : [];
+        const contentBlocks = renderMode === 'live'
+            ? Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-content')) as HTMLElement[]
+            : [];
+
+        return {
+            blockCount: blocks.length,
+            blockClasses: blocks.map(block => block.className),
+            styles: blocks.map(block => {
+                const styles = window.getComputedStyle(block);
+                return {
+                    accent: styles.getPropertyValue('--pem-fenced-div-accent').trim(),
+                    background: styles.getPropertyValue('--pem-fenced-div-bg').trim(),
+                    backgroundColor: styles.backgroundColor,
+                    borderBottomColor: styles.borderBottomColor,
+                    borderBottomWidth: styles.borderBottomWidth,
+                    borderLeftColor: styles.borderLeftColor,
+                    borderLeftWidth: styles.borderLeftWidth,
+                    borderRadiusVar: styles.getPropertyValue('--pem-fenced-div-border-radius').trim(),
+                    borderRadius: styles.borderRadius,
+                    borderRightColor: styles.borderRightColor,
+                    borderRightWidth: styles.borderRightWidth,
+                    borderTopColor: styles.borderTopColor,
+                    borderTopWidth: styles.borderTopWidth,
+                    borderWidthVar: styles.getPropertyValue('--pem-fenced-div-border-width').trim(),
+                    boxShadow: styles.boxShadow,
+                    railWidth: styles.getPropertyValue('--pem-fenced-div-rail-width').trim()
+                };
+            }),
+            closeStyles: closeBlocks.map(block => {
+                const styles = window.getComputedStyle(block);
+                return {
+                    borderBottomColor: styles.borderBottomColor,
+                    borderBottomWidth: styles.borderBottomWidth,
+                    borderWidthVar: styles.getPropertyValue('--pem-fenced-div-border-width').trim()
+                };
+            }),
+            contentStyles: contentBlocks.map(block => {
+                const styles = window.getComputedStyle(block);
+                return {
+                    background: styles.getPropertyValue('--pem-fenced-div-bg').trim(),
+                    backgroundColor: styles.backgroundColor
+                };
+            })
+        };
+    }, mode);
 }
 
 async function getReadingModeState(): Promise<ReadableFencedDivState> {

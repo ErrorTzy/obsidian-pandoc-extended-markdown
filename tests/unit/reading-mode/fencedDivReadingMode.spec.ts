@@ -58,6 +58,7 @@ describe('fenced div reading mode rendering', () => {
 
         const fencedDiv = element.querySelector('.pem-fenced-div') as HTMLElement | null;
         expect(fencedDiv).toBeTruthy();
+        expect(fencedDiv?.classList.contains('theorem')).toBe(true);
         expect(fencedDiv?.classList.contains('pem-fenced-div-theorem')).toBe(true);
         expect(fencedDiv?.dataset.pandocDivId).toBe('thm:pythagoras');
         expect(fencedDiv?.textContent).not.toContain('Theorem:');
@@ -179,6 +180,57 @@ describe('fenced div reading mode rendering', () => {
         expect(reference?.dataset.pandocDivRef).toBe('thm');
         expect(reference?.textContent).toBe('Theorem 1');
         expect(element.textContent).not.toContain('@thm');
+    });
+
+    it('adds every source class and prefixed CSS hook to rendered reading-mode blocks', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: {.class1 .class2 #native}</p>',
+            '<p>Native content.</p>',
+            '<p>:::</p>',
+            '<p>::: class3 class4 #readable</p>',
+            '<p>Readable content.</p>',
+            '<p>:::</p>',
+            '<p>::: Case & accent #placeholder</p>',
+            '<p>Placeholder content.</p>',
+            '<p>:::</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext([
+                '::: {.class1 .class2 #native}',
+                'Native content.',
+                ':::',
+                '',
+                '::: class3 class4 #readable',
+                'Readable content.',
+                ':::',
+                '',
+                '::: Case & accent #placeholder',
+                'Placeholder content.',
+                ':::'
+            ].join('\n')),
+            createConfig()
+        );
+
+        const blocks = Array.from(element.querySelectorAll('.pem-fenced-div')) as HTMLElement[];
+
+        expect(blocks).toHaveLength(3);
+        expect(blocks[0].classList.contains('class1')).toBe(true);
+        expect(blocks[0].classList.contains('class2')).toBe(true);
+        expect(blocks[0].classList.contains('pem-fenced-div-class1')).toBe(true);
+        expect(blocks[0].classList.contains('pem-fenced-div-class2')).toBe(true);
+        expect(blocks[1].classList.contains('class3')).toBe(true);
+        expect(blocks[1].classList.contains('class4')).toBe(true);
+        expect(blocks[1].classList.contains('pem-fenced-div-class3')).toBe(true);
+        expect(blocks[1].classList.contains('pem-fenced-div-class4')).toBe(true);
+        expect(blocks[2].classList.contains('Case')).toBe(true);
+        expect(blocks[2].classList.contains('&')).toBe(true);
+        expect(blocks[2].classList.contains('accent')).toBe(true);
+        expect(blocks[2].classList.contains('pem-fenced-div-case')).toBe(true);
+        expect(blocks[2].classList.contains('pem-fenced-div-accent')).toBe(true);
+        expect(blocks[2].classList.contains('pem-fenced-div-&')).toBe(false);
     });
 
     it('renders explicit title shorthand and later @id citations in non-strict mode', () => {

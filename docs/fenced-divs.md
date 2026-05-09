@@ -109,6 +109,34 @@ mode, not as "no internal metadata is computed".
 When fenced divs are enabled and strict Pandoc mode is off, the plugin adds
 theorem-style rendering to fenced divs.
 
+### CSS Customization Hooks
+
+Obsidian users can customize fenced divs with CSS snippets. See
+[Customizing CSS](customizing-css.md) for the user-facing snippet guide and
+copyable examples.
+
+Implementation contract: Live Preview adds a sanitized
+`cm-pem-fenced-div-...` line class for each non-control source class on the
+fenced div. For example:
+
+```markdown
+::: {.class1 .class2}
+Content
+:::
+```
+
+adds both `cm-pem-fenced-div-class1` and `cm-pem-fenced-div-class2` to the
+rendered Live Preview lines.
+
+Reading mode keeps the original source classes on the rendered block and also
+adds matching sanitized `pem-fenced-div-...` classes. The same example renders a
+block with `class1`, `class2`, `pem-fenced-div-class1`, and
+`pem-fenced-div-class2`.
+
+Control classes used only for numbering behavior, such as `no-num`,
+`unnumbered`, and placeholder-only classes such as `&`, do not receive prefixed
+CSS hook classes. They remain available as source classes in Reading mode.
+
 ### Block Titles
 
 A fenced div renders a visible title line when it has either:

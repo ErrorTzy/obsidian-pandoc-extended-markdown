@@ -1,6 +1,7 @@
 import { FencedDivAttributes } from '../../../../shared/types/fencedDivTypes';
 import {
     getFencedDivTitleClass,
+    isFencedDivControlClass,
     synthesizeFencedDivTitleFromClasses
 } from '../../../../shared/utils/fencedDivReferenceMetadata';
 
@@ -122,7 +123,32 @@ export function getFencedDivCssClass(classes: string[]): string | undefined {
         return undefined;
     }
 
-    return primaryClass
+    return normalizeFencedDivCssClass(primaryClass);
+}
+
+export function getFencedDivCssClasses(classes: string[]): string[] {
+    const cssClasses: string[] = [];
+    const seen = new Set<string>();
+
+    for (const className of classes) {
+        if (isFencedDivControlClass(className)) {
+            continue;
+        }
+
+        const cssClass = normalizeFencedDivCssClass(className);
+        if (!cssClass || seen.has(cssClass)) {
+            continue;
+        }
+
+        seen.add(cssClass);
+        cssClasses.push(cssClass);
+    }
+
+    return cssClasses;
+}
+
+function normalizeFencedDivCssClass(className: string): string | undefined {
+    return className
         .toLowerCase()
         .replace(/[^a-z0-9_-]+/g, '-')
         .replace(/^-+|-+$/g, '') || undefined;

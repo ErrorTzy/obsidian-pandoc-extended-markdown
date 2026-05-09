@@ -9,7 +9,7 @@ import { FencedDivReferenceInlineProcessor } from '../pipeline/inline/fencedDivR
 import { ReadingModeContext } from '../pipeline/types';
 import {
     allowsFencedDivOpeningAfterLine,
-    getFencedDivCssClass,
+    getFencedDivCssClasses,
     isFencedDivClosing,
     parseFencedDivOpening
 } from '../../live-preview/pipeline/structural/fencedDiv/parser';
@@ -513,13 +513,16 @@ function createFencedDivElement(
     blockTitleText: string = ''
 ): { block: HTMLElement, content: HTMLElement } {
     const block = document.createElement('div');
-    const primaryClass = getFencedDivCssClass(classes);
+    const sourceClasses = getFencedDivSourceClasses(classes);
+    const semanticClasses = getFencedDivCssClasses(classes)
+        .map(className => `pem-fenced-div-${className}`);
     const depthClass = Math.min(depth, MAX_DEPTH_CLASS);
     block.className = [
         'pem-fenced-div',
+        ...sourceClasses,
         depth > 1 ? 'pem-fenced-div-inner' : undefined,
         depth > 1 ? `pem-fenced-div-depth-${depthClass}` : undefined,
-        primaryClass ? `pem-fenced-div-${primaryClass}` : undefined
+        ...semanticClasses
     ].filter(Boolean).join(' ');
 
     if (label) {
@@ -549,6 +552,22 @@ function createFencedDivElement(
     block.appendChild(content);
 
     return { block, content };
+}
+
+function getFencedDivSourceClasses(classes: string[]): string[] {
+    const sourceClasses: string[] = [];
+    const seen = new Set<string>();
+
+    for (const className of classes) {
+        if (!className || /\s/.test(className) || seen.has(className)) {
+            continue;
+        }
+
+        seen.add(className);
+        sourceClasses.push(className);
+    }
+
+    return sourceClasses;
 }
 
 function appendContentLine(

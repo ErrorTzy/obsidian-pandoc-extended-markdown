@@ -1,5 +1,6 @@
 import {
     allowsFencedDivOpeningAfterLine,
+    getFencedDivCssClasses,
     isFencedDivClosing,
     parseFencedDivOpening
 } from '../../../../src/live-preview/pipeline/structural/fencedDiv/parser';
@@ -106,6 +107,16 @@ describe('fenced div parser', () => {
                 '::: Theorem #thm data=1',
                 { strictPandocMode: true }
             )).toBeNull();
+        });
+    });
+
+    describe('CSS class hooks', () => {
+        it('returns every non-control semantic class as a stable prefixed hook suffix', () => {
+            expect(getFencedDivCssClasses(['Class1', 'class2', '&', 'accent', 'no-num', 'class2'])).toEqual([
+                'class1',
+                'class2',
+                'accent'
+            ]);
         });
     });
 

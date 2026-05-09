@@ -411,6 +411,21 @@ describe('FencedDivExtendedSyntax.lua', () => {
         expect(html).not.toMatch(/\.pem-fenced-div[^{}]*\{[^}]*background/s);
     });
 
+    it('preserves all semantic fenced div classes for HTML export styling', () => {
+        const html = renderFormat([
+            '::: {.class1 .class2 #native}',
+            'Native classes.',
+            ':::',
+            '',
+            '::: class3 class4 #readable',
+            'Readable classes.',
+            ':::'
+        ].join('\n'), 'html');
+
+        expect(html).toContain('class="class1 class2 pem-fenced-div"');
+        expect(html).toContain('class="class3 class4 pem-fenced-div"');
+    });
+
     it('wraps LaTeX fenced div export with a no-fill left-rule block', () => {
         const latex = renderFormat([
             '::: {.theorem #thm title="Theorem &"}',

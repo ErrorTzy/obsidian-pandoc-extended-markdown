@@ -217,6 +217,20 @@ describe('FencedDivProcessor', () => {
             expect(result.skipFurtherProcessing).toBe(false);
         });
 
+        it('adds every semantic fenced div class to decorated lines', () => {
+            const context = createContext('::: {.class1 .class2 #multi}\ncontent\n:::');
+
+            const opening = processor.process(context.document.line(1), context);
+            const content = processor.process(context.document.line(2), context);
+            const closing = processor.process(context.document.line(3), context);
+
+            for (const result of [opening, content, closing]) {
+                const className = result.decorations[0].decoration.spec?.class;
+                expect(className).toContain('cm-pem-fenced-div-class1');
+                expect(className).toContain('cm-pem-fenced-div-class2');
+            }
+        });
+
         it('adds nested depth classes to inner fenced div lines', () => {
             const context = createContext('::: {.outer}\n::: {.inner}\ncontent\n:::\n:::');
 

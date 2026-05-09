@@ -58,6 +58,7 @@ Start here if you want more than the quick start:
 
 - [Documentation index](docs/README.md)
 - [Syntax reference](docs/syntax-reference.md)
+- [Customizing CSS](docs/customizing-css.md)
 - [Fenced divs](docs/fenced-divs.md)
 - [List panel](docs/list-panel.md)
 - [Pandoc export](docs/pandoc-export.md)
