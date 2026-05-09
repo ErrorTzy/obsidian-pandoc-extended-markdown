@@ -97,6 +97,7 @@ In the plugin:
 - Extended `@id` fenced-div reference rendering is disabled.
 - Extended visible block-title rendering is suppressed in Live Preview and
   Reading mode.
+- Custom label lists are disabled completely.
 
 Important nuance: the shared parser may still compute title metadata for native
 forms internally, because the same parser is reused by scanning, suggestions,
@@ -962,9 +963,9 @@ write `title="AT\\&T-&.&"` in source Markdown.
    characters remain literal.
 6. The readable shorthand title-synthesis algorithm uses only selected class
    tokens, not every class token. This is useful but non-obvious.
-7. Strict mode disables readable shorthand and extended reference/title
-   rendering, but internal scanners may still compute metadata for native
-   fenced divs.
+7. Strict mode disables custom label lists, readable shorthand, and extended
+   reference/title rendering, but internal scanners may still compute metadata
+   for native fenced divs.
 8. Reading mode relies on source section text to match Live Preview/scanner
    block-boundary behavior. DOM-only helper calls cannot fully reconstruct
    source blank-line boundaries.

@@ -6,7 +6,7 @@ The toolbar switches between panel modules. The panel order can be changed in pl
 
 ## Custom Label Lists
 
-Available when `Custom label lists` is enabled.
+Available when `Custom label lists` is enabled and Strict Pandoc mode is off.
 
 - Shows all `{::LABEL}` custom label list items.
 - Displays processed labels and content.

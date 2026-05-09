@@ -9,7 +9,11 @@ import { UI_CONSTANTS, ICONS, CSS_CLASSES } from '../../core/constants';
 
 // Utils
 import { handleError } from '../../shared/utils/errorHandler';
-import { isSyntaxFeatureEnabled, normalizeSettings } from '../../shared/types/settingsTypes';
+import {
+    isCustomLabelListsEnabled,
+    isSyntaxFeatureEnabled,
+    normalizeSettings
+} from '../../shared/types/settingsTypes';
 
 // Internal modules
 import { CustomLabelPanelModule } from './modules/CustomLabelPanelModule';
@@ -48,7 +52,7 @@ export class ListPanelView extends ItemView {
         const availablePanels: PanelTabInfo[] = [];
         
         // Register all available panels
-        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')) {
+        if (isCustomLabelListsEnabled(this.plugin.settings)) {
             const customLabelModule = new CustomLabelPanelModule(this.plugin);
             availablePanels.push({
                 id: customLabelModule.id,

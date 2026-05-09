@@ -123,7 +123,8 @@ describe('Ordered list marker settings', () => {
     });
 
     it('refreshes panel order visibility after syntax toggles without rebuilding', async () => {
-        const { tab } = createSettingTab();
+        const { plugin, tab } = createSettingTab();
+        plugin.settings.enableCustomLabelLists = false;
 
         tab.display();
 

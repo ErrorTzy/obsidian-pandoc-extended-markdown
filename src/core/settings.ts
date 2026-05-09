@@ -6,6 +6,7 @@ import {
     PandocExtendedMarkdownSettings,
     DEFAULT_SETTINGS,
     normalizeSettings,
+    isCustomLabelListsEnabled,
     isSyntaxFeatureEnabled,
     SyntaxFeatureSettingKey
 } from '../shared/types/settingsTypes';
@@ -25,6 +26,7 @@ export type { PandocExtendedMarkdownSettings };
 export {
     DEFAULT_SETTINGS,
     normalizeSettings,
+    isCustomLabelListsEnabled,
     isSyntaxFeatureEnabled
 };
 
@@ -75,6 +77,9 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.strictPandocMode = value;
                     await this.plugin.saveSettings();
+                    this.app.workspace.updateOptions();
+                    this.refreshListPanels();
+                    this.refreshPanelOrderList();
                 }));
     }
 
@@ -540,7 +545,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private isPanelVisible(panelId: string): boolean {
         if (panelId === 'custom-labels') {
-            return isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists');
+            return isCustomLabelListsEnabled(this.plugin.settings);
         }
 
         if (panelId === 'example-lists') {

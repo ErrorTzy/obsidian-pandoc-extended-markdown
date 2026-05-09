@@ -96,7 +96,7 @@ export const SETTINGS_UI = {
     },
     STRICT_MODE: {
         NAME: 'Strict Pandoc mode',
-        DESCRIPTION: 'Enable strict pandoc formatting requirements. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
+        DESCRIPTION: 'Keep rendering closer to native Pandoc Markdown. When enabled, lists must have empty lines before and after them, capital letter lists require double spacing after markers, custom label lists are disabled completely, and extended fenced div syntax is disabled.'
     },
     AUTO_RENUMBER: {
         NAME: 'Auto-renumber lists',
@@ -132,7 +132,7 @@ export const SETTINGS_UI = {
     },
     CUSTOM_LABEL: {
         NAME: 'Custom label lists',
-        DESCRIPTION: 'Enable `{::LABEL}` custom label lists and references. Use together with `CustomLabelList.lua` for Pandoc output. In strict mode, custom label lists must be surrounded by blank lines.'
+        DESCRIPTION: 'Enable `{::LABEL}` custom label lists and references. Use together with `CustomLabelList.lua` for Pandoc output. Strict Pandoc mode disables this feature completely.'
     },
     UNORDERED_LIST_MARKER_CYCLING: {
         NAME: 'Cycle unordered list markers',

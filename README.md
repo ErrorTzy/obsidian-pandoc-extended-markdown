@@ -17,11 +17,11 @@ It focuses on syntax that is useful while writing notes: fancy lists, definition
 | List editing helpers | Enter, Tab, Shift+Tab | Continues lists, cycles marker styles by depth, and can renumber affected list items. |
 | List panel | Command: `Open list panel` | Shows custom labels, examples, definition lists, fenced divs, and footnotes from the active note. |
 
-Custom label lists are a core plugin extension. They are disabled by default because they are plugin-specific and need the bundled Lua filter for matching Pandoc export.
+Custom label lists are a core plugin extension. They are enabled by default and need the bundled Lua filter for matching Pandoc export.
 
 ## Quick Start
 
-Paste this into a note and switch to Live Preview. Enable `Custom label lists` in settings to render the `{::P}` lines.
+Paste this into a note and switch to Live Preview.
 
 ```markdown
 Water is H~2~O, and 2^10^ is 1024.
@@ -69,7 +69,7 @@ Start here if you want more than the quick start:
 - Live Preview is the main editing surface.
 - Reading mode renders the implemented syntax after Obsidian has produced its HTML.
 - Source mode preserves plain Markdown.
-- Strict Pandoc mode disables plugin-specific fenced-div shorthand and applies stricter Pandoc list spacing rules.
+- Strict Pandoc mode disables custom label lists completely, disables extended fenced div syntax, and applies stricter Pandoc list spacing rules.
 
 The plugin settings let you enable or disable individual syntax families, list marker cycling, auto-renumbering, distinct unordered-list marker rendering, and the sidebar list panel.
 

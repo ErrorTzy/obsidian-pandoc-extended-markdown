@@ -13,7 +13,7 @@ import {
 } from './types';
 import { CodeRegion } from '../../shared/types/codeTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
-import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
+import { isCustomLabelListsEnabled, isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 // Patterns
 import { ListPatterns } from '../../shared/patterns';
@@ -201,7 +201,7 @@ export class ProcessingPipeline {
         placeholderContext: PlaceholderContext,
         codeRegions?: CodeRegion[]
     ) {
-        return isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists')
+        return isCustomLabelListsEnabled(settings)
             ? scanCustomLabels(doc, settings, placeholderContext, codeRegions)
             : {
                 customLabels: new Map<string, string>(),

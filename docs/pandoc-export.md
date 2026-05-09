@@ -45,9 +45,9 @@ pandoc input.md \
 
 ## Strict Pandoc Mode
 
-Strict Pandoc mode in Obsidian is useful when you want source that stays closer to native Pandoc Markdown. It disables plugin-specific fenced-div shorthand and fenced-div reference rendering in Obsidian.
+Strict Pandoc mode in Obsidian is useful when you want source that stays closer to native Pandoc Markdown. It disables custom label lists completely and disables extended fenced div syntax, including plugin-specific fenced-div shorthand and fenced-div reference rendering in Obsidian.
 
-Custom label lists are still plugin-specific even when strict Pandoc mode is enabled, so export documents containing `{::LABEL}` with `CustomLabelList.lua`.
+When strict mode is off, custom label lists are plugin-specific, so export documents containing `{::LABEL}` with `CustomLabelList.lua`.
 
 ## Literal Ampersands In Fenced Div Titles
 

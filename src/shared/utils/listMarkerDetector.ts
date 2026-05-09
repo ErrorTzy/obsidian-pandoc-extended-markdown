@@ -1,5 +1,9 @@
 import { ListMarkerInfo } from '../types/listTypes';
-import { PandocExtendedMarkdownSettings, isSyntaxFeatureEnabled } from '../types/settingsTypes';
+import {
+    PandocExtendedMarkdownSettings,
+    isCustomLabelListsEnabled,
+    isSyntaxFeatureEnabled
+} from '../types/settingsTypes';
 
 import { ListPatterns } from '../patterns';
 import { NUMERIC_CONSTANTS, LIST_MARKERS, LIST_TYPES } from '../../core/constants';
@@ -64,7 +68,7 @@ function parseMarkerParts(line: string, settings?: Partial<PandocExtendedMarkdow
     }
     
     // Check for custom label lists
-    const customLabelMatch = isSyntaxFeatureEnabled(settings || {}, 'enableCustomLabelLists')
+    const customLabelMatch = isCustomLabelListsEnabled(settings || {})
         ? ListPatterns.isCustomLabelList(line)
         : null;
     if (customLabelMatch) {

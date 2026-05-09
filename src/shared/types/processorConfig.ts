@@ -1,5 +1,6 @@
 import {
     PandocExtendedMarkdownSettings,
+    isCustomLabelListsEnabled,
     isSyntaxFeatureEnabled
 } from './settingsTypes';
 
@@ -49,7 +50,7 @@ export function createProcessorConfig(
             || isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
         enableSuperscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript'),
         enableSubscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
-        enableCustomLabelLists: isSyntaxFeatureEnabled(pluginSettings, 'enableCustomLabelLists'),
+        enableCustomLabelLists: isCustomLabelListsEnabled(pluginSettings),
         enableUnorderedListMarkerStyles: isSyntaxFeatureEnabled(pluginSettings, 'enableUnorderedListMarkerStyles')
     };
 }

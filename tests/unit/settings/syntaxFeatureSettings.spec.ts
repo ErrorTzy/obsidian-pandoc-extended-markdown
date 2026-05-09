@@ -1,10 +1,15 @@
 import { createProcessorConfig } from '../../../src/shared/types/processorConfig';
-import {
-    normalizeSettings,
-    isSyntaxFeatureEnabled
-} from '../../../src/shared/types/settingsTypes';
+import { normalizeSettings } from '../../../src/shared/types/settingsTypes';
 
 describe('Syntax feature settings', () => {
+    it('enables custom labels and list renumbering by default', () => {
+        const settings = normalizeSettings({});
+
+        expect(settings.strictPandocMode).toBe(false);
+        expect(settings.enableCustomLabelLists).toBe(true);
+        expect(settings.autoRenumberLists).toBe(true);
+    });
+
     it('keeps custom labels disabled when only the granular toggle is false', () => {
         const settings = normalizeSettings({
             enableCustomLabelLists: false
@@ -21,6 +26,18 @@ describe('Syntax feature settings', () => {
 
         expect(settings.enableCustomLabelLists).toBe(false);
         expect(settings).not.toHaveProperty('unusedSavedFlag');
+    });
+
+    it('disables custom labels in processor config when strict mode is enabled', () => {
+        const config = createProcessorConfig(
+            { strictLineBreaks: false },
+            {
+                strictPandocMode: true,
+                enableCustomLabelLists: true
+            }
+        );
+
+        expect(config.enableCustomLabelLists).toBe(false);
     });
 
     it('preserves split superscript and subscript flags in processor config', () => {

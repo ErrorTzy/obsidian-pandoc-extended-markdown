@@ -8,7 +8,7 @@ import {
     PandocExtendedMarkdownSettings,
     PandocExtendedMarkdownSettingTab,
     normalizeSettings,
-    isSyntaxFeatureEnabled
+    isCustomLabelListsEnabled
 } from './settings';
 import { createProcessorConfig } from '../shared/types/processorConfig';
 
@@ -148,7 +148,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
                 const content = editor.getValue();
                 const issues = checkPandocFormatting(
                     content,
-                    isSyntaxFeatureEnabled(this.settings, 'enableCustomLabelLists')
+                    isCustomLabelListsEnabled(this.settings)
                 );
                 
                 if (issues.length === 0) {
@@ -170,7 +170,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
                 const content = editor.getValue();
                 const formatted = formatToPandocStandard(
                     content,
-                    isSyntaxFeatureEnabled(this.settings, 'enableCustomLabelLists')
+                    isCustomLabelListsEnabled(this.settings)
                 );
                 
                 if (content !== formatted) {

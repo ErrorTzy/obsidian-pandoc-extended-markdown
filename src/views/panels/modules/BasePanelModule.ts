@@ -7,7 +7,10 @@ import { FencedDivReference } from '../../../shared/types/fencedDivTypes';
 import { extractExampleLists } from '../../../shared/extractors/exampleListExtractor';
 import { extractCustomLabels } from '../../../shared/extractors/customLabelExtractor';
 import { extractFencedDivs } from '../../../shared/extractors/fencedDivExtractor';
-import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import {
+    isCustomLabelListsEnabled,
+    isSyntaxFeatureEnabled
+} from '../../../shared/types/settingsTypes';
 import { FencedDivTypeCounters, createFencedDivReference } from '../../../shared/utils/fencedDivReferenceMetadata';
 
 /**
@@ -133,7 +136,7 @@ export abstract class BasePanelModule implements PanelModule {
         const customLabelMap = new Map<string, string>();
         const rawToProcessed = new Map<string, string>();
 
-        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists')) {
+        if (isCustomLabelListsEnabled(this.plugin.settings)) {
             const customLabels = extractCustomLabels(content, true);
             customLabels.forEach(label => {
                 customLabelMap.set(label.rawLabel, label.content);

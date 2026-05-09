@@ -2,7 +2,7 @@
 
 Pandoc Extended Markdown renders supported Pandoc-style syntax in Live Preview and Reading mode. Source mode stays unchanged.
 
-Most syntax families are enabled by default. Custom label lists are a core plugin extension, but they are disabled by default because they are plugin-specific and need the bundled Lua filter for matching Pandoc export.
+Supported syntax families are enabled by default. Custom label lists are a core plugin extension and need the bundled Lua filter for matching Pandoc export.
 
 ## Superscript And Subscript
 
@@ -49,7 +49,7 @@ List editing helpers:
 - Ordered marker cycling can choose marker styles by nesting depth.
 - Auto-renumbering can update affected list items when inserting in the middle of a list.
 
-Strict Pandoc mode requires blank lines around list blocks and at least two spaces after uppercase period markers such as `A.  Item`.
+Strict Pandoc mode requires blank lines around list blocks, requires at least two spaces after uppercase period markers such as `A.  Item`, disables custom label lists completely, and disables extended fenced div syntax.
 
 ## Unordered Lists
 
@@ -113,7 +113,7 @@ See [Fenced divs](fenced-divs.md) for the full guide.
 
 ## Custom Label Lists
 
-Custom label lists are a plugin-specific core extension. Enable `Custom label lists` in settings before using them.
+Custom label lists are a plugin-specific core extension. They are enabled by default and disabled completely when Strict Pandoc mode is on.
 
 ```markdown
 {::P} All humans are mortal.
@@ -171,7 +171,7 @@ The plugin adds these commands:
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| Strict Pandoc mode | Off | Enforces stricter Pandoc formatting and disables plugin-specific fenced-div shorthand/rendering. |
+| Strict Pandoc mode | Off | Enforces stricter Pandoc formatting, disables custom label lists completely, and disables extended fenced div syntax. |
 | Hash auto-number lists | On | Enables `#.` rendering and continuation. |
 | Fancy lists | On | Enables alphabetic and Roman numeral lists. |
 | Example lists | On | Enables `(@label)` examples and references. |
@@ -180,8 +180,8 @@ The plugin adds these commands:
 | Distinct unordered list markers | On | Gives `+` and `*` separate rendered marker styles. |
 | Superscript | On | Enables `^text^`. |
 | Subscript | On | Enables `~text~`. |
-| Custom label lists | Off | Enables plugin-specific `{::LABEL}` lists and references. |
-| Auto-renumber lists | Off | Renumbers affected ordered/fancy list items after insertion. |
+| Custom label lists | On | Enables plugin-specific `{::LABEL}` lists and references. |
+| Auto-renumber lists | On | Renumbers affected ordered/fancy list items after insertion. |
 | Cycle unordered list markers | On | Chooses `-`, `+`, or `*` by depth on indent/outdent. |
 | Cycle ordered list markers | On | Chooses ordered marker styles by depth on indent/outdent. |
 | List panel | On | Enables the sidebar panel and ribbon icon. |

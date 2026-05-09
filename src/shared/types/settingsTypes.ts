@@ -77,7 +77,7 @@ export interface PandocExtendedMarkdownSettings {
 
 export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     strictPandocMode: false,
-    autoRenumberLists: false,
+    autoRenumberLists: true,
     enableHashAutoNumber: true,
     enableFancyLists: true,
     enableExampleLists: true,
@@ -85,7 +85,7 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableFencedDivs: true,
     enableSuperscript: true,
     enableSubscript: true,
-    enableCustomLabelLists: false,
+    enableCustomLabelLists: true,
     enableUnorderedListMarkerCycling: true,
     enableUnorderedListMarkerStyles: true,
     unorderedListMarkerOrder: [...DEFAULT_UNORDERED_LIST_MARKER_ORDER],
@@ -113,6 +113,12 @@ export function isSyntaxFeatureEnabled(
     key: SyntaxFeatureSettingKey
 ): boolean {
     return settings[key] ?? DEFAULT_SETTINGS[key] ?? false;
+}
+
+export function isCustomLabelListsEnabled(
+    settings: Partial<PandocExtendedMarkdownSettings>
+): boolean {
+    return !settings.strictPandocMode && isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists');
 }
 
 export function normalizeSettings(

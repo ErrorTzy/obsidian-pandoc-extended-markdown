@@ -1,6 +1,10 @@
 import { EditorView } from '@codemirror/view';
 import { ListPatterns } from '../../../shared/patterns';
-import { PandocExtendedMarkdownSettings, isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import {
+    PandocExtendedMarkdownSettings,
+    isCustomLabelListsEnabled,
+    isSyntaxFeatureEnabled
+} from '../../../shared/types/settingsTypes';
 import { CurrentLineInfo, ListMarkerDetectionResult } from '../types';
 
 /**
@@ -36,7 +40,7 @@ export function detectListMarker(
     }
 
     // Check for empty custom label list special case
-    const isEmptyCustomLabelList = isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists')
+    const isEmptyCustomLabelList = isCustomLabelListsEnabled(settings)
         ? lineText.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)
         : null;
     if (isEmptyCustomLabelList) {
@@ -87,7 +91,7 @@ export function isExtendedList(lineText: string, settings: PandocExtendedMarkdow
     return !!(
         (isSyntaxFeatureEnabled(settings, 'enableFancyLists') && ListPatterns.isFancyList(lineText)) ||
         (isSyntaxFeatureEnabled(settings, 'enableExampleLists') && ListPatterns.isExampleList(lineText)) ||
-        (isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists') && ListPatterns.isCustomLabelList(lineText)) ||
+        (isCustomLabelListsEnabled(settings) && ListPatterns.isCustomLabelList(lineText)) ||
         (isSyntaxFeatureEnabled(settings, 'enableHashAutoNumber') && ListPatterns.isHashList(lineText)) ||
         (isSyntaxFeatureEnabled(settings, 'enableDefinitionLists') && ListPatterns.isDefinitionMarker(lineText))
     );

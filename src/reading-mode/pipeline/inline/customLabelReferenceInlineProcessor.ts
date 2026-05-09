@@ -8,7 +8,7 @@ export class CustomLabelReferenceInlineProcessor implements InlineTextProcessor 
     priority = 340;
 
     isEnabled(context: ReadingModeContext): boolean {
-        return Boolean(context.config.enableCustomLabelLists);
+        return !context.config.strictPandocMode && Boolean(context.config.enableCustomLabelLists);
     }
 
     findMatches(text: string, node: Text, context: ReadingModeContext): InlineTextMatch[] {

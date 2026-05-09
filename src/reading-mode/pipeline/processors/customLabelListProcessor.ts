@@ -8,7 +8,7 @@ export class CustomLabelListProcessor implements BlockDomProcessor {
     priority = 130;
 
     isEnabled(context: ReadingModeContext): boolean {
-        return Boolean(context.config.enableCustomLabelLists);
+        return !context.config.strictPandocMode && Boolean(context.config.enableCustomLabelLists);
     }
 
     process(context: ReadingModeContext): void {

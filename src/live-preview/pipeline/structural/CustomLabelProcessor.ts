@@ -19,7 +19,7 @@ import { Line } from '@codemirror/state';
 
 // Types
 import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
-import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import { isCustomLabelListsEnabled } from '../../../shared/types/settingsTypes';
 
 // Patterns
 import { ListPatterns } from '../../../shared/patterns';
@@ -39,7 +39,7 @@ export class CustomLabelProcessor implements StructuralProcessor {
     priority = 15; // Process after basic lists
 
     canProcess(line: Line, context: ProcessingContext): boolean {
-        if (!isSyntaxFeatureEnabled(context.settings, 'enableCustomLabelLists')) {
+        if (!isCustomLabelListsEnabled(context.settings)) {
             return false;
         }
 
