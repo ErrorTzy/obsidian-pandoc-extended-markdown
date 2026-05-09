@@ -302,6 +302,26 @@ describe('FencedDivExtendedSyntax.lua', () => {
         expect(inlineText(lastPara.c as PandocInline[])).toBe('See AT&T-1.1 and 1-&.');
     });
 
+    it('matches Pandoc block boundaries for readable shorthand inside paragraph text', () => {
+        const blocks = renderBlocks([
+            'Paragraph before.',
+            '::: Theorem #invalid',
+            'Still paragraph text.',
+            ':::',
+            '',
+            '::: Theorem #valid',
+            'Actual div.',
+            ':::',
+            '',
+            'See @invalid and @valid.'
+        ].join('\n'));
+        const lastPara = blocks[blocks.length - 1];
+
+        expect(blocks.map(block => block.t)).toEqual(['Para', 'Div', 'Para']);
+        expect(JSON.stringify(lastPara)).toContain('invalid');
+        expect(inlineText(lastPara.c as PandocInline[])).toBe('See  and Theorem.');
+    });
+
     it('uses explicit titles from readable braced title shorthand', () => {
         const blocks = renderBlocks([
             '::: {.logic #logic:a} explicit title after attributes &',

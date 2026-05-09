@@ -58,6 +58,14 @@ describe('fenced div parser', () => {
             expect(opening?.keyValues.get('escaped')).toBe('hello "world"');
         });
 
+        it('matches Pandoc escaping for literal ampersands in quoted attributes', () => {
+            const singleBackslash = parseFencedDivOpening('::: {.case title="AT\\&T-&.&"}');
+            const doubleBackslash = parseFencedDivOpening('::: {.case title="AT\\\\&T-&.&"}');
+
+            expect(singleBackslash?.keyValues.get('title')).toBe('AT&T-&.&');
+            expect(doubleBackslash?.keyValues.get('title')).toBe('AT\\&T-&.&');
+        });
+
         it('maps Pandoc dash shorthand to the unnumbered class', () => {
             expect(parseFencedDivOpening('::: {-}')?.classes).toEqual(['unnumbered']);
             expect(parseFencedDivOpening('::: {- .note}')?.classes).toEqual(['unnumbered', 'note']);

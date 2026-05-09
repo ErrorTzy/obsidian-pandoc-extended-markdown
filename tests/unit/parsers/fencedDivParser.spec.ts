@@ -58,6 +58,14 @@ describe('fenced div parser', () => {
             expect(parsed?.keyValues.get('escaped')).toBe('hello "world"');
             expect(parsed?.keyValues.get('csv')).toBe('x,y');
         });
+
+        it('requires a doubled Markdown backslash for escaped ampersands in quoted attributes', () => {
+            const singleBackslash = parseFencedDivOpening('::: {.case title="AT\\&T-&.&"}');
+            const doubleBackslash = parseFencedDivOpening('::: {.case title="AT\\\\&T-&.&"}');
+
+            expect(singleBackslash?.keyValues.get('title')).toBe('AT&T-&.&');
+            expect(doubleBackslash?.keyValues.get('title')).toBe('AT\\&T-&.&');
+        });
     });
 
     describe('readable shorthand openings', () => {

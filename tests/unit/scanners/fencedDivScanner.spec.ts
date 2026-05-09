@@ -163,6 +163,21 @@ describe('scanFencedDivs', () => {
         expect(labels.get('literal')?.referenceText).toBe('Case &');
     });
 
+    it('matches Pandoc export escaping for literal ampersands in native titles', () => {
+        const labels = scan([
+            '::: {.case #single title="AT\\&T-&.&"}',
+            'Single backslash is consumed by Markdown.',
+            ':::',
+            '',
+            '::: {.case #double title="AT\\\\&T-&.&"}',
+            'Doubled backslash preserves the numbering escape.',
+            ':::'
+        ].join('\n'));
+
+        expect(labels.get('single')?.referenceText).toBe('AT1T-&.&');
+        expect(labels.get('double')?.referenceText).toBe('AT&T-1.1');
+    });
+
     it('does not collect labels from readable shorthand in strict mode', () => {
         const labels = scanFencedDivs(
             Text.of([

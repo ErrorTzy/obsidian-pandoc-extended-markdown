@@ -11,6 +11,11 @@ export class FencedDivBlockProcessor implements BlockDomProcessor {
     }
 
     process(context: ReadingModeContext): void {
-        scheduleFencedDivProcessing(context.element, context.sourcePath, context.config);
+        scheduleFencedDivProcessing(
+            context.element,
+            context.sourcePath,
+            context.config,
+            context.sectionInfo?.text
+        );
     }
 }

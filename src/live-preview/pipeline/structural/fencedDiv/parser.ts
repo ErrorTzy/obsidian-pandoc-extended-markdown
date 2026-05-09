@@ -477,25 +477,20 @@ function stripQuotes(value: string): string {
     }
 
     let unquoted = '';
-    let escaped = false;
-    for (const char of value.slice(1, -1)) {
-        if (escaped) {
-            unquoted += char === '&'
-                ? `\\${char}`
-                : char;
-            escaped = false;
-            continue;
-        }
+    const quotedValue = value.slice(1, -1);
+    for (let index = 0; index < quotedValue.length; index++) {
+        const char = quotedValue[index];
 
-        if (char === '\\') {
-            escaped = true;
+        if (char === '\\' && index + 1 < quotedValue.length) {
+            unquoted += quotedValue[index + 1];
+            index++;
             continue;
         }
 
         unquoted += char;
     }
 
-    return escaped ? `${unquoted}\\` : unquoted;
+    return unquoted;
 }
 
 function findClosingBrace(value: string): number {

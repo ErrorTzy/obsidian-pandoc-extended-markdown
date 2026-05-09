@@ -286,6 +286,48 @@ describe('fenced div reading mode rendering', () => {
         expect(element.textContent).toContain('::: Theorem #thm data=1');
     });
 
+    it('does not render fenced div openers that Pandoc keeps inside a paragraph', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>Paragraph before.</p>',
+            '<p>::: {.note #invalid}</p>',
+            '<p>Still paragraph text.</p>',
+            '<p>:::</p>',
+            '<p>::: {.note #valid}</p>',
+            '<p>Actual div.</p>',
+            '<p>:::</p>',
+            '<p>See @invalid and @valid.</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext([
+                'Paragraph before.',
+                '::: {.note #invalid}',
+                'Still paragraph text.',
+                ':::',
+                '',
+                '::: {.note #valid}',
+                'Actual div.',
+                ':::',
+                '',
+                'See @invalid and @valid.'
+            ].join('\n')),
+            createConfig()
+        );
+
+        const blocks = Array.from(element.querySelectorAll('.pem-fenced-div'));
+        const references = Array.from(
+            element.querySelectorAll(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)
+        ).map(reference => reference.textContent);
+
+        expect(blocks).toHaveLength(1);
+        expect((blocks[0] as HTMLElement).dataset.pandocDivId).toBe('valid');
+        expect(references).toEqual(['Note']);
+        expect(element.textContent).toContain('::: {.note #invalid}');
+        expect(element.textContent).toContain('@invalid');
+    });
+
     it('leaves fenced div syntax untouched when the feature is disabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [

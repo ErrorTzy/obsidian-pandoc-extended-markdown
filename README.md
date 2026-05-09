@@ -74,9 +74,46 @@ Term 3
 
 ### Fenced Divs
 
-*Warning: Most of the features described here are plugin-specific. To use pandoc for similar output, apply lua filter in lua_filter/FencedDivExtendedSyntax.lua for pandoc export. If you only want native pandoc fenced_divs, turn on strict pandoc mode*
+Fenced div support has two layers:
+- Native Pandoc fenced div syntax.
+- Plugin rendering and readable shorthand syntax, enabled when strict Pandoc mode is off.
 
-Live Preview and Reading mode render Pandoc fenced div blocks and generic `@id` cross-references:
+Most rendering and shorthand features below are plugin-specific. For matching Pandoc export, use `lua_filter/FencedDivExtendedSyntax.lua`. If you only want native Pandoc fenced div behavior in Obsidian, enable strict Pandoc mode.
+
+#### Native Pandoc fenced divs
+
+Pandoc accepts braced attributes:
+
+```markdown
+::: {.classname #id title="titlename"}
+Content
+:::
+```
+
+Pandoc creates a `Div` with class `classname`, identifier `id`, and attribute `title="titlename"`. Native Pandoc does not render the `title` attribute as a visible title, and it does not treat `@id` as a div cross-reference.
+
+Pandoc also accepts one unbraced class token:
+
+```markdown
+::: classname
+Content
+:::
+```
+
+This is equivalent to:
+
+```markdown
+::: {.classname}
+Content
+:::
+```
+
+Native Pandoc does not support multi-token shortcuts such as `::: classname1 classname2`, `::: classname #id`, or `::: classname {#id}`.
+
+#### Plugin rendering
+
+When fenced divs are enabled and strict Pandoc mode is off, Live Preview and Reading mode render visible block titles and document-local `@id` references:
+
 ```markdown
 ::: {.theorem #thm title="Theorem &"}
 Every compact metric space is complete.
@@ -85,7 +122,17 @@ Every compact metric space is complete.
 See @thm.
 ```
 
-Labeled fenced divs render a theorem-style title line, and known `@id` citations render the same text. Numbering is opt-in: put `&` in the title template where the generated counter should appear. Titles without `&` render exactly as written. If there is no title, the first class is used as an unnumbered label; id-only blocks reference as `Div` without inventing a number.
+A fenced div renders a theorem-style title line when it has a `title` attribute or at least one non-control class. Known `@id` citations render the same title text. Unknown citations are left unchanged for other citation processors.
+
+Title rules:
+- Explicit `title="..."` wins.
+- Without `title`, the first non-control class is humanized, so `.logic-block` renders as `Logic Block`.
+- Control classes such as `.no-num`, `.unnumbered`, and placeholder-only classes such as `&` or `&.&` do not become titles.
+- An id-only div such as `::: {#misc}` has no visible block title; `@misc` renders as `Div`.
+
+#### Numbering
+
+Numbering is opt-in. Put `&` in the title template where the generated counter should appear. Titles without `&` are not numbered.
 
 ```markdown
 ::: {.proposition #prop:a title="Proposition &"}
@@ -99,9 +146,9 @@ A premise.
 See @prop:a and @prem:a.
 ```
 
-The block titles and references render as `Proposition 1` and `Premise 1`; unknown citations remain unchanged.
+The block titles and references render as `Proposition 1` and `Premise 1`.
 
-You can place the counter at the front or use multiple placeholders for manual depth:
+Only the first unescaped placeholder group is replaced. A group is `&`, `&.&`, `&.&.&`, and so on. The number of `&` tokens controls counter depth. Numbering is grouped by title stem, not by physical nesting.
 
 ```markdown
 ::: {.case #c1 title="Case &"}
@@ -117,11 +164,19 @@ Front-numbered note.
 :::
 ```
 
-These render as `Case 1`, `Case 1.1`, and `1 Note`. Deeper counters reset when a shallower placeholder pattern advances in the same title family.
+These render as `Case 1`, `Case 1.1`, and `1 Note`. Deeper counters use the current shallower counter in the same title family.
 
-Escape literal ampersands inside numbered titles with `\&`, as in `title="AT\&T-&.&"` for `AT&T-1.1`. Pandoc export of native braced attributes may require the backslash itself to be escaped in Markdown (`title="AT\\&T-&.&"`).
+Escape literal ampersands inside numbered titles with `\&` at the title-template layer. In Markdown source for native braced attributes, Pandoc consumes a single backslash before the Lua filter sees it, so write `\\&` when you need the escaped ampersand to survive:
 
-Use `.no-num` when a title contains a literal ampersand or when placeholder text should be shown literally:
+```markdown
+::: {.case #escaped title="AT\\&T-&.&"}
+Content
+:::
+```
+
+This renders/references as `AT&T-1.1`. A single source backslash, `title="AT\&T-&.&"`, is parsed by Pandoc as `AT&T-&.&`; the first `&` in `AT&T` becomes the numbering position and renders like `AT1T-&.&`.
+
+Use `.no-num` or `.unnumbered` when all ampersands/placeholders should stay literal:
 
 ```markdown
 ::: {.warning #warn .no-num title="AT&T Warning"}
@@ -129,17 +184,25 @@ Literal ampersand, no numbering.
 :::
 ```
 
-You can also escape a `&` in the title which keeping other `&`:
+#### Readable shorthand
 
-```
-::: {.warning #warn title="AT\&T-&.&"}
-Literal ampersand, no numbering.
+Non-strict mode accepts a readable token shorthand:
+
+```markdown
+::: classname1 classname2 #id title="xxx"
+Content
 :::
 ```
 
-#### Readable shorthand
+This is interpreted like:
 
-In readable shorthand, bare class tokens can synthesize the same title template. Prefer separated placeholder tokens so CSS can still target the semantic class:
+```markdown
+::: {.classname1 .classname2 #id title="xxx"}
+Content
+:::
+```
+
+Supported tokens are `#id`, bare classes, and `key=value` pairs, including quoted values like `title="hello world"`. If no explicit title is present, the first relevant class token supplies the title. When numbering placeholders are split into separate tokens, the title template is synthesized from the semantic class plus the placeholder:
 
 ```markdown
 ::: Case & #c1
@@ -155,19 +218,58 @@ Front-numbered note.
 :::
 ```
 
-These are treated like title templates `Case &`, `Case &.&`, and `& Note`, while preserving classes such as `Case` and `Note`. `::: Case_&.&` also renders as `Case 1.1`, but its class is `Case_&.&`, so `Case &.&` is recommended.
+These are treated like title templates `Case &`, `Case &.&`, and `& Note`, while preserving classes such as `Case` and `Note`. Prefer separated placeholder tokens so CSS can still target the semantic class. `::: Case_&.&` also renders as `Case 1.1`, but its class is literally `Case_&.&`.
 
-The shorthand above is inconvenient when there are space in the title. Therefore, an alternative shorthand is
+For titles with spaces, put title text outside the braced attributes. The `{...}` part may come before or after the title text:
 
 ```markdown
 ::: title with space {.case #a1}
-title with space
+Content
 :::
 
 ::: {.case #b1} title with space until linebreak
-title with space
+Content
 :::
 ```
+
+These are interpreted as `title="title with space"` and `title="title with space until linebreak"`.
+
+One intentionally plugin-specific special case is:
+
+```markdown
+::: title="titlename"
+Content
+:::
+```
+
+Native Pandoc treats this as one literal class token, not as a title attribute. In non-strict plugin mode and with the Lua filter, it is treated as readable title shorthand and renders as `titlename`.
+
+#### Boundaries, nesting, and strict mode
+
+Fenced div openers follow Pandoc-style block boundaries. An opener is accepted at the start of a document, after a blank line, after a heading/thematic break/supported single-line HTML block, after another fenced-div boundary, or inside an already-open fenced div when the previous line allows a block start. It is not accepted immediately after paragraph-like text:
+
+```markdown
+Paragraph before.
+::: {.note #invalid}
+This is paragraph text, not a fenced div.
+:::
+```
+
+Add a blank line to start a fenced div:
+
+```markdown
+Paragraph before.
+
+::: {.note #valid}
+This is a fenced div.
+:::
+```
+
+Fenced divs can be nested, and adjacent fenced divs do not require a blank line between the closing fence and the next opener.
+
+Strict Pandoc mode disables readable shorthand, visible plugin-generated titles, and fenced-div `@id` reference rendering. Native fenced div structure is still recognized internally where needed, but the rendered view should stay close to native Pandoc output.
+
+For Pandoc export with plugin-like behavior, apply `lua_filter/FencedDivExtendedSyntax.lua`. The Lua filter normalizes readable shorthand, inserts generated titles, replaces known simple `@id` citations, preserves unknown citations, and follows the same `\\&` source-escaping rule for native braced attributes.
 
 ### List Panel View
 

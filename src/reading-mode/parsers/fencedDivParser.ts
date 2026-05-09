@@ -8,6 +8,7 @@ import { processInlineTextNodes } from '../pipeline/inline/textReplacementEngine
 import { FencedDivReferenceInlineProcessor } from '../pipeline/inline/fencedDivReferenceInlineProcessor';
 import { ReadingModeContext } from '../pipeline/types';
 import {
+    allowsFencedDivOpeningAfterLine,
     getFencedDivCssClass,
     isFencedDivClosing,
     parseFencedDivOpening
@@ -43,10 +44,26 @@ interface CandidateLine {
     nodes: Node[];
 }
 
+interface MultilineCandidateResult {
+    processed: boolean;
+    canOpenAtNextLine: boolean;
+}
+
+interface SourceOpeningState {
+    openings: SourceOpeningEligibility[];
+    index: number;
+}
+
+interface SourceOpeningEligibility {
+    text: string;
+    allowed: boolean;
+}
+
 export function scheduleFencedDivProcessing(
     element: HTMLElement,
     docPath: string,
-    config: ProcessorConfig
+    config: ProcessorConfig,
+    sourceText?: string
 ): void {
     if (config.enableFencedDivs === false) {
         return;
@@ -54,7 +71,7 @@ export function scheduleFencedDivProcessing(
 
     const section = element.closest('.markdown-preview-section');
     if (!section) {
-        processFencedDivs(element, docPath, config, true);
+        processFencedDivs(element, docPath, config, true, sourceText);
         scheduleFencedDivLabelHydration(element, docPath, config);
         return;
     }
@@ -66,7 +83,7 @@ export function scheduleFencedDivProcessing(
 
     const timeout = window.setTimeout(() => {
         pendingSectionProcessing.delete(section);
-        processFencedDivs(section, docPath, config);
+        processFencedDivs(section, docPath, config, false, sourceText);
         scheduleFencedDivLabelHydration(section, docPath, config);
     }, 0);
 
@@ -93,7 +110,8 @@ export function processFencedDivs(
     element: HTMLElement,
     docPath: string,
     config: ProcessorConfig,
-    preserveStack: boolean = false
+    preserveStack: boolean = false,
+    sourceText?: string
 ): void {
     if (config.enableFencedDivs === false) {
         return;
@@ -109,6 +127,10 @@ export function processFencedDivs(
     }
     const typeCounters = getDocumentTypeCounters(docPath);
     const candidates = Array.from(element.querySelectorAll('p, li'));
+    const sourceOpeningState = sourceText
+        ? createSourceOpeningState(sourceText, config)
+        : undefined;
+    let canOpenAtCurrentLine = true;
 
     for (const candidate of candidates) {
         if (shouldSkipElement(candidate)) {
@@ -116,11 +138,27 @@ export function processFencedDivs(
         }
 
         const lineText = getTextWithLineBreaks(candidate);
-        if (processMultilineCandidate(candidate, lineText, stack, labels, config, typeCounters)) {
+        const multilineResult = processMultilineCandidate(
+            candidate,
+            lineText,
+            stack,
+            labels,
+            config,
+            typeCounters,
+            canOpenAtCurrentLine,
+            sourceOpeningState
+        );
+        if (multilineResult.processed) {
+            canOpenAtCurrentLine = multilineResult.canOpenAtNextLine;
             continue;
         }
 
-        const opening = parseFencedDivOpening(lineText, config);
+        const opening = getAllowedFencedDivOpening(
+            lineText,
+            config,
+            canOpenAtCurrentLine,
+            sourceOpeningState
+        );
         if (opening) {
             const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
@@ -130,6 +168,7 @@ export function processFencedDivs(
                 contentLines: [],
                 reference: fencedDiv.reference
             });
+            canOpenAtCurrentLine = true;
             continue;
         }
 
@@ -139,6 +178,7 @@ export function processFencedDivs(
                 closed.reference.content = closed.contentLines.join('\n').trim();
             }
             candidate.remove();
+            canOpenAtCurrentLine = true;
             continue;
         }
 
@@ -149,6 +189,9 @@ export function processFencedDivs(
             }
             stack[stack.length - 1].contentElement.appendChild(candidate);
         }
+        canOpenAtCurrentLine = sourceOpeningState
+            ? allowsFencedDivOpeningAfterLine(lineText)
+            : true;
     }
 
     if (!config.strictPandocMode) {
@@ -206,20 +249,42 @@ function processMultilineCandidate(
     stack: ActiveFencedDiv[],
     labels: Map<string, FencedDivReference>,
     config: ProcessorConfig,
-    typeCounters: FencedDivTypeCounters
-): boolean {
+    typeCounters: FencedDivTypeCounters,
+    initialCanOpenAtCurrentLine: boolean,
+    sourceOpeningState?: SourceOpeningState
+): MultilineCandidateResult {
     if (!text.includes('\n')) {
-        return false;
+        return {
+            processed: false,
+            canOpenAtNextLine: initialCanOpenAtCurrentLine
+        };
     }
 
     const lines = splitCandidateIntoLines(candidate);
-    if (!lines.some(line => parseFencedDivOpening(line.text, config) || isFencedDivClosing(line.text))) {
-        return false;
+    if (!multilineCandidateHasProcessableFence(
+        lines,
+        config,
+        initialCanOpenAtCurrentLine,
+        stack.length,
+        sourceOpeningState
+    )) {
+        return {
+            processed: false,
+            canOpenAtNextLine: initialCanOpenAtCurrentLine
+        };
     }
 
     const fragments: Node[] = [];
+    let canOpenAtCurrentLine = initialCanOpenAtCurrentLine;
+    let processedFence = false;
+
     for (const line of lines) {
-        const opening = parseFencedDivOpening(line.text, config);
+        const opening = getAllowedFencedDivOpening(
+            line.text,
+            config,
+            canOpenAtCurrentLine,
+            sourceOpeningState
+        );
         if (opening) {
             const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
@@ -229,6 +294,8 @@ function processMultilineCandidate(
                 contentLines: [],
                 reference: fencedDiv.reference
             });
+            canOpenAtCurrentLine = true;
+            processedFence = true;
             continue;
         }
 
@@ -237,10 +304,22 @@ function processMultilineCandidate(
             if (closed) {
                 closed.reference.content = closed.contentLines.join('\n').trim();
             }
+            canOpenAtCurrentLine = true;
+            processedFence = true;
             continue;
         }
 
         appendContentLine(line, fragments, stack);
+        canOpenAtCurrentLine = sourceOpeningState
+            ? allowsFencedDivOpeningAfterLine(line.text)
+            : true;
+    }
+
+    if (!processedFence) {
+        return {
+            processed: false,
+            canOpenAtNextLine: canOpenAtCurrentLine
+        };
     }
 
     if (stack.length > 0) {
@@ -250,7 +329,137 @@ function processMultilineCandidate(
     }
 
     replaceCandidateWithFragments(candidate, fragments);
-    return true;
+    return {
+        processed: true,
+        canOpenAtNextLine: canOpenAtCurrentLine
+    };
+}
+
+function multilineCandidateHasProcessableFence(
+    lines: CandidateLine[],
+    config: ProcessorConfig,
+    initialCanOpenAtCurrentLine: boolean,
+    initialStackDepth: number,
+    sourceOpeningState?: SourceOpeningState
+): boolean {
+    let canOpenAtCurrentLine = initialCanOpenAtCurrentLine;
+    let stackDepth = initialStackDepth;
+
+    for (const line of lines) {
+        const opening = getAllowedFencedDivOpening(
+            line.text,
+            config,
+            canOpenAtCurrentLine,
+            sourceOpeningState,
+            false
+        );
+        if (opening) {
+            stackDepth++;
+            canOpenAtCurrentLine = true;
+            return true;
+        }
+
+        if (isFencedDivClosing(line.text) && stackDepth > 0) {
+            stackDepth--;
+            canOpenAtCurrentLine = true;
+            return true;
+        }
+
+        canOpenAtCurrentLine = sourceOpeningState
+            ? allowsFencedDivOpeningAfterLine(line.text)
+            : true;
+    }
+
+    return false;
+}
+
+function getAllowedFencedDivOpening(
+    lineText: string,
+    config: ProcessorConfig,
+    canOpenAtCurrentLine: boolean,
+    sourceOpeningState?: SourceOpeningState,
+    consumeSourceOpening: boolean = true
+): FencedDivAttributes | null {
+    const opening = (sourceOpeningState || canOpenAtCurrentLine)
+        ? parseFencedDivOpening(lineText, config)
+        : null;
+    if (!opening) {
+        return null;
+    }
+
+    if (!sourceOpeningState) {
+        return opening;
+    }
+
+    return isOpeningAllowedBySource(lineText, sourceOpeningState, consumeSourceOpening)
+        ? opening
+        : null;
+}
+
+function createSourceOpeningState(
+    sourceText: string,
+    config: ProcessorConfig
+): SourceOpeningState {
+    const openings: SourceOpeningEligibility[] = [];
+    const sourceLines = sourceText.split('\n');
+    let canOpenAtCurrentLine = true;
+    let stackDepth = 0;
+
+    for (const sourceLine of sourceLines) {
+        const syntacticOpening = parseFencedDivOpening(sourceLine, config);
+        const allowedOpening = canOpenAtCurrentLine
+            ? syntacticOpening
+            : null;
+
+        if (syntacticOpening) {
+            openings.push({
+                text: sourceLine.trim(),
+                allowed: Boolean(allowedOpening)
+            });
+        }
+
+        if (allowedOpening) {
+            stackDepth++;
+            canOpenAtCurrentLine = true;
+            continue;
+        }
+
+        if (isFencedDivClosing(sourceLine) && stackDepth > 0) {
+            stackDepth--;
+            canOpenAtCurrentLine = true;
+            continue;
+        }
+
+        canOpenAtCurrentLine = allowsFencedDivOpeningAfterLine(sourceLine);
+    }
+
+    return {
+        openings,
+        index: 0
+    };
+}
+
+function isOpeningAllowedBySource(
+    lineText: string,
+    sourceOpeningState: SourceOpeningState,
+    consume: boolean
+): boolean {
+    const normalizedLine = lineText.trim();
+    const startIndex = sourceOpeningState.index;
+
+    for (let index = startIndex; index < sourceOpeningState.openings.length; index++) {
+        const opening = sourceOpeningState.openings[index];
+        if (opening.text !== normalizedLine) {
+            continue;
+        }
+
+        if (consume) {
+            sourceOpeningState.index = index + 1;
+        }
+        return opening.allowed;
+    }
+
+    return false;
 }
 
 function prepareFencedDivOpening(

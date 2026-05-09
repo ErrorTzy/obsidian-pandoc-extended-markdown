@@ -22,6 +22,8 @@ local NUMBERING_ESCAPE_CLASSES = {
     ['no-num'] = true,
     ['unnumbered'] = true,
 }
+local split_line_groups = setmetatable({}, { __mode = 'k' })
+local split_line_group_counter = 0
 
 local HTML_STYLE_BLOCK = [[
 <style>
@@ -462,6 +464,57 @@ local function is_readable_closing(text)
     return text:match('^:::+%s*$') ~= nil
 end
 
+local function is_atx_heading(text)
+    local hashes = text:match('^(#+)')
+    if not hashes or #hashes > 6 then
+        return false
+    end
+
+    local next_char = text:sub(#hashes + 1, #hashes + 1)
+    return next_char == '' or next_char:match('%s') ~= nil
+end
+
+local function is_thematic_break(text)
+    return text:match('^(%*%s*)%*%s*%*[%*%s]*$') ~= nil or
+        text:match('^(%-%s*)%-%s*%-[%-%s]*$') ~= nil or
+        text:match('^(_%s*)_%s*_[_%s]*$') ~= nil
+end
+
+local function is_single_line_html_block(text)
+    local tag = text:match('^<([A-Za-z][A-Za-z0-9%-]*)(%s[^>]*)?>.*</%1>$')
+    if not tag then
+        return false
+    end
+
+    local block_tags = {
+        address = true, article = true, aside = true, base = true,
+        basefont = true, blockquote = true, body = true, caption = true,
+        center = true, col = true, colgroup = true, dd = true,
+        details = true, dialog = true, dir = true, div = true,
+        dl = true, dt = true, fieldset = true, figcaption = true,
+        figure = true, footer = true, form = true, frame = true,
+        frameset = true, h1 = true, h2 = true, h3 = true,
+        h4 = true, h5 = true, h6 = true, head = true,
+        header = true, hr = true, html = true, iframe = true,
+        legend = true, li = true, link = true, main = true,
+        menu = true, menuitem = true, nav = true, noframes = true,
+        ol = true, optgroup = true, option = true, p = true,
+        param = true, search = true, section = true, summary = true,
+        table = true, tbody = true, td = true, tfoot = true,
+        th = true, thead = true, title = true, tr = true,
+        track = true, ul = true,
+    }
+    return block_tags[tag:lower()] == true
+end
+
+local function allows_readable_opening_after_line(text)
+    local trimmed = trim(text or '')
+    return trimmed == '' or
+        is_atx_heading(trimmed) or
+        is_thematic_break(trimmed) or
+        is_single_line_html_block(trimmed)
+end
+
 local function split_inline_lines(inlines)
     local lines = List{}
     local current = List{}
@@ -486,16 +539,19 @@ local function block_text(block)
     return utils.stringify(block.content)
 end
 
-local function block_contains_readable_fence_lines(block)
+local function block_contains_processable_readable_fence_lines(block)
     if block.t ~= 'Para' and block.t ~= 'Plain' then
         return false
     end
 
+    local can_open = true
     for _, line in ipairs(split_inline_lines(block.content)) do
         local text = utils.stringify(line)
-        if parse_readable_opening(text) or is_readable_closing(text) then
+        if can_open and parse_readable_opening(text) then
             return true
         end
+
+        can_open = allows_readable_opening_after_line(text)
     end
     return false
 end
@@ -504,9 +560,12 @@ local function expand_fence_paragraphs(blocks)
     local expanded = List{}
 
     for _, block in ipairs(blocks) do
-        if block_contains_readable_fence_lines(block) then
+        if block_contains_processable_readable_fence_lines(block) then
+            split_line_group_counter = split_line_group_counter + 1
             for _, line in ipairs(split_inline_lines(block.content)) do
-                expanded:insert(pandoc.Para(line))
+                local paragraph = pandoc.Para(line)
+                split_line_groups[paragraph] = split_line_group_counter
+                expanded:insert(paragraph)
             end
         else
             expanded:insert(block)
@@ -544,10 +603,20 @@ end
 local function parse_readable_sequence(blocks, start_index, stop_on_close)
     local result = List{}
     local index = start_index
+    local can_open = true
+    local active_split_group = nil
 
     while index <= #blocks do
         local block = blocks[index]
         local text = block_text(block)
+        local split_group = split_line_groups[block]
+
+        if split_group ~= active_split_group then
+            active_split_group = split_group
+            can_open = true
+        elseif not split_group then
+            can_open = true
+        end
 
         if text and is_readable_closing(text) then
             if stop_on_close then
@@ -556,8 +625,9 @@ local function parse_readable_sequence(blocks, start_index, stop_on_close)
 
             result:insert(block)
             index = index + 1
+            can_open = true
         else
-            local opening = text and parse_readable_opening(text) or nil
+            local opening = can_open and text and parse_readable_opening(text) or nil
             if opening then
                 local inner, next_index, closed = parse_readable_sequence(blocks, index + 1, true)
                 if closed then
@@ -566,6 +636,7 @@ local function parse_readable_sequence(blocks, start_index, stop_on_close)
                         pandoc.Attr(opening.id, opening.classes, opening.key_values)
                     ))
                     index = next_index
+                    can_open = true
                 else
                     io.stderr:write('[FencedDivExtendedSyntax] unmatched readable fenced div opener; leaving content unchanged\n')
                     result:insert(block)
@@ -577,6 +648,11 @@ local function parse_readable_sequence(blocks, start_index, stop_on_close)
             else
                 result:insert(normalize_child_blocks(block))
                 index = index + 1
+                if split_group and text then
+                    can_open = allows_readable_opening_after_line(text)
+                else
+                    can_open = true
+                end
             end
         end
     end
