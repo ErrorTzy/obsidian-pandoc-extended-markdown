@@ -27,6 +27,79 @@ describe('Definition list live preview', () => {
         });
     });
 
+    it('aligns definition items with ordinary unordered list items in live preview', async () => {
+        const filePath = 'definition-list-live-preview-alignment.md';
+        const content = `plain text
+
+- ordinary lists
+
+Definition term
+: definition list
+
+- ordinary lists
+
+plain text`;
+
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureLivePreviewMode();
+            await waitForDefinitionMarkerWidget();
+
+            await browser.waitUntil(async () => {
+                const state = await getDefinitionListAlignmentState();
+                return state.ready;
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected ordinary and definition list text to render in live preview'
+            });
+
+            const state = await getDefinitionListAlignmentState();
+
+            expect(state.ready).toBe(true);
+            expect(state.termToPlainDelta).toBeLessThanOrEqual(1);
+            expect(state.definitionToOrdinaryDelta).toBeLessThanOrEqual(1);
+        } finally {
+            await deleteFileIfExists(filePath);
+        }
+    });
+
+    it('aligns definition descriptions with ordinary unordered list items in reading mode', async () => {
+        const filePath = 'definition-list-reading-mode-alignment.md';
+        const content = `plain text
+
+- ordinary lists
+
+Definition term
+: definition list
+
+- ordinary lists
+
+plain text`;
+
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureReadingMode();
+
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeDefinitionListAlignmentState();
+                return state.ready;
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected ordinary and definition list text to render in reading mode'
+            });
+
+            const state = await getReadingModeDefinitionListAlignmentState();
+
+            expect(state.ready).toBe(true);
+            expect(state.termToPlainDelta).toBeLessThanOrEqual(1);
+            expect(state.definitionToOrdinaryDelta).toBeLessThanOrEqual(1);
+        } finally {
+            await deleteFileIfExists(filePath);
+        }
+    });
+
     it('shows source definition marker text when a selection range intersects it', async () => {
         const filePath = 'definition-list-live-preview-selection.md';
         const content = 'Description Term\n: details1';
@@ -124,6 +197,74 @@ describe('Definition list live preview', () => {
     }
 });
 
+async function getDefinitionListAlignmentState(): Promise<{
+    ready: boolean;
+    ordinaryContentLeft: number;
+    definitionContentLeft: number;
+    termContentLeft: number;
+    plainContentLeft: number;
+    definitionToOrdinaryDelta: number;
+    termToPlainDelta: number;
+    lineDiagnostics: string[];
+}> {
+    return browser.execute(() => {
+        const lines = Array.from(document.querySelectorAll('.cm-line')) as HTMLElement[];
+        const ordinaryLine = lines.find(line => line.textContent?.includes('ordinary lists')) ?? null;
+        const definitionLine = lines.find(line => line.textContent?.includes('definition list')) ?? null;
+        const termLine = lines.find(line => line.textContent?.includes('Definition term')) ?? null;
+        const plainLine = lines.find(line => line.textContent?.trim() === 'plain text') ?? null;
+
+        const getTextLeft = (line: HTMLElement | null, text: string): number => {
+            if (!line) {
+                return Number.NaN;
+            }
+
+            const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+            while (node) {
+                const textContent = node.textContent ?? '';
+                const index = textContent.indexOf(text);
+                if (index >= 0) {
+                    const range = document.createRange();
+                    range.setStart(node, index);
+                    range.setEnd(node, index + text.length);
+                    const rect = range.getBoundingClientRect();
+                    range.detach();
+                    return rect.left;
+                }
+                node = walker.nextNode();
+            }
+
+            return Number.NaN;
+        };
+
+        const ordinaryContentLeft = getTextLeft(ordinaryLine, 'ordinary lists');
+        const definitionContentLeft = getTextLeft(definitionLine, 'definition list');
+        const termContentLeft = getTextLeft(termLine, 'Definition term');
+        const plainContentLeft = getTextLeft(plainLine, 'plain text');
+        const positions = [
+            ordinaryContentLeft,
+            definitionContentLeft,
+            termContentLeft,
+            plainContentLeft
+        ];
+        const ready = positions.every(value => Number.isFinite(value) && value > 0);
+
+        return {
+            ready,
+            ordinaryContentLeft,
+            definitionContentLeft,
+            termContentLeft,
+            plainContentLeft,
+            definitionToOrdinaryDelta: ready ? Math.abs(definitionContentLeft - ordinaryContentLeft) : Number.POSITIVE_INFINITY,
+            termToPlainDelta: ready ? Math.abs(termContentLeft - plainContentLeft) : Number.POSITIVE_INFINITY,
+            lineDiagnostics: lines
+                .filter(line => /plain text|ordinary lists|Definition term|definition list/.test(line.textContent ?? ''))
+                .map(line => `${line.className}: ${line.textContent}`)
+        };
+    });
+}
+
 async function waitForDefinitionMarkerWidget(): Promise<void> {
     await browser.waitUntil(async () => {
         const state = await getDefinitionMarkerRenderState();
@@ -131,6 +272,79 @@ async function waitForDefinitionMarkerWidget(): Promise<void> {
     }, {
         timeout: 5000,
         timeoutMsg: 'Expected definition marker widget in live preview'
+    });
+}
+
+async function getReadingModeDefinitionListAlignmentState(): Promise<{
+    ready: boolean;
+    ordinaryContentLeft: number;
+    definitionContentLeft: number;
+    termContentLeft: number;
+    plainContentLeft: number;
+    definitionToOrdinaryDelta: number;
+    termToPlainDelta: number;
+    diagnostics: string[];
+}> {
+    return browser.execute(() => {
+        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
+        const ordinaryItems = Array.from(preview?.querySelectorAll('ul > li') ?? []) as HTMLElement[];
+        const ordinaryItem = ordinaryItems.find(item => item.textContent?.includes('ordinary lists')) ?? null;
+        const definitionDesc = preview?.querySelector('.pem-list-definition-desc') as HTMLElement | null;
+        const definitionTerm = preview?.querySelector('.pem-definition-term') as HTMLElement | null;
+        const plainParagraph = Array.from(preview?.querySelectorAll('p') ?? [])
+            .find(paragraph => paragraph.textContent?.trim() === 'plain text') as HTMLElement | undefined;
+
+        const getTextLeft = (element: HTMLElement | null | undefined, text: string): number => {
+            if (!element) {
+                return Number.NaN;
+            }
+
+            const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+            while (node) {
+                const textContent = node.textContent ?? '';
+                const index = textContent.indexOf(text);
+                if (index >= 0) {
+                    const range = document.createRange();
+                    range.setStart(node, index);
+                    range.setEnd(node, index + text.length);
+                    const rect = range.getBoundingClientRect();
+                    range.detach();
+                    return rect.left;
+                }
+                node = walker.nextNode();
+            }
+
+            return Number.NaN;
+        };
+
+        const ordinaryContentLeft = getTextLeft(ordinaryItem, 'ordinary lists');
+        const definitionContentLeft = getTextLeft(definitionDesc, 'definition list');
+        const termContentLeft = getTextLeft(definitionTerm, 'Definition term');
+        const plainContentLeft = getTextLeft(plainParagraph, 'plain text');
+        const positions = [
+            ordinaryContentLeft,
+            definitionContentLeft,
+            termContentLeft,
+            plainContentLeft
+        ];
+        const ready = positions.every(value => Number.isFinite(value) && value > 0);
+
+        return {
+            ready,
+            ordinaryContentLeft,
+            definitionContentLeft,
+            termContentLeft,
+            plainContentLeft,
+            definitionToOrdinaryDelta: ready ? Math.abs(definitionContentLeft - ordinaryContentLeft) : Number.POSITIVE_INFINITY,
+            termToPlainDelta: ready ? Math.abs(termContentLeft - plainContentLeft) : Number.POSITIVE_INFINITY,
+            diagnostics: [
+                `ordinary=${ordinaryItem?.outerHTML ?? ''}`,
+                `definition=${definitionDesc?.outerHTML ?? ''}`,
+                `term=${definitionTerm?.outerHTML ?? ''}`,
+                `plain=${plainParagraph?.outerHTML ?? ''}`
+            ]
+        };
     });
 }
 
@@ -331,6 +545,7 @@ async function getDefinitionListCssState(mode: DefinitionListRenderMode): Promis
         const previewList = document.querySelector('.markdown-preview-view .pem-definition-list') as HTMLElement | null;
         const previewTerm = previewList?.querySelector('.pem-definition-term') as HTMLElement | null;
         const previewDefinition = previewList?.querySelector('.pem-list-definition-desc') as HTMLElement | null;
+        const previewMarker = previewDefinition?.querySelector('.pem-definition-desc-item') as HTMLElement | null;
         const liveTerm = document.querySelector('.cm-line.cm-pem-definition-term') as HTMLElement | null;
         const liveDefinition = document.querySelector('.cm-line.cm-pem-definition-paragraph') as HTMLElement | null;
         const liveMarker = liveDefinition?.querySelector('.pem-list-marker') as HTMLElement | null;
@@ -339,7 +554,7 @@ async function getDefinitionListCssState(mode: DefinitionListRenderMode): Promis
         const term = renderMode === 'reading' ? previewTerm : liveTerm;
         const definition = renderMode === 'reading' ? previewDefinition : liveDefinition;
         const markerColor = renderMode === 'reading'
-            ? (previewDefinition ? window.getComputedStyle(previewDefinition, '::before').color : '')
+            ? (previewMarker ? window.getComputedStyle(previewMarker, '::marker').color : '')
             : (liveMarker ? window.getComputedStyle(liveMarker).color : '');
 
         return {

@@ -80,13 +80,12 @@ function appendDefinitionDescription(
 
     const content = normalizePlainText(lines);
     if (definition.wrapParagraph) {
-        const paragraph = document.createElement('p');
+        const paragraph = createDefinitionDescriptionItem(dd);
         appendInlineContent(paragraph, content, context, appendContent);
-        dd.appendChild(paragraph);
         return;
     }
 
-    appendInlineContent(dd, content, context, appendContent);
+    appendInlineContent(createDefinitionDescriptionItem(dd), content, context, appendContent);
 }
 
 function appendParagraphs(
@@ -241,6 +240,16 @@ function appendInlineContent(
         appendContent(child, segment.content, context);
         element.appendChild(child);
     });
+}
+
+function createDefinitionDescriptionItem(dd: HTMLElement): HTMLElement {
+    const list = document.createElement('ul');
+    const item = document.createElement('li');
+    list.className = CSS_CLASSES.DEFINITION_DESC_LIST;
+    item.className = CSS_CLASSES.DEFINITION_DESC_ITEM;
+    list.appendChild(item);
+    dd.appendChild(list);
+    return item;
 }
 
 function splitInlineMarkdown(content: string): Array<{ type: 'text' | 'strong' | 'em' | 'code', content: string }> {

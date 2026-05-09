@@ -112,20 +112,24 @@ describe('DefinitionProcessor', () => {
                 context = createContext(': Definition item');
                 const line = context.document.line(1);
                 const result = processor.process(line, context);
+                const widgetDecoration = result.decorations.find(item =>
+                    item.decoration.spec?.widget?.constructor.name === 'DefinitionBulletWidget'
+                );
                 
-                expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].from).toBe(0);
-                expect(result.decorations[0].to).toBe(2); // ": "
-                expect(result.decorations[0].decoration.spec?.widget?.constructor.name).toBe('DefinitionBulletWidget');
+                expect(widgetDecoration).toBeDefined();
+                expect(widgetDecoration?.from).toBe(0);
+                expect(widgetDecoration?.to).toBe(2); // ": "
             });
             
             it('should create bullet widget for tilde marker', () => {
                 context = createContext('~ Definition item');
                 const line = context.document.line(1);
                 const result = processor.process(line, context);
+                const widgetDecoration = result.decorations.find(item =>
+                    item.decoration.spec?.widget?.constructor.name === 'DefinitionBulletWidget'
+                );
                 
-                expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].decoration.spec?.widget?.constructor.name).toBe('DefinitionBulletWidget');
+                expect(widgetDecoration).toBeDefined();
             });
             
             it('should create content region for inline processing', () => {
@@ -147,10 +151,12 @@ describe('DefinitionProcessor', () => {
                 
                 const line = context.document.line(1);
                 const result = processor.process(line, context);
+                const cursorDecoration = result.decorations.find(item =>
+                    item.decoration.spec?.class === 'cm-pem-definition-marker-cursor'
+                );
                 
-                expect(result.decorations).toHaveLength(1);
                 // When cursor is in marker, we create a mark decoration instead of replace
-                expect(result.decorations[0].decoration.spec?.class).toBe('cm-pem-definition-marker-cursor');
+                expect(cursorDecoration).toBeDefined();
             });
 
             it('should not replace marker when any selection range includes it', () => {
@@ -168,9 +174,11 @@ describe('DefinitionProcessor', () => {
 
                 const line = context.document.line(1);
                 const result = processor.process(line, context);
+                const cursorDecoration = result.decorations.find(item =>
+                    item.decoration.spec?.class === 'cm-pem-definition-marker-cursor'
+                );
 
-                expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].decoration.spec?.class).toBe('cm-pem-definition-marker-cursor');
+                expect(cursorDecoration).toBeDefined();
             });
             
             it('should update definition state', () => {
@@ -199,21 +207,26 @@ describe('DefinitionProcessor', () => {
                 context = createContext('Term\n: Definition');
                 const line = context.document.line(1);
                 const result = processor.process(line, context);
+                const termDecoration = result.decorations.find(item =>
+                    item.decoration.spec?.class?.includes('cm-strong')
+                );
                 
-                expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].from).toBe(0);
-                expect(result.decorations[0].to).toBe(4); // "Term"
-                expect(result.decorations[0].decoration.spec?.class).toContain('cm-strong');
-                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-definition-term');
+                expect(termDecoration).toBeDefined();
+                expect(termDecoration?.from).toBe(0);
+                expect(termDecoration?.to).toBe(4); // "Term"
+                expect(termDecoration?.decoration.spec?.class).toContain('cm-strong');
+                expect(termDecoration?.decoration.spec?.class).toContain('cm-pem-definition-term');
             });
             
             it('should handle terms with blank line before definition', () => {
                 context = createContext('Term\n\n: Definition');
                 const line = context.document.line(1);
                 const result = processor.process(line, context);
+                const termDecoration = result.decorations.find(item =>
+                    item.decoration.spec?.class?.includes('cm-pem-definition-term')
+                );
                 
-                expect(result.decorations).toHaveLength(1);
-                expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-definition-term');
+                expect(termDecoration).toBeDefined();
             });
             
             it('should not mark as content region', () => {

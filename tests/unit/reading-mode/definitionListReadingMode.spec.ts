@@ -58,6 +58,8 @@ describe('definition list reading mode rendering', () => {
 
         expect(terms.map(term => term.textContent)).toEqual(['Description Term']);
         expect(definitions.map(def => def.textContent)).toEqual(['details1', 'details2', 'details3']);
+        expect(definitions[0].querySelector(':scope > ul.pem-definition-desc-list > li.pem-definition-desc-item')?.textContent)
+            .toBe('details1');
     });
 
     it('keeps blank-line-separated terms in one definition list', () => {

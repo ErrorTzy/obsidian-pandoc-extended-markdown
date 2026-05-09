@@ -15,6 +15,8 @@ export const CSS_CLASSES = {
     DEFINITION_LIST: 'pem-definition-list',
     DEFINITION_TERM: 'pem-definition-term',
     DEFINITION_DESC: 'pem-list-definition-desc',
+    DEFINITION_DESC_LIST: 'pem-definition-desc-list',
+    DEFINITION_DESC_ITEM: 'pem-definition-desc-item',
     DEFINITION_ITEMS: 'pem-definition-items',
     DEFINITION_CONTENT_TEXT: 'pem-definition-content-text',
 

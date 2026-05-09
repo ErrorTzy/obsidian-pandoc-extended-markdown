@@ -74,7 +74,7 @@ function renderDefinitionDescription(
     const listItem = parseListItemContent(definition.content);
 
     if (!listItem) {
-        appendContent(dd, definition.content, context);
+        appendDefinitionDescriptionText(dd, definition.content, context, appendContent);
         return { element: dd, nextIndex: index + 1 };
     }
 
@@ -121,7 +121,7 @@ function renderNestedDefinitionList(
     while (hasIndentedDefinitionItem(parsedLines[index], parentIndent)) {
         const definition = parsedLines[index].metadata as DefinitionData;
         const dd = createDefinitionDescription();
-        appendContent(dd, definition.content, context);
+        appendDefinitionDescriptionText(dd, definition.content, context, appendContent);
         dl.appendChild(dd);
         index++;
     }
@@ -164,6 +164,21 @@ function createDefinitionDescription(): HTMLElement {
     const dd = document.createElement('dd');
     dd.className = CSS_CLASSES.DEFINITION_DESC;
     return dd;
+}
+
+function appendDefinitionDescriptionText(
+    dd: HTMLElement,
+    content: string,
+    context: RenderContext,
+    appendContent: ContentAppender
+): void {
+    const list = document.createElement('ul');
+    const item = document.createElement('li');
+    list.className = CSS_CLASSES.DEFINITION_DESC_LIST;
+    item.className = CSS_CLASSES.DEFINITION_DESC_ITEM;
+    appendContent(item, content, context);
+    list.appendChild(item);
+    dd.appendChild(list);
 }
 
 function parseListItemContent(content: string): ListItemContent | null {

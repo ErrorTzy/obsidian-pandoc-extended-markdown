@@ -78,6 +78,14 @@ describe('Widget Editability', () => {
             expect(widget.ignoreEvent(inputEvent)).toBe(false);
             expect(widget.ignoreEvent(mouseEvent)).toBe(false);
         });
+
+        it('DefinitionBulletWidget should use native unordered list marker spacing classes', () => {
+            const widget = new DefinitionBulletWidget();
+            const element = widget.toDOM();
+
+            expect(element.classList.contains('cm-formatting-list-ul')).toBe(true);
+            expect(element.classList.contains('pem-list-marker')).toBe(true);
+        });
     });
 
     describe('Custom Label Widgets', () => {
