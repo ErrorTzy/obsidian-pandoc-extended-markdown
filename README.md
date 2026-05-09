@@ -64,8 +64,6 @@ Start here if you want more than the quick start:
 - [Development](docs/development.md)
 - [Architecture](ARCHITECTURE.md)
 
-Maintainer-facing fenced-div implementation notes live in [docs/fenced-divs-design-notes.md](docs/fenced-divs-design-notes.md).
-
 ## Modes And Settings
 
 - Live Preview is the main editing surface.

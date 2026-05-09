@@ -12,6 +12,5 @@ This folder holds the detailed documentation for Pandoc Extended Markdown. The r
 ## Maintainers
 
 - [Development](development.md): repository layout, commands, and testing workflow.
-- [Fenced divs design notes](fenced-divs-design-notes.md): implementation design and edge cases for fenced div support.
 - [Architecture](../ARCHITECTURE.md): broader code architecture.
 - [Tests](../tests/README.md): test structure and examples.
