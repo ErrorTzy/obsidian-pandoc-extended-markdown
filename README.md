@@ -10,6 +10,7 @@ It focuses on syntax that is useful while writing notes: fancy lists, definition
 | --- | --- | --- |
 | Superscript and subscript | `2^10^`, `H~2~O` | Renders Pandoc-style inline super/subscripts. |
 | Fancy lists | `A.`, `a)`, `iv.`, `#.` | Renders alphabetic, Roman numeral, and hash auto-numbered lists. |
+| Unordered list markers | `-`, `+`, `*` | Keeps `-` as the default round marker, renders `+` as a square, and renders `*` as a hollow round marker. |
 | Definition lists | `Term` followed by `: definition` | Renders Pandoc definition lists in Live Preview and Reading mode. |
 | Example lists | `(@label) Example` and `(@label)` | Numbers examples and resolves local example references. |
 | Fenced divs | `::: {.theorem #thm title="Theorem &"}` | Renders Pandoc fenced divs with optional titles, numbering, and local `@id` references. |
@@ -26,13 +27,21 @@ Water is H~2~O, and 2^10^ is 1024.
 
 A.  First point
 B.  Second point
+    a. Third point
+    b. Fourth point
 
 #. Auto-numbering list
+#. Auto-numbering list
+
+- Default round unordered marker
+	+ Square unordered marker
+		* Hollow round unordered marker
 
 Term
 :   A definition list item.
 
-(@intro) This is a numbered example.
+(@) This is a numbered example.
+(@intro) This is a citable numbered example
 
 {::P} A custom-labeled premise.
 {::Q(#step)} A custom label with placeholder numbering.
@@ -43,7 +52,12 @@ See example (@intro), premise {::P}, and step {::Q(#step)}.
 Every compact metric space is complete.
 :::
 
-See @compact.
+::: theorem &.& #thm2
+This is a sub theorem, using shortcut syntax
+:::
+
+See @compact and @thm2
+
 ```
 
 Preview:
