@@ -9,6 +9,7 @@ import { setTooltip } from 'obsidian';
 import { CSS_CLASSES, DECORATION_STYLES } from '../../../core/constants';
 import { ListPatterns } from '../../../shared/patterns';
 import { renderDefinitionListAt } from '../definition-lists/parsedLineAdapter';
+import { appendMathContent } from './mathContentRenderer';
 
 import { ParsedLine, HashListData, FancyListData, ExampleListData, DefinitionData, ReferenceData } from './lineParser';
 
@@ -194,6 +195,16 @@ export class ReadingModeRenderer {
     }
 
     appendContent(element: HTMLElement, content: string, context: RenderContext): void {
+        if (appendMathContent(element, content, text => {
+            this.appendTextContent(element, text, context);
+        })) {
+            return;
+        }
+
+        this.appendTextContent(element, content, context);
+    }
+
+    private appendTextContent(element: HTMLElement, content: string, context: RenderContext): void {
         this.processContentForReferences(content, context).forEach(child => {
             element.appendChild(child);
         });

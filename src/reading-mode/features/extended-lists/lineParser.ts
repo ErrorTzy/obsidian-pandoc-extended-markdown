@@ -122,7 +122,7 @@ export class ReadingModeParser {
         const defMarker = config?.enableDefinitionLists !== false
             ? parseDefinitionListMarker(line)
             : null;
-        if (defMarker && defMarker.type === 'definition') {
+        if (defMarker && defMarker.type === 'definition' && context?.isAtParagraphStart !== false) {
             return {
                 type: 'definition-item',
                 content: line,

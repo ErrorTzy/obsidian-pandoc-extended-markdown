@@ -33,18 +33,169 @@ describe('Definition list semantic HTML in reading mode', () => {
             { tag: 'DD', text: 'DefinitionItem' }
         ]);
 
-        const html = await browser.execute(() => {
-            const definitionList = document.querySelector('.markdown-preview-view .pem-definition-list');
-            return {
-                termText: definitionList?.querySelector('dt')?.textContent ?? '',
-                hasStrayBreak: Boolean(definitionList?.querySelector(':scope > br'))
-            };
-        });
+        const structure = await getDefinitionListStructure();
 
-        expect(html.termText).toBe('DefinitionTerm');
-        expect(html.hasStrayBreak).toBe(false);
+        expect(structure.lists[0].directChildren[0]?.text).toBe('DefinitionTerm');
+        expect(structure.lists[0].hasStrayBreak).toBe(false);
 
         await deleteFileIfExists('definition-list-semantic-e2e.md');
+    });
+
+    it('does not render a colon after bold text as a definition marker', async () => {
+        const path = 'definition-list-bold-colon-paragraph-e2e.md';
+        const markdown = '**title**: content';
+
+        await createOrReplaceFile(path, markdown);
+        await openFileInActiveLeaf(path);
+        await ensureReadingMode();
+        await browser.waitUntil(async () => {
+            const state = await getPreviewState();
+            return state.text.includes('title: content');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected bold-colon paragraph to remain regular text'
+        });
+
+        const state = await getPreviewState();
+
+        expect(state.definitionListCount).toBe(0);
+        expect(state.html).not.toContain('pem-list-definition-desc');
+        expect(state.text).toContain('title: content');
+        expect(state.text).not.toContain('title• content');
+
+        await deleteFileIfExists(path);
+    });
+
+    it('renders inline and block math inside definition descriptions', async () => {
+        const path = 'definition-list-reading-mode-math-e2e.md';
+        const markdown = `Math Term
+: inline math $x^2 + y^2 = z^2$
+: $$\\int_0^1 x\\,dx$$`;
+
+        await createOrReplaceFile(path, markdown);
+        await openFileInActiveLeaf(path);
+        await ensureReadingMode();
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getDefinitionListMathState();
+                return state.listCount === 1 &&
+                    state.definitionCount === 2 &&
+                    state.mathCount >= 2;
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected rendered math inside definition list descriptions'
+            });
+        } catch (error) {
+            const state = await getDefinitionListMathState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getDefinitionListMathState();
+
+        expect(state.inlineMathCount).toBeGreaterThanOrEqual(1);
+        expect(state.blockMathCount).toBeGreaterThanOrEqual(1);
+        expect(state.textOutsideMath).not.toContain('$x^2 + y^2 = z^2$');
+        expect(state.textOutsideMath).not.toContain('$$\\int_0^1 x\\,dx$$');
+
+        await deleteFileIfExists(path);
+    });
+
+    it('keeps reading mode stable with mixed math definitions followed by plain text', async () => {
+        const path = 'definition-list-reading-mode-mixed-math-e2e.md';
+        const markdown = `aaa
+: aaa $aaa$
+: aaa $$aaa$$
+: aaa`;
+
+        await createOrReplaceFile(path, markdown);
+        await openFileInActiveLeaf(path);
+        await ensureReadingMode();
+        await browser.waitUntil(async () => {
+            const state = await getDefinitionListMathState();
+            return state.listCount === 1 &&
+                state.definitionCount === 3 &&
+                state.inlineMathCount >= 1 &&
+                state.blockMathCount >= 1;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected stable rendered math in all definition descriptions'
+        });
+
+        const before = await getPreviewState();
+        await browser.pause(1500);
+        const after = await getPreviewState();
+
+        expect(after.definitionListCount).toBe(1);
+        expect(after.text).toContain('aaa');
+        expect(after.html).toBe(before.html);
+
+        await deleteFileIfExists(path);
+    });
+
+    it('keeps reading mode stable with multiline display math in a definition description', async () => {
+        const path = 'definition-list-reading-mode-display-math-e2e.md';
+        const markdown = `Math Term
+: $$
+  \\int_0^1 x\\,dx
+  $$`;
+
+        await createOrReplaceFile(path, markdown);
+        await openFileInActiveLeaf(path);
+        await ensureReadingMode();
+        await browser.waitUntil(async () => {
+            const state = await getDefinitionListMathState();
+            return state.listCount === 1 &&
+                state.definitionCount === 1 &&
+                state.mathCount >= 1;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected rendered display math inside definition list description'
+        });
+
+        const before = await getPreviewState();
+        await browser.pause(1500);
+        const after = await getPreviewState();
+
+        expect(after.definitionListCount).toBe(1);
+        expect(after.text).toContain('Math Term');
+        expect(after.html).toBe(before.html);
+
+        await deleteFileIfExists(path);
+    });
+
+    it('keeps reading mode stable for same-line double-dollar math followed by text', async () => {
+        const path = 'definition-list-user-math-repro-e2e.md';
+        const markdown = `Defi
+: aaa
+: aaa $aaa$
+: aaa $$aaa$$ : aaa`;
+
+        await createOrReplaceFile(path, markdown);
+        await openFileInActiveLeaf(path);
+        await ensureReadingMode();
+        await browser.waitUntil(async () => {
+            const structure = await getDefinitionListStructure();
+            return structure.listCount === 1 &&
+                JSON.stringify(structure.lists[0]?.directChildren) === JSON.stringify([
+                    { tag: 'DT', text: 'Defi' },
+                    { tag: 'DD', text: 'aaa' },
+                    { tag: 'DD', text: 'aaa' },
+                    { tag: 'DD', text: 'aaa  : aaa' }
+                ]);
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected exact user math repro to render as one stable definition list'
+        });
+
+        const before = await getPreviewState();
+        await browser.pause(1500);
+        const after = await getPreviewState();
+
+        expect(after.definitionListCount).toBe(1);
+        expect(after.html).toBe(before.html);
+        expect(after.text).toContain('Defi');
+
+        await deleteFileIfExists(path);
     });
 
     it('renders multiple definition lines as sibling dd elements', async () => {
@@ -121,9 +272,7 @@ random text...`;
             { tag: 'DD', text: 'details3' }
         ]);
 
-        const text = await browser.execute(() =>
-            document.querySelector('.markdown-preview-view')?.textContent ?? ''
-        );
+        const text = (await getPreviewState()).text;
 
         expect(text).toContain('random text...');
 
@@ -160,9 +309,7 @@ after text...`;
             ]
         ]);
 
-        const text = await browser.execute(() =>
-            document.querySelector('.markdown-preview-view')?.textContent ?? ''
-        );
+        const text = (await getPreviewState()).text;
 
         expect(text).toContain('before text...');
         expect(text).toContain('middle text...');
@@ -224,18 +371,7 @@ Another Term
 
         const structure = await getDefinitionListStructure();
         const outerList = structure.lists[0];
-        const nested = await browser.execute(() => {
-            const outer = document.querySelector('.markdown-preview-view .pem-definition-list') as HTMLElement | null;
-            const nestedList = outer?.querySelector(':scope > dd ul > li > dl') as HTMLElement | null;
-
-            return {
-                nestedTerm: nestedList?.querySelector('dt')?.textContent?.trim() ?? '',
-                nestedDefinition: nestedList?.querySelector('dd')?.textContent?.trim() ?? '',
-                outerDirectDdCount: Array.from(outer?.children ?? [])
-                    .filter(child => child.tagName === 'DD')
-                    .length
-            };
-        });
+        const nested = await getNestedDefinitionState();
 
         expect(outerList.directChildren).toEqual([
             { tag: 'DT', text: 'Description Term' },
@@ -335,6 +471,114 @@ async function waitForAnyDefinitionList(): Promise<void> {
     });
 }
 
+async function getPreviewState(): Promise<{
+    definitionListCount: number;
+    html: string;
+    text: string;
+}> {
+    return browser.execute(() => {
+        const getActiveMarkdownPreview = (): HTMLElement | null => {
+            // @ts-ignore
+            const activeFile = app.workspace.getActiveFile?.();
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType?.('markdown') ?? [];
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            const preview = leaf?.view?.containerEl?.querySelector('.markdown-preview-view');
+            if (preview instanceof HTMLElement) {
+                return preview;
+            }
+
+            return document.querySelector('.workspace-leaf.mod-active .markdown-preview-view') ??
+                document.querySelector('.markdown-preview-view');
+        };
+        const preview = getActiveMarkdownPreview();
+        return {
+            definitionListCount: preview?.querySelectorAll('.pem-definition-list').length ?? 0,
+            html: preview?.innerHTML ?? '',
+            text: preview?.textContent ?? ''
+        };
+    });
+}
+
+async function getDefinitionListMathState(): Promise<{
+    listCount: number;
+    definitionCount: number;
+    mathCount: number;
+    inlineMathCount: number;
+    blockMathCount: number;
+    textOutsideMath: string;
+}> {
+    return browser.execute(() => {
+        const getActiveMarkdownPreview = (): HTMLElement | null => {
+            // @ts-ignore
+            const activeFile = app.workspace.getActiveFile?.();
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType?.('markdown') ?? [];
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            const preview = leaf?.view?.containerEl?.querySelector('.markdown-preview-view');
+            if (preview instanceof HTMLElement) {
+                return preview;
+            }
+
+            return document.querySelector('.workspace-leaf.mod-active .markdown-preview-view') ??
+                document.querySelector('.markdown-preview-view');
+        };
+        const preview = getActiveMarkdownPreview();
+        const list = preview?.querySelector('.pem-definition-list') as HTMLElement | null;
+        const clone = list?.cloneNode(true) as HTMLElement | null;
+        clone?.querySelectorAll('.math, mjx-container').forEach(element => element.remove());
+
+        return {
+            listCount: preview?.querySelectorAll('.pem-definition-list').length ?? 0,
+            definitionCount: list?.querySelectorAll(':scope > dd').length ?? 0,
+            mathCount: list?.querySelectorAll('.math, mjx-container').length ?? 0,
+            inlineMathCount: list?.querySelectorAll('.math-inline, mjx-container[jax]').length ?? 0,
+            blockMathCount: list?.querySelectorAll('.math-block, mjx-container[display="true"]').length ?? 0,
+            textOutsideMath: clone?.textContent ?? ''
+        };
+    });
+}
+
+async function getNestedDefinitionState(): Promise<{
+    nestedTerm: string;
+    nestedDefinition: string;
+    outerDirectDdCount: number;
+}> {
+    return browser.execute(() => {
+        const getActiveMarkdownPreview = (): HTMLElement | null => {
+            // @ts-ignore
+            const activeFile = app.workspace.getActiveFile?.();
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType?.('markdown') ?? [];
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            const preview = leaf?.view?.containerEl?.querySelector('.markdown-preview-view');
+            if (preview instanceof HTMLElement) {
+                return preview;
+            }
+
+            return document.querySelector('.workspace-leaf.mod-active .markdown-preview-view') ??
+                document.querySelector('.markdown-preview-view');
+        };
+        const preview = getActiveMarkdownPreview();
+        const outer = preview?.querySelector('.pem-definition-list') as HTMLElement | null;
+        const nestedList = outer?.querySelector(':scope > dd ul > li > dl') as HTMLElement | null;
+
+        return {
+            nestedTerm: nestedList?.querySelector('dt')?.textContent?.trim() ?? '',
+            nestedDefinition: nestedList?.querySelector('dd')?.textContent?.trim() ?? '',
+            outerDirectDdCount: Array.from(outer?.children ?? [])
+                .filter(child => child.tagName === 'DD')
+                .length
+        };
+    });
+}
+
 async function getPandocParity(markdown: string): Promise<{
     expected: NormalizedDefinitionNode[];
     actual: NormalizedDefinitionNode[];
@@ -357,7 +601,23 @@ async function getPandocParity(markdown: string): Promise<{
 
         const parser = new DOMParser();
         const expectedDoc = parser.parseFromString(`<main>${expectedHtml}</main>`, 'text/html');
-        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
+        const getActiveMarkdownPreview = (): HTMLElement | null => {
+            // @ts-ignore
+            const activeFile = app.workspace.getActiveFile?.();
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType?.('markdown') ?? [];
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            const preview = leaf?.view?.containerEl?.querySelector('.markdown-preview-view');
+            if (preview instanceof HTMLElement) {
+                return preview;
+            }
+
+            return document.querySelector('.workspace-leaf.mod-active .markdown-preview-view') ??
+                document.querySelector('.markdown-preview-view');
+        };
+        const preview = getActiveMarkdownPreview();
 
         const normalizeTopLevelDefinitionLists = (root: ParentNode, selector: string): BrowserNormalizedNode[] =>
             Array.from(root.querySelectorAll(selector))
@@ -450,34 +710,68 @@ async function openFileInActiveLeaf(path: string): Promise<void> {
         const file = app.vault.getAbstractFileByPath(filePath);
         if (file) {
             // @ts-ignore
-            await app.workspace.getLeaf().openFile(file);
+            const leaves = app.workspace.getLeavesOfType('markdown');
+            // @ts-ignore
+            const leaf = leaves[0] ?? app.workspace.getLeaf();
+            // @ts-ignore
+            await leaf.openFile(file);
+            // @ts-ignore
+            app.workspace.setActiveLeaf(leaf, { focus: true });
         }
     }, path);
+    await browser.waitUntil(async () =>
+        browser.execute((filePath: string) => {
+            // @ts-ignore
+            return app.workspace.getActiveFile()?.path === filePath;
+        }, path),
+    { timeout: 5000 });
 }
 
 async function ensureReadingMode(): Promise<void> {
     await browser.execute(async () => {
         // @ts-ignore
-        const leaf = app.workspace.getLeaf();
+        const activeFile = app.workspace.getActiveFile();
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        const leaf = leaves.find((candidate: { view?: { file?: { path?: string } } }) =>
+            candidate.view?.file?.path === activeFile?.path
+        ) ?? leaves[0];
+        if (!leaf) {
+            return;
+        }
         // @ts-ignore
         const state = leaf.getViewState();
         state.state.mode = 'preview';
         // @ts-ignore
         await leaf.setViewState(state);
     });
-    await browser.waitUntil(async () => {
-        const hasPreview = await browser.execute(() =>
-            Boolean(document.querySelector('.markdown-preview-view'))
-        );
-        return hasPreview;
-    }, { timeout: 5000 });
+    await browser.waitUntil(async () =>
+        browser.execute(() => {
+            // @ts-ignore
+            const activeFile = app.workspace.getActiveFile();
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType('markdown');
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            return Boolean(leaf?.view?.containerEl?.querySelector('.markdown-preview-view'));
+        }),
+    { timeout: 5000 });
     await browser.pause(500);
 }
 
 async function ensureLivePreviewMode(): Promise<void> {
     await browser.execute(async () => {
         // @ts-ignore
-        const leaf = app.workspace.getLeaf();
+        const activeFile = app.workspace.getActiveFile();
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        const leaf = leaves.find((candidate: { view?: { file?: { path?: string } } }) =>
+            candidate.view?.file?.path === activeFile?.path
+        ) ?? leaves[0];
+        if (!leaf) {
+            return;
+        }
         // @ts-ignore
         const state = leaf.getViewState();
         state.state.mode = 'source';
@@ -485,12 +779,18 @@ async function ensureLivePreviewMode(): Promise<void> {
         // @ts-ignore
         await leaf.setViewState(state);
     });
-    await browser.waitUntil(async () => {
-        const hasLivePreview = await browser.execute(() =>
-            Boolean(document.querySelector('.markdown-source-view.mod-cm6 .cm-content'))
-        );
-        return hasLivePreview;
-    }, { timeout: 5000 });
+    await browser.waitUntil(async () =>
+        browser.execute(() => {
+            // @ts-ignore
+            const activeFile = app.workspace.getActiveFile();
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType('markdown');
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            return Boolean(leaf?.view?.containerEl?.querySelector('.markdown-source-view.mod-cm6 .cm-content'));
+        }),
+    { timeout: 5000 });
     await browser.pause(500);
 }
 
@@ -533,6 +833,7 @@ async function getDefinitionListStructure(): Promise<{
     previewHtml: string;
     lists: Array<{
         html: string;
+        hasStrayBreak: boolean;
         directChildren: Array<{ tag: string, text: string }>;
     }>;
 }> {
@@ -541,8 +842,23 @@ async function getDefinitionListStructure(): Promise<{
         const activeFile = app.workspace.getActiveFile();
         // @ts-ignore
         const sourceText = activeFile ? await app.vault.cachedRead(activeFile) : '';
+        const getActiveMarkdownPreview = (): HTMLElement | null => {
+            // @ts-ignore
+            const leaves = app.workspace.getLeavesOfType?.('markdown') ?? [];
+            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
+                candidate.view?.file?.path === activeFile?.path
+            );
+            const preview = leaf?.view?.containerEl?.querySelector('.markdown-preview-view');
+            if (preview instanceof HTMLElement) {
+                return preview;
+            }
+
+            return document.querySelector('.workspace-leaf.mod-active .markdown-preview-view') ??
+                document.querySelector('.markdown-preview-view');
+        };
+        const preview = getActiveMarkdownPreview();
         const lists = Array.from(
-            document.querySelectorAll('.markdown-preview-view .pem-definition-list')
+            preview?.querySelectorAll('.pem-definition-list') ?? []
         ) as HTMLElement[];
 
         return {
@@ -550,9 +866,10 @@ async function getDefinitionListStructure(): Promise<{
             // @ts-ignore
             activePath: activeFile?.path ?? '',
             sourceText,
-            previewHtml: document.querySelector('.markdown-preview-view')?.innerHTML.slice(0, 1000) ?? '',
+            previewHtml: preview?.innerHTML.slice(0, 1000) ?? '',
             lists: lists.map(list => ({
                 html: list.outerHTML,
+                hasStrayBreak: Boolean(list.querySelector(':scope > br')),
                 directChildren: Array.from(list.children).map(child => ({
                     tag: child.tagName,
                     text: child.textContent?.trim() ?? ''

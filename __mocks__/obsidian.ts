@@ -119,6 +119,17 @@ export function setTooltip(element: HTMLElement, text: string, _options?: Toolti
   element.setAttribute('data-tooltip', text);
 }
 
+export function renderMath(source: string, display: boolean): HTMLElement {
+  const element = document.createElement('span');
+  element.className = display ? 'math math-block' : 'math math-inline';
+  element.textContent = source;
+  return element;
+}
+
+export function finishRenderMath(): Promise<void> {
+  return Promise.resolve();
+}
+
 export class MarkdownPostProcessorContext {
   getSectionInfo() {
     return {
