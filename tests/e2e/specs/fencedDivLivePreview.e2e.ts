@@ -107,6 +107,7 @@ describe('Fenced div live preview', () => {
             if (plugin && plugin.settings) {
                 plugin.settings.strictPandocMode = false;
                 plugin.settings.enableFencedDivs = true;
+                plugin.settings.enableFencedDivExtras = true;
                 plugin.saveSettings();
                 // @ts-ignore
                 app.workspace.updateOptions();
@@ -505,7 +506,7 @@ describe('Fenced div live preview', () => {
         await deleteFileIfExists(filePath);
     });
 
-    it('keeps strict Pandoc mode from rendering lua-filter fenced div titles or cross-references', async () => {
+    it('renders fenced div titles and cross-references in strict Pandoc mode when extras are enabled', async () => {
         const filePath = 'fenced-div-live-preview-strict-crossrefs.md';
         const content = [
             '::: {.theorem #thm:strict title="Theorem &"}',
@@ -527,12 +528,12 @@ describe('Fenced div live preview', () => {
                     const state = await getFencedDivReferenceState();
                     return state.strictPandocMode === true &&
                         state.headerTexts.length === 1 &&
-                        state.titleElementCount === 0 &&
-                        state.referenceTexts.length === 0 &&
-                        state.referenceLineText.includes('@thm:strict');
+                        state.titleElementCount === 1 &&
+                        state.referenceTexts.includes('Theorem 1') &&
+                        !state.referenceLineText.includes('@thm:strict');
                 }, {
                     timeout: 5000,
-                    timeoutMsg: 'Expected strict Pandoc live preview to preserve raw fenced-div citation text'
+                    timeoutMsg: 'Expected strict Pandoc live preview to render fenced-div citation text'
                 });
             } catch (error) {
                 const state = await getFencedDivReferenceState();
@@ -541,13 +542,53 @@ describe('Fenced div live preview', () => {
 
             const state = await getFencedDivReferenceState();
 
+            expect(state.headerTexts).toEqual(['Theorem 1']);
+            expect(state.titleElementCount).toBe(1);
+            expect(state.referenceTexts).toEqual(['Theorem 1']);
+            expect(state.referenceLabels).toEqual(['thm:strict']);
+            expect(state.referenceLineText).toContain('See Theorem 1 for the result.');
+        } finally {
+            await setStrictPandocMode(false);
+            await deleteFileIfExists(filePath);
+        }
+    });
+
+    it('keeps base fenced div blocks but preserves cross-references when fenced div extras are disabled', async () => {
+        const filePath = 'fenced-div-live-preview-extras-off.md';
+        const content = [
+            '::: {.theorem #thm:extras title="Theorem &"}',
+            'Extras-disabled content.',
+            ':::',
+            '',
+            'See @thm:extras for the result.'
+        ].join('\n');
+
+        await setFencedDivExtras(false);
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureLivePreviewMode();
+            await moveCursorToLine(5);
+
+            await browser.waitUntil(async () => {
+                const state = await getFencedDivReferenceState();
+                return state.headerTexts.length === 1 &&
+                    state.titleElementCount === 0 &&
+                    state.referenceTexts.length === 0 &&
+                    state.referenceLineText.includes('@thm:extras');
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected live preview fenced div block without generated extras'
+            });
+
+            const state = await getFencedDivReferenceState();
+
             expect(state.headerTexts).toEqual(['']);
             expect(state.titleElementCount).toBe(0);
             expect(state.referenceTexts).toEqual([]);
-            expect(state.referenceLabels).toEqual([]);
-            expect(state.referenceLineText).toContain('See @thm:strict for the result.');
+            expect(state.referenceLineText).toContain('See @thm:extras for the result.');
         } finally {
-            await setStrictPandocMode(false);
+            await setFencedDivExtras(true);
             await deleteFileIfExists(filePath);
         }
     });
@@ -984,6 +1025,20 @@ async function setStrictPandocMode(value: boolean): Promise<void> {
         const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         if (plugin?.settings) {
             plugin.settings.strictPandocMode = strictPandocMode;
+            await plugin.saveSettings();
+            // @ts-ignore
+            app.workspace.updateOptions();
+        }
+    }, value);
+    await browser.pause(250);
+}
+
+async function setFencedDivExtras(value: boolean): Promise<void> {
+    await browser.execute(async (enableFencedDivExtras: boolean) => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        if (plugin?.settings) {
+            plugin.settings.enableFencedDivExtras = enableFencedDivExtras;
             await plugin.saveSettings();
             // @ts-ignore
             app.workspace.updateOptions();

@@ -1,6 +1,5 @@
 import { pluginStateManager } from '../../core/state/pluginStateManager';
 import { extractFencedDivs } from '../../shared/extractors/fencedDivExtractor';
-import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 import { ReadingModePipeline } from './ReadingModePipeline';
 import { CustomLabelReferenceInlineProcessor } from './inline/customLabelReferenceInlineProcessor';
@@ -79,7 +78,7 @@ function hydrateFencedDivLabelsFromSource(
     config: ReadingModeContext['config'],
     labels: ReadingModeContext['counters']['fencedDivLabels']
 ): void {
-    if (!source || !isSyntaxFeatureEnabled(config, 'enableFencedDivs')) {
+    if (!source || config.enableFencedDivs === false || config.enableFencedDivExtras === false) {
         return;
     }
 

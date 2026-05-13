@@ -7,6 +7,7 @@ describe('Syntax feature settings', () => {
 
         expect(settings.strictPandocMode).toBe(false);
         expect(settings.enableCustomLabelLists).toBe(true);
+        expect(settings.enableFencedDivExtras).toBe(true);
         expect(settings.autoRenumberLists).toBe(true);
     });
 
@@ -28,7 +29,7 @@ describe('Syntax feature settings', () => {
         expect(settings).not.toHaveProperty('unusedSavedFlag');
     });
 
-    it('disables custom labels in processor config when strict mode is enabled', () => {
+    it('keeps custom labels enabled in processor config when strict mode is enabled', () => {
         const config = createProcessorConfig(
             { strictLineBreaks: false },
             {
@@ -37,7 +38,23 @@ describe('Syntax feature settings', () => {
             }
         );
 
-        expect(config.enableCustomLabelLists).toBe(false);
+        expect(config.enableCustomLabelLists).toBe(true);
+    });
+
+    it('defaults fenced div extras on and disables them when either fenced div toggle is off', () => {
+        const enabled = createProcessorConfig({ strictLineBreaks: false }, {});
+        const extrasDisabled = createProcessorConfig(
+            { strictLineBreaks: false },
+            { enableFencedDivExtras: false }
+        );
+        const fencedDivsDisabled = createProcessorConfig(
+            { strictLineBreaks: false },
+            { enableFencedDivs: false, enableFencedDivExtras: true }
+        );
+
+        expect(enabled.enableFencedDivExtras).toBe(true);
+        expect(extrasDisabled.enableFencedDivExtras).toBe(false);
+        expect(fencedDivsDisabled.enableFencedDivExtras).toBe(false);
     });
 
     it('preserves split superscript and subscript flags in processor config', () => {

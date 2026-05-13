@@ -4,6 +4,7 @@ import { PandocExtendedMarkdownSettings } from '../../core/settings';
 import { extractFencedDivsFromDoc } from '../../shared/extractors/fencedDivExtractor';
 import { CodeRegion } from '../../shared/types/codeTypes';
 import { FencedDivReference } from '../../shared/types/fencedDivTypes';
+import { isFencedDivExtrasEnabled } from '../../shared/types/settingsTypes';
 
 export function scanFencedDivs(
     doc: Text,
@@ -11,6 +12,10 @@ export function scanFencedDivs(
     codeRegions?: CodeRegion[]
 ): Map<string, FencedDivReference> {
     const labels = new Map<string, FencedDivReference>();
+    if (!isFencedDivExtrasEnabled(settings)) {
+        return labels;
+    }
+
     const items = extractFencedDivsFromDoc(doc, settings, codeRegions);
 
     for (const item of items) {

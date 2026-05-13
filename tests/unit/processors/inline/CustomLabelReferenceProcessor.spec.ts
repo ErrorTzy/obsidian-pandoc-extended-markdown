@@ -168,6 +168,21 @@ describe('CustomLabelReferenceProcessor', () => {
             
             expect(matches).toHaveLength(0);
         });
+
+        it('should find matches in strict mode when custom label lists are enabled', () => {
+            context.settings.strictPandocMode = true;
+            context.customLabels.set('label', 'Label content');
+            const text = 'Text with {::label} reference';
+            const region: ContentRegion = {
+                from: 0,
+                to: text.length,
+                type: 'normal'
+            };
+
+            const matches = processor.findMatches(text, region, context);
+
+            expect(matches).toHaveLength(1);
+        });
         
         it('should handle references with underscores and hyphens', () => {
             // Add the label to customLabels to make it valid

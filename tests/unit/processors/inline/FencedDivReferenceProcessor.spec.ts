@@ -24,7 +24,8 @@ describe('FencedDivReferenceProcessor', () => {
             view,
             settings: {
                 strictPandocMode: false,
-                enableFencedDivs: true
+                enableFencedDivs: true,
+                enableFencedDivExtras: true
             },
             exampleLabels: new Map(),
             exampleContent: new Map(),
@@ -94,6 +95,32 @@ describe('FencedDivReferenceProcessor', () => {
         };
 
         const matches = processor.findMatches('see @missing.', region, context);
+
+        expect(matches).toHaveLength(0);
+    });
+
+    it('finds references in strict mode when fenced div extras are enabled', () => {
+        context.settings.strictPandocMode = true;
+        const region: ContentRegion = {
+            from: 0,
+            to: view.state.doc.length,
+            type: 'normal'
+        };
+
+        const matches = processor.findMatches('see @thm:label.', region, context);
+
+        expect(matches).toHaveLength(1);
+    });
+
+    it('does not find references when fenced div extras are disabled', () => {
+        context.settings.enableFencedDivExtras = false;
+        const region: ContentRegion = {
+            from: 0,
+            to: view.state.doc.length,
+            type: 'normal'
+        };
+
+        const matches = processor.findMatches('see @thm:label.', region, context);
 
         expect(matches).toHaveLength(0);
     });

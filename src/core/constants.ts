@@ -70,6 +70,7 @@ export const SETTINGS = {
     EXAMPLE_LISTS: 'enableExampleLists',
     DEFINITION_LISTS: 'enableDefinitionLists',
     FENCED_DIVS: 'enableFencedDivs',
+    FENCED_DIV_EXTRAS: 'enableFencedDivExtras',
     SUPERSCRIPT: 'enableSuperscript',
     SUBSCRIPT: 'enableSubscript',
     CUSTOM_LABEL: 'enableCustomLabelLists',
@@ -96,7 +97,7 @@ export const SETTINGS_UI = {
     },
     STRICT_MODE: {
         NAME: 'Strict Pandoc mode',
-        DESCRIPTION: 'Keep rendering closer to native Pandoc Markdown. When enabled, lists must have empty lines before and after them, capital letter lists require double spacing after markers, custom label lists are disabled completely, and extended fenced div syntax is disabled.'
+        DESCRIPTION: 'Validate Pandoc-compatible list formatting. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
     },
     AUTO_RENUMBER: {
         NAME: 'Auto-renumber lists',
@@ -122,6 +123,14 @@ export const SETTINGS_UI = {
         NAME: 'Fenced divs',
         DESCRIPTION: 'Enable Pandoc fenced div blocks such as `::: {.theorem #thm:label}` in Live Preview and Reading mode.'
     },
+    NON_NATIVE_SYNTAX: {
+        NAME: 'Non-native Pandoc syntax',
+        DESCRIPTION: 'Configure plugin extensions that require bundled filters or generated preview behavior.'
+    },
+    FENCED_DIV_EXTRAS: {
+        NAME: 'Fenced div titles and references',
+        DESCRIPTION: 'Generate fenced div titles, numbering, and `@id` reference rendering for fenced div blocks.'
+    },
     SUPERSCRIPT: {
         NAME: 'Superscript',
         DESCRIPTION: 'Render inline superscript syntax like `2^10^`.'
@@ -132,7 +141,7 @@ export const SETTINGS_UI = {
     },
     CUSTOM_LABEL: {
         NAME: 'Custom label lists',
-        DESCRIPTION: 'Enable `{::LABEL}` custom label lists and references. Use together with `CustomLabelList.lua` for Pandoc output. Strict Pandoc mode disables this feature completely.'
+        DESCRIPTION: 'Enable `{::LABEL}` custom label lists and references. Use together with `CustomLabelList.lua` for Pandoc output.'
     },
     UNORDERED_LIST_MARKER_CYCLING: {
         NAME: 'Cycle unordered list markers',

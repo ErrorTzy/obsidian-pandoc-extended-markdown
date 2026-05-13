@@ -113,7 +113,12 @@ export function processHydratedFencedDivReferences(
             section: element.closest<HTMLElement>('.markdown-preview-section'),
             sectionInfo: null,
             sourcePath: docPath,
-            config: { strictLineBreaks: false, strictPandocMode: false, enableFencedDivs: true },
+            config: {
+                strictLineBreaks: false,
+                strictPandocMode: false,
+                enableFencedDivs: true,
+                enableFencedDivExtras: true
+            },
             renderContext: {},
             counters,
             validationLines: []

@@ -5,7 +5,7 @@ import type { PandocExtendedMarkdownPlugin } from '../../core/main';
 import type { FencedDivSuggestion } from '../../shared/types/fencedDivTypes';
 import { CSS_CLASSES, TEXT_PROCESSING } from '../../core/constants';
 import { scanFencedDivs } from '../../live-preview/scanners/fencedDivScanner';
-import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
+import { isFencedDivExtrasEnabled } from '../../shared/types/settingsTypes';
 import { withErrorBoundary } from '../../shared/utils/errorHandler';
 
 const CITATION_QUERY_STOP = /[\s,;)\]}]/;
@@ -25,7 +25,7 @@ export class FencedDivReferenceSuggest extends EditorSuggest<FencedDivSuggestion
     }
 
     onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
-        if (!isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs')) {
+        if (!isFencedDivExtrasEnabled(this.plugin.settings)) {
             return null;
         }
 
@@ -59,7 +59,7 @@ export class FencedDivReferenceSuggest extends EditorSuggest<FencedDivSuggestion
     }
 
     private getSuggestionsInternal(context: EditorSuggestContext): FencedDivSuggestion[] {
-        if (!isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs')) {
+        if (!isFencedDivExtrasEnabled(this.plugin.settings)) {
             return [];
         }
 

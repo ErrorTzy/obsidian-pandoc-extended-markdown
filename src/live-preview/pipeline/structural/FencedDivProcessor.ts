@@ -1,7 +1,10 @@
 import { Decoration } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { CSS_CLASSES } from '../../../core/constants';
-import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import {
+    isFencedDivExtrasEnabled,
+    isSyntaxFeatureEnabled
+} from '../../../shared/types/settingsTypes';
 import { FencedDivStackItem } from '../../../shared/types/fencedDivTypes';
 import { ProcessingContext, StructuralResult } from '../types';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
@@ -40,7 +43,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
             : null;
         if (opening) {
             context.fencedDivTypeCounters = context.fencedDivTypeCounters || new Map();
-            const renderExtendedTitle = !context.settings.strictPandocMode;
+            const renderExtendedTitle = isFencedDivExtrasEnabled(context.settings);
             const title = renderExtendedTitle ? getFencedDivTitle(opening) : '';
             const metadata = renderExtendedTitle && (opening.id || title || opening.classes.length > 0)
                 ? createFencedDivReferenceMetadata(

@@ -149,6 +149,36 @@ describe('reading mode pipeline', () => {
         expect(element.querySelectorAll('sup.pem-superscript')).toHaveLength(1);
         expect(element.textContent).toBe('H2O and x2');
     });
+
+    it('renders custom labels in strict mode when custom label lists are enabled', () => {
+        const element = document.createElement('div');
+        element.innerHTML = '<p>{::P} Premise.</p><p>Therefore {::P}.</p>';
+        const context = createPostProcessorContext('{::P} Premise.\n\nTherefore {::P}.');
+
+        processReadingMode(element, context, createConfig({
+            strictPandocMode: true,
+            enableCustomLabelLists: true
+        }));
+
+        expect(element.querySelector('.pem-list-marker')?.textContent).toBe('(P)');
+        expect(element.querySelector('.pem-custom-label-reference-processed')?.textContent).toBe('(P)');
+        expect(element.textContent).not.toContain('{::P}');
+    });
+
+    it('leaves custom labels raw when custom label lists are disabled', () => {
+        const element = document.createElement('div');
+        element.innerHTML = '<p>{::P} Premise.</p><p>Therefore {::P}.</p>';
+        const context = createPostProcessorContext('{::P} Premise.\n\nTherefore {::P}.');
+
+        processReadingMode(element, context, createConfig({
+            strictPandocMode: true,
+            enableCustomLabelLists: false
+        }));
+
+        expect(element.querySelector('.pem-list-marker')).toBeNull();
+        expect(element.querySelector('.pem-custom-label-reference-processed')).toBeNull();
+        expect(element.textContent).toContain('{::P}');
+    });
 });
 
 function createProcessor(

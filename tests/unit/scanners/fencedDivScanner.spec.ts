@@ -194,6 +194,38 @@ describe('scanFencedDivs', () => {
         expect(labels.has('thm')).toBe(false);
     });
 
+    it('collects native labels in strict mode when fenced div extras are enabled', () => {
+        const labels = scanFencedDivs(
+            Text.of([
+                '::: {.theorem #thm title="Theorem &"}',
+                'Strict content.',
+                ':::'
+            ]),
+            {
+                ...settings,
+                strictPandocMode: true
+            }
+        );
+
+        expect(labels.get('thm')?.referenceText).toBe('Theorem 1');
+    });
+
+    it('does not collect labels when fenced div extras are disabled', () => {
+        const labels = scanFencedDivs(
+            Text.of([
+                '::: {.theorem #thm title="Theorem &"}',
+                'Content.',
+                ':::'
+            ]),
+            {
+                ...settings,
+                enableFencedDivExtras: false
+            }
+        );
+
+        expect(labels.size).toBe(0);
+    });
+
     it('does not collect labels from openings that Pandoc treats as paragraph text', () => {
         const labels = scan([
             'Paragraph before.',

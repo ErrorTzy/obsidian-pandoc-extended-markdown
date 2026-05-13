@@ -1,7 +1,10 @@
 import { Text } from '@codemirror/state';
 
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
-import { isSyntaxFeatureEnabled } from '../types/settingsTypes';
+import {
+    isFencedDivExtrasEnabled,
+    isSyntaxFeatureEnabled
+} from '../types/settingsTypes';
 import { CodeRegion } from '../types/codeTypes';
 import {
     allowsFencedDivOpeningAfterLine,
@@ -63,6 +66,7 @@ export function extractFencedDivsFromDoc(
     let canOpenAtCurrentLine = true;
     let fallbackCodeFenceMarker: string | undefined;
     const typeCounters: FencedDivTypeCounters = new Map();
+    const includeExtras = isFencedDivExtrasEnabled(settings);
 
     for (let lineNum = 1; lineNum <= doc.lines; lineNum++) {
         const line = doc.line(lineNum);
@@ -94,8 +98,12 @@ export function extractFencedDivsFromDoc(
             : null;
 
         if (opening) {
-            const title = getFencedDivTitle(opening);
-            const metadata = createFencedDivReferenceMetadata(title, opening.classes, typeCounters);
+            const title = includeExtras ? getFencedDivTitle(opening) : '';
+            const metadata = createFencedDivReferenceMetadata(
+                title,
+                includeExtras ? opening.classes : [],
+                typeCounters
+            );
             const activeDiv: ActiveFencedDiv = {
                 title: metadata.title,
                 label: opening.id || '',

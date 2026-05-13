@@ -117,6 +117,28 @@ describe('fenced div live-preview pipeline', () => {
         expect(widgetNames).not.toContain('FencedDivReferenceWidget');
     });
 
+    it('renders Pandoc fenced div titles and references in strict mode when extras are enabled', () => {
+        settings.strictPandocMode = true;
+        updateView('::: {.theorem #thm:label}\ncontent\n:::\n\nsee @thm:label.');
+
+        const widgetNames = getWidgetNames();
+
+        expect(widgetNames).toContain('FencedDivHeaderWidget');
+        expect(widgetNames).toContain('FencedDivClosingWidget');
+        expect(widgetNames).toContain('FencedDivReferenceWidget');
+    });
+
+    it('renders base fenced div blocks without references when fenced div extras are disabled', () => {
+        settings.enableFencedDivExtras = false;
+        updateView('::: {.theorem #thm:label}\ncontent\n:::\n\nsee @thm:label.');
+
+        const widgetNames = getWidgetNames();
+
+        expect(widgetNames).toContain('FencedDivHeaderWidget');
+        expect(widgetNames).toContain('FencedDivClosingWidget');
+        expect(widgetNames).not.toContain('FencedDivReferenceWidget');
+    });
+
     it('does not render invalid comma-separated attributes that Pandoc treats as text', () => {
         updateView('::: {.theorem, #thm:label}\ncontent\n:::\n\nsee @thm:label.');
 

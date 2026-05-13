@@ -9,6 +9,7 @@ import { extractCustomLabels } from '../../../shared/extractors/customLabelExtra
 import { extractFencedDivs } from '../../../shared/extractors/fencedDivExtractor';
 import {
     isCustomLabelListsEnabled,
+    isFencedDivExtrasEnabled,
     isSyntaxFeatureEnabled
 } from '../../../shared/types/settingsTypes';
 import { FencedDivTypeCounters, createFencedDivReference } from '../../../shared/utils/fencedDivReferenceMetadata';
@@ -147,7 +148,7 @@ export abstract class BasePanelModule implements PanelModule {
         }
 
         const fencedDivLabels = new Map<string, FencedDivReference>();
-        if (isSyntaxFeatureEnabled(this.plugin.settings, 'enableFencedDivs')) {
+        if (isFencedDivExtrasEnabled(this.plugin.settings)) {
             const fencedDivs = extractFencedDivs(content, this.plugin.settings);
             const typeCounters: FencedDivTypeCounters = new Map();
             fencedDivs.forEach(item => {

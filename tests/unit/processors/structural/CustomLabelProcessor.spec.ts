@@ -76,6 +76,12 @@ describe('CustomLabelProcessor', () => {
             const line = context.document.line(1);
             expect(processor.canProcess(line, context)).toBe(false);
         });
+
+        it('should return true in strict mode when custom label lists are enabled', () => {
+            context = createContext('{::Label} Content', { strictPandocMode: true });
+            const line = context.document.line(1);
+            expect(processor.canProcess(line, context)).toBe(true);
+        });
         
         it('should return true for labels with placeholders', () => {
             context = createContext('{::P(#a)} Content with placeholder');

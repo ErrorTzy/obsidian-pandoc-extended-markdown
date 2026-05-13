@@ -68,6 +68,16 @@ describe('Fenced Div Reference Suggestions', () => {
 
             expect(result).toBeNull();
         });
+
+        it('does not trigger when fenced div extras are disabled', () => {
+            plugin.settings.enableFencedDivExtras = false;
+            const cursor: EditorPosition = { line: 0, ch: 5 };
+            mockEditor.getLine = jest.fn().mockReturnValue('See @');
+
+            const result = suggest.onTrigger(cursor, mockEditor, null);
+
+            expect(result).toBeNull();
+        });
     });
 
     describe('getSuggestions', () => {
@@ -130,6 +140,22 @@ describe('Fenced Div Reference Suggestions', () => {
             } as any);
 
             expect(suggestions.map(suggestion => suggestion.label)).toEqual(['lem']);
+        });
+
+        it('returns no suggestions when fenced div extras are disabled', () => {
+            plugin.settings.enableFencedDivExtras = false;
+            mockEditor.getValue = jest.fn().mockReturnValue([
+                '::: {.theorem #thm}',
+                'Theorem content.',
+                ':::'
+            ].join('\n'));
+
+            const suggestions = suggest.getSuggestions({
+                editor: mockEditor,
+                query: ''
+            } as any);
+
+            expect(suggestions).toEqual([]);
         });
 
         it('filters suggestions by label', () => {

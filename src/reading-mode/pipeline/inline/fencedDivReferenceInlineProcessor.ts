@@ -13,7 +13,7 @@ export class FencedDivReferenceInlineProcessor implements InlineTextProcessor {
 
     isEnabled(context: ReadingModeContext): boolean {
         return context.config.enableFencedDivs !== false &&
-            !context.config.strictPandocMode;
+            context.config.enableFencedDivExtras !== false;
     }
 
     findMatches(text: string, _node: Text, context: ReadingModeContext): InlineTextMatch[] {

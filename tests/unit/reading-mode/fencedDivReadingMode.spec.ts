@@ -28,6 +28,7 @@ describe('fenced div reading mode rendering', () => {
         enableSuperSubscripts: false,
         enableCustomLabelLists: false,
         enableFencedDivs: true,
+        enableFencedDivExtras: true,
         ...overrides
     });
 
@@ -336,6 +337,47 @@ describe('fenced div reading mode rendering', () => {
         expect(element.querySelector('.pem-fenced-div')).toBeNull();
         expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
         expect(element.textContent).toContain('::: Theorem #thm data=1');
+    });
+
+    it('renders Pandoc fenced div titles and references in strict mode when extras are enabled', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: {.theorem #thm title="Theorem &"}</p>',
+            '<p>Strict content.</p>',
+            '<p>:::</p>',
+            '<p>See @thm.</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext('::: {.theorem #thm title="Theorem &"}\nStrict content.\n:::\n\nSee @thm.'),
+            createConfig({ strictPandocMode: true })
+        );
+
+        expect(element.querySelector('.pem-fenced-div')).not.toBeNull();
+        expect(element.querySelector('.pem-fenced-div-title')?.textContent).toBe('Theorem 1');
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)?.textContent).toBe('Theorem 1');
+    });
+
+    it('renders base fenced div blocks without generated titles or references when extras are disabled', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: {.theorem #thm title="Theorem &"}</p>',
+            '<p>Content.</p>',
+            '<p>:::</p>',
+            '<p>See @thm.</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createContext('::: {.theorem #thm title="Theorem &"}\nContent.\n:::\n\nSee @thm.'),
+            createConfig({ enableFencedDivExtras: false })
+        );
+
+        expect(element.querySelector('.pem-fenced-div')).not.toBeNull();
+        expect(element.querySelector('.pem-fenced-div-title')).toBeNull();
+        expect(element.querySelector(`.${CSS_CLASSES.FENCED_DIV_REFERENCE}`)).toBeNull();
+        expect(element.textContent).toContain('See @thm.');
     });
 
     it('does not render fenced div openers that Pandoc keeps inside a paragraph', () => {

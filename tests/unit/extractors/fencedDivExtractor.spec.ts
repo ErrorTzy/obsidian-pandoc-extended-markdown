@@ -51,6 +51,31 @@ describe('extractFencedDivs', () => {
         });
     });
 
+    it('extracts base fenced divs without generated metadata when extras are disabled', () => {
+        const items = extractFencedDivs([
+            '::: {.logic-block #prem:a title="Premise &"}',
+            'Panel content.',
+            ':::'
+        ].join('\n'), {
+            ...settings,
+            enableFencedDivExtras: false
+        });
+
+        expect(items).toHaveLength(1);
+        expect(items[0]).toMatchObject({
+            title: '',
+            label: 'prem:a',
+            content: 'Panel content.',
+            classes: ['logic-block'],
+            typeLabel: 'Div',
+            number: 0,
+            numberParts: [],
+            numberingEnabled: false,
+            referenceText: 'Div',
+            blockTitleText: ''
+        });
+    });
+
     it('provides rendered panel titles for numbered titles and class-only blocks', () => {
         const items = extractFencedDivs([
             '::: {.theorem #thm title="Theorem &"}',

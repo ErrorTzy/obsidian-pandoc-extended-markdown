@@ -75,7 +75,7 @@ function scheduleFencedDivLabelHydration(
     docPath: string,
     config: ProcessorConfig
 ): void {
-    if (config.strictPandocMode) {
+    if (config.enableFencedDivExtras === false) {
         return;
     }
 
@@ -170,7 +170,7 @@ export function processFencedDivs(
         canOpenAtCurrentLine = nextOpeningEligibility(sourceOpeningState, lineText);
     }
 
-    if (!config.strictPandocMode) {
+    if (config.enableFencedDivExtras !== false) {
         hydrateRenderedFencedDivLabels(element, labels);
     }
 
@@ -362,7 +362,7 @@ function prepareFencedDivOpening(
     typeCounters: FencedDivTypeCounters,
     config: ProcessorConfig
 ): PreparedFencedDiv {
-    const renderExtendedTitle = !config.strictPandocMode;
+    const renderExtendedTitle = config.enableFencedDivExtras !== false;
     const title = getFencedDivTitle(opening);
     const metadata = createFencedDivReferenceMetadata(
         renderExtendedTitle ? title : '',
@@ -383,7 +383,7 @@ function prepareFencedDivOpening(
         opening.id,
         opening.classes,
         stack.length + 1,
-        title,
+        renderExtendedTitle ? title : '',
         renderExtendedTitle ? reference.blockTitleText : ''
     );
 

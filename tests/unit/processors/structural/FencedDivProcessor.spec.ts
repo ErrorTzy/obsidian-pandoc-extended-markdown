@@ -180,6 +180,20 @@ describe('FencedDivProcessor', () => {
             expect(headerDom?.textContent).toBe('Theorem 1');
         });
 
+        it('renders the base fenced div block without generated title text when extras are disabled', () => {
+            const context = createContext(
+                '::: {.theorem #thm:label title="Theorem &"}\ncontent\n:::',
+                { enableFencedDivExtras: false }
+            );
+            const result = processor.process(context.document.line(1), context);
+            const headerDom = result.decorations[1].decoration.spec?.widget?.toDOM();
+
+            expect(result.decorations[0].decoration.spec?.class).toContain('cm-pem-fenced-div-open');
+            expect(result.decorations[1].decoration.spec?.widget?.constructor.name).toBe('FencedDivHeaderWidget');
+            expect(headerDom?.textContent).toBe('');
+            expect(context.fencedDivStack?.[0].label).toBe('thm:label');
+        });
+
         it('does not replace an opening fence while the cursor is editing it', () => {
             const context = createContext('::: {.theorem #thm:label}\ncontent\n:::');
             view.dispatch({ selection: EditorSelection.cursor(2) });

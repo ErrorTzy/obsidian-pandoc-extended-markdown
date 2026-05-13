@@ -250,7 +250,7 @@ function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {
         (config?.enableDefinitionLists !== false && !!ListPatterns.isDefinitionMarker(text)) ||
         (config?.enableExampleLists !== false && ListPatterns.findExampleReferences(text).length > 0);
 
-    const hasCustomLabelSyntax = !config?.strictPandocMode && config?.enableCustomLabelLists &&
+    const hasCustomLabelSyntax = config?.enableCustomLabelLists &&
         (ListPatterns.isCustomLabelList(text) ||
             ListPatterns.findCustomLabelReferences(text).length > 0);
 

@@ -1,5 +1,5 @@
 import { Decoration } from '@codemirror/view';
-import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import { isFencedDivExtrasEnabled } from '../../../shared/types/settingsTypes';
 import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
 import { FencedDivReferenceWidget } from '../../widgets';
 import { ContentRegion, InlineMatch, InlineProcessor, ProcessingContext } from '../types';
@@ -14,8 +14,7 @@ export class FencedDivReferenceProcessor implements InlineProcessor {
 
     findMatches(text: string, region: ContentRegion, context: ProcessingContext): InlineMatch[] {
         const matches: InlineMatch[] = [];
-        if (!isSyntaxFeatureEnabled(context.settings, 'enableFencedDivs') ||
-            context.settings.strictPandocMode) {
+        if (!isFencedDivExtrasEnabled(context.settings)) {
             return matches;
         }
 

@@ -80,6 +80,7 @@ describe('Ordered list marker settings', () => {
 
         expect(headings).toEqual([
             'Syntax features',
+            'Non-native Pandoc syntax',
             'List auto-completion',
             'Unordered list marker order',
             'Ordered list marker order',
@@ -88,6 +89,10 @@ describe('Ordered list marker settings', () => {
         ]);
         expect(indexOfSetting('Hash auto-number lists')).toBeGreaterThan(indexOfSetting('Syntax features'));
         expect(indexOfSetting('Hash auto-number lists')).toBeLessThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Custom label lists')).toBeGreaterThan(indexOfSetting('Non-native Pandoc syntax'));
+        expect(indexOfSetting('Custom label lists')).toBeLessThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Fenced div titles and references')).toBeGreaterThan(indexOfSetting('Non-native Pandoc syntax'));
+        expect(indexOfSetting('Fenced div titles and references')).toBeLessThan(indexOfSetting('Custom label lists'));
         expect(indexOfSetting('Auto-renumber lists')).toBeGreaterThan(indexOfSetting('List auto-completion'));
         expect(indexOfSetting('Cycle unordered list markers')).toBeGreaterThan(indexOfSetting('List auto-completion'));
         expect(indexOfSetting('Cycle ordered list markers')).toBeGreaterThan(indexOfSetting('List auto-completion'));

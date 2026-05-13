@@ -46,6 +46,7 @@ describe('Fenced div reading mode', () => {
             if (enabledPlugin?.settings) {
                 enabledPlugin.settings.strictPandocMode = false;
                 enabledPlugin.settings.enableFencedDivs = true;
+                enabledPlugin.settings.enableFencedDivExtras = true;
                 await enabledPlugin.saveSettings();
                 // @ts-ignore
                 app.workspace.updateOptions();
@@ -152,7 +153,7 @@ describe('Fenced div reading mode', () => {
         await deleteFileIfExists(filePath);
     });
 
-    it('keeps strict Pandoc mode from rendering lua-filter fenced div titles or @id references in reading mode', async () => {
+    it('renders fenced div titles and @id references in strict Pandoc mode when extras are enabled', async () => {
         const filePath = 'fenced-div-reading-mode-strict-e2e.md';
         const content = [
             '::: {.theorem #thm:strict title="Theorem &"}',
@@ -173,12 +174,12 @@ describe('Fenced div reading mode', () => {
                     const state = await getReadingModeFencedDivState();
                     return state.strictPandocMode === true &&
                         state.blockCount === 1 &&
-                        state.titleElementCount === 0 &&
-                        state.referenceTexts.length === 0 &&
-                        state.rawText.includes('@thm:strict');
+                        state.titleElementCount === 1 &&
+                        state.referenceTexts.includes('Theorem 1') &&
+                        !state.rawText.includes('@thm:strict');
                 }, {
                     timeout: 5000,
-                    timeoutMsg: 'Expected strict Pandoc reading mode to preserve raw fenced-div citation text'
+                    timeoutMsg: 'Expected strict Pandoc reading mode to render fenced-div citation text'
                 });
             } catch (error) {
                 const state = await getReadingModeFencedDivState();
@@ -188,18 +189,58 @@ describe('Fenced div reading mode', () => {
             const state = await getReadingModeFencedDivState();
 
             expect(state.blockCount).toBe(1);
-            expect(state.headerTexts).toEqual(['']);
-            expect(state.titleElementCount).toBe(0);
+            expect(state.headerTexts).toEqual(['Theorem 1']);
+            expect(state.titleElementCount).toBe(1);
             expect(state.blockLabels).toEqual(['thm:strict']);
             expect(state.blockClasses[0]).toContain('pem-fenced-div-theorem');
             expect(state.blockTexts[0]).toContain('Strict-mode content.');
-            expect(state.blockTexts[0]).not.toContain('Theorem 1');
-            expect(state.referenceTexts).toEqual([]);
-            expect(state.referenceLabels).toEqual([]);
-            expect(state.rawText).toContain('@thm:strict');
+            expect(state.referenceTexts).toEqual(['Theorem 1']);
+            expect(state.referenceLabels).toEqual(['thm:strict']);
+            expect(state.rawText).not.toContain('@thm:strict');
             expect(state.rawText).not.toContain('::: {.theorem #thm:strict title="Theorem &"}');
         } finally {
             await setStrictPandocMode(false);
+            await deleteFileIfExists(filePath);
+        }
+    });
+
+    it('keeps base fenced div blocks but preserves @id references when fenced div extras are disabled', async () => {
+        const filePath = 'fenced-div-reading-mode-extras-off-e2e.md';
+        const content = [
+            '::: {.theorem #thm:extras title="Theorem &"}',
+            'Extras-disabled content.',
+            ':::',
+            '',
+            'See @thm:extras for the result.'
+        ].join('\n');
+
+        await setFencedDivExtras(false);
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureReadingMode();
+
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeFencedDivState();
+                return state.blockCount === 1 &&
+                    state.titleElementCount === 0 &&
+                    state.referenceTexts.length === 0 &&
+                    state.rawText.includes('@thm:extras');
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected fenced div block without generated extras in reading mode'
+            });
+
+            const state = await getReadingModeFencedDivState();
+
+            expect(state.blockCount).toBe(1);
+            expect(state.headerTexts).toEqual(['']);
+            expect(state.blockLabels).toEqual(['thm:extras']);
+            expect(state.referenceTexts).toEqual([]);
+            expect(state.rawText).toContain('@thm:extras');
+            expect(state.rawText).not.toContain('::: {.theorem #thm:extras title="Theorem &"}');
+        } finally {
+            await setFencedDivExtras(true);
             await deleteFileIfExists(filePath);
         }
     });
@@ -516,6 +557,20 @@ async function setStrictPandocMode(value: boolean): Promise<void> {
         const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         if (plugin?.settings) {
             plugin.settings.strictPandocMode = strictPandocMode;
+            await plugin.saveSettings();
+            // @ts-ignore
+            app.workspace.updateOptions();
+        }
+    }, value);
+    await browser.pause(250);
+}
+
+async function setFencedDivExtras(value: boolean): Promise<void> {
+    await browser.execute(async (enableFencedDivExtras: boolean) => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        if (plugin?.settings) {
+            plugin.settings.enableFencedDivExtras = enableFencedDivExtras;
             await plugin.saveSettings();
             // @ts-ignore
             app.workspace.updateOptions();

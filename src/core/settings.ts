@@ -7,6 +7,7 @@ import {
     DEFAULT_SETTINGS,
     normalizeSettings,
     isCustomLabelListsEnabled,
+    isFencedDivExtrasEnabled,
     isSyntaxFeatureEnabled,
     SyntaxFeatureSettingKey
 } from '../shared/types/settingsTypes';
@@ -27,6 +28,7 @@ export {
     DEFAULT_SETTINGS,
     normalizeSettings,
     isCustomLabelListsEnabled,
+    isFencedDivExtrasEnabled,
     isSyntaxFeatureEnabled
 };
 
@@ -64,6 +66,7 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
         this.renderGeneralSettings(containerEl);
         this.renderSyntaxFeatureSettings(containerEl);
+        this.renderNonNativeSyntaxSettings(containerEl);
         this.renderListAutocompletionSettings(containerEl);
         this.renderPanelFeatureSettings(containerEl);
     }
@@ -137,6 +140,21 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             SETTINGS_UI.SUBSCRIPT.DESCRIPTION,
             'enableSubscript'
         );
+    }
+
+    private renderNonNativeSyntaxSettings(containerEl: HTMLElement): void {
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.NON_NATIVE_SYNTAX.NAME)
+            .setDesc(SETTINGS_UI.NON_NATIVE_SYNTAX.DESCRIPTION)
+            .setHeading();
+
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.FENCED_DIV_EXTRAS.NAME,
+            SETTINGS_UI.FENCED_DIV_EXTRAS.DESCRIPTION,
+            'enableFencedDivExtras'
+        );
+
         new Setting(containerEl)
             .setName(SETTINGS_UI.CUSTOM_LABEL.NAME)
             .setDesc(SETTINGS_UI.CUSTOM_LABEL.DESCRIPTION)

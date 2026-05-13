@@ -1,5 +1,6 @@
 import {
     PandocExtendedMarkdownSettings,
+    isFencedDivExtrasEnabled,
     isCustomLabelListsEnabled,
     isSyntaxFeatureEnabled
 } from './settingsTypes';
@@ -24,6 +25,7 @@ export interface ProcessorConfig {
     enableExampleLists?: boolean;
     enableDefinitionLists?: boolean;
     enableFencedDivs?: boolean;
+    enableFencedDivExtras?: boolean;
     enableSuperSubscripts?: boolean;
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
@@ -46,6 +48,7 @@ export function createProcessorConfig(
         enableExampleLists: isSyntaxFeatureEnabled(pluginSettings, 'enableExampleLists'),
         enableDefinitionLists: isSyntaxFeatureEnabled(pluginSettings, 'enableDefinitionLists'),
         enableFencedDivs: isSyntaxFeatureEnabled(pluginSettings, 'enableFencedDivs'),
+        enableFencedDivExtras: isFencedDivExtrasEnabled(pluginSettings),
         enableSuperSubscripts: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript')
             || isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
         enableSuperscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript'),

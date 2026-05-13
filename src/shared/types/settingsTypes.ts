@@ -63,6 +63,7 @@ export interface PandocExtendedMarkdownSettings {
     enableExampleLists?: boolean;
     enableDefinitionLists?: boolean;
     enableFencedDivs?: boolean;
+    enableFencedDivExtras?: boolean;
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
     enableCustomLabelLists?: boolean;
@@ -83,6 +84,7 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableExampleLists: true,
     enableDefinitionLists: true,
     enableFencedDivs: true,
+    enableFencedDivExtras: true,
     enableSuperscript: true,
     enableSubscript: true,
     enableCustomLabelLists: true,
@@ -101,6 +103,7 @@ export type SyntaxFeatureSettingKey =
     | 'enableExampleLists'
     | 'enableDefinitionLists'
     | 'enableFencedDivs'
+    | 'enableFencedDivExtras'
     | 'enableSuperscript'
     | 'enableSubscript'
     | 'enableCustomLabelLists'
@@ -118,7 +121,14 @@ export function isSyntaxFeatureEnabled(
 export function isCustomLabelListsEnabled(
     settings: Partial<PandocExtendedMarkdownSettings>
 ): boolean {
-    return !settings.strictPandocMode && isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists');
+    return isSyntaxFeatureEnabled(settings, 'enableCustomLabelLists');
+}
+
+export function isFencedDivExtrasEnabled(
+    settings: Partial<PandocExtendedMarkdownSettings>
+): boolean {
+    return isSyntaxFeatureEnabled(settings, 'enableFencedDivs') &&
+        isSyntaxFeatureEnabled(settings, 'enableFencedDivExtras');
 }
 
 export function normalizeSettings(
@@ -133,6 +143,7 @@ export function normalizeSettings(
         enableExampleLists: isSyntaxFeatureEnabled(sourceSettings, 'enableExampleLists'),
         enableDefinitionLists: isSyntaxFeatureEnabled(sourceSettings, 'enableDefinitionLists'),
         enableFencedDivs: isSyntaxFeatureEnabled(sourceSettings, 'enableFencedDivs'),
+        enableFencedDivExtras: isSyntaxFeatureEnabled(sourceSettings, 'enableFencedDivExtras'),
         enableSuperscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript'),
         enableSubscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript'),
         enableCustomLabelLists: isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists'),
