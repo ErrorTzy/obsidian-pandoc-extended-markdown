@@ -7,7 +7,7 @@ describe('fenced div live-preview styles', () => {
     it('uses a contained callout treatment instead of a bare vertical rule', () => {
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*background:\s*var\(--pem-fenced-div-surface\)/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+var\(--pem-fenced-div-rail-width\)\s+0\s+0/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-start:\s*1\.35em\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-line:not\(\.HyperMD-list-line\)\s*\{[^}]*padding-inline-start:\s*1\.35em\s*!important/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*padding-inline-end:\s*1em/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*border-left:/s);
     });
@@ -26,11 +26,17 @@ describe('fenced div live-preview styles', () => {
         expect(styles).toMatch(/--pem-fenced-div-rail-1:[\s\S]*var\(--pem-fenced-div-inner-bg\)\s+calc\(var\(--pem-fenced-div-nest-indent\)\s*\+\s*var\(--pem-fenced-div-rail-width\)\)/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-inner,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-inner\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*--pem-fenced-div-surface:\s*var\(--pem-fenced-div-rail-1\),\s*var\(--pem-fenced-div-bg\)/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-line,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-line\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*box-shadow:\s*inset\s+var\(--pem-fenced-div-rail-width\)\s+0\s+0\s+var\(--pem-fenced-div-accent\)/s);
-        expect(styles).toMatch(/\.cm-pem-fenced-div-inner\s*\{[^}]*padding-inline-start:\s*calc\(var\(--pem-fenced-div-current-indent\)\s*\+\s*1\.35em\)\s*!important/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-inner:not\(\.HyperMD-list-line\)\s*\{[^}]*padding-inline-start:\s*calc\(var\(--pem-fenced-div-current-indent\)\s*\+\s*1\.35em\)\s*!important/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-depth-3\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*--pem-fenced-div-current-indent:\s*calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
         expect(styles).toMatch(/--pem-fenced-div-rail-2:[\s\S]*transparent\s+calc\(var\(--pem-fenced-div-nest-indent\)\s*\*\s*2\)/s);
         expect(styles).toMatch(/\.cm-pem-fenced-div-depth-3,\s*\.cm-content\s*>\s*\.cm-pem-fenced-div-depth-3\s*\+\s*\.math\.math-block\.cm-embed-block:has\(\+\s*\.cm-pem-fenced-div-line\)\s*\{[^}]*var\(--pem-fenced-div-rail-2\),\s*var\(--pem-fenced-div-rail-1\)/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-inner[^{}]*::before/s);
+    });
+
+    it('does not override native list indentation on live-preview fenced div list lines', () => {
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\.HyperMD-list-line\s*\{[^}]*padding-inline-start/s);
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\.HyperMD-list-line\s*>\s*\.cm-formatting-list/s);
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\.HyperMD-list-line\s*>\s*:is/s);
     });
 
     it('compacts inactive closing fences while preserving fenced div surfaces', () => {

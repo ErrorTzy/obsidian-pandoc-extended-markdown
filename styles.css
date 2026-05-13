@@ -355,8 +355,11 @@
 
 .cm-pem-fenced-div-line {
     background: var(--pem-fenced-div-surface) !important;
-    padding-inline-start: 1.35em !important;
     padding-inline-end: 1em;
+}
+
+.cm-pem-fenced-div-line:not(.HyperMD-list-line) {
+    padding-inline-start: 1.35em !important;
 }
 
 .cm-pem-fenced-div-inner,
@@ -365,7 +368,7 @@
     --pem-fenced-div-surface: var(--pem-fenced-div-rail-1), var(--pem-fenced-div-bg);
 }
 
-.cm-pem-fenced-div-inner {
+.cm-pem-fenced-div-inner:not(.HyperMD-list-line) {
     padding-inline-start: calc(var(--pem-fenced-div-current-indent) + 1.35em) !important;
 }
 

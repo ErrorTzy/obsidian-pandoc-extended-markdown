@@ -81,6 +81,21 @@ interface FencedDivMathBlockState {
     childMathBackgrounds: string[];
 }
 
+interface FencedDivListIndentState {
+    error?: string;
+    headerLeftPx: number;
+    railRightPx: number;
+    insideListCount: number;
+    outsideListCount: number;
+    markerClasses: string[];
+    insideListPaddingLeftPx: number[];
+    outsideListPaddingLeftPx: number[];
+    insideTextLeftPx: number[];
+    outsideTextLeftPx: number[];
+    insideTextIndent: string[];
+    outsideTextIndent: string[];
+}
+
 interface NestedFencedDivMathRailState {
     headerTexts: string[];
     mathBlockCount: number;
@@ -331,6 +346,64 @@ describe('Fenced div live preview', () => {
         expect(state.closeLineMaxHeightPx).toBeLessThanOrEqual(14);
         expect(state.closeLinesStayCompact).toBe(true);
         expect(state.closeLinesKeepSurface).toBe(true);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('keeps unordered list markers and text indented inside fenced div content', async () => {
+        const filePath = 'fenced-div-live-preview-unordered-list-indent.md';
+        const content = [
+            '::: fenced_div',
+            '- unordered list inside',
+            '+ unordered list inside',
+            '* unordered list inside',
+            ':::',
+            '',
+            '- unordered list outside',
+            '+ unordered list outside',
+            '* unordered list outside'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(6);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivListIndentState();
+            return !state.error &&
+                state.insideListCount === 3 &&
+                state.outsideListCount === 3;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected unordered list lines inside and outside fenced div content'
+        });
+
+        const state = await getFencedDivListIndentState();
+
+        if (state.error) {
+            throw new Error(state.error);
+        }
+
+        expect(state.markerClasses).toEqual([
+            'pem-unordered-list-marker-dash',
+            'pem-unordered-list-marker-plus',
+            'pem-unordered-list-marker-star'
+        ]);
+        const keepsNativeListPadding = state.insideListPaddingLeftPx.every((padding, index) =>
+            Math.abs(padding - state.outsideListPaddingLeftPx[index]) <= 1
+        );
+        const keepsNativeTextIndent = state.insideTextIndent.every((textIndent, index) =>
+            textIndent === state.outsideTextIndent[index]
+        );
+        const textStartsAtContentColumn = state.insideTextLeftPx.every(left =>
+            Math.abs(left - state.headerLeftPx) <= 4
+        );
+        const textClearsRail = state.insideTextLeftPx.every(left => left > state.railRightPx + 12);
+
+        if (!keepsNativeListPadding || !keepsNativeTextIndent || !textStartsAtContentColumn || !textClearsRail) {
+            throw new Error(`Unexpected fenced div list indentation: ${JSON.stringify(state, null, 2)}`);
+        }
 
         await deleteFileIfExists(filePath);
     });
@@ -765,6 +838,92 @@ async function getFencedDivReferenceState(): Promise<FencedDivReferenceState> {
                 .filter((label): label is string => Boolean(label)),
             referenceLineText: referenceLine?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
             rawMissingPreserved: Boolean(referenceLine?.textContent?.includes('@missing'))
+        };
+    });
+}
+
+async function getFencedDivListIndentState(): Promise<FencedDivListIndentState> {
+    return browser.execute((): FencedDivListIndentState => {
+        const header = document.querySelector('.cm-line.cm-pem-fenced-div-open .pem-fenced-div-header') as HTMLElement | null;
+        const fencedLine = document.querySelector('.cm-line.cm-pem-fenced-div-line') as HTMLElement | null;
+        const allListLines = Array.from(document.querySelectorAll('.cm-line.HyperMD-list-line')) as HTMLElement[];
+        const insideLines = allListLines.filter(line =>
+            line.classList.contains('cm-pem-fenced-div-content') &&
+            (line.textContent ?? '').includes('unordered list inside')
+        );
+        const outsideLines = allListLines.filter(line =>
+            !line.classList.contains('cm-pem-fenced-div-line') &&
+            (line.textContent ?? '').includes('unordered list outside')
+        );
+
+        const getPaddingLeft = (line: HTMLElement): number =>
+            Number.parseFloat(window.getComputedStyle(line).paddingLeft);
+        const getTextLeft = (line: HTMLElement, text: string): number => {
+            const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+
+            while (node) {
+                const content = node.textContent ?? '';
+                const index = content.indexOf(text);
+                if (index >= 0) {
+                    const range = document.createRange();
+                    range.setStart(node, index);
+                    range.setEnd(node, index + text.length);
+                    const rect = range.getBoundingClientRect();
+                    range.detach();
+                    return rect.left;
+                }
+                node = walker.nextNode();
+            }
+
+            return 0;
+        };
+
+        if (!header || !fencedLine) {
+            return {
+                error: 'missing-fenced-div-header',
+                headerLeftPx: 0,
+                railRightPx: 0,
+                insideListCount: insideLines.length,
+                outsideListCount: outsideLines.length,
+                markerClasses: [],
+                insideListPaddingLeftPx: [],
+                outsideListPaddingLeftPx: [],
+                insideTextLeftPx: [],
+                outsideTextLeftPx: [],
+                insideTextIndent: [],
+                outsideTextIndent: []
+            };
+        }
+
+        const markerClassOrder = [
+            'pem-unordered-list-marker-dash',
+            'pem-unordered-list-marker-plus',
+            'pem-unordered-list-marker-star'
+        ];
+        const sortedInsideLines = markerClassOrder
+            .map(className => insideLines.find(line => line.classList.contains(className)))
+            .filter((line): line is HTMLElement => Boolean(line));
+        const sortedOutsideLines = markerClassOrder
+            .map(className => outsideLines.find(line => line.classList.contains(className)))
+            .filter((line): line is HTMLElement => Boolean(line));
+        const fencedStyle = window.getComputedStyle(fencedLine);
+        const railWidth = Number.parseFloat(fencedStyle.getPropertyValue('--pem-fenced-div-rail-width')) || 0;
+
+        return {
+            headerLeftPx: header.getBoundingClientRect().left,
+            railRightPx: fencedLine.getBoundingClientRect().left + railWidth,
+            insideListCount: insideLines.length,
+            outsideListCount: outsideLines.length,
+            markerClasses: sortedInsideLines.map(line =>
+                markerClassOrder.find(className => line.classList.contains(className)) ?? ''
+            ),
+            insideListPaddingLeftPx: sortedInsideLines.map(getPaddingLeft),
+            outsideListPaddingLeftPx: sortedOutsideLines.map(getPaddingLeft),
+            insideTextLeftPx: sortedInsideLines.map(line => getTextLeft(line, 'unordered list inside')),
+            outsideTextLeftPx: sortedOutsideLines.map(line => getTextLeft(line, 'unordered list outside')),
+            insideTextIndent: sortedInsideLines.map(line => window.getComputedStyle(line).textIndent),
+            outsideTextIndent: sortedOutsideLines.map(line => window.getComputedStyle(line).textIndent)
         };
     });
 }
