@@ -77,6 +77,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         context: ProcessingContext,
         stackItem: FencedDivStackItem
     ): StructuralResult {
+        this.resetDefinitionState(context);
         context.fencedDivStack = context.fencedDivStack || [];
         context.fencedDivStack.push(stackItem);
         context.fencedDivBoundaryLine = line.number;
@@ -94,6 +95,7 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
     }
 
     private processClosingFence(line: Line, context: ProcessingContext): StructuralResult {
+        this.resetDefinitionState(context);
         const stack = context.fencedDivStack || [];
         const renderDepth = stack.length;
         const closingItem = stack.pop();
@@ -224,5 +226,10 @@ export class FencedDivProcessor extends BaseStructuralProcessor {
         }
 
         return isFencedDivClosing(context.document.line(line.number + 1).text);
+    }
+
+    private resetDefinitionState(context: ProcessingContext): void {
+        context.definitionState.lastWasItem = false;
+        context.definitionState.pendingBlankLine = false;
     }
 }

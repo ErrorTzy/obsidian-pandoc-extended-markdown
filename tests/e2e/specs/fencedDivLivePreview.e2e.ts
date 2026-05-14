@@ -95,6 +95,15 @@ interface FencedDivListIndentState {
     outsideTextLeftPx: number[];
 }
 
+interface FencedDivDefinitionMarkerState {
+    openLineCount: number;
+    closeLineCount: number;
+    fencedContentText: string;
+    fencedDefinitionMarkerCount: number;
+    fencedDefinitionParagraphCount: number;
+    outsideDefinitionMarkerCount: number;
+}
+
 interface NestedFencedDivMathRailState {
     headerTexts: string[];
     mathBlockCount: number;
@@ -279,6 +288,41 @@ describe('Fenced div live preview', () => {
         });
 
         expect(selectionHead).toBeGreaterThan(0);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('keeps marker-only fenced div content as plain text in live preview', async () => {
+        const filePath = 'fenced-div-definition-marker-live-preview.md';
+        const content = [
+            '::: title',
+            ': text',
+            ':::',
+            '',
+            'Term',
+            ': outside'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivDefinitionMarkerState();
+            return state.openLineCount === 1 &&
+                state.closeLineCount === 1 &&
+                state.fencedContentText.includes(': text');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected marker-only fenced div content in live preview'
+        });
+
+        const state = await getFencedDivDefinitionMarkerState();
+
+        expect(state.fencedContentText).toContain(': text');
+        expect(state.fencedDefinitionMarkerCount).toBe(0);
+        expect(state.fencedDefinitionParagraphCount).toBe(0);
+        expect(state.outsideDefinitionMarkerCount).toBeGreaterThanOrEqual(1);
 
         await deleteFileIfExists(filePath);
     });
@@ -849,6 +893,33 @@ async function getFencedDivReferenceState(): Promise<FencedDivReferenceState> {
                 .filter((label): label is string => Boolean(label)),
             referenceLineText: referenceLine?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
             rawMissingPreserved: Boolean(referenceLine?.textContent?.includes('@missing'))
+        };
+    });
+}
+
+async function getFencedDivDefinitionMarkerState(): Promise<FencedDivDefinitionMarkerState> {
+    return browser.execute((): FencedDivDefinitionMarkerState => {
+        const openLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-open')) as HTMLElement[];
+        const closeLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-close')) as HTMLElement[];
+        const contentLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-fenced-div-content')) as HTMLElement[];
+        const fencedMarkerLines = contentLines.filter(line => line.textContent?.includes('text'));
+        const outsideDefinitionLines = Array.from(document.querySelectorAll('.cm-line.cm-pem-definition-paragraph')) as HTMLElement[];
+        const outsideDefinitionMarkerCount = outsideDefinitionLines
+            .filter(line => !line.classList.contains('cm-pem-fenced-div-content'))
+            .reduce((count, line) => count + line.querySelectorAll('.pem-list-marker').length, 0);
+
+        return {
+            openLineCount: openLines.length,
+            closeLineCount: closeLines.length,
+            fencedContentText: fencedMarkerLines.map(line => line.textContent ?? '').join('\n'),
+            fencedDefinitionMarkerCount: fencedMarkerLines.reduce(
+                (count, line) => count + line.querySelectorAll('.pem-list-marker').length,
+                0
+            ),
+            fencedDefinitionParagraphCount: fencedMarkerLines
+                .filter(line => line.classList.contains('cm-pem-definition-paragraph'))
+                .length,
+            outsideDefinitionMarkerCount
         };
     });
 }

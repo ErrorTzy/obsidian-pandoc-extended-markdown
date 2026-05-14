@@ -1,4 +1,5 @@
 import { parseDefinitionListMarker } from '../../../src/reading-mode/features/extended-lists/definitionListMarker';
+import { findPandocDefinitionListBlocks } from '../../../src/reading-mode/features/definition-lists/sourceParser';
 
 describe('DefinitionListParser', () => {
   describe('parseDefinitionListMarker', () => {
@@ -71,6 +72,22 @@ describe('DefinitionListParser', () => {
         marker: ':',
         content: 'Definition with *emphasis*'
       });
+    });
+  });
+
+  describe('findPandocDefinitionListBlocks', () => {
+    it('does not treat a fenced div opener as a definition term', () => {
+      const blocks = findPandocDefinitionListBlocks('::: title\n: text\n:::');
+
+      expect(blocks).toEqual([]);
+    });
+
+    it('still finds definition lists inside fenced div content when a term is present', () => {
+      const blocks = findPandocDefinitionListBlocks('::: title\nTerm\n: text\n:::');
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0].termTexts).toEqual(['Term']);
+      expect(blocks[0].definitionTexts).toEqual(['text']);
     });
   });
 });

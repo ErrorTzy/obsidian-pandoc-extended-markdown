@@ -61,6 +61,29 @@ describe('definition list reading mode rendering', () => {
         expect(definitions[0].textContent).toBe('details1');
     });
 
+    it('does not normalize a fenced div opener as a definition term', () => {
+        jest.useFakeTimers();
+        config.enableFencedDivs = true;
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = `
+            <div class="el-p"><p>::: title</p></div>
+            <div class="el-p"><p>: text</p></div>
+            <div class="el-p"><p>:::</p></div>
+        `;
+
+        processReadingMode(
+            section,
+            createContext('::: title\n: text\n:::'),
+            config
+        );
+        jest.runOnlyPendingTimers();
+
+        expect(section.querySelector('dl.pem-definition-list')).toBeNull();
+        expect(section.textContent).toContain(': text');
+        expect(section.textContent).not.toContain('• text');
+    });
+
     it('keeps blank-line-separated terms in one definition list', () => {
         const element = document.createElement('div');
         element.innerHTML = '<p>Description Term<br>: details1<br><br>Another Term<br>: another detail1</p>';

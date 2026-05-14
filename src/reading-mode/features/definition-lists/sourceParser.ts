@@ -1,4 +1,8 @@
 import { ListPatterns } from '../../../shared/patterns';
+import {
+    isFencedDivClosing,
+    parseFencedDivOpening
+} from '../../../live-preview/pipeline/structural/fencedDiv/parser';
 
 export interface PandocDefinitionListBlock {
     startLine: number;
@@ -178,6 +182,10 @@ function readDefinitionDescription(
     let sawBlank = false;
 
     while (index < lines.length) {
+        if (isDefinitionTermBoundary(lines[index])) {
+            break;
+        }
+
         if (parseTopLevelDefinitionMarker(lines[index])) {
             break;
         }
@@ -211,12 +219,21 @@ function readDefinitionDescription(
 }
 
 function canStartDefinitionListItem(lines: string[], index: number): boolean {
-    if (index >= lines.length || lines[index].trim().length === 0 || parseTopLevelDefinitionMarker(lines[index])) {
+    if (
+        index >= lines.length ||
+        lines[index].trim().length === 0 ||
+        parseTopLevelDefinitionMarker(lines[index]) ||
+        isDefinitionTermBoundary(lines[index])
+    ) {
         return false;
     }
 
     const markerIndex = findFirstDefinitionMarker(lines, index);
     return markerIndex === index + 1 || markerIndex === index + 2;
+}
+
+function isDefinitionTermBoundary(line: string): boolean {
+    return Boolean(parseFencedDivOpening(line) || isFencedDivClosing(line));
 }
 
 function findFirstDefinitionMarker(lines: string[], termLine: number): number {

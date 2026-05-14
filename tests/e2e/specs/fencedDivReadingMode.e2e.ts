@@ -27,6 +27,14 @@ interface ReadingModeFencedDivState {
     paragraphHtml: string[];
 }
 
+interface ReadingModeDefinitionMarkerBoundaryState {
+    blockCount: number;
+    blockTexts: string[];
+    definitionListCount: number;
+    rawText: string;
+    previewHtml: string;
+}
+
 describe('Fenced div reading mode', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -94,6 +102,44 @@ describe('Fenced div reading mode', () => {
         expect(state.referenceLabels).toEqual(['thm:reading']);
         expect(state.rawText).not.toContain('::: {.theorem #thm:reading title="Theorem &"}');
         expect(state.rawText).not.toContain('@thm:reading');
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('keeps marker-only fenced div content as plain text in reading mode', async () => {
+        const filePath = 'fenced-div-definition-marker-reading-mode.md';
+        const content = [
+            '::: title',
+            ': text',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureReadingMode();
+
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeDefinitionMarkerBoundaryState();
+                return state.blockCount === 1 &&
+                    state.blockTexts.some(text => text.includes(': text')) &&
+                    !state.rawText.includes('::: title');
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected marker-only fenced div content as plain text in reading mode'
+            });
+        } catch (error) {
+            const state = await getReadingModeDefinitionMarkerBoundaryState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getReadingModeDefinitionMarkerBoundaryState();
+
+        expect(state.blockCount).toBe(1);
+        expect(state.blockTexts[0]).toContain(': text');
+        expect(state.definitionListCount).toBe(0);
+        expect(state.rawText).not.toContain('::: title');
+        expect(state.rawText).not.toContain(':::');
 
         await deleteFileIfExists(filePath);
     });
@@ -545,6 +591,21 @@ async function getReadingModeFencedDivState(): Promise<ReadingModeFencedDivState
                 .map(node => node.textContent ?? '')
                 .join(' ');
         }
+    });
+}
+
+async function getReadingModeDefinitionMarkerBoundaryState(): Promise<ReadingModeDefinitionMarkerBoundaryState> {
+    return browser.execute((): ReadingModeDefinitionMarkerBoundaryState => {
+        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
+        const blocks = Array.from(preview?.querySelectorAll('.pem-fenced-div') ?? []) as HTMLElement[];
+
+        return {
+            blockCount: blocks.length,
+            blockTexts: blocks.map(block => block.textContent ?? ''),
+            definitionListCount: preview?.querySelectorAll('dl.pem-definition-list').length ?? 0,
+            rawText: preview?.textContent ?? '',
+            previewHtml: preview?.innerHTML ?? ''
+        };
     });
 }
 

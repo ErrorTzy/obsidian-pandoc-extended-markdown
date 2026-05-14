@@ -43,7 +43,7 @@ function normalizeDefinitionListsFromSource(
     const sectionInfo = getSourceSectionInfo(element, context);
     const blocks = findPandocDefinitionListBlocks(sourceText);
     if (blocks.length === 0) {
-        return false;
+        return true;
     }
 
     const renderer = new ReadingModeRenderer();

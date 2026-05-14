@@ -35,6 +35,10 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
     }
 
     private processElementTextNodes(elem: Element, context: ReadingModeContext): void {
+        if (shouldKeepSourceBackedDefinitionMarkerPlain(elem, context)) {
+            return;
+        }
+
         if (context.config.enableDefinitionLists !== false &&
             elem.nodeName === 'P' &&
             this.processDefinitionListParagraph(elem, context)) {
@@ -79,6 +83,8 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
             isAtParagraphStart,
             context.config
         );
+
+        applySourceDefinitionBoundaries(parsedLines, lines, context);
 
         if (context.config.strictPandocMode) {
             parsedLines.forEach((parsedLine, index) => {
@@ -214,6 +220,79 @@ function shouldSkipElement(element: Element, sourcePath: string): boolean {
     return Boolean(
         element.closest('h1, h2, h3, h4, h5, h6') ||
         pluginStateManager.isElementProcessed(element, 'pem-processed', sourcePath)
+    );
+}
+
+function shouldKeepSourceBackedDefinitionMarkerPlain(
+    element: Element,
+    context: ReadingModeContext
+): boolean {
+    if (
+        context.config.enableDefinitionLists === false ||
+        element.nodeName !== 'P' ||
+        !context.sectionInfo?.text
+    ) {
+        return false;
+    }
+
+    const text = normalizeCandidateText(getTextWithLineBreaks(element));
+    if (!ListPatterns.isDefinitionMarker(text)) {
+        return false;
+    }
+
+    const sourceLines = context.sectionInfo.text.split('\n');
+    const matchingSourceLineIndexes = sourceLines
+        .map((line, index) => ({ line: normalizeCandidateText(line), index }))
+        .filter(item => item.line === text)
+        .map(item => item.index);
+
+    if (matchingSourceLineIndexes.length === 0) {
+        return false;
+    }
+
+    const blocks = findPandocDefinitionListBlocks(context.sectionInfo.text);
+    return matchingSourceLineIndexes.every(index =>
+        !blocks.some(block => index >= block.startLine && index <= block.endLine)
+    );
+}
+
+function applySourceDefinitionBoundaries(
+    parsedLines: ReturnType<ReadingModeParser['parseLines']>,
+    lines: string[],
+    context: ReadingModeContext
+): void {
+    if (context.config.enableDefinitionLists === false || !context.sectionInfo?.text) {
+        return;
+    }
+
+    parsedLines.forEach((parsedLine, index) => {
+        if (
+            parsedLine.type !== 'definition-item' ||
+            isSourceLineInDefinitionBlock(lines[index], context.sectionInfo?.text ?? '')
+        ) {
+            return;
+        }
+
+        parsedLine.type = 'plain';
+        parsedLine.metadata = undefined;
+    });
+}
+
+function isSourceLineInDefinitionBlock(line: string, sourceText: string): boolean {
+    const normalizedLine = normalizeCandidateText(line);
+    const sourceLines = sourceText.split('\n');
+    const matchingSourceLineIndexes = sourceLines
+        .map((sourceLine, index) => ({ line: normalizeCandidateText(sourceLine), index }))
+        .filter(item => item.line === normalizedLine)
+        .map(item => item.index);
+
+    if (matchingSourceLineIndexes.length === 0) {
+        return true;
+    }
+
+    const blocks = findPandocDefinitionListBlocks(sourceText);
+    return matchingSourceLineIndexes.some(index =>
+        blocks.some(block => index >= block.startLine && index <= block.endLine)
     );
 }
 

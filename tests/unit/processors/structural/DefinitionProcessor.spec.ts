@@ -85,6 +85,32 @@ describe('DefinitionProcessor', () => {
             const line = context.document.line(1);
             expect(processor.canProcess(line, context)).toBe(true);
         });
+
+        it('should not treat marker-only fenced div content as a definition item', () => {
+            context = createContext('::: title\n: text\n:::');
+            context.fencedDivStack = [{
+                classes: ['title'],
+                openingLine: 1
+            }];
+
+            const line = context.document.line(2);
+
+            expect(processor.canProcess(line, context)).toBe(false);
+        });
+
+        it('should still process definition lists inside fenced div content when a term is present', () => {
+            context = createContext('::: title\nTerm\n: Definition\n:::');
+            context.fencedDivStack = [{
+                classes: ['title'],
+                openingLine: 1
+            }];
+
+            const termLine = context.document.line(2);
+            const definitionLine = context.document.line(3);
+
+            expect(processor.canProcess(termLine, context)).toBe(true);
+            expect(processor.canProcess(definitionLine, context)).toBe(true);
+        });
         
         it('should return true for terms with blank line before definition', () => {
             context = createContext('Term\n\n: Definition');

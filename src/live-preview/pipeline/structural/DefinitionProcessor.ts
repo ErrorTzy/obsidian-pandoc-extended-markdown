@@ -10,6 +10,10 @@ import { ListPatterns } from '../../../shared/patterns';
 
 import { DefinitionBulletWidget } from '../../widgets';
 import { handleError } from '../../../shared/utils/errorHandler';
+import {
+    isFencedDivClosing,
+    parseFencedDivOpening
+} from './fencedDiv/parser';
 
 /**
  * Processor for definition lists (: and ~ markers)
@@ -27,7 +31,10 @@ export class DefinitionProcessor implements StructuralProcessor {
         const lineText = context.document.sliceString(line.from, line.to);
         
         // Check if it's a definition item
-        if (ListPatterns.isDefinitionMarker(lineText)) {
+        if (
+            ListPatterns.isDefinitionMarker(lineText) &&
+            this.canProcessDefinitionMarker(line, context)
+        ) {
             return true;
         }
         
@@ -232,7 +239,7 @@ export class DefinitionProcessor implements StructuralProcessor {
         const lineText = context.document.sliceString(line.from, line.to);
         
         // Empty lines or markers are not terms
-        if (!lineText.trim() || ListPatterns.isDefinitionMarker(lineText) || ListPatterns.isIndentedContent(lineText)) {
+        if (!this.isDefinitionTermLine(lineText, context)) {
             return false;
         }
         
@@ -260,6 +267,50 @@ export class DefinitionProcessor implements StructuralProcessor {
         }
         
         return false;
+    }
+
+    private canProcessDefinitionMarker(line: Line, context: ProcessingContext): boolean {
+        if (!this.isInsideFencedDiv(context)) {
+            return true;
+        }
+
+        if (context.definitionState.lastWasItem || context.definitionState.pendingBlankLine) {
+            return true;
+        }
+
+        return this.hasPrecedingDefinitionTerm(line, context);
+    }
+
+    private hasPrecedingDefinitionTerm(line: Line, context: ProcessingContext): boolean {
+        let previousLineNumber = line.number - 1;
+        if (previousLineNumber < 1) {
+            return false;
+        }
+
+        let previousLine = context.document.line(previousLineNumber);
+        if (previousLine.text.trim() === '') {
+            previousLineNumber--;
+            if (previousLineNumber < 1) {
+                return false;
+            }
+            previousLine = context.document.line(previousLineNumber);
+        }
+
+        return this.isDefinitionTermLine(previousLine.text, context);
+    }
+
+    private isDefinitionTermLine(lineText: string, context: ProcessingContext): boolean {
+        return Boolean(
+            lineText.trim() &&
+            !ListPatterns.isDefinitionMarker(lineText) &&
+            !ListPatterns.isIndentedContent(lineText) &&
+            !parseFencedDivOpening(lineText, context.settings) &&
+            !isFencedDivClosing(lineText)
+        );
+    }
+
+    private isInsideFencedDiv(context: ProcessingContext): boolean {
+        return (context.fencedDivStack?.length ?? 0) > 0;
     }
     
     private isIndentedDefinitionContent(line: Line, context: ProcessingContext): boolean {

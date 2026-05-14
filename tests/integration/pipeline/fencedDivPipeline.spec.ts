@@ -2,6 +2,7 @@ import { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { ProcessingPipeline } from '../../../src/live-preview/pipeline/ProcessingPipeline';
 import { FencedDivProcessor } from '../../../src/live-preview/pipeline/structural/FencedDivProcessor';
+import { DefinitionProcessor } from '../../../src/live-preview/pipeline/structural/DefinitionProcessor';
 import { FencedDivReferenceProcessor } from '../../../src/live-preview/pipeline/inline/FencedDivReferenceProcessor';
 import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 import { PluginStateManager } from '../../../src/core/state/pluginStateManager';
@@ -47,6 +48,7 @@ describe('fenced div live-preview pipeline', () => {
         });
         pipeline = new ProcessingPipeline(new PluginStateManager());
         pipeline.registerStructuralProcessor(new FencedDivProcessor());
+        pipeline.registerStructuralProcessor(new DefinitionProcessor());
         pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
         settings = {
             strictPandocMode: false,
@@ -232,5 +234,25 @@ describe('fenced div live-preview pipeline', () => {
         updateView(' ::: {.note}\ncontent\n:::');
 
         expect(getWidgetNames()).not.toContain('FencedDivHeaderWidget');
+    });
+
+    it('keeps marker-only content after a fenced div opener as plain text', () => {
+        updateView('::: title\n: text\n:::');
+
+        const widgetNames = getWidgetNames();
+
+        expect(widgetNames).toContain('FencedDivHeaderWidget');
+        expect(widgetNames).toContain('FencedDivClosingWidget');
+        expect(widgetNames).not.toContain('DefinitionBulletWidget');
+    });
+
+    it('still renders real definition lists inside fenced div content', () => {
+        updateView('::: title\nTerm\n: text\n:::');
+
+        const widgetNames = getWidgetNames();
+
+        expect(widgetNames).toContain('FencedDivHeaderWidget');
+        expect(widgetNames).toContain('FencedDivClosingWidget');
+        expect(widgetNames).toContain('DefinitionBulletWidget');
     });
 });
