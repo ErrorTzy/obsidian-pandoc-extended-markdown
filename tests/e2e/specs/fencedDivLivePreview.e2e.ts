@@ -83,17 +83,16 @@ interface FencedDivMathBlockState {
 
 interface FencedDivListIndentState {
     error?: string;
-    headerLeftPx: number;
-    railRightPx: number;
+    outsidePlainTextLeftPx: number;
+    insidePlainTextLeftPx: number;
+    nestedPlainTextLeftPx: number;
     insideListCount: number;
+    nestedListCount: number;
     outsideListCount: number;
     markerClasses: string[];
-    insideListPaddingLeftPx: number[];
-    outsideListPaddingLeftPx: number[];
     insideTextLeftPx: number[];
+    nestedTextLeftPx: number[];
     outsideTextLeftPx: number[];
-    insideTextIndent: string[];
-    outsideTextIndent: string[];
 }
 
 interface NestedFencedDivMathRailState {
@@ -350,29 +349,39 @@ describe('Fenced div live preview', () => {
         await deleteFileIfExists(filePath);
     });
 
-    it('keeps unordered list markers and text indented inside fenced div content', async () => {
+    it('adds fenced div indentation before unordered list indentation in live preview', async () => {
         const filePath = 'fenced-div-live-preview-unordered-list-indent.md';
         const content = [
+            'plain text outside',
+            '- unordered list outside',
+            '+ unordered list outside',
+            '* unordered list outside',
+            '',
             '::: fenced_div',
+            'plain text inside',
             '- unordered list inside',
             '+ unordered list inside',
             '* unordered list inside',
-            ':::',
             '',
-            '- unordered list outside',
-            '+ unordered list outside',
-            '* unordered list outside'
+            '::: nested',
+            'plain text nested',
+            '- unordered list nested',
+            '+ unordered list nested',
+            '* unordered list nested',
+            ':::',
+            ':::'
         ].join('\n');
 
         await createOrReplaceFile(filePath, content);
         await openFileInActiveLeaf(filePath);
         await ensureLivePreviewMode();
-        await moveCursorToLine(6);
+        await moveCursorToLine(18);
 
         await browser.waitUntil(async () => {
             const state = await getFencedDivListIndentState();
             return !state.error &&
                 state.insideListCount === 3 &&
+                state.nestedListCount === 3 &&
                 state.outsideListCount === 3;
         }, {
             timeout: 5000,
@@ -390,18 +399,20 @@ describe('Fenced div live preview', () => {
             'pem-unordered-list-marker-plus',
             'pem-unordered-list-marker-star'
         ]);
-        const keepsNativeListPadding = state.insideListPaddingLeftPx.every((padding, index) =>
-            Math.abs(padding - state.outsideListPaddingLeftPx[index]) <= 1
-        );
-        const keepsNativeTextIndent = state.insideTextIndent.every((textIndent, index) =>
-            textIndent === state.outsideTextIndent[index]
-        );
-        const textStartsAtContentColumn = state.insideTextLeftPx.every(left =>
-            Math.abs(left - state.headerLeftPx) <= 4
-        );
-        const textClearsRail = state.insideTextLeftPx.every(left => left > state.railRightPx + 12);
 
-        if (!keepsNativeListPadding || !keepsNativeTextIndent || !textStartsAtContentColumn || !textClearsRail) {
+        const outsideListIndentPx = state.outsideTextLeftPx.map(left => left - state.outsidePlainTextLeftPx);
+        const insideListIndentPx = state.insideTextLeftPx.map(left => left - state.insidePlainTextLeftPx);
+        const nestedListIndentPx = state.nestedTextLeftPx.map(left => left - state.nestedPlainTextLeftPx);
+        const listIndentMatchesOutside = outsideListIndentPx.every((outsideIndent, index) =>
+            Math.abs(insideListIndentPx[index] - outsideIndent) <= 3 &&
+            Math.abs(nestedListIndentPx[index] - outsideIndent) <= 3
+        );
+        const insideInheritsFenceIndent = state.insidePlainTextLeftPx > state.outsidePlainTextLeftPx + 8 &&
+            state.insideTextLeftPx.every(left => left > state.outsideTextLeftPx[0] + 8);
+        const nestedInheritsFenceIndent = state.nestedPlainTextLeftPx > state.insidePlainTextLeftPx + 8 &&
+            state.nestedTextLeftPx.every(left => left > state.insideTextLeftPx[0] + 8);
+
+        if (!listIndentMatchesOutside || !insideInheritsFenceIndent || !nestedInheritsFenceIndent) {
             throw new Error(`Unexpected fenced div list indentation: ${JSON.stringify(state, null, 2)}`);
         }
 
@@ -844,20 +855,23 @@ async function getFencedDivReferenceState(): Promise<FencedDivReferenceState> {
 
 async function getFencedDivListIndentState(): Promise<FencedDivListIndentState> {
     return browser.execute((): FencedDivListIndentState => {
-        const header = document.querySelector('.cm-line.cm-pem-fenced-div-open .pem-fenced-div-header') as HTMLElement | null;
-        const fencedLine = document.querySelector('.cm-line.cm-pem-fenced-div-line') as HTMLElement | null;
+        const allLines = Array.from(document.querySelectorAll('.cm-line')) as HTMLElement[];
         const allListLines = Array.from(document.querySelectorAll('.cm-line.HyperMD-list-line')) as HTMLElement[];
         const insideLines = allListLines.filter(line =>
             line.classList.contains('cm-pem-fenced-div-content') &&
+            !line.classList.contains('cm-pem-fenced-div-inner') &&
             (line.textContent ?? '').includes('unordered list inside')
+        );
+        const nestedLines = allListLines.filter(line =>
+            line.classList.contains('cm-pem-fenced-div-content') &&
+            line.classList.contains('cm-pem-fenced-div-inner') &&
+            (line.textContent ?? '').includes('unordered list nested')
         );
         const outsideLines = allListLines.filter(line =>
             !line.classList.contains('cm-pem-fenced-div-line') &&
             (line.textContent ?? '').includes('unordered list outside')
         );
 
-        const getPaddingLeft = (line: HTMLElement): number =>
-            Number.parseFloat(window.getComputedStyle(line).paddingLeft);
         const getTextLeft = (line: HTMLElement, text: string): number => {
             const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
             let node = walker.nextNode();
@@ -878,21 +892,26 @@ async function getFencedDivListIndentState(): Promise<FencedDivListIndentState> 
 
             return 0;
         };
+        const findLine = (text: string): HTMLElement | null =>
+            allLines.find(line => (line.textContent ?? '').includes(text)) ?? null;
 
-        if (!header || !fencedLine) {
+        const outsidePlainLine = findLine('plain text outside');
+        const insidePlainLine = findLine('plain text inside');
+        const nestedPlainLine = findLine('plain text nested');
+
+        if (!outsidePlainLine || !insidePlainLine || !nestedPlainLine) {
             return {
-                error: 'missing-fenced-div-header',
-                headerLeftPx: 0,
-                railRightPx: 0,
+                error: 'missing-plain-text-lines',
+                outsidePlainTextLeftPx: 0,
+                insidePlainTextLeftPx: 0,
+                nestedPlainTextLeftPx: 0,
                 insideListCount: insideLines.length,
+                nestedListCount: nestedLines.length,
                 outsideListCount: outsideLines.length,
                 markerClasses: [],
-                insideListPaddingLeftPx: [],
-                outsideListPaddingLeftPx: [],
                 insideTextLeftPx: [],
+                nestedTextLeftPx: [],
                 outsideTextLeftPx: [],
-                insideTextIndent: [],
-                outsideTextIndent: []
             };
         }
 
@@ -904,26 +923,26 @@ async function getFencedDivListIndentState(): Promise<FencedDivListIndentState> 
         const sortedInsideLines = markerClassOrder
             .map(className => insideLines.find(line => line.classList.contains(className)))
             .filter((line): line is HTMLElement => Boolean(line));
+        const sortedNestedLines = markerClassOrder
+            .map(className => nestedLines.find(line => line.classList.contains(className)))
+            .filter((line): line is HTMLElement => Boolean(line));
         const sortedOutsideLines = markerClassOrder
             .map(className => outsideLines.find(line => line.classList.contains(className)))
             .filter((line): line is HTMLElement => Boolean(line));
-        const fencedStyle = window.getComputedStyle(fencedLine);
-        const railWidth = Number.parseFloat(fencedStyle.getPropertyValue('--pem-fenced-div-rail-width')) || 0;
 
         return {
-            headerLeftPx: header.getBoundingClientRect().left,
-            railRightPx: fencedLine.getBoundingClientRect().left + railWidth,
+            outsidePlainTextLeftPx: getTextLeft(outsidePlainLine, 'plain text outside'),
+            insidePlainTextLeftPx: getTextLeft(insidePlainLine, 'plain text inside'),
+            nestedPlainTextLeftPx: getTextLeft(nestedPlainLine, 'plain text nested'),
             insideListCount: insideLines.length,
+            nestedListCount: nestedLines.length,
             outsideListCount: outsideLines.length,
             markerClasses: sortedInsideLines.map(line =>
                 markerClassOrder.find(className => line.classList.contains(className)) ?? ''
             ),
-            insideListPaddingLeftPx: sortedInsideLines.map(getPaddingLeft),
-            outsideListPaddingLeftPx: sortedOutsideLines.map(getPaddingLeft),
             insideTextLeftPx: sortedInsideLines.map(line => getTextLeft(line, 'unordered list inside')),
+            nestedTextLeftPx: sortedNestedLines.map(line => getTextLeft(line, 'unordered list nested')),
             outsideTextLeftPx: sortedOutsideLines.map(line => getTextLeft(line, 'unordered list outside')),
-            insideTextIndent: sortedInsideLines.map(line => window.getComputedStyle(line).textIndent),
-            outsideTextIndent: sortedOutsideLines.map(line => window.getComputedStyle(line).textIndent)
         };
     });
 }

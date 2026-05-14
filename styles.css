@@ -245,6 +245,7 @@
     --pem-fenced-div-bg: var(--background-secondary);
     --pem-fenced-div-inner-bg: var(--background-primary-alt, var(--background-primary));
     --pem-fenced-div-nest-indent: 1.5em;
+    --pem-fenced-div-content-indent: 1.35em;
     --pem-fenced-div-rail-width: 3px;
     --pem-fenced-div-border-color: transparent;
     --pem-fenced-div-border-style: solid;
@@ -258,7 +259,7 @@
     border-radius: var(--pem-fenced-div-border-radius);
     box-shadow: inset var(--pem-fenced-div-rail-width) 0 0 var(--pem-fenced-div-accent);
     margin: 1em 0;
-    padding: 0.55em 1em 0.7em 1.35em;
+    padding: 0.55em 1em 0.7em var(--pem-fenced-div-content-indent);
 }
 
 .pem-fenced-div .pem-fenced-div {
@@ -359,7 +360,7 @@
 }
 
 .cm-pem-fenced-div-line:not(.HyperMD-list-line) {
-    padding-inline-start: 1.35em !important;
+    padding-inline-start: var(--pem-fenced-div-content-indent) !important;
 }
 
 .cm-pem-fenced-div-inner,
@@ -369,7 +370,14 @@
 }
 
 .cm-pem-fenced-div-inner:not(.HyperMD-list-line) {
-    padding-inline-start: calc(var(--pem-fenced-div-current-indent) + 1.35em) !important;
+    padding-inline-start: calc(var(--pem-fenced-div-current-indent) + var(--pem-fenced-div-content-indent)) !important;
+}
+
+/* Preserve Obsidian's native list padding/text-indent and prepend only the fenced-div content offset. */
+.cm-pem-fenced-div-line.HyperMD-list-line::before {
+    content: "";
+    display: inline-block;
+    width: calc(var(--pem-fenced-div-current-indent) + var(--pem-fenced-div-content-indent));
 }
 
 .cm-pem-fenced-div-depth-3,
@@ -435,7 +443,7 @@
     background: var(--pem-fenced-div-surface) !important;
     margin: 0;
     padding-bottom: 0.2em !important;
-    padding-inline-start: calc(var(--pem-fenced-div-current-indent) + 1.35em) !important;
+    padding-inline-start: calc(var(--pem-fenced-div-current-indent) + var(--pem-fenced-div-content-indent)) !important;
     padding-inline-end: 1em !important;
     padding-top: 0.1em !important;
 }
