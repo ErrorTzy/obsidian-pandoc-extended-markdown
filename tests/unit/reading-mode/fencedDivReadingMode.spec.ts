@@ -422,6 +422,94 @@ describe('fenced div reading mode rendering', () => {
         expect(element.textContent).toContain('@invalid');
     });
 
+    it('uses source opening depth when a missed closing would otherwise nest later blocks', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: Overall Limit {}</p>',
+            '<p>Limit equation.</p>',
+            '<p>Formal definition.</p>',
+            '<p>Game semantics paragraph.</p>',
+            '<p>Let limits be defined.</p>',
+            '<p>::: Addition law {}<br>Addition content.<br>:::</p>'
+        ].join('');
+
+        processFencedDivs(
+            element,
+            docPath,
+            createConfig(),
+            false,
+            [
+                '::: Overall Limit {}',
+                '',
+                'Limit equation.',
+                '',
+                'Formal definition.',
+                '',
+                'Game semantics paragraph.',
+                ':::',
+                '',
+                '### Limit Laws',
+                '',
+                'Let limits be defined.',
+                '',
+                '::: Addition law {}',
+                'Addition content.',
+                ':::'
+            ].join('\n')
+        );
+
+        const blocks = Array.from(element.querySelectorAll('.pem-fenced-div')) as HTMLElement[];
+        const titles = blocks.map(block => block.querySelector('.pem-fenced-div-title')?.textContent);
+        const parentIndices = blocks.map(block => {
+            const parentBlock = block.parentElement?.closest('.pem-fenced-div') as HTMLElement | null;
+            return parentBlock ? blocks.indexOf(parentBlock) : -1;
+        });
+
+        expect(titles).toEqual(['Overall Limit', 'Addition law']);
+        expect(parentIndices).toEqual([-1, -1]);
+        expect(blocks[0].textContent).toContain('Game semantics paragraph.');
+        expect(blocks[0].textContent).not.toContain('Addition law');
+        expect(element.textContent).toContain('Let limits be defined.');
+    });
+
+    it('closes a reading-mode fenced div when an Obsidian comment hides the closing marker', () => {
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: Title</p>',
+            '<p>inside-title</p>',
+            '<p>outside-title</p>',
+            '<p>:::</p>',
+            '<p>tail-text</p>'
+        ].join('');
+
+        processFencedDivs(
+            element,
+            docPath,
+            createConfig(),
+            false,
+            [
+                '::: Title',
+                'inside-title',
+                '%%',
+                ':::',
+                '%%',
+                'outside-title',
+                ':::',
+                '',
+                'tail-text'
+            ].join('\n')
+        );
+
+        const blocks = Array.from(element.querySelectorAll('.pem-fenced-div')) as HTMLElement[];
+
+        expect(blocks).toHaveLength(1);
+        expect(blocks[0].textContent).toContain('inside-title');
+        expect(blocks[0].textContent).not.toContain('outside-title');
+        expect(element.textContent).toContain('outside-title');
+        expect(element.textContent).toContain(':::');
+        expect(element.textContent).toContain('tail-text');
+    });
+
     it('leaves fenced div syntax untouched when the feature is disabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [

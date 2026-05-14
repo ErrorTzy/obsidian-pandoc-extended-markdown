@@ -153,6 +153,53 @@ describe('Fenced div reading mode', () => {
         await deleteFileIfExists(filePath);
     });
 
+    it('matches Pandoc when an Obsidian comment contains a fenced-div closing marker', async () => {
+        const filePath = 'fenced-div-reading-mode-comment-close-e2e.md';
+        const content = [
+            '::: Title',
+            'inside-title',
+            '%%',
+            ':::',
+            '%%',
+            'outside-title',
+            ':::',
+            '',
+            'tail-text'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureReadingMode();
+
+        try {
+            await browser.waitUntil(async () => {
+                const state = await getReadingModeFencedDivState();
+                return state.blockCount === 1 &&
+                    state.headerTexts[0] === 'Title' &&
+                    state.rawText.includes('outside-title') &&
+                    state.rawText.includes('tail-text');
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected comment-delimited fenced div sample in reading mode'
+            });
+        } catch (error) {
+            const state = await getReadingModeFencedDivState();
+            throw new Error(`${(error as Error).message}\nState: ${JSON.stringify(state, null, 2)}`);
+        }
+
+        const state = await getReadingModeFencedDivState();
+
+        expect(state.blockCount).toBe(1);
+        expect(state.headerTexts).toEqual(['Title']);
+        expect(state.blockTexts[0]).toContain('inside-title');
+        expect(state.blockTexts[0]).not.toContain('outside-title');
+        expect(state.rawText).toContain('outside-title');
+        expect(state.rawText).toContain('tail-text');
+        expect(state.rawText).toContain(':::');
+
+        await deleteFileIfExists(filePath);
+    });
+
     it('renders fenced div titles and @id references in strict Pandoc mode when extras are enabled', async () => {
         const filePath = 'fenced-div-reading-mode-strict-e2e.md';
         const content = [

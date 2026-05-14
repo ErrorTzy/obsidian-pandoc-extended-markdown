@@ -46,20 +46,24 @@ export function createSourceOpeningState(
     let canOpenAtCurrentLine = true;
     let stackDepth = 0;
 
-    for (const sourceLine of sourceLines) {
+    for (const [lineIndex, sourceLine] of sourceLines.entries()) {
         const syntacticOpening = parseFencedDivOpening(sourceLine, config);
         const allowedOpening = canOpenAtCurrentLine
             ? syntacticOpening
             : null;
+        const stackOpening = allowedOpening ||
+            (!config.strictPandocMode && stackDepth > 0 ? syntacticOpening : null);
 
         if (syntacticOpening) {
             openings.push({
                 text: sourceLine.trim(),
-                allowed: Boolean(allowedOpening)
+                allowed: Boolean(allowedOpening),
+                depth: stackDepth,
+                lineIndex
             });
         }
 
-        if (allowedOpening) {
+        if (stackOpening) {
             stackDepth++;
             canOpenAtCurrentLine = true;
             continue;
@@ -76,7 +80,10 @@ export function createSourceOpeningState(
 
     return {
         openings,
-        index: 0
+        index: 0,
+        sourceLines,
+        lineIndex: 0,
+        inObsidianComment: false
     };
 }
 
@@ -97,6 +104,11 @@ function isOpeningAllowedBySource(
 
         if (consume) {
             sourceOpeningState.index = index + 1;
+            sourceOpeningState.currentOpeningDepth = opening.depth;
+            sourceOpeningState.lineIndex = Math.max(
+                sourceOpeningState.lineIndex,
+                opening.lineIndex + 1
+            );
         }
         return opening.allowed || allowNonStrictNestedOpening;
     }

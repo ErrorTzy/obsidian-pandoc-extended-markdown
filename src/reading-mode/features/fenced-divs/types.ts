@@ -20,14 +20,21 @@ export interface CandidateLine {
 export interface MultilineCandidateResult {
     processed: boolean;
     canOpenAtNextLine: boolean;
+    lastProcessedFenceWasClosing: boolean;
 }
 
 export interface SourceOpeningState {
     openings: SourceOpeningEligibility[];
     index: number;
+    currentOpeningDepth?: number;
+    sourceLines: string[];
+    lineIndex: number;
+    inObsidianComment: boolean;
 }
 
 export interface SourceOpeningEligibility {
     text: string;
     allowed: boolean;
+    depth: number;
+    lineIndex: number;
 }

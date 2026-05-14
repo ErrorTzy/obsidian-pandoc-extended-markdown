@@ -1,5 +1,6 @@
 import { normalizeExistingDefinitionLists } from '../../features/definition-lists/normalizer';
-import { BlockDomProcessor, ObsidianAppLike, ReadingModeContext } from '../types';
+import { readFullSourceText } from '../sourceText';
+import { BlockDomProcessor, ReadingModeContext } from '../types';
 
 const DOM_SETTLED_FRAME_COUNT = 2;
 const DOM_SETTLED_FALLBACK_MS = 500;
@@ -114,39 +115,4 @@ async function normalizeDefinitionListsWithFullSource(
         context.renderContext,
         fullSourceText
     );
-}
-
-async function readFullSourceText(
-    sourcePath?: string,
-    suppliedApp?: ObsidianAppLike
-): Promise<string | undefined> {
-    const app = suppliedApp ?? getObsidianApp();
-    const vault = app?.vault;
-    const activeFile = app?.workspace?.getActiveFile?.();
-    const path = sourcePath ?? activeFile?.path;
-
-    if (!path) {
-        return undefined;
-    }
-
-    const file = activeFile?.path === path
-        ? activeFile
-        : vault?.getAbstractFileByPath(path);
-    if (!file || typeof vault?.cachedRead !== 'function') {
-        return undefined;
-    }
-
-    try {
-        return await vault.cachedRead(file);
-    } catch {
-        return undefined;
-    }
-}
-
-function getObsidianApp(): ObsidianAppLike | undefined {
-    const globalWindow = window as Window & {
-        app?: ObsidianAppLike;
-    };
-
-    return globalWindow.app;
 }

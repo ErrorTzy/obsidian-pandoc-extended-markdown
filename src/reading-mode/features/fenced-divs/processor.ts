@@ -37,6 +37,7 @@ import {
 
 const pendingSectionProcessing = new WeakMap<HTMLElement, number>();
 const chunkStacks = new Map<string, ActiveFencedDiv[]>();
+const chunkLastProcessedFenceWasClosing = new Map<string, boolean>();
 const documentTypeCounters = new Map<string, FencedDivTypeCounters>();
 
 export function scheduleFencedDivProcessing(
@@ -63,7 +64,7 @@ export function scheduleFencedDivProcessing(
 
     const timeout = window.setTimeout(() => {
         pendingSectionProcessing.delete(section);
-        processFencedDivs(section, docPath, config, false, sourceText);
+        processFencedDivs(section, docPath, config, true, sourceText);
         scheduleFencedDivLabelHydration(section, docPath, config);
     }, 0);
 
@@ -107,6 +108,9 @@ export function processFencedDivs(
     const candidates = Array.from(element.querySelectorAll('p, li'));
     const sourceOpeningState = sourceText ? createSourceOpeningState(sourceText, config) : undefined;
     let canOpenAtCurrentLine = true;
+    let lastProcessedFenceWasClosing = preserveStack
+        ? chunkLastProcessedFenceWasClosing.get(docPath) ?? false
+        : false;
 
     for (const candidate of candidates) {
         if (shouldSkipElement(candidate)) {
@@ -114,6 +118,14 @@ export function processFencedDivs(
         }
 
         const lineText = getTextWithLineBreaks(candidate);
+        if (!lineText.includes('\n')) {
+            synchronizeSourceClosingsBeforeRenderedLine(
+                stack,
+                sourceOpeningState,
+                lineText,
+                lastProcessedFenceWasClosing || previousRenderedCandidateWasClosing(candidate)
+            );
+        }
         const multilineResult = processMultilineCandidate(
             candidate,
             lineText,
@@ -126,6 +138,7 @@ export function processFencedDivs(
         );
         if (multilineResult.processed) {
             canOpenAtCurrentLine = multilineResult.canOpenAtNextLine;
+            lastProcessedFenceWasClosing = multilineResult.lastProcessedFenceWasClosing;
             continue;
         }
 
@@ -138,6 +151,9 @@ export function processFencedDivs(
             stack.length > 0
         );
         if (opening) {
+            if (!lastProcessedFenceWasClosing) {
+                synchronizeStackToSourceOpeningDepth(stack, sourceOpeningState);
+            }
             const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
             insertFencedDiv(candidate, fencedDiv.block, stack);
@@ -147,6 +163,7 @@ export function processFencedDivs(
                 reference: fencedDiv.reference
             });
             canOpenAtCurrentLine = true;
+            lastProcessedFenceWasClosing = false;
             continue;
         }
 
@@ -156,7 +173,9 @@ export function processFencedDivs(
                 closed.reference.content = closed.contentLines.join('\n').trim();
             }
             candidate.remove();
+            advanceSourcePastRenderedLine(sourceOpeningState, lineText);
             canOpenAtCurrentLine = true;
+            lastProcessedFenceWasClosing = true;
             continue;
         }
 
@@ -167,6 +186,10 @@ export function processFencedDivs(
             }
             stack[stack.length - 1].contentElement.appendChild(candidate);
         }
+        if (lineText.trim()) {
+            lastProcessedFenceWasClosing = false;
+        }
+        advanceSourcePastRenderedLine(sourceOpeningState, lineText);
         canOpenAtCurrentLine = nextOpeningEligibility(sourceOpeningState, lineText);
     }
 
@@ -174,8 +197,13 @@ export function processFencedDivs(
         hydrateRenderedFencedDivLabels(element, labels);
     }
 
-    if (preserveStack && stack.length === 0) {
-        chunkStacks.delete(docPath);
+    if (preserveStack) {
+        if (stack.length === 0) {
+            chunkStacks.delete(docPath);
+            chunkLastProcessedFenceWasClosing.delete(docPath);
+        } else {
+            chunkLastProcessedFenceWasClosing.set(docPath, lastProcessedFenceWasClosing);
+        }
     }
 }
 
@@ -204,7 +232,7 @@ function shouldResetDocumentCounters(
     preserveStack: boolean,
     stack: ActiveFencedDiv[]
 ): boolean {
-    if (preserveStack || stack.length > 0) {
+    if (stack.length > 0) {
         return false;
     }
 
@@ -216,6 +244,10 @@ function shouldResetDocumentCounters(
     }
 
     const previousSection = section.previousElementSibling;
+    if (preserveStack && previousSection?.classList.contains('markdown-preview-section')) {
+        return false;
+    }
+
     return !previousSection?.classList.contains('markdown-preview-section');
 }
 
@@ -232,7 +264,8 @@ function processMultilineCandidate(
     if (!text.includes('\n')) {
         return {
             processed: false,
-            canOpenAtNextLine: initialCanOpenAtCurrentLine
+            canOpenAtNextLine: initialCanOpenAtCurrentLine,
+            lastProcessedFenceWasClosing: false
         };
     }
 
@@ -246,15 +279,23 @@ function processMultilineCandidate(
     )) {
         return {
             processed: false,
-            canOpenAtNextLine: initialCanOpenAtCurrentLine
+            canOpenAtNextLine: initialCanOpenAtCurrentLine,
+            lastProcessedFenceWasClosing: false
         };
     }
 
     const fragments: Node[] = [];
     let canOpenAtCurrentLine = initialCanOpenAtCurrentLine;
     let processedFence = false;
+    let lastProcessedFenceWasClosing = false;
 
     for (const line of lines) {
+        synchronizeSourceClosingsBeforeRenderedLine(
+            stack,
+            sourceOpeningState,
+            line.text,
+            lastProcessedFenceWasClosing
+        );
         const opening = getAllowedFencedDivOpening(
             line.text,
             config,
@@ -264,6 +305,9 @@ function processMultilineCandidate(
             stack.length > 0
         );
         if (opening) {
+            if (!lastProcessedFenceWasClosing) {
+                synchronizeStackToSourceOpeningDepth(stack, sourceOpeningState);
+            }
             const fencedDiv = prepareFencedDivOpening(opening, stack, labels, typeCounters, config);
 
             appendRenderedLineNode(fencedDiv.block, fragments, stack);
@@ -274,6 +318,7 @@ function processMultilineCandidate(
             });
             canOpenAtCurrentLine = true;
             processedFence = true;
+            lastProcessedFenceWasClosing = false;
             continue;
         }
 
@@ -282,19 +327,26 @@ function processMultilineCandidate(
             if (closed) {
                 closed.reference.content = closed.contentLines.join('\n').trim();
             }
+            advanceSourcePastRenderedLine(sourceOpeningState, line.text);
             canOpenAtCurrentLine = true;
             processedFence = true;
+            lastProcessedFenceWasClosing = true;
             continue;
         }
 
         appendContentLine(line, fragments, stack);
+        if (line.text.trim()) {
+            lastProcessedFenceWasClosing = false;
+        }
+        advanceSourcePastRenderedLine(sourceOpeningState, line.text);
         canOpenAtCurrentLine = nextOpeningEligibility(sourceOpeningState, line.text);
     }
 
     if (!processedFence) {
         return {
             processed: false,
-            canOpenAtNextLine: canOpenAtCurrentLine
+            canOpenAtNextLine: canOpenAtCurrentLine,
+            lastProcessedFenceWasClosing
         };
     }
 
@@ -307,7 +359,8 @@ function processMultilineCandidate(
     replaceCandidateWithFragments(candidate, fragments);
     return {
         processed: true,
-        canOpenAtNextLine: canOpenAtCurrentLine
+        canOpenAtNextLine: canOpenAtCurrentLine,
+        lastProcessedFenceWasClosing
     };
 }
 
@@ -353,6 +406,150 @@ function nextOpeningEligibility(
     lineText: string
 ): boolean {
     return sourceOpeningState ? allowsFencedDivOpeningAfterLine(lineText) : true;
+}
+
+function synchronizeSourceClosingsBeforeRenderedLine(
+    stack: ActiveFencedDiv[],
+    sourceOpeningState: SourceOpeningState | undefined,
+    renderedLine: string,
+    lastProcessedFenceWasClosing: boolean
+): void {
+    if (!sourceOpeningState || lastProcessedFenceWasClosing || isFencedDivClosing(renderedLine)) {
+        return;
+    }
+
+    while (sourceOpeningState.lineIndex < sourceOpeningState.sourceLines.length) {
+        const sourceLine = sourceOpeningState.sourceLines[sourceOpeningState.lineIndex];
+        const trimmedSourceLine = sourceLine.trim();
+
+        if (isObsidianCommentDelimiter(trimmedSourceLine)) {
+            sourceOpeningState.inObsidianComment = !sourceOpeningState.inObsidianComment;
+            sourceOpeningState.lineIndex++;
+            continue;
+        }
+
+        if (sourceOpeningState.inObsidianComment) {
+            closeSourceFence(stack, sourceOpeningState, sourceLine);
+            sourceOpeningState.lineIndex++;
+            continue;
+        }
+
+        if (!trimmedSourceLine) {
+            sourceOpeningState.lineIndex++;
+            continue;
+        }
+
+        if (sourceLineMatchesRenderedLine(sourceLine, renderedLine)) {
+            return;
+        }
+
+        return;
+    }
+}
+
+function closeSourceFence(
+    stack: ActiveFencedDiv[],
+    sourceOpeningState: SourceOpeningState,
+    sourceLine: string
+): void {
+    if (!isFencedDivClosing(sourceLine) || stack.length === 0) {
+        return;
+    }
+
+    const closed = stack.pop();
+    if (closed) {
+        closed.reference.content = closed.contentLines.join('\n').trim();
+    }
+    sourceOpeningState.currentOpeningDepth = stack.length;
+}
+
+function advanceSourcePastRenderedLine(
+    sourceOpeningState: SourceOpeningState | undefined,
+    renderedLine: string
+): void {
+    if (!sourceOpeningState || !renderedLine.trim()) {
+        return;
+    }
+
+    while (sourceOpeningState.lineIndex < sourceOpeningState.sourceLines.length) {
+        const sourceLine = sourceOpeningState.sourceLines[sourceOpeningState.lineIndex];
+        const trimmedSourceLine = sourceLine.trim();
+
+        if (!trimmedSourceLine || isObsidianCommentDelimiter(trimmedSourceLine)) {
+            return;
+        }
+
+        if (isFencedDivClosing(sourceLine) || sourceLineMatchesRenderedLine(sourceLine, renderedLine)) {
+            sourceOpeningState.lineIndex++;
+        }
+        return;
+    }
+}
+
+function isObsidianCommentDelimiter(lineText: string): boolean {
+    return lineText === '%%';
+}
+
+function previousRenderedCandidateWasClosing(candidate: Element): boolean {
+    const previous = findPreviousRenderedCandidate(candidate);
+    if (!previous) {
+        return false;
+    }
+
+    return isFencedDivClosing(getTextWithLineBreaks(previous));
+}
+
+function findPreviousRenderedCandidate(candidate: Element): Element | null {
+    const previousSibling = candidate.previousElementSibling;
+    if (previousSibling) {
+        return findLastCandidate(previousSibling) || previousSibling;
+    }
+
+    const parentPreviousSibling = candidate.parentElement?.previousElementSibling;
+    if (!parentPreviousSibling) {
+        return null;
+    }
+
+    return findLastCandidate(parentPreviousSibling) || parentPreviousSibling;
+}
+
+function findLastCandidate(element: Element): Element | null {
+    const candidates = element.querySelectorAll('p, li');
+    return candidates[candidates.length - 1] ?? null;
+}
+
+function sourceLineMatchesRenderedLine(sourceLine: string, renderedLine: string): boolean {
+    const sourceWords = getComparableWords(sourceLine);
+    const renderedWords = getComparableWords(renderedLine);
+
+    if (renderedWords.length === 0) {
+        return sourceWords.length === 0;
+    }
+
+    return renderedWords.every(word => sourceWords.includes(word));
+}
+
+function getComparableWords(text: string): string[] {
+    return text
+        .toLowerCase()
+        .match(/[a-z0-9]+/g) || [];
+}
+
+function synchronizeStackToSourceOpeningDepth(
+    stack: ActiveFencedDiv[],
+    sourceOpeningState: SourceOpeningState | undefined
+): void {
+    const sourceDepth = sourceOpeningState?.currentOpeningDepth;
+    if (sourceDepth === undefined) {
+        return;
+    }
+
+    while (stack.length > sourceDepth) {
+        const closed = stack.pop();
+        if (closed) {
+            closed.reference.content = closed.contentLines.join('\n').trim();
+        }
+    }
 }
 
 function prepareFencedDivOpening(
