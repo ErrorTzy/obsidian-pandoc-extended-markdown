@@ -86,10 +86,16 @@ interface FencedDivListIndentState {
     outsidePlainTextLeftPx: number;
     insidePlainTextLeftPx: number;
     nestedPlainTextLeftPx: number;
+    outsidePlainLineLeftPx: number;
+    insidePlainLineLeftPx: number;
+    nestedPlainLineLeftPx: number;
     insideListCount: number;
     nestedListCount: number;
     outsideListCount: number;
     markerClasses: string[];
+    insideLineLeftPx: number[];
+    nestedLineLeftPx: number[];
+    outsideLineLeftPx: number[];
     insideTextLeftPx: number[];
     nestedTextLeftPx: number[];
     outsideTextLeftPx: number[];
@@ -151,6 +157,10 @@ describe('Fenced div live preview', () => {
                     .find((element) => element.textContent?.includes('#') || element.textContent?.includes('thm')) as HTMLElement | undefined ?? null;
             };
         });
+    });
+
+    afterEach(async () => {
+        await removeMinimalListTransformFixture();
     });
 
     it('keeps expanded fenced div ids styled as plain source text', async () => {
@@ -416,6 +426,7 @@ describe('Fenced div live preview', () => {
             ':::'
         ].join('\n');
 
+        await applyMinimalListTransformFixture();
         await createOrReplaceFile(filePath, content);
         await openFileInActiveLeaf(filePath);
         await ensureLivePreviewMode();
@@ -432,6 +443,7 @@ describe('Fenced div live preview', () => {
             timeoutMsg: 'Expected unordered list lines inside and outside fenced div content'
         });
 
+        await applyMinimalListTransformToRenderedLines();
         const state = await getFencedDivListIndentState();
 
         if (state.error) {
@@ -455,8 +467,24 @@ describe('Fenced div live preview', () => {
             state.insideTextLeftPx.every(left => left > state.outsideTextLeftPx[0] + 8);
         const nestedInheritsFenceIndent = state.nestedPlainTextLeftPx > state.insidePlainTextLeftPx + 8 &&
             state.nestedTextLeftPx.every(left => left > state.insideTextLeftPx[0] + 8);
+        const outsideListTransformApplied = state.outsideLineLeftPx.every(left =>
+            left > state.outsidePlainLineLeftPx + 4
+        );
+        const insideRailContinuous = state.insideLineLeftPx.every(left =>
+            Math.abs(left - state.insidePlainLineLeftPx) <= 1
+        );
+        const nestedRailContinuous = state.nestedLineLeftPx.every(left =>
+            Math.abs(left - state.nestedPlainLineLeftPx) <= 1
+        );
 
-        if (!listIndentMatchesOutside || !insideInheritsFenceIndent || !nestedInheritsFenceIndent) {
+        if (
+            !listIndentMatchesOutside ||
+            !insideInheritsFenceIndent ||
+            !nestedInheritsFenceIndent ||
+            !outsideListTransformApplied ||
+            !insideRailContinuous ||
+            !nestedRailContinuous
+        ) {
             throw new Error(`Unexpected fenced div list indentation: ${JSON.stringify(state, null, 2)}`);
         }
 
@@ -976,10 +1004,16 @@ async function getFencedDivListIndentState(): Promise<FencedDivListIndentState> 
                 outsidePlainTextLeftPx: 0,
                 insidePlainTextLeftPx: 0,
                 nestedPlainTextLeftPx: 0,
+                outsidePlainLineLeftPx: 0,
+                insidePlainLineLeftPx: 0,
+                nestedPlainLineLeftPx: 0,
                 insideListCount: insideLines.length,
                 nestedListCount: nestedLines.length,
                 outsideListCount: outsideLines.length,
                 markerClasses: [],
+                insideLineLeftPx: [],
+                nestedLineLeftPx: [],
+                outsideLineLeftPx: [],
                 insideTextLeftPx: [],
                 nestedTextLeftPx: [],
                 outsideTextLeftPx: [],
@@ -1000,17 +1034,24 @@ async function getFencedDivListIndentState(): Promise<FencedDivListIndentState> 
         const sortedOutsideLines = markerClassOrder
             .map(className => outsideLines.find(line => line.classList.contains(className)))
             .filter((line): line is HTMLElement => Boolean(line));
+        const getLineLeft = (line: HTMLElement): number => line.getBoundingClientRect().left;
 
         return {
             outsidePlainTextLeftPx: getTextLeft(outsidePlainLine, 'plain text outside'),
             insidePlainTextLeftPx: getTextLeft(insidePlainLine, 'plain text inside'),
             nestedPlainTextLeftPx: getTextLeft(nestedPlainLine, 'plain text nested'),
+            outsidePlainLineLeftPx: getLineLeft(outsidePlainLine),
+            insidePlainLineLeftPx: getLineLeft(insidePlainLine),
+            nestedPlainLineLeftPx: getLineLeft(nestedPlainLine),
             insideListCount: insideLines.length,
             nestedListCount: nestedLines.length,
             outsideListCount: outsideLines.length,
             markerClasses: sortedInsideLines.map(line =>
                 markerClassOrder.find(className => line.classList.contains(className)) ?? ''
             ),
+            insideLineLeftPx: sortedInsideLines.map(getLineLeft),
+            nestedLineLeftPx: sortedNestedLines.map(getLineLeft),
+            outsideLineLeftPx: sortedOutsideLines.map(getLineLeft),
             insideTextLeftPx: sortedInsideLines.map(line => getTextLeft(line, 'unordered list inside')),
             nestedTextLeftPx: sortedNestedLines.map(line => getTextLeft(line, 'unordered list nested')),
             outsideTextLeftPx: sortedOutsideLines.map(line => getTextLeft(line, 'unordered list outside')),
@@ -1266,6 +1307,33 @@ async function ensureLivePreviewMode(): Promise<void> {
         }
     });
     await browser.pause(500);
+}
+
+async function applyMinimalListTransformFixture(): Promise<void> {
+    await browser.execute(() => {
+        document.body.style.setProperty('--adaptive-list-edit-offset', '8px');
+    });
+    await browser.pause(100);
+}
+
+async function applyMinimalListTransformToRenderedLines(): Promise<void> {
+    await browser.execute(() => {
+        document.querySelectorAll<HTMLElement>('.cm-line.HyperMD-list-line').forEach(line => {
+            line.style.setProperty('--adaptive-list-edit-offset', '8px');
+            line.style.transform = 'translateX(8px)';
+        });
+    });
+    await browser.pause(100);
+}
+
+async function removeMinimalListTransformFixture(): Promise<void> {
+    await browser.execute(() => {
+        document.body.style.removeProperty('--adaptive-list-edit-offset');
+        document.querySelectorAll<HTMLElement>('.cm-line.HyperMD-list-line').forEach(line => {
+            line.style.removeProperty('--adaptive-list-edit-offset');
+            line.style.removeProperty('transform');
+        });
+    });
 }
 
 async function setStrictPandocMode(value: boolean): Promise<void> {

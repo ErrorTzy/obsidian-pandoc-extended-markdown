@@ -373,11 +373,20 @@
     padding-inline-start: calc(var(--pem-fenced-div-current-indent) + var(--pem-fenced-div-content-indent)) !important;
 }
 
+/* Keep the fenced-div rail aligned when themes translate live-preview list lines. */
+.cm-pem-fenced-div-line.HyperMD-list-line {
+    transform: none !important;
+}
+
 /* Preserve Obsidian's native list padding/text-indent and prepend only the fenced-div content offset. */
 .cm-pem-fenced-div-line.HyperMD-list-line::before {
     content: "";
     display: inline-block;
-    width: calc(var(--pem-fenced-div-current-indent) + var(--pem-fenced-div-content-indent));
+    width: calc(
+        var(--pem-fenced-div-current-indent) +
+        var(--pem-fenced-div-content-indent) +
+        var(--adaptive-list-edit-offset, 0px)
+    );
 }
 
 .cm-pem-fenced-div-depth-3,
