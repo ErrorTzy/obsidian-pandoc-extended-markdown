@@ -59,6 +59,33 @@ describe('Fenced Div Reference Suggestions', () => {
             expect(result).toBeNull();
         });
 
+        it('does not trigger inside an email-like word', () => {
+            const cursor: EditorPosition = { line: 0, ch: 13 };
+            mockEditor.getLine = jest.fn().mockReturnValue('mail a@exam');
+
+            const result = suggest.onTrigger(cursor, mockEditor, null);
+
+            expect(result).toBeNull();
+        });
+
+        it('does not trigger at the start of a Pandoc citation', () => {
+            const cursor: EditorPosition = { line: 0, ch: 6 };
+            mockEditor.getLine = jest.fn().mockReturnValue('See [@');
+
+            const result = suggest.onTrigger(cursor, mockEditor, null);
+
+            expect(result).toBeNull();
+        });
+
+        it('does not trigger after a semicolon in a Pandoc citation group', () => {
+            const cursor: EditorPosition = { line: 0, ch: 14 };
+            mockEditor.getLine = jest.fn().mockReturnValue('See [@one; @');
+
+            const result = suggest.onTrigger(cursor, mockEditor, null);
+
+            expect(result).toBeNull();
+        });
+
         it('does not trigger when the feature is disabled', () => {
             plugin.settings.enableFencedDivs = false;
             const cursor: EditorPosition = { line: 0, ch: 5 };

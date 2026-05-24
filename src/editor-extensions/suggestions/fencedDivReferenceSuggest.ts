@@ -9,6 +9,7 @@ import { isFencedDivExtrasEnabled } from '../../shared/types/settingsTypes';
 import { withErrorBoundary } from '../../shared/utils/errorHandler';
 
 const CITATION_QUERY_STOP = /[\s,;)\]}]/;
+const WORD_CHARACTER = /[A-Za-z0-9_]/;
 const NO_PREVIEW_TEXT = '(no content)';
 
 type DivFactory = (options?: { cls?: string }) => HTMLElement;
@@ -31,7 +32,22 @@ export class FencedDivReferenceSuggest extends EditorSuggest<FencedDivSuggestion
 
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
         const startIndex = line.lastIndexOf('@');
-        if (startIndex < 0 || line[startIndex - 1] === '(') {
+        if (startIndex < 0) {
+            return null;
+        }
+
+        const textBeforeReference = line.substring(0, startIndex);
+        const charBeforeReference = textBeforeReference[textBeforeReference.length - 1] || '';
+        if (charBeforeReference && WORD_CHARACTER.test(charBeforeReference)) {
+            return null;
+        }
+
+        const trimmedTextBeforeReference = textBeforeReference.trimEnd();
+        if (
+            trimmedTextBeforeReference.endsWith('(') ||
+            trimmedTextBeforeReference.endsWith('[') ||
+            trimmedTextBeforeReference.endsWith(';')
+        ) {
             return null;
         }
 
