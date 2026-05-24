@@ -9,6 +9,7 @@ This folder holds the detailed documentation for Pandoc Extended Markdown. The r
 - [Fenced divs](fenced-divs.md): detailed guide for fenced div titles, shorthand, numbering, and references.
 - [List panel](list-panel.md): how the sidebar panel works and what each panel shows.
 - [Pandoc export](pandoc-export.md): how to use the bundled Lua filters with Pandoc.
+- [Pandoc variables and Lua filters](pandoc-variables-and-filters.md): export template variables, resource paths, and bundled filter deployment.
 
 ## Development
 

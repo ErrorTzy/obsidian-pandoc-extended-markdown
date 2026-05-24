@@ -36,6 +36,13 @@
 - `lua_filter/ReadableFencedDiv.lua` normalizes readable fenced-div shorthand for Pandoc export, and `lua_filter/FencedDivCrossRef.lua` wires fenced-div titles and cross-references in exported output.
 - Keep fenced-div citation/autocomplete support aligned across `FencedDivReferenceSuggest`, `FencedDivReferenceProcessor`, `FencedDivReferenceInlineProcessor`, `FencedDivReferenceWidget`, and `fencedDivReferenceContentProcessor`.
 
+## Optional Pandoc Integration Notes
+- Pandoc export/rendering support belongs in an isolated optional module under `src/pandoc/`.
+- Keep Pandoc as an optional desktop-only dependency. Do not require Pandoc, Node process APIs, or Electron APIs during normal plugin startup or existing Live Preview/Reading mode rendering.
+- The core rendering features must continue to work when Pandoc is missing, disabled, or unavailable on mobile.
+- Prefer a service boundary that accepts argument arrays and uses an injectable process runner; avoid shell-string command construction except for a future explicitly advanced/custom-command mode.
+- Future UI should be task-oriented around export profiles, output paths, bundled Lua filters, extra args, and output preview rather than exposing raw command templates as the primary workflow.
+
 ## Commit & Pull Request Guidelines
 - Recent commits are short, imperative, one-line summaries (e.g., “Fix…”, “Add…”, “Address…”); follow that style and avoid scopes unless needed.
 - Before every commit, run `npm run lint` and resolve all reported errors.

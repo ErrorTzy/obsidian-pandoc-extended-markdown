@@ -59,6 +59,8 @@ export const COMMANDS = {
     TOGGLE_DEFINITION_BOLD: 'toggle-definition-bold-style',
     TOGGLE_DEFINITION_UNDERLINE: 'toggle-definition-underline-style',
     OPEN_LIST_PANEL: 'open-list-panel',
+    PANDOC_EXPORT: 'pandoc-export',
+    PANDOC_EXPORT_PREVIOUS: 'pandoc-export-previous',
 } as const;
 
 // Settings keys

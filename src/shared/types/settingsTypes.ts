@@ -13,6 +13,8 @@ import {
     normalizeUnorderedListMarkerOrder
 } from './unorderedListTypes';
 import { FencedDivReference } from './fencedDivTypes';
+import { normalizePandocExportSettings } from '../../pandoc/settings';
+import type { PandocExportSettings } from '../../pandoc/types';
 
 /**
  * View modes supported by the plugin
@@ -74,6 +76,7 @@ export interface PandocExtendedMarkdownSettings {
     orderedListMarkerOrder: OrderedListMarkerStyle[];
     enableListPanel: boolean;
     panelOrder: string[];
+    pandocExport?: PandocExportSettings;
 }
 
 export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
@@ -94,7 +97,8 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableOrderedListMarkerCycling: true,
     orderedListMarkerOrder: [...DEFAULT_ORDERED_LIST_MARKER_ORDER],
     enableListPanel: true,
-    panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'fenced-divs', 'footnotes']
+    panelOrder: ['custom-labels', 'example-lists', 'definition-lists', 'fenced-divs', 'footnotes'],
+    pandocExport: normalizePandocExportSettings()
 };
 
 export type SyntaxFeatureSettingKey =
@@ -153,7 +157,8 @@ export function normalizeSettings(
         enableOrderedListMarkerCycling: isSyntaxFeatureEnabled(sourceSettings, 'enableOrderedListMarkerCycling'),
         orderedListMarkerOrder: normalizeOrderedListMarkerOrder(sourceSettings.orderedListMarkerOrder),
         enableListPanel: sourceSettings.enableListPanel ?? DEFAULT_SETTINGS.enableListPanel,
-        panelOrder: sourceSettings.panelOrder ?? [...DEFAULT_SETTINGS.panelOrder]
+        panelOrder: sourceSettings.panelOrder ?? [...DEFAULT_SETTINGS.panelOrder],
+        pandocExport: normalizePandocExportSettings(sourceSettings.pandocExport)
     };
 
     return normalized;

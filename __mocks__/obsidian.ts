@@ -5,6 +5,7 @@ interface TooltipOptions {
 interface WorkspaceMock {
   on: jest.Mock;
   getActiveViewOfType: jest.Mock;
+  getActiveFile: jest.Mock<TFile | null, []>;
   getLeavesOfType: jest.Mock<WorkspaceLeaf[], [string]>;
   getRightLeaf: jest.Mock<WorkspaceLeaf | null, [boolean]>;
   revealLeaf: jest.Mock<void, [WorkspaceLeaf]>;
@@ -30,6 +31,7 @@ type ExtendedElement = HTMLElement & {
 };
 
 type ToggleChangeHandler = (value: boolean) => void | Promise<void>;
+type TextChangeHandler = (value: string) => void | Promise<void>;
 
 function ensureCssHelpers(): void {
   const toKebabCase = (property: string) =>
@@ -98,8 +100,10 @@ function enhanceElement(element: HTMLElement): ExtendedElement {
 
 export class Plugin {
   app: App;
-  constructor(app: App, _manifest: unknown) {
+  manifest: unknown;
+  constructor(app: App, manifest: unknown) {
     this.app = app;
+    this.manifest = manifest;
   }
   loadData(): Promise<Record<string, unknown>> { return Promise.resolve({}); }
   saveData(): Promise<void> { return Promise.resolve(); }
@@ -109,7 +113,7 @@ export class Plugin {
   addRibbonIcon(): void {}
   registerEditorSuggest(): void {}
   addSettingTab(): void {}
-  addCommand(): void {}
+  addCommand = jest.fn();
   registerEvent(): void {}
   registerHoverLinkSource(): void {}
 }
@@ -164,8 +168,32 @@ export class WorkspaceLeaf {
   setViewState(): Promise<void> { return Promise.resolve(); }
 }
 
-export class Modal {}
-export class Notice {}
+export class Modal {
+  app: App;
+  titleEl: ExtendedElement;
+  contentEl: ExtendedElement;
+  containerEl: ExtendedElement;
+
+  constructor(app: App) {
+    this.app = app;
+    this.containerEl = enhanceElement(document.createElement('div'));
+    this.titleEl = this.containerEl.createDiv({ cls: 'modal-title' });
+    this.contentEl = this.containerEl.createDiv({ cls: 'modal-content' });
+  }
+
+  open(): void { this.onOpen(); }
+  close(): void { this.onClose(); }
+  onOpen(): void {}
+  onClose(): void {}
+}
+export class Notice {
+  message: string;
+  timeout?: number;
+  constructor(message: string, timeout?: number) {
+    this.message = message;
+    this.timeout = timeout;
+  }
+}
 export class PluginSettingTab {
   app: App;
   plugin: unknown;
@@ -200,10 +228,132 @@ class ToggleComponent {
   }
 }
 
+class TextComponent {
+  inputEl: HTMLInputElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.inputEl = document.createElement('input');
+    containerEl.appendChild(this.inputEl);
+  }
+
+  setValue(value: string): this {
+    this.inputEl.value = value;
+    return this;
+  }
+
+  setPlaceholder(value: string): this {
+    this.inputEl.placeholder = value;
+    return this;
+  }
+
+  setDisabled(value: boolean): this {
+    this.inputEl.disabled = value;
+    return this;
+  }
+
+  onChange(callback: TextChangeHandler): this {
+    this.inputEl.addEventListener('input', () => {
+      void callback(this.inputEl.value);
+    });
+    return this;
+  }
+}
+
+class TextAreaComponent {
+  inputEl: HTMLTextAreaElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.inputEl = document.createElement('textarea');
+    containerEl.appendChild(this.inputEl);
+  }
+
+  setValue(value: string): this {
+    this.inputEl.value = value;
+    return this;
+  }
+
+  onChange(callback: TextChangeHandler): this {
+    this.inputEl.addEventListener('input', () => {
+      void callback(this.inputEl.value);
+    });
+    return this;
+  }
+}
+
+class DropdownComponent {
+  selectEl: HTMLSelectElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.selectEl = document.createElement('select');
+    containerEl.appendChild(this.selectEl);
+  }
+
+  addOptions(options: Record<string, string>): this {
+    Object.entries(options).forEach(([value, text]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      this.selectEl.appendChild(option);
+    });
+    return this;
+  }
+
+  setValue(value: string): this {
+    this.selectEl.value = value;
+    return this;
+  }
+
+  onChange(callback: TextChangeHandler): this {
+    this.selectEl.addEventListener('change', () => {
+      void callback(this.selectEl.value);
+    });
+    return this;
+  }
+}
+
+class ButtonComponent {
+  buttonEl: HTMLButtonElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.buttonEl = document.createElement('button');
+    containerEl.appendChild(this.buttonEl);
+  }
+
+  setButtonText(value: string): this {
+    this.buttonEl.textContent = value;
+    return this;
+  }
+
+  setCta(): this {
+    this.buttonEl.classList.add('mod-cta');
+    return this;
+  }
+
+  onClick(callback: () => void | Promise<void>): this {
+    this.buttonEl.addEventListener('click', () => {
+      void callback();
+    });
+    return this;
+  }
+}
+
+class ExtraButtonComponent extends ButtonComponent {
+  setIcon(value: string): this {
+    this.buttonEl.dataset.icon = value;
+    return this;
+  }
+
+  setTooltip(value: string): this {
+    this.buttonEl.title = value;
+    return this;
+  }
+}
+
 export class Setting {
   settingEl: ExtendedElement;
   infoEl: ExtendedElement;
   controlEl: ExtendedElement;
+  components: unknown[] = [];
 
   constructor(containerEl: HTMLElement) {
     this.settingEl = enhanceElement(document.createElement('div'));
@@ -229,7 +379,44 @@ export class Setting {
   }
 
   addToggle(callback: (toggle: ToggleComponent) => void): this {
-    callback(new ToggleComponent(this.controlEl));
+    const component = new ToggleComponent(this.controlEl);
+    this.components.push(component);
+    callback(component);
+    return this;
+  }
+
+  addText(callback: (text: TextComponent) => void): this {
+    const component = new TextComponent(this.controlEl);
+    this.components.push(component);
+    callback(component);
+    return this;
+  }
+
+  addTextArea(callback: (text: TextAreaComponent) => void): this {
+    const component = new TextAreaComponent(this.controlEl);
+    this.components.push(component);
+    callback(component);
+    return this;
+  }
+
+  addDropdown(callback: (dropdown: DropdownComponent) => void): this {
+    const component = new DropdownComponent(this.controlEl);
+    this.components.push(component);
+    callback(component);
+    return this;
+  }
+
+  addButton(callback: (button: ButtonComponent) => void): this {
+    const component = new ButtonComponent(this.controlEl);
+    this.components.push(component);
+    callback(component);
+    return this;
+  }
+
+  addExtraButton(callback: (button: ExtraButtonComponent) => void): this {
+    const component = new ExtraButtonComponent(this.controlEl);
+    this.components.push(component);
+    callback(component);
     return this;
   }
 }
@@ -237,6 +424,7 @@ export class App {
   workspace: WorkspaceMock = {
     on: jest.fn(),
     getActiveViewOfType: jest.fn(),
+    getActiveFile: jest.fn<TFile | null, []>().mockReturnValue(null),
     getLeavesOfType: jest.fn<WorkspaceLeaf[], [string]>().mockReturnValue([]),
     getRightLeaf: jest.fn<WorkspaceLeaf | null, [boolean]>().mockReturnValue(null),
     revealLeaf: jest.fn(),
@@ -244,6 +432,20 @@ export class App {
     trigger: jest.fn(),
     setActiveLeaf: jest.fn(),
     updateOptions: jest.fn()
+  };
+  vault = {
+    adapter: {
+      getBasePath: jest.fn(() => '/vault'),
+      getFullPath: jest.fn((path: string) => `/vault/${path}`),
+      exists: jest.fn(() => Promise.resolve(false)),
+      mkdir: jest.fn(() => Promise.resolve()),
+      write: jest.fn(() => Promise.resolve())
+    },
+    config: {}
+  };
+  metadataCache = {
+    getCache: jest.fn(() => null),
+    getFirstLinkpathDest: jest.fn(() => null)
   };
 }
 export class MarkdownView {
@@ -275,8 +477,39 @@ export interface EditorPosition {
   line: number;
   ch: number;
 }
-export interface TFile {
+export class TAbstractFile {
   path: string;
+  name: string;
+  constructor(path = '') {
+    this.path = path;
+    this.name = path.split('/').pop() ?? path;
+  }
+}
+export class TFile extends TAbstractFile {
+  basename: string;
+  constructor(path = '') {
+    super(path);
+    this.basename = this.name.replace(/\.[^.]+$/, '');
+  }
+}
+export class Menu {
+  addItem(callback: (item: MenuItem) => void): this {
+    callback(new MenuItem());
+    return this;
+  }
+  addSeparator(): this { return this; }
+}
+class MenuItem {
+  setTitle(): this { return this; }
+  setIcon(): this { return this; }
+  onClick(): this { return this; }
+}
+export const Platform = {
+  isDesktop: true
+};
+
+export function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/\/+/g, '/');
 }
 
 // Mock editorLivePreviewField

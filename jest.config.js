@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   moduleNameMapper: {
     'obsidian': '<rootDir>/__mocks__/obsidian.ts',
+    '\\.lua$': '<rootDir>/__mocks__/luaFilter.ts',
     '@codemirror/state': '<rootDir>/__mocks__/codemirror.ts',
     '@codemirror/view': '<rootDir>/__mocks__/codemirror.ts',
     '@codemirror/language': '<rootDir>/__mocks__/codemirror.ts'

@@ -1,8 +1,14 @@
 # Pandoc Export
 
-The Obsidian plugin changes Live Preview and Reading mode. It does not automatically change output from the `pandoc` command.
+The plugin includes an optional desktop-only Pandoc export backend. Mobile support and the existing Live Preview/Reading mode renderers do not depend on Pandoc.
 
-For plugin-specific syntax, use the bundled Lua filters in `lua_filter/`.
+Enable **Pandoc export** in the plugin settings, optionally set a Pandoc executable path, then run **Export with pandoc** from the command palette or a file menu. **Export with previous pandoc settings** repeats the last successful profile/folder choice.
+
+Export profiles use argument arrays for built-in Pandoc formats. Advanced custom shell profiles can be added in the profile JSON, but they must use `type: "custom"` and `shell: true`.
+
+For plugin-specific syntax, use the bundled Lua filters in `lua_filter/`. The filters are embedded into `main.js` at build time and released into the installed plugin folder on startup, so users do not need to download them separately.
+
+See [Pandoc variables and Lua filters](pandoc-variables-and-filters.md) for the full variable list and filter deployment details.
 
 ## Fenced Divs
 

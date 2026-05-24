@@ -88,16 +88,18 @@ The plugin settings let you enable or disable individual syntax families, list m
 
 ## Pandoc Export
 
-For exporting from inside Obsidian, consider using [Obsidian Enhancing Export](https://github.com/mokeyish/obsidian-enhancing-export), a Pandoc-based export plugin for formats such as Markdown, HTML, docx, and LaTeX.
+Pandoc export is an optional desktop-only module. It is disabled by default, is not loaded as a hard requirement for normal rendering, and is not available on mobile. Live Preview and Reading mode continue to work when Pandoc is missing, disabled, or unavailable.
 
-Obsidian rendering does not automatically change Pandoc CLI output. For plugin-specific export behavior, use the bundled Lua filters:
+Enable **Pandoc export** in plugin settings, optionally set a Pandoc executable path, then run **Export with pandoc** or **Export with previous pandoc settings**. Built-in profiles cover common Pandoc formats such as Markdown, HTML, PDF, DOCX, ODT, RTF, EPUB, LaTeX, Typst, PPTX, and bibliography export.
+
+Obsidian rendering does not automatically change Pandoc CLI output. The plugin bundles Lua filters for plugin-specific export behavior and writes them into the installed plugin folder on startup:
 
 ```bash
 pandoc input.md --lua-filter=lua_filter/FencedDivExtendedSyntax.lua -o output.docx
 pandoc input.md --lua-filter=lua_filter/CustomLabelList.lua -o output.docx
 ```
 
-See [Pandoc export](docs/pandoc-export.md) for details.
+See [Pandoc export](docs/pandoc-export.md) and [Pandoc variables and Lua filters](docs/pandoc-variables-and-filters.md) for details.
 
 ## Development
 

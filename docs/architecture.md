@@ -10,6 +10,7 @@
 4. [Processing Pipeline Details](#processing-pipeline-details)
 5. [Implementation Patterns](#implementation-patterns)
 6. [Extension Guide](#extension-guide)
+7. [Pandoc Export Module](#pandoc-export-module)
 
 ## Overview
 
@@ -17,6 +18,8 @@ This plugin extends Obsidian's markdown rendering to support Pandoc's extended s
 
 - **Live Preview Mode**: Real-time syntax transformation using CodeMirror 6 decorations
 - **Reading Mode**: Post-processing of rendered HTML using DOM manipulation
+
+The optional Pandoc export backend is a separate desktop-only module. It is not required for either rendering mode, is disabled by default, and is not registered on mobile.
 
 ### Supported Syntax
 
@@ -729,6 +732,7 @@ async function myAsyncFunction() {
   /features/            → Feature-owned parsing, rendering, DOM repair, and source matching
   /utils/               → DOM utilities
 /views/panels/          → Sidebar panels
+/pandoc/                → Optional desktop-only Pandoc export backend
 /shared/                → Cross-mode utilities
   /utils/               → Shared utilities
   /patterns.ts          → All regex patterns
@@ -770,6 +774,51 @@ interface InlineTextProcessor extends ReadingModeProcessor {
 - **Unit tests**: `/tests/unit/` - Mock dependencies
 - **Integration tests**: `/tests/integration/` - Component interaction
 - **E2E tests**: `/tests/e2e/` - Real Obsidian environment
+
+## Pandoc Export Module
+
+The Pandoc export backend lives in `/src/pandoc/` and is intentionally isolated from the Live Preview and Reading mode pipelines. Existing rendering features must keep working when Pandoc is missing, the export setting is disabled, or the plugin is running on mobile.
+
+### Runtime Boundaries
+
+- Commands are registered only when `Platform.isDesktop` is true.
+- Settings are normalized under `settings.pandocExport`, so missing export settings do not affect rendering defaults.
+- Node, Electron, and filesystem APIs are loaded lazily through the Pandoc module.
+- Pandoc profiles build argument arrays and execute without shell-string construction.
+- Raw shell strings are restricted to advanced custom profiles with `type: "custom"` and `shell: true`.
+- Post-export open/reveal actions are best-effort and must not turn a successful conversion into a failed export.
+
+### Module Map
+
+| File | Responsibility |
+| --- | --- |
+| `PandocService.ts` | Low-level process runner, version check, and conversion API. |
+| `PandocExportManager.ts` | Export orchestration, profile selection, overwrite handling, settings persistence, and post-export actions. |
+| `ExportModal.ts` | Desktop export dialog for profile, output path, overwrite, and extra args. |
+| `registerPandocCommands.ts` | Desktop-gated command and file-menu registration. |
+| `defaultProfiles.ts` | Built-in profile list and default export settings. |
+| `profileArgs.ts` | Converts Pandoc profiles plus variables into argument arrays. |
+| `variables.ts` | Builds export variables from vault, metadata, current file, and output path. |
+| `environment.ts` | Merges platform defaults, user environment overrides, and rendered variables. |
+| `resources.ts` | Releases bundled Lua filters into the installed plugin folder. |
+| `nodeModule.ts` | Desktop module loader for Electron/Node contexts. |
+| `desktopAdapter.ts` | Lazy Electron dialog, open, and reveal helpers. |
+| `fileSystem.ts` | Desktop filesystem checks and output-directory creation. |
+| `shellRunner.ts` | Advanced custom shell profile execution. |
+| `template.ts` | Simple `${name}` substitution. |
+
+### Lua Filter Deployment
+
+The repository source filters live in `/lua_filter/`. `esbuild.config.mjs` loads `.lua` files as text, embeds them into `main.js`, and `releaseBundledPandocLuaFilters()` writes them into `<pluginDir>/lua_filter/` during plugin load. This mirrors the resource-release pattern used by export-focused plugins while keeping the installed release compatible with Obsidian's normal `main.js`, `manifest.json`, and `styles.css` asset model.
+
+The default export profiles reference:
+
+```text
+${luaFilterDir}/FencedDivExtendedSyntax.lua
+${luaFilterDir}/CustomLabelList.lua
+```
+
+See [Pandoc variables and Lua filters](pandoc-variables-and-filters.md) for the variable list and filter behavior.
 
 ### Code Standards Summary
 - **File Size**: Maximum 400 lines (split larger files into modules)

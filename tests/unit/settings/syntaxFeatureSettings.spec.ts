@@ -29,6 +29,22 @@ describe('Syntax feature settings', () => {
         expect(settings).not.toHaveProperty('unusedSavedFlag');
     });
 
+    it('fills pandoc export defaults without affecting rendering defaults', () => {
+        const settings = normalizeSettings({
+            enableCustomLabelLists: false,
+            pandocExport: {
+                enabled: true,
+                profiles: []
+            }
+        } as Partial<ReturnType<typeof normalizeSettings>>);
+
+        expect(settings.enableCustomLabelLists).toBe(false);
+        expect(settings.enableFencedDivs).toBe(true);
+        expect(settings.pandocExport?.enabled).toBe(true);
+        expect(settings.pandocExport?.pandocPath).toBe('');
+        expect(settings.pandocExport?.profiles.some(profile => profile.id === 'html')).toBe(true);
+    });
+
     it('keeps custom labels enabled in processor config when strict mode is enabled', () => {
         const config = createProcessorConfig(
             { strictLineBreaks: false },

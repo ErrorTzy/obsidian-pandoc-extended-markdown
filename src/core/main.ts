@@ -28,6 +28,8 @@ import { formatToPandocStandard, checkPandocFormatting } from '../editor-extensi
 import { createListAutocompletionKeymap } from '../editor-extensions/listAutocompletion';
 import { pluginStateManager } from './state/pluginStateManager';
 import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
+import { registerPandocExportCommands } from '../pandoc/registerPandocCommands';
+import { releaseBundledPandocLuaFilters } from '../pandoc/resources';
 
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;
@@ -38,6 +40,9 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        await releaseBundledPandocLuaFilters(this).catch(error => {
+            console.warn('Failed to release bundled Pandoc Lua filters.', error);
+        });
         
         // Register custom icons for views
         this.registerViewIcons();
@@ -72,6 +77,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         
         // Register all commands
         this.registerCommands();
+        registerPandocExportCommands(this);
 
         this.updateListPanelAvailability();
 
