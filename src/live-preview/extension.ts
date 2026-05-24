@@ -8,6 +8,7 @@ import { pluginStateManager } from '../core/state/pluginStateManager';
 import { ProcessingPipeline } from './pipeline/ProcessingPipeline';
 import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor, FencedDivProcessor, StandardListProcessor, ListContinuationProcessor } from './pipeline/structural';
 import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor, FencedDivReferenceProcessor } from './pipeline/inline';
+import { fencedDivDragExtension } from './fencedDivDragExtension';
 
 // Main view plugin for rendering Pandoc extended markdown
 const pandocExtendedMarkdownPlugin = (
@@ -84,5 +85,8 @@ export function pandocExtendedMarkdownExtension(
     getApp?: () => App | undefined,
     getComponent?: () => Component | undefined
 ): Extension {
-    return pandocExtendedMarkdownPlugin(getSettings, getDocPath, getApp, getComponent);
+    return [
+        pandocExtendedMarkdownPlugin(getSettings, getDocPath, getApp, getComponent),
+        fencedDivDragExtension(getSettings)
+    ];
 }

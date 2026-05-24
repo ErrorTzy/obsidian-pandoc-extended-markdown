@@ -184,6 +184,13 @@ then the block has no visible title. A reference to `@misc` renders as:
 Div
 ```
 
+### Live Preview Block Dragging
+
+In Live Preview, the left rail on a rendered fenced div is draggable. Dragging
+the rail moves the entire source block, from its opening fence through its
+matching closing fence, to the target line. Nested fenced divs move the
+innermost matching source block when the drag starts on a nested block line.
+
 ### Cross-References
 
 Known fenced div ids are rendered as document-local references:

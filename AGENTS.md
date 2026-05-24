@@ -20,7 +20,7 @@
 - TypeScript-first; follow ESLint rules in `eslint.config.mjs`.
 - Use 4-space indentation, single quotes, and semicolons as seen in `src/`.
 - Import order follows the architecture guide: External → Types → Constants → Patterns → Utils → Internal.
-- Keep typescript files ≤400 lines and functions ≤50 lines (see `ARCHITECTURE.md`).
+- Keep typescript files in src ≤400 lines and functions ≤50 lines
 - Naming: `PascalCase` for classes/types, `camelCase` for functions/vars, `UPPER_SNAKE_CASE` for constants.
 
 ## Testing Guidelines
@@ -40,4 +40,4 @@
 - Recent commits are short, imperative, one-line summaries (e.g., “Fix…”, “Add…”, “Address…”); follow that style and avoid scopes unless needed.
 - Before every commit, run `npm run lint` and resolve all reported errors.
 - PRs should include: a concise summary, testing notes (commands + results), linked issues when applicable, and screenshots/GIFs for UI or CSS changes.
-- Update `README.md` and `ARCHITECTURE.md` when behavior or structure changes.
+- Update `README.md` and docs in `docs/` when behavior or structure changes.

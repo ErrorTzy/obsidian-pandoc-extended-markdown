@@ -45,12 +45,12 @@ describe('fenced div live-preview styles', () => {
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*background:/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\s*\{[^}]*box-shadow:/s);
         expect(styles).not.toMatch(/\.cm-pem-fenced-div-close\.cm-pem-fenced-div-depth-[2-6]\s*\{/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*cursor:\s*text/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*height:\s*0\.7em\s*!important/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*line-height:\s*0\.7/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*min-height:\s*0\.7em/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*padding-bottom:\s*0\s*!important/s);
-        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\)\s*\{[^}]*padding-top:\s*0\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\):not\(\.cm-pem-fenced-div-rail-hover\)\s*\{[^}]*cursor:\s*text/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\):not\(\.cm-pem-fenced-div-rail-hover\)\s*\{[^}]*height:\s*0\.7em\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\):not\(\.cm-pem-fenced-div-rail-hover\)\s*\{[^}]*line-height:\s*0\.7/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\):not\(\.cm-pem-fenced-div-rail-hover\)\s*\{[^}]*min-height:\s*0\.7em/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\):not\(\.cm-pem-fenced-div-rail-hover\)\s*\{[^}]*padding-bottom:\s*0\s*!important/s);
+        expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close:not\(\.cm-active\):not\(\.cm-pem-fenced-div-rail-hover\)\s*\{[^}]*padding-top:\s*0\s*!important/s);
         expect(styles).toMatch(/\.cm-line\.cm-pem-fenced-div-close\.cm-active\s*\{[^}]*line-height:\s*1\.4/s);
         expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*display:\s*inline-block/s);
         expect(styles).toMatch(/\.pem-fenced-div-closing\s*\{[^}]*height:\s*0/s);
@@ -59,6 +59,16 @@ describe('fenced div live-preview styles', () => {
 
     it('does not style a visible source handle by default', () => {
         expect(styles).not.toMatch(/\.pem-fenced-div-source-handle\s*\{/s);
+    });
+
+    it('limits drag cursor styling to rail hover and active drag states', () => {
+        expect(styles).not.toMatch(/\.cm-pem-fenced-div-line\s*\{[^}]*cursor:\s*grab/s);
+        expect(styles).toMatch(/\.cm-pem-fenced-div-rail-hover\s*\{[^}]*cursor:\s*grab/s);
+        expect(styles).toMatch(/\.pem-fenced-div-rail-dragging\s*\{[^}]*cursor:\s*grabbing\s*!important/s);
+        expect(styles).toMatch(/\.pem-fenced-div-drag-ghost\s*\{[^}]*pointer-events:\s*none/s);
+        expect(styles).toMatch(/\.pem-fenced-div-drag-ghost\s*\{[^}]*transition:\s*transform\s+90ms\s+ease,\s*opacity\s+90ms\s+ease/s);
+        expect(styles).toMatch(/\.pem-fenced-div-drop-indicator\s*\{[^}]*height:\s*2px/s);
+        expect(styles).toMatch(/\.pem-fenced-div-drop-indicator\s*\{[^}]*transition:\s*transform\s+90ms\s+ease/s);
     });
 
     it('styles generated fenced div titles as theorem-style block headers', () => {

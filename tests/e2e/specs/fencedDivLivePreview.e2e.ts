@@ -20,6 +20,24 @@ interface FenceHitInfo {
     selectionHead?: number;
 }
 
+interface DragRailResult {
+    error?: string;
+    startX?: number;
+    startY?: number;
+    targetX?: number;
+    targetY?: number;
+    ghostExistedBeforeMouseup?: boolean;
+    ghostWasInvalidBeforeMouseup?: boolean;
+    indicatorExistedBeforeMouseup?: boolean;
+    sourceBeforeMouseup?: string;
+}
+
+interface FencedDivDragCursorState {
+    error?: string;
+    contentCursor?: string;
+    railCursor?: string;
+}
+
 interface FencedDivRenderState {
     openLineCount: number;
     contentLineCount: number;
@@ -298,6 +316,367 @@ describe('Fenced div live preview', () => {
         });
 
         expect(selectionHead).toBeGreaterThan(0);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('moves an entire fenced div when dragging its live-preview rail', async () => {
+        const filePath = 'fenced-div-live-preview-drag.md';
+        const content = [
+            '# Start',
+            '::: {.note #move title="Move me"}',
+            'Alpha',
+            ':::',
+            'Middle paragraph.',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(5);
+
+        await browser.waitUntil(async () => {
+            return browser.execute(() => {
+                return Boolean(document.querySelector('.cm-line.cm-pem-fenced-div-open'));
+            });
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected draggable fenced div opening line in live preview'
+        });
+
+        const dragResult = await dragFirstFencedDivRailBeforeLine('Target');
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        await browser.waitUntil(async () => {
+            const source = await getActiveEditorSource();
+            return source.indexOf('Middle paragraph.') < source.indexOf('::: {.note #move title="Move me"}') &&
+                source.indexOf('::: {.note #move title="Move me"}') < source.indexOf('## Target');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div source block to move before target heading'
+        });
+
+        const source = await getActiveEditorSource();
+        expect(source).toBe([
+            '# Start',
+            'Middle paragraph.',
+            '',
+            '::: {.note #move title="Move me"}',
+            'Alpha',
+            ':::',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n'));
+
+        await moveCursorToLine(8);
+        const state = await getFencedDivRenderState();
+        expect(state.openLineCount).toBe(1);
+        expect(state.headerTexts).toEqual(['Move me']);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('preserves the old-location blank line needed by a following fenced div', async () => {
+        const filePath = 'fenced-div-live-preview-drag-preserve-old-blank.md';
+        const content = [
+            'Intro paragraph.',
+            '',
+            '::: {.note #move title="Move me"}',
+            'Alpha',
+            ':::',
+            '::: {.tip #stay title="Stay valid"}',
+            'Beta',
+            ':::',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(11);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivRenderState();
+            return state.headerTexts.includes('Move me') &&
+                state.headerTexts.includes('Stay valid');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected both fenced divs to render before dragging'
+        });
+
+        const dragResult = await dragFirstFencedDivRailBeforeLine('Target');
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        await browser.waitUntil(async () => {
+            const source = await getActiveEditorSource();
+            return source.indexOf('Stay valid') < source.indexOf('Move me') &&
+                source.indexOf('Move me') < source.indexOf('## Target');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected first fenced div to move after the second'
+        });
+
+        expect(await getActiveEditorSource()).toBe([
+            'Intro paragraph.',
+            '',
+            '::: {.tip #stay title="Stay valid"}',
+            'Beta',
+            ':::',
+            '',
+            '::: {.note #move title="Move me"}',
+            'Alpha',
+            ':::',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n'));
+
+        await moveCursorToLine(12);
+        const state = await getFencedDivRenderState();
+        expect(state.headerTexts).toEqual(['Stay valid', 'Move me']);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('preserves the old-location blank line after a moved fenced div', async () => {
+        const filePath = 'fenced-div-live-preview-drag-preserve-after-blank.md';
+        const content = [
+            'Intro paragraph.',
+            '',
+            '::: {.note #move title="Move me"}',
+            'Alpha',
+            ':::',
+            '',
+            'Middle paragraph.',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(10);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivRenderState();
+            return state.headerTexts.includes('Move me');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div to render before dragging'
+        });
+
+        const dragResult = await dragFirstFencedDivRailBeforeLine('Target');
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        await browser.waitUntil(async () => {
+            const source = await getActiveEditorSource();
+            return source.indexOf('Middle paragraph.') < source.indexOf('::: {.note #move title="Move me"}') &&
+                source.indexOf('::: {.note #move title="Move me"}') < source.indexOf('## Target');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div to move before target heading'
+        });
+
+        expect(await getActiveEditorSource()).toBe([
+            'Intro paragraph.',
+            '',
+            'Middle paragraph.',
+            '',
+            '::: {.note #move title="Move me"}',
+            'Alpha',
+            ':::',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n'));
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('moves a fenced div to the end of the document', async () => {
+        const filePath = 'fenced-div-live-preview-drag-to-end.md';
+        const content = [
+            '# Start',
+            '::: {.note #end title="Move to end"}',
+            'Alpha',
+            ':::',
+            'Middle paragraph.',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(5);
+
+        await browser.waitUntil(async () => {
+            const state = await getFencedDivRenderState();
+            return state.headerTexts.includes('Move to end');
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div to render before dragging to document end'
+        });
+
+        const dragResult = await dragFirstFencedDivRailToDocumentEnd();
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        await browser.waitUntil(async () => {
+            const source = await getActiveEditorSource();
+            return source.endsWith([
+                '::: {.note #end title="Move to end"}',
+                'Alpha',
+                ':::'
+            ].join('\n'));
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div source block to move to document end'
+        });
+
+        expect(await getActiveEditorSource()).toBe([
+            '# Start',
+            'Middle paragraph.',
+            'Tail',
+            '',
+            '::: {.note #end title="Move to end"}',
+            'Alpha',
+            ':::'
+        ].join('\n'));
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('only shows a grab cursor over the painted fenced div rail', async () => {
+        const filePath = 'fenced-div-live-preview-rail-cursor.md';
+        const content = [
+            '::: {.note title="Cursor"}',
+            'Alpha',
+            ':::',
+            '',
+            'Target'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(5);
+
+        await browser.waitUntil(async () => {
+            return browser.execute(() => Boolean(document.querySelector('.cm-line.cm-pem-fenced-div-open')));
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div opening line before cursor assertions'
+        });
+
+        const cursorState = await getFencedDivDragCursorState();
+        if (cursorState.error) {
+            throw new Error(cursorState.error);
+        }
+
+        expect(cursorState.contentCursor).not.toBe('grab');
+        expect(cursorState.railCursor).toBe('grab');
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('does not drag fenced divs from their rendered content area', async () => {
+        const filePath = 'fenced-div-live-preview-content-drag.md';
+        const content = [
+            '# Start',
+            '::: {.note #stay title="Stay"}',
+            'Alpha',
+            ':::',
+            'Middle paragraph.',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(5);
+
+        const dragResult = await dragFirstFencedDivContentBeforeLine('Target');
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        expect(await getActiveEditorSource()).toBe(content);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('previews the landing ghost before mouseup without changing source', async () => {
+        const filePath = 'fenced-div-live-preview-drag-ghost.md';
+        const content = [
+            '# Start',
+            '::: {.note #ghost title="Ghost"}',
+            'Alpha',
+            ':::',
+            'Middle paragraph.',
+            '',
+            '## Target',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(5);
+
+        const dragResult = await dragFirstFencedDivRailBeforeLine('Target');
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        expect(dragResult.ghostExistedBeforeMouseup).toBe(true);
+        expect(dragResult.indicatorExistedBeforeMouseup).toBe(true);
+        expect(dragResult.sourceBeforeMouseup).toBe(content);
+
+        await deleteFileIfExists(filePath);
+    });
+
+    it('rejects fenced div drops inside markdown code blocks', async () => {
+        const filePath = 'fenced-div-live-preview-drag-code.md';
+        const content = [
+            '::: {.note #code title="Code"}',
+            'Alpha',
+            ':::',
+            '',
+            '```',
+            'code target',
+            '```',
+            '',
+            'Tail'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await moveCursorToLine(9);
+
+        const dragResult = await dragFirstFencedDivRailBeforeLine('code target');
+        if (dragResult.error) {
+            throw new Error(dragResult.error);
+        }
+
+        expect(dragResult.ghostWasInvalidBeforeMouseup).toBe(true);
+        expect(await getActiveEditorSource()).toBe(content);
 
         await deleteFileIfExists(filePath);
     });
@@ -1204,6 +1583,210 @@ async function getNestedFencedDivMathRailState(): Promise<NestedFencedDivMathRai
                 ? Number.parseFloat(window.getComputedStyle(deepestContentLine).paddingLeft)
                 : 0
         };
+    });
+}
+
+async function dragFirstFencedDivRailBeforeLine(targetText: string): Promise<DragRailResult> {
+    return browser.execute((text: string): DragRailResult => {
+        // @ts-ignore
+        const cm = app.workspace.getLeaf()?.view?.editor?.cm;
+        const sourceLine = document.querySelector('.cm-line.cm-pem-fenced-div-open') as HTMLElement | null;
+        const targetLine = Array.from(document.querySelectorAll('.cm-line'))
+            .find(line => line.textContent?.includes(text)) as HTMLElement | undefined;
+        if (!sourceLine) {
+            return { error: 'missing-source-line' };
+        }
+        if (!targetLine) {
+            return { error: 'missing-target-line' };
+        }
+
+        const sourceRect = sourceLine.getBoundingClientRect();
+        const targetRect = targetLine.getBoundingClientRect();
+        const startX = sourceRect.left + 2;
+        const startY = sourceRect.top + sourceRect.height / 2;
+        const targetX = targetRect.left + 8;
+        const targetY = targetRect.top + Math.max(2, targetRect.height * 0.25);
+
+        sourceLine.dispatchEvent(new MouseEvent('mousedown', {
+            bubbles: true,
+            button: 0,
+            buttons: 1,
+            cancelable: true,
+            clientX: startX,
+            clientY: startY
+        }));
+        document.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true,
+            button: 0,
+            buttons: 1,
+            cancelable: true,
+            clientX: targetX,
+            clientY: targetY
+        }));
+        const ghost = document.querySelector('.pem-fenced-div-drag-ghost');
+        const indicator = document.querySelector('.pem-fenced-div-drop-indicator');
+        const ghostExistedBeforeMouseup = Boolean(ghost);
+        const ghostWasInvalidBeforeMouseup = ghost?.classList.contains('is-invalid') ?? false;
+        const indicatorExistedBeforeMouseup = Boolean(indicator);
+        const sourceBeforeMouseup = cm?.state.doc.toString() ?? '';
+        document.dispatchEvent(new MouseEvent('mouseup', {
+            bubbles: true,
+            button: 0,
+            buttons: 0,
+            cancelable: true,
+            clientX: targetX,
+            clientY: targetY
+        }));
+
+        return {
+            startX,
+            startY,
+            targetX,
+            targetY,
+            ghostExistedBeforeMouseup,
+            ghostWasInvalidBeforeMouseup,
+            indicatorExistedBeforeMouseup,
+            sourceBeforeMouseup
+        };
+    }, targetText);
+}
+
+async function dragFirstFencedDivContentBeforeLine(targetText: string): Promise<DragRailResult> {
+    return browser.execute((text: string): DragRailResult => {
+        const sourceLine = document.querySelector('.cm-line.cm-pem-fenced-div-open') as HTMLElement | null;
+        const targetLine = Array.from(document.querySelectorAll('.cm-line'))
+            .find(line => line.textContent?.includes(text)) as HTMLElement | undefined;
+        if (!sourceLine) {
+            return { error: 'missing-source-line' };
+        }
+        if (!targetLine) {
+            return { error: 'missing-target-line' };
+        }
+
+        const sourceRect = sourceLine.getBoundingClientRect();
+        const targetRect = targetLine.getBoundingClientRect();
+        const startX = sourceRect.left + Math.max(40, sourceRect.width / 2);
+        const startY = sourceRect.top + sourceRect.height / 2;
+        const targetX = targetRect.left + 8;
+        const targetY = targetRect.top + Math.max(2, targetRect.height * 0.25);
+
+        sourceLine.dispatchEvent(new MouseEvent('mousedown', {
+            bubbles: true,
+            button: 0,
+            buttons: 1,
+            cancelable: true,
+            clientX: startX,
+            clientY: startY
+        }));
+        document.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true,
+            button: 0,
+            buttons: 1,
+            cancelable: true,
+            clientX: targetX,
+            clientY: targetY
+        }));
+        document.dispatchEvent(new MouseEvent('mouseup', {
+            bubbles: true,
+            button: 0,
+            buttons: 0,
+            cancelable: true,
+            clientX: targetX,
+            clientY: targetY
+        }));
+
+        return { startX, startY, targetX, targetY };
+    }, targetText);
+}
+
+async function dragFirstFencedDivRailToDocumentEnd(): Promise<DragRailResult> {
+    return browser.execute((): DragRailResult => {
+        const sourceLine = document.querySelector('.cm-line.cm-pem-fenced-div-open') as HTMLElement | null;
+        const lines = Array.from(document.querySelectorAll('.cm-line')) as HTMLElement[];
+        const targetLine = lines[lines.length - 1];
+        if (!sourceLine) {
+            return { error: 'missing-source-line' };
+        }
+        if (!targetLine) {
+            return { error: 'missing-target-line' };
+        }
+
+        const sourceRect = sourceLine.getBoundingClientRect();
+        const targetRect = targetLine.getBoundingClientRect();
+        const startX = sourceRect.left + 2;
+        const startY = sourceRect.top + sourceRect.height / 2;
+        const targetX = targetRect.left + 8;
+        const targetY = targetRect.bottom + Math.max(8, targetRect.height);
+
+        sourceLine.dispatchEvent(new MouseEvent('mousedown', {
+            bubbles: true,
+            button: 0,
+            buttons: 1,
+            cancelable: true,
+            clientX: startX,
+            clientY: startY
+        }));
+        document.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true,
+            button: 0,
+            buttons: 1,
+            cancelable: true,
+            clientX: targetX,
+            clientY: targetY
+        }));
+        document.dispatchEvent(new MouseEvent('mouseup', {
+            bubbles: true,
+            button: 0,
+            buttons: 0,
+            cancelable: true,
+            clientX: targetX,
+            clientY: targetY
+        }));
+
+        return { startX, startY, targetX, targetY };
+    });
+}
+
+async function getFencedDivDragCursorState(): Promise<FencedDivDragCursorState> {
+    return browser.execute((): FencedDivDragCursorState => {
+        const line = document.querySelector('.cm-line.cm-pem-fenced-div-open') as HTMLElement | null;
+        if (!line) {
+            return { error: 'missing-open-line' };
+        }
+
+        const rect = line.getBoundingClientRect();
+        line.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true,
+            cancelable: true,
+            clientX: rect.left + Math.max(40, rect.width / 2),
+            clientY: rect.top + rect.height / 2
+        }));
+        const contentCursor = window.getComputedStyle(line).cursor;
+        line.dispatchEvent(new MouseEvent('mousemove', {
+            bubbles: true,
+            cancelable: true,
+            clientX: rect.left + 2,
+            clientY: rect.top + rect.height / 2
+        }));
+        const railCursor = window.getComputedStyle(line).cursor;
+        line.dispatchEvent(new MouseEvent('mouseleave', {
+            bubbles: true,
+            cancelable: true,
+            clientX: rect.left - 20,
+            clientY: rect.top + rect.height / 2
+        }));
+
+        return { contentCursor, railCursor };
+    });
+}
+
+async function getActiveEditorSource(): Promise<string> {
+    return browser.execute((): string => {
+        // @ts-ignore
+        const leaf = app.workspace.getLeaf();
+        const view = leaf?.view;
+        const cm = view?.editor?.cm;
+        return cm?.state.doc.toString() ?? '';
     });
 }
 

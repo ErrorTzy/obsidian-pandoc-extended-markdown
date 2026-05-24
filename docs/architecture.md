@@ -120,6 +120,12 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | **StandardListProcessor** | 25 | Adds source-marker classes to standard unordered lists when distinct marker rendering is enabled while preserving native rendering | `^\s*[-*+]\s+` | StructuralProcessor |
 | **ListContinuationProcessor** | 100 | Indented continuations | Indented non-empty lines | StructuralProcessor |
 
+Live Preview also registers `fencedDivDragExtension`, a small CodeMirror view
+plugin that listens for left-button drags that begin on a fenced-div rail and
+moves the matching source block as whole lines. It is intentionally separate
+from `FencedDivProcessor`, which remains responsible only for parsing and
+decorations.
+
 #### Inline Processors (`/live-preview/pipeline/inline/`)
 
 | Processor | Priority | Processes | Regions |
