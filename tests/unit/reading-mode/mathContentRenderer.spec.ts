@@ -24,4 +24,14 @@ describe('mathContentRenderer', () => {
         expect(element.querySelectorAll('.math-inline')).toHaveLength(1);
         expect(element.querySelectorAll('.math-block')).toHaveLength(1);
     });
+
+    it('preserves unmatched trailing dollar text around valid math', () => {
+        const element = document.createElement('dd');
+
+        const handled = appendMathContent(element, 'a $x$ and price is $5', appendText(element));
+
+        expect(handled).toBe(true);
+        expect(element.textContent).toBe('a x and price is $5');
+        expect(element.querySelectorAll('.math-inline')).toHaveLength(1);
+    });
 });

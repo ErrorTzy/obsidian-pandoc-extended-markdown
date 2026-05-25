@@ -21,6 +21,14 @@ interface PanelLayoutInfo {
     contentWidth: number;
 }
 
+interface PanelMathRenderInfo {
+    text: string;
+    html: string;
+    mathCount: number;
+    mathErrorCount: number;
+    rawDollarCount: number;
+}
+
 describe('Fenced div list panel', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -150,6 +158,39 @@ describe('Fenced div list panel', () => {
 
         await deleteFileIfExists(filePath);
     });
+
+    it('does not cut display math in the content preview', async () => {
+        const filePath = 'fenced-div-panel-display-math.md';
+        const content = [
+            '::: {.theorem #thm:display-math}',
+            '$$',
+            '\\frac{a_1 + a_2 + a_3 + a_4 + a_5 + a_6 + a_7 + a_8 + a_9 + a_{10}}{b_1 + b_2 + b_3 + b_4 + b_5 + b_6 + b_7 + b_8 + b_9 + b_{10}} = c',
+            '$$',
+            'This trailing sentence keeps the fenced div content long enough to require truncation.',
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await openFencedDivPanel();
+
+        await browser.waitUntil(async () => {
+            const state = await getPanelMathRenderInfo();
+            return state.text.includes('…') && state.rawDollarCount === 0 && state.mathErrorCount === 0;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div panel preview to truncate without raw or errored display math'
+        });
+
+        const state = await getPanelMathRenderInfo();
+        expect(state.text).toContain('…');
+        expect(state.rawDollarCount).toBe(0);
+        expect(state.mathErrorCount).toBe(0);
+        expect(state.html).not.toContain('mjx-merror');
+
+        await deleteFileIfExists(filePath);
+    });
 });
 
 async function openFencedDivPanel(): Promise<void> {
@@ -211,6 +252,21 @@ async function getFirstRowLayout(): Promise<PanelLayoutInfo> {
             titleWidth: title?.getBoundingClientRect().width ?? 0,
             labelWidth: label?.getBoundingClientRect().width ?? 0,
             contentWidth: content?.getBoundingClientRect().width ?? 0
+        };
+    });
+}
+
+async function getPanelMathRenderInfo(): Promise<PanelMathRenderInfo> {
+    return browser.execute((): PanelMathRenderInfo => {
+        const content = document.querySelector('.pem-fenced-div-panel-content') as HTMLElement | null;
+        const text = content?.textContent ?? '';
+        const html = content?.innerHTML ?? '';
+        return {
+            text,
+            html,
+            mathCount: content?.querySelectorAll('.math, mjx-container').length ?? 0,
+            mathErrorCount: content?.querySelectorAll('mjx-merror, .math-error').length ?? 0,
+            rawDollarCount: (text.match(/\$/g) ?? []).length
         };
     });
 }

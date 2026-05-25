@@ -83,5 +83,30 @@ describe('Content Truncator', () => {
             // Should close the math expression properly
             expect(truncated).toMatch(/\$/);
         });
+
+        it('should not return partial display math when truncating from the equation', () => {
+            const displayMath = [
+                '$$',
+                '\\frac{a_1 + a_2 + a_3 + a_4 + a_5 + a_6}{b_1 + b_2 + b_3 + b_4 + b_5 + b_6} = c',
+                '$$',
+                'Trailing content'
+            ].join('\n');
+
+            const truncated = truncateContentWithRendering(displayMath);
+            expect(truncated).toBe('…');
+            expect(truncated).not.toContain('$');
+        });
+
+        it('should preserve complete display math when it fits', () => {
+            const displayMath = '$$\\alpha + \\beta$$';
+            const truncated = truncateContentWithRendering(displayMath);
+            expect(truncated).toBe(displayMath);
+        });
+
+        it('should not unbalance prior inline math when later display math is omitted', () => {
+            const mixedMath = '$x$ $$\\frac{a_1 + a_2 + a_3 + a_4 + a_5 + a_6}{b_1 + b_2 + b_3 + b_4 + b_5 + b_6} = c$$';
+            const truncated = truncateContentWithRendering(mixedMath, 2);
+            expect(truncated).toBe('$x$…');
+        });
     });
 });

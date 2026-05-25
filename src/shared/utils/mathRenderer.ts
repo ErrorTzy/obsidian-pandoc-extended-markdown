@@ -1,5 +1,6 @@
 import { MATH_SYMBOLS } from '../../core/constants';
 import { ListPatterns } from '../patterns';
+import { LatexMathSegment, splitMathSegments } from './mathSegments';
 
 export function renderMathToText(mathContent: string): string {
     let rendered = mathContent;
@@ -114,4 +115,111 @@ export function truncateMathAtLimit(
     } else {
         return currentResult + '…';
     }
+}
+
+export function truncateContentPreservingMath(content: string, maxLength: number): string {
+    const segments = splitMathSegments(content);
+
+    let result = '';
+    let renderedLength = 0;
+
+    for (const segment of segments) {
+        const remainingLength = maxLength - renderedLength;
+        if (segment.type === 'text') {
+            const textResult = appendTextSegment(result, renderedLength, segment.content, remainingLength);
+            result = textResult.result;
+            renderedLength = textResult.renderedLength;
+            if (textResult.truncated) return result;
+            continue;
+        }
+
+        const mathResult = appendMathSegment(result, renderedLength, segment, maxLength);
+        result = mathResult.result;
+        renderedLength = mathResult.renderedLength;
+        if (mathResult.truncated) return result;
+    }
+
+    return result;
+}
+
+function appendTextSegment(
+    currentResult: string,
+    currentLength: number,
+    text: string,
+    remainingLength: number
+): { result: string; renderedLength: number; truncated: boolean } {
+    if (text.length <= remainingLength) {
+        return {
+            result: currentResult + text,
+            renderedLength: currentLength + text.length,
+            truncated: false
+        };
+    }
+
+    return {
+        result: appendEllipsis(currentResult, text, remainingLength),
+        renderedLength: currentLength + Math.max(remainingLength, 0),
+        truncated: true
+    };
+}
+
+function appendMathSegment(
+    currentResult: string,
+    currentLength: number,
+    segment: LatexMathSegment,
+    maxLength: number
+): { result: string; renderedLength: number; truncated: boolean } {
+    const renderedMath = renderMathToText(segment.content);
+    const remainingLength = maxLength - currentLength;
+    if (renderedMath.length <= remainingLength) {
+        return {
+            result: currentResult + formatMathSegment(segment),
+            renderedLength: currentLength + renderedMath.length,
+            truncated: false
+        };
+    }
+
+    if (segment.delimiter === '$') {
+        return {
+            result: truncateMathAtLimit(segment.content, currentResult + '$', remainingLength),
+            renderedLength: maxLength,
+            truncated: true
+        };
+    }
+
+    return {
+        result: currentResult ? appendSafeOverflowEllipsis(currentResult) : '…',
+        renderedLength: maxLength,
+        truncated: true
+    };
+}
+
+function formatMathSegment(segment: LatexMathSegment): string {
+    return `${segment.delimiter}${segment.content}${segment.delimiter}`;
+}
+
+function appendEllipsis(currentResult: string, text: string, remainingLength: number): string {
+    if (remainingLength > 1) {
+        return currentResult + text.slice(0, remainingLength - 1) + '…';
+    }
+
+    if (remainingLength === 1) {
+        return currentResult + '…';
+    }
+
+    return replaceLastCharacterWithEllipsis(currentResult);
+}
+
+function appendSafeOverflowEllipsis(content: string): string {
+    return content.endsWith('$')
+        ? `${content}…`
+        : replaceLastCharacterWithEllipsis(content);
+}
+
+function replaceLastCharacterWithEllipsis(content: string): string {
+    if (!content || content.endsWith('…')) {
+        return content || '…';
+    }
+
+    return content.slice(0, -1) + '…';
 }
