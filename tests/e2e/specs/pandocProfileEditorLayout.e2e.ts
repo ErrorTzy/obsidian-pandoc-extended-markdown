@@ -64,6 +64,33 @@ describe('Pandoc profile editor layout', () => {
         await typeFirstResourcePathValue('$');
         expect(await getVariableSuggestionText()).toContain('${currentDir}');
     });
+
+    it('clips overflowing string values on the left with an indicator', async () => {
+        await configurePandocExport();
+        await openPandocProfileEditor();
+        await browser.waitUntil(async () => await hasFirstResourcePathInput(), {
+            timeout: 5000,
+            timeoutMsg: 'Expected resource path value input'
+        });
+
+        await typeFirstResourcePathValue('/tmp/pandoc-export-profile/very/deep/path/final-output-name.html');
+        await blurFirstResourcePathInput();
+        await browser.waitUntil(async () => {
+            const state = await getFirstResourcePathOverflowState();
+            return state.overflows && state.scrollLeft > 0;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected resource path value to overflow on the left'
+        });
+
+        const state = await getFirstResourcePathOverflowState();
+        expect(state.textAlign).toBe('right');
+        expect(state.overflowSide).toBe('left');
+        expect(state.scrollLeft).toBeGreaterThan(0);
+        expect(state.maxScrollLeft - state.scrollLeft).toBeLessThanOrEqual(1);
+        expect(state.indicatorContent).toContain('...');
+        expect(state.indicatorDisplay).not.toBe('none');
+    });
 });
 
 async function configurePandocExport(): Promise<void> {
@@ -219,6 +246,36 @@ async function typeFirstResourcePathValue(value: string): Promise<void> {
         input.setSelectionRange(nextValue.length, nextValue.length);
         input.dispatchEvent(new InputEvent('input', { bubbles: true }));
     }, value);
+}
+
+async function getFirstResourcePathOverflowState(): Promise<{
+    overflows: boolean;
+    scrollLeft: number;
+    maxScrollLeft: number;
+    textAlign: string;
+    overflowSide: string | null;
+    indicatorContent: string;
+    indicatorDisplay: string;
+}> {
+    return browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        const frame = row?.querySelector('.pem-pandoc-string-input-frame') as HTMLElement | null;
+        const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+        if (!frame || !input) throw new Error('Resource path string input frame not found.');
+        const indicator = window.getComputedStyle(frame, '::before');
+        return {
+            overflows: input.scrollWidth > input.clientWidth + 1,
+            scrollLeft: input.scrollLeft,
+            maxScrollLeft: input.scrollWidth - input.clientWidth,
+            textAlign: window.getComputedStyle(input).textAlign,
+            overflowSide: frame.getAttribute('data-overflow-side'),
+            indicatorContent: indicator.content,
+            indicatorDisplay: indicator.display
+        };
+    });
 }
 
 async function openOptionSearchPanel(): Promise<void> {

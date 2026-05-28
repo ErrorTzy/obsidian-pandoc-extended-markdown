@@ -162,6 +162,50 @@
     position: relative;
 }
 
+.pem-pandoc-string-input-frame {
+    flex: 1 1 auto;
+    isolation: isolate;
+    min-width: 0;
+    position: relative;
+}
+
+.pem-pandoc-string-input-frame::before {
+    background: var(--background-primary);
+    color: var(--text-muted);
+    content: "...";
+    display: none;
+    align-items: center;
+    box-sizing: border-box;
+    font-size: var(--font-ui-small);
+    height: calc(100% - 2px);
+    left: 1px;
+    line-height: normal;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 22px, transparent 42px);
+    mask-image: linear-gradient(to right, #000 0, #000 22px, transparent 42px);
+    padding-left: 7px;
+    pointer-events: none;
+    position: absolute;
+    top: 1px;
+    width: 42px;
+    z-index: 2;
+}
+
+.pem-pandoc-string-input-frame.is-overflowing::before {
+    display: flex;
+}
+
+.pem-pandoc-string-input-frame .pem-pandoc-string-input {
+    box-sizing: border-box;
+    direction: ltr;
+    position: relative;
+    z-index: 0;
+}
+
+.pem-pandoc-string-input-frame.is-overflowing .pem-pandoc-string-input {
+    padding-left: 8px;
+    text-align: right;
+}
+
 .pem-pandoc-value-cell input,
 .pem-pandoc-value-cell select {
     min-width: 0;

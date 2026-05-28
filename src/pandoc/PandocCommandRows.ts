@@ -207,25 +207,54 @@ function createTemplateValueInput(
     actions: PandocCommandRowActions,
     placeholder: string
 ): HTMLInputElement {
-    const input = createInput(container, renderValueForDisplay(row.value, draft, actions), value => {
+    const frame = container.createDiv({ cls: 'pem-pandoc-string-input-frame' });
+    const input = createInput(frame, renderValueForDisplay(row.value, draft, actions), value => {
         row.value = value;
     }, 'text', placeholder);
+    input.addClass('pem-pandoc-string-input');
+    connectStringOverflowIndicator(frame, input);
     const suggestions = container.createDiv({ cls: 'pem-pandoc-key-suggestions pem-pandoc-variable-suggestions' });
 
     input.addEventListener('focus', () => {
         input.value = row.value;
+        refreshStringOverflowIndicator(frame, input);
     });
     input.oninput = () => {
         row.value = input.value;
+        refreshStringOverflowIndicator(frame, input);
         renderVariableSuggestions(suggestions, input, row, draft, actions);
         actions.updatePreview(draft);
     };
     input.addEventListener('blur', () => {
         window.setTimeout(() => suggestions.empty(), 120);
         input.value = renderValueForDisplay(row.value, draft, actions);
+        refreshStringOverflowIndicator(frame, input);
     });
 
     return input;
+}
+
+function connectStringOverflowIndicator(frame: HTMLElement, input: HTMLInputElement): void {
+    refreshStringOverflowIndicator(frame, input);
+    input.addEventListener('change', () => refreshStringOverflowIndicator(frame, input));
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => refreshStringOverflowIndicator(frame, input));
+    observer.observe(input);
+}
+
+function refreshStringOverflowIndicator(frame: HTMLElement, input: HTMLInputElement): void {
+    window.requestAnimationFrame(() => {
+        const isOverflowing = input.value.length > 0 && input.scrollWidth > input.clientWidth + 1;
+        frame.classList.toggle('is-overflowing', isOverflowing);
+        if (isOverflowing) {
+            frame.setAttribute('data-overflow-side', 'left');
+            input.scrollLeft = input.scrollWidth;
+        } else {
+            frame.removeAttribute('data-overflow-side');
+            input.scrollLeft = 0;
+        }
+    });
 }
 
 function renderValueForDisplay(
