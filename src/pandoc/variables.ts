@@ -4,6 +4,7 @@ import {
     joinPath,
     removeExtension
 } from './pathUtils';
+import { getPathExtension } from './outputExtension';
 import { ExportVariables } from './types';
 
 export interface ExportVariableFile {
@@ -65,6 +66,7 @@ export function buildExportVariables(request: BuildExportVariablesRequest): Expo
         outputDir,
         outputFileName: removeExtension(outputFileFullName),
         outputFileFullName,
+        outputExtension: getPathExtension(outputFileFullName),
         attachmentFolderPath: resolveAttachmentFolder(vaultDir, currentDir, request.vault),
         embedDirs: getEmbedDirs(request, vaultDir),
         fromFormat: request.vault?.config?.useMarkdownLinks ?

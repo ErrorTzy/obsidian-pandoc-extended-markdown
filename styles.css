@@ -99,6 +99,7 @@
 }
 
 .pem-pandoc-key-input,
+.pem-pandoc-key-label,
 .pem-pandoc-value-cell input,
 .pem-pandoc-value-cell select {
     width: 100%;
@@ -114,6 +115,13 @@
 }
 
 .pem-pandoc-key-cell .pem-pandoc-key-input {
+    min-width: 0;
+}
+
+.pem-pandoc-key-label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    line-height: var(--input-height);
     min-width: 0;
 }
 

@@ -261,10 +261,16 @@ describe('pandoc GUI core', () => {
         const draft = createProfileDraft(profile);
         const compiled = compileProfileDraft(draft, FALLBACK_PANDOC_CATALOG);
 
-        expect(compiled).toEqual(profile);
+        expect(compiled).toMatchObject({
+            ...profile,
+            inputPath: '${currentPath}',
+            outputPath: '${outputDir}/${currentFileName}${outputExtension}'
+        });
         expect(draft.optionRows.map(row => row.key)).toEqual(expect.arrayContaining([
+            'input file',
             '-f',
             '-t',
+            '-o',
             '--resource-path',
             '-L'
         ]));

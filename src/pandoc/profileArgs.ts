@@ -6,6 +6,7 @@ import {
     renderExportTemplate,
     renderExportTemplates
 } from './template';
+import { inferOutputExtension } from './outputExtension';
 
 export interface BuildProfileArgsRequest {
     profile: PandocExportProfile;
@@ -15,27 +16,32 @@ export interface BuildProfileArgsRequest {
 
 export function buildPandocProfileArgs(request: BuildProfileArgsRequest): string[] {
     const { profile, variables } = request;
+    const to = renderExportTemplate(profile.to, variables);
+    const effectiveVariables = {
+        ...variables,
+        outputExtension: inferOutputExtension(to, variables.outputExtension)
+    };
     const args = [
-        variables.currentPath,
+        renderExportTemplate(profile.inputPath ?? '${currentPath}', effectiveVariables),
         '-f',
-        renderExportTemplate(profile.from ?? variables.fromFormat, variables),
+        renderExportTemplate(profile.from ?? variables.fromFormat, effectiveVariables),
         '-t',
-        renderExportTemplate(profile.to, variables)
+        to
     ];
 
-    appendOutputArgs(args, profile, variables);
+    appendOutputArgs(args, profile, effectiveVariables);
 
     if (profile.standalone) {
         args.push('--standalone');
     }
 
-    appendRepeatedArgs(args, '--resource-path', profile.resourcePaths, variables);
-    appendRepeatedArgs(args, '--lua-filter', profile.luaFilters, variables);
-    appendMetadataArgs(args, profile.metadata, variables);
+    appendRepeatedArgs(args, '--resource-path', profile.resourcePaths, effectiveVariables);
+    appendRepeatedArgs(args, '--lua-filter', profile.luaFilters, effectiveVariables);
+    appendMetadataArgs(args, profile.metadata, effectiveVariables);
 
     return [
         ...args,
-        ...renderExportTemplates(profile.extraArgs, variables),
+        ...renderExportTemplates(profile.extraArgs, effectiveVariables),
         ...(request.extraArgs ?? [])
     ];
 }
@@ -45,6 +51,11 @@ function appendOutputArgs(
     profile: PandocExportProfile,
     variables: ExportVariables
 ): void {
+    if (profile.outputPath) {
+        args.push('-o', renderExportTemplate(profile.outputPath, variables));
+        return;
+    }
+
     const profileHasOutput = (profile.extraArgs ?? [])
         .some(arg => arg === '-o' || arg === '--output' || arg.startsWith('--output='));
 

@@ -31,6 +31,7 @@ const TEMPLATE_VARIABLE_NAMES = [
     'outputDir',
     'outputFileName',
     'outputFileFullName',
+    'outputExtension',
     'vaultDir',
     'attachmentFolderPath',
     'embedDirs',
@@ -76,12 +77,14 @@ function renderOptionRow(
     const spec = findOptionSpec(catalog, row.key);
     const item = container.createDiv({ cls: 'pem-pandoc-builder-row' });
     createKeyCell(item, row, draft, catalog, actions);
-    if (spec?.valueKind !== 'none') {
+    if (row.role === 'input' || spec?.valueKind !== 'none') {
         item.createEl('span', { cls: 'pem-pandoc-row-separator', text: ':' });
     }
     renderValueControl(item, draft, row, spec, actions);
-    item.createEl('span', { cls: 'pem-pandoc-row-type', text: typeText(spec) });
+    item.createEl('span', { cls: 'pem-pandoc-row-type', text: typeText(row, spec) });
     const controls = item.createDiv({ cls: 'pem-pandoc-row-actions' });
+    if (isRequiredRow(row, spec)) return;
+
     createButton(controls, 'x', () => {
         draft.optionRows = draft.optionRows.filter(item => item.id !== row.id);
         actions.render();
@@ -96,6 +99,13 @@ function createKeyCell(
     actions: PandocCommandRowActions
 ): void {
     const cell = container.createDiv({ cls: 'pem-pandoc-key-cell' });
+    if (row.role === 'input') {
+        // The command builder labels this pseudo-key exactly as the bare input role.
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
+        cell.createEl('span', { cls: 'pem-pandoc-key-label', text: 'input file' });
+        return;
+    }
+
     const input = cell.createEl('input', {
         type: 'text',
         cls: 'pem-pandoc-key-input',
@@ -366,7 +376,8 @@ function createButton(
     return button;
 }
 
-function typeText(spec?: OptionSpec): string {
+function typeText(row: ProfileOptionRow, spec?: OptionSpec): string {
+    if (row.role === 'input') return 'type: input file';
     if (!spec) return 'type: unknown';
     if (spec.valueKind === 'none') return 'type: flag';
     if (spec.valueKind === 'format') return 'type: format string';
@@ -374,4 +385,8 @@ function typeText(spec?: OptionSpec): string {
     if (spec.valueKind === 'pathList') return 'type: folder path';
     if (spec.valueKind === 'file') return 'type: file path';
     return `type: ${spec.valueKind}`;
+}
+
+function isRequiredRow(row: ProfileOptionRow, spec?: OptionSpec): boolean {
+    return row.role === 'input' || ['from', 'to', 'output'].includes(spec?.mapsTo ?? '');
 }

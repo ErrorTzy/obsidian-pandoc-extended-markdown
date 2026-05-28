@@ -2,6 +2,7 @@ import type {
     CustomExportProfile,
     ExportProfile
 } from '../types';
+import { inferOutputExtension } from '../outputExtension';
 import { findOptionSpec } from './catalog';
 import type {
     OptionSpec,
@@ -47,14 +48,17 @@ export function compileProfileDraft(
     }
 
     const command = readDraftCommandRows(draft.optionRows, catalog);
+    const to = (command.to ?? draft.to).trim();
 
     return {
         id: draft.id.trim(),
         name: draft.name.trim(),
         type: 'pandoc',
-        extension: normalizeExtension(draft.extension),
+        extension: inferOutputExtension(to, draft.extension),
+        inputPath: optionalString(command.inputPath ?? '${currentPath}'),
         from: optionalString(command.from ?? draft.from),
-        to: (command.to ?? draft.to).trim(),
+        to,
+        outputPath: optionalString(command.outputPath ?? defaultOutputPathTemplate()),
         standalone: command.standalone ?? draft.standalone,
         resourcePaths: cleanList([...draft.resourcePaths, ...command.resourcePaths]),
         luaFilters: cleanList([...draft.luaFilters, ...command.luaFilters]),
@@ -83,15 +87,19 @@ export function createEmptyOptionRow(index: number): ProfileOptionRow {
 
 export function createDefaultPandocRows(): ProfileOptionRow[] {
     return [
+        createInputRow(),
         createOptionRow('field-from', '-f', 'markdown'),
         createOptionRow('field-to', '-t', 'html'),
+        createOptionRow('field-output', '-o', defaultOutputPathTemplate()),
         createOptionRow('field-standalone', '-s', '')
     ];
 }
 
 export interface DraftCommandRows {
+    inputPath?: string;
     from?: string;
     to?: string;
+    outputPath?: string;
     standalone?: boolean;
     resourcePaths: string[];
     luaFilters: string[];
@@ -111,7 +119,12 @@ export function readDraftCommandRows(
     };
 
     for (const row of rows) {
-        if (!row.enabled || !row.key.trim()) continue;
+        if (!row.enabled) continue;
+        if (row.role === 'input') {
+            result.inputPath = row.value.trim();
+            continue;
+        }
+        if (!row.key.trim()) continue;
         const spec = catalog ? findOptionSpec(catalog, row.key) : undefined;
         if (!applyMappedRow(result, row, spec)) {
             result.extraArgs.push(...compileOptionRow(row, catalog));
@@ -162,9 +175,14 @@ function createCustomDraft(profile: CustomExportProfile): ProfileDraft {
 }
 
 function createPandocProfileRows(profile: Extract<ExportProfile, { type: 'pandoc' }>): ProfileOptionRow[] {
+    const extraRows = parseExtraArgs(profile.extraArgs ?? []);
+    const outputRow = firstOutputRow(extraRows);
+
     return [
+        createInputRow(profile.inputPath),
         createOptionRow('field-from', '-f', profile.from ?? ''),
         createOptionRow('field-to', '-t', profile.to),
+        createOptionRow('field-output', '-o', profile.outputPath ?? outputRow?.value ?? defaultOutputPathTemplate()),
         ...(profile.standalone === false ? [] : [createOptionRow('field-standalone', '-s', '')]),
         ...(profile.resourcePaths ?? []).map((value, index) =>
             createOptionRow(`resource-path-${index}`, '--resource-path', value)),
@@ -172,8 +190,18 @@ function createPandocProfileRows(profile: Extract<ExportProfile, { type: 'pandoc
             createOptionRow(`lua-filter-${index}`, '-L', value)),
         ...Object.entries(profile.metadata ?? {}).map(([key, value], index) =>
             createOptionRow(`metadata-${index}`, '-M', `${key}=${value}`)),
-        ...parseExtraArgs(profile.extraArgs ?? [])
+        ...extraRows.filter(row => !isOutputKey(row.key))
     ];
+}
+
+function createInputRow(value = '${currentPath}'): ProfileOptionRow {
+    return {
+        id: 'field-input',
+        key: 'input file',
+        value,
+        enabled: true,
+        role: 'input'
+    };
 }
 
 function createOptionRow(id: string, key: string, value: string): ProfileOptionRow {
@@ -253,6 +281,10 @@ function applyMappedRow(
         result.to = value;
         return true;
     }
+    if (spec.mapsTo === 'output') {
+        result.outputPath = value;
+        return true;
+    }
     if (spec.mapsTo === 'standalone') {
         result.standalone = value !== 'false';
         return true;
@@ -310,4 +342,16 @@ function normalizeExtension(extension: string): string {
     const trimmed = extension.trim();
     if (!trimmed) return '';
     return trimmed.startsWith('.') ? trimmed : `.${trimmed}`;
+}
+
+function firstOutputRow(rows: ProfileOptionRow[]): ProfileOptionRow | undefined {
+    return rows.find(row => isOutputKey(row.key));
+}
+
+function isOutputKey(key: string): boolean {
+    return ['-o', '--output'].includes(key);
+}
+
+function defaultOutputPathTemplate(): string {
+    return '${outputDir}/${currentFileName}${outputExtension}';
 }

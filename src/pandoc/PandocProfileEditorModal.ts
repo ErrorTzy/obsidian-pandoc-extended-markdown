@@ -7,6 +7,7 @@ import { PandocOptionSearchModal } from './PandocOptionSearchModal';
 import { buildPreviewExportVariables } from './previewVariables';
 import {
     buildProfileDraftPreview,
+    compileProfileDraft,
     compileProfileDrafts,
     createDefaultPandocRows,
     createProfileDrafts,
@@ -117,6 +118,8 @@ export class PandocProfileEditorModal extends Modal {
         this.renderTextField(details, 'Preset name', draft.name, value => {
             draft.name = value;
         });
+        if (draft.type !== 'custom') return;
+
         this.renderTextField(details, 'Output extension', draft.extension, value => {
             draft.extension = value;
             this.updatePreview(draft);
@@ -244,11 +247,15 @@ export class PandocProfileEditorModal extends Modal {
     }
 
     private buildPreviewVariables(draft: ProfileDraft) {
+        const profile = draft.type === 'pandoc' && this.catalog ?
+            compileProfileDraft(draft, this.catalog) :
+            undefined;
+
         return buildPreviewExportVariables({
             app: this.plugin.app,
             manifest: this.plugin.manifest,
             settings: this.plugin.settings.pandocExport,
-            extension: draft.extension
+            extension: profile?.extension ?? draft.extension
         });
     }
 

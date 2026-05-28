@@ -88,6 +88,7 @@ export interface ExportVariables extends Record<string, unknown> {
     outputDir: string;
     outputFileName: string;
     outputFileFullName: string;
+    outputExtension?: string;
     attachmentFolderPath: string;
     embedDirs: string;
     fromFormat: string;
@@ -105,8 +106,10 @@ export interface BaseExportProfile {
 
 export interface PandocExportProfile extends BaseExportProfile {
     type: 'pandoc';
+    inputPath?: string;
     to: string;
     from?: string;
+    outputPath?: string;
     standalone?: boolean;
     resourcePaths?: string[];
     luaFilters?: string[];

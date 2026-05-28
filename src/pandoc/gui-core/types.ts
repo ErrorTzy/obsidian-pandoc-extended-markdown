@@ -51,6 +51,7 @@ export interface ProfileOptionRow {
     key: string;
     value: string;
     enabled: boolean;
+    role?: 'input';
 }
 
 export interface ProfileDraft {

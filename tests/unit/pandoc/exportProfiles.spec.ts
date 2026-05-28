@@ -102,6 +102,27 @@ describe('export profiles', () => {
         expect(args).not.toContain('/exports/note.html');
     });
 
+    it('resolves outputExtension from the output format for editable output rows', () => {
+        const profile: PandocExportProfile = {
+            id: 'markdown',
+            name: 'Markdown',
+            type: 'pandoc',
+            to: 'markdown',
+            extension: '.html',
+            outputPath: '${outputDir}/${currentFileName}${outputExtension}'
+        };
+
+        expect(buildPandocProfileArgs({ profile, variables })).toEqual([
+            '/vault/note.md',
+            '-f',
+            'markdown+wikilinks_title_after_pipe',
+            '-t',
+            'markdown',
+            '-o',
+            '/exports/note.md'
+        ]);
+    });
+
     it('includes bundled plugin syntax filters in Pandoc defaults', () => {
         const profile = DEFAULT_EXPORT_PROFILES.find(item => item.id === 'docx');
 

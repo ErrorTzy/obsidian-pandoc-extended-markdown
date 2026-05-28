@@ -53,6 +53,11 @@ describe('Pandoc command rows', () => {
         expect(rowHasSeparator(rows, '--toc')).toBe(false);
         expect(rowHasSeparator(rows, '--eol')).toBe(true);
         expect(rowSelectValues(rows, '--eol')).toEqual(['crlf', 'lf', 'native']);
+        expect(rowHasRemoveButton(rows, 'input file')).toBe(false);
+        expect(rowHasRemoveButton(rows, '-f')).toBe(false);
+        expect(rowHasRemoveButton(rows, '-t')).toBe(false);
+        expect(rowHasRemoveButton(rows, '-o')).toBe(false);
+        expect(rowHasRemoveButton(rows, '--toc')).toBe(true);
     });
 
     it('renders template variable suggestions with resolved preview values', () => {
@@ -76,7 +81,9 @@ describe('Pandoc command rows', () => {
         input.value = '$';
         input.dispatchEvent(new InputEvent('input', { bubbles: true }));
 
-        const suggestions = container.querySelector('.pem-pandoc-variable-suggestions');
+        const suggestions = input
+            .closest('.pem-pandoc-builder-row')
+            ?.querySelector('.pem-pandoc-variable-suggestions');
         const firstSuggestion = suggestions?.querySelector('.pem-pandoc-variable-suggestion');
         expect(suggestions?.textContent).toContain('${currentDir}');
         expect(suggestions?.textContent).toContain('/vault');
@@ -100,6 +107,10 @@ function createDraft(): ProfileDraft {
         luaFilters: [],
         metadata: {},
         optionRows: [
+            { id: 'input', key: 'input file', value: '${currentPath}', enabled: true, role: 'input' },
+            { id: 'from', key: '-f', value: 'markdown', enabled: true },
+            { id: 'to', key: '-t', value: 'html', enabled: true },
+            { id: 'output', key: '-o', value: '${outputDir}/${currentFileName}${outputExtension}', enabled: true },
             { id: 'resource', key: '--resource-path', value: '${currentDir}', enabled: true },
             { id: 'lua', key: '-L', value: '${luaFilterDir}/CustomLabelList.lua', enabled: true },
             { id: 'columns', key: '--columns', value: '80', enabled: true },
@@ -113,38 +124,44 @@ function createDraft(): ProfileDraft {
 }
 
 function rowHasBrowseButton(rows: Element[], key: string): boolean | undefined {
-    const row = rows.find(item =>
-        (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
+    const row = rows.find(item => getRowKey(item) === key);
     return Array.from(row?.querySelectorAll('button') ?? [])
         .some(button => button.textContent === 'Browse');
 }
 
 function rowHasValueControl(rows: Element[], key: string): boolean | undefined {
-    const row = rows.find(item =>
-        (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
+    const row = rows.find(item => getRowKey(item) === key);
     return Boolean(row?.querySelector('.pem-pandoc-value-cell input, .pem-pandoc-value-cell select'));
 }
 
 function rowHasSeparator(rows: Element[], key: string): boolean | undefined {
-    const row = rows.find(item =>
-        (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
+    const row = rows.find(item => getRowKey(item) === key);
     return Boolean(row?.querySelector('.pem-pandoc-row-separator'));
 }
 
 function rowSelectValues(rows: Element[], key: string): string[] {
-    const row = rows.find(item =>
-        (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
+    const row = rows.find(item => getRowKey(item) === key);
     const select = row?.querySelector('.pem-pandoc-value-cell select') as HTMLSelectElement | null;
     return Array.from(select?.options ?? []).map(option => option.value);
 }
 
+function rowHasRemoveButton(rows: Element[], key: string): boolean | undefined {
+    const row = rows.find(item => getRowKey(item) === key);
+    return Boolean(row?.querySelector('button[aria-label="Remove option"]'));
+}
+
 function findValueInput(container: HTMLElement, key: string): HTMLInputElement {
     const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
-    const row = rows.find(item =>
-        (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
+    const row = rows.find(item => getRowKey(item) === key);
     const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
     if (!input) throw new Error(`Value input not found for ${key}.`);
     return input;
+}
+
+function getRowKey(row: Element): string {
+    return (row.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value ??
+        row.querySelector('.pem-pandoc-key-label')?.textContent ??
+        '';
 }
 
 function enhanceElement(element: HTMLElement): HTMLElement {

@@ -20,6 +20,7 @@ const PREVIEW_VARIABLES: ExportVariables = {
     outputDir: '${outputDir}',
     outputFileName: '${outputFileName}',
     outputFileFullName: '${outputFileFullName}',
+    outputExtension: '${outputExtension}',
     attachmentFolderPath: '${attachmentFolderPath}',
     embedDirs: '${embedDirs}',
     fromFormat: 'markdown',

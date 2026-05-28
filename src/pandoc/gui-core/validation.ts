@@ -21,6 +21,7 @@ const KNOWN_TEMPLATE_VARIABLES = new Set([
     'outputDir',
     'outputFileName',
     'outputFileFullName',
+    'outputExtension',
     'attachmentFolderPath',
     'embedDirs',
     'fromFormat',
@@ -38,6 +39,7 @@ export function validateProfileDraft(
         const command = readDraftCommandRows(draft.optionRows, catalog);
         validateFormat('from', command.from ?? draft.from, catalog.inputFormats, issues, false);
         validateFormat('to', command.to ?? draft.to, catalog.outputFormats, issues, true);
+        validateRequiredRows(draft.optionRows, catalog, issues);
         validateRows(draft.optionRows, catalog, issues);
     }
 
@@ -55,6 +57,27 @@ function validateRequiredFields(draft: ProfileDraft, issues: ValidationIssue[]):
     if (draft.type === 'custom' && !draft.customCommandTemplate.trim()) {
         addError(issues, 'Custom command template is required.', 'customCommandTemplate');
     }
+}
+
+function validateRequiredRows(
+    rows: ProfileOptionRow[],
+    catalog: PandocOptionCatalog,
+    issues: ValidationIssue[]
+): void {
+    if (!rows.some(row => row.enabled && row.role === 'input')) {
+        addError(issues, 'Input file row is required.', 'optionRows');
+    }
+
+    const presentFields = new Set<string>();
+    for (const row of rows) {
+        if (!row.enabled || row.role === 'input') continue;
+        const spec = findOptionSpec(catalog, row.key);
+        if (spec?.mapsTo) presentFields.add(spec.mapsTo);
+    }
+
+    if (!presentFields.has('from')) addError(issues, '-f input format row is required.', 'optionRows');
+    if (!presentFields.has('to')) addError(issues, '-t output format row is required.', 'optionRows');
+    if (!presentFields.has('output')) addError(issues, '-o output file row is required.', 'optionRows');
 }
 
 function validateFormat(
@@ -83,7 +106,12 @@ function validateRows(
     const singletonKeys = new Set<string>();
 
     for (const row of rows) {
-        if (!row.enabled || !row.key.trim()) continue;
+        if (!row.enabled) continue;
+        if (row.role === 'input') {
+            validateInputRow(row, issues);
+            continue;
+        }
+        if (!row.key.trim()) continue;
         const spec = findOptionSpec(catalog, row.key);
         if (!spec) {
             addWarning(issues, `Unknown Pandoc option "${row.key}".`, 'optionRows', row.id);
@@ -92,6 +120,22 @@ function validateRows(
         validateRowValue(row, spec, issues);
         validateDuplicate(row, spec, singletonKeys, issues);
     }
+}
+
+function validateInputRow(row: ProfileOptionRow, issues: ValidationIssue[]): void {
+    const value = row.value.trim();
+    if (!value) {
+        addError(issues, 'input file requires a value.', 'optionRows', row.id);
+        return;
+    }
+
+    validatePathTemplateValue(value, {
+        key: 'input file',
+        aliases: [],
+        name: 'input file',
+        description: '',
+        valueKind: 'file'
+    }, issues, row.id);
 }
 
 function validateRowValue(

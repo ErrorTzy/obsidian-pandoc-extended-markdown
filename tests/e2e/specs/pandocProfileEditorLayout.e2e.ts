@@ -17,9 +17,10 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.builderOverflows).toBe(false);
         expect(layout.previewOverflows).toBe(false);
         expect(layout.visibleTypeLabels).toBeGreaterThanOrEqual(2);
-        expect(layout.rowsWithoutSearchButtons).toBe(0);
+        expect(layout.rowsWithoutSearchButtons).toBe(1);
 
         const rows = await getCommandRows();
+        expect(rowType(rows, 'input file')).toBe('type: input file');
         expect(rowType(rows, '-t')).toBe('type: format string');
         expect(rowType(rows, '--resource-path')).toBe('type: folder path');
         expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
@@ -359,10 +360,11 @@ async function getCommandRows(): Promise<Array<{
     return browser.execute(() => {
         return Array.from(document.querySelectorAll('.pem-pandoc-builder-row')).map(row => {
             const keyInput = row.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null;
+            const keyLabel = row.querySelector('.pem-pandoc-key-label');
             const type = row.querySelector('.pem-pandoc-row-type');
             const buttons = Array.from(row.querySelectorAll('button'));
             return {
-                key: keyInput?.value ?? '',
+                key: keyInput?.value ?? keyLabel?.textContent ?? '',
                 type: type?.textContent ?? '',
                 hasBrowseButton: buttons.some(button => button.textContent === 'Browse')
             };
