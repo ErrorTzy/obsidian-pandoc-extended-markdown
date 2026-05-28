@@ -1,4 +1,5 @@
 import { findOptionSpec } from './catalog';
+import { readDraftCommandRows } from './profileDraft';
 import type {
     OptionSpec,
     PandocOptionCatalog,
@@ -17,8 +18,9 @@ export function validateProfileDraft(
 
     validateRequiredFields(draft, issues);
     if (draft.type === 'pandoc') {
-        validateFormat('from', draft.from, catalog.inputFormats, issues, false);
-        validateFormat('to', draft.to, catalog.outputFormats, issues, true);
+        const command = readDraftCommandRows(draft.optionRows, catalog);
+        validateFormat('from', command.from ?? draft.from, catalog.inputFormats, issues, false);
+        validateFormat('to', command.to ?? draft.to, catalog.outputFormats, issues, true);
         validateRows(draft.optionRows, catalog, issues);
     }
 
@@ -33,9 +35,6 @@ function validateRequiredFields(draft: ProfileDraft, issues: ValidationIssue[]):
     if (!draft.id.trim()) addError(issues, 'Profile id is required.', 'id');
     if (!draft.name.trim()) addError(issues, 'Profile name is required.', 'name');
     if (!draft.extension.trim()) addError(issues, 'Output extension is required.', 'extension');
-    if (draft.type === 'pandoc' && !draft.to.trim()) {
-        addError(issues, 'Output format is required.', 'to');
-    }
     if (draft.type === 'custom' && !draft.customCommandTemplate.trim()) {
         addError(issues, 'Custom command template is required.', 'customCommandTemplate');
     }
@@ -75,7 +74,6 @@ function validateRows(
         }
         validateRowValue(row, spec, issues);
         validateDuplicate(row, spec, singletonKeys, issues);
-        validateFirstClassDuplicate(row, spec, issues);
     }
 }
 
@@ -85,6 +83,7 @@ function validateRowValue(
     issues: ValidationIssue[]
 ): void {
     const value = row.value.trim();
+    if (spec.mapsTo === 'from' && !value) return;
     if (spec.valueKind !== 'none' && spec.valueKind !== 'boolean' && !value) {
         addError(issues, `${spec.key} requires a value.`, 'optionRows', row.id);
     }
@@ -125,21 +124,6 @@ function validateDuplicate(
         addWarning(issues, `${spec.key} is usually used only once.`, 'optionRows', row.id);
     }
     singletonKeys.add(spec.key);
-}
-
-function validateFirstClassDuplicate(
-    row: ProfileOptionRow,
-    spec: OptionSpec,
-    issues: ValidationIssue[]
-): void {
-    if (['from', 'to', 'output', 'standalone', 'resourcePath', 'luaFilter'].includes(spec.mapsTo ?? '')) {
-        addWarning(
-            issues,
-            `${spec.key} is already represented by a profile field.`,
-            'optionRows',
-            row.id
-        );
-    }
 }
 
 function stripExtensions(format: string): string {

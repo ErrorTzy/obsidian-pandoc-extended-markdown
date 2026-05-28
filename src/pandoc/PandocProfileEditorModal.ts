@@ -7,6 +7,7 @@ import { PandocOptionSearchModal } from './PandocOptionSearchModal';
 import {
     buildProfileDraftPreview,
     compileProfileDrafts,
+    createDefaultPandocRows,
     createProfileDrafts,
     PandocCatalogService,
     validateProfileDraft
@@ -173,13 +174,13 @@ export class PandocProfileEditorModal extends Modal {
             name: 'New preset',
             type: 'pandoc',
             extension: '.html',
-            from: 'markdown',
-            to: 'html',
-            standalone: true,
+            from: '',
+            to: '',
+            standalone: false,
             resourcePaths: [],
             luaFilters: [],
             metadata: {},
-            optionRows: [],
+            optionRows: createDefaultPandocRows(),
             customCommandTemplate: '',
             customShell: false
         });

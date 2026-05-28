@@ -12,6 +12,15 @@ import type {
     PandocOptionCatalog
 } from './types';
 
+const OPTION_NAME_PATTERN = '-{1,2}[A-Za-z0-9][A-Za-z0-9-]*';
+const OPTION_VALUE_PATTERN = '[A-Za-z][A-Za-z0-9_:|.[\\]<>-]*';
+const OPTION_MODIFIER_PATTERN = '(?:\\[[^\\]]+\\]|=\\[[^\\]]+\\])';
+const OPTION_FORM_PATTERN =
+    `${OPTION_NAME_PATTERN}(?:[ =]${OPTION_VALUE_PATTERN})?(?:${OPTION_MODIFIER_PATTERN})?`;
+const MAN_OPTION_SIGNATURE_PATTERN = new RegExp(
+    `^${OPTION_FORM_PATTERN}(?:,\\s*${OPTION_FORM_PATTERN})*$`
+);
+
 export interface PandocCatalogServiceConfig {
     service?: PandocService;
     shellRunner?: ShellRunner;
@@ -149,6 +158,8 @@ function parseHelpLine(line: string): OptionSpec | undefined {
 
 function parseManOptionLine(line: string): OptionSpec | undefined {
     if (!/^\s{5,}-/.test(line)) return undefined;
+    if (!MAN_OPTION_SIGNATURE_PATTERN.test(line.trim())) return undefined;
+
     const tokens = optionTokenMatches(line);
     if (tokens.length === 0) return undefined;
 
@@ -174,7 +185,7 @@ function buildSpec(tokens: string[], description: string): OptionSpec {
 }
 
 function optionTokenMatches(line: string): string[] {
-    return Array.from(line.matchAll(/(?:^|\s|,)(-{1,2}[A-Za-z0-9][A-Za-z0-9-]*)(?:[ =]([A-Z][A-Z0-9_:|.[\]<>-]*))?/g))
+    return Array.from(line.matchAll(/(?:^|\s|,)(-{1,2}[A-Za-z0-9][A-Za-z0-9-]*)(?:[ =]([A-Za-z][A-Za-z0-9_:|.[\]<>-]*))?/g))
         .map(match => match[2] ? `${match[1]}=${match[2]}` : match[1]);
 }
 
@@ -183,7 +194,7 @@ function normalizeOptionToken(token: string): string {
 }
 
 function inferPlaceholder(text: string): string | undefined {
-    const match = text.match(/[= ]([A-Z][A-Z0-9_:|.[\]<>-]*)/);
+    const match = text.match(/[= ]([A-Za-z][A-Za-z0-9_:|.[\]<>-]*)/);
     return match?.[1];
 }
 
@@ -194,7 +205,8 @@ function inferValueKind(key: string, text: string): OptionValueKind {
     if (/FORMAT/.test(placeholder)) return 'format';
     if (/DIRECTORY|DIRNAME/.test(placeholder)) return 'directory';
     if (/FILE|SCRIPT|SCRIPTPATH|THEMEPATH/.test(placeholder)) return 'file';
-    if (/PATH|SEARCHPATH|URL/.test(placeholder)) return 'path';
+    if (/SEARCHPATH/.test(placeholder)) return 'pathList';
+    if (/PATH|URL/.test(placeholder)) return 'path';
     if (/NUMBER|NUMBERS/.test(placeholder)) return 'integer';
     if (/KEY|VALUE|VAL|JSON/.test(placeholder)) return 'keyValue';
     if (placeholder.includes('|')) return 'enum';

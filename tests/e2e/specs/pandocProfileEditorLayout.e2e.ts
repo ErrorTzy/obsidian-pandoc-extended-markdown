@@ -17,6 +17,12 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.builderOverflows).toBe(false);
         expect(layout.previewOverflows).toBe(false);
         expect(layout.visibleTypeLabels).toBeGreaterThanOrEqual(2);
+        expect(layout.rowsWithoutSearchButtons).toBe(0);
+
+        const rows = await getCommandRows();
+        expect(rowType(rows, '-t')).toBe('type: format string');
+        expect(rowType(rows, '--resource-path')).toBe('type: folder path');
+        expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
     });
 
     it('uses key-only inline suggestions and a separate searchable option panel', async () => {
@@ -174,12 +180,43 @@ async function hasOptionPanel(): Promise<boolean> {
     });
 }
 
+async function getCommandRows(): Promise<Array<{
+    key: string;
+    type: string;
+    hasBrowseButton: boolean;
+}>> {
+    return browser.execute(() => {
+        return Array.from(document.querySelectorAll('.pem-pandoc-builder-row')).map(row => {
+            const keyInput = row.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null;
+            const type = row.querySelector('.pem-pandoc-row-type');
+            const buttons = Array.from(row.querySelectorAll('button'));
+            return {
+                key: keyInput?.value ?? '',
+                type: type?.textContent ?? '',
+                hasBrowseButton: buttons.some(button => button.textContent === 'Browse')
+            };
+        });
+    });
+}
+
+function rowType(rows: Array<{ key: string; type: string }>, key: string): string | undefined {
+    return rows.find(row => row.key === key)?.type;
+}
+
+function rowHasBrowseButton(
+    rows: Array<{ key: string; hasBrowseButton: boolean }>,
+    key: string
+): boolean | undefined {
+    return rows.find(row => row.key === key)?.hasBrowseButton;
+}
+
 async function getCommandBuilderLayout(): Promise<{
     modalTitle: string;
     contentOverflows: boolean;
     builderOverflows: boolean;
     previewOverflows: boolean;
     visibleTypeLabels: number;
+    rowsWithoutSearchButtons: number;
 }> {
     return browser.execute(() => {
         const overflows = (element: HTMLElement | null): boolean => {
@@ -195,13 +232,17 @@ async function getCommandBuilderLayout(): Promise<{
         const builder = modal?.querySelector('.pem-pandoc-command-builder') as HTMLElement | null;
         const preview = modal?.querySelector('.pem-pandoc-command-preview') as HTMLElement | null;
         const labels = Array.from(modal?.querySelectorAll('.pem-pandoc-row-type') ?? []);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
 
         return {
             modalTitle: modal?.querySelector('.modal-title')?.textContent ?? '',
             contentOverflows: overflows(content),
             builderOverflows: overflows(builder),
             previewOverflows: overflows(preview),
-            visibleTypeLabels: labels.filter(isVisible).length
+            visibleTypeLabels: labels.filter(isVisible).length,
+            rowsWithoutSearchButtons: rows.filter(row =>
+                !row.querySelector('.pem-pandoc-key-cell button[aria-label="Search pandoc options"]')
+            ).length
         };
     });
 }

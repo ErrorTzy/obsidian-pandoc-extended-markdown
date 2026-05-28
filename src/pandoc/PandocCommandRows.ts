@@ -29,16 +29,6 @@ export function renderPandocRows(
 ): void {
     const section = container.createDiv({ cls: 'pem-pandoc-option-section' });
     section.createEl('h3', { text: 'Options' });
-    renderFormatRow(section, draft, '-f', draft.from, catalog.inputFormats, value => {
-        draft.from = value;
-    }, true, actions);
-    renderFormatRow(section, draft, '-t', draft.to, catalog.outputFormats, value => {
-        draft.to = value;
-    }, false, actions);
-    renderStandaloneRow(section, draft, actions);
-    renderListRows(section, draft, '--resource-path', draft.resourcePaths, 'folder path', actions);
-    renderListRows(section, draft, '-L', draft.luaFilters, 'file path', actions);
-    renderMetadataRows(section, draft, actions);
 
     for (const row of draft.optionRows) {
         renderOptionRow(section, draft, row, catalog, actions);
@@ -48,83 +38,6 @@ export function renderPandocRows(
         draft.optionRows.push(createEmptyOptionRow(actions.nextOptionIndex()));
         actions.render();
     }, 'Add option');
-}
-
-function renderFormatRow(
-    container: HTMLElement,
-    draft: ProfileDraft,
-    key: string,
-    value: string,
-    formats: string[],
-    onChange: (value: string) => void,
-    allowBlank: boolean,
-    actions: PandocCommandRowActions
-): void {
-    const row = createRow(container, key, 'format string');
-    const select = createSelect(row.valueEl, allowBlank ? [['', 'default markdown']] : []);
-    for (const format of formats) select.createEl('option', { value: format, text: format });
-    select.value = value;
-    select.onchange = () => {
-        onChange(select.value);
-        actions.updatePreview(draft);
-    };
-}
-
-function renderStandaloneRow(
-    container: HTMLElement,
-    draft: ProfileDraft,
-    actions: PandocCommandRowActions
-): void {
-    const row = createRow(container, '-s', 'flag');
-    const select = createSelect(row.valueEl, [['false', 'off'], ['true', 'on']]);
-    select.value = draft.standalone ? 'true' : 'false';
-    select.onchange = () => {
-        draft.standalone = select.value === 'true';
-        actions.updatePreview(draft);
-    };
-}
-
-function renderListRows(
-    container: HTMLElement,
-    draft: ProfileDraft,
-    key: string,
-    values: string[],
-    typeLabel: string,
-    actions: PandocCommandRowActions
-): void {
-    for (const [index, value] of values.entries()) {
-        const row = createRow(container, key, typeLabel);
-        const input = createInput(row.valueEl, value, next => {
-            values[index] = next;
-            actions.updatePreview(draft);
-        });
-        if (typeLabel === 'folder path') addFolderButton(row.valueEl, input);
-        createButton(row.actionsEl, 'x', () => {
-            values.splice(index, 1);
-            actions.render();
-        }, 'Remove option');
-    }
-}
-
-function renderMetadataRows(
-    container: HTMLElement,
-    draft: ProfileDraft,
-    actions: PandocCommandRowActions
-): void {
-    for (const [key, value] of Object.entries(draft.metadata)) {
-        const row = createRow(container, '-M', 'key=value');
-        createInput(row.valueEl, `${key}=${value}`, next => {
-            const nextMetadata = { ...draft.metadata };
-            delete nextMetadata[key];
-            Object.assign(nextMetadata, parseSingleKeyValue(next));
-            draft.metadata = nextMetadata;
-            actions.updatePreview(draft);
-        });
-        createButton(row.actionsEl, 'x', () => {
-            delete draft.metadata[key];
-            actions.render();
-        }, 'Remove option');
-    }
 }
 
 function renderOptionRow(
@@ -209,7 +122,9 @@ function renderValueControl(
         row.value = control.value;
         actions.updatePreview(draft);
     };
-    if (spec?.valueKind === 'directory') addFolderButton(valueEl, control);
+    if (['directory', 'pathList'].includes(spec?.valueKind ?? '')) {
+        addFolderButton(valueEl, control);
+    }
 }
 
 function createTypedValueControl(
@@ -224,7 +139,7 @@ function createTypedValueControl(
         return select;
     }
     if (spec?.values?.length) {
-        const select = createSelect(container, []);
+        const select = createSelect(container, spec.mapsTo === 'from' ? [['', 'default markdown']] : []);
         for (const value of spec.values) select.createEl('option', { value, text: value });
         select.value = row.value;
         return select;
@@ -234,24 +149,6 @@ function createTypedValueControl(
     return createInput(container, row.value, value => {
         row.value = value;
     }, type, spec?.valuePlaceholder ?? 'Value');
-}
-
-function createRow(container: HTMLElement, key: string, typeLabel: string): {
-    valueEl: HTMLElement;
-    actionsEl: HTMLElement;
-} {
-    const row = container.createDiv({ cls: 'pem-pandoc-builder-row' });
-    row.createEl('input', {
-        type: 'text',
-        cls: 'pem-pandoc-key-input',
-        value: key,
-        attr: { readonly: 'true' }
-    });
-    row.createEl('span', { cls: 'pem-pandoc-row-separator', text: ':' });
-    const valueEl = row.createDiv({ cls: 'pem-pandoc-value-cell' });
-    row.createEl('span', { cls: 'pem-pandoc-row-type', text: `type: ${typeLabel}` });
-    const actionsEl = row.createDiv({ cls: 'pem-pandoc-row-actions' });
-    return { valueEl, actionsEl };
 }
 
 function createInput(
@@ -303,17 +200,12 @@ async function chooseFolder(input: ValueInput): Promise<void> {
     input.dispatchEvent(new Event('change'));
 }
 
-function parseSingleKeyValue(text: string): Record<string, string> {
-    const index = text.indexOf('=');
-    if (index < 1) return {};
-    return { [text.slice(0, index).trim()]: text.slice(index + 1).trim() };
-}
-
 function typeText(spec?: OptionSpec): string {
     if (!spec) return 'type: unknown';
     if (spec.valueKind === 'none') return 'type: flag';
     if (spec.valueKind === 'format') return 'type: format string';
     if (spec.valueKind === 'directory') return 'type: folder path';
+    if (spec.valueKind === 'pathList') return 'type: folder path';
     if (spec.valueKind === 'file') return 'type: file path';
     return `type: ${spec.valueKind}`;
 }

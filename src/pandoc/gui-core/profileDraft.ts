@@ -20,13 +20,13 @@ export function createProfileDraft(profile: ExportProfile): ProfileDraft {
         name: profile.name,
         type: 'pandoc',
         extension: profile.extension,
-        from: profile.from ?? '',
-        to: profile.to,
-        standalone: profile.standalone ?? false,
-        resourcePaths: [...(profile.resourcePaths ?? [])],
-        luaFilters: [...(profile.luaFilters ?? [])],
-        metadata: { ...(profile.metadata ?? {}) },
-        optionRows: parseExtraArgs(profile.extraArgs ?? []),
+        from: '',
+        to: '',
+        standalone: false,
+        resourcePaths: [],
+        luaFilters: [],
+        metadata: {},
+        optionRows: createPandocProfileRows(profile),
         customCommandTemplate: '',
         customShell: false,
         openOutputFile: profile.openOutputFile,
@@ -46,18 +46,20 @@ export function compileProfileDraft(
         return compileCustomDraft(draft);
     }
 
+    const command = readDraftCommandRows(draft.optionRows, catalog);
+
     return {
         id: draft.id.trim(),
         name: draft.name.trim(),
         type: 'pandoc',
         extension: normalizeExtension(draft.extension),
-        from: optionalString(draft.from),
-        to: draft.to.trim(),
-        standalone: draft.standalone,
-        resourcePaths: cleanList(draft.resourcePaths),
-        luaFilters: cleanList(draft.luaFilters),
-        metadata: cleanRecord(draft.metadata),
-        extraArgs: compileOptionRows(draft.optionRows, catalog),
+        from: optionalString(command.from ?? draft.from),
+        to: (command.to ?? draft.to).trim(),
+        standalone: command.standalone ?? draft.standalone,
+        resourcePaths: cleanList([...draft.resourcePaths, ...command.resourcePaths]),
+        luaFilters: cleanList([...draft.luaFilters, ...command.luaFilters]),
+        metadata: cleanRecord({ ...draft.metadata, ...command.metadata }),
+        extraArgs: command.extraArgs,
         openOutputFile: draft.openOutputFile,
         revealOutputFile: draft.revealOutputFile
     };
@@ -77,6 +79,46 @@ export function createEmptyOptionRow(index: number): ProfileOptionRow {
         value: '',
         enabled: true
     };
+}
+
+export function createDefaultPandocRows(): ProfileOptionRow[] {
+    return [
+        createOptionRow('field-from', '-f', 'markdown'),
+        createOptionRow('field-to', '-t', 'html'),
+        createOptionRow('field-standalone', '-s', '')
+    ];
+}
+
+export interface DraftCommandRows {
+    from?: string;
+    to?: string;
+    standalone?: boolean;
+    resourcePaths: string[];
+    luaFilters: string[];
+    metadata: Record<string, string>;
+    extraArgs: string[];
+}
+
+export function readDraftCommandRows(
+    rows: ProfileOptionRow[],
+    catalog?: PandocOptionCatalog
+): DraftCommandRows {
+    const result: DraftCommandRows = {
+        resourcePaths: [],
+        luaFilters: [],
+        metadata: {},
+        extraArgs: []
+    };
+
+    for (const row of rows) {
+        if (!row.enabled || !row.key.trim()) continue;
+        const spec = catalog ? findOptionSpec(catalog, row.key) : undefined;
+        if (!applyMappedRow(result, row, spec)) {
+            result.extraArgs.push(...compileOptionRow(row, catalog));
+        }
+    }
+
+    return result;
 }
 
 export function parseKeyValueLines(text: string): Record<string, string> {
@@ -119,6 +161,30 @@ function createCustomDraft(profile: CustomExportProfile): ProfileDraft {
     };
 }
 
+function createPandocProfileRows(profile: Extract<ExportProfile, { type: 'pandoc' }>): ProfileOptionRow[] {
+    return [
+        createOptionRow('field-from', '-f', profile.from ?? ''),
+        createOptionRow('field-to', '-t', profile.to),
+        createOptionRow('field-standalone', '-s', profile.standalone === false ? 'false' : ''),
+        ...(profile.resourcePaths ?? []).map((value, index) =>
+            createOptionRow(`resource-path-${index}`, '--resource-path', value)),
+        ...(profile.luaFilters ?? []).map((value, index) =>
+            createOptionRow(`lua-filter-${index}`, '-L', value)),
+        ...Object.entries(profile.metadata ?? {}).map(([key, value], index) =>
+            createOptionRow(`metadata-${index}`, '-M', `${key}=${value}`)),
+        ...parseExtraArgs(profile.extraArgs ?? [])
+    ];
+}
+
+function createOptionRow(id: string, key: string, value: string): ProfileOptionRow {
+    return {
+        id,
+        key,
+        value,
+        enabled: true
+    };
+}
+
 function compileCustomDraft(draft: ProfileDraft): CustomExportProfile {
     return {
         id: draft.id.trim(),
@@ -152,20 +218,6 @@ function parseExtraArgs(args: string[]): ProfileOptionRow[] {
     return rows;
 }
 
-function compileOptionRows(
-    rows: ProfileOptionRow[],
-    catalog?: PandocOptionCatalog
-): string[] {
-    const args: string[] = [];
-
-    for (const row of rows) {
-        if (!row.enabled || !row.key.trim()) continue;
-        args.push(...compileOptionRow(row, catalog));
-    }
-
-    return args;
-}
-
 function compileOptionRow(
     row: ProfileOptionRow,
     catalog?: PandocOptionCatalog
@@ -192,6 +244,42 @@ function normalizeRowKey(key: string, spec?: OptionSpec): string {
     return splitEqualsOption(trimmed).key;
 }
 
+function applyMappedRow(
+    result: DraftCommandRows,
+    row: ProfileOptionRow,
+    spec?: OptionSpec
+): boolean {
+    if (!spec) return false;
+    const value = row.value.trim();
+
+    if (spec.mapsTo === 'from') {
+        result.from = value;
+        return true;
+    }
+    if (spec.mapsTo === 'to') {
+        result.to = value;
+        return true;
+    }
+    if (spec.mapsTo === 'standalone') {
+        result.standalone = value !== 'false';
+        return true;
+    }
+    if (spec.mapsTo === 'resourcePath') {
+        if (value) result.resourcePaths.push(value);
+        return true;
+    }
+    if (spec.mapsTo === 'luaFilter') {
+        if (value) result.luaFilters.push(value);
+        return true;
+    }
+    if (spec.mapsTo === 'metadata') {
+        Object.assign(result.metadata, parseSingleKeyValue(value));
+        return true;
+    }
+
+    return false;
+}
+
 function splitEqualsOption(token: string): { key: string; value?: string } {
     const index = token.indexOf('=');
     if (index < 0 || !token.startsWith('-')) return { key: token };
@@ -199,6 +287,12 @@ function splitEqualsOption(token: string): { key: string; value?: string } {
         key: token.slice(0, index),
         value: token.slice(index + 1)
     };
+}
+
+function parseSingleKeyValue(text: string): Record<string, string> {
+    const index = text.indexOf('=');
+    if (index < 1) return {};
+    return { [text.slice(0, index).trim()]: text.slice(index + 1).trim() };
 }
 
 function cleanList(values: string[]): string[] | undefined {

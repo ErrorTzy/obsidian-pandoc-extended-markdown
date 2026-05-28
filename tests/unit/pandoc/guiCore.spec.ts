@@ -7,7 +7,11 @@ import {
 import {
     buildProfileDraftPreview,
     compileProfileDraft,
+    createProfileDraft,
+    FALLBACK_OPTIONS,
     FALLBACK_PANDOC_CATALOG,
+    findOptionSpec,
+    mergeOptionSpecs,
     parsePandocHelp,
     parsePandocManPage,
     searchOptionKeys,
@@ -76,6 +80,67 @@ describe('pandoc GUI core', () => {
         ]));
     });
 
+    it('ignores man page prose that only mentions options', () => {
+        const options = parsePandocManPage(`
+     --from and --to options below. Pandoc can also produce PDF output.
+     --pdf-engine option or -t context, -t html, or -t ms to the command line.
+     -t FORMAT, -w FORMAT, --to=FORMAT, --write=FORMAT
+          Specify output format.
+          --resource-path baz:bim is equivalent to --resource-path
+     --resource-path=SEARCHPATH
+          List of paths to search for images and other resources.
+`);
+
+        expect(options.map(option => option.key)).toEqual(['--to', '--resource-path']);
+        expect(findOptionSpec({
+            ...FALLBACK_PANDOC_CATALOG,
+            options
+        }, '-t')).toMatchObject({
+            key: '--to',
+            valueKind: 'format',
+            mapsTo: 'to'
+        });
+        expect(findOptionSpec({
+            ...FALLBACK_PANDOC_CATALOG,
+            options
+        }, '--resource-path')).toMatchObject({
+            valueKind: 'pathList',
+            mapsTo: 'resourcePath'
+        });
+    });
+
+    it('keeps fallback semantics aligned with runtime option extraction', () => {
+        const runtimeOptions = mergeOptionSpecs(
+            parsePandocHelp(`
+  -f FORMAT, -r FORMAT  --from=FORMAT, --read=FORMAT
+  -t FORMAT, -w FORMAT  --to=FORMAT, --write=FORMAT
+                        --resource-path=SEARCHPATH
+  -L SCRIPTPATH         --lua-filter=SCRIPTPATH
+`),
+            parsePandocManPage(`
+     --pdf-engine option or -t context, -t html, or -t ms to the command line.
+     -t FORMAT, -w FORMAT, --to=FORMAT, --write=FORMAT
+          Specify output format.
+          --resource-path baz:bim is equivalent to --resource-path
+     --resource-path=SEARCHPATH
+          List of paths to search for images and other resources.
+`)
+        );
+        const merged = {
+            ...FALLBACK_PANDOC_CATALOG,
+            options: mergeOptionSpecs(FALLBACK_OPTIONS, runtimeOptions)
+        };
+
+        for (const key of ['-f', '-t', '--resource-path', '-L']) {
+            const fallback = findOptionSpec(FALLBACK_PANDOC_CATALOG, key);
+            const runtime = findOptionSpec(merged, key);
+            expect(runtime).toMatchObject({
+                valueKind: fallback?.valueKind,
+                mapsTo: fallback?.mapsTo
+            });
+        }
+    });
+
     it('searches by alias, normalized key, and description text', () => {
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'from')[0].option.key).toBe('-f');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, '--from')[0].option.key).toBe('-f');
@@ -89,7 +154,7 @@ describe('pandoc GUI core', () => {
         expect(searchOptionKeys(FALLBACK_PANDOC_CATALOG, 'table contents')).toHaveLength(0);
     });
 
-    it('validates formats, integers, unknown keys, and first-class duplicates', () => {
+    it('validates formats, integers, and unknown keys', () => {
         const draft = {
             id: 'bad',
             name: 'Bad',
@@ -112,8 +177,7 @@ describe('pandoc GUI core', () => {
 
         expect(validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG)).toEqual(expect.arrayContaining([
             expect.objectContaining({ severity: 'error', rowId: 'one' }),
-            expect.objectContaining({ severity: 'warning', rowId: 'two' }),
-            expect.objectContaining({ severity: 'warning', rowId: 'three' })
+            expect.objectContaining({ severity: 'warning', rowId: 'two' })
         ]));
     });
 
@@ -122,26 +186,17 @@ describe('pandoc GUI core', () => {
         expect(profile?.type).toBe('pandoc');
         if (profile?.type !== 'pandoc') return;
 
-        const compiled = compileProfileDraft(
-            {
-                id: profile.id,
-                name: profile.name,
-                type: 'pandoc',
-                extension: profile.extension,
-                from: profile.from ?? '',
-                to: profile.to,
-                standalone: profile.standalone ?? false,
-                resourcePaths: profile.resourcePaths ?? [],
-                luaFilters: profile.luaFilters ?? [],
-                metadata: profile.metadata ?? {},
-                optionRows: [],
-                customCommandTemplate: '',
-                customShell: false
-            },
-            FALLBACK_PANDOC_CATALOG
-        );
+        const draft = createProfileDraft(profile);
+        const compiled = compileProfileDraft(draft, FALLBACK_PANDOC_CATALOG);
 
         expect(compiled).toEqual(profile);
+        expect(draft.optionRows.map(row => row.key)).toEqual(expect.arrayContaining([
+            '-f',
+            '-t',
+            '-s',
+            '--resource-path',
+            '-L'
+        ]));
         expect(buildPandocProfileArgs({ profile: compiled, variables })).toEqual(
             buildPandocProfileArgs({ profile, variables })
         );

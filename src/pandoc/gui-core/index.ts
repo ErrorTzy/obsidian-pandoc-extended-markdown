@@ -17,6 +17,7 @@ export {
 export {
     compileProfileDraft,
     compileProfileDrafts,
+    createDefaultPandocRows,
     createEmptyOptionRow,
     createProfileDraft,
     createProfileDrafts,
