@@ -2,6 +2,7 @@ import { Modal, Notice, Setting } from 'obsidian';
 
 import { PandocExportPluginLike } from './ExportModal';
 import { renderPandocRows } from './PandocCommandRows';
+import { PandocFormatEditorModal } from './PandocFormatEditor';
 import { PandocOptionSearchModal } from './PandocOptionSearchModal';
 import { buildPreviewExportVariables } from './previewVariables';
 import {
@@ -69,6 +70,20 @@ export class PandocProfileEditorModal extends Modal {
             renderPandocRows(content, draft, this.catalog, {
                 nextOptionIndex: () => this.optionIndex++,
                 getVariables: current => this.buildPreviewVariables(current),
+                openFormatEditor: (row, spec, current) => {
+                    new PandocFormatEditorModal(this.app, {
+                        draft: current,
+                        row,
+                        spec,
+                        catalog: this.catalog!,
+                        getVariables: editorDraft => this.buildPreviewVariables(editorDraft),
+                        onApply: value => {
+                            row.value = value;
+                            this.updatePreview(current);
+                            this.render();
+                        }
+                    }).open();
+                },
                 openOptionSearch: onChoose => {
                     new PandocOptionSearchModal(this.app, this.catalog!, onChoose).open();
                 },

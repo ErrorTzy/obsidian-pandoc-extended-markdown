@@ -44,6 +44,7 @@ const TEMPLATE_VARIABLE_NAMES = [
 export interface PandocCommandRowActions {
     nextOptionIndex(): number;
     getVariables(draft: ProfileDraft): ExportVariables;
+    openFormatEditor(row: ProfileOptionRow, spec: OptionSpec, draft: ProfileDraft): void;
     openOptionSearch(onChoose: (option: OptionSpec) => void): void;
     render(): void;
     updatePreview(draft: ProfileDraft): void;
@@ -100,7 +101,6 @@ function renderKeyCell(
     actions: PandocCommandRowActions
 ): void {
     if (row.role === 'input') {
-        // The command builder labels this pseudo-key exactly as the bare input role.
         // eslint-disable-next-line obsidianmd/ui/sentence-case
         cell.createEl('span', { cls: 'pem-pandoc-key-label', text: 'input file' });
         return;
@@ -195,7 +195,11 @@ function createTypedValueControl(
 ): ValueControl {
     if (spec?.valueKind === 'none') return undefined;
     if (spec?.valueKind === 'format') {
-        return createTemplateValueInput(container, row, draft, actions, spec.valuePlaceholder ?? 'FORMAT');
+        const input = createTemplateValueInput(container, row, draft, actions, spec.valuePlaceholder ?? 'FORMAT');
+        createButton(container, '...', () => {
+            actions.openFormatEditor(row, spec, draft);
+        }, 'Edit pandoc format');
+        return input;
     }
 
     if (spec?.values?.length) {

@@ -11,6 +11,14 @@ export {
     FALLBACK_PANDOC_CATALOG
 } from './fallbackCatalog';
 export {
+    buildPandocFormatValue,
+    getFormatExtensionChoices,
+    parseExtensionListOutput,
+    parsePandocFormatValue,
+    selectedCompatibleExtensions,
+    stripFormatExtensions
+} from './formatExtensions';
+export {
     buildProfileDraftPreview,
     quoteToken
 } from './preview';
@@ -40,6 +48,7 @@ export {
 export type {
     CommandPreview,
     EditablePandocProfile,
+    FormatExtensionSpec,
     OptionField,
     OptionSpec,
     OptionValueKind,

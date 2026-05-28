@@ -43,7 +43,13 @@ export interface PandocOptionCatalog {
     inputFormats: string[];
     outputFormats: string[];
     markdownExtensions: string[];
+    formatExtensions: Record<string, FormatExtensionSpec[]>;
     highlightStyles: string[];
+}
+
+export interface FormatExtensionSpec {
+    name: string;
+    defaultEnabled: boolean;
 }
 
 export interface ProfileOptionRow {

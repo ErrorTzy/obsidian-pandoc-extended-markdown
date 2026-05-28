@@ -7,6 +7,7 @@ import { renderPandocRows } from '../../../src/pandoc/PandocCommandRows';
 import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/gui-core';
 import type { ProfileDraft } from '../../../src/pandoc/gui-core';
 import type { ExportVariables } from '../../../src/pandoc/types';
+import { FORMAT_EXTENSION_FIXTURE_CATALOG } from './formatExtensionFixture';
 
 const variables: ExportVariables = {
     vaultDir: '/vault',
@@ -38,6 +39,7 @@ describe('Pandoc command rows', () => {
         renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
             nextOptionIndex: () => 1,
             getVariables: () => variables,
+            openFormatEditor: () => undefined,
             openOptionSearch: () => undefined,
             render: () => undefined,
             updatePreview: () => undefined
@@ -71,6 +73,7 @@ describe('Pandoc command rows', () => {
         renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
             nextOptionIndex: () => 1,
             getVariables: () => variables,
+            openFormatEditor: () => undefined,
             openOptionSearch: () => undefined,
             render: () => undefined,
             updatePreview: () => undefined
@@ -93,29 +96,40 @@ describe('Pandoc command rows', () => {
             .toBe('/vault/note.md');
     });
 
-    it('renders format rows as exact command values', () => {
+    it('renders format rows as text fields with editor helpers', () => {
         window.requestAnimationFrame = jest.fn(callback => {
             callback(0);
             return 0;
         });
         const container = enhanceElement(document.createElement('div'));
         const draft = createDraft();
+        const openFormatEditor = jest.fn();
         draft.optionRows.find(row => row.key === '-f')!.value = '${fromFormat}';
         draft.optionRows.find(row => row.key === '-t')!.value = 'commonmark_x-attributes';
 
-        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+        renderPandocRows(container, draft, FORMAT_EXTENSION_FIXTURE_CATALOG, {
             nextOptionIndex: () => 1,
             getVariables: () => variables,
+            openFormatEditor,
             openOptionSearch: () => undefined,
             render: () => undefined,
             updatePreview: () => undefined
         });
 
+        const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
         expect(findValueInput(container, '-f').value).toBe('markdown');
         expect(findValueInput(container, '-t').value).toBe('commonmark_x-attributes');
-        expect(rowSelectValues(Array.from(container.querySelectorAll('.pem-pandoc-builder-row')), '-f'))
-            .toEqual([]);
+        expect(rowSelectValues(rows, '-f')).toEqual([]);
+        expect(rowHasButton(rows, '-f', 'Edit pandoc format')).toBe(true);
+        expect(container.querySelector('.pem-pandoc-format-extension')).toBeNull();
         expect(container.textContent).not.toContain('default markdown');
+
+        rowButton(rows, '-f', 'Edit pandoc format').click();
+        expect(openFormatEditor).toHaveBeenCalledWith(
+            draft.optionRows.find(row => row.key === '-f'),
+            expect.objectContaining({ valueKind: 'format' }),
+            draft
+        );
     });
 });
 
@@ -173,6 +187,18 @@ function rowSelectValues(rows: Element[], key: string): string[] {
 function rowHasRemoveButton(rows: Element[], key: string): boolean | undefined {
     const row = rows.find(item => getRowKey(item) === key);
     return Boolean(row?.querySelector('button[aria-label="Remove option"]'));
+}
+
+function rowHasButton(rows: Element[], key: string, label: string): boolean {
+    return Boolean(rowButton(rows, key, label, false));
+}
+
+function rowButton(rows: Element[], key: string, label: string, required = true): HTMLButtonElement {
+    const row = rows.find(item => getRowKey(item) === key);
+    const button = Array.from(row?.querySelectorAll('button') ?? [])
+        .find(item => item.getAttribute('aria-label') === label) as HTMLButtonElement | undefined;
+    if (!button && required) throw new Error(`Button not found for ${key}: ${label}.`);
+    return button as HTMLButtonElement;
 }
 
 function findValueInput(container: HTMLElement, key: string): HTMLInputElement {

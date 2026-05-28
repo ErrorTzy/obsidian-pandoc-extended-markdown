@@ -6,7 +6,11 @@ import {
     FALLBACK_OPTIONS,
     FALLBACK_PANDOC_CATALOG
 } from './fallbackCatalog';
+import {
+    parseExtensionListOutput
+} from './formatExtensions';
 import type {
+    FormatExtensionSpec,
     OptionSpec,
     OptionValueKind,
     PandocOptionCatalog
@@ -56,7 +60,7 @@ export class PandocCatalogService {
             return undefined;
         }
 
-        const [help, man, inputFormats, outputFormats, extensions, styles] = await Promise.all([
+        const [help, man, inputFormats, outputFormats, markdownExtensionsText, styles] = await Promise.all([
             this.runPandocList(['--help'], options),
             this.runManPandoc(),
             this.runPandocList(['--list-input-formats'], options),
@@ -64,6 +68,16 @@ export class PandocCatalogService {
             this.runPandocList(['--list-extensions=markdown'], options),
             this.runPandocList(['--list-highlight-styles'], options)
         ]);
+        const inputFormatList = parseListOutput(inputFormats);
+        const outputFormatList = parseListOutput(outputFormats);
+        const markdownExtensions = parseExtensionListOutput(markdownExtensionsText);
+        const formatExtensions = await this.loadFormatExtensions(
+            Array.from(new Set([...inputFormatList, ...outputFormatList])),
+            options
+        );
+        if (markdownExtensions.length > 0) {
+            formatExtensions.markdown = markdownExtensions;
+        }
 
         const parsedOptions = mergeOptionSpecs(
             parsePandocHelp(help),
@@ -74,9 +88,10 @@ export class PandocCatalogService {
             version: versionResult.version ?? parsePandocVersion(versionResult.result.stdout),
             source: 'runtime',
             options: enrichOptions(parsedOptions, inputFormats, outputFormats, styles),
-            inputFormats: parseListOutput(inputFormats),
-            outputFormats: parseListOutput(outputFormats),
-            markdownExtensions: parseListOutput(extensions).map(stripExtensionMarker),
+            inputFormats: inputFormatList,
+            outputFormats: outputFormatList,
+            markdownExtensions: markdownExtensions.map(extension => extension.name),
+            formatExtensions,
             highlightStyles: parseListOutput(styles)
         };
     }
@@ -92,6 +107,18 @@ export class PandocCatalogService {
     private async runManPandoc(): Promise<string> {
         const result = await this.shellRunner({ command: 'man pandoc | col -b' });
         return result.ok ? result.stdout : '';
+    }
+
+    private async loadFormatExtensions(
+        formats: string[],
+        options: PandocCommandOptions
+    ): Promise<Record<string, FormatExtensionSpec[]>> {
+        const entries = await Promise.all(formats.map(async format => {
+            const output = await this.runPandocList([`--list-extensions=${format}`], options);
+            return [format, parseExtensionListOutput(output)] as const;
+        }));
+
+        return Object.fromEntries(entries.filter(([, extensions]) => extensions.length > 0));
     }
 }
 
@@ -334,10 +361,6 @@ function mergeOptionSpec(base: OptionSpec, incoming: OptionSpec): OptionSpec {
     };
 }
 
-function stripExtensionMarker(value: string): string {
-    return value.replace(/^[+-]/, '');
-}
-
 function cloneCatalog(catalog: PandocOptionCatalog): PandocOptionCatalog {
     return {
         ...catalog,
@@ -345,6 +368,8 @@ function cloneCatalog(catalog: PandocOptionCatalog): PandocOptionCatalog {
         inputFormats: [...catalog.inputFormats],
         outputFormats: [...catalog.outputFormats],
         markdownExtensions: [...catalog.markdownExtensions],
+        formatExtensions: Object.fromEntries(Object.entries(catalog.formatExtensions)
+            .map(([format, extensions]) => [format, extensions.map(extension => ({ ...extension }))])),
         highlightStyles: [...catalog.highlightStyles]
     };
 }

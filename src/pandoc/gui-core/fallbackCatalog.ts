@@ -48,39 +48,9 @@ const OUTPUT_FORMATS = [
     'typst'
 ];
 
-const MARKDOWN_EXTENSIONS = [
-    'all_symbols_escapable',
-    'auto_identifiers',
-    'citations',
-    'definition_lists',
-    'example_lists',
-    'fancy_lists',
-    'fenced_code_blocks',
-    'fenced_divs',
-    'footnotes',
-    'grid_tables',
-    'pipe_tables',
-    'raw_html',
-    'raw_tex',
-    'smart',
-    'subscript',
-    'superscript',
-    'task_lists',
-    'tex_math_dollars',
-    'yaml_metadata_block'
-];
+const MARKDOWN_EXTENSIONS: string[] = [];
 
-const HIGHLIGHT_STYLES = [
-    'default',
-    'breezedark',
-    'espresso',
-    'haddock',
-    'kate',
-    'monochrome',
-    'pygments',
-    'tango',
-    'zenburn'
-];
+const HIGHLIGHT_STYLES = ['default', 'breezedark', 'espresso', 'haddock', 'kate', 'monochrome', 'pygments', 'tango', 'zenburn'];
 
 export const FALLBACK_OPTIONS: OptionSpec[] = [
     spec('-f', ['-r', '--from', '--read'], 'from', 'Input format.', 'format', 'FORMAT', 'from'),
@@ -133,6 +103,7 @@ export const FALLBACK_PANDOC_CATALOG: PandocOptionCatalog = {
     inputFormats: INPUT_FORMATS,
     outputFormats: OUTPUT_FORMATS,
     markdownExtensions: MARKDOWN_EXTENSIONS,
+    formatExtensions: {},
     highlightStyles: HIGHLIGHT_STYLES
 };
 

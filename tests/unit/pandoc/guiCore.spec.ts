@@ -11,7 +11,10 @@ import {
     FALLBACK_OPTIONS,
     FALLBACK_PANDOC_CATALOG,
     findOptionSpec,
+    getFormatExtensionChoices,
     mergeOptionSpecs,
+    parseExtensionListOutput,
+    parsePandocFormatValue,
     parsePandocHelp,
     parsePandocManPage,
     quoteToken,
@@ -20,6 +23,7 @@ import {
     validateProfileDraft
 } from '../../../src/pandoc/gui-core';
 import { ExportVariables } from '../../../src/pandoc/types';
+import { FORMAT_EXTENSION_FIXTURE_CATALOG } from './formatExtensionFixture';
 
 const variables: ExportVariables = {
     vaultDir: '/vault',
@@ -177,6 +181,50 @@ describe('pandoc GUI core', () => {
             valueKind: 'enum',
             values: ['auto', 'none', 'preserve']
         });
+    });
+
+    it('parses pandoc extension lists with default inclusion state', () => {
+        expect(parseExtensionListOutput(`
++footnotes
+-wikilinks_title_after_pipe
+ignored
+`)).toEqual([
+            { name: 'footnotes', defaultEnabled: true },
+            { name: 'wikilinks_title_after_pipe', defaultEnabled: false }
+        ]);
+    });
+
+    it('classifies format extensions as included, compatible, or incompatible', () => {
+        expect(parsePandocFormatValue('markdown+wikilinks_title_after_pipe-alerts')).toEqual({
+            baseFormat: 'markdown',
+            modifiers: [
+                { operator: '+', name: 'wikilinks_title_after_pipe' },
+                { operator: '-', name: 'alerts' }
+            ]
+        });
+        expect(getFormatExtensionChoices(
+            FORMAT_EXTENSION_FIXTURE_CATALOG,
+            'markdown+wikilinks_title_after_pipe+not_real'
+        )).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                name: 'fenced_divs',
+                state: 'included',
+                checked: true,
+                editable: false
+            }),
+            expect.objectContaining({
+                name: 'wikilinks_title_after_pipe',
+                state: 'enabled',
+                checked: true,
+                editable: true
+            }),
+            expect.objectContaining({
+                name: 'not_real',
+                state: 'incompatible',
+                checked: true,
+                editable: false
+            })
+        ]));
     });
 
     it('searches by alias, normalized key, and description text', () => {
