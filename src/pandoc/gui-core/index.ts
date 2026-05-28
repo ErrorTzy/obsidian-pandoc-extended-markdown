@@ -31,8 +31,12 @@ export {
 } from './search';
 export {
     hasValidationErrors,
-    validateProfileDraft
+    validateProfileDraft,
+    validateProfileDraftNames
 } from './validation';
+export {
+    PandocPresetManager
+} from './presetManager';
 export type {
     CommandPreview,
     EditablePandocProfile,

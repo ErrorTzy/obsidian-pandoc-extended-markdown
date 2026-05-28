@@ -56,7 +56,8 @@ export function renderPandocRows(
     actions: PandocCommandRowActions
 ): void {
     const section = container.createDiv({ cls: 'pem-pandoc-option-section' });
-    section.createEl('h3', { text: 'Options' });
+    // eslint-disable-next-line obsidianmd/ui/sentence-case
+    section.createEl('h3', { text: 'Command Options' });
 
     for (const row of draft.optionRows) {
         renderOptionRow(section, draft, row, catalog, actions);
@@ -204,6 +205,7 @@ function createTypedValueControl(
     if (type === 'number') {
         return createInput(container, row.value, value => {
             row.value = value;
+            actions.updatePreview(draft);
         }, type, spec?.valuePlaceholder ?? 'Value');
     }
 

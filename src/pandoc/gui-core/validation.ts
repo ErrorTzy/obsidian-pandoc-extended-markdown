@@ -50,9 +50,28 @@ export function hasValidationErrors(issues: ValidationIssue[]): boolean {
     return issues.some(issue => issue.severity === 'error');
 }
 
+export function validateProfileDraftNames(drafts: ProfileDraft[]): ValidationIssue[] {
+    const issues: ValidationIssue[] = [];
+    const seen = new Set<string>();
+
+    for (const draft of drafts) {
+        const name = draft.name.trim();
+        if (!name) {
+            addError(issues, 'Preset name is required.', 'name');
+            continue;
+        }
+        const normalized = name.toLowerCase();
+        if (seen.has(normalized)) {
+            addError(issues, `Preset name "${name}" is already used.`, 'name');
+        }
+        seen.add(normalized);
+    }
+
+    return issues;
+}
+
 function validateRequiredFields(draft: ProfileDraft, issues: ValidationIssue[]): void {
-    if (!draft.id.trim()) addError(issues, 'Profile id is required.', 'id');
-    if (!draft.name.trim()) addError(issues, 'Profile name is required.', 'name');
+    if (!draft.name.trim()) addError(issues, 'Preset name is required.', 'name');
     if (!draft.extension.trim()) addError(issues, 'Output extension is required.', 'extension');
     if (draft.type === 'custom' && !draft.customCommandTemplate.trim()) {
         addError(issues, 'Custom command template is required.', 'customCommandTemplate');

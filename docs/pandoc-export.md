@@ -6,6 +6,8 @@ Enable **Pandoc export** in the plugin settings, optionally set a Pandoc executa
 
 Export profiles use argument arrays for built-in Pandoc formats. Advanced custom shell profiles can be added in the profile JSON, but they must use `type: "custom"` and `shell: true`.
 
+The **Edit pandoc export** command builder separates preset management from command editing. **Preset Options** manages the selected preset, its name, and actions such as save current, reset current, delete current, and restore built-in presets. **Command Options** contains the Pandoc argument rows or custom command fields. The final footer can cancel editor changes or **Save and close** the current preset list as shown; **Save current** persists only the selected preset immediately.
+
 For plugin-specific syntax, use the bundled Lua filters in `lua_filter/`. The filters are embedded into `main.js` at build time and released into the installed plugin folder on startup, so users do not need to download them separately.
 
 See [Pandoc variables and Lua filters](pandoc-variables-and-filters.md) for the full variable list and filter deployment details.

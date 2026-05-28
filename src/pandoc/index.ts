@@ -40,10 +40,12 @@ export {
     findOptionSpec,
     hasValidationErrors,
     optionLabel,
+    PandocPresetManager,
     parseKeyValueLines,
     renderKeyValueLines,
     searchOptions,
-    validateProfileDraft
+    validateProfileDraft,
+    validateProfileDraftNames
 } from './gui-core';
 export type {
     PandocCommandOptions,

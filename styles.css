@@ -46,30 +46,30 @@
     word-break: break-all;
 }
 
-.pem-pandoc-preset-bar,
-.pem-pandoc-preset-details {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+.pem-pandoc-preset-section,
+.pem-pandoc-option-section {
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 12px;
+    padding-top: 8px;
+}
+
+.pem-pandoc-preset-section h3,
+.pem-pandoc-option-section h3 {
+    margin: 0 0 10px;
+}
+
+.pem-pandoc-preset-fields {
+    align-items: end;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(180px, 1fr);
     margin-bottom: 10px;
 }
 
-.pem-pandoc-preset-bar select {
-    flex: 1 1 220px;
-    min-width: 180px;
-}
-
-.pem-pandoc-preset-bar button {
-    flex: 0 0 auto;
-}
-
 .pem-pandoc-preset-field {
-    align-items: center;
     display: grid;
     gap: 6px;
-    grid-template-columns: auto minmax(110px, 1fr);
-    min-width: min(260px, 100%);
+    min-width: 0;
 }
 
 .pem-pandoc-preset-field label,
@@ -78,15 +78,50 @@
     font-size: var(--font-ui-smaller);
 }
 
-.pem-pandoc-preset-field input {
+.pem-pandoc-preset-field input,
+.pem-pandoc-preset-field select {
     min-width: 0;
     width: 100%;
 }
 
-.pem-pandoc-option-section {
-    border-top: 1px solid var(--background-modifier-border);
-    margin-top: 12px;
-    padding-top: 8px;
+.pem-pandoc-preset-select-frame {
+    min-width: 0;
+    position: relative;
+}
+
+.pem-pandoc-preset-select-frame::after {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--text-muted);
+    content: "";
+    height: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-35%);
+    width: 0;
+}
+
+.pem-pandoc-preset-select-frame select {
+    appearance: none;
+    background-color: var(--background-secondary);
+    border-color: var(--interactive-accent);
+    cursor: pointer;
+    font-weight: 500;
+    padding-right: 36px;
+}
+
+.pem-pandoc-preset-actions {
+    align-items: end;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(180px, 1fr) repeat(5, max-content);
+    margin-bottom: 10px;
+}
+
+.pem-pandoc-preset-actions button {
+    white-space: nowrap;
 }
 
 .pem-pandoc-builder-row {
@@ -287,6 +322,12 @@
     color: var(--text-warning);
 }
 
+.pem-pandoc-command-footer {
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 12px;
+    padding-top: 8px;
+}
+
 .pem-pandoc-option-search-modal {
     max-width: calc(100vw - 48px);
     width: min(820px, calc(100vw - 48px));
@@ -351,6 +392,14 @@
 }
 
 @media (max-width: 720px) {
+    .pem-pandoc-preset-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .pem-pandoc-preset-actions button {
+        width: 100%;
+    }
+
     .pem-pandoc-builder-row {
         grid-template-areas:
             "key separator"

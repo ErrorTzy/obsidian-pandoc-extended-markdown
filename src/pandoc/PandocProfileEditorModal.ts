@@ -1,6 +1,5 @@
 import { Modal, Notice, Setting } from 'obsidian';
 
-import { DEFAULT_EXPORT_PROFILES } from './defaultProfiles';
 import { PandocExportPluginLike } from './ExportModal';
 import { renderPandocRows } from './PandocCommandRows';
 import { PandocOptionSearchModal } from './PandocOptionSearchModal';
@@ -8,11 +7,10 @@ import { buildPreviewExportVariables } from './previewVariables';
 import {
     buildProfileDraftPreview,
     compileProfileDraft,
-    compileProfileDrafts,
-    createDefaultPandocRows,
-    createProfileDrafts,
+    PandocPresetManager,
     PandocCatalogService,
-    validateProfileDraft
+    validateProfileDraft,
+    validateProfileDraftNames
 } from './gui-core';
 import type {
     PandocOptionCatalog,
@@ -22,17 +20,17 @@ import type {
 
 export class PandocProfileEditorModal extends Modal {
     private readonly plugin: PandocExportPluginLike;
-    private drafts: ProfileDraft[];
+    private readonly presets: PandocPresetManager;
     private catalog?: PandocOptionCatalog;
-    private selectedId: string;
     private optionIndex = 0;
     private previewEl?: HTMLElement;
+    private resetCurrentButton?: HTMLButtonElement;
+    private restorePresetButton?: HTMLButtonElement;
 
     constructor(plugin: PandocExportPluginLike) {
         super(plugin.app);
         this.plugin = plugin;
-        this.drafts = createProfileDrafts(plugin.settings.pandocExport?.profiles ?? []);
-        this.selectedId = this.drafts[0]?.id ?? '';
+        this.presets = new PandocPresetManager(plugin.settings.pandocExport?.profiles ?? []);
     }
 
     onOpen(): void {
@@ -66,8 +64,7 @@ export class PandocProfileEditorModal extends Modal {
         const draft = this.selectedDraft();
         if (!draft) return;
         this.renderCommandPreview(content, draft);
-        this.renderPresetBar(content, draft);
-        this.renderPresetDetails(content, draft);
+        this.renderPresetOptions(content, draft);
         if (draft.type === 'pandoc') {
             renderPandocRows(content, draft, this.catalog, {
                 nextOptionIndex: () => this.optionIndex++,
@@ -81,7 +78,7 @@ export class PandocProfileEditorModal extends Modal {
         } else {
             this.renderCustomFields(content, draft);
         }
-        this.renderValidation(content, validateProfileDraft(draft, this.catalog));
+        this.renderValidation(content, this.currentValidationIssues(draft));
         this.renderFooter(content);
     }
 
@@ -92,42 +89,62 @@ export class PandocProfileEditorModal extends Modal {
         this.updatePreview(draft);
     }
 
-    private renderPresetBar(container: HTMLElement, draft: ProfileDraft): void {
-        const bar = container.createDiv({ cls: 'pem-pandoc-preset-bar' });
-        const select = bar.createEl('select', { attr: { 'aria-label': 'Load preset' } });
-        for (const item of this.drafts) {
-            select.createEl('option', { value: item.id, text: item.name || item.id });
+    private renderPresetOptions(container: HTMLElement, draft: ProfileDraft): void {
+        const section = container.createDiv({ cls: 'pem-pandoc-preset-section' });
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
+        section.createEl('h3', { text: 'Preset Options' });
+
+        const fields = section.createDiv({ cls: 'pem-pandoc-preset-fields' });
+        const selectField = fields.createDiv({ cls: 'pem-pandoc-preset-field' });
+        selectField.createEl('label', { text: 'Preset' });
+        const selectFrame = selectField.createDiv({ cls: 'pem-pandoc-preset-select-frame' });
+        const select = selectFrame.createEl('select', { attr: { 'aria-label': 'Load preset' } });
+        for (const item of this.presets.visibleDrafts()) {
+            select.createEl('option', { value: item.id, text: item.name });
         }
         select.value = draft.id;
         select.onchange = () => {
-            this.selectedId = select.value;
+            this.presets.select(select.value);
             this.render();
         };
 
-        this.createButton(bar, 'New preset', () => this.addProfile());
-        this.createButton(bar, 'Save as preset', () => this.duplicateSelected());
-        this.createButton(bar, 'Reset defaults', () => this.resetDefaults());
-    }
-
-    private renderPresetDetails(container: HTMLElement, draft: ProfileDraft): void {
-        const details = container.createDiv({ cls: 'pem-pandoc-preset-details' });
-        this.renderTextField(details, 'Preset ID', draft.id, value => {
-            draft.id = value;
-            this.selectedId = value;
-        });
-        this.renderTextField(details, 'Preset name', draft.name, value => {
+        const actions = section.createDiv({ cls: 'pem-pandoc-preset-actions' });
+        this.renderTextField(actions, 'Name', draft.name, value => {
             draft.name = value;
         });
-        if (draft.type !== 'custom') return;
-
-        this.renderTextField(details, 'Output extension', draft.extension, value => {
-            draft.extension = value;
-            this.updatePreview(draft);
+        this.createButton(actions, 'New preset', () => {
+            this.presets.addPreset();
+            this.render();
         });
+        this.createButton(actions, 'Save current', () => {
+            void this.saveCurrent();
+        });
+        this.resetCurrentButton = this.createButton(actions, 'Reset current', () => {
+            this.presets.resetSelected();
+            this.render();
+        });
+        this.createButton(actions, 'Delete current', () => {
+            if (!this.presets.deleteSelected()) {
+                new Notice('At least one export preset is required.');
+            }
+            this.render();
+        }).disabled = !this.presets.canDeleteSelected();
+        this.restorePresetButton = this.createButton(actions, 'Restore preset', () => {
+            this.presets.restoreSelected();
+            this.render();
+        });
+        this.refreshPresetActionStates();
     }
 
     private renderCustomFields(container: HTMLElement, draft: ProfileDraft): void {
-        new Setting(container)
+        const section = container.createDiv({ cls: 'pem-pandoc-option-section' });
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
+        section.createEl('h3', { text: 'Command Options' });
+        this.renderTextField(section, 'Output extension', draft.extension, value => {
+            draft.extension = value;
+        });
+
+        new Setting(section)
             .setName('Command template')
             .addTextArea(text => text
                 .setValue(draft.customCommandTemplate)
@@ -135,7 +152,7 @@ export class PandocProfileEditorModal extends Modal {
                     draft.customCommandTemplate = value;
                     this.updatePreview(draft);
                 }));
-        new Setting(container).setName('Enable shell command').addToggle(toggle => toggle
+        new Setting(section).setName('Enable shell command').addToggle(toggle => toggle
             .setValue(draft.customShell)
             .onChange(value => {
                 draft.customShell = value;
@@ -155,85 +172,57 @@ export class PandocProfileEditorModal extends Modal {
     }
 
     private renderFooter(container: HTMLElement): void {
-        new Setting(container)
+        new Setting(container.createDiv({ cls: 'pem-pandoc-command-footer' }))
             .addButton(button => button
-                .setButtonText('Remove preset')
-                .onClick(() => this.removeSelected()))
-            .addButton(button => button
-                .setButtonText('Cancel')
+                .setButtonText('Cancel changes')
                 .onClick(() => this.close()))
             .addButton(button => button
-                .setButtonText('Save profiles')
+                .setButtonText('Save and close')
                 .setCta()
-                .onClick(() => this.save()));
+                .onClick(() => {
+                    void this.saveAndClose();
+                }));
     }
 
     private selectedDraft(): ProfileDraft | undefined {
-        return this.drafts.find(draft => draft.id === this.selectedId) ?? this.drafts[0];
+        return this.presets.selectedDraft();
     }
 
-    private addProfile(): void {
-        const id = uniqueId('profile', this.drafts.map(draft => draft.id));
-        this.drafts.push({
-            id,
-            name: 'New preset',
-            type: 'pandoc',
-            extension: '.html',
-            from: '',
-            to: '',
-            standalone: false,
-            resourcePaths: [],
-            luaFilters: [],
-            metadata: {},
-            optionRows: createDefaultPandocRows(),
-            customCommandTemplate: '',
-            customShell: false
-        });
-        this.selectedId = id;
-        this.render();
-    }
-
-    private duplicateSelected(): void {
+    private async saveCurrent(): Promise<void> {
+        if (!this.catalog) return;
         const draft = this.selectedDraft();
         if (!draft) return;
-        const copy = cloneDraft(draft);
-        copy.id = uniqueId(`${draft.id}-copy`, this.drafts.map(item => item.id));
-        copy.name = `${draft.name} Copy`;
-        this.drafts.push(copy);
-        this.selectedId = copy.id;
-        this.render();
-    }
-
-    private resetDefaults(): void {
-        this.drafts = createProfileDrafts(DEFAULT_EXPORT_PROFILES);
-        this.selectedId = this.drafts[0]?.id ?? '';
-        this.render();
-    }
-
-    private removeSelected(): void {
-        if (this.drafts.length <= 1) {
-            new Notice('At least one export profile is required.');
-            return;
-        }
-        this.drafts = this.drafts.filter(draft => draft.id !== this.selectedId);
-        this.selectedId = this.drafts[0]?.id ?? '';
-        this.render();
-    }
-
-    private async save(): Promise<void> {
-        if (!this.catalog) return;
-        const errors = this.drafts.flatMap(draft =>
-            validateProfileDraft(draft, this.catalog!).filter(issue => issue.severity === 'error'));
+        const errors = [
+            ...validateProfileDraftNames(this.presets.visibleDrafts()),
+            ...validateProfileDraft(draft, this.catalog)
+        ]
+            .filter(issue => issue.severity === 'error');
         if (errors.length > 0) {
-            new Notice(`Fix ${errors.length} Pandoc profile error(s) before saving.`);
+            new Notice(`Fix ${errors.length} Pandoc preset error(s) before saving.`);
             return;
         }
 
         const settings = this.plugin.settings.pandocExport;
         if (!settings) return;
-        settings.profiles = compileProfileDrafts(this.drafts, this.catalog);
+        settings.profiles = this.presets.saveSelected(this.catalog);
         await this.plugin.saveSettings();
-        new Notice('Pandoc export profiles saved.');
+        new Notice('Current pandoc preset saved.');
+        this.render();
+    }
+
+    private async saveAndClose(): Promise<void> {
+        if (!this.catalog) return;
+        const errors = this.allValidationIssues()
+            .filter(issue => issue.severity === 'error');
+        if (errors.length > 0) {
+            new Notice(`Fix ${errors.length} Pandoc preset error(s) before saving.`);
+            return;
+        }
+
+        const settings = this.plugin.settings.pandocExport;
+        if (!settings) return;
+        settings.profiles = this.presets.saveAll(this.catalog);
+        await this.plugin.saveSettings();
         this.close();
     }
 
@@ -244,6 +233,32 @@ export class PandocProfileEditorModal extends Modal {
             this.catalog,
             this.buildPreviewVariables(draft)
         ).display);
+        this.refreshPresetActionStates();
+    }
+
+    private refreshPresetActionStates(): void {
+        if (this.resetCurrentButton) {
+            this.resetCurrentButton.disabled = !this.presets.canResetSelected();
+        }
+        if (this.restorePresetButton) {
+            this.restorePresetButton.disabled = !this.presets.canRestoreSelected();
+        }
+    }
+
+    private currentValidationIssues(draft: ProfileDraft): ValidationIssue[] {
+        if (!this.catalog) return [];
+        return [
+            ...validateProfileDraftNames(this.presets.visibleDrafts()),
+            ...validateProfileDraft(draft, this.catalog)
+        ];
+    }
+
+    private allValidationIssues(): ValidationIssue[] {
+        if (!this.catalog) return [];
+        return [
+            ...validateProfileDraftNames(this.presets.visibleDrafts()),
+            ...this.presets.visibleDrafts().flatMap(draft => validateProfileDraft(draft, this.catalog!))
+        ];
     }
 
     private buildPreviewVariables(draft: ProfileDraft) {
@@ -297,18 +312,4 @@ export class PandocProfileEditorModal extends Modal {
         return button;
     }
 
-}
-
-function uniqueId(base: string, existing: string[]): string {
-    let candidate = base;
-    let index = 2;
-    while (existing.includes(candidate)) {
-        candidate = `${base}-${index}`;
-        index += 1;
-    }
-    return candidate;
-}
-
-function cloneDraft(draft: ProfileDraft): ProfileDraft {
-    return JSON.parse(JSON.stringify(draft)) as ProfileDraft;
 }

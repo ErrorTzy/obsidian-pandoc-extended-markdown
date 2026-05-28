@@ -16,6 +16,23 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.contentOverflows).toBe(false);
         expect(layout.builderOverflows).toBe(false);
         expect(layout.previewOverflows).toBe(false);
+        expect(layout.sectionTitles).toEqual(expect.arrayContaining([
+            'Preset Options',
+            'Command Options'
+        ]));
+        expect(layout.hasPresetIdField).toBe(false);
+        expect(layout.presetFieldLabels).toEqual(['Preset', 'Name']);
+        expect(layout.nameSharesActionRow).toBe(true);
+        expect(layout.presetSelectStyledAsDropdown).toBe(true);
+        expect(layout.presetSelectHasTriangle).toBe(true);
+        expect(layout.footerButtons).toEqual(['Cancel changes', 'Save and close']);
+        expect(layout.presetActionStates).toEqual(expect.objectContaining({
+            newPreset: false,
+            saveCurrent: false,
+            resetCurrent: true,
+            deleteCurrent: false,
+            restorePreset: true
+        }));
         expect(layout.visibleTypeLabels).toBeGreaterThanOrEqual(2);
         expect(layout.rowsWithoutSearchButtons).toBe(1);
         expect(layout.valueColumnLeftSpread).toBeLessThanOrEqual(1);
@@ -47,6 +64,28 @@ describe('Pandoc profile editor layout', () => {
         await setOptionPanelFuzzySearch(true);
         expect(await getOptionPanelText()).toContain('--toc');
         expect(await isConfirmNextToSearchBar()).toBe(true);
+    });
+
+    it('enables reset and restore immediately after command option edits', async () => {
+        await configurePandocExport();
+        await openPandocProfileEditor();
+        await browser.waitUntil(async () => await hasFirstResourcePathInput(), {
+            timeout: 5000,
+            timeoutMsg: 'Expected resource path value input'
+        });
+
+        await typeFirstResourcePathValue('/tmp/pandoc-export-profile/assets');
+        await browser.waitUntil(async () => {
+            const states = (await getCommandBuilderLayout()).presetActionStates;
+            return states.resetCurrent === false && states.restorePreset === false;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected reset and restore to enable after editing a command option'
+        });
+
+        const states = (await getCommandBuilderLayout()).presetActionStates;
+        expect(states.resetCurrent).toBe(false);
+        expect(states.restorePreset).toBe(false);
     });
 
     it('expands option variables while blurred and suggests them while editing', async () => {
@@ -390,6 +429,14 @@ async function getCommandBuilderLayout(): Promise<{
     contentOverflows: boolean;
     builderOverflows: boolean;
     previewOverflows: boolean;
+    sectionTitles: string[];
+    footerButtons: string[];
+    hasPresetIdField: boolean;
+    presetFieldLabels: string[];
+    nameSharesActionRow: boolean;
+    presetSelectStyledAsDropdown: boolean;
+    presetSelectHasTriangle: boolean;
+    presetActionStates: Record<string, boolean | undefined>;
     visibleTypeLabels: number;
     rowsWithoutSearchButtons: number;
     valueColumnLeftSpread: number;
@@ -412,8 +459,19 @@ async function getCommandBuilderLayout(): Promise<{
         const content = modal?.querySelector('.modal-content') as HTMLElement | null;
         const builder = modal?.querySelector('.pem-pandoc-command-builder') as HTMLElement | null;
         const preview = modal?.querySelector('.pem-pandoc-command-preview') as HTMLElement | null;
+        const buttons = Array.from(modal?.querySelectorAll('button') ?? []);
+        const presetSelect = modal?.querySelector('.pem-pandoc-preset-fields select') as HTMLSelectElement | null;
+        const presetSelectStyle = presetSelect ? getComputedStyle(presetSelect) : undefined;
+        const presetSelectFrame = modal?.querySelector('.pem-pandoc-preset-select-frame') as HTMLElement | null;
+        const presetSelectFrameAfter = presetSelectFrame ?
+            getComputedStyle(presetSelectFrame, '::after') :
+            undefined;
+        const nameField = Array.from(modal?.querySelectorAll('.pem-pandoc-preset-field') ?? [])
+            .find(field => field.querySelector('label')?.textContent === 'Name');
         const labels = Array.from(modal?.querySelectorAll('.pem-pandoc-row-type') ?? []);
         const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const findButton = (text: string): HTMLButtonElement | undefined =>
+            buttons.find(button => button.textContent === text) as HTMLButtonElement | undefined;
         const valueLefts = rows
             .map(row => row.querySelector('.pem-pandoc-value-cell')?.getBoundingClientRect().left)
             .filter((left): left is number => left !== undefined);
@@ -424,6 +482,33 @@ async function getCommandBuilderLayout(): Promise<{
             contentOverflows: overflows(content),
             builderOverflows: overflows(builder),
             previewOverflows: overflows(preview),
+            sectionTitles: Array.from(modal?.querySelectorAll('h3') ?? [])
+                .map(title => title.textContent ?? ''),
+            footerButtons: Array.from(modal?.querySelectorAll('.pem-pandoc-command-footer button') ?? [])
+                .map(button => button.textContent ?? ''),
+            hasPresetIdField: Array.from(modal?.querySelectorAll('.pem-pandoc-preset-field label') ?? [])
+                .some(label => label.textContent === 'Preset ID'),
+            presetFieldLabels: Array.from(modal?.querySelectorAll('.pem-pandoc-preset-field label') ?? [])
+                .map(label => label.textContent ?? ''),
+            nameSharesActionRow: Boolean(nameField?.closest('.pem-pandoc-preset-actions')),
+            presetSelectStyledAsDropdown: Boolean(
+                presetSelect &&
+                presetSelectStyle &&
+                presetSelectStyle.cursor === 'pointer' &&
+                presetSelectStyle.backgroundColor !== getComputedStyle(content!).backgroundColor
+            ),
+            presetSelectHasTriangle: Boolean(
+                presetSelectFrameAfter &&
+                presetSelectFrameAfter.content !== 'none' &&
+                presetSelectFrameAfter.borderTopWidth !== '0px'
+            ),
+            presetActionStates: {
+                newPreset: findButton('New preset')?.disabled,
+                saveCurrent: findButton('Save current')?.disabled,
+                resetCurrent: findButton('Reset current')?.disabled,
+                deleteCurrent: findButton('Delete current')?.disabled,
+                restorePreset: findButton('Restore preset')?.disabled
+            },
             visibleTypeLabels: labels.filter(isVisible).length,
             rowsWithoutSearchButtons: rows.filter(row =>
                 !row.querySelector('.pem-pandoc-key-cell button[aria-label="Search pandoc options"]')
