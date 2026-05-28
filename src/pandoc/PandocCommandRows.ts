@@ -194,8 +194,12 @@ function createTypedValueControl(
     actions: PandocCommandRowActions
 ): ValueControl {
     if (spec?.valueKind === 'none') return undefined;
+    if (spec?.valueKind === 'format') {
+        return createTemplateValueInput(container, row, draft, actions, spec.valuePlaceholder ?? 'FORMAT');
+    }
+
     if (spec?.values?.length) {
-        const select = createSelect(container, spec.mapsTo === 'from' ? [['', 'default markdown']] : []);
+        const select = createSelect(container);
         for (const value of spec.values) select.createEl('option', { value, text: value });
         select.value = row.value;
         return select;
@@ -359,7 +363,7 @@ function createInput(
     return input;
 }
 
-function createSelect(container: HTMLElement, options: string[][]): HTMLSelectElement {
+function createSelect(container: HTMLElement, options: string[][] = []): HTMLSelectElement {
     const select = container.createEl('select');
     for (const [value, text] of options) select.createEl('option', { value, text });
     return select;

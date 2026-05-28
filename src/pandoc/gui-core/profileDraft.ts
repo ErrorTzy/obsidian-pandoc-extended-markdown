@@ -180,7 +180,7 @@ function createPandocProfileRows(profile: Extract<ExportProfile, { type: 'pandoc
 
     return [
         createInputRow(profile.inputPath),
-        createOptionRow('field-from', '-f', profile.from ?? ''),
+        createOptionRow('field-from', '-f', profile.from ?? '${fromFormat}'),
         createOptionRow('field-to', '-t', profile.to),
         createOptionRow('field-output', '-o', profile.outputPath ?? outputRow?.value ?? defaultOutputPathTemplate()),
         ...(profile.standalone === false ? [] : [createOptionRow('field-standalone', '-s', '')]),

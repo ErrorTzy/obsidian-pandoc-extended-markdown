@@ -92,6 +92,31 @@ describe('Pandoc command rows', () => {
         expect(firstSuggestion?.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent)
             .toBe('/vault/note.md');
     });
+
+    it('renders format rows as exact command values', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+        draft.optionRows.find(row => row.key === '-f')!.value = '${fromFormat}';
+        draft.optionRows.find(row => row.key === '-t')!.value = 'commonmark_x-attributes';
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            nextOptionIndex: () => 1,
+            getVariables: () => variables,
+            openOptionSearch: () => undefined,
+            render: () => undefined,
+            updatePreview: () => undefined
+        });
+
+        expect(findValueInput(container, '-f').value).toBe('markdown');
+        expect(findValueInput(container, '-t').value).toBe('commonmark_x-attributes');
+        expect(rowSelectValues(Array.from(container.querySelectorAll('.pem-pandoc-builder-row')), '-f'))
+            .toEqual([]);
+        expect(container.textContent).not.toContain('default markdown');
+    });
 });
 
 function createDraft(): ProfileDraft {

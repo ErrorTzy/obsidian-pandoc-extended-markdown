@@ -112,6 +112,10 @@ function validateFormat(
         addError(issues, `${field} format is required.`, field);
         return;
     }
+    if (hasTemplateVariable(trimmed)) {
+        validateKnownTemplateVariables(trimmed, field, issues);
+        return;
+    }
     if (formats.length > 0 && !formats.includes(stripExtensions(trimmed))) {
         addWarning(issues, `"${trimmed}" is not in the installed Pandoc ${field} format list.`, field);
     }
@@ -227,6 +231,27 @@ function validateDuplicate(
 
 function stripExtensions(format: string): string {
     return format.split(/[+-]/)[0];
+}
+
+function hasTemplateVariable(value: string): boolean {
+    return getExportTemplateVariableNames(value).length > 0;
+}
+
+function validateKnownTemplateVariables(
+    value: string,
+    field: string,
+    issues: ValidationIssue[]
+): void {
+    const unknownVariables = getExportTemplateVariableNames(value)
+        .filter(name => !KNOWN_TEMPLATE_VARIABLES.has(name));
+
+    if (unknownVariables.length > 0) {
+        addWarning(
+            issues,
+            `${field} format contains unresolved template variable(s): ${unknownVariables.join(', ')}.`,
+            field
+        );
+    }
 }
 
 function isPathKind(spec: OptionSpec): boolean {

@@ -260,12 +260,17 @@ describe('pandoc GUI core', () => {
 
         const draft = createProfileDraft(profile);
         const compiled = compileProfileDraft(draft, FALLBACK_PANDOC_CATALOG);
+        const fromRow = draft.optionRows.find(row => row.key === '-f');
+        const toRow = draft.optionRows.find(row => row.key === '-t');
 
         expect(compiled).toMatchObject({
             ...profile,
             inputPath: '${currentPath}',
             outputPath: '${outputDir}/${currentFileName}${outputExtension}'
         });
+        expect(fromRow?.value).toBe('${fromFormat}');
+        expect(toRow?.value).toBe(profile.to);
+        expect(validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG)).toEqual([]);
         expect(draft.optionRows.map(row => row.key)).toEqual(expect.arrayContaining([
             'input file',
             '-f',
