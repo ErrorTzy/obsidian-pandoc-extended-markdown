@@ -1,10 +1,13 @@
 import { Notice, Platform, Setting } from 'obsidian';
+import type { App, PluginManifest } from 'obsidian';
 
 import { PandocService } from '../pandoc';
 import { PandocExtendedMarkdownSettings } from '../shared/types/settingsTypes';
-import type { ExportProfile } from '../pandoc';
+import { PandocProfileEditorModal } from '../pandoc/PandocProfileEditorModal';
 
 export interface PandocExportSettingsPlugin {
+    app: App;
+    manifest: PluginManifest;
     settings: PandocExtendedMarkdownSettings;
     saveSettings: () => Promise<void>;
 }
@@ -131,24 +134,10 @@ function renderJsonSettings(
 
     new Setting(containerEl)
         .setName('Export profiles')
-        .setDesc('JSON array. Custom shell profiles must use type "custom" and shell true.')
-        .addTextArea(text => text
-            .setValue(JSON.stringify(settings.profiles, null, 2))
-            .onChange(async value => {
-                await updateJson(value, array => {
-                    if (Array.isArray(array)) {
-                        settings.profiles = array.filter(isExportProfile);
-                    }
-                }, plugin);
-            }));
-}
-
-function isExportProfile(value: unknown): value is ExportProfile {
-    return typeof value === 'object' &&
-        value !== null &&
-        'id' in value &&
-        'name' in value &&
-        'type' in value;
+        .setDesc('Open the structured pandoc profile editor.')
+        .addButton(button => button
+            .setButtonText('Edit pandoc export')
+            .onClick(() => new PandocProfileEditorModal(plugin).open()));
 }
 
 async function updateJson(

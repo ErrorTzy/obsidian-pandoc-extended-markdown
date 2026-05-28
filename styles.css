@@ -3,6 +3,279 @@
     cursor: text;
 }
 
+/* Pandoc export command builder */
+.pem-pandoc-command-modal {
+    max-width: calc(100vw - 48px);
+    width: min(1040px, calc(100vw - 48px));
+}
+
+.pem-pandoc-command-modal .modal-content {
+    overflow-x: hidden;
+}
+
+.pem-pandoc-command-builder {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+}
+
+.pem-pandoc-command-panel {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+}
+
+.pem-pandoc-command-label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    margin-bottom: 6px;
+}
+
+.pem-pandoc-command-preview {
+    box-sizing: border-box;
+    display: block;
+    font-size: var(--font-ui-small);
+    max-height: 170px;
+    max-width: 100%;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.pem-pandoc-preset-bar,
+.pem-pandoc-preset-details {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.pem-pandoc-preset-bar select {
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+.pem-pandoc-preset-bar button {
+    flex: 0 0 auto;
+}
+
+.pem-pandoc-preset-field {
+    align-items: center;
+    display: grid;
+    gap: 6px;
+    grid-template-columns: auto minmax(110px, 1fr);
+    min-width: min(260px, 100%);
+}
+
+.pem-pandoc-preset-field label,
+.pem-pandoc-row-type {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.pem-pandoc-preset-field input {
+    min-width: 0;
+    width: 100%;
+}
+
+.pem-pandoc-option-section {
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 12px;
+    padding-top: 8px;
+}
+
+.pem-pandoc-builder-row {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(130px, 210px) 12px minmax(0, 1fr) minmax(110px, 160px) auto;
+    margin-bottom: 8px;
+    max-width: 100%;
+}
+
+.pem-pandoc-key-input,
+.pem-pandoc-value-cell input,
+.pem-pandoc-value-cell select {
+    width: 100%;
+}
+
+.pem-pandoc-key-cell {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-width: 0;
+    position: relative;
+}
+
+.pem-pandoc-key-cell .pem-pandoc-key-input {
+    min-width: 0;
+}
+
+.pem-pandoc-key-cell > button {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.pem-pandoc-key-suggestions {
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-s);
+    display: none;
+    left: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+}
+
+.pem-pandoc-key-suggestions:not(:empty) {
+    display: block;
+}
+
+.pem-pandoc-key-suggestions button {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    display: block;
+    padding: 6px 8px;
+    text-align: left;
+    width: 100%;
+}
+
+.pem-pandoc-key-suggestions button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.pem-pandoc-value-cell {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+}
+
+.pem-pandoc-value-cell input,
+.pem-pandoc-value-cell select {
+    min-width: 0;
+}
+
+.pem-pandoc-row-type {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pem-pandoc-row-separator {
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.pem-pandoc-value-cell button,
+.pem-pandoc-row-actions button,
+.pem-pandoc-option-section > button {
+    white-space: nowrap;
+}
+
+.pem-pandoc-validation {
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 12px;
+    padding-top: 8px;
+}
+
+.pem-pandoc-validation .is-error {
+    color: var(--text-error);
+}
+
+.pem-pandoc-validation .is-warning {
+    color: var(--text-warning);
+}
+
+.pem-pandoc-option-search-modal {
+    max-width: calc(100vw - 48px);
+    width: min(820px, calc(100vw - 48px));
+}
+
+.pem-pandoc-option-search-box {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) max-content max-content;
+    margin-bottom: 10px;
+}
+
+.pem-pandoc-option-search-box input[type="search"] {
+    width: 100%;
+}
+
+.pem-pandoc-fuzzy-toggle {
+    align-items: center;
+    color: var(--text-muted);
+    display: inline-flex;
+    font-size: var(--font-ui-smaller);
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.pem-pandoc-fuzzy-toggle input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin: 0;
+    width: auto;
+}
+
+.pem-pandoc-option-results {
+    border-top: 1px solid var(--background-modifier-border);
+    max-height: min(52vh, 460px);
+    overflow-y: auto;
+}
+
+.pem-pandoc-option-result {
+    border-bottom: 1px solid var(--background-modifier-border);
+    cursor: pointer;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    padding: 8px 4px;
+}
+
+.pem-pandoc-option-result:hover,
+.pem-pandoc-option-result.is-selected {
+    background: var(--background-modifier-hover);
+}
+
+.pem-pandoc-option-result-key {
+    font-family: var(--font-monospace);
+}
+
+.pem-pandoc-option-result-desc {
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+    .pem-pandoc-builder-row {
+        grid-template-columns: minmax(96px, 1fr) 12px;
+    }
+
+    .pem-pandoc-value-cell,
+    .pem-pandoc-row-type,
+    .pem-pandoc-row-actions {
+        grid-column: 1 / -1;
+    }
+
+    .pem-pandoc-option-search-box {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Source-aware unordered list marker styles */
 .HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-plus .cm-formatting-list-ul:not(:has(.list-bullet)),
 .HyperMD-list-line:not(.cm-active).pem-unordered-list-marker-star .cm-formatting-list-ul:not(:has(.list-bullet)) {

@@ -25,6 +25,22 @@ export {
     parsePandocVersion
 } from './pandocPath';
 export { PandocService, runPandocProcess } from './PandocService';
+export {
+    PandocCatalogService,
+    buildProfileDraftPreview,
+    compileProfileDraft,
+    compileProfileDrafts,
+    createEmptyOptionRow,
+    createProfileDraft,
+    createProfileDrafts,
+    findOptionSpec,
+    hasValidationErrors,
+    optionLabel,
+    parseKeyValueLines,
+    renderKeyValueLines,
+    searchOptions,
+    validateProfileDraft
+} from './gui-core';
 export type {
     PandocCommandOptions,
     PandocConvertRequest,
@@ -41,6 +57,15 @@ export type {
     PandocServiceConfig,
     PandocVersionInfo
 } from './types';
+export type {
+    CommandPreview,
+    OptionSpec,
+    OptionValueKind,
+    PandocOptionCatalog,
+    ProfileDraft,
+    ProfileOptionRow,
+    ValidationIssue
+} from './gui-core';
 export type {
     BuildExportVariablesRequest,
     ExportVariableFile
