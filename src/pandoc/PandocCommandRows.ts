@@ -1,4 +1,4 @@
-import { ElectronPandocDesktopAdapter } from './desktopAdapter';
+import { addBrowseButton } from './PandocPathBrowse';
 import {
     createEmptyOptionRow,
     findOptionSpec,
@@ -15,6 +15,7 @@ import type {
 import type { ExportVariables } from './types';
 
 type ValueInput = HTMLInputElement | HTMLSelectElement;
+type ValueControl = ValueInput | undefined;
 
 const TEMPLATE_VARIABLE_NAMES = [
     'currentPath',
@@ -70,7 +71,9 @@ function renderOptionRow(
     const spec = findOptionSpec(catalog, row.key);
     const item = container.createDiv({ cls: 'pem-pandoc-builder-row' });
     createKeyCell(item, row, draft, catalog, actions);
-    item.createEl('span', { cls: 'pem-pandoc-row-separator', text: ':' });
+    if (spec?.valueKind !== 'none') {
+        item.createEl('span', { cls: 'pem-pandoc-row-separator', text: ':' });
+    }
     renderValueControl(item, draft, row, spec, actions);
     item.createEl('span', { cls: 'pem-pandoc-row-type', text: typeText(spec) });
     const controls = item.createDiv({ cls: 'pem-pandoc-row-actions' });
@@ -138,19 +141,18 @@ function renderValueControl(
 ): void {
     const valueEl = container.createDiv({ cls: 'pem-pandoc-value-cell' });
     const control = createTypedValueControl(valueEl, row, draft, spec, actions);
+    if (!control) return;
     if (!isTemplateTextInput(control)) {
         control.onchange = () => {
             row.value = control.value;
             actions.updatePreview(draft);
         };
     }
-    if (['directory', 'pathList'].includes(spec?.valueKind ?? '')) {
-        addFolderButton(valueEl, control, value => {
-            row.value = value;
-            actions.updatePreview(draft);
-            updateControlDisplay(control, row, draft, actions);
-        });
-    }
+    addBrowseButton(valueEl, spec?.valueKind, control, value => {
+        row.value = value;
+        actions.updatePreview(draft);
+        updateControlDisplay(control, row, draft, actions);
+    });
 }
 
 function isTemplateTextInput(control: ValueInput): control is HTMLInputElement {
@@ -176,13 +178,8 @@ function createTypedValueControl(
     draft: ProfileDraft,
     spec: OptionSpec | undefined,
     actions: PandocCommandRowActions
-): ValueInput {
-    if (spec?.valueKind === 'none') return createDisabledInput(container, 'no value');
-    if (spec?.valueKind === 'boolean') {
-        const select = createSelect(container, [['', 'on'], ['false', 'off']]);
-        select.value = row.value;
-        return select;
-    }
+): ValueControl {
+    if (spec?.valueKind === 'none') return undefined;
     if (spec?.values?.length) {
         const select = createSelect(container, spec.mapsTo === 'from' ? [['', 'default markdown']] : []);
         for (const value of spec.values) select.createEl('option', { value, text: value });
@@ -340,12 +337,6 @@ function createSelect(container: HTMLElement, options: string[][]): HTMLSelectEl
     return select;
 }
 
-function createDisabledInput(container: HTMLElement, placeholder: string): HTMLInputElement {
-    const input = createInput(container, '', () => undefined, 'text', placeholder);
-    input.disabled = true;
-    return input;
-}
-
 function createButton(
     container: HTMLElement,
     text: string,
@@ -355,26 +346,6 @@ function createButton(
     const button = container.createEl('button', { text, attr: { 'aria-label': label } });
     button.onclick = onClick;
     return button;
-}
-
-function addFolderButton(
-    container: HTMLElement,
-    input: ValueInput,
-    onChoose: (value: string) => void
-): void {
-    createButton(container, 'Browse', () => {
-        void chooseFolder(input, onChoose);
-    });
-}
-
-async function chooseFolder(
-    input: ValueInput,
-    onChoose: (value: string) => void
-): Promise<void> {
-    const selected = await new ElectronPandocDesktopAdapter().chooseFolder(input.value);
-    if (!selected) return;
-    input.value = selected;
-    onChoose(selected);
 }
 
 function typeText(spec?: OptionSpec): string {

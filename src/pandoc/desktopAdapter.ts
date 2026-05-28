@@ -10,6 +10,16 @@ export interface PandocDesktopAdapter {
 type ElectronModule = typeof import('electron');
 
 export class ElectronPandocDesktopAdapter implements PandocDesktopAdapter {
+    async chooseFile(defaultPath?: string): Promise<string | undefined> {
+        const electron = await importElectron();
+        const result = await electron.remote.dialog.showOpenDialog({
+            defaultPath,
+            properties: ['openFile']
+        });
+
+        return result.canceled ? undefined : result.filePaths[0];
+    }
+
     async chooseFolder(defaultPath?: string): Promise<string | undefined> {
         const electron = await importElectron();
         const result = await electron.remote.dialog.showOpenDialog({

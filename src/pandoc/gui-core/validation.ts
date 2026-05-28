@@ -101,7 +101,7 @@ function validateRowValue(
 ): void {
     const value = row.value.trim();
     if (spec.mapsTo === 'from' && !value) return;
-    if (spec.valueKind !== 'none' && spec.valueKind !== 'boolean' && !value) {
+    if (spec.valueKind !== 'none' && !value) {
         addError(issues, `${spec.key} requires a value.`, 'optionRows', row.id);
     }
     if (value && ['integer', 'number'].includes(spec.valueKind)) {

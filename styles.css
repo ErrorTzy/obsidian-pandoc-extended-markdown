@@ -107,6 +107,7 @@
 .pem-pandoc-key-cell {
     display: grid;
     gap: 4px;
+    grid-column: 1;
     grid-template-columns: minmax(0, 1fr) auto;
     min-width: 0;
     position: relative;
@@ -158,6 +159,7 @@
     align-items: center;
     display: flex;
     gap: 6px;
+    grid-column: 3;
     min-width: 0;
     position: relative;
 }
@@ -212,6 +214,7 @@
 }
 
 .pem-pandoc-row-type {
+    grid-column: 4;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -219,7 +222,12 @@
 
 .pem-pandoc-row-separator {
     color: var(--text-muted);
+    grid-column: 2;
     text-align: center;
+}
+
+.pem-pandoc-row-actions {
+    grid-column: 5;
 }
 
 .pem-pandoc-value-cell button,
@@ -308,6 +316,14 @@
 @media (max-width: 720px) {
     .pem-pandoc-builder-row {
         grid-template-columns: minmax(96px, 1fr) 12px;
+    }
+
+    .pem-pandoc-key-cell {
+        grid-column: 1;
+    }
+
+    .pem-pandoc-row-separator {
+        grid-column: 2;
     }
 
     .pem-pandoc-value-cell,

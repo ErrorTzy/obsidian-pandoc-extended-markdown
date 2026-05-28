@@ -2,7 +2,6 @@ import type { ExportProfile, PandocExportProfile } from '../types';
 
 export type OptionValueKind =
     | 'none'
-    | 'boolean'
     | 'string'
     | 'integer'
     | 'number'

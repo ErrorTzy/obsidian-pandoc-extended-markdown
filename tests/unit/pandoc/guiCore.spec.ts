@@ -43,7 +43,9 @@ describe('pandoc GUI core', () => {
     it('parses option keys and value placeholders from pandoc help', () => {
         const options = parsePandocHelp(`
   -f FORMAT, -r FORMAT  --from=FORMAT, --read=FORMAT
+  -s                    --standalone
                         --columns=NUMBER
+                        --eol=crlf|lf|native
                         --toc[=true|false], --table-of-contents[=true|false]
 `);
 
@@ -56,6 +58,19 @@ describe('pandoc GUI core', () => {
             expect.objectContaining({
                 key: '--columns',
                 valueKind: 'integer'
+            }),
+            expect.objectContaining({
+                key: '--standalone',
+                valueKind: 'none'
+            }),
+            expect.objectContaining({
+                key: '--eol',
+                valueKind: 'enum',
+                values: ['crlf', 'lf', 'native']
+            }),
+            expect.objectContaining({
+                key: '--toc',
+                valueKind: 'none'
             })
         ]));
     });
@@ -67,6 +82,9 @@ describe('pandoc GUI core', () => {
 
      --data-dir=DIRECTORY
           Specify the user data directory.
+
+     --wrap=auto|none|preserve
+          Determine how text is wrapped.
 `);
 
         expect(options).toEqual(expect.arrayContaining([
@@ -77,6 +95,11 @@ describe('pandoc GUI core', () => {
             expect.objectContaining({
                 key: '--data-dir',
                 valueKind: 'directory'
+            }),
+            expect.objectContaining({
+                key: '--wrap',
+                valueKind: 'enum',
+                values: ['auto', 'none', 'preserve']
             })
         ]));
     });
@@ -115,7 +138,9 @@ describe('pandoc GUI core', () => {
             parsePandocHelp(`
   -f FORMAT, -r FORMAT  --from=FORMAT, --read=FORMAT
   -t FORMAT, -w FORMAT  --to=FORMAT, --write=FORMAT
+  -s                    --standalone
                         --resource-path=SEARCHPATH
+                        --eol=crlf|lf|native
   -L SCRIPTPATH         --lua-filter=SCRIPTPATH
 `),
             parsePandocManPage(`
@@ -132,14 +157,26 @@ describe('pandoc GUI core', () => {
             options: mergeOptionSpecs(FALLBACK_OPTIONS, runtimeOptions)
         };
 
-        for (const key of ['-f', '-t', '--resource-path', '-L']) {
+        for (const key of ['-f', '-t', '-s', '--resource-path', '--eol', '-L']) {
             const fallback = findOptionSpec(FALLBACK_PANDOC_CATALOG, key);
             const runtime = findOptionSpec(merged, key);
             expect(runtime).toMatchObject({
                 valueKind: fallback?.valueKind,
-                mapsTo: fallback?.mapsTo
+                mapsTo: fallback?.mapsTo,
+                values: fallback?.values
             });
         }
+    });
+
+    it('keeps manual fallback values for known enum options', () => {
+        expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--eol')).toMatchObject({
+            valueKind: 'enum',
+            values: ['crlf', 'lf', 'native']
+        });
+        expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--wrap')).toMatchObject({
+            valueKind: 'enum',
+            values: ['auto', 'none', 'preserve']
+        });
     });
 
     it('searches by alias, normalized key, and description text', () => {
@@ -228,10 +265,10 @@ describe('pandoc GUI core', () => {
         expect(draft.optionRows.map(row => row.key)).toEqual(expect.arrayContaining([
             '-f',
             '-t',
-            '-s',
             '--resource-path',
             '-L'
         ]));
+        expect(draft.optionRows.map(row => row.key)).not.toContain('-s');
         expect(buildPandocProfileArgs({ profile: compiled, variables })).toEqual(
             buildPandocProfileArgs({ profile, variables })
         );

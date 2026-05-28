@@ -153,7 +153,7 @@ function parseHelpLine(line: string): OptionSpec | undefined {
     const tokens = optionTokenMatches(line);
     if (tokens.length === 0) return undefined;
 
-    return buildSpec(tokens, '');
+    return buildSpec(tokens, '', line);
 }
 
 function parseManOptionLine(line: string): OptionSpec | undefined {
@@ -163,22 +163,24 @@ function parseManOptionLine(line: string): OptionSpec | undefined {
     const tokens = optionTokenMatches(line);
     if (tokens.length === 0) return undefined;
 
-    return buildSpec(tokens, '');
+    return buildSpec(tokens, '', line);
 }
 
-function buildSpec(tokens: string[], description: string): OptionSpec {
+function buildSpec(tokens: string[], description: string, sourceText: string): OptionSpec {
     const normalized = tokens.map(normalizeOptionToken);
     const long = normalized.find(token => token.startsWith('--'));
     const key = long ?? normalized[0];
     const aliases = normalized.filter(token => token !== key);
+    const valueKind = inferValueKind(key, sourceText);
 
     return {
         key,
         aliases,
         name: key.replace(/^--?/, ''),
         description,
-        valueKind: inferValueKind(key, tokens.join(' ')),
-        valuePlaceholder: inferPlaceholder(tokens.join(' ')),
+        valueKind,
+        valuePlaceholder: inferValuePlaceholder(sourceText, valueKind),
+        values: inferValues(sourceText, valueKind),
         repeatable: inferRepeatable(key),
         mapsTo: inferMapsTo(key)
     };
@@ -198,10 +200,18 @@ function inferPlaceholder(text: string): string | undefined {
     return match?.[1];
 }
 
+function inferValuePlaceholder(
+    text: string,
+    valueKind: OptionValueKind
+): string | undefined {
+    if (valueKind === 'none') return undefined;
+    return inferPlaceholder(text);
+}
+
 function inferValueKind(key: string, text: string): OptionValueKind {
+    if (hasOptionalFlagModifier(text)) return 'none';
     const placeholder = inferPlaceholder(text);
-    if (!placeholder && text.includes('[=true|false]')) return 'boolean';
-    if (!placeholder) return key === '--citeproc' ? 'none' : 'boolean';
+    if (!placeholder) return 'none';
     if (/FORMAT/.test(placeholder)) return 'format';
     if (/DIRECTORY|DIRNAME/.test(placeholder)) return 'directory';
     if (/FILE|SCRIPT|SCRIPTPATH|THEMEPATH/.test(placeholder)) return 'file';
@@ -213,6 +223,24 @@ function inferValueKind(key: string, text: string): OptionValueKind {
     return 'string';
 }
 
+function hasOptionalFlagModifier(text: string): boolean {
+    return /\[(?:=)?true\|false\]/.test(text);
+}
+
+function inferValues(text: string, valueKind: OptionValueKind): string[] | undefined {
+    if (valueKind !== 'enum') return undefined;
+    const placeholder = inferPlaceholder(text);
+    if (!placeholder?.includes('|')) return undefined;
+
+    const values = placeholder
+        .split('|')
+        .map(value => value.trim())
+        .filter(value => /^[a-z0-9][a-z0-9_-]*$/i.test(value))
+        .filter(value => value.toUpperCase() !== value);
+
+    return values.length > 0 ? Array.from(new Set(values)) : undefined;
+}
+
 function inferMapsTo(key: string): OptionSpec['mapsTo'] {
     if (['--from', '-f', '--read', '-r'].includes(key)) return 'from';
     if (['--to', '-t', '--write', '-w'].includes(key)) return 'to';
@@ -222,7 +250,7 @@ function inferMapsTo(key: string): OptionSpec['mapsTo'] {
     if (['--lua-filter', '-L'].includes(key)) return 'luaFilter';
     if (['--metadata', '-M'].includes(key)) return 'metadata';
     if (['--variable', '-V', '--variable-json'].includes(key)) return 'variable';
-    return 'extraArg';
+    return undefined;
 }
 
 function inferRepeatable(key: string): boolean {
@@ -276,8 +304,13 @@ function enrichOption(
 ): OptionSpec {
     if (spec.mapsTo === 'from') return { ...spec, values: inputFormats };
     if (spec.mapsTo === 'to') return { ...spec, values: outputFormats };
-    if (spec.name.includes('highlight')) return { ...spec, values: styles };
+    if (spec.name.includes('highlight')) return { ...spec, values: mergeValues(spec.values, styles) };
     return spec;
+}
+
+function mergeValues(...groups: Array<string[] | undefined>): string[] | undefined {
+    const values = Array.from(new Set(groups.flatMap(group => group ?? [])));
+    return values.length > 0 ? values : undefined;
 }
 
 function canonicalOptionKey(spec: OptionSpec): string {

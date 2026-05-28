@@ -165,7 +165,7 @@ function createPandocProfileRows(profile: Extract<ExportProfile, { type: 'pandoc
     return [
         createOptionRow('field-from', '-f', profile.from ?? ''),
         createOptionRow('field-to', '-t', profile.to),
-        createOptionRow('field-standalone', '-s', profile.standalone === false ? 'false' : ''),
+        ...(profile.standalone === false ? [] : [createOptionRow('field-standalone', '-s', '')]),
         ...(profile.resourcePaths ?? []).map((value, index) =>
             createOptionRow(`resource-path-${index}`, '--resource-path', value)),
         ...(profile.luaFilters ?? []).map((value, index) =>
@@ -227,14 +227,7 @@ function compileOptionRow(
     const value = row.value.trim();
 
     if (spec?.valueKind === 'none') return [key];
-    if (spec?.valueKind === 'boolean') return compileBooleanOption(key, value);
     if (!value) return [key];
-    return [key, value];
-}
-
-function compileBooleanOption(key: string, value: string): string[] {
-    if (!value || value === 'true') return [key];
-    if (value === 'false') return [`${key}=false`];
     return [key, value];
 }
 

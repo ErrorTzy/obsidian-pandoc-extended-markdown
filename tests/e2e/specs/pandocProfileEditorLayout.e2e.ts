@@ -23,6 +23,8 @@ describe('Pandoc profile editor layout', () => {
         expect(rowType(rows, '-t')).toBe('type: format string');
         expect(rowType(rows, '--resource-path')).toBe('type: folder path');
         expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
+        expect(rowType(rows, '-L')).toBe('type: file path');
+        expect(rowHasBrowseButton(rows, '-L')).toBe(true);
     });
 
     it('uses key-only inline suggestions and a separate searchable option panel', async () => {
