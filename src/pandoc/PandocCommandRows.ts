@@ -1,4 +1,5 @@
 import { addBrowseButton } from './PandocPathBrowse';
+import { createPandocCommandRowSlots } from './PandocCommandRowSlots';
 import {
     createEmptyOptionRow,
     findOptionSpec,
@@ -75,30 +76,28 @@ function renderOptionRow(
     actions: PandocCommandRowActions
 ): void {
     const spec = findOptionSpec(catalog, row.key);
-    const item = container.createDiv({ cls: 'pem-pandoc-builder-row' });
-    createKeyCell(item, row, draft, catalog, actions);
+    const slots = createPandocCommandRowSlots(container);
+    renderKeyCell(slots.key, row, draft, catalog, actions);
     if (row.role === 'input' || spec?.valueKind !== 'none') {
-        item.createEl('span', { cls: 'pem-pandoc-row-separator', text: ':' });
+        slots.separator.textContent = ':';
     }
-    renderValueControl(item, draft, row, spec, actions);
-    item.createEl('span', { cls: 'pem-pandoc-row-type', text: typeText(row, spec) });
-    const controls = item.createDiv({ cls: 'pem-pandoc-row-actions' });
+    renderValueControl(slots.value, draft, row, spec, actions);
+    slots.type.textContent = typeText(row, spec);
     if (isRequiredRow(row, spec)) return;
 
-    createButton(controls, 'x', () => {
+    createButton(slots.actions, 'x', () => {
         draft.optionRows = draft.optionRows.filter(item => item.id !== row.id);
         actions.render();
     }, 'Remove option');
 }
 
-function createKeyCell(
-    container: HTMLElement,
+function renderKeyCell(
+    cell: HTMLElement,
     row: ProfileOptionRow,
     draft: ProfileDraft,
     catalog: PandocOptionCatalog,
     actions: PandocCommandRowActions
 ): void {
-    const cell = container.createDiv({ cls: 'pem-pandoc-key-cell' });
     if (row.role === 'input') {
         // The command builder labels this pseudo-key exactly as the bare input role.
         // eslint-disable-next-line obsidianmd/ui/sentence-case
@@ -154,8 +153,7 @@ function renderValueControl(
     spec: OptionSpec | undefined,
     actions: PandocCommandRowActions
 ): void {
-    const valueEl = container.createDiv({ cls: 'pem-pandoc-value-cell' });
-    const control = createTypedValueControl(valueEl, row, draft, spec, actions);
+    const control = createTypedValueControl(container, row, draft, spec, actions);
     if (!control) return;
     if (!isTemplateTextInput(control)) {
         control.onchange = () => {
@@ -163,7 +161,7 @@ function renderValueControl(
             actions.updatePreview(draft);
         };
     }
-    addBrowseButton(valueEl, spec?.valueKind, control, value => {
+    addBrowseButton(container, spec?.valueKind, control, value => {
         row.value = value;
         actions.updatePreview(draft);
         updateControlDisplay(control, row, draft, actions);

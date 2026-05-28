@@ -93,7 +93,8 @@
     align-items: center;
     display: grid;
     gap: 8px;
-    grid-template-columns: minmax(130px, 210px) 12px minmax(0, 1fr) minmax(110px, 160px) auto;
+    grid-template-areas: "key separator value type actions";
+    grid-template-columns: minmax(130px, 210px) 12px minmax(0, 1fr) minmax(110px, 160px) var(--input-height, 32px);
     margin-bottom: 8px;
     max-width: 100%;
 }
@@ -108,7 +109,7 @@
 .pem-pandoc-key-cell {
     display: grid;
     gap: 4px;
-    grid-column: 1;
+    grid-area: key;
     grid-template-columns: minmax(0, 1fr) auto;
     min-width: 0;
     position: relative;
@@ -187,7 +188,7 @@
     align-items: center;
     display: flex;
     gap: 6px;
-    grid-column: 3;
+    grid-area: value;
     min-width: 0;
     position: relative;
 }
@@ -242,7 +243,7 @@
 }
 
 .pem-pandoc-row-type {
-    grid-column: 4;
+    grid-area: type;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -250,18 +251,26 @@
 
 .pem-pandoc-row-separator {
     color: var(--text-muted);
-    grid-column: 2;
+    grid-area: separator;
     text-align: center;
 }
 
 .pem-pandoc-row-actions {
-    grid-column: 5;
+    grid-area: actions;
+    min-width: var(--input-height, 32px);
+    width: var(--input-height, 32px);
 }
 
 .pem-pandoc-value-cell button,
 .pem-pandoc-row-actions button,
 .pem-pandoc-option-section > button {
     white-space: nowrap;
+}
+
+.pem-pandoc-row-actions button {
+    padding-left: 0;
+    padding-right: 0;
+    width: 100%;
 }
 
 .pem-pandoc-validation {
@@ -343,21 +352,12 @@
 
 @media (max-width: 720px) {
     .pem-pandoc-builder-row {
+        grid-template-areas:
+            "key separator"
+            "value value"
+            "type type"
+            "actions actions";
         grid-template-columns: minmax(96px, 1fr) 12px;
-    }
-
-    .pem-pandoc-key-cell {
-        grid-column: 1;
-    }
-
-    .pem-pandoc-row-separator {
-        grid-column: 2;
-    }
-
-    .pem-pandoc-value-cell,
-    .pem-pandoc-row-type,
-    .pem-pandoc-row-actions {
-        grid-column: 1 / -1;
     }
 
     .pem-pandoc-option-search-box {

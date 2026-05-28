@@ -18,6 +18,8 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.previewOverflows).toBe(false);
         expect(layout.visibleTypeLabels).toBeGreaterThanOrEqual(2);
         expect(layout.rowsWithoutSearchButtons).toBe(1);
+        expect(layout.valueColumnLeftSpread).toBeLessThanOrEqual(1);
+        expect(layout.typeColumnLeftSpread).toBeLessThanOrEqual(1);
 
         const rows = await getCommandRows();
         expect(rowType(rows, 'input file')).toBe('type: input file');
@@ -390,6 +392,8 @@ async function getCommandBuilderLayout(): Promise<{
     previewOverflows: boolean;
     visibleTypeLabels: number;
     rowsWithoutSearchButtons: number;
+    valueColumnLeftSpread: number;
+    typeColumnLeftSpread: number;
 }> {
     return browser.execute(() => {
         const overflows = (element: HTMLElement | null): boolean => {
@@ -400,12 +404,20 @@ async function getCommandBuilderLayout(): Promise<{
             const rect = element.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0;
         };
+        const spread = (values: number[]): number => {
+            if (values.length === 0) return 0;
+            return Math.max(...values) - Math.min(...values);
+        };
         const modal = document.querySelector('.pem-pandoc-command-modal');
         const content = modal?.querySelector('.modal-content') as HTMLElement | null;
         const builder = modal?.querySelector('.pem-pandoc-command-builder') as HTMLElement | null;
         const preview = modal?.querySelector('.pem-pandoc-command-preview') as HTMLElement | null;
         const labels = Array.from(modal?.querySelectorAll('.pem-pandoc-row-type') ?? []);
         const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const valueLefts = rows
+            .map(row => row.querySelector('.pem-pandoc-value-cell')?.getBoundingClientRect().left)
+            .filter((left): left is number => left !== undefined);
+        const typeLefts = labels.map(label => label.getBoundingClientRect().left);
 
         return {
             modalTitle: modal?.querySelector('.modal-title')?.textContent ?? '',
@@ -415,7 +427,9 @@ async function getCommandBuilderLayout(): Promise<{
             visibleTypeLabels: labels.filter(isVisible).length,
             rowsWithoutSearchButtons: rows.filter(row =>
                 !row.querySelector('.pem-pandoc-key-cell button[aria-label="Search pandoc options"]')
-            ).length
+            ).length,
+            valueColumnLeftSpread: spread(valueLefts),
+            typeColumnLeftSpread: spread(typeLefts)
         };
     });
 }

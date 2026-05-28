@@ -136,7 +136,7 @@ function rowHasValueControl(rows: Element[], key: string): boolean | undefined {
 
 function rowHasSeparator(rows: Element[], key: string): boolean | undefined {
     const row = rows.find(item => getRowKey(item) === key);
-    return Boolean(row?.querySelector('.pem-pandoc-row-separator'));
+    return row?.querySelector('.pem-pandoc-row-separator')?.textContent === ':';
 }
 
 function rowSelectValues(rows: Element[], key: string): string[] {
