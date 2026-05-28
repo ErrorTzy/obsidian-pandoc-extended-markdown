@@ -43,6 +43,27 @@ describe('Pandoc profile editor layout', () => {
         expect(await getOptionPanelText()).toContain('--toc');
         expect(await isConfirmNextToSearchBar()).toBe(true);
     });
+
+    it('expands option variables while blurred and suggests them while editing', async () => {
+        await configurePandocExport();
+        await openPandocProfileEditor();
+        await browser.waitUntil(async () => await hasFirstResourcePathInput(), {
+            timeout: 5000,
+            timeoutMsg: 'Expected resource path value input'
+        });
+
+        const blurredValue = await getFirstResourcePathInputValue();
+        expect(blurredValue).not.toContain('${');
+
+        await focusFirstResourcePathInput();
+        expect(await getFirstResourcePathInputValue()).toBe('${currentDir}');
+
+        await blurFirstResourcePathInput();
+        expect(await getFirstResourcePathInputValue()).toBe(blurredValue);
+
+        await typeFirstResourcePathValue('$');
+        expect(await getVariableSuggestionText()).toContain('${currentDir}');
+    });
 });
 
 async function configurePandocExport(): Promise<void> {
@@ -65,6 +86,9 @@ async function configurePandocExport(): Promise<void> {
 
 async function openPandocProfileEditor(): Promise<void> {
     await browser.execute(() => {
+        for (const button of Array.from(document.querySelectorAll('.modal-close-button'))) {
+            (button as HTMLButtonElement).click();
+        }
         // @ts-ignore
         app.setting.open();
         // @ts-ignore
@@ -121,9 +145,80 @@ async function typeCustomOptionKey(value: string): Promise<void> {
 
 async function getInlineSuggestionText(): Promise<string> {
     return browser.execute(() => {
-        const suggestions = Array.from(document.querySelectorAll('.pem-pandoc-key-suggestions'));
+        const suggestions = Array.from(document.querySelectorAll('.pem-pandoc-key-cell .pem-pandoc-key-suggestions'));
         return suggestions.at(-1)?.textContent ?? '';
     });
+}
+
+async function getVariableSuggestionText(): Promise<string> {
+    return browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        return row?.querySelector('.pem-pandoc-variable-suggestions')?.textContent ?? '';
+    });
+}
+
+async function getFirstResourcePathInputValue(): Promise<string> {
+    return browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+        if (!input) throw new Error('Resource path value input not found.');
+        return input.value;
+    });
+}
+
+async function hasFirstResourcePathInput(): Promise<boolean> {
+    return browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        return rows.some(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path' &&
+            Boolean(item.querySelector('.pem-pandoc-value-cell input')));
+    });
+}
+
+async function focusFirstResourcePathInput(): Promise<void> {
+    await browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+        if (!input) throw new Error('Resource path value input not found.');
+        input.focus();
+    });
+}
+
+async function blurFirstResourcePathInput(): Promise<void> {
+    await browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+        if (!input) throw new Error('Resource path value input not found.');
+        input.blur();
+    });
+}
+
+async function typeFirstResourcePathValue(value: string): Promise<void> {
+    await browser.execute((nextValue: string) => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+        if (!input) throw new Error('Resource path value input not found.');
+        input.focus();
+        input.value = nextValue;
+        input.setSelectionRange(nextValue.length, nextValue.length);
+        input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    }, value);
 }
 
 async function openOptionSearchPanel(): Promise<void> {

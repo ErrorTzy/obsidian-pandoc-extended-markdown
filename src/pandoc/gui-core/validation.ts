@@ -1,5 +1,6 @@
 import { findOptionSpec } from './catalog';
 import { readDraftCommandRows } from './profileDraft';
+import { getExportTemplateVariableNames } from '../template';
 import type {
     OptionSpec,
     PandocOptionCatalog,
@@ -8,7 +9,23 @@ import type {
     ValidationIssue
 } from './types';
 
-const TEMPLATE_PATTERN = /\$\{[^}]+}/;
+const KNOWN_TEMPLATE_VARIABLES = new Set([
+    'vaultDir',
+    'pluginDir',
+    'luaFilterDir',
+    'currentPath',
+    'currentDir',
+    'currentFileName',
+    'currentFileFullName',
+    'outputPath',
+    'outputDir',
+    'outputFileName',
+    'outputFileFullName',
+    'attachmentFolderPath',
+    'embedDirs',
+    'fromFormat',
+    'metadata'
+]);
 
 export function validateProfileDraft(
     draft: ProfileDraft,
@@ -93,8 +110,27 @@ function validateRowValue(
     if (value && spec.valueKind === 'enum' && spec.values?.length && !spec.values.includes(value)) {
         addWarning(issues, `"${value}" is not a known value for ${spec.key}.`, 'optionRows', row.id);
     }
-    if (value && isPathKind(spec) && TEMPLATE_PATTERN.test(value)) {
-        addWarning(issues, `${spec.key} contains a template path and cannot be checked now.`, 'optionRows', row.id);
+    if (value && isPathKind(spec)) {
+        validatePathTemplateValue(value, spec, issues, row.id);
+    }
+}
+
+function validatePathTemplateValue(
+    value: string,
+    spec: OptionSpec,
+    issues: ValidationIssue[],
+    rowId: string
+): void {
+    const unknownVariables = getExportTemplateVariableNames(value)
+        .filter(name => !KNOWN_TEMPLATE_VARIABLES.has(name));
+
+    if (unknownVariables.length > 0) {
+        addWarning(
+            issues,
+            `${spec.key} contains unresolved template variable(s): ${unknownVariables.join(', ')}.`,
+            'optionRows',
+            rowId
+        );
     }
 }
 

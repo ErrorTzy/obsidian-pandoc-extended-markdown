@@ -2,6 +2,18 @@ import { ExportVariables } from './types';
 
 const TEMPLATE_VARIABLE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
+export function getExportTemplateVariableNames(template: string): string[] {
+    const variables: string[] = [];
+    let match: RegExpExecArray | null;
+
+    TEMPLATE_VARIABLE.lastIndex = 0;
+    while ((match = TEMPLATE_VARIABLE.exec(template)) !== null) {
+        variables.push(match[1]);
+    }
+
+    return variables;
+}
+
 export function renderExportTemplate(
     template: string,
     variables: Partial<ExportVariables> & Record<string, unknown>

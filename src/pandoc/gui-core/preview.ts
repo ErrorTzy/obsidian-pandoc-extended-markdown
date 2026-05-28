@@ -1,4 +1,5 @@
 import { buildPandocProfileArgs } from '../profileArgs';
+import { renderExportTemplate } from '../template';
 import type { ExportVariables } from '../types';
 import { compileProfileDraft } from './profileDraft';
 import type {
@@ -27,12 +28,16 @@ const PREVIEW_VARIABLES: ExportVariables = {
 
 export function buildProfileDraftPreview(
     draft: ProfileDraft,
-    catalog?: PandocOptionCatalog
+    catalog?: PandocOptionCatalog,
+    variables: ExportVariables = PREVIEW_VARIABLES
 ): CommandPreview {
     const profile = compileProfileDraft(draft, catalog);
     const tokens = profile.type === 'pandoc' ?
-        ['pandoc', ...buildPandocProfileArgs({ profile, variables: PREVIEW_VARIABLES })] :
-        [profile.commandTemplate];
+        [getPandocCommand(), ...buildPandocProfileArgs({
+            profile,
+            variables
+        })] :
+        [renderExportTemplate(profile.commandTemplate, variables)];
 
     return {
         tokens,
@@ -42,6 +47,24 @@ export function buildProfileDraftPreview(
 
 export function quoteToken(token: string): string {
     if (token.length === 0) return '""';
-    if (!/[\s"'\\]/.test(token)) return token;
-    return `"${token.replace(/(["\\$`])/g, '\\$1')}"`;
+    if (getPlatform() === 'win32') return quoteWindowsToken(token);
+    if (!/[\s"'\\$`]/.test(token)) return token;
+    return `'${token.replace(/'/g, `'\\''`)}'`;
+}
+
+function quoteWindowsToken(token: string): string {
+    if (!/[\s"&|<>^;]/.test(token)) return token;
+    return `"${token.replace(/"/g, '\\"')}"`;
+}
+
+function getPandocCommand(): string {
+    return getPlatform() === 'win32' ? 'pandoc.exe' : 'pandoc';
+}
+
+function getPlatform(): string {
+    const processLike = globalThis as typeof globalThis & {
+        process?: { platform?: string };
+    };
+
+    return processLike.process?.platform ?? '';
 }

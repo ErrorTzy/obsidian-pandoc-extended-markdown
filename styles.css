@@ -159,6 +159,7 @@
     display: flex;
     gap: 6px;
     min-width: 0;
+    position: relative;
 }
 
 .pem-pandoc-value-cell input,

@@ -14,6 +14,7 @@ import {
     mergeOptionSpecs,
     parsePandocHelp,
     parsePandocManPage,
+    quoteToken,
     searchOptionKeys,
     searchOptions,
     validateProfileDraft
@@ -181,6 +182,40 @@ describe('pandoc GUI core', () => {
         ]));
     });
 
+    it('does not warn for supported path template variables', () => {
+        const draft = {
+            id: 'paths',
+            name: 'Paths',
+            type: 'pandoc' as const,
+            extension: '.html',
+            from: 'markdown',
+            to: 'html',
+            standalone: false,
+            resourcePaths: [],
+            luaFilters: [],
+            metadata: {},
+            optionRows: [
+                { id: 'known', key: '--resource-path', value: '${currentDir}', enabled: true },
+                { id: 'unknown', key: '--data-dir', value: '${missingDir}', enabled: true }
+            ],
+            customCommandTemplate: '',
+            customShell: false
+        };
+
+        const issues = validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG);
+
+        expect(issues).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ rowId: 'known' })
+        ]));
+        expect(issues).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                severity: 'warning',
+                rowId: 'unknown',
+                message: expect.stringContaining('missingDir')
+            })
+        ]));
+    });
+
     it('round-trips a default profile through the draft model', () => {
         const profile = DEFAULT_EXPORT_PROFILES.find(item => item.id === 'docx');
         expect(profile?.type).toBe('pandoc');
@@ -202,7 +237,7 @@ describe('pandoc GUI core', () => {
         );
     });
 
-    it('builds a quoted command preview from a draft', () => {
+    it('builds a quoted command preview with resolved variables from a draft', () => {
         const preview = buildProfileDraftPreview({
             id: 'html',
             name: 'HTML',
@@ -217,16 +252,32 @@ describe('pandoc GUI core', () => {
             optionRows: [{ id: 'toc', key: '--toc', value: '', enabled: true }],
             customCommandTemplate: '',
             customShell: false
-        }, FALLBACK_PANDOC_CATALOG);
+        }, FALLBACK_PANDOC_CATALOG, variables);
 
         expect(preview.tokens).toEqual(expect.arrayContaining([
             'pandoc',
+            '/vault/note.md',
             '-f',
             'markdown',
             '-t',
             'html',
+            '--resource-path',
+            '/vault',
             '--toc'
         ]));
+        expect(preview.display).not.toContain('${');
         expect(preview.display).toContain('pandoc');
+    });
+
+    it('quotes Windows path tokens without doubling path separators', () => {
+        const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+        Object.defineProperty(process, 'platform', { value: 'win32' });
+
+        try {
+            expect(quoteToken('C:\\Users\\Scott\\My Note.md')).toBe('"C:\\Users\\Scott\\My Note.md"');
+            expect(quoteToken('C:\\Images;D:\\Shared')).toBe('"C:\\Images;D:\\Shared"');
+        } finally {
+            Object.defineProperty(process, 'platform', descriptor ?? { value: 'linux' });
+        }
     });
 });

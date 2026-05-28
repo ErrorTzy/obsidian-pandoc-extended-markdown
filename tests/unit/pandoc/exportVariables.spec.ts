@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
     buildExportVariables,
+    buildPreviewExportVariables,
     renderExportTemplate
 } from '../../../src/pandoc';
 
@@ -94,5 +95,51 @@ describe('export variables', () => {
         });
 
         expect(variables.attachmentFolderPath).toBe('/vault/folder/attachments');
+    });
+
+    it('builds copyable preview variables from the active file and output settings', () => {
+        const variables = buildPreviewExportVariables({
+            app: {
+                vault: {
+                    adapter: {
+                        getBasePath: () => '/vault',
+                        getFullPath: (path: string) => `/vault/${path}`
+                    },
+                    config: {
+                        attachmentFolderPath: 'assets'
+                    }
+                },
+                metadataCache: {
+                    getCache: () => null,
+                    getFirstLinkpathDest: () => null
+                },
+                workspace: {
+                    getActiveFile: () => ({
+                        path: 'folder/note.md',
+                        name: 'note.md',
+                        basename: 'note'
+                    })
+                }
+            } as any,
+            manifest: {
+                id: 'pandoc-extended-markdown',
+                dir: '.obsidian/plugins/pandoc-extended-markdown'
+            } as any,
+            settings: {
+                defaultOutputFolderMode: 'custom',
+                customOutputFolder: 'exports'
+            } as any,
+            extension: '.html'
+        });
+
+        expect(variables).toMatchObject({
+            currentPath: '/vault/folder/note.md',
+            currentDir: '/vault/folder',
+            outputPath: '/vault/exports/note.html',
+            outputDir: '/vault/exports',
+            pluginDir: '/vault/.obsidian/plugins/pandoc-extended-markdown',
+            luaFilterDir: '/vault/.obsidian/plugins/pandoc-extended-markdown/lua_filter',
+            attachmentFolderPath: '/vault/assets'
+        });
     });
 });
