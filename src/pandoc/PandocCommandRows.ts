@@ -17,6 +17,11 @@ import type { ExportVariables } from './types';
 type ValueInput = HTMLInputElement | HTMLSelectElement;
 type ValueControl = ValueInput | undefined;
 
+interface VariableSuggestion {
+    name: string;
+    value: string;
+}
+
 const TEMPLATE_VARIABLE_NAMES = [
     'currentPath',
     'currentDir',
@@ -273,11 +278,20 @@ function renderVariableSuggestions(
     container.empty();
     if (!trigger) return;
 
-    for (const name of getVariableSuggestions(trigger.query, actions.getVariables(draft))) {
-        const button = container.createEl('button', { text: `\${${name}}` });
+    for (const suggestion of getVariableSuggestions(trigger.query, actions.getVariables(draft))) {
+        const button = container.createEl('button', { cls: 'pem-pandoc-variable-suggestion' });
+        button.createEl('span', {
+            cls: 'pem-pandoc-variable-suggestion-name',
+            text: `\${${suggestion.name}}`
+        });
+        button.createEl('span', {
+            cls: 'pem-pandoc-variable-suggestion-value',
+            text: suggestion.value,
+            attr: { title: suggestion.value }
+        });
         button.onmousedown = event => event.preventDefault();
         button.onclick = () => {
-            insertVariable(input, row, trigger, name);
+            insertVariable(input, row, trigger, suggestion.name);
             actions.updatePreview(draft);
             container.empty();
         };
@@ -295,12 +309,16 @@ function getVariableTrigger(value: string, cursor: number): { start: number; que
     };
 }
 
-function getVariableSuggestions(query: string, variables: ExportVariables): string[] {
+function getVariableSuggestions(query: string, variables: ExportVariables): VariableSuggestion[] {
     const lowerQuery = query.toLowerCase();
     return TEMPLATE_VARIABLE_NAMES
         .filter(name => variables[name] !== undefined)
         .filter(name => name.toLowerCase().startsWith(lowerQuery))
-        .slice(0, 8);
+        .slice(0, 8)
+        .map(name => ({
+            name,
+            value: renderExportTemplate(`\${${name}}`, variables)
+        }));
 }
 
 function insertVariable(

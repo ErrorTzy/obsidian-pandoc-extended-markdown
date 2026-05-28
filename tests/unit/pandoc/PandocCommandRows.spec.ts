@@ -54,6 +54,37 @@ describe('Pandoc command rows', () => {
         expect(rowHasSeparator(rows, '--eol')).toBe(true);
         expect(rowSelectValues(rows, '--eol')).toEqual(['crlf', 'lf', 'native']);
     });
+
+    it('renders template variable suggestions with resolved preview values', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            nextOptionIndex: () => 1,
+            getVariables: () => variables,
+            openOptionSearch: () => undefined,
+            render: () => undefined,
+            updatePreview: () => undefined
+        });
+
+        const input = findValueInput(container, '--resource-path');
+        input.focus();
+        input.value = '$';
+        input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        const suggestions = container.querySelector('.pem-pandoc-variable-suggestions');
+        const firstSuggestion = suggestions?.querySelector('.pem-pandoc-variable-suggestion');
+        expect(suggestions?.textContent).toContain('${currentDir}');
+        expect(suggestions?.textContent).toContain('/vault');
+        expect(firstSuggestion?.querySelector('.pem-pandoc-variable-suggestion-name')?.textContent)
+            .toBe('${currentPath}');
+        expect(firstSuggestion?.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent)
+            .toBe('/vault/note.md');
+    });
 });
 
 function createDraft(): ProfileDraft {
@@ -105,6 +136,15 @@ function rowSelectValues(rows: Element[], key: string): string[] {
         (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
     const select = row?.querySelector('.pem-pandoc-value-cell select') as HTMLSelectElement | null;
     return Array.from(select?.options ?? []).map(option => option.value);
+}
+
+function findValueInput(container: HTMLElement, key: string): HTMLInputElement {
+    const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
+    const row = rows.find(item =>
+        (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === key);
+    const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+    if (!input) throw new Error(`Value input not found for ${key}.`);
+    return input;
 }
 
 function enhanceElement(element: HTMLElement): HTMLElement {

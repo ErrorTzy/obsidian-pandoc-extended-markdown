@@ -65,6 +65,9 @@ describe('Pandoc profile editor layout', () => {
 
         await typeFirstResourcePathValue('$');
         expect(await getVariableSuggestionText()).toContain('${currentDir}');
+        const variableSuggestions = await getVariableSuggestions();
+        expect(variableSuggestions.some(suggestion =>
+            suggestion.name === '${currentDir}' && suggestion.value === blurredValue)).toBe(true);
     });
 
     it('clips overflowing string values on the left with an indicator', async () => {
@@ -186,6 +189,20 @@ async function getVariableSuggestionText(): Promise<string> {
         const row = rows.find(item =>
             (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
         return row?.querySelector('.pem-pandoc-variable-suggestions')?.textContent ?? '';
+    });
+}
+
+async function getVariableSuggestions(): Promise<Array<{ name: string; value: string }>> {
+    return browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        return Array.from(row?.querySelectorAll('.pem-pandoc-variable-suggestion') ?? [])
+            .map(suggestion => ({
+                name: suggestion.querySelector('.pem-pandoc-variable-suggestion-name')?.textContent ?? '',
+                value: suggestion.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent ?? ''
+            }));
     });
 }
 

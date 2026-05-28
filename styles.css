@@ -155,6 +155,26 @@
     background: var(--background-modifier-hover);
 }
 
+.pem-pandoc-key-suggestions .pem-pandoc-variable-suggestion {
+    align-items: baseline;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.pem-pandoc-variable-suggestion-name {
+    color: var(--text-normal);
+    font-family: var(--font-monospace);
+}
+
+.pem-pandoc-variable-suggestion-value {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .pem-pandoc-value-cell {
     align-items: center;
     display: flex;
