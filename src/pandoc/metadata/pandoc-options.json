@@ -1,0 +1,3586 @@
+{
+  "schemaVersion": 1,
+  "pandocVersion": "3.9.0.2",
+  "sourceCommand": "man pandoc | col -b",
+  "normalizedOptionsText": "OPTIONS\nGeneral options\n-f FORMAT, -r FORMAT, --from=FORMAT, --read=FORMAT\nSpecify input format. FORMAT can be:\n• asciidoc (AsciiDoc markup)\n• bibtex (BibTeX bibliography)\n• biblatex (BibLaTeX bibliography)\n• bits (BITS XML, alias for jats)\n• commonmark (CommonMark Markdown)\n• commonmark_x (CommonMark Markdown with extensions)\n• creole (Creole 1.0)\n• csljson (CSL JSON bibliography)\n• csv (CSV table)\n• tsv (TSV table)\n• djot (Djot markup)\n• docbook (DocBook)\n• docx (Word docx)\n• dokuwiki (DokuWiki markup)\n• endnotexml (EndNote XML bibliography)\n• epub (EPUB)\n• fb2 (FictionBook2 e-book)\n• gfm (GitHub-Flavored Markdown), or the deprecated and less accurate markdown_github; use markdown_github only if you need extensions not supported in gfm.\n• haddock (Haddock markup)\n• html (HTML)\n• ipynb (Jupyter notebook)\n• jats (JATS XML)\n• jira (Jira/Confluence wiki markup)\n• json (JSON version of native AST)\n• latex (LaTeX)\n• markdown (Pandoc’s Markdown)\n• markdown_mmd (MultiMarkdown)\n• markdown_phpextra (PHP Markdown Extra)\n• markdown_strict (original unextended Markdown)\n• mediawiki (MediaWiki markup)\n• man (roff man)\n• mdoc (mdoc manual page markup)\n• muse (Muse)\n• native (native Haskell)\n• odt (OpenDocument text document)\n• opml (OPML)\n• org (Emacs Org mode)\n• pod (Perl’s Plain Old Documentation)\n• pptx (PowerPoint)\n• ris (RIS bibliography)\n• rtf (Rich Text Format)\n• rst (reStructuredText)\n• t2t (txt2tags)\n• textile (Textile)\n• tikiwiki (TikiWiki markup)\n• twiki (TWiki markup)\n• typst (typst)\n• vimwiki (Vimwiki)\n• xlsx (Excel spreadsheet)\n• xml (XML version of native AST)\n• the path of a custom Lua reader, see Custom readers and writers below\nExtensions can be individually enabled or disabled by appending +EXTENSION or -EXTENSION to the format name. See Extensions below, for a list of extensions and their names. See --list-input-formats and --list-extensions, below.\n-t FORMAT, -w FORMAT, --to=FORMAT, --write=FORMAT\nSpecify output format. FORMAT can be:\n• ansi (text with ANSI escape codes, for terminal viewing)\n• asciidoc (modern AsciiDoc as interpreted by AsciiDoctor)\n• asciidoc_legacy (AsciiDoc as interpreted by asciidoc-py).\n• asciidoctor (deprecated synonym for asciidoc)\n• bbcode BBCode\n• bbcode_fluxbb BBCode (FluxBB)\n• bbcode_phpbb BBCode (phpBB)\n• bbcode_steam BBCode (Steam)\n• bbcode_hubzilla BBCode (Hubzilla)\n• bbcode_xenforo BBCode (xenForo)\n• beamer (LaTeX beamer slide show)\n• bibtex (BibTeX bibliography)\n• biblatex (BibLaTeX bibliography)\n• chunkedhtml (zip archive of multiple linked HTML files)\n• commonmark (CommonMark Markdown)\n• commonmark_x (CommonMark Markdown with extensions)\n• context (ConTeXt)\n• csljson (CSL JSON bibliography)\n• djot (Djot markup)\n• docbook or docbook4 (DocBook 4)\n• docbook5 (DocBook 5)\n• docx (Word docx)\n• dokuwiki (DokuWiki markup)\n• epub or epub3 (EPUB v3 book)\n• epub2 (EPUB v2)\n• fb2 (FictionBook2 e-book)\n• gfm (GitHub-Flavored Markdown), or the deprecated and less accurate markdown_github; use markdown_github only if you need extensions not supported in gfm.\n• haddock (Haddock markup)\n• html or html5 (HTML, i.e. HTML5/XHTML polyglot markup)\n• html4 (XHTML 1.0 Transitional)\n• icml (InDesign ICML)\n• ipynb (Jupyter notebook)\n• jats_archiving (JATS XML, Archiving and Interchange Tag Set)\n• jats_articleauthoring (JATS XML, Article Authoring Tag Set)\n• jats_publishing (JATS XML, Journal Publishing Tag Set)\n• jats (alias for jats_archiving)\n• jira (Jira/Confluence wiki markup)\n• json (JSON version of native AST)\n• latex (LaTeX)\n• man (roff man)\n• markdown (Pandoc’s Markdown)\n• markdown_mmd (MultiMarkdown)\n• markdown_phpextra (PHP Markdown Extra)\n• markdown_strict (original unextended Markdown)\n• markua (Markua)\n• mediawiki (MediaWiki markup)\n• ms (roff ms)\n• muse (Muse)\n• native (native Haskell)\n• odt (OpenDocument text document)\n• opml (OPML)\n• opendocument (OpenDocument XML)\n• org (Emacs Org mode)\n• pdf (PDF)\n• plain (plain text)\n• pptx (PowerPoint slide show)\n• rst (reStructuredText)\n• rtf (Rich Text Format)\n• texinfo (GNU Texinfo)\n• textile (Textile)\n• slideous (Slideous HTML and JavaScript slide show)\n• slidy (Slidy HTML and JavaScript slide show)\n• dzslides (DZSlides HTML5 + JavaScript slide show)\n• revealjs (reveal.js HTML5 + JavaScript slide show)\n• s5 (S5 HTML and JavaScript slide show)\n• tei (TEI Simple)\n• typst (typst)\n• vimdoc (Vimdoc)\n• xml (XML version of native AST)\n• xwiki (XWiki markup)\n• zimwiki (ZimWiki markup)\n• the path of a custom Lua writer, see Custom readers and writers below\nNote that odt, docx, epub, and pdf output will not be directed to stdout unless forced with -o -.\nExtensions can be individually enabled or disabled by appending +EXTENSION or -EXTENSION to the format name. See Extensions below, for a list of extensions and their names. See --list-output-formats and --list-extensions, below.\n-o FILE, --output=FILE\nWrite output to FILE instead of stdout. If FILE is -, output will go to stdout, even if a non-textual format (docx, odt, epub2, epub3) is specified. If the output format is chunkedhtml and FILE has no extension, then instead of producing a .zip file pandoc will create a directory FILE and unpack the zip archive there (unless FILE already exists, in which case an error will be raised).\n--data-dir=DIRECTORY\nSpecify the user data directory to search for pandoc data files. If this option is not specified, the default user data directory will be used. On *nix and macOS systems this will be the pandoc subdirectory of the XDG data directory (by default, $HOME/.local/share, overridable by setting the XDG_DATA_HOME environment variable). If that directory does not exist and $HOME/.pandoc exists, it will be used (for backwards compatibility). On Windows the default user data directory is %APPDATA%\\pandoc. You can find the default user data directory on your system by looking at the output of pandoc --version. Data files placed in this directory (for example, reference.odt, reference.docx, epub.css, templates) will override pandoc’s normal defaults. (Note that the user data directory is not created by pandoc, so you will need to create it yourself if you want to make use of it.)\n-d FILE, --defaults=FILE\nSpecify a set of default option settings. FILE is a YAML or JSON file whose fields correspond to command-line option settings. All options for document conversion, including input and output files, can be set using a defaults file. The file will be searched for first in the working directory, and then in the defaults subdirectory of the user data directory (see --data-dir). The .yaml extension will be added if FILE lacs an extension. See the section Defaults files for more information on the file format. Settings from the defaults file may be overridden or extended by subsequent options on the command line.\n--bash-completion\nGenerate a bash completion script. To enable bash completion with pandoc, add this to your .bashrc:\neval \"$(pandoc --bash-completion)\"\n--verbose\nGive verbose debugging output.\n--quiet\nSuppress warning messages.\n--fail-if-warnings[=true|false]\nExit with error status if there are any warnings.\n--log=FILE\nWrite log messages in machine-readable JSON format to FILE. All messages above DEBUG level will be written, regardless of verbosity settings (--verbose, --quiet).\n--list-input-formats\nList supported input formats, one per line.\n--list-output-formats\nList supported output formats, one per line.\n--list-extensions[=FORMAT]\nList supported extensions for FORMAT, one per line, preceded by a + or - indicating whether it is enabled by default in FORMAT. If FORMAT is not specified, defaults for pandoc’s Markdown are given.\n--list-highlight-languages\nList supported languages for syntax highlighting, one per line.\n--list-highlight-styles\nList supported styles for syntax highlighting, one per line. See --syntax-highlighting.\n-v, --version\nPrint version.\n-h, --help\nShow usage message.\nReader options\n--shift-heading-level-by=NUMBER\nShift heading levels by a positive or negative integer. For example, with --shift-heading-level-by=-1, level 2 headings become level 1 headings, and level 3 headings become level 2 headings. Headings cannot have a level less than 1, so a heading that would be shifted below level 1 becomes a regular paragraph. Exception: with a shift of -N, a level-N heading at the beginning of the document replaces the metadata title. --shift-heading-level-by=-1 is a good choice when converting HTML or Markdown documents that use an initial level-1 heading for the document title and level-2+ headings for sections. --shift-heading-level-by=1 may be a good choice for converting Markdown documents that use level-1 headings for sections to HTML, since pandoc uses a level-1 heading to render the document title.\n--base-header-level=NUMBER\nDeprecated. Use --shift-heading-level-by=X instead, where X = NUMBER - 1. Specify the base level for headings (defaults to 1).\n--indented-code-classes=CLASSES\nSpecify classes to use for indented code blocks——for example, perl,numberLines or haskell. Multiple classes may be separated by spaces or commas.\n--default-image-extension=EXTENSION\nSpecify a default extension to use when image paths/URLs have no extension. This allows you to use the same source for formats that require different kinds of images. Currently this option only affects the Markdown and LaTeX readers.\n--file-scope[=true|false]\nParse each file individually before combining for multifile documents. This will allow footnotes in different files with the same identifiers to work as expected. If this option is set, footnotes and links will not work across files. Reading binary files (docx, odt, epub) implies --file-scope.\nIf two or more files are processed using --file-scope, prefixes based on the filenames will be added to identifiers in order to disambiguate them, and internal links will be adjusted accordingly. For example, a header with identifier foo in subdir/file1.txt will have its identifier changed to subdir__file1.txt__foo.\n-F PROGRAM, --filter=PROGRAM\nSpecify an executable to be used as a filter transforming the pandoc AST after the input is parsed and before the output is written. The executable should read JSON from stdin and write JSON to stdout. The JSON must be formatted like pandoc’s own JSON input and output. The name of the output format will be passed to the filter as the first argument. Hence,\npandoc --filter ./caps.py -t latex\nis equivalent to\npandoc -t json | ./caps.py latex | pandoc -f json -t latex\nThe latter form may be useful for debugging filters.\nFilters may be written in any language. Text.Pandoc.JSON exports toJSONFilter to facilitate writing filters in Haskell. Those who would prefer to write filters in python can use the module pandocfilters, installable from PyPI. There are also pandoc filter libraries in PHP, perl, and JavaScript/node.js.\nIn order of preference, pandoc will look for filters in\n1. a specified full or relative path (executable or non-executable),\n2. $DATADIR/filters (executable or non-executable) where $DATADIR is the user data directory (see --data-dir, above),\n3. $PATH (executable only).\nFilters, Lua-filters, and citeproc processing are applied in the order specified on the command line.\n-L SCRIPT, --lua-filter=SCRIPT\nTransform the document in a similar fashion as JSON filters (see --filter), but use pandoc’s built-in Lua filtering system. The given Lua script is expected to return a list of Lua filters which will be applied in order. Each Lua filter must contain element-transforming functions indexed by the name of the AST element on which the filter function should be applied.\nThe pandoc Lua module provides helper functions for element creation. It is always loaded into the script’s Lua environment.\nSee the Lua filters documentation for further details.\nIn order of preference, pandoc will look for Lua filters in\n1. a specified full or relative path,\n2. $DATADIR/filters where $DATADIR is the user data directory (see --data-dir, above).\nFilters, Lua filters, and citeproc processing are applied in the order specified on the command line.\n-M KEY[=VAL], --metadata=KEY[:VAL]\nSet the metadata field KEY to the value VAL. A value specified on the command line overrides a value specified in the document using YAML metadata blocks. Values will be parsed as YAML boolean or string values. If no value is specified, the value will be treated as Boolean true. Like --variable, --metadata causes template variables to be set. But unlike --variable, --metadata affects the metadata of the underlying document (which is accessible from filters and may be printed in some output formats) and metadata values will be escaped when inserted into the template.\n--metadata-file=FILE\nRead metadata from the supplied YAML (or JSON) file. This option can be used with every input format, but string scalars in the metadata file will always be parsed as Markdown. (If the input format is Markdown or a Markdown variant, then the same variant will be used to parse the metadata file; if it is a non-Markdown format, pandoc’s default Markdown extensions will be used.) This option can be used repeatedly to include multiple metadata files; values in files specified later on the command line will be preferred over those specified in earlier files. Metadata values specified inside the document, or by using -M, overwrite values specified with this option. The file will be searched for first in the working directory, and then in the metadata subdirectory of the user data directory (see --data-dir).\n-p, --preserve-tabs[=true|false]\nPreserve tabs instead of converting them to spaces. (By default, pandoc converts tabs to spaces before parsing its input.) Note that this will only affect tabs in literal code spans and code blocks. Tabs in regular text are always treated as spaces.\n--tab-stop=NUMBER\nSpecify the number of spaces per tab (default is 4).\n--track-changes=accept|reject|all\nSpecifies what to do with insertions, deletions, and comments produced by the MS Word “Track Changes” feature. accept (the default) processes all the insertions and deletions. reject ignores them. Both accept and reject ignore comments. all includes all insertions, deletions, and comments, wrapped in spans with insertion, deletion, comment-start, and comment-end classes, respectively. The author and time of change is included. all is useful for scripting: only accepting changes from a certain reviewer, say, or before a certain date. If a paragraph is inserted or deleted, track-changes=all produces a span with the class paragraph-insertion/paragraph-deletion before the affected paragraph break. This option only affects the docx reader.\n--extract-media=DIR|FILE.zip\nExtract images and other media contained in or linked from the source document to the path DIR, creating it if necessary, and adjust the images references in the document so they point to the extracted files. Media are downloaded, read from the file system, or extracted from a binary container (e.g. docx), as needed. The original file paths are used if they are relative paths not containing ... Otherwise filenames are constructed from the SHA1 hash of the contents.\nIf the path given ends in .zip, then instead of creating a directory, pandoc will create a zip archive containing the media files.\n--abbreviations=FILE\nSpecifies a custom abbreviations file, with abbreviations one to a line. If this option is not specified, pandoc will read the data file abbreviations from the user data directory or fall back on a system default. To see the system default, use pandoc --print-default-data-file=abbreviations. The only use pandoc makes of this list is in the Markdown reader. Strings found in this list will be followed by a nonbreaking space, and the period will not produce sentence-ending space in formats like LaTeX. The strings may not contain spaces.\n--trace[=true|false]\nPrint diagnostic output tracing parser progress to stderr. This option is intended for use by developers in diagnosing performance issues.\nGeneral writer options\n-s, --standalone\nProduce output with an appropriate header and footer (e.g. a standalone HTML, LaTeX, TEI, or RTF file, not a fragment). This option is set automatically for pdf, epub, epub3, fb2, docx, and odt output. For native output, this option causes metadata to be included; otherwise, metadata is suppressed.\n--template=FILE|URL\nUse the specified file as a custom template for the generated document. Implies --standalone. See Templates, below, for a description of template syntax. If the template is not found, pandoc will search for it in the templates subdirectory of the user data directory (see --data-dir). If no extension is specified and an extensionless template is not found, pandoc will look for a template with an extension corresponding to the writer, so that --template=special looks for special.html for HTML output. If this option is not used, a default template appropriate for the output format will be used (see -D/--print-default-template).\n-V KEY[=VAL], --variable=KEY[=VAL]\nSet the template variable KEY to the string value VAL when rendering the document in standalone mode. Either : or = may be used to separate KEY from VAL. If no VAL is specified, the key will be given the value true. Structured values (lists, maps) cannot be assigned using this option, but they can be assigned in the variables section of a defaults file or using the --variable-json option. If the variable already has a list value, the value will be added to the list. If it already has another kind of value, it will be made into a list containing the previous and the new value. For example, -V keyword=Joe -V author=Sue makes author contain a list of strings: Joe and Sue.\n--variable-json=KEY[=:JSON]\nSet the template variable KEY to the value specified by a JSON string (this may be a boolean, a string, a list, or a mapping; a number will be treated as a string). For example, --variable-json foo=false will give foo the boolean false value, while --variable-json foo='\"false\"' will give it the string value \"false\". Either : or = may be used to separate KEY from VAL. If the variable already has a value, this value will be replaced.\n--sandbox[=true|false]\nRun pandoc in a sandbox, limiting IO operations in readers and writers to reading the files specified on the command line. Note that this option does not limit IO operations by filters or in the production of PDF documents. But it does offer security against, for example, disclosure of files through the use of include directives. Anyone using pandoc on untrusted user input should use this option.\nNote: some readers and writers (e.g., docx) need access to data files. If these are stored on the file system, then pandoc will not be able to find them when run in --sandbox mode and will raise an error. For these applications, we recommend using a pandoc binary compiled with the embed_data_files option, which causes the data files to be baked into the binary instead of being stored on the file system.\n-D FORMAT, --print-default-template=FORMAT\nPrint the system default template for an output FORMAT. (See -t for a list of possible FORMATs.) Templates in the user data directory are ignored. This option may be used with -o/--output to redirect output to a file, but -o/--output must come before --print-default-template on the command line.\nNote that some of the default templates use partials, for example styles.html. To print the partials, use --print-default-data-file: for example, --print-default-data-file=templates/styles.html.\n--print-default-data-file=FILE\nPrint a system default data file. Files in the user data directory are ignored. This option may be used with -o/--output to redirect output to a file, but -o/--output must come before --print-default-data-file on the command line.\n--eol=crlf|lf|native\nManually specify line endings: crlf (Windows), lf (macOS/Linux/UNIX), or native (line endings appropriate to the OS on which pandoc is being run). The default is native.\n--dpi=NUMBER\nSpecify the default dpi (dots per inch) value for conversion from pixels to inch/centimeters and vice versa. (Technically, the correct term would be ppi: pixels per inch.) The default is 96dpi. When images contain information about dpi internally, the encoded value is used instead of the default specified by this option.\n--wrap=auto|none|preserve\nDetermine how text is wrapped in the output (the source code, not the rendered version). With auto (the default), pandoc will attempt to wrap lines to the column width specified by --columns (default 72). With none, pandoc will not wrap lines at all. With preserve, pandoc will attempt to preserve the wrapping from the source document (that is, where there are nonsemantic newlines in the source, there will be nonsemantic newlines in the output as well). In ipynb output, this option affects wrapping of the contents of Markdown cells.\n--columns=NUMBER\nSpecify length of lines in characters. This affects text wrapping in the generated source code (see --wrap). It also affects calculation of column widths for plain text tables (see Tables below).\n--toc[=true|false], --table-of-contents[=true|false]\nInclude an automatically generated table of contents (or, in the case of latex, context, docx, odt, opendocument, rst, or ms, an instruction to create one) in the output document. This option has no effect unless -s/--standalone is used, and it has no effect on man, docbook4, docbook5, or jats output.\nNote that if you are producing a PDF via ms and using (the default) pdfroff as a --pdf-engine, the table of contents will appear at the beginning of the document, before the title. If you would prefer it to be at the end of the document, use the option --pdf-engine-opt=--no-toc-relocation. If groff is used as the --pdf-engine, the table of contents will always appear at the end of the document.\n--toc-depth=NUMBER\nSpecify the number of section levels to include in the table of contents. The default is 3 (which means that level-1, 2, and 3 headings will be listed in the contents).\n--lof[=true|false], --list-of-figures[=true|false]\nInclude an automatically generated list of figures (or, in some formats, an instruction to create one) in the output document. This option has no effect unless -s/--standalone is used, and it only has an effect on latex, context, and docx output.\n--lot[=true|false], --list-of-tables[=true|false]\nInclude an automatically generated list of tables (or, in some formats, an instruction to create one) in the output document. This option has no effect unless -s/--standalone is used, and it only has an effect on latex, context, and docx output.\n--strip-comments[=true|false]\nStrip out HTML comments in the Markdown or Textile source, rather than passing them on to Markdown, Textile or HTML output as raw HTML. This does not apply to HTML comments inside raw HTML blocks when the markdown_in_html_blocks extension is not set.\n--syntax-highlighting=default|none|idiomatic|STYLE|FILE\nThe method to use for code syntax highlighting. Setting a specific STYLE causes highlighting to be performed with the internal highlighting engine, using KDE syntax definitions and styles. The idiomatic method uses a format-specific highlighter if one is available, or the default style if the target format has no idiomatic highlighting method. Setting this option to none disables all syntax highlighting. The default method uses a format-specific default.\nThe default for HTML, EPUB, Docx, Ms, Man, and LaTeX output is to use the internal highlighter with the default style; for Typst it is to use Typst’s own syntax highlighting system.\nStyle options are pygments (the default), kate, monochrome, breezeDark, espresso, zenburn, haddock, and tango. For more information on syntax highlighting in pandoc, see Syntax highlighting, below. See also --list-highlight-styles.\nInstead of a STYLE name, a JSON file with extension .theme may be supplied. This will be parsed as a KDE syntax highlighting theme and (if valid) used as the highlighting style.\nTo generate the JSON version of an existing style, use --print-highlight-style.\n--no-highlight\nDeprecated, use --syntax-highlighting=none instead.\nDisables syntax highlighting for code blocks and inlines, even when a language attribute is given.\n--highlight-style=STYLE|FILE\nDeprecated, use --syntax-highlighting=STYLE|FILE instead.\nSpecifies the coloring style to be used in highlighted source code.\n--print-highlight-style=STYLE|FILE\nPrints a JSON version of a highlighting style, which can be modified, saved with a .theme extension, and used with --syntax-highlighting. This option may be used with -o/--output to redirect output to a file, but -o/--output must come before --print-highlight-style on the command line.\n--syntax-definition=FILE\nInstructs pandoc to load a KDE XML syntax definition file, which will be used for syntax highlighting of appropriately marked code blocks. This can be used to add support for new languages or to use altered syntax definitions for existing languages. This option may be repeated to add multiple syntax definitions.\n-H FILE, --include-in-header=FILE|URL\nInclude contents of FILE, verbatim, at the end of the header. This can be used, for example, to include special CSS or JavaScript in HTML documents. This option can be used repeatedly to include multiple files in the header. They will be included in the order specified. Implies --standalone.\n-B FILE, --include-before-body=FILE|URL\nInclude contents of FILE, verbatim, at the beginning of the document body (e.g. after the <body> tag in HTML, or the \\begin{document} command in LaTeX). This can be used to include navigation bars or banners in HTML documents. This option can be used repeatedly to include multiple files. They will be included in the order specified. Implies --standalone. Note that if the output format is odt, this file must be in OpenDocument XML format suitable for insertion into the body of the document, and if the output is docx, this file must be in appropriate OpenXML format.\n-A FILE, --include-after-body=FILE|URL\nInclude contents of FILE, verbatim, at the end of the document body (before the </body> tag in HTML, or the \\end{document} command in LaTeX). This option can be used repeatedly to include multiple files. They will be included in the order specified. Implies --standalone. Note that if the output format is odt, this file must be in OpenDocument XML format suitable for insertion into the body of the document, and if the output is docx, this file must be in appropriate OpenXML format.\n--resource-path=SEARCHPATH\nList of paths to search for images and other resources. The paths should be separated by : on Linux, UNIX, and macOS systems, and by ; on Windows. If --resource-path is not specified, the default resource path is the working directory. Note that, if --resource-path is specified, the working directory must be explicitly listed or it will not be searched. For example: --resource-path=.:test will search the working directory and the test subdirectory, in that order. This option can be used repeatedly. Search path components that come later on the command line will be searched before those that come earlier, so --resource-path foo:bar --resource-path baz:bim is equivalent to --resource-path baz:bim:foo:bar. Note that this option only has an effect when pandoc itself needs to find an image (e.g., in producing a PDF or docx, or when --embed-resources is used.) It will not cause image paths to be rewritten in other cases (e.g., when pandoc is generating LaTeX or HTML).\n--request-header=NAME:VAL\nSet the request header NAME to the value VAL when making HTTP requests (for example, when a URL is given on the command line, or when resources used in a document must be downloaded). If you’re behind a proxy, you also need to set the environment variable http_proxy to http://....\n--no-check-certificate[=true|false]\nDisable the certificate verification to allow access to unsecure HTTP resources (for example when the certificate is no longer valid or self signed).\nOptions affecting specific writers\n--self-contained[=true|false]\nDeprecated synonym for --embed-resources --standalone.\n--embed-resources[=true|false]\nProduce a standalone HTML file with no external dependencies, using data: URIs to incorporate the contents of linked scripts, stylesheets, images, and videos. The resulting file should be “self-contained,” in the sense that it needs no external files and no net access to be displayed properly by a browser. This option works only with HTML output formats, including html4, html5, html+lhs, html5+lhs, s5, slidy, slideous, dzslides, and revealjs. Scripts, images, and stylesheets at absolute URLs will be downloaded; those at relative URLs will be sought relative to the working directory (if the first source file is local) or relative to the base URL (if the first source file is remote). Elements with the attribute data-external=\"1\" will be left alone; the documents they link to will not be incorporated in the document. Limitation: resources that are loaded dynamically through JavaScript cannot be incorporated; as a result, fonts may be missing when --mathjax is used, and some advanced features (e.g. zoom or speaker notes) may not work in an offline “self-contained” reveal.js slide show.\nFor SVG images, img tags with data: URIs are used, unless the image has the class inline-svg, in which case an inline SVG element is inserted. This approach is recommended when there are many occurrences of the same SVG in a document, as <use> elements will be used to reduce duplication.\n--link-images[=true|false]\nInclude links to images instead of embedding the images in ODT. (This option currently only affects ODT output.)\n--html-q-tags[=true|false]\nUse <q> tags for quotes in HTML. (This option only has an effect if the smart extension is enabled for the input format used.)\n--ascii[=true|false]\nUse only ASCII characters in output. Currently supported for XML and HTML formats (which use entities instead of UTF-8 when this option is selected), CommonMark, gfm, and Markdown (which use entities), roff man and ms (which use hexadecimal escapes), and to a limited degree LaTeX (which uses standard commands for accented characters when possible).\n--reference-links[=true|false]\nUse reference-style links, rather than inline links, in writing Markdown or reStructuredText. By default inline links are used. The placement of link references is affected by the --reference-location option.\n--reference-location=block|section|document\nSpecify whether footnotes (and references, if reference-links is set) are placed at the end of the current (top-level) block, the current section, or the document. The default is document. Currently this option only affects the markdown, muse, html, epub, slidy, s5, slideous, dzslides, and revealjs writers. In slide formats, specifying --reference-location=section will cause notes to be rendered at the bottom of a slide.\n--figure-caption-position=above|below\nSpecify whether figure captions go above or below figures (default is below). This option only affects HTML, LaTeX, Docx, ODT, and Typst output.\n--table-caption-position=above|below\nSpecify whether table captions go above or below tables (default is above). This option only affects HTML, LaTeX, Docx, ODT, and Typst output.\n--markdown-headings=setext|atx\nSpecify whether to use ATX-style (#-prefixed) or Setext-style (underlined) headings for level 1 and 2 headings in Markdown output. (The default is atx.) ATX-style headings are always used for levels 3+. This option also affects Markdown cells in ipynb output.\n--list-tables[=true|false]\nRender tables as list tables in RST output.\n--top-level-division=default|section|chapter|part\nTreat top-level headings as the given division type in LaTeX, ConTeXt, DocBook, and TEI output. The hierarchy order is part, chapter, then section; all headings are shifted such that the top-level heading becomes the specified type. The default behavior is to determine the best division type via heuristics: unless other conditions apply, section is chosen. When the documentclass variable is set to report, book, or memoir (unless the article option is specified), chapter is implied as the setting for this option. If beamer is the output format, specifying either chapter or part will cause top-level headings to become \\part{..}, while second-level headings remain as their default type.\nIn Docx output, this option adds section breaks before first-level headings if chapter is selected, and before first- and second-level headings if part is selected. Footnote numbers will restart with each section break unless the reference doc modifies this.\n-N, --number-sections=[true|false]\nNumber section headings in LaTeX, ConTeXt, HTML, Docx, ms, or EPUB output. By default, sections are not numbered. Sections with class unnumbered will never be numbered, even if --number-sections is specified.\n--number-offset=NUMBER[,NUMBER,...]\nOffsets for section heading numbers. The first number is added to the section number for level-1 headings, the second for level-2 headings, and so on. So, for example, if you want the first level-1 heading in your document to be numbered “6” instead of “1”, specify --number-offset=5. If your document starts with a level-2 heading which you want to be numbered “1.5”, specify --number-offset=1,4. --number-offset only directly affects the number of the first section heading in a document; subsequent numbers increment in the normal way. Implies --number-sections. Currently this feature only affects HTML and Docx output.\n--listings[=true|false]\n*Deprecated, use --syntax-highlighting=idiomatic or --syntax-highlighting=default instead.\nUse the listings package for LaTeX code blocks. The package does not support multi-byte encoding for source code. To handle UTF-8 you would need to use a custom template. This issue is fully documented here: Encoding issue with the listings package.\n-i, --incremental[=true|false]\nMake list items in slide shows display incrementally (one by one). The default is for lists to be displayed all at once.\n--slide-level=NUMBER\nSpecifies that headings with the specified level create slides (for beamer, revealjs, pptx, s5, slidy, slideous, dzslides). Headings above this level in the hierarchy are used to divide the slide show into sections; headings below this level create subheads within a slide. Valid values are 0-6. If a slide level of 0 is specified, slides will not be split automatically on headings, and horizontal rules must be used to indicate slide boundaries. If a slide level is not specified explicitly, the slide level will be set automatically based on the contents of the document; see Structuring the slide show.\n--section-divs[=true|false]\nWrap sections in <section> tags (or <div> tags for html4), and attach identifiers to the enclosing <section> (or <div>) rather than the heading itself (see Heading identifiers, below). This option only affects HTML output (and does not affect HTML slide formats).\n--email-obfuscation=none|javascript|references\nSpecify a method for obfuscating mailto: links in HTML documents. none leaves mailto: links as they are. javascript obfuscates them using JavaScript. references obfuscates them by printing their letters as decimal or hexadecimal character references. The default is none.\n--id-prefix=STRING\nSpecify a prefix to be added to all identifiers and internal links in HTML and DocBook output, and to footnote numbers in Markdown and Haddock output. This is useful for preventing duplicate identifiers when generating fragments to be included in other pages.\n-T STRING, --title-prefix=STRING\nSpecify STRING as a prefix at the beginning of the title that appears in the HTML header (but not in the title as it appears at the beginning of the HTML body). Implies --standalone.\n-c URL, --css=URL\nLink to a CSS style sheet. This option can be used repeatedly to include multiple files. They will be included in the order specified. This option only affects HTML (including HTML slide shows) and EPUB output. It should be used together with -s/--standalone, because the link to the stylesheet goes in the document header.\nA stylesheet is required for generating EPUB. If none is provided using this option (or the css or stylesheet metadata fields), pandoc will look for a file epub.css in the user data directory (see --data-dir). If it is not found there, sensible defaults will be used.\n--reference-doc=FILE|URL\nUse the specified file as a style reference in producing a docx or ODT file.\nDocx For best results, the reference docx should be a modified version of a docx file produced using pandoc. The contents of the reference docx are ignored, but its stylesheets and document properties (including margins, page size, header, and footer) are used in the new docx. If no reference docx is specified on the command line, pandoc will look for a file reference.docx in the user data directory (see --data-dir). If this is not found either, sensible defaults will be used.\nTo produce a custom reference.docx, first get a copy of the default reference.docx: pandoc -o custom-reference.docx --print-default-data-file reference.docx. Then open custom-reference.docx in Word, modify the styles as you wish, and save the file. For best results, do not make changes to this file other than modifying the styles used by pandoc:\nParagraph styles:\n• Normal\n• Body Text\n• First Paragraph\n• Compact\n• Title\n• Subtitle\n• Author\n• Date\n• Abstract\n• AbstractTitle\n• Bibliography\n• Heading 1\n• Heading 2\n• Heading 3\n• Heading 4\n• Heading 5\n• Heading 6\n• Heading 7\n• Heading 8\n• Heading 9\n• Block Text [for block quotes]\n• Footnote Block Text [for block quotes in footnotes]\n• Source Code\n• Footnote Text\n• Definition Term\n• Definition\n• Caption\n• Table Caption\n• Image Caption\n• Figure\n• Captioned Figure\n• TOC Heading\nCharacter styles:\n• Default Paragraph Font\n• Verbatim Char\n• Footnote Reference\n• Hyperlink\n• Section Number\nTable style:\n• Table\nODT For best results, the reference ODT should be a modified version of an ODT produced using pandoc. The contents of the reference ODT are ignored, but its stylesheets are used in the new ODT. If no reference ODT is specified on the command line, pandoc will look for a file reference.odt in the user data directory (see --data-dir). If this is not found either, sensible defaults will be used.\nTo produce a custom reference.odt, first get a copy of the default reference.odt: pandoc -o custom-reference.odt --print-default-data-file reference.odt. Then open custom-reference.odt in LibreOffice, modify the styles as you wish, and save the file.\nPowerPoint Templates included with Microsoft PowerPoint 2013 (either with .pptx or .potx extension) are known to work, as are most templates derived from these.\nThe specific requirement is that the template should contain layouts with the following names (as seen within PowerPoint):\n• Title Slide\n• Title and Content\n• Section Header\n• Two Content\n• Comparison\n• Content with Caption\n• Blank\nFor each name, the first layout found with that name will be used. If no layout is found with one of the names, pandoc will output a warning and use the layout with that name from the default reference doc instead. (How these layouts are used is described in PowerPoint layout choice.)\nAll templates included with a recent version of MS PowerPoint will fit these criteria. (You can click on Layout under the Home menu to check.)\nYou can also modify the default reference.pptx: first run pandoc -o custom-reference.pptx --print-default-data-file reference.pptx, and then modify custom-reference.pptx in MS PowerPoint (pandoc will use the layouts with the names listed above).\n--split-level=NUMBER\nSpecify the heading level at which to split an EPUB or chunked HTML document into separate files. The default is to split into chapters at level-1 headings. In the case of EPUB, this option only affects the internal composition of the EPUB, not the way chapters and sections are displayed to users. Some readers may be slow if the chapter files are too large, so for large documents with few level-1 headings, one might want to use a chapter level of 2 or 3. For chunked HTML, this option determines how much content goes in each “chunk.”\n--chunk-template=PATHTEMPLATE\nSpecify a template for the filenames in a chunkedhtml document. In the template, %n will be replaced by the chunk number (padded with leading 0s to 3 digits), %s with the section number of the chunk, %h with the heading text (with formatting removed), %i with the section identifier. For example, section-%s-%i.html might be resolved to section-1.1-introduction.html. The characters / and \\ are not allowed in chunk templates and will be ignored. The default is %s-%i.html.\n--epub-chapter-level=NUMBER\nDeprecated synonym for --split-level.\n--epub-cover-image=FILE\nUse the specified image as the EPUB cover. It is recommended that the image be less than 1000px in width and height. Note that in a Markdown source document you can also specify cover-image in a YAML metadata block (see EPUB Metadata, below).\n--epub-title-page=true|false\nDetermines whether a the title page is included in the EPUB (default is true).\n--epub-metadata=FILE\nLook in the specified XML file for metadata for the EPUB. The file should contain a series of Dublin Core elements. For example:\n<dc:rights>Creative Commons</dc:rights> <dc:language>es-AR</dc:language>\nBy default, pandoc will include the following metadata elements: <dc:title> (from the document title), <dc:creator> (from the document authors), <dc:date> (from the document date, which should be in ISO 8601 format), <dc:language> (from the lang variable, or, if is not set, the locale), and <dc:identifier id=\"BookId\"> (a randomly generated UUID). Any of these may be overridden by elements in the metadata file.\nNote: if the source document is Markdown, a YAML metadata block in the document can be used instead. See below under EPUB Metadata.\n--epub-embed-font=FILE\nEmbed the specified font in the EPUB. This option can be repeated to embed multiple fonts. Wildcards can also be used: for example, DejaVuSans-*.ttf. However, if you use wildcards on the command line, be sure to escape them or put the whole filename in single quotes, to prevent them from being interpreted by the shell. To use the embedded fonts, you will need to add declarations like the following to your CSS (see --css):\n@font-face { font-family: DejaVuSans; font-style: normal; font-weight: normal; src:url(\"../fonts/DejaVuSans-Regular.ttf\"); } @font-face { font-family: DejaVuSans; font-style: normal; font-weight: bold; src:url(\"../fonts/DejaVuSans-Bold.ttf\"); } @font-face { font-family: DejaVuSans; font-style: italic; font-weight: normal; src:url(\"../fonts/DejaVuSans-Oblique.ttf\"); } @font-face { font-family: DejaVuSans; font-style: italic; font-weight: bold; src:url(\"../fonts/DejaVuSans-BoldOblique.ttf\"); } body { font-family: \"DejaVuSans\"; }\n--epub-subdirectory=DIRNAME\nSpecify the subdirectory in the OCF container that is to hold the EPUB-specific contents. The default is EPUB. To put the EPUB contents in the top level, use an empty string.\n--ipynb-output=all|none|best\nDetermines how ipynb output cells are treated. all means that all of the data formats included in the original are preserved. none means that the contents of data cells are omitted. best causes pandoc to try to pick the richest data block in each output cell that is compatible with the output format. The default is best.\n--pdf-engine=PROGRAM\nUse the specified engine when producing PDF output. Valid values are pdflatex, lualatex, xelatex, latexmk, tectonic, wkhtmltopdf, weasyprint, pagedjs-cli, prince, context, groff, pdfroff, and typst. If the engine is not in your PATH, the full path of the engine may be specified here. If this option is not specified, pandoc uses the following defaults depending on the output format specified using -t/--to:\n• -t latex or none: pdflatex (other options: xelatex, lualatex, tectonic, latexmk)\n• -t context: context\n• -t html: weasyprint (other options: prince, wkhtmltopdf, pagedjs-cli; see print-css.rocks for a good introduction to PDF generation from HTML/CSS)\n• -t ms: pdfroff\n• -t typst: typst\nThis option is normally intended to be used when a PDF file is specified as -o/--output. However, it may still have an effect when other output formats are requested. For example, ms output will include .pdfhref macros only if a --pdf-engine is selected, and the macros will be differently encoded depending on whether groff or pdfroff is specified.\n--pdf-engine-opt=STRING\nUse the given string as a command-line argument to the pdf-engine. For example, to use a persistent directory foo for latexmk’s auxiliary files, use --pdf-engine-opt=-outdir=foo. Note that no check for duplicate options is done.\nCitation rendering\n-C, --citeproc\nProcess the citations in the file, replacing them with rendered citations and adding a bibliography. Citation processing will not take place unless bibliographic data is supplied, either through an external file specified using the --bibliography option or the bibliography field in metadata, or via a references section in metadata containing a list of citations in CSL YAML format with Markdown formatting. The style is controlled by a CSL stylesheet specified using the --csl option or the csl field in metadata. (If no stylesheet is specified, the chicago-author-date style will be used by default.) The citation processing transformation may be applied before or after filters or Lua filters (see --filter, --lua-filter): these transformations are applied in the order they appear on the command line. For more information, see the section on Citations.\nNote: if this option is specified, the citations extension will be disabled automatically in the writer, to ensure that the citeproc-generated citations will be rendered instead of the format’s own citation syntax.\n--bibliography=FILE\nSet the bibliography field in the document’s metadata to FILE, overriding any value set in the metadata. If you supply this argument multiple times, each FILE will be added to bibliography. If FILE is a URL, it will be fetched via HTTP. If FILE is not found relative to the working directory, it will be sought in the resource path (see --resource-path).\n--csl=FILE\nSet the csl field in the document’s metadata to FILE, overriding any value set in the metadata. (This is equivalent to --metadata csl=FILE.) If FILE is a URL, it will be fetched via HTTP. If FILE is not found relative to the working directory, it will be sought in the resource path (see --resource-path) and finally in the csl subdirectory of the pandoc user data directory.\n--citation-abbreviations=FILE\nSet the citation-abbreviations field in the document’s metadata to FILE, overriding any value set in the metadata. (This is equivalent to --metadata citation-abbreviations=FILE.) If FILE is a URL, it will be fetched via HTTP. If FILE is not found relative to the working directory, it will be sought in the resource path (see --resource-path) and finally in the csl subdirectory of the pandoc user data directory.\n--natbib\nUse natbib for citations in LaTeX output. This option is not for use with the --citeproc option or with PDF output. It is intended for use in producing a LaTeX file that can be processed with bibtex.\n--biblatex\nUse biblatex for citations in LaTeX output. This option is not for use with the --citeproc option or with PDF output. It is intended for use in producing a LaTeX file that can be processed with bibtex or biber.\nMath rendering in HTML\nThe default is to render TeX math as far as possible using Unicode characters. Formulas are put inside a span with class=\"math\", so that they may be styled differently from the surrounding text if needed. However, this gives acceptable results only for basic math, usually you will want to use --mathjax or another of the following options.\n--mathjax[=URL]\nUse MathJax to display embedded TeX math in HTML output. TeX math will be put between \\(...\\) (for inline math) or \\[...\\] (for display math) and wrapped in <span> tags with class math. Then the MathJax JavaScript will render it. The URL should point to the MathJax.js load script. If a URL is not provided, a link to the Cloudflare CDN will be inserted.\n--mathml\nConvert TeX math to MathML (in epub3, docbook4, docbook5, jats, html4 and html5). This is the default in odt output. MathML is supported natively by the main web browsers and select e-book readers.\n--webtex[=URL]\nConvert TeX formulas to <img> tags that link to an external script that converts formulas to images. The formula will be URL-encoded and concatenated with the URL provided. For SVG images you can for example use --webtex https://latex.codecogs.com/svg.latex?. If no URL is specified, the CodeCogs URL generating PNGs will be used (https://latex.codecogs.com/png.latex?). Note: the --webtex option will affect Markdown output as well as HTML, which is useful if you’re targeting a version of Markdown without native math support.\n--katex[=URL]\nUse KaTeX to display embedded TeX math in HTML output. The URL is the base URL for the KaTeX library. That directory should contain a katex.min.js and a katex.min.css file. If a URL is not provided, a link to the KaTeX CDN will be inserted.\n--gladtex\nEnclose TeX math in <eq> tags in HTML output. The resulting HTML can then be processed by GladTeX to produce SVG images of the typeset formulas and an HTML file with these images embedded.\npandoc -s --gladtex input.md -o myfile.htex gladtex -d image_dir myfile.htex # produces myfile.html and images in image_dir\nOptions for wrapper scripts\n--dump-args[=true|false]\nPrint information about command-line arguments to stdout, then exit. This option is intended primarily for use in wrapper scripts. The first line of output contains the name of the output file specified with the -o option, or - (for stdout) if no output file was specified. The remaining lines contain the command-line arguments, one per line, in the order they appear. These do not include regular pandoc options and their arguments, but do include any options appearing after a -- separator at the end of the line.\n--ignore-args[=true|false]\nIgnore command-line arguments (for use in wrapper scripts). Regular pandoc options are not ignored. Thus, for example,\npandoc --ignore-args -o foo.html -s foo.txt -- -e latin1\nis equivalent to\npandoc -o foo.html -s",
+  "valueTypes": [
+    {
+      "id": "none",
+      "name": "Flag"
+    },
+    {
+      "id": "string",
+      "name": "String"
+    },
+    {
+      "id": "integer",
+      "name": "Integer"
+    },
+    {
+      "id": "number",
+      "name": "Number"
+    },
+    {
+      "id": "enum",
+      "name": "Enum"
+    },
+    {
+      "id": "format",
+      "name": "Format"
+    },
+    {
+      "id": "file",
+      "name": "File"
+    },
+    {
+      "id": "directory",
+      "name": "Directory"
+    },
+    {
+      "id": "path",
+      "name": "Path"
+    },
+    {
+      "id": "pathList",
+      "name": "Path list"
+    },
+    {
+      "id": "keyValue",
+      "name": "Key/value"
+    }
+  ],
+  "sections": [
+    {
+      "id": "options",
+      "title": "Options",
+      "order": 0,
+      "descriptionBlocks": []
+    },
+    {
+      "id": "general-options",
+      "title": "General options",
+      "order": 1,
+      "descriptionBlocks": []
+    },
+    {
+      "id": "reader-options",
+      "title": "Reader options",
+      "order": 2,
+      "descriptionBlocks": []
+    },
+    {
+      "id": "general-writer-options",
+      "title": "General writer options",
+      "order": 3,
+      "descriptionBlocks": []
+    },
+    {
+      "id": "options-affecting-specific-writers",
+      "title": "Options affecting specific writers",
+      "order": 4,
+      "descriptionBlocks": []
+    },
+    {
+      "id": "citation-rendering",
+      "title": "Citation rendering",
+      "order": 5,
+      "descriptionBlocks": []
+    },
+    {
+      "id": "math-rendering-in-html",
+      "title": "Math rendering in HTML",
+      "order": 6,
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "The default is to render TeX math as far as possible using Unicode characters. Formulas are put inside a span with class=\"math\", so that they may be styled differently from the surrounding text if needed. However, this gives acceptable results only for basic math, usually you will want to use --mathjax or another of the following options."
+        }
+      ]
+    },
+    {
+      "id": "options-for-wrapper-scripts",
+      "title": "Options for wrapper scripts",
+      "order": 7,
+      "descriptionBlocks": []
+    }
+  ],
+  "optionGroups": [
+    {
+      "id": 1,
+      "sectionId": "general-options",
+      "order": 0,
+      "signature": "-f FORMAT, -r FORMAT, --from=FORMAT, --read=FORMAT",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify input format. FORMAT can be:"
+        },
+        {
+          "type": "bullet",
+          "text": "asciidoc (AsciiDoc markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "bibtex (BibTeX bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "biblatex (BibLaTeX bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "bits (BITS XML, alias for jats)"
+        },
+        {
+          "type": "bullet",
+          "text": "commonmark (CommonMark Markdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "commonmark_x (CommonMark Markdown with extensions)"
+        },
+        {
+          "type": "bullet",
+          "text": "creole (Creole 1.0)"
+        },
+        {
+          "type": "bullet",
+          "text": "csljson (CSL JSON bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "csv (CSV table)"
+        },
+        {
+          "type": "bullet",
+          "text": "tsv (TSV table)"
+        },
+        {
+          "type": "bullet",
+          "text": "djot (Djot markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "docbook (DocBook)"
+        },
+        {
+          "type": "bullet",
+          "text": "docx (Word docx)"
+        },
+        {
+          "type": "bullet",
+          "text": "dokuwiki (DokuWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "endnotexml (EndNote XML bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "epub (EPUB)"
+        },
+        {
+          "type": "bullet",
+          "text": "fb2 (FictionBook2 e-book)"
+        },
+        {
+          "type": "bullet",
+          "text": "gfm (GitHub-Flavored Markdown), or the deprecated and less accurate markdown_github; use markdown_github only if you need extensions not supported in gfm."
+        },
+        {
+          "type": "bullet",
+          "text": "haddock (Haddock markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "html (HTML)"
+        },
+        {
+          "type": "bullet",
+          "text": "ipynb (Jupyter notebook)"
+        },
+        {
+          "type": "bullet",
+          "text": "jats (JATS XML)"
+        },
+        {
+          "type": "bullet",
+          "text": "jira (Jira/Confluence wiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "json (JSON version of native AST)"
+        },
+        {
+          "type": "bullet",
+          "text": "latex (LaTeX)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown (Pandoc’s Markdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown_mmd (MultiMarkdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown_phpextra (PHP Markdown Extra)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown_strict (original unextended Markdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "mediawiki (MediaWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "man (roff man)"
+        },
+        {
+          "type": "bullet",
+          "text": "mdoc (mdoc manual page markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "muse (Muse)"
+        },
+        {
+          "type": "bullet",
+          "text": "native (native Haskell)"
+        },
+        {
+          "type": "bullet",
+          "text": "odt (OpenDocument text document)"
+        },
+        {
+          "type": "bullet",
+          "text": "opml (OPML)"
+        },
+        {
+          "type": "bullet",
+          "text": "org (Emacs Org mode)"
+        },
+        {
+          "type": "bullet",
+          "text": "pod (Perl’s Plain Old Documentation)"
+        },
+        {
+          "type": "bullet",
+          "text": "pptx (PowerPoint)"
+        },
+        {
+          "type": "bullet",
+          "text": "ris (RIS bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "rtf (Rich Text Format)"
+        },
+        {
+          "type": "bullet",
+          "text": "rst (reStructuredText)"
+        },
+        {
+          "type": "bullet",
+          "text": "t2t (txt2tags)"
+        },
+        {
+          "type": "bullet",
+          "text": "textile (Textile)"
+        },
+        {
+          "type": "bullet",
+          "text": "tikiwiki (TikiWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "twiki (TWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "typst (typst)"
+        },
+        {
+          "type": "bullet",
+          "text": "vimwiki (Vimwiki)"
+        },
+        {
+          "type": "bullet",
+          "text": "xlsx (Excel spreadsheet)"
+        },
+        {
+          "type": "bullet",
+          "text": "xml (XML version of native AST)"
+        },
+        {
+          "type": "bullet",
+          "text": "the path of a custom Lua reader, see Custom readers and writers below"
+        },
+        {
+          "type": "paragraph",
+          "text": "Extensions can be individually enabled or disabled by appending +EXTENSION or -EXTENSION to the format name. See Extensions below, for a list of extensions and their names. See --list-input-formats and --list-extensions, below."
+        }
+      ],
+      "valueTypeId": "format",
+      "valuePlaceholder": "FORMAT",
+      "repeatable": false,
+      "mapsTo": "from"
+    },
+    {
+      "id": 2,
+      "sectionId": "general-options",
+      "order": 1,
+      "signature": "-t FORMAT, -w FORMAT, --to=FORMAT, --write=FORMAT",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify output format. FORMAT can be:"
+        },
+        {
+          "type": "bullet",
+          "text": "ansi (text with ANSI escape codes, for terminal viewing)"
+        },
+        {
+          "type": "bullet",
+          "text": "asciidoc (modern AsciiDoc as interpreted by AsciiDoctor)"
+        },
+        {
+          "type": "bullet",
+          "text": "asciidoc_legacy (AsciiDoc as interpreted by asciidoc-py)."
+        },
+        {
+          "type": "bullet",
+          "text": "asciidoctor (deprecated synonym for asciidoc)"
+        },
+        {
+          "type": "bullet",
+          "text": "bbcode BBCode"
+        },
+        {
+          "type": "bullet",
+          "text": "bbcode_fluxbb BBCode (FluxBB)"
+        },
+        {
+          "type": "bullet",
+          "text": "bbcode_phpbb BBCode (phpBB)"
+        },
+        {
+          "type": "bullet",
+          "text": "bbcode_steam BBCode (Steam)"
+        },
+        {
+          "type": "bullet",
+          "text": "bbcode_hubzilla BBCode (Hubzilla)"
+        },
+        {
+          "type": "bullet",
+          "text": "bbcode_xenforo BBCode (xenForo)"
+        },
+        {
+          "type": "bullet",
+          "text": "beamer (LaTeX beamer slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "bibtex (BibTeX bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "biblatex (BibLaTeX bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "chunkedhtml (zip archive of multiple linked HTML files)"
+        },
+        {
+          "type": "bullet",
+          "text": "commonmark (CommonMark Markdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "commonmark_x (CommonMark Markdown with extensions)"
+        },
+        {
+          "type": "bullet",
+          "text": "context (ConTeXt)"
+        },
+        {
+          "type": "bullet",
+          "text": "csljson (CSL JSON bibliography)"
+        },
+        {
+          "type": "bullet",
+          "text": "djot (Djot markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "docbook or docbook4 (DocBook 4)"
+        },
+        {
+          "type": "bullet",
+          "text": "docbook5 (DocBook 5)"
+        },
+        {
+          "type": "bullet",
+          "text": "docx (Word docx)"
+        },
+        {
+          "type": "bullet",
+          "text": "dokuwiki (DokuWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "epub or epub3 (EPUB v3 book)"
+        },
+        {
+          "type": "bullet",
+          "text": "epub2 (EPUB v2)"
+        },
+        {
+          "type": "bullet",
+          "text": "fb2 (FictionBook2 e-book)"
+        },
+        {
+          "type": "bullet",
+          "text": "gfm (GitHub-Flavored Markdown), or the deprecated and less accurate markdown_github; use markdown_github only if you need extensions not supported in gfm."
+        },
+        {
+          "type": "bullet",
+          "text": "haddock (Haddock markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "html or html5 (HTML, i.e. HTML5/XHTML polyglot markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "html4 (XHTML 1.0 Transitional)"
+        },
+        {
+          "type": "bullet",
+          "text": "icml (InDesign ICML)"
+        },
+        {
+          "type": "bullet",
+          "text": "ipynb (Jupyter notebook)"
+        },
+        {
+          "type": "bullet",
+          "text": "jats_archiving (JATS XML, Archiving and Interchange Tag Set)"
+        },
+        {
+          "type": "bullet",
+          "text": "jats_articleauthoring (JATS XML, Article Authoring Tag Set)"
+        },
+        {
+          "type": "bullet",
+          "text": "jats_publishing (JATS XML, Journal Publishing Tag Set)"
+        },
+        {
+          "type": "bullet",
+          "text": "jats (alias for jats_archiving)"
+        },
+        {
+          "type": "bullet",
+          "text": "jira (Jira/Confluence wiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "json (JSON version of native AST)"
+        },
+        {
+          "type": "bullet",
+          "text": "latex (LaTeX)"
+        },
+        {
+          "type": "bullet",
+          "text": "man (roff man)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown (Pandoc’s Markdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown_mmd (MultiMarkdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown_phpextra (PHP Markdown Extra)"
+        },
+        {
+          "type": "bullet",
+          "text": "markdown_strict (original unextended Markdown)"
+        },
+        {
+          "type": "bullet",
+          "text": "markua (Markua)"
+        },
+        {
+          "type": "bullet",
+          "text": "mediawiki (MediaWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "ms (roff ms)"
+        },
+        {
+          "type": "bullet",
+          "text": "muse (Muse)"
+        },
+        {
+          "type": "bullet",
+          "text": "native (native Haskell)"
+        },
+        {
+          "type": "bullet",
+          "text": "odt (OpenDocument text document)"
+        },
+        {
+          "type": "bullet",
+          "text": "opml (OPML)"
+        },
+        {
+          "type": "bullet",
+          "text": "opendocument (OpenDocument XML)"
+        },
+        {
+          "type": "bullet",
+          "text": "org (Emacs Org mode)"
+        },
+        {
+          "type": "bullet",
+          "text": "pdf (PDF)"
+        },
+        {
+          "type": "bullet",
+          "text": "plain (plain text)"
+        },
+        {
+          "type": "bullet",
+          "text": "pptx (PowerPoint slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "rst (reStructuredText)"
+        },
+        {
+          "type": "bullet",
+          "text": "rtf (Rich Text Format)"
+        },
+        {
+          "type": "bullet",
+          "text": "texinfo (GNU Texinfo)"
+        },
+        {
+          "type": "bullet",
+          "text": "textile (Textile)"
+        },
+        {
+          "type": "bullet",
+          "text": "slideous (Slideous HTML and JavaScript slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "slidy (Slidy HTML and JavaScript slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "dzslides (DZSlides HTML5 + JavaScript slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "revealjs (reveal.js HTML5 + JavaScript slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "s5 (S5 HTML and JavaScript slide show)"
+        },
+        {
+          "type": "bullet",
+          "text": "tei (TEI Simple)"
+        },
+        {
+          "type": "bullet",
+          "text": "typst (typst)"
+        },
+        {
+          "type": "bullet",
+          "text": "vimdoc (Vimdoc)"
+        },
+        {
+          "type": "bullet",
+          "text": "xml (XML version of native AST)"
+        },
+        {
+          "type": "bullet",
+          "text": "xwiki (XWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "zimwiki (ZimWiki markup)"
+        },
+        {
+          "type": "bullet",
+          "text": "the path of a custom Lua writer, see Custom readers and writers below"
+        },
+        {
+          "type": "paragraph",
+          "text": "Note that odt, docx, epub, and pdf output will not be directed to stdout unless forced with -o -."
+        },
+        {
+          "type": "paragraph",
+          "text": "Extensions can be individually enabled or disabled by appending +EXTENSION or -EXTENSION to the format name. See Extensions below, for a list of extensions and their names. See --list-output-formats and --list-extensions, below."
+        }
+      ],
+      "valueTypeId": "format",
+      "valuePlaceholder": "FORMAT",
+      "repeatable": false,
+      "mapsTo": "to"
+    },
+    {
+      "id": 3,
+      "sectionId": "general-options",
+      "order": 2,
+      "signature": "-o FILE, --output=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Write output to FILE instead of stdout. If FILE is -, output will go to stdout, even if a non-textual format (docx, odt, epub2, epub3) is specified. If the output format is chunkedhtml and FILE has no extension, then instead of producing a .zip file pandoc will create a directory FILE and unpack the zip archive there (unless FILE already exists, in which case an error will be raised)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false,
+      "mapsTo": "output"
+    },
+    {
+      "id": 4,
+      "sectionId": "general-options",
+      "order": 3,
+      "signature": "--data-dir=DIRECTORY",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify the user data directory to search for pandoc data files. If this option is not specified, the default user data directory will be used. On *nix and macOS systems this will be the pandoc subdirectory of the XDG data directory (by default, $HOME/.local/share, overridable by setting the XDG_DATA_HOME environment variable). If that directory does not exist and $HOME/.pandoc exists, it will be used (for backwards compatibility). On Windows the default user data directory is %APPDATA%\\pandoc. You can find the default user data directory on your system by looking at the output of pandoc --version. Data files placed in this directory (for example, reference.odt, reference.docx, epub.css, templates) will override pandoc’s normal defaults. (Note that the user data directory is not created by pandoc, so you will need to create it yourself if you want to make use of it.)"
+        }
+      ],
+      "valueTypeId": "directory",
+      "valuePlaceholder": "DIRECTORY",
+      "repeatable": false
+    },
+    {
+      "id": 5,
+      "sectionId": "general-options",
+      "order": 4,
+      "signature": "-d FILE, --defaults=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify a set of default option settings. FILE is a YAML or JSON file whose fields correspond to command-line option settings. All options for document conversion, including input and output files, can be set using a defaults file. The file will be searched for first in the working directory, and then in the defaults subdirectory of the user data directory (see --data-dir). The .yaml extension will be added if FILE lacs an extension. See the section Defaults files for more information on the file format. Settings from the defaults file may be overridden or extended by subsequent options on the command line."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 6,
+      "sectionId": "general-options",
+      "order": 5,
+      "signature": "--bash-completion",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Generate a bash completion script. To enable bash completion with pandoc, add this to your .bashrc:"
+        },
+        {
+          "type": "paragraph",
+          "text": "eval \"$(pandoc --bash-completion)\""
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 7,
+      "sectionId": "general-options",
+      "order": 6,
+      "signature": "--verbose",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Give verbose debugging output."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 8,
+      "sectionId": "general-options",
+      "order": 7,
+      "signature": "--quiet",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Suppress warning messages."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 9,
+      "sectionId": "general-options",
+      "order": 8,
+      "signature": "--fail-if-warnings[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Exit with error status if there are any warnings."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 10,
+      "sectionId": "general-options",
+      "order": 9,
+      "signature": "--log=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Write log messages in machine-readable JSON format to FILE. All messages above DEBUG level will be written, regardless of verbosity settings (--verbose, --quiet)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 11,
+      "sectionId": "general-options",
+      "order": 10,
+      "signature": "--list-input-formats",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "List supported input formats, one per line."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 12,
+      "sectionId": "general-options",
+      "order": 11,
+      "signature": "--list-output-formats",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "List supported output formats, one per line."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 13,
+      "sectionId": "general-options",
+      "order": 12,
+      "signature": "--list-extensions[=FORMAT]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "List supported extensions for FORMAT, one per line, preceded by a + or - indicating whether it is enabled by default in FORMAT. If FORMAT is not specified, defaults for pandoc’s Markdown are given."
+        }
+      ],
+      "valueTypeId": "format",
+      "valuePlaceholder": "[=FORMAT]",
+      "repeatable": false
+    },
+    {
+      "id": 14,
+      "sectionId": "general-options",
+      "order": 13,
+      "signature": "--list-highlight-languages",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "List supported languages for syntax highlighting, one per line."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 15,
+      "sectionId": "general-options",
+      "order": 14,
+      "signature": "--list-highlight-styles",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "List supported styles for syntax highlighting, one per line. See --syntax-highlighting."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 16,
+      "sectionId": "general-options",
+      "order": 15,
+      "signature": "-v, --version",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Print version."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 17,
+      "sectionId": "general-options",
+      "order": 16,
+      "signature": "-h, --help",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Show usage message."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 18,
+      "sectionId": "reader-options",
+      "order": 17,
+      "signature": "--shift-heading-level-by=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Shift heading levels by a positive or negative integer. For example, with --shift-heading-level-by=-1, level 2 headings become level 1 headings, and level 3 headings become level 2 headings. Headings cannot have a level less than 1, so a heading that would be shifted below level 1 becomes a regular paragraph. Exception: with a shift of -N, a level-N heading at the beginning of the document replaces the metadata title. --shift-heading-level-by=-1 is a good choice when converting HTML or Markdown documents that use an initial level-1 heading for the document title and level-2+ headings for sections. --shift-heading-level-by=1 may be a good choice for converting Markdown documents that use level-1 headings for sections to HTML, since pandoc uses a level-1 heading to render the document title."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 19,
+      "sectionId": "reader-options",
+      "order": 18,
+      "signature": "--base-header-level=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Deprecated. Use --shift-heading-level-by=X instead, where X = NUMBER - 1. Specify the base level for headings (defaults to 1)."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 20,
+      "sectionId": "reader-options",
+      "order": 19,
+      "signature": "--indented-code-classes=CLASSES",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify classes to use for indented code blocks——for example, perl,numberLines or haskell. Multiple classes may be separated by spaces or commas."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "CLASSES",
+      "repeatable": false
+    },
+    {
+      "id": 21,
+      "sectionId": "reader-options",
+      "order": 20,
+      "signature": "--default-image-extension=EXTENSION",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify a default extension to use when image paths/URLs have no extension. This allows you to use the same source for formats that require different kinds of images. Currently this option only affects the Markdown and LaTeX readers."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "EXTENSION",
+      "repeatable": false
+    },
+    {
+      "id": 22,
+      "sectionId": "reader-options",
+      "order": 21,
+      "signature": "--file-scope[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Parse each file individually before combining for multifile documents. This will allow footnotes in different files with the same identifiers to work as expected. If this option is set, footnotes and links will not work across files. Reading binary files (docx, odt, epub) implies --file-scope."
+        },
+        {
+          "type": "paragraph",
+          "text": "If two or more files are processed using --file-scope, prefixes based on the filenames will be added to identifiers in order to disambiguate them, and internal links will be adjusted accordingly. For example, a header with identifier foo in subdir/file1.txt will have its identifier changed to subdir__file1.txt__foo."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 23,
+      "sectionId": "reader-options",
+      "order": 22,
+      "signature": "-F PROGRAM, --filter=PROGRAM",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify an executable to be used as a filter transforming the pandoc AST after the input is parsed and before the output is written. The executable should read JSON from stdin and write JSON to stdout. The JSON must be formatted like pandoc’s own JSON input and output. The name of the output format will be passed to the filter as the first argument. Hence,"
+        },
+        {
+          "type": "paragraph",
+          "text": "pandoc --filter ./caps.py -t latex"
+        },
+        {
+          "type": "paragraph",
+          "text": "is equivalent to"
+        },
+        {
+          "type": "paragraph",
+          "text": "pandoc -t json | ./caps.py latex | pandoc -f json -t latex"
+        },
+        {
+          "type": "paragraph",
+          "text": "The latter form may be useful for debugging filters."
+        },
+        {
+          "type": "paragraph",
+          "text": "Filters may be written in any language. Text.Pandoc.JSON exports toJSONFilter to facilitate writing filters in Haskell. Those who would prefer to write filters in python can use the module pandocfilters, installable from PyPI. There are also pandoc filter libraries in PHP, perl, and JavaScript/node.js."
+        },
+        {
+          "type": "paragraph",
+          "text": "In order of preference, pandoc will look for filters in"
+        },
+        {
+          "type": "paragraph",
+          "text": "1. a specified full or relative path (executable or non-executable),"
+        },
+        {
+          "type": "paragraph",
+          "text": "2. $DATADIR/filters (executable or non-executable) where $DATADIR is the user data directory (see --data-dir, above),"
+        },
+        {
+          "type": "paragraph",
+          "text": "3. $PATH (executable only)."
+        },
+        {
+          "type": "paragraph",
+          "text": "Filters, Lua-filters, and citeproc processing are applied in the order specified on the command line."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "PROGRAM",
+      "repeatable": true
+    },
+    {
+      "id": 24,
+      "sectionId": "reader-options",
+      "order": 23,
+      "signature": "-L SCRIPT, --lua-filter=SCRIPT",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Transform the document in a similar fashion as JSON filters (see --filter), but use pandoc’s built-in Lua filtering system. The given Lua script is expected to return a list of Lua filters which will be applied in order. Each Lua filter must contain element-transforming functions indexed by the name of the AST element on which the filter function should be applied."
+        },
+        {
+          "type": "paragraph",
+          "text": "The pandoc Lua module provides helper functions for element creation. It is always loaded into the script’s Lua environment."
+        },
+        {
+          "type": "paragraph",
+          "text": "See the Lua filters documentation for further details."
+        },
+        {
+          "type": "paragraph",
+          "text": "In order of preference, pandoc will look for Lua filters in"
+        },
+        {
+          "type": "paragraph",
+          "text": "1. a specified full or relative path,"
+        },
+        {
+          "type": "paragraph",
+          "text": "2. $DATADIR/filters where $DATADIR is the user data directory (see --data-dir, above)."
+        },
+        {
+          "type": "paragraph",
+          "text": "Filters, Lua filters, and citeproc processing are applied in the order specified on the command line."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "SCRIPT",
+      "repeatable": true,
+      "mapsTo": "luaFilter"
+    },
+    {
+      "id": 25,
+      "sectionId": "reader-options",
+      "order": 24,
+      "signature": "-M KEY[=VAL], --metadata=KEY[:VAL]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the metadata field KEY to the value VAL. A value specified on the command line overrides a value specified in the document using YAML metadata blocks. Values will be parsed as YAML boolean or string values. If no value is specified, the value will be treated as Boolean true. Like --variable, --metadata causes template variables to be set. But unlike --variable, --metadata affects the metadata of the underlying document (which is accessible from filters and may be printed in some output formats) and metadata values will be escaped when inserted into the template."
+        }
+      ],
+      "valueTypeId": "keyValue",
+      "valuePlaceholder": "KEY[=VAL]",
+      "repeatable": true,
+      "mapsTo": "metadata"
+    },
+    {
+      "id": 26,
+      "sectionId": "reader-options",
+      "order": 25,
+      "signature": "--metadata-file=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Read metadata from the supplied YAML (or JSON) file. This option can be used with every input format, but string scalars in the metadata file will always be parsed as Markdown. (If the input format is Markdown or a Markdown variant, then the same variant will be used to parse the metadata file; if it is a non-Markdown format, pandoc’s default Markdown extensions will be used.) This option can be used repeatedly to include multiple metadata files; values in files specified later on the command line will be preferred over those specified in earlier files. Metadata values specified inside the document, or by using -M, overwrite values specified with this option. The file will be searched for first in the working directory, and then in the metadata subdirectory of the user data directory (see --data-dir)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 27,
+      "sectionId": "reader-options",
+      "order": 26,
+      "signature": "-p, --preserve-tabs[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Preserve tabs instead of converting them to spaces. (By default, pandoc converts tabs to spaces before parsing its input.) Note that this will only affect tabs in literal code spans and code blocks. Tabs in regular text are always treated as spaces."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 28,
+      "sectionId": "reader-options",
+      "order": 27,
+      "signature": "--tab-stop=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify the number of spaces per tab (default is 4)."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 29,
+      "sectionId": "reader-options",
+      "order": 28,
+      "signature": "--track-changes=accept|reject|all",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specifies what to do with insertions, deletions, and comments produced by the MS Word “Track Changes” feature. accept (the default) processes all the insertions and deletions. reject ignores them. Both accept and reject ignore comments. all includes all insertions, deletions, and comments, wrapped in spans with insertion, deletion, comment-start, and comment-end classes, respectively. The author and time of change is included. all is useful for scripting: only accepting changes from a certain reviewer, say, or before a certain date. If a paragraph is inserted or deleted, track-changes=all produces a span with the class paragraph-insertion/paragraph-deletion before the affected paragraph break. This option only affects the docx reader."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "accept|reject|all",
+      "valueTokens": [
+        {
+          "value": "accept",
+          "kind": "literal"
+        },
+        {
+          "value": "reject",
+          "kind": "literal"
+        },
+        {
+          "value": "all",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 30,
+      "sectionId": "reader-options",
+      "order": 29,
+      "signature": "--extract-media=DIR|FILE.zip",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Extract images and other media contained in or linked from the source document to the path DIR, creating it if necessary, and adjust the images references in the document so they point to the extracted files. Media are downloaded, read from the file system, or extracted from a binary container (e.g. docx), as needed. The original file paths are used if they are relative paths not containing ... Otherwise filenames are constructed from the SHA1 hash of the contents."
+        },
+        {
+          "type": "paragraph",
+          "text": "If the path given ends in .zip, then instead of creating a directory, pandoc will create a zip archive containing the media files."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "DIR|FILE.zip",
+      "valueTokens": [
+        {
+          "value": "DIR",
+          "kind": "placeholder"
+        },
+        {
+          "value": "FILE.zip",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 31,
+      "sectionId": "reader-options",
+      "order": 30,
+      "signature": "--abbreviations=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specifies a custom abbreviations file, with abbreviations one to a line. If this option is not specified, pandoc will read the data file abbreviations from the user data directory or fall back on a system default. To see the system default, use pandoc --print-default-data-file=abbreviations. The only use pandoc makes of this list is in the Markdown reader. Strings found in this list will be followed by a nonbreaking space, and the period will not produce sentence-ending space in formats like LaTeX. The strings may not contain spaces."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 32,
+      "sectionId": "reader-options",
+      "order": 31,
+      "signature": "--trace[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Print diagnostic output tracing parser progress to stderr. This option is intended for use by developers in diagnosing performance issues."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 33,
+      "sectionId": "general-writer-options",
+      "order": 32,
+      "signature": "-s, --standalone",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Produce output with an appropriate header and footer (e.g. a standalone HTML, LaTeX, TEI, or RTF file, not a fragment). This option is set automatically for pdf, epub, epub3, fb2, docx, and odt output. For native output, this option causes metadata to be included; otherwise, metadata is suppressed."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false,
+      "mapsTo": "standalone"
+    },
+    {
+      "id": 34,
+      "sectionId": "general-writer-options",
+      "order": 33,
+      "signature": "--template=FILE|URL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use the specified file as a custom template for the generated document. Implies --standalone. See Templates, below, for a description of template syntax. If the template is not found, pandoc will search for it in the templates subdirectory of the user data directory (see --data-dir). If no extension is specified and an extensionless template is not found, pandoc will look for a template with an extension corresponding to the writer, so that --template=special looks for special.html for HTML output. If this option is not used, a default template appropriate for the output format will be used (see -D/--print-default-template)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE|URL",
+      "valueTokens": [
+        {
+          "value": "FILE",
+          "kind": "placeholder"
+        },
+        {
+          "value": "URL",
+          "kind": "placeholder"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 35,
+      "sectionId": "general-writer-options",
+      "order": 34,
+      "signature": "-V KEY[=VAL], --variable=KEY[=VAL]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the template variable KEY to the string value VAL when rendering the document in standalone mode. Either : or = may be used to separate KEY from VAL. If no VAL is specified, the key will be given the value true. Structured values (lists, maps) cannot be assigned using this option, but they can be assigned in the variables section of a defaults file or using the --variable-json option. If the variable already has a list value, the value will be added to the list. If it already has another kind of value, it will be made into a list containing the previous and the new value. For example, -V keyword=Joe -V author=Sue makes author contain a list of strings: Joe and Sue."
+        }
+      ],
+      "valueTypeId": "keyValue",
+      "valuePlaceholder": "KEY[=VAL]",
+      "repeatable": true,
+      "mapsTo": "variable"
+    },
+    {
+      "id": 36,
+      "sectionId": "general-writer-options",
+      "order": 35,
+      "signature": "--variable-json=KEY[=:JSON]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the template variable KEY to the value specified by a JSON string (this may be a boolean, a string, a list, or a mapping; a number will be treated as a string). For example, --variable-json foo=false will give foo the boolean false value, while --variable-json foo='\"false\"' will give it the string value \"false\". Either : or = may be used to separate KEY from VAL. If the variable already has a value, this value will be replaced."
+        }
+      ],
+      "valueTypeId": "keyValue",
+      "valuePlaceholder": "KEY[=:JSON]",
+      "repeatable": true,
+      "mapsTo": "variable"
+    },
+    {
+      "id": 37,
+      "sectionId": "general-writer-options",
+      "order": 36,
+      "signature": "--sandbox[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Run pandoc in a sandbox, limiting IO operations in readers and writers to reading the files specified on the command line. Note that this option does not limit IO operations by filters or in the production of PDF documents. But it does offer security against, for example, disclosure of files through the use of include directives. Anyone using pandoc on untrusted user input should use this option."
+        },
+        {
+          "type": "paragraph",
+          "text": "Note: some readers and writers (e.g., docx) need access to data files. If these are stored on the file system, then pandoc will not be able to find them when run in --sandbox mode and will raise an error. For these applications, we recommend using a pandoc binary compiled with the embed_data_files option, which causes the data files to be baked into the binary instead of being stored on the file system."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 38,
+      "sectionId": "general-writer-options",
+      "order": 37,
+      "signature": "-D FORMAT, --print-default-template=FORMAT",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Print the system default template for an output FORMAT. (See -t for a list of possible FORMATs.) Templates in the user data directory are ignored. This option may be used with -o/--output to redirect output to a file, but -o/--output must come before --print-default-template on the command line."
+        },
+        {
+          "type": "paragraph",
+          "text": "Note that some of the default templates use partials, for example styles.html. To print the partials, use --print-default-data-file: for example, --print-default-data-file=templates/styles.html."
+        }
+      ],
+      "valueTypeId": "format",
+      "valuePlaceholder": "FORMAT",
+      "repeatable": false
+    },
+    {
+      "id": 39,
+      "sectionId": "general-writer-options",
+      "order": 38,
+      "signature": "--print-default-data-file=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Print a system default data file. Files in the user data directory are ignored. This option may be used with -o/--output to redirect output to a file, but -o/--output must come before --print-default-data-file on the command line."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 40,
+      "sectionId": "general-writer-options",
+      "order": 39,
+      "signature": "--eol=crlf|lf|native",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Manually specify line endings: crlf (Windows), lf (macOS/Linux/UNIX), or native (line endings appropriate to the OS on which pandoc is being run). The default is native."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "crlf|lf|native",
+      "valueTokens": [
+        {
+          "value": "crlf",
+          "kind": "literal"
+        },
+        {
+          "value": "lf",
+          "kind": "literal"
+        },
+        {
+          "value": "native",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 41,
+      "sectionId": "general-writer-options",
+      "order": 40,
+      "signature": "--dpi=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify the default dpi (dots per inch) value for conversion from pixels to inch/centimeters and vice versa. (Technically, the correct term would be ppi: pixels per inch.) The default is 96dpi. When images contain information about dpi internally, the encoded value is used instead of the default specified by this option."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 42,
+      "sectionId": "general-writer-options",
+      "order": 41,
+      "signature": "--wrap=auto|none|preserve",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Determine how text is wrapped in the output (the source code, not the rendered version). With auto (the default), pandoc will attempt to wrap lines to the column width specified by --columns (default 72). With none, pandoc will not wrap lines at all. With preserve, pandoc will attempt to preserve the wrapping from the source document (that is, where there are nonsemantic newlines in the source, there will be nonsemantic newlines in the output as well). In ipynb output, this option affects wrapping of the contents of Markdown cells."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "auto|none|preserve",
+      "valueTokens": [
+        {
+          "value": "auto",
+          "kind": "literal"
+        },
+        {
+          "value": "none",
+          "kind": "literal"
+        },
+        {
+          "value": "preserve",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 43,
+      "sectionId": "general-writer-options",
+      "order": 42,
+      "signature": "--columns=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify length of lines in characters. This affects text wrapping in the generated source code (see --wrap). It also affects calculation of column widths for plain text tables (see Tables below)."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 44,
+      "sectionId": "general-writer-options",
+      "order": 43,
+      "signature": "--toc[=true|false], --table-of-contents[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include an automatically generated table of contents (or, in the case of latex, context, docx, odt, opendocument, rst, or ms, an instruction to create one) in the output document. This option has no effect unless -s/--standalone is used, and it has no effect on man, docbook4, docbook5, or jats output."
+        },
+        {
+          "type": "paragraph",
+          "text": "Note that if you are producing a PDF via ms and using (the default) pdfroff as a --pdf-engine, the table of contents will appear at the beginning of the document, before the title. If you would prefer it to be at the end of the document, use the option --pdf-engine-opt=--no-toc-relocation. If groff is used as the --pdf-engine, the table of contents will always appear at the end of the document."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 45,
+      "sectionId": "general-writer-options",
+      "order": 44,
+      "signature": "--toc-depth=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify the number of section levels to include in the table of contents. The default is 3 (which means that level-1, 2, and 3 headings will be listed in the contents)."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 46,
+      "sectionId": "general-writer-options",
+      "order": 45,
+      "signature": "--lof[=true|false], --list-of-figures[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include an automatically generated list of figures (or, in some formats, an instruction to create one) in the output document. This option has no effect unless -s/--standalone is used, and it only has an effect on latex, context, and docx output."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 47,
+      "sectionId": "general-writer-options",
+      "order": 46,
+      "signature": "--lot[=true|false], --list-of-tables[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include an automatically generated list of tables (or, in some formats, an instruction to create one) in the output document. This option has no effect unless -s/--standalone is used, and it only has an effect on latex, context, and docx output."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 48,
+      "sectionId": "general-writer-options",
+      "order": 47,
+      "signature": "--strip-comments[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Strip out HTML comments in the Markdown or Textile source, rather than passing them on to Markdown, Textile or HTML output as raw HTML. This does not apply to HTML comments inside raw HTML blocks when the markdown_in_html_blocks extension is not set."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 49,
+      "sectionId": "general-writer-options",
+      "order": 48,
+      "signature": "--syntax-highlighting=default|none|idiomatic|STYLE|FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "The method to use for code syntax highlighting. Setting a specific STYLE causes highlighting to be performed with the internal highlighting engine, using KDE syntax definitions and styles. The idiomatic method uses a format-specific highlighter if one is available, or the default style if the target format has no idiomatic highlighting method. Setting this option to none disables all syntax highlighting. The default method uses a format-specific default."
+        },
+        {
+          "type": "paragraph",
+          "text": "The default for HTML, EPUB, Docx, Ms, Man, and LaTeX output is to use the internal highlighter with the default style; for Typst it is to use Typst’s own syntax highlighting system."
+        },
+        {
+          "type": "paragraph",
+          "text": "Style options are pygments (the default), kate, monochrome, breezeDark, espresso, zenburn, haddock, and tango. For more information on syntax highlighting in pandoc, see Syntax highlighting, below. See also --list-highlight-styles."
+        },
+        {
+          "type": "paragraph",
+          "text": "Instead of a STYLE name, a JSON file with extension .theme may be supplied. This will be parsed as a KDE syntax highlighting theme and (if valid) used as the highlighting style."
+        },
+        {
+          "type": "paragraph",
+          "text": "To generate the JSON version of an existing style, use --print-highlight-style."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "default|none|idiomatic|STYLE|FILE",
+      "valueTokens": [
+        {
+          "value": "default",
+          "kind": "literal"
+        },
+        {
+          "value": "none",
+          "kind": "literal"
+        },
+        {
+          "value": "idiomatic",
+          "kind": "literal"
+        },
+        {
+          "value": "STYLE",
+          "kind": "placeholder"
+        },
+        {
+          "value": "FILE",
+          "kind": "placeholder"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 50,
+      "sectionId": "general-writer-options",
+      "order": 49,
+      "signature": "--no-highlight",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Deprecated, use --syntax-highlighting=none instead."
+        },
+        {
+          "type": "paragraph",
+          "text": "Disables syntax highlighting for code blocks and inlines, even when a language attribute is given."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 51,
+      "sectionId": "general-writer-options",
+      "order": 50,
+      "signature": "--highlight-style=STYLE|FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Deprecated, use --syntax-highlighting=STYLE|FILE instead."
+        },
+        {
+          "type": "paragraph",
+          "text": "Specifies the coloring style to be used in highlighted source code."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "STYLE|FILE",
+      "valueTokens": [
+        {
+          "value": "STYLE",
+          "kind": "placeholder"
+        },
+        {
+          "value": "FILE",
+          "kind": "placeholder"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 52,
+      "sectionId": "general-writer-options",
+      "order": 51,
+      "signature": "--print-highlight-style=STYLE|FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Prints a JSON version of a highlighting style, which can be modified, saved with a .theme extension, and used with --syntax-highlighting. This option may be used with -o/--output to redirect output to a file, but -o/--output must come before --print-highlight-style on the command line."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "STYLE|FILE",
+      "valueTokens": [
+        {
+          "value": "STYLE",
+          "kind": "placeholder"
+        },
+        {
+          "value": "FILE",
+          "kind": "placeholder"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 53,
+      "sectionId": "general-writer-options",
+      "order": 52,
+      "signature": "--syntax-definition=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Instructs pandoc to load a KDE XML syntax definition file, which will be used for syntax highlighting of appropriately marked code blocks. This can be used to add support for new languages or to use altered syntax definitions for existing languages. This option may be repeated to add multiple syntax definitions."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": true
+    },
+    {
+      "id": 54,
+      "sectionId": "general-writer-options",
+      "order": 53,
+      "signature": "-H FILE, --include-in-header=FILE|URL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include contents of FILE, verbatim, at the end of the header. This can be used, for example, to include special CSS or JavaScript in HTML documents. This option can be used repeatedly to include multiple files in the header. They will be included in the order specified. Implies --standalone."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": true
+    },
+    {
+      "id": 55,
+      "sectionId": "general-writer-options",
+      "order": 54,
+      "signature": "-B FILE, --include-before-body=FILE|URL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include contents of FILE, verbatim, at the beginning of the document body (e.g. after the <body> tag in HTML, or the \\begin{document} command in LaTeX). This can be used to include navigation bars or banners in HTML documents. This option can be used repeatedly to include multiple files. They will be included in the order specified. Implies --standalone. Note that if the output format is odt, this file must be in OpenDocument XML format suitable for insertion into the body of the document, and if the output is docx, this file must be in appropriate OpenXML format."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": true
+    },
+    {
+      "id": 56,
+      "sectionId": "general-writer-options",
+      "order": 55,
+      "signature": "-A FILE, --include-after-body=FILE|URL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include contents of FILE, verbatim, at the end of the document body (before the </body> tag in HTML, or the \\end{document} command in LaTeX). This option can be used repeatedly to include multiple files. They will be included in the order specified. Implies --standalone. Note that if the output format is odt, this file must be in OpenDocument XML format suitable for insertion into the body of the document, and if the output is docx, this file must be in appropriate OpenXML format."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": true
+    },
+    {
+      "id": 57,
+      "sectionId": "general-writer-options",
+      "order": 56,
+      "signature": "--resource-path=SEARCHPATH",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "List of paths to search for images and other resources. The paths should be separated by : on Linux, UNIX, and macOS systems, and by ; on Windows. If --resource-path is not specified, the default resource path is the working directory. Note that, if --resource-path is specified, the working directory must be explicitly listed or it will not be searched. For example: --resource-path=.:test will search the working directory and the test subdirectory, in that order. This option can be used repeatedly. Search path components that come later on the command line will be searched before those that come earlier, so --resource-path foo:bar --resource-path baz:bim is equivalent to --resource-path baz:bim:foo:bar. Note that this option only has an effect when pandoc itself needs to find an image (e.g., in producing a PDF or docx, or when --embed-resources is used.) It will not cause image paths to be rewritten in other cases (e.g., when pandoc is generating LaTeX or HTML)."
+        }
+      ],
+      "valueTypeId": "pathList",
+      "valuePlaceholder": "SEARCHPATH",
+      "repeatable": true,
+      "mapsTo": "resourcePath"
+    },
+    {
+      "id": 58,
+      "sectionId": "general-writer-options",
+      "order": 57,
+      "signature": "--request-header=NAME:VAL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the request header NAME to the value VAL when making HTTP requests (for example, when a URL is given on the command line, or when resources used in a document must be downloaded). If you’re behind a proxy, you also need to set the environment variable http_proxy to http://...."
+        }
+      ],
+      "valueTypeId": "keyValue",
+      "valuePlaceholder": "NAME:VAL",
+      "repeatable": true
+    },
+    {
+      "id": 59,
+      "sectionId": "general-writer-options",
+      "order": 58,
+      "signature": "--no-check-certificate[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Disable the certificate verification to allow access to unsecure HTTP resources (for example when the certificate is no longer valid or self signed)."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 60,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 59,
+      "signature": "--self-contained[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Deprecated synonym for --embed-resources --standalone."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 61,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 60,
+      "signature": "--embed-resources[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Produce a standalone HTML file with no external dependencies, using data: URIs to incorporate the contents of linked scripts, stylesheets, images, and videos. The resulting file should be “self-contained,” in the sense that it needs no external files and no net access to be displayed properly by a browser. This option works only with HTML output formats, including html4, html5, html+lhs, html5+lhs, s5, slidy, slideous, dzslides, and revealjs. Scripts, images, and stylesheets at absolute URLs will be downloaded; those at relative URLs will be sought relative to the working directory (if the first source file is local) or relative to the base URL (if the first source file is remote). Elements with the attribute data-external=\"1\" will be left alone; the documents they link to will not be incorporated in the document. Limitation: resources that are loaded dynamically through JavaScript cannot be incorporated; as a result, fonts may be missing when --mathjax is used, and some advanced features (e.g. zoom or speaker notes) may not work in an offline “self-contained” reveal.js slide show."
+        },
+        {
+          "type": "paragraph",
+          "text": "For SVG images, img tags with data: URIs are used, unless the image has the class inline-svg, in which case an inline SVG element is inserted. This approach is recommended when there are many occurrences of the same SVG in a document, as <use> elements will be used to reduce duplication."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 62,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 61,
+      "signature": "--link-images[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Include links to images instead of embedding the images in ODT. (This option currently only affects ODT output.)"
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 63,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 62,
+      "signature": "--html-q-tags[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use <q> tags for quotes in HTML. (This option only has an effect if the smart extension is enabled for the input format used.)"
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 64,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 63,
+      "signature": "--ascii[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use only ASCII characters in output. Currently supported for XML and HTML formats (which use entities instead of UTF-8 when this option is selected), CommonMark, gfm, and Markdown (which use entities), roff man and ms (which use hexadecimal escapes), and to a limited degree LaTeX (which uses standard commands for accented characters when possible)."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 65,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 64,
+      "signature": "--reference-links[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use reference-style links, rather than inline links, in writing Markdown or reStructuredText. By default inline links are used. The placement of link references is affected by the --reference-location option."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 66,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 65,
+      "signature": "--reference-location=block|section|document",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify whether footnotes (and references, if reference-links is set) are placed at the end of the current (top-level) block, the current section, or the document. The default is document. Currently this option only affects the markdown, muse, html, epub, slidy, s5, slideous, dzslides, and revealjs writers. In slide formats, specifying --reference-location=section will cause notes to be rendered at the bottom of a slide."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "block|section|document",
+      "valueTokens": [
+        {
+          "value": "block",
+          "kind": "literal"
+        },
+        {
+          "value": "section",
+          "kind": "literal"
+        },
+        {
+          "value": "document",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 67,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 66,
+      "signature": "--figure-caption-position=above|below",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify whether figure captions go above or below figures (default is below). This option only affects HTML, LaTeX, Docx, ODT, and Typst output."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "above|below",
+      "valueTokens": [
+        {
+          "value": "above",
+          "kind": "literal"
+        },
+        {
+          "value": "below",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 68,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 67,
+      "signature": "--table-caption-position=above|below",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify whether table captions go above or below tables (default is above). This option only affects HTML, LaTeX, Docx, ODT, and Typst output."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "above|below",
+      "valueTokens": [
+        {
+          "value": "above",
+          "kind": "literal"
+        },
+        {
+          "value": "below",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 69,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 68,
+      "signature": "--markdown-headings=setext|atx",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify whether to use ATX-style (#-prefixed) or Setext-style (underlined) headings for level 1 and 2 headings in Markdown output. (The default is atx.) ATX-style headings are always used for levels 3+. This option also affects Markdown cells in ipynb output."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "setext|atx",
+      "valueTokens": [
+        {
+          "value": "setext",
+          "kind": "literal"
+        },
+        {
+          "value": "atx",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 70,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 69,
+      "signature": "--list-tables[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Render tables as list tables in RST output."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 71,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 70,
+      "signature": "--top-level-division=default|section|chapter|part",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Treat top-level headings as the given division type in LaTeX, ConTeXt, DocBook, and TEI output. The hierarchy order is part, chapter, then section; all headings are shifted such that the top-level heading becomes the specified type. The default behavior is to determine the best division type via heuristics: unless other conditions apply, section is chosen. When the documentclass variable is set to report, book, or memoir (unless the article option is specified), chapter is implied as the setting for this option. If beamer is the output format, specifying either chapter or part will cause top-level headings to become \\part{..}, while second-level headings remain as their default type."
+        },
+        {
+          "type": "paragraph",
+          "text": "In Docx output, this option adds section breaks before first-level headings if chapter is selected, and before first- and second-level headings if part is selected. Footnote numbers will restart with each section break unless the reference doc modifies this."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "default|section|chapter|part",
+      "valueTokens": [
+        {
+          "value": "default",
+          "kind": "literal"
+        },
+        {
+          "value": "section",
+          "kind": "literal"
+        },
+        {
+          "value": "chapter",
+          "kind": "literal"
+        },
+        {
+          "value": "part",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 72,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 71,
+      "signature": "-N, --number-sections=[true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Number section headings in LaTeX, ConTeXt, HTML, Docx, ms, or EPUB output. By default, sections are not numbered. Sections with class unnumbered will never be numbered, even if --number-sections is specified."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 73,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 72,
+      "signature": "--number-offset=NUMBER[,NUMBER,...]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Offsets for section heading numbers. The first number is added to the section number for level-1 headings, the second for level-2 headings, and so on. So, for example, if you want the first level-1 heading in your document to be numbered “6” instead of “1”, specify --number-offset=5. If your document starts with a level-2 heading which you want to be numbered “1.5”, specify --number-offset=1,4. --number-offset only directly affects the number of the first section heading in a document; subsequent numbers increment in the normal way. Implies --number-sections. Currently this feature only affects HTML and Docx output."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER[,NUMBER,...]",
+      "repeatable": false
+    },
+    {
+      "id": 74,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 73,
+      "signature": "--listings[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "*Deprecated, use --syntax-highlighting=idiomatic or --syntax-highlighting=default instead."
+        },
+        {
+          "type": "paragraph",
+          "text": "Use the listings package for LaTeX code blocks. The package does not support multi-byte encoding for source code. To handle UTF-8 you would need to use a custom template. This issue is fully documented here: Encoding issue with the listings package."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 75,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 74,
+      "signature": "-i, --incremental[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Make list items in slide shows display incrementally (one by one). The default is for lists to be displayed all at once."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 76,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 75,
+      "signature": "--slide-level=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specifies that headings with the specified level create slides (for beamer, revealjs, pptx, s5, slidy, slideous, dzslides). Headings above this level in the hierarchy are used to divide the slide show into sections; headings below this level create subheads within a slide. Valid values are 0-6. If a slide level of 0 is specified, slides will not be split automatically on headings, and horizontal rules must be used to indicate slide boundaries. If a slide level is not specified explicitly, the slide level will be set automatically based on the contents of the document; see Structuring the slide show."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 77,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 76,
+      "signature": "--section-divs[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Wrap sections in <section> tags (or <div> tags for html4), and attach identifiers to the enclosing <section> (or <div>) rather than the heading itself (see Heading identifiers, below). This option only affects HTML output (and does not affect HTML slide formats)."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 78,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 77,
+      "signature": "--email-obfuscation=none|javascript|references",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify a method for obfuscating mailto: links in HTML documents. none leaves mailto: links as they are. javascript obfuscates them using JavaScript. references obfuscates them by printing their letters as decimal or hexadecimal character references. The default is none."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "none|javascript|references",
+      "valueTokens": [
+        {
+          "value": "none",
+          "kind": "literal"
+        },
+        {
+          "value": "javascript",
+          "kind": "literal"
+        },
+        {
+          "value": "references",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 79,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 78,
+      "signature": "--id-prefix=STRING",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify a prefix to be added to all identifiers and internal links in HTML and DocBook output, and to footnote numbers in Markdown and Haddock output. This is useful for preventing duplicate identifiers when generating fragments to be included in other pages."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "STRING",
+      "repeatable": false
+    },
+    {
+      "id": 80,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 79,
+      "signature": "-T STRING, --title-prefix=STRING",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify STRING as a prefix at the beginning of the title that appears in the HTML header (but not in the title as it appears at the beginning of the HTML body). Implies --standalone."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "STRING",
+      "repeatable": false
+    },
+    {
+      "id": 81,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 80,
+      "signature": "-c URL, --css=URL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Link to a CSS style sheet. This option can be used repeatedly to include multiple files. They will be included in the order specified. This option only affects HTML (including HTML slide shows) and EPUB output. It should be used together with -s/--standalone, because the link to the stylesheet goes in the document header."
+        },
+        {
+          "type": "paragraph",
+          "text": "A stylesheet is required for generating EPUB. If none is provided using this option (or the css or stylesheet metadata fields), pandoc will look for a file epub.css in the user data directory (see --data-dir). If it is not found there, sensible defaults will be used."
+        }
+      ],
+      "valueTypeId": "path",
+      "valuePlaceholder": "URL",
+      "repeatable": true
+    },
+    {
+      "id": 82,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 81,
+      "signature": "--reference-doc=FILE|URL",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use the specified file as a style reference in producing a docx or ODT file."
+        },
+        {
+          "type": "paragraph",
+          "text": "Docx For best results, the reference docx should be a modified version of a docx file produced using pandoc. The contents of the reference docx are ignored, but its stylesheets and document properties (including margins, page size, header, and footer) are used in the new docx. If no reference docx is specified on the command line, pandoc will look for a file reference.docx in the user data directory (see --data-dir). If this is not found either, sensible defaults will be used."
+        },
+        {
+          "type": "paragraph",
+          "text": "To produce a custom reference.docx, first get a copy of the default reference.docx: pandoc -o custom-reference.docx --print-default-data-file reference.docx. Then open custom-reference.docx in Word, modify the styles as you wish, and save the file. For best results, do not make changes to this file other than modifying the styles used by pandoc:"
+        },
+        {
+          "type": "paragraph",
+          "text": "Paragraph styles:"
+        },
+        {
+          "type": "bullet",
+          "text": "Normal"
+        },
+        {
+          "type": "bullet",
+          "text": "Body Text"
+        },
+        {
+          "type": "bullet",
+          "text": "First Paragraph"
+        },
+        {
+          "type": "bullet",
+          "text": "Compact"
+        },
+        {
+          "type": "bullet",
+          "text": "Title"
+        },
+        {
+          "type": "bullet",
+          "text": "Subtitle"
+        },
+        {
+          "type": "bullet",
+          "text": "Author"
+        },
+        {
+          "type": "bullet",
+          "text": "Date"
+        },
+        {
+          "type": "bullet",
+          "text": "Abstract"
+        },
+        {
+          "type": "bullet",
+          "text": "AbstractTitle"
+        },
+        {
+          "type": "bullet",
+          "text": "Bibliography"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 1"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 2"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 3"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 4"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 5"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 6"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 7"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 8"
+        },
+        {
+          "type": "bullet",
+          "text": "Heading 9"
+        },
+        {
+          "type": "bullet",
+          "text": "Block Text [for block quotes]"
+        },
+        {
+          "type": "bullet",
+          "text": "Footnote Block Text [for block quotes in footnotes]"
+        },
+        {
+          "type": "bullet",
+          "text": "Source Code"
+        },
+        {
+          "type": "bullet",
+          "text": "Footnote Text"
+        },
+        {
+          "type": "bullet",
+          "text": "Definition Term"
+        },
+        {
+          "type": "bullet",
+          "text": "Definition"
+        },
+        {
+          "type": "bullet",
+          "text": "Caption"
+        },
+        {
+          "type": "bullet",
+          "text": "Table Caption"
+        },
+        {
+          "type": "bullet",
+          "text": "Image Caption"
+        },
+        {
+          "type": "bullet",
+          "text": "Figure"
+        },
+        {
+          "type": "bullet",
+          "text": "Captioned Figure"
+        },
+        {
+          "type": "bullet",
+          "text": "TOC Heading"
+        },
+        {
+          "type": "paragraph",
+          "text": "Character styles:"
+        },
+        {
+          "type": "bullet",
+          "text": "Default Paragraph Font"
+        },
+        {
+          "type": "bullet",
+          "text": "Verbatim Char"
+        },
+        {
+          "type": "bullet",
+          "text": "Footnote Reference"
+        },
+        {
+          "type": "bullet",
+          "text": "Hyperlink"
+        },
+        {
+          "type": "bullet",
+          "text": "Section Number"
+        },
+        {
+          "type": "paragraph",
+          "text": "Table style:"
+        },
+        {
+          "type": "bullet",
+          "text": "Table"
+        },
+        {
+          "type": "paragraph",
+          "text": "ODT For best results, the reference ODT should be a modified version of an ODT produced using pandoc. The contents of the reference ODT are ignored, but its stylesheets are used in the new ODT. If no reference ODT is specified on the command line, pandoc will look for a file reference.odt in the user data directory (see --data-dir). If this is not found either, sensible defaults will be used."
+        },
+        {
+          "type": "paragraph",
+          "text": "To produce a custom reference.odt, first get a copy of the default reference.odt: pandoc -o custom-reference.odt --print-default-data-file reference.odt. Then open custom-reference.odt in LibreOffice, modify the styles as you wish, and save the file."
+        },
+        {
+          "type": "paragraph",
+          "text": "PowerPoint Templates included with Microsoft PowerPoint 2013 (either with .pptx or .potx extension) are known to work, as are most templates derived from these."
+        },
+        {
+          "type": "paragraph",
+          "text": "The specific requirement is that the template should contain layouts with the following names (as seen within PowerPoint):"
+        },
+        {
+          "type": "bullet",
+          "text": "Title Slide"
+        },
+        {
+          "type": "bullet",
+          "text": "Title and Content"
+        },
+        {
+          "type": "bullet",
+          "text": "Section Header"
+        },
+        {
+          "type": "bullet",
+          "text": "Two Content"
+        },
+        {
+          "type": "bullet",
+          "text": "Comparison"
+        },
+        {
+          "type": "bullet",
+          "text": "Content with Caption"
+        },
+        {
+          "type": "bullet",
+          "text": "Blank"
+        },
+        {
+          "type": "paragraph",
+          "text": "For each name, the first layout found with that name will be used. If no layout is found with one of the names, pandoc will output a warning and use the layout with that name from the default reference doc instead. (How these layouts are used is described in PowerPoint layout choice.)"
+        },
+        {
+          "type": "paragraph",
+          "text": "All templates included with a recent version of MS PowerPoint will fit these criteria. (You can click on Layout under the Home menu to check.)"
+        },
+        {
+          "type": "paragraph",
+          "text": "You can also modify the default reference.pptx: first run pandoc -o custom-reference.pptx --print-default-data-file reference.pptx, and then modify custom-reference.pptx in MS PowerPoint (pandoc will use the layouts with the names listed above)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE|URL",
+      "valueTokens": [
+        {
+          "value": "FILE",
+          "kind": "placeholder"
+        },
+        {
+          "value": "URL",
+          "kind": "placeholder"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 83,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 82,
+      "signature": "--split-level=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify the heading level at which to split an EPUB or chunked HTML document into separate files. The default is to split into chapters at level-1 headings. In the case of EPUB, this option only affects the internal composition of the EPUB, not the way chapters and sections are displayed to users. Some readers may be slow if the chapter files are too large, so for large documents with few level-1 headings, one might want to use a chapter level of 2 or 3. For chunked HTML, this option determines how much content goes in each “chunk.”"
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 84,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 83,
+      "signature": "--chunk-template=PATHTEMPLATE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify a template for the filenames in a chunkedhtml document. In the template, %n will be replaced by the chunk number (padded with leading 0s to 3 digits), %s with the section number of the chunk, %h with the heading text (with formatting removed), %i with the section identifier. For example, section-%s-%i.html might be resolved to section-1.1-introduction.html. The characters / and \\ are not allowed in chunk templates and will be ignored. The default is %s-%i.html."
+        }
+      ],
+      "valueTypeId": "path",
+      "valuePlaceholder": "PATHTEMPLATE",
+      "repeatable": false
+    },
+    {
+      "id": 85,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 84,
+      "signature": "--epub-chapter-level=NUMBER",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Deprecated synonym for --split-level."
+        }
+      ],
+      "valueTypeId": "integer",
+      "valuePlaceholder": "NUMBER",
+      "repeatable": false
+    },
+    {
+      "id": 86,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 85,
+      "signature": "--epub-cover-image=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use the specified image as the EPUB cover. It is recommended that the image be less than 1000px in width and height. Note that in a Markdown source document you can also specify cover-image in a YAML metadata block (see EPUB Metadata, below)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 87,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 86,
+      "signature": "--epub-title-page=true|false",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Determines whether a the title page is included in the EPUB (default is true)."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "true|false",
+      "valueTokens": [
+        {
+          "value": "true",
+          "kind": "literal"
+        },
+        {
+          "value": "false",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 88,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 87,
+      "signature": "--epub-metadata=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Look in the specified XML file for metadata for the EPUB. The file should contain a series of Dublin Core elements. For example:"
+        },
+        {
+          "type": "paragraph",
+          "text": "<dc:rights>Creative Commons</dc:rights> <dc:language>es-AR</dc:language>"
+        },
+        {
+          "type": "paragraph",
+          "text": "By default, pandoc will include the following metadata elements: <dc:title> (from the document title), <dc:creator> (from the document authors), <dc:date> (from the document date, which should be in ISO 8601 format), <dc:language> (from the lang variable, or, if is not set, the locale), and <dc:identifier id=\"BookId\"> (a randomly generated UUID). Any of these may be overridden by elements in the metadata file."
+        },
+        {
+          "type": "paragraph",
+          "text": "Note: if the source document is Markdown, a YAML metadata block in the document can be used instead. See below under EPUB Metadata."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 89,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 88,
+      "signature": "--epub-embed-font=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Embed the specified font in the EPUB. This option can be repeated to embed multiple fonts. Wildcards can also be used: for example, DejaVuSans-*.ttf. However, if you use wildcards on the command line, be sure to escape them or put the whole filename in single quotes, to prevent them from being interpreted by the shell. To use the embedded fonts, you will need to add declarations like the following to your CSS (see --css):"
+        },
+        {
+          "type": "paragraph",
+          "text": "@font-face { font-family: DejaVuSans; font-style: normal; font-weight: normal; src:url(\"../fonts/DejaVuSans-Regular.ttf\"); } @font-face { font-family: DejaVuSans; font-style: normal; font-weight: bold; src:url(\"../fonts/DejaVuSans-Bold.ttf\"); } @font-face { font-family: DejaVuSans; font-style: italic; font-weight: normal; src:url(\"../fonts/DejaVuSans-Oblique.ttf\"); } @font-face { font-family: DejaVuSans; font-style: italic; font-weight: bold; src:url(\"../fonts/DejaVuSans-BoldOblique.ttf\"); } body { font-family: \"DejaVuSans\"; }"
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": true
+    },
+    {
+      "id": 90,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 89,
+      "signature": "--epub-subdirectory=DIRNAME",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Specify the subdirectory in the OCF container that is to hold the EPUB-specific contents. The default is EPUB. To put the EPUB contents in the top level, use an empty string."
+        }
+      ],
+      "valueTypeId": "directory",
+      "valuePlaceholder": "DIRNAME",
+      "repeatable": false
+    },
+    {
+      "id": 91,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 90,
+      "signature": "--ipynb-output=all|none|best",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Determines how ipynb output cells are treated. all means that all of the data formats included in the original are preserved. none means that the contents of data cells are omitted. best causes pandoc to try to pick the richest data block in each output cell that is compatible with the output format. The default is best."
+        }
+      ],
+      "valueTypeId": "enum",
+      "valuePlaceholder": "all|none|best",
+      "valueTokens": [
+        {
+          "value": "all",
+          "kind": "literal"
+        },
+        {
+          "value": "none",
+          "kind": "literal"
+        },
+        {
+          "value": "best",
+          "kind": "literal"
+        }
+      ],
+      "repeatable": false
+    },
+    {
+      "id": 92,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 91,
+      "signature": "--pdf-engine=PROGRAM",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use the specified engine when producing PDF output. Valid values are pdflatex, lualatex, xelatex, latexmk, tectonic, wkhtmltopdf, weasyprint, pagedjs-cli, prince, context, groff, pdfroff, and typst. If the engine is not in your PATH, the full path of the engine may be specified here. If this option is not specified, pandoc uses the following defaults depending on the output format specified using -t/--to:"
+        },
+        {
+          "type": "bullet",
+          "text": "-t latex or none: pdflatex (other options: xelatex, lualatex, tectonic, latexmk)"
+        },
+        {
+          "type": "bullet",
+          "text": "-t context: context"
+        },
+        {
+          "type": "bullet",
+          "text": "-t html: weasyprint (other options: prince, wkhtmltopdf, pagedjs-cli; see print-css.rocks for a good introduction to PDF generation from HTML/CSS)"
+        },
+        {
+          "type": "bullet",
+          "text": "-t ms: pdfroff"
+        },
+        {
+          "type": "bullet",
+          "text": "-t typst: typst"
+        },
+        {
+          "type": "paragraph",
+          "text": "This option is normally intended to be used when a PDF file is specified as -o/--output. However, it may still have an effect when other output formats are requested. For example, ms output will include .pdfhref macros only if a --pdf-engine is selected, and the macros will be differently encoded depending on whether groff or pdfroff is specified."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "PROGRAM",
+      "repeatable": false
+    },
+    {
+      "id": 93,
+      "sectionId": "options-affecting-specific-writers",
+      "order": 92,
+      "signature": "--pdf-engine-opt=STRING",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use the given string as a command-line argument to the pdf-engine. For example, to use a persistent directory foo for latexmk’s auxiliary files, use --pdf-engine-opt=-outdir=foo. Note that no check for duplicate options is done."
+        }
+      ],
+      "valueTypeId": "string",
+      "valuePlaceholder": "STRING",
+      "repeatable": true
+    },
+    {
+      "id": 94,
+      "sectionId": "citation-rendering",
+      "order": 93,
+      "signature": "-C, --citeproc",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Process the citations in the file, replacing them with rendered citations and adding a bibliography. Citation processing will not take place unless bibliographic data is supplied, either through an external file specified using the --bibliography option or the bibliography field in metadata, or via a references section in metadata containing a list of citations in CSL YAML format with Markdown formatting. The style is controlled by a CSL stylesheet specified using the --csl option or the csl field in metadata. (If no stylesheet is specified, the chicago-author-date style will be used by default.) The citation processing transformation may be applied before or after filters or Lua filters (see --filter, --lua-filter): these transformations are applied in the order they appear on the command line. For more information, see the section on Citations."
+        },
+        {
+          "type": "paragraph",
+          "text": "Note: if this option is specified, the citations extension will be disabled automatically in the writer, to ensure that the citeproc-generated citations will be rendered instead of the format’s own citation syntax."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 95,
+      "sectionId": "citation-rendering",
+      "order": 94,
+      "signature": "--bibliography=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the bibliography field in the document’s metadata to FILE, overriding any value set in the metadata. If you supply this argument multiple times, each FILE will be added to bibliography. If FILE is a URL, it will be fetched via HTTP. If FILE is not found relative to the working directory, it will be sought in the resource path (see --resource-path)."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": true
+    },
+    {
+      "id": 96,
+      "sectionId": "citation-rendering",
+      "order": 95,
+      "signature": "--csl=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the csl field in the document’s metadata to FILE, overriding any value set in the metadata. (This is equivalent to --metadata csl=FILE.) If FILE is a URL, it will be fetched via HTTP. If FILE is not found relative to the working directory, it will be sought in the resource path (see --resource-path) and finally in the csl subdirectory of the pandoc user data directory."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 97,
+      "sectionId": "citation-rendering",
+      "order": 96,
+      "signature": "--citation-abbreviations=FILE",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Set the citation-abbreviations field in the document’s metadata to FILE, overriding any value set in the metadata. (This is equivalent to --metadata citation-abbreviations=FILE.) If FILE is a URL, it will be fetched via HTTP. If FILE is not found relative to the working directory, it will be sought in the resource path (see --resource-path) and finally in the csl subdirectory of the pandoc user data directory."
+        }
+      ],
+      "valueTypeId": "file",
+      "valuePlaceholder": "FILE",
+      "repeatable": false
+    },
+    {
+      "id": 98,
+      "sectionId": "citation-rendering",
+      "order": 97,
+      "signature": "--natbib",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use natbib for citations in LaTeX output. This option is not for use with the --citeproc option or with PDF output. It is intended for use in producing a LaTeX file that can be processed with bibtex."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 99,
+      "sectionId": "citation-rendering",
+      "order": 98,
+      "signature": "--biblatex",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use biblatex for citations in LaTeX output. This option is not for use with the --citeproc option or with PDF output. It is intended for use in producing a LaTeX file that can be processed with bibtex or biber."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 100,
+      "sectionId": "math-rendering-in-html",
+      "order": 99,
+      "signature": "--mathjax[=URL]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use MathJax to display embedded TeX math in HTML output. TeX math will be put between \\(...\\) (for inline math) or \\[...\\] (for display math) and wrapped in <span> tags with class math. Then the MathJax JavaScript will render it. The URL should point to the MathJax.js load script. If a URL is not provided, a link to the Cloudflare CDN will be inserted."
+        }
+      ],
+      "valueTypeId": "path",
+      "valuePlaceholder": "[=URL]",
+      "repeatable": false
+    },
+    {
+      "id": 101,
+      "sectionId": "math-rendering-in-html",
+      "order": 100,
+      "signature": "--mathml",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Convert TeX math to MathML (in epub3, docbook4, docbook5, jats, html4 and html5). This is the default in odt output. MathML is supported natively by the main web browsers and select e-book readers."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 102,
+      "sectionId": "math-rendering-in-html",
+      "order": 101,
+      "signature": "--webtex[=URL]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Convert TeX formulas to <img> tags that link to an external script that converts formulas to images. The formula will be URL-encoded and concatenated with the URL provided. For SVG images you can for example use --webtex https://latex.codecogs.com/svg.latex?. If no URL is specified, the CodeCogs URL generating PNGs will be used (https://latex.codecogs.com/png.latex?). Note: the --webtex option will affect Markdown output as well as HTML, which is useful if you’re targeting a version of Markdown without native math support."
+        }
+      ],
+      "valueTypeId": "path",
+      "valuePlaceholder": "[=URL]",
+      "repeatable": false
+    },
+    {
+      "id": 103,
+      "sectionId": "math-rendering-in-html",
+      "order": 102,
+      "signature": "--katex[=URL]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Use KaTeX to display embedded TeX math in HTML output. The URL is the base URL for the KaTeX library. That directory should contain a katex.min.js and a katex.min.css file. If a URL is not provided, a link to the KaTeX CDN will be inserted."
+        }
+      ],
+      "valueTypeId": "path",
+      "valuePlaceholder": "[=URL]",
+      "repeatable": false
+    },
+    {
+      "id": 104,
+      "sectionId": "math-rendering-in-html",
+      "order": 103,
+      "signature": "--gladtex",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Enclose TeX math in <eq> tags in HTML output. The resulting HTML can then be processed by GladTeX to produce SVG images of the typeset formulas and an HTML file with these images embedded."
+        },
+        {
+          "type": "paragraph",
+          "text": "pandoc -s --gladtex input.md -o myfile.htex gladtex -d image_dir myfile.htex # produces myfile.html and images in image_dir"
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 105,
+      "sectionId": "options-for-wrapper-scripts",
+      "order": 104,
+      "signature": "--dump-args[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Print information about command-line arguments to stdout, then exit. This option is intended primarily for use in wrapper scripts. The first line of output contains the name of the output file specified with the -o option, or - (for stdout) if no output file was specified. The remaining lines contain the command-line arguments, one per line, in the order they appear. These do not include regular pandoc options and their arguments, but do include any options appearing after a -- separator at the end of the line."
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    },
+    {
+      "id": 106,
+      "sectionId": "options-for-wrapper-scripts",
+      "order": 105,
+      "signature": "--ignore-args[=true|false]",
+      "descriptionBlocks": [
+        {
+          "type": "paragraph",
+          "text": "Ignore command-line arguments (for use in wrapper scripts). Regular pandoc options are not ignored. Thus, for example,"
+        },
+        {
+          "type": "paragraph",
+          "text": "pandoc --ignore-args -o foo.html -s foo.txt -- -e latin1"
+        },
+        {
+          "type": "paragraph",
+          "text": "is equivalent to"
+        },
+        {
+          "type": "paragraph",
+          "text": "pandoc -o foo.html -s"
+        }
+      ],
+      "valueTypeId": "none",
+      "repeatable": false
+    }
+  ],
+  "optionNames": [
+    {
+      "name": "-f",
+      "groupId": 1,
+      "order": 0,
+      "valueSyntax": "FORMAT"
+    },
+    {
+      "name": "-r",
+      "groupId": 1,
+      "order": 1,
+      "valueSyntax": "FORMAT"
+    },
+    {
+      "name": "--from",
+      "groupId": 1,
+      "order": 2,
+      "valueSyntax": "=FORMAT"
+    },
+    {
+      "name": "--read",
+      "groupId": 1,
+      "order": 3,
+      "valueSyntax": "=FORMAT"
+    },
+    {
+      "name": "-t",
+      "groupId": 2,
+      "order": 0,
+      "valueSyntax": "FORMAT"
+    },
+    {
+      "name": "-w",
+      "groupId": 2,
+      "order": 1,
+      "valueSyntax": "FORMAT"
+    },
+    {
+      "name": "--to",
+      "groupId": 2,
+      "order": 2,
+      "valueSyntax": "=FORMAT"
+    },
+    {
+      "name": "--write",
+      "groupId": 2,
+      "order": 3,
+      "valueSyntax": "=FORMAT"
+    },
+    {
+      "name": "-o",
+      "groupId": 3,
+      "order": 0,
+      "valueSyntax": "FILE"
+    },
+    {
+      "name": "--output",
+      "groupId": 3,
+      "order": 1,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--data-dir",
+      "groupId": 4,
+      "order": 0,
+      "valueSyntax": "=DIRECTORY"
+    },
+    {
+      "name": "-d",
+      "groupId": 5,
+      "order": 0,
+      "valueSyntax": "FILE"
+    },
+    {
+      "name": "--defaults",
+      "groupId": 5,
+      "order": 1,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--bash-completion",
+      "groupId": 6,
+      "order": 0
+    },
+    {
+      "name": "--verbose",
+      "groupId": 7,
+      "order": 0
+    },
+    {
+      "name": "--quiet",
+      "groupId": 8,
+      "order": 0
+    },
+    {
+      "name": "--fail-if-warnings",
+      "groupId": 9,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--log",
+      "groupId": 10,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--list-input-formats",
+      "groupId": 11,
+      "order": 0
+    },
+    {
+      "name": "--list-output-formats",
+      "groupId": 12,
+      "order": 0
+    },
+    {
+      "name": "--list-extensions",
+      "groupId": 13,
+      "order": 0,
+      "valueSyntax": "[=FORMAT]"
+    },
+    {
+      "name": "--list-highlight-languages",
+      "groupId": 14,
+      "order": 0
+    },
+    {
+      "name": "--list-highlight-styles",
+      "groupId": 15,
+      "order": 0
+    },
+    {
+      "name": "-v",
+      "groupId": 16,
+      "order": 0
+    },
+    {
+      "name": "--version",
+      "groupId": 16,
+      "order": 1
+    },
+    {
+      "name": "-h",
+      "groupId": 17,
+      "order": 0
+    },
+    {
+      "name": "--help",
+      "groupId": 17,
+      "order": 1
+    },
+    {
+      "name": "--shift-heading-level-by",
+      "groupId": 18,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--base-header-level",
+      "groupId": 19,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--indented-code-classes",
+      "groupId": 20,
+      "order": 0,
+      "valueSyntax": "=CLASSES"
+    },
+    {
+      "name": "--default-image-extension",
+      "groupId": 21,
+      "order": 0,
+      "valueSyntax": "=EXTENSION"
+    },
+    {
+      "name": "--file-scope",
+      "groupId": 22,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "-F",
+      "groupId": 23,
+      "order": 0,
+      "valueSyntax": "PROGRAM"
+    },
+    {
+      "name": "--filter",
+      "groupId": 23,
+      "order": 1,
+      "valueSyntax": "=PROGRAM"
+    },
+    {
+      "name": "-L",
+      "groupId": 24,
+      "order": 0,
+      "valueSyntax": "SCRIPT"
+    },
+    {
+      "name": "--lua-filter",
+      "groupId": 24,
+      "order": 1,
+      "valueSyntax": "=SCRIPT"
+    },
+    {
+      "name": "-M",
+      "groupId": 25,
+      "order": 0,
+      "valueSyntax": "KEY[=VAL]"
+    },
+    {
+      "name": "--metadata",
+      "groupId": 25,
+      "order": 1,
+      "valueSyntax": "=KEY[:VAL]"
+    },
+    {
+      "name": "--metadata-file",
+      "groupId": 26,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "-p",
+      "groupId": 27,
+      "order": 0
+    },
+    {
+      "name": "--preserve-tabs",
+      "groupId": 27,
+      "order": 1,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--tab-stop",
+      "groupId": 28,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--track-changes",
+      "groupId": 29,
+      "order": 0,
+      "valueSyntax": "=accept|reject|all"
+    },
+    {
+      "name": "--extract-media",
+      "groupId": 30,
+      "order": 0,
+      "valueSyntax": "=DIR|FILE.zip"
+    },
+    {
+      "name": "--abbreviations",
+      "groupId": 31,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--trace",
+      "groupId": 32,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "-s",
+      "groupId": 33,
+      "order": 0
+    },
+    {
+      "name": "--standalone",
+      "groupId": 33,
+      "order": 1
+    },
+    {
+      "name": "--template",
+      "groupId": 34,
+      "order": 0,
+      "valueSyntax": "=FILE|URL"
+    },
+    {
+      "name": "-V",
+      "groupId": 35,
+      "order": 0,
+      "valueSyntax": "KEY[=VAL]"
+    },
+    {
+      "name": "--variable",
+      "groupId": 35,
+      "order": 1,
+      "valueSyntax": "=KEY[=VAL]"
+    },
+    {
+      "name": "--variable-json",
+      "groupId": 36,
+      "order": 0,
+      "valueSyntax": "=KEY[=:JSON]"
+    },
+    {
+      "name": "--sandbox",
+      "groupId": 37,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "-D",
+      "groupId": 38,
+      "order": 0,
+      "valueSyntax": "FORMAT"
+    },
+    {
+      "name": "--print-default-template",
+      "groupId": 38,
+      "order": 1,
+      "valueSyntax": "=FORMAT"
+    },
+    {
+      "name": "--print-default-data-file",
+      "groupId": 39,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--eol",
+      "groupId": 40,
+      "order": 0,
+      "valueSyntax": "=crlf|lf|native"
+    },
+    {
+      "name": "--dpi",
+      "groupId": 41,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--wrap",
+      "groupId": 42,
+      "order": 0,
+      "valueSyntax": "=auto|none|preserve"
+    },
+    {
+      "name": "--columns",
+      "groupId": 43,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--toc",
+      "groupId": 44,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--table-of-contents",
+      "groupId": 44,
+      "order": 1,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--toc-depth",
+      "groupId": 45,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--lof",
+      "groupId": 46,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--list-of-figures",
+      "groupId": 46,
+      "order": 1,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--lot",
+      "groupId": 47,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--list-of-tables",
+      "groupId": 47,
+      "order": 1,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--strip-comments",
+      "groupId": 48,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--syntax-highlighting",
+      "groupId": 49,
+      "order": 0,
+      "valueSyntax": "=default|none|idiomatic|STYLE|FILE"
+    },
+    {
+      "name": "--no-highlight",
+      "groupId": 50,
+      "order": 0
+    },
+    {
+      "name": "--highlight-style",
+      "groupId": 51,
+      "order": 0,
+      "valueSyntax": "=STYLE|FILE"
+    },
+    {
+      "name": "--print-highlight-style",
+      "groupId": 52,
+      "order": 0,
+      "valueSyntax": "=STYLE|FILE"
+    },
+    {
+      "name": "--syntax-definition",
+      "groupId": 53,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "-H",
+      "groupId": 54,
+      "order": 0,
+      "valueSyntax": "FILE"
+    },
+    {
+      "name": "--include-in-header",
+      "groupId": 54,
+      "order": 1,
+      "valueSyntax": "=FILE|URL"
+    },
+    {
+      "name": "-B",
+      "groupId": 55,
+      "order": 0,
+      "valueSyntax": "FILE"
+    },
+    {
+      "name": "--include-before-body",
+      "groupId": 55,
+      "order": 1,
+      "valueSyntax": "=FILE|URL"
+    },
+    {
+      "name": "-A",
+      "groupId": 56,
+      "order": 0,
+      "valueSyntax": "FILE"
+    },
+    {
+      "name": "--include-after-body",
+      "groupId": 56,
+      "order": 1,
+      "valueSyntax": "=FILE|URL"
+    },
+    {
+      "name": "--resource-path",
+      "groupId": 57,
+      "order": 0,
+      "valueSyntax": "=SEARCHPATH"
+    },
+    {
+      "name": "--request-header",
+      "groupId": 58,
+      "order": 0,
+      "valueSyntax": "=NAME:VAL"
+    },
+    {
+      "name": "--no-check-certificate",
+      "groupId": 59,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--self-contained",
+      "groupId": 60,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--embed-resources",
+      "groupId": 61,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--link-images",
+      "groupId": 62,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--html-q-tags",
+      "groupId": 63,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--ascii",
+      "groupId": 64,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--reference-links",
+      "groupId": 65,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--reference-location",
+      "groupId": 66,
+      "order": 0,
+      "valueSyntax": "=block|section|document"
+    },
+    {
+      "name": "--figure-caption-position",
+      "groupId": 67,
+      "order": 0,
+      "valueSyntax": "=above|below"
+    },
+    {
+      "name": "--table-caption-position",
+      "groupId": 68,
+      "order": 0,
+      "valueSyntax": "=above|below"
+    },
+    {
+      "name": "--markdown-headings",
+      "groupId": 69,
+      "order": 0,
+      "valueSyntax": "=setext|atx"
+    },
+    {
+      "name": "--list-tables",
+      "groupId": 70,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--top-level-division",
+      "groupId": 71,
+      "order": 0,
+      "valueSyntax": "=default|section|chapter|part"
+    },
+    {
+      "name": "-N",
+      "groupId": 72,
+      "order": 0
+    },
+    {
+      "name": "--number-sections",
+      "groupId": 72,
+      "order": 1,
+      "valueSyntax": "=[true|false]"
+    },
+    {
+      "name": "--number-offset",
+      "groupId": 73,
+      "order": 0,
+      "valueSyntax": "=NUMBER[,NUMBER,...]"
+    },
+    {
+      "name": "--listings",
+      "groupId": 74,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "-i",
+      "groupId": 75,
+      "order": 0
+    },
+    {
+      "name": "--incremental",
+      "groupId": 75,
+      "order": 1,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--slide-level",
+      "groupId": 76,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--section-divs",
+      "groupId": 77,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--email-obfuscation",
+      "groupId": 78,
+      "order": 0,
+      "valueSyntax": "=none|javascript|references"
+    },
+    {
+      "name": "--id-prefix",
+      "groupId": 79,
+      "order": 0,
+      "valueSyntax": "=STRING"
+    },
+    {
+      "name": "-T",
+      "groupId": 80,
+      "order": 0,
+      "valueSyntax": "STRING"
+    },
+    {
+      "name": "--title-prefix",
+      "groupId": 80,
+      "order": 1,
+      "valueSyntax": "=STRING"
+    },
+    {
+      "name": "-c",
+      "groupId": 81,
+      "order": 0,
+      "valueSyntax": "URL"
+    },
+    {
+      "name": "--css",
+      "groupId": 81,
+      "order": 1,
+      "valueSyntax": "=URL"
+    },
+    {
+      "name": "--reference-doc",
+      "groupId": 82,
+      "order": 0,
+      "valueSyntax": "=FILE|URL"
+    },
+    {
+      "name": "--split-level",
+      "groupId": 83,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--chunk-template",
+      "groupId": 84,
+      "order": 0,
+      "valueSyntax": "=PATHTEMPLATE"
+    },
+    {
+      "name": "--epub-chapter-level",
+      "groupId": 85,
+      "order": 0,
+      "valueSyntax": "=NUMBER"
+    },
+    {
+      "name": "--epub-cover-image",
+      "groupId": 86,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--epub-title-page",
+      "groupId": 87,
+      "order": 0,
+      "valueSyntax": "=true|false"
+    },
+    {
+      "name": "--epub-metadata",
+      "groupId": 88,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--epub-embed-font",
+      "groupId": 89,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--epub-subdirectory",
+      "groupId": 90,
+      "order": 0,
+      "valueSyntax": "=DIRNAME"
+    },
+    {
+      "name": "--ipynb-output",
+      "groupId": 91,
+      "order": 0,
+      "valueSyntax": "=all|none|best"
+    },
+    {
+      "name": "--pdf-engine",
+      "groupId": 92,
+      "order": 0,
+      "valueSyntax": "=PROGRAM"
+    },
+    {
+      "name": "--pdf-engine-opt",
+      "groupId": 93,
+      "order": 0,
+      "valueSyntax": "=STRING"
+    },
+    {
+      "name": "-C",
+      "groupId": 94,
+      "order": 0
+    },
+    {
+      "name": "--citeproc",
+      "groupId": 94,
+      "order": 1
+    },
+    {
+      "name": "--bibliography",
+      "groupId": 95,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--csl",
+      "groupId": 96,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--citation-abbreviations",
+      "groupId": 97,
+      "order": 0,
+      "valueSyntax": "=FILE"
+    },
+    {
+      "name": "--natbib",
+      "groupId": 98,
+      "order": 0
+    },
+    {
+      "name": "--biblatex",
+      "groupId": 99,
+      "order": 0
+    },
+    {
+      "name": "--mathjax",
+      "groupId": 100,
+      "order": 0,
+      "valueSyntax": "[=URL]"
+    },
+    {
+      "name": "--mathml",
+      "groupId": 101,
+      "order": 0
+    },
+    {
+      "name": "--webtex",
+      "groupId": 102,
+      "order": 0,
+      "valueSyntax": "[=URL]"
+    },
+    {
+      "name": "--katex",
+      "groupId": 103,
+      "order": 0,
+      "valueSyntax": "[=URL]"
+    },
+    {
+      "name": "--gladtex",
+      "groupId": 104,
+      "order": 0
+    },
+    {
+      "name": "--dump-args",
+      "groupId": 105,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    },
+    {
+      "name": "--ignore-args",
+      "groupId": 106,
+      "order": 0,
+      "valueSyntax": "[=true|false]"
+    }
+  ]
+}

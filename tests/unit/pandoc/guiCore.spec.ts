@@ -1,9 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
+import { readFileSync } from 'node:fs';
 
 import {
     buildPandocProfileArgs,
     DEFAULT_EXPORT_PROFILES
 } from '../../../src/pandoc';
+import FALLBACK_PANDOC_OPTIONS_METADATA from '../../../src/pandoc/metadata/pandoc-options.json';
 import {
     buildProfileDraftPreview,
     compileProfileDraft,
@@ -13,18 +15,22 @@ import {
     findOptionSpec,
     getFormatExtensionChoices,
     mergeOptionSpecs,
+    optionLabel,
     optionValueTypeText,
     parseExtensionListOutput,
     parsePandocExtensionDescriptions,
     parsePandocFormatValue,
     parsePandocHelp,
     parsePandocManPage,
+    parsePandocOptionsMetadata,
     quoteToken,
+    rebuildPandocOptionsText,
     searchOptionKeys,
     searchOptions,
     validateProfileDraft
 } from '../../../src/pandoc/gui-core';
 import { ExportVariables } from '../../../src/pandoc/types';
+import type { PandocOptionsMetadata } from '../../../src/pandoc/gui-core';
 import { FORMAT_EXTENSION_FIXTURE_CATALOG } from './formatExtensionFixture';
 
 const variables: ExportVariables = {
@@ -44,6 +50,8 @@ const variables: ExportVariables = {
     fromFormat: 'markdown',
     metadata: {}
 };
+
+const PANDOC_OPTIONS_FIXTURE = 'tests/unit/pandoc/fixtures/pandoc-options.man.txt';
 
 describe('pandoc GUI core', () => {
     it('parses option keys and value placeholders from pandoc help', () => {
@@ -95,7 +103,7 @@ describe('pandoc GUI core', () => {
 
         expect(options).toEqual(expect.arrayContaining([
             expect.objectContaining({
-                key: '--output',
+                key: '-o',
                 description: 'Write output to FILE instead of stdout.'
             }),
             expect.objectContaining({
@@ -110,6 +118,102 @@ describe('pandoc GUI core', () => {
         ]));
     });
 
+    it('stores equivalent man page flags as separate names sharing one group', () => {
+        const metadata = parsePandocOptionsMetadata(`
+OPTIONS
+   General options
+     -f FORMAT, -r FORMAT, --from=FORMAT, --read=FORMAT
+          Specify input format. FORMAT can be:
+
+          • markdown (Pandoc's Markdown)
+
+          • gfm  (GitHub-Flavored Markdown), or the deprecated and less accu‐
+            rate markdown_github.
+
+          Extensions can be individually enabled or disabled.
+`);
+        const names = metadata.optionNames.filter(name => ['-f', '-r', '--from', '--read'].includes(name.name));
+        const groupIds = new Set(names.map(name => name.groupId));
+        const spec = parsePandocManPage(`
+OPTIONS
+   General options
+     -f FORMAT, -r FORMAT, --from=FORMAT, --read=FORMAT
+          Specify input format. FORMAT can be:
+
+          • markdown (Pandoc's Markdown)
+
+          • gfm  (GitHub-Flavored Markdown), or the deprecated and less accu‐
+            rate markdown_github.
+
+          Extensions can be individually enabled or disabled.
+`)[0];
+
+        expect(names.map(name => name.name)).toEqual(['-f', '-r', '--from', '--read']);
+        expect(groupIds.size).toBe(1);
+        expect(spec.aliases).toEqual(['-r', '--from', '--read']);
+        expect(spec.description).toContain('markdown (Pandoc');
+        expect(spec.description).toContain('less accurate markdown_github');
+        expect(spec.description).toContain('Extensions can be individually enabled');
+    });
+
+    it('rebuilds normalized options text from parsed metadata', () => {
+        const metadata = parsePandocOptionsMetadata(`
+OPTIONS
+   General options
+     --wrap=auto|none|preserve
+          Determine how text is wrapped.
+
+          • auto wraps text.
+
+          • none preserves line breaks.
+
+   Reader options
+     --columns=NUMBER
+          Specify the column width.
+
+EXIT CODES
+`);
+
+        expect(rebuildPandocOptionsText(metadata)).toBe([
+            'OPTIONS',
+            'General options',
+            '--wrap=auto|none|preserve',
+            'Determine how text is wrapped.',
+            '• auto wraps text.',
+            '• none preserves line breaks.',
+            'Reader options',
+            '--columns=NUMBER',
+            'Specify the column width.'
+        ].join('\n'));
+    });
+
+    it('rebuilds the complete bundled Pandoc OPTIONS section from metadata', () => {
+        const metadata = FALLBACK_PANDOC_OPTIONS_METADATA as PandocOptionsMetadata;
+        const sourceText = readFileSync(PANDOC_OPTIONS_FIXTURE, 'utf8');
+        const normalizedSource = normalizePandocOptionsSource(sourceText);
+        const expectedSections = [
+            'General options',
+            'Reader options',
+            'General writer options',
+            'Options affecting specific writers',
+            'Citation rendering',
+            'Math rendering in HTML',
+            'Options for wrapper scripts'
+        ];
+        const actualSections = metadata.sections
+            .filter(section => section.id !== 'options')
+            .map(section => section.title);
+
+        expect(actualSections).toEqual(expectedSections);
+        expect(metadata.optionGroups.length).toBeGreaterThan(100);
+        expect(metadata.optionNames.length).toBeGreaterThan(metadata.optionGroups.length);
+        expect(rebuildPandocOptionsText(metadata)).toBe(normalizedSource);
+        expect(metadata.normalizedOptionsText).toBe(normalizedSource);
+        for (const section of expectedSections) {
+            expect(metadata.normalizedOptionsText).toContain(`\n${section}\n`);
+        }
+    });
+
     it('ignores man page prose that only mentions options', () => {
         const options = parsePandocManPage(`
      --from and --to options below. Pandoc can also produce PDF output.
@@ -121,12 +225,12 @@ describe('pandoc GUI core', () => {
           List of paths to search for images and other resources.
 `);
 
-        expect(options.map(option => option.key)).toEqual(['--to', '--resource-path']);
+        expect(options.map(option => option.key)).toEqual(['-t', '--resource-path']);
         expect(findOptionSpec({
             ...FALLBACK_PANDOC_CATALOG,
             options
         }, '-t')).toMatchObject({
-            key: '--to',
+            key: '-t',
             valueKind: 'format',
             mapsTo: 'to'
         });
@@ -183,6 +287,8 @@ describe('pandoc GUI core', () => {
             valueKind: 'enum',
             values: ['auto', 'none', 'preserve']
         });
+        expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')?.values)
+            .toEqual(expect.arrayContaining(['default', 'none', 'idiomatic', 'pygments']));
     });
 
     it('parses pandoc extension lists with default inclusion state', () => {
@@ -262,6 +368,10 @@ ignored
     it('searches by alias, normalized key, and description text', () => {
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'from')[0].option.key).toBe('-f');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, '--from')[0].option.key).toBe('-f');
+        expect(searchOptions(FALLBACK_PANDOC_CATALOG, '--read')[0].option.key).toBe('-f');
+        expect(optionLabel(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--read')!)).toBe('-f, -r, --from, --read FORMAT');
+        expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--from')?.description).toContain('FORMAT can be:');
+        expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--from')?.description).toContain('markdown (Pandoc');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'table of contents')[0].option.key).toBe('--toc');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'table contents')).toHaveLength(0);
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'table contents', 20, true)[0].option.key).toBe('--toc');
@@ -417,3 +527,79 @@ ignored
         }
     });
 });
+
+function normalizePandocOptionsSource(text: string): string {
+    const lines = text.split(/\r?\n/);
+    const chunks: string[] = [];
+    let currentDescriptionIndex: number | undefined;
+
+    for (const line of lines) {
+        if (line.trim() === 'EXIT CODES') break;
+        if (line.trim().length === 0) {
+            currentDescriptionIndex = undefined;
+            continue;
+        }
+        if (line.trim() === 'OPTIONS') {
+            chunks.push('OPTIONS');
+            currentDescriptionIndex = undefined;
+            continue;
+        }
+        if (isFixtureSectionHeading(line) || isFixtureOptionSignature(line)) {
+            chunks.push(line.trim());
+            currentDescriptionIndex = undefined;
+            continue;
+        }
+
+        const normalized = normalizeFixtureLine(line);
+        const bullet = normalized.match(/^•\s*(.*)$/);
+        if (bullet) {
+            chunks.push(`• ${bullet[1]}`);
+            currentDescriptionIndex = chunks.length - 1;
+            continue;
+        }
+        if (currentDescriptionIndex === undefined) {
+            chunks.push(normalized);
+            currentDescriptionIndex = chunks.length - 1;
+        } else {
+            chunks[currentDescriptionIndex] = normalizeFixtureLine(
+                `${chunks[currentDescriptionIndex]} ${normalized}`
+            );
+        }
+    }
+
+    return chunks.join('\n');
+}
+
+function isFixtureSectionHeading(line: string): boolean {
+    return /^\s{3}\S/.test(line) && !isFixtureOptionSignature(line);
+}
+
+function isFixtureOptionSignature(line: string): boolean {
+    if (!/^\s{5,}-/.test(line)) return false;
+    return splitFixtureSignature(line.trim())
+        .every(part => /^-{1,2}[A-Za-z0-9][A-Za-z0-9-]*(?:\s+\S+|=\S+|\[[^\]]+\])?$/.test(part));
+}
+
+function splitFixtureSignature(signature: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let start = 0;
+    for (let index = 0; index < signature.length; index += 1) {
+        const char = signature[index];
+        if (char === '[') depth += 1;
+        if (char === ']') depth = Math.max(0, depth - 1);
+        if (char === ',' && depth === 0) {
+            parts.push(signature.slice(start, index).trim());
+            start = index + 1;
+        }
+    }
+    parts.push(signature.slice(start).trim());
+    return parts.filter(Boolean);
+}
+
+function normalizeFixtureLine(line: string): string {
+    return line
+        .trim()
+        .replace(/[\u00ad\u2010]\s+/g, '')
+        .replace(/\s+/g, ' ');
+}

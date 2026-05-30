@@ -43,6 +43,11 @@ export {
     optionValueTypeText
 } from './optionValueTypes';
 export {
+    metadataToOptionSpecs,
+    parsePandocOptionsMetadata,
+    rebuildPandocOptionsText
+} from './optionsMetadata';
+export {
     hasValidationErrors,
     validateProfileDraft,
     validateProfileDraftNames
@@ -57,6 +62,10 @@ export type {
     OptionField,
     OptionSpec,
     OptionValueKind,
+    PandocDescriptionBlock,
+    PandocOptionGroup,
+    PandocOptionName,
+    PandocOptionsMetadata,
     PandocOptionCatalog,
     ProfileDraft,
     ProfileOptionRow,

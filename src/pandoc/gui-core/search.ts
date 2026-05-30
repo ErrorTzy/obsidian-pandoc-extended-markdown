@@ -40,11 +40,8 @@ export function searchOptionKeys(
 
 export function optionLabel(option: OptionSpec): string {
     const tokens = [option.key, ...option.aliases];
-    const alias = tokens.find(item => item.length === 2);
-    const long = tokens.find(item => item.startsWith('--'));
     const suffix = option.valuePlaceholder ? ` ${option.valuePlaceholder}` : '';
-    if (alias && long) return `${alias}, ${long}${suffix}`;
-    return `${option.key}${suffix}`;
+    return `${tokens.join(', ')}${suffix}`;
 }
 
 function scoreOptionKeys(option: OptionSpec, query: string): number {
@@ -78,7 +75,34 @@ function scoreText(text: string, query: string, fuzzy: boolean): number {
     if (!text) return 0;
     if (text.includes(query)) return 35;
     if (!fuzzy) return 0;
+    if (containsQueryWordsNearby(text, query)) return 34;
+    if (containsQueryWords(text, query)) return 30;
     return fuzzyScore(text, query) > 0 ? 15 : 0;
+}
+
+function containsQueryWordsNearby(text: string, query: string): boolean {
+    const words = query.split(/\s+/).filter(Boolean);
+    if (words.length < 2) return false;
+    const pattern = words
+        .map(escapeRegExp)
+        .join('\\s+(?:\\w+\\s+){0,2}');
+    return new RegExp(pattern).test(text);
+}
+
+function containsQueryWords(text: string, query: string): boolean {
+    const words = query.split(/\s+/).filter(Boolean);
+    if (words.length < 2) return false;
+    let position = 0;
+    for (const word of words) {
+        const found = text.indexOf(word, position);
+        if (found < 0) return false;
+        position = found + word.length;
+    }
+    return true;
+}
+
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function fuzzyScore(text: string, query: string): number {

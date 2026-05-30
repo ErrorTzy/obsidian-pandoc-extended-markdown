@@ -12,21 +12,16 @@ import {
     parsePandocExtensionDescriptions,
     parseExtensionListOutput
 } from './formatExtensions';
+import {
+    metadataToOptionSpecs,
+    parsePandocOptionsMetadata
+} from './optionsMetadata';
 import type {
     FormatExtensionSpec,
     OptionSpec,
     OptionValueKind,
     PandocOptionCatalog
 } from './types';
-
-const OPTION_NAME_PATTERN = '-{1,2}[A-Za-z0-9][A-Za-z0-9-]*';
-const OPTION_VALUE_PATTERN = '[A-Za-z][A-Za-z0-9_:|.[\\]<>-]*';
-const OPTION_MODIFIER_PATTERN = '(?:\\[[^\\]]+\\]|=\\[[^\\]]+\\])';
-const OPTION_FORM_PATTERN =
-    `${OPTION_NAME_PATTERN}(?:[ =]${OPTION_VALUE_PATTERN})?(?:${OPTION_MODIFIER_PATTERN})?`;
-const MAN_OPTION_SIGNATURE_PATTERN = new RegExp(
-    `^${OPTION_FORM_PATTERN}(?:,\\s*${OPTION_FORM_PATTERN})*$`
-);
 
 export interface PandocCatalogServiceConfig {
     service?: PandocService;
@@ -83,10 +78,7 @@ export class PandocCatalogService {
             formatExtensions.markdown = markdownExtensions;
         }
 
-        const parsedOptions = mergeOptionSpecs(
-            parsePandocHelp(help),
-            parsePandocManPage(man)
-        );
+        const parsedOptions = parseRuntimeOptions(man, help, versionResult.version);
 
         return {
             version: versionResult.version ?? parsePandocVersion(versionResult.result.stdout),
@@ -135,19 +127,7 @@ export function parsePandocHelp(text: string): OptionSpec[] {
 }
 
 export function parsePandocManPage(text: string): OptionSpec[] {
-    const lines = text.split(/\r?\n/);
-    const specs: OptionSpec[] = [];
-
-    for (let index = 0; index < lines.length; index += 1) {
-        const parsed = parseManOptionLine(lines[index]);
-        if (!parsed) continue;
-        specs.push({
-            ...parsed,
-            description: collectDescription(lines, index + 1)
-        });
-    }
-
-    return specs;
+    return metadataToOptionSpecs(parsePandocOptionsMetadata(text));
 }
 
 export function parseListOutput(text: string): string[] {
@@ -182,16 +162,6 @@ export function findOptionSpec(
 
 function parseHelpLine(line: string): OptionSpec | undefined {
     if (!line.trimStart().startsWith('-')) return undefined;
-    const tokens = optionTokenMatches(line);
-    if (tokens.length === 0) return undefined;
-
-    return buildSpec(tokens, '', line);
-}
-
-function parseManOptionLine(line: string): OptionSpec | undefined {
-    if (!/^\s{5,}-/.test(line)) return undefined;
-    if (!MAN_OPTION_SIGNATURE_PATTERN.test(line.trim())) return undefined;
-
     const tokens = optionTokenMatches(line);
     if (tokens.length === 0) return undefined;
 
@@ -302,19 +272,6 @@ function inferRepeatable(key: string): boolean {
     ].includes(key);
 }
 
-function collectDescription(lines: string[], startIndex: number): string {
-    const chunks: string[] = [];
-
-    for (let index = startIndex; index < lines.length; index += 1) {
-        const line = lines[index];
-        if (/^\s{5,}-/.test(line)) break;
-        if (line.trim().length === 0 && chunks.length > 0) break;
-        if (line.trim().length > 0) chunks.push(line.trim());
-    }
-
-    return chunks.join(' ').replace(/\s+/g, ' ');
-}
-
 function enrichOptions(
     options: OptionSpec[],
     inputFormatsText: string,
@@ -401,4 +358,15 @@ function applyFormatExtensionDescriptions(
             format,
             applyExtensionDescriptions(extensions, descriptions)
         ]));
+}
+
+function parseRuntimeOptions(
+    man: string,
+    help: string,
+    version?: string
+): OptionSpec[] {
+    const manOptions = man.trim()
+        ? metadataToOptionSpecs(parsePandocOptionsMetadata(man, version))
+        : [];
+    return manOptions.length > 0 ? manOptions : parsePandocHelp(help);
 }

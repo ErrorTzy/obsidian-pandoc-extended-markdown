@@ -29,11 +29,70 @@ export interface OptionSpec {
     aliases: string[];
     name: string;
     description: string;
+    descriptionBlocks?: PandocDescriptionBlock[];
+    groupId?: number;
+    signature?: string;
+    sectionId?: string;
     valueKind: OptionValueKind;
     valuePlaceholder?: string;
     values?: string[];
     repeatable?: boolean;
     mapsTo?: OptionField;
+}
+
+export type PandocDescriptionBlockType = 'paragraph' | 'bullet';
+
+export interface PandocDescriptionBlock {
+    type: PandocDescriptionBlockType;
+    text: string;
+}
+
+export interface PandocValueType {
+    id: OptionValueKind;
+    name: string;
+}
+
+export interface PandocOptionsMetadata {
+    schemaVersion: 1;
+    pandocVersion?: string;
+    sourceCommand: string;
+    normalizedOptionsText: string;
+    valueTypes: PandocValueType[];
+    sections: PandocOptionSection[];
+    optionGroups: PandocOptionGroup[];
+    optionNames: PandocOptionName[];
+}
+
+export interface PandocOptionSection {
+    id: string;
+    title: string;
+    order: number;
+    descriptionBlocks?: PandocDescriptionBlock[];
+}
+
+export interface PandocOptionGroup {
+    id: number;
+    sectionId: string;
+    order: number;
+    signature: string;
+    descriptionBlocks: PandocDescriptionBlock[];
+    valueTypeId: OptionValueKind;
+    valuePlaceholder?: string;
+    valueTokens?: PandocValueToken[];
+    repeatable: boolean;
+    mapsTo?: OptionField;
+}
+
+export interface PandocOptionName {
+    name: string;
+    groupId: number;
+    order: number;
+    valueSyntax?: string;
+}
+
+export interface PandocValueToken {
+    value: string;
+    kind: 'literal' | 'placeholder';
 }
 
 export interface PandocOptionCatalog {
