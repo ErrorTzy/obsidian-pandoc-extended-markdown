@@ -466,7 +466,7 @@
     border-bottom: 1px solid var(--background-modifier-border);
     display: grid;
     gap: 8px;
-    grid-template-columns: 18px minmax(0, 1fr);
+    grid-template-columns: 18px minmax(0, 1fr) 28px;
     min-height: 30px;
     padding: 4px 8px;
 }
@@ -489,6 +489,48 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.pem-pandoc-extension-help {
+    align-items: center;
+    border-radius: 50%;
+    display: inline-flex;
+    font-weight: 600;
+    height: 22px;
+    justify-content: center;
+    min-width: 22px;
+    padding: 0;
+    width: 22px;
+}
+
+.pem-pandoc-extension-detail {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+}
+
+.pem-pandoc-extension-detail-header {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.pem-pandoc-extension-detail-header code {
+    font-family: var(--font-monospace);
+    overflow-wrap: anywhere;
+}
+
+.pem-pandoc-extension-detail-state {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.pem-pandoc-extension-detail p {
+    color: var(--text-normal);
+    margin: 0;
 }
 
 .pem-pandoc-format-extension.is-included,

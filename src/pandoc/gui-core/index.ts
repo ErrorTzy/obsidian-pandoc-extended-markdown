@@ -11,9 +11,11 @@ export {
     FALLBACK_PANDOC_CATALOG
 } from './fallbackCatalog';
 export {
+    applyExtensionDescriptions,
     buildPandocFormatValue,
     getFormatExtensionChoices,
     parseExtensionListOutput,
+    parsePandocExtensionDescriptions,
     parsePandocFormatValue,
     selectedCompatibleExtensions,
     stripFormatExtensions

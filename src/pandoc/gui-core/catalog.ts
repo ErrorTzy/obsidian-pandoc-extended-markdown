@@ -6,7 +6,10 @@ import {
     FALLBACK_OPTIONS,
     FALLBACK_PANDOC_CATALOG
 } from './fallbackCatalog';
+import { FALLBACK_EXTENSION_DESCRIPTIONS } from './fallbackExtensionDescriptions';
 import {
+    applyExtensionDescriptions,
+    parsePandocExtensionDescriptions,
     parseExtensionListOutput
 } from './formatExtensions';
 import type {
@@ -70,11 +73,12 @@ export class PandocCatalogService {
         ]);
         const inputFormatList = parseListOutput(inputFormats);
         const outputFormatList = parseListOutput(outputFormats);
-        const markdownExtensions = parseExtensionListOutput(markdownExtensionsText);
-        const formatExtensions = await this.loadFormatExtensions(
+        const extensionDescriptions = runtimeExtensionDescriptions(man);
+        const markdownExtensions = parseExtensionListOutput(markdownExtensionsText, extensionDescriptions);
+        const formatExtensions = applyFormatExtensionDescriptions(await this.loadFormatExtensions(
             Array.from(new Set([...inputFormatList, ...outputFormatList])),
             options
-        );
+        ), extensionDescriptions);
         if (markdownExtensions.length > 0) {
             formatExtensions.markdown = markdownExtensions;
         }
@@ -91,6 +95,7 @@ export class PandocCatalogService {
             inputFormats: inputFormatList,
             outputFormats: outputFormatList,
             markdownExtensions: markdownExtensions.map(extension => extension.name),
+            extensionDescriptions,
             formatExtensions,
             highlightStyles: parseListOutput(styles)
         };
@@ -368,8 +373,32 @@ function cloneCatalog(catalog: PandocOptionCatalog): PandocOptionCatalog {
         inputFormats: [...catalog.inputFormats],
         outputFormats: [...catalog.outputFormats],
         markdownExtensions: [...catalog.markdownExtensions],
+        extensionDescriptions: { ...catalog.extensionDescriptions },
         formatExtensions: Object.fromEntries(Object.entries(catalog.formatExtensions)
             .map(([format, extensions]) => [format, extensions.map(extension => ({ ...extension }))])),
         highlightStyles: [...catalog.highlightStyles]
     };
+}
+
+function runtimeExtensionDescriptions(manPage: string): Record<string, string> {
+    const runtime = parsePandocExtensionDescriptions(manPage);
+    const descriptions = {
+        ...FALLBACK_EXTENSION_DESCRIPTIONS,
+        ...runtime
+    };
+    if (descriptions.wikilinks_title_after_pipe && !descriptions.wikilinks_title_before_pipe) {
+        descriptions.wikilinks_title_before_pipe = descriptions.wikilinks_title_after_pipe;
+    }
+    return descriptions;
+}
+
+function applyFormatExtensionDescriptions(
+    catalog: Record<string, FormatExtensionSpec[]>,
+    descriptions: Record<string, string>
+): Record<string, FormatExtensionSpec[]> {
+    return Object.fromEntries(Object.entries(catalog)
+        .map(([format, extensions]) => [
+            format,
+            applyExtensionDescriptions(extensions, descriptions)
+        ]));
 }

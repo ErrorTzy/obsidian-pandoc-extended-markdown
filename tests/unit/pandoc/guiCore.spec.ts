@@ -14,6 +14,7 @@ import {
     getFormatExtensionChoices,
     mergeOptionSpecs,
     parseExtensionListOutput,
+    parsePandocExtensionDescriptions,
     parsePandocFormatValue,
     parsePandocHelp,
     parsePandocManPage,
@@ -188,10 +189,39 @@ describe('pandoc GUI core', () => {
 +footnotes
 -wikilinks_title_after_pipe
 ignored
-`)).toEqual([
-            { name: 'footnotes', defaultEnabled: true },
-            { name: 'wikilinks_title_after_pipe', defaultEnabled: false }
+`, {
+            footnotes: 'Allows footnotes.',
+            wikilinks_title_after_pipe: 'Supports URL-first wikilinks.'
+        })).toEqual([
+            { name: 'footnotes', defaultEnabled: true, description: 'Allows footnotes.' },
+            {
+                name: 'wikilinks_title_after_pipe',
+                defaultEnabled: false,
+                description: 'Supports URL-first wikilinks.'
+            }
         ]);
+    });
+
+    it('extracts extension descriptions from pandoc man page blocks', () => {
+        const descriptions = parsePandocExtensionDescriptions(`
+   Extension: smart
+     Interpret straight quotes as curly quotes.
+
+     This extension can be enabled/disabled for the following formats:
+
+   Extension: superscript, subscript
+     Allows super/subscript markup.
+
+   Extension: citations (org)
+     Enables org citation syntax.
+`);
+
+        expect(descriptions).toMatchObject({
+            smart: 'Interpret straight quotes as curly quotes.',
+            superscript: 'Allows super/subscript markup.',
+            subscript: 'Allows super/subscript markup.',
+            citations: 'Enables org citation syntax.'
+        });
     });
 
     it('classifies format extensions as included, compatible, or incompatible', () => {
@@ -216,7 +246,8 @@ ignored
                 name: 'wikilinks_title_after_pipe',
                 state: 'enabled',
                 checked: true,
-                editable: true
+                editable: true,
+                description: 'Supports URL-first wikilinks.'
             }),
             expect.objectContaining({
                 name: 'not_real',

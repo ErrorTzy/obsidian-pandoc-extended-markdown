@@ -2,7 +2,9 @@
  * @jest-environment jsdom
  */
 import { describe, expect, it, jest } from '@jest/globals';
+import { App } from 'obsidian';
 
+import { PandocFormatEditorModal } from '../../../src/pandoc/PandocFormatEditor';
 import { renderPandocRows } from '../../../src/pandoc/PandocCommandRows';
 import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/gui-core';
 import type { ProfileDraft } from '../../../src/pandoc/gui-core';
@@ -130,6 +132,31 @@ describe('Pandoc command rows', () => {
             expect.objectContaining({ valueKind: 'format' }),
             draft
         );
+    });
+
+    it('opens an extension description panel from help buttons', () => {
+        const draft = createDraft();
+        const row = draft.optionRows.find(item => item.key === '-f')!;
+        const modal = new PandocFormatEditorModal(new App(), {
+            draft,
+            row,
+            spec: { key: '-f', aliases: [], name: 'from', description: '', valueKind: 'format', mapsTo: 'from' },
+            catalog: FORMAT_EXTENSION_FIXTURE_CATALOG,
+            getVariables: () => variables,
+            onApply: () => undefined
+        });
+
+        modal.open();
+        expect(modal.contentEl.querySelector('.pem-pandoc-extension-detail')).toBeNull();
+
+        const button = modal.contentEl.querySelector(
+            'button[aria-label="Show wikilinks_title_after_pipe extension description"]'
+        ) as HTMLButtonElement;
+        button.click();
+
+        const detail = modal.contentEl.querySelector('.pem-pandoc-extension-detail');
+        expect(detail?.textContent).toContain('wikilinks_title_after_pipe');
+        expect(detail?.textContent).toContain('Supports URL-first wikilinks.');
     });
 });
 

@@ -20,14 +20,44 @@ export interface FormatExtensionChoice {
     state: FormatExtensionState;
     checked: boolean;
     editable: boolean;
+    description?: string;
 }
 
-export function parseExtensionListOutput(text: string): FormatExtensionSpec[] {
+export function parseExtensionListOutput(
+    text: string,
+    descriptions: Record<string, string> = {}
+): FormatExtensionSpec[] {
     return text
         .split(/\r?\n/)
         .map(line => line.trim())
-        .map(parseExtensionLine)
+        .map(line => parseExtensionLine(line, descriptions))
         .filter((extension): extension is FormatExtensionSpec => extension !== undefined);
+}
+
+export function parsePandocExtensionDescriptions(text: string): Record<string, string> {
+    const lines = text.split(/\r?\n/);
+    const descriptions: Record<string, string> = {};
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const names = parseExtensionHeading(lines[index]);
+        if (!names) continue;
+        const description = collectExtensionDescription(lines, index + 1);
+        for (const name of names) {
+            descriptions[name] = description;
+        }
+    }
+
+    return descriptions;
+}
+
+export function applyExtensionDescriptions(
+    extensions: FormatExtensionSpec[],
+    descriptions: Record<string, string>
+): FormatExtensionSpec[] {
+    return extensions.map(extension => ({
+        ...extension,
+        description: descriptions[extension.name] ?? extension.description
+    }));
 }
 
 export function parsePandocFormatValue(value: string): ParsedPandocFormat {
@@ -67,7 +97,8 @@ export function getFormatExtensionChoices(
             name: spec.name,
             state: extensionState(spec, operator),
             checked: enabled,
-            editable
+            editable,
+            description: spec.description ?? catalog.extensionDescriptions[spec.name]
         };
     });
 
@@ -77,7 +108,8 @@ export function getFormatExtensionChoices(
             name: modifier.name,
             state: 'incompatible',
             checked: modifier.operator === '+',
-            editable: false
+            editable: false,
+            description: catalog.extensionDescriptions[modifier.name]
         });
     }
 
@@ -97,14 +129,94 @@ export function stripFormatExtensions(format: string): string {
     return parsePandocFormatValue(format).baseFormat;
 }
 
-function parseExtensionLine(line: string): FormatExtensionSpec | undefined {
+function parseExtensionLine(
+    line: string,
+    descriptions: Record<string, string>
+): FormatExtensionSpec | undefined {
     const match = line.match(/^([+-])(.+)$/);
     if (!match) return undefined;
 
+    const name = match[2];
     return {
-        name: match[2],
-        defaultEnabled: match[1] === '+'
+        name,
+        defaultEnabled: match[1] === '+',
+        description: descriptions[name]
     };
+}
+
+function parseExtensionHeading(line: string): string[] | undefined {
+    const match = line.trim().match(/^Extension:\s+(.+?)(?:\s+±)?$/);
+    if (!match) return undefined;
+
+    return match[1]
+        .split(',')
+        .map(name => name.trim().replace(/\s+\([^)]*\)$/, ''))
+        .filter(name => name.length > 0);
+}
+
+function collectExtensionDescription(lines: string[], startIndex: number): string {
+    const chunks: string[] = [];
+    let pendingContinuation = false;
+    let inContinuation = false;
+    let remainingContinuations = 0;
+
+    for (let index = startIndex; index < lines.length; index += 1) {
+        const line = lines[index];
+        if (parseExtensionHeading(line)) break;
+        if (isPandocManSectionHeading(line, chunks.length > 0)) break;
+        if (isExtensionDescriptionStopLine(line.trim())) break;
+        if (line.trim().length === 0) {
+            if (chunks.length === 0) continue;
+            if (shouldStopExtensionDescription(chunks, inContinuation, remainingContinuations)) break;
+            if (inContinuation) {
+                inContinuation = false;
+                remainingContinuations -= 1;
+            } else if (remainingContinuations === 0) {
+                remainingContinuations = continuationBlockCount(chunks.join(' '));
+            }
+            pendingContinuation = remainingContinuations > 0;
+            continue;
+        }
+        if (pendingContinuation) {
+            inContinuation = true;
+            pendingContinuation = false;
+        }
+        if (line.trim().length > 0) chunks.push(line.trim());
+    }
+
+    return normalizeExtensionDescription(chunks.join(' '));
+}
+
+function shouldStopExtensionDescription(
+    chunks: string[],
+    inContinuation: boolean,
+    remainingContinuations: number
+): boolean {
+    if (chunks.length === 0) return false;
+    return (inContinuation && remainingContinuations <= 1) ||
+        (!inContinuation && remainingContinuations === 0 && continuationBlockCount(chunks.join(' ')) === 0);
+}
+
+function continuationBlockCount(description: string): number {
+    const trimmed = description.trim();
+    if (!trimmed) return 0;
+    if (/^If the file begins with a title block$/.test(trimmed)) return 2;
+    if (!/[.!?)]$/.test(trimmed)) return 1;
+    if (/(?:like|as follows|for example,?|syntax:|example:|this:)$/i.test(trimmed)) return 1;
+    return 0;
+}
+
+function isPandocManSectionHeading(line: string, hasDescription: boolean): boolean {
+    return hasDescription && /^\s{3}\S/.test(line) && !/^\s{5,}/.test(line);
+}
+
+function isExtensionDescriptionStopLine(line: string): boolean {
+    return line === 'This extension can be enabled/disabled for the following formats:' ||
+        /^(input formats|output formats|enabled by default in)$/i.test(line);
+}
+
+function normalizeExtensionDescription(description: string): string {
+    return description.replace(/\s+/g, ' ').trim();
 }
 
 function parseFormatModifiers(text: string): FormatExtensionModifier[] {

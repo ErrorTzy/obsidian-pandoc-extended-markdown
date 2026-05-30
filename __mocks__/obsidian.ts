@@ -28,6 +28,7 @@ type ExtendedElement = HTMLElement & {
   createSpan: (opts?: CreateElOptions) => ExtendedElement;
   addClass: (cls: string) => void;
   removeClass: (cls: string) => void;
+  setText: (text: string) => void;
 };
 
 type ToggleChangeHandler = (value: boolean) => void | Promise<void>;
@@ -94,6 +95,9 @@ function enhanceElement(element: HTMLElement): ExtendedElement {
   };
   extended.removeClass = function removeClass(cls: string) {
     this.classList.remove(cls);
+  };
+  extended.setText = function setText(text: string) {
+    this.textContent = text;
   };
   return extended;
 }
@@ -170,6 +174,7 @@ export class WorkspaceLeaf {
 
 export class Modal {
   app: App;
+  modalEl: ExtendedElement;
   titleEl: ExtendedElement;
   contentEl: ExtendedElement;
   containerEl: ExtendedElement;
@@ -177,6 +182,7 @@ export class Modal {
   constructor(app: App) {
     this.app = app;
     this.containerEl = enhanceElement(document.createElement('div'));
+    this.modalEl = this.containerEl;
     this.titleEl = this.containerEl.createDiv({ cls: 'modal-title' });
     this.contentEl = this.containerEl.createDiv({ cls: 'modal-content' });
   }

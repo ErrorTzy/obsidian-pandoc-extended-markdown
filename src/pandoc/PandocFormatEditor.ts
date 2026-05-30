@@ -37,6 +37,7 @@ export class PandocFormatEditorModal extends Modal {
     private selectedExtensions: Set<string>;
     private lockedModifiers: LockedModifier[];
     private previewEl?: HTMLElement;
+    private activeExtensionName?: string;
 
     constructor(app: App, config: PandocFormatEditorModalConfig) {
         super(app);
@@ -128,6 +129,7 @@ export class PandocFormatEditorModal extends Modal {
             choice.state === 'compatible' || choice.state === 'enabled'));
         this.renderExtensionSection(list, 'Included', choices.filter(choice => choice.state === 'included'));
         this.renderExtensionSection(list, 'Incompatible', choices.filter(choice => choice.state === 'incompatible'));
+        this.renderExtensionDetail(column, choices);
     }
 
     private renderExtensionSection(
@@ -140,17 +142,61 @@ export class PandocFormatEditorModal extends Modal {
         const section = container.createDiv({ cls: 'pem-pandoc-format-extension-section' });
         section.createEl('div', { cls: 'pem-pandoc-format-extension-heading', text: title });
         for (const choice of choices) {
-            const label = section.createEl('label', {
+            const row = section.createDiv({
                 cls: `pem-pandoc-format-extension is-${choice.state}`
             });
-            const checkbox = label.createEl('input', { type: 'checkbox' });
+            const checkbox = row.createEl('input', { type: 'checkbox' });
             checkbox.checked = choice.checked;
             checkbox.disabled = !choice.editable;
             checkbox.onchange = () => {
                 this.updateSelectedExtension(choice.name, checkbox.checked);
             };
-            label.createEl('span', { cls: 'pem-pandoc-format-extension-name', text: choice.name });
+            row.onclick = event => {
+                if (!choice.editable || event.target === checkbox) return;
+                checkbox.checked = !checkbox.checked;
+                this.updateSelectedExtension(choice.name, checkbox.checked);
+            };
+            row.createEl('span', { cls: 'pem-pandoc-format-extension-name', text: choice.name });
+            this.renderExtensionHelpButton(row, choice);
         }
+    }
+
+    private renderExtensionHelpButton(
+        row: HTMLElement,
+        choice: ReturnType<typeof getFormatExtensionChoices>[number]
+    ): void {
+        const button = row.createEl('button', {
+            cls: 'pem-pandoc-extension-help',
+            text: '?',
+            attr: {
+                type: 'button',
+                'aria-label': `Show ${choice.name} extension description`
+            }
+        });
+        button.disabled = !choice.description;
+        button.onclick = event => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.activeExtensionName = choice.name;
+            this.render();
+        };
+    }
+
+    private renderExtensionDetail(
+        container: HTMLElement,
+        choices: ReturnType<typeof getFormatExtensionChoices>
+    ): void {
+        const choice = choices.find(item => item.name === this.activeExtensionName);
+        if (!choice?.description) return;
+
+        const panel = container.createDiv({ cls: 'pem-pandoc-extension-detail' });
+        const header = panel.createDiv({ cls: 'pem-pandoc-extension-detail-header' });
+        header.createEl('code', { text: choice.name });
+        header.createEl('span', {
+            cls: `pem-pandoc-extension-detail-state is-${choice.state}`,
+            text: choice.state
+        });
+        panel.createEl('p', { text: choice.description });
     }
 
     private updateSelectedExtension(name: string, checked: boolean): void {

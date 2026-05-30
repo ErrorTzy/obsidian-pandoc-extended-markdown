@@ -1,4 +1,5 @@
 import type { OptionSpec, PandocOptionCatalog } from './types';
+import { FALLBACK_EXTENSION_DESCRIPTIONS } from './fallbackExtensionDescriptions';
 
 const INPUT_FORMATS = [
     'commonmark',
@@ -103,6 +104,7 @@ export const FALLBACK_PANDOC_CATALOG: PandocOptionCatalog = {
     inputFormats: INPUT_FORMATS,
     outputFormats: OUTPUT_FORMATS,
     markdownExtensions: MARKDOWN_EXTENSIONS,
+    extensionDescriptions: FALLBACK_EXTENSION_DESCRIPTIONS,
     formatExtensions: {},
     highlightStyles: HIGHLIGHT_STYLES
 };
