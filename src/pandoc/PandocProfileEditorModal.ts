@@ -8,6 +8,7 @@ import {
     buildOptionDisplayExportVariables,
     buildPreviewExportVariables
 } from './previewVariables';
+import { buildTemplateVariableContext } from './templateVariables';
 import {
     buildProfileDraftPreview,
     compileProfileDraft,
@@ -74,6 +75,8 @@ export class PandocProfileEditorModal extends Modal {
                 nextOptionIndex: () => this.optionIndex++,
                 getVariables: current => this.buildPreviewVariables(current),
                 getDisplayVariables: current => this.buildOptionDisplayVariables(current),
+                getTemplateVariableContext: current => this.buildPreviewTemplateVariableContext(current),
+                getDisplayTemplateVariableContext: current => this.buildOptionDisplayTemplateVariableContext(current),
                 openFormatEditor: (row, spec, current) => {
                     new PandocFormatEditorModal(this.app, {
                         draft: current,
@@ -218,7 +221,7 @@ export class PandocProfileEditorModal extends Modal {
         if (!draft) return;
         const errors = [
             ...validateProfileDraftNames(this.presets.visibleDrafts()),
-            ...validateProfileDraft(draft, this.catalog)
+            ...validateProfileDraft(draft, this.catalog, this.buildKnownTemplateVariableNames(draft))
         ]
             .filter(issue => issue.severity === 'error');
         if (errors.length > 0) {
@@ -255,7 +258,7 @@ export class PandocProfileEditorModal extends Modal {
         this.previewEl.setText(buildProfileDraftPreview(
             draft,
             this.catalog,
-            this.buildPreviewVariables(draft)
+            this.buildPreviewTemplateVariableContext(draft).variables
         ).display);
         this.refreshPresetActionStates();
     }
@@ -273,7 +276,7 @@ export class PandocProfileEditorModal extends Modal {
         if (!this.catalog) return [];
         return [
             ...validateProfileDraftNames(this.presets.visibleDrafts()),
-            ...validateProfileDraft(draft, this.catalog)
+            ...validateProfileDraft(draft, this.catalog, this.buildKnownTemplateVariableNames(draft))
         ];
     }
 
@@ -281,7 +284,8 @@ export class PandocProfileEditorModal extends Modal {
         if (!this.catalog) return [];
         return [
             ...validateProfileDraftNames(this.presets.visibleDrafts()),
-            ...this.presets.visibleDrafts().flatMap(draft => validateProfileDraft(draft, this.catalog!))
+            ...this.presets.visibleDrafts().flatMap(draft =>
+                validateProfileDraft(draft, this.catalog!, this.buildKnownTemplateVariableNames(draft)))
         ];
     }
 
@@ -309,6 +313,23 @@ export class PandocProfileEditorModal extends Modal {
             settings: this.plugin.settings.pandocExport,
             extension: profile?.extension ?? draft.extension
         });
+    }
+
+    private buildPreviewTemplateVariableContext(draft: ProfileDraft) {
+        return buildTemplateVariableContext(this.buildPreviewVariables(draft), {
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+        });
+    }
+
+    private buildOptionDisplayTemplateVariableContext(draft: ProfileDraft) {
+        return buildTemplateVariableContext(this.buildOptionDisplayVariables(draft), {
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+        });
+    }
+
+    private buildKnownTemplateVariableNames(draft: ProfileDraft): string[] {
+        const context = this.buildPreviewTemplateVariableContext(draft);
+        return [...context.builtInNames, ...context.runtimeEnvNames];
     }
 
     private renderTextField(

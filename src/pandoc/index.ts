@@ -24,6 +24,10 @@ export {
     renderExportTemplates
 } from './template';
 export {
+    buildTemplateVariableContext,
+    getRuntimeEnv
+} from './templateVariables';
+export {
     DEFAULT_PANDOC_EXECUTABLE,
     getPandocVersionLine,
     normalizePandocExecutable,
@@ -77,3 +81,6 @@ export type {
     BuildExportVariablesRequest,
     ExportVariableFile
 } from './variables';
+export type {
+    TemplateVariableContext
+} from './templateVariables';

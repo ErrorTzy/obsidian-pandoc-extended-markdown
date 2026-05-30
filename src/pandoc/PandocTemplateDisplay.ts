@@ -1,5 +1,7 @@
 import { renderExportTemplate } from './template';
+import { buildTemplateVariableContext } from './templateVariables';
 import type { ExportVariables } from './types';
+import type { TemplateVariableContext } from './templateVariables';
 
 export interface ValueDisplayPart {
     text: string;
@@ -16,30 +18,12 @@ export interface VariableSuggestion {
     value: string;
 }
 
-const TEMPLATE_VARIABLE_NAMES = [
-    'currentPath',
-    'currentDir',
-    'currentFileName',
-    'currentFileFullName',
-    'outputPath',
-    'outputDir',
-    'outputFileName',
-    'outputFileFullName',
-    'outputExtension',
-    'vaultDir',
-    'attachmentFolderPath',
-    'embedDirs',
-    'pluginDir',
-    'luaFilterDir',
-    'fromFormat'
-];
-
 const TEMPLATE_VARIABLE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
 export function renderTemplateValueDisplay(
     template: string,
-    variables: ExportVariables,
-    displayVariables: ExportVariables
+    variables: ExportVariables & Record<string, unknown>,
+    displayVariables: ExportVariables & Record<string, unknown>
 ): ValueDisplay {
     const parts: ValueDisplayPart[] = [];
     let lastIndex = 0;
@@ -63,16 +47,18 @@ export function renderTemplateValueDisplay(
 
 export function getVariableSuggestions(
     query: string,
-    variables: ExportVariables
+    context: TemplateVariableContext | ExportVariables
 ): VariableSuggestion[] {
     const lowerQuery = query.toLowerCase();
-    return TEMPLATE_VARIABLE_NAMES
-        .filter(name => variables[name] !== undefined)
+    const normalized = normalizeSuggestionContext(context);
+    return [
+        ...normalized.builtInNames,
+        ...normalized.runtimeEnvNames
+    ]
         .filter(name => name.toLowerCase().startsWith(lowerQuery))
-        .slice(0, 8)
         .map(name => ({
             name,
-            value: renderExportTemplate(`\${${name}}`, variables)
+            value: renderExportTemplate(`\${${name}}`, normalized.variables)
         }));
 }
 
@@ -108,4 +94,14 @@ function appendDisplayPart(
     }
 
     parts.push({ text, muted });
+}
+
+function normalizeSuggestionContext(
+    context: TemplateVariableContext | ExportVariables
+): TemplateVariableContext {
+    if ('variables' in context && 'builtInNames' in context && 'runtimeEnvNames' in context) {
+        return context;
+    }
+
+    return buildTemplateVariableContext(context);
 }

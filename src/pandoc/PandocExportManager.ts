@@ -11,6 +11,7 @@ import { PandocService } from './PandocService';
 import { buildPandocProfileArgs } from './profileArgs';
 import { runShellCommand, ShellRunner } from './shellRunner';
 import { renderExportTemplate } from './template';
+import { buildTemplateVariableContext } from './templateVariables';
 import {
     ExportProfile,
     PandocExportRequest,
@@ -66,12 +67,15 @@ export class PandocExportManager {
             pluginDir: this.getPluginDir()
         });
         const env = buildPandocEnv(this.config.settings.env, variables);
+        const templateVariables = buildTemplateVariableContext(variables, {
+            includeRuntimeEnv: this.config.settings.suggestRuntimeEnvVariables
+        }).variables;
         const fileSystem = this.config.fileSystem ?? new NodePandocExportFileSystem();
         await fileSystem.ensureDir(finalOutputPath);
 
         const result = profile.type === 'pandoc' ?
-            await this.exportPandocProfile(profile, variables, env, request.extraArgs) :
-            await this.exportCustomProfile(profile, variables, env);
+            await this.exportPandocProfile(profile, templateVariables, env, request.extraArgs) :
+            await this.exportCustomProfile(profile, templateVariables, env);
 
         if (!result.ok) {
             return { ok: false, profile, outputPath: finalOutputPath, result, error: result.error || result.stderr };

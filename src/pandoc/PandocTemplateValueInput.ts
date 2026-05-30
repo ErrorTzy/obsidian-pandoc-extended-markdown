@@ -8,6 +8,7 @@ import type {
     ProfileDraft,
     ProfileOptionRow
 } from './gui-core';
+import type { ExportVariables } from './types';
 
 export function createTemplateValueInput(
     container: HTMLElement,
@@ -87,10 +88,15 @@ function renderValueForDisplay(
     draft: ProfileDraft,
     actions: PandocCommandRowActions
 ): ValueDisplay {
+    const variables = actions.getTemplateVariableContext?.(draft).variables ?? actions.getVariables(draft);
+    const displayVariables = actions.getDisplayTemplateVariableContext?.(draft).variables ??
+        actions.getDisplayVariables?.(draft) ??
+        variables;
+
     return renderTemplateValueDisplay(
         value,
-        actions.getVariables(draft),
-        actions.getDisplayVariables?.(draft) ?? actions.getVariables(draft)
+        variables,
+        displayVariables
     );
 }
 
@@ -119,7 +125,7 @@ function renderVariableSuggestions(
     container.empty();
     if (!trigger) return;
 
-    for (const suggestion of getVariableSuggestions(trigger.query, actions.getVariables(draft))) {
+    for (const suggestion of getVariableSuggestions(trigger.query, getSuggestionContext(draft, actions))) {
         const button = container.createEl('button', { cls: 'pem-pandoc-variable-suggestion' });
         button.createEl('span', {
             cls: 'pem-pandoc-variable-suggestion-name',
@@ -137,6 +143,13 @@ function renderVariableSuggestions(
             container.empty();
         };
     }
+}
+
+function getSuggestionContext(
+    draft: ProfileDraft,
+    actions: PandocCommandRowActions
+): ReturnType<NonNullable<PandocCommandRowActions['getTemplateVariableContext']>> | ExportVariables {
+    return actions.getTemplateVariableContext?.(draft) ?? actions.getVariables(draft);
 }
 
 function getVariableTrigger(value: string, cursor: number): { start: number; query: string } | undefined {

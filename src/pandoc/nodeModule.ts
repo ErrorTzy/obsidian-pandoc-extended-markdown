@@ -1,5 +1,5 @@
 type NodeRequire = (moduleName: string) => unknown;
-type DesktopModuleName = 'child_process' | 'electron' | 'fs';
+type DesktopModuleName = 'child_process' | 'electron' | 'fs' | 'process';
 
 interface NodeRequireHost {
     require?: NodeRequire;
@@ -17,7 +17,7 @@ export async function importDesktopModule<T>(moduleName: DesktopModuleName): Pro
     return importDesktopModuleFallback<T>(moduleName);
 }
 
-function getNodeRequire(): NodeRequire | undefined {
+export function getNodeRequire(): NodeRequire | undefined {
     const host = globalThis as typeof globalThis & NodeRequireHost;
 
     return host.require ?? host.window?.require;
@@ -33,5 +33,8 @@ function importDesktopModuleFallback<T>(moduleName: DesktopModuleName): Promise<
         case 'fs':
             // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only export filesystem access.
             return import('fs') as Promise<T>;
+        case 'process':
+            // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only environment access.
+            return import('process') as Promise<T>;
     }
 }

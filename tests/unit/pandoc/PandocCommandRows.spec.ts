@@ -6,6 +6,7 @@ import { App } from 'obsidian';
 
 import { PandocFormatEditorModal } from '../../../src/pandoc/PandocFormatEditor';
 import { renderPandocRows } from '../../../src/pandoc/PandocCommandRows';
+import { buildTemplateVariableContext } from '../../../src/pandoc/templateVariables';
 import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/gui-core';
 import type { ProfileDraft } from '../../../src/pandoc/gui-core';
 import type { ExportVariables } from '../../../src/pandoc/types';
@@ -103,10 +104,14 @@ describe('Pandoc command rows', () => {
         });
         const container = enhanceElement(document.createElement('div'));
         const draft = createDraft();
+        const availableVariables: ExportVariables = {
+            ...variables,
+            customToolDir: '/custom/tool'
+        };
 
         renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
             nextOptionIndex: () => 1,
-            getVariables: () => variables,
+            getVariables: () => availableVariables,
             openFormatEditor: () => undefined,
             openOptionSearch: () => undefined,
             render: () => undefined,
@@ -121,13 +126,62 @@ describe('Pandoc command rows', () => {
         const suggestions = input
             .closest('.pem-pandoc-builder-row')
             ?.querySelector('.pem-pandoc-variable-suggestions');
-        const firstSuggestion = suggestions?.querySelector('.pem-pandoc-variable-suggestion');
+        const variableSuggestions = Array.from(
+            suggestions?.querySelectorAll('.pem-pandoc-variable-suggestion') ?? []
+        ).map(suggestion => ({
+            name: suggestion.querySelector('.pem-pandoc-variable-suggestion-name')?.textContent,
+            value: suggestion.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent
+        }));
+
         expect(suggestions?.textContent).toContain('${currentDir}');
         expect(suggestions?.textContent).toContain('/vault');
-        expect(firstSuggestion?.querySelector('.pem-pandoc-variable-suggestion-name')?.textContent)
-            .toBe('${currentPath}');
-        expect(firstSuggestion?.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent)
-            .toBe('/vault/note.md');
+        expect(variableSuggestions).toContainEqual({
+            name: '${currentPath}',
+            value: '/vault/note.md'
+        });
+        expect(variableSuggestions).toContainEqual({
+            name: '${luaFilterDir}',
+            value: '/plugin/lua_filter'
+        });
+        expect(variableSuggestions).toContainEqual({
+            name: '${customToolDir}',
+            value: '/custom/tool'
+        });
+    });
+
+    it('suggests opted-in runtime env variables after built-in export variables', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            nextOptionIndex: () => 1,
+            getVariables: () => variables,
+            getTemplateVariableContext: () => buildTemplateVariableContext(variables, {
+                includeRuntimeEnv: true,
+                runtimeEnv: {
+                    PEM_ENV_DIR: '/env/dir',
+                    currentDir: '/env/current'
+                }
+            }),
+            openFormatEditor: () => undefined,
+            openOptionSearch: () => undefined,
+            render: () => undefined,
+            updatePreview: () => undefined
+        });
+
+        const input = findValueInput(container, '--resource-path');
+        input.focus();
+        input.value = '$';
+        input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        const names = variableSuggestionTexts(input);
+        expect(names).toContain('${PEM_ENV_DIR}');
+        expect(names.indexOf('${luaFilterDir}')).toBeLessThan(names.indexOf('${PEM_ENV_DIR}'));
+        expect(variableSuggestionValues(input).get('${currentDir}')).toBe('/vault');
     });
 
     it('renders blurred option values as absolute paths with appended prefixes muted', () => {
@@ -368,6 +422,23 @@ function findValueInput(container: HTMLElement, key: string): HTMLInputElement {
     const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
     if (!input) throw new Error(`Value input not found for ${key}.`);
     return input;
+}
+
+function variableSuggestionTexts(input: HTMLInputElement): string[] {
+    return Array.from(input
+        .closest('.pem-pandoc-builder-row')
+        ?.querySelectorAll('.pem-pandoc-variable-suggestion-name') ?? [])
+        .map(suggestion => suggestion.textContent ?? '');
+}
+
+function variableSuggestionValues(input: HTMLInputElement): Map<string, string> {
+    return new Map(Array.from(input
+        .closest('.pem-pandoc-builder-row')
+        ?.querySelectorAll('.pem-pandoc-variable-suggestion') ?? [])
+        .map(suggestion => [
+            suggestion.querySelector('.pem-pandoc-variable-suggestion-name')?.textContent ?? '',
+            suggestion.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent ?? ''
+        ]));
 }
 
 function valueDisplayParts(container: HTMLElement, key: string): Array<{ text: string; muted: boolean }> {

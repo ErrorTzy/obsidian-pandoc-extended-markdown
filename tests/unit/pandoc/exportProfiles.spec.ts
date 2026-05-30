@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
     buildPandocEnv,
     buildPandocProfileArgs,
+    buildTemplateVariableContext,
     DEFAULT_EXPORT_PROFILES,
     splitCommandLineArgs
 } from '../../../src/pandoc';
@@ -148,6 +149,48 @@ describe('export profiles', () => {
         expect(env.TEXINPUTS).toBe('/plugin/tex:');
         expect(env.CUSTOM_OUT).toBe('/exports/note.html');
         expect(env.PATH).toBeDefined();
+    });
+
+    it('resolves opted-in runtime env variables in profile arguments', () => {
+        const profile: PandocExportProfile = {
+            id: 'html',
+            name: 'HTML',
+            type: 'pandoc',
+            to: 'html',
+            extension: '.html',
+            resourcePaths: ['${PEM_RESOURCE_DIR}', '${currentDir}']
+        };
+        const context = buildTemplateVariableContext(variables, {
+            includeRuntimeEnv: true,
+            runtimeEnv: {
+                PEM_RESOURCE_DIR: '/env/resources',
+                currentDir: '/env/current'
+            }
+        });
+
+        expect(buildPandocProfileArgs({
+            profile,
+            variables: context.variables
+        })).toEqual(expect.arrayContaining([
+            '--resource-path',
+            '/env/resources',
+            '--resource-path',
+            '/vault'
+        ]));
+    });
+
+    it('reads runtime env variables when no test env map is injected', () => {
+        try {
+            process.env.PEM_RUNTIME_RESOURCE_DIR = '/runtime/resources';
+            const context = buildTemplateVariableContext(variables, {
+                includeRuntimeEnv: true
+            });
+
+            expect(context.runtimeEnvNames).toContain('PEM_RUNTIME_RESOURCE_DIR');
+            expect(context.variables.PEM_RUNTIME_RESOURCE_DIR).toBe('/runtime/resources');
+        } finally {
+            delete process.env.PEM_RUNTIME_RESOURCE_DIR;
+        }
     });
 
     it('splits quoted extra argument strings', () => {

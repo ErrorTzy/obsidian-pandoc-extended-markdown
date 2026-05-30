@@ -95,20 +95,31 @@ function renderBooleanSettings(
     const settings = plugin.settings.pandocExport;
     if (!settings) return;
 
-    const toggles: Array<[string, keyof typeof settings]> = [
-        ['Confirm before replacing files', 'showOverwriteConfirmation'],
-        ['Open output file after export', 'openOutputFile'],
-        ['Reveal output file after export', 'revealOutputFile'],
-        ['Show progress notices', 'showProgress']
+    const toggles: Array<{
+        name: string;
+        key: keyof typeof settings;
+        desc?: string;
+    }> = [
+        { name: 'Confirm before replacing files', key: 'showOverwriteConfirmation' },
+        { name: 'Open output file after export', key: 'openOutputFile' },
+        { name: 'Reveal output file after export', key: 'revealOutputFile' },
+        { name: 'Show progress notices', key: 'showProgress' },
+        {
+            name: 'Suggest runtime environment variables',
+            key: 'suggestRuntimeEnvVariables',
+            desc: 'Shows environment variables in template suggestions. Values may include sensitive information.'
+        }
     ];
 
-    for (const [name, key] of toggles) {
-        new Setting(containerEl)
-            .setName(name)
+    for (const item of toggles) {
+        const setting = new Setting(containerEl)
+            .setName(item.name);
+        if (item.desc) setting.setDesc(item.desc);
+        setting
             .addToggle(toggle => toggle
-                .setValue(Boolean(settings[key]))
+                .setValue(Boolean(settings[item.key]))
                 .onChange(async value => {
-                    settings[key] = value as never;
+                    settings[item.key] = value as never;
                     await plugin.saveSettings();
                 }));
     }

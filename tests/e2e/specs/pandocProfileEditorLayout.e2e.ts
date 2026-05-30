@@ -128,6 +128,21 @@ describe('Pandoc profile editor layout', () => {
             suggestion.name === '${currentDir}' && suggestion.value === blurredValue)).toBe(true);
     });
 
+    it('suggests runtime environment variables after the user opts in', async () => {
+        await configurePandocExport({ suggestRuntimeEnvVariables: true });
+        await openPandocProfileEditor();
+        await browser.waitUntil(async () => await hasFirstResourcePathInput(), {
+            timeout: 5000,
+            timeoutMsg: 'Expected resource path value input'
+        });
+
+        await typeFirstResourcePathValue('${H');
+        const variableSuggestions = await getVariableSuggestions();
+        if (!variableSuggestions.some(suggestion => suggestion.name === '${HOME}')) {
+            throw new Error(`Expected HOME suggestion. ${JSON.stringify(await getRuntimeEnvSuggestionDiagnostics())}`);
+        }
+    });
+
     it('clips overflowing string values on the left with an indicator', async () => {
         await configurePandocExport();
         await openPandocProfileEditor();
@@ -158,8 +173,12 @@ describe('Pandoc profile editor layout', () => {
     });
 });
 
-async function configurePandocExport(): Promise<void> {
-    await browser.execute(async () => {
+async function configurePandocExport(options: {
+    suggestRuntimeEnvVariables?: boolean;
+} = {}): Promise<void> {
+    await browser.execute(async (nextOptions: {
+        suggestRuntimeEnvVariables?: boolean;
+    }) => {
         // @ts-ignore
         const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         if (!plugin?.settings) {
@@ -170,10 +189,11 @@ async function configurePandocExport(): Promise<void> {
             ...(plugin.settings.pandocExport ?? {}),
             enabled: true,
             pandocPath: '',
-            showProgress: false
+            showProgress: false,
+            suggestRuntimeEnvVariables: nextOptions.suggestRuntimeEnvVariables ?? false
         };
         await plugin.saveSettings();
-    });
+    }, options);
 }
 
 async function openPandocProfileEditor(): Promise<void> {
@@ -263,6 +283,42 @@ async function getVariableSuggestions(): Promise<Array<{ name: string; value: st
                 name: suggestion.querySelector('.pem-pandoc-variable-suggestion-name')?.textContent ?? '',
                 value: suggestion.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent ?? ''
             }));
+    });
+}
+
+async function getRuntimeEnvSuggestionDiagnostics(): Promise<Record<string, unknown>> {
+    return browser.execute(() => {
+        const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
+        const rows = Array.from(modal?.querySelectorAll('.pem-pandoc-builder-row') ?? []);
+        const row = rows.find(item =>
+            (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
+        const suggestions = Array.from(row?.querySelectorAll('.pem-pandoc-variable-suggestion-name') ?? [])
+            .map(suggestion => suggestion.textContent ?? '');
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        const host = globalThis as typeof globalThis & {
+            process?: { env?: Record<string, string | undefined> };
+            require?: (moduleName: string) => unknown;
+            window?: { require?: (moduleName: string) => unknown };
+        };
+        const requireFn = host.require ?? host.window?.require;
+        let requiredProcessKeys: string[] = [];
+        let requireError = '';
+        try {
+            const requiredProcess = requireFn?.('process') as { env?: Record<string, string | undefined> } | undefined;
+            requiredProcessKeys = Object.keys(requiredProcess?.env ?? {}).filter(key => key.startsWith('H'));
+        } catch (error) {
+            requireError = error instanceof Error ? error.message : String(error);
+        }
+
+        return {
+            suggestRuntimeEnvVariables: plugin?.settings?.pandocExport?.suggestRuntimeEnvVariables,
+            processKeys: Object.keys(host.process?.env ?? {}).filter(key => key.startsWith('H')),
+            hasRequire: Boolean(requireFn),
+            requiredProcessKeys,
+            requireError,
+            suggestions
+        };
     });
 }
 

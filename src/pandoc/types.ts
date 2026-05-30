@@ -74,6 +74,7 @@ export interface PandocExportSettings {
     openOutputFile: boolean;
     revealOutputFile: boolean;
     showProgress: boolean;
+    suggestRuntimeEnvVariables: boolean;
 }
 
 export interface ExportVariables extends Record<string, unknown> {

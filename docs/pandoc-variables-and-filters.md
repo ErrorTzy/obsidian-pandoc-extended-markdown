@@ -6,6 +6,8 @@ The Pandoc export backend is optional and desktop-only. It lives under `src/pand
 
 Export profiles, environment overrides, resource paths, Lua filter paths, metadata values, and advanced custom shell commands use simple `${name}` replacement. Unknown variables are preserved literally. JavaScript expressions are not evaluated.
 
+The command builder suggests built-in export variables first. Runtime environment variable suggestions are disabled by default because their values may contain sensitive information. Enable **Suggest runtime environment variables** in Pandoc export settings to include current environment variables after the built-in export variables. The template syntax remains `${NAME}` on every operating system because the plugin resolves these placeholders before passing arguments or environment overrides to Pandoc.
+
 | Variable | Meaning |
 | --- | --- |
 | `vaultDir` | Absolute path to the current vault. |

@@ -16,6 +16,7 @@ import type {
     ProfileOptionRow
 } from './gui-core';
 import type { ExportVariables } from './types';
+import type { TemplateVariableContext } from './templateVariables';
 
 type ValueInput = HTMLInputElement | HTMLSelectElement;
 type ValueControl = ValueInput | undefined;
@@ -26,6 +27,8 @@ export interface PandocCommandRowActions {
     nextOptionIndex(): number;
     getVariables(draft: ProfileDraft): ExportVariables;
     getDisplayVariables?(draft: ProfileDraft): ExportVariables;
+    getTemplateVariableContext?(draft: ProfileDraft): TemplateVariableContext;
+    getDisplayTemplateVariableContext?(draft: ProfileDraft): TemplateVariableContext;
     openFormatEditor(row: ProfileOptionRow, spec: OptionSpec, draft: ProfileDraft): void;
     openOptionSearch(onChoose: (option: OptionSpec) => void): void;
     render(): void;

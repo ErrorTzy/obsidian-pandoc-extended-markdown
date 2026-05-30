@@ -31,17 +31,19 @@ const KNOWN_TEMPLATE_VARIABLES = new Set([
 
 export function validateProfileDraft(
     draft: ProfileDraft,
-    catalog: PandocOptionCatalog
+    catalog: PandocOptionCatalog,
+    knownTemplateVariables: Iterable<string> = KNOWN_TEMPLATE_VARIABLES
 ): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
+    const knownTemplateVariableSet = new Set(knownTemplateVariables);
 
     validateRequiredFields(draft, issues);
     if (draft.type === 'pandoc') {
         const command = readDraftCommandRows(draft.optionRows, catalog);
-        validateFormat('from', command.from ?? draft.from, catalog.inputFormats, issues, false);
-        validateFormat('to', command.to ?? draft.to, catalog.outputFormats, issues, true);
+        validateFormat('from', command.from ?? draft.from, catalog.inputFormats, issues, false, knownTemplateVariableSet);
+        validateFormat('to', command.to ?? draft.to, catalog.outputFormats, issues, true, knownTemplateVariableSet);
         validateRequiredRows(draft.optionRows, catalog, issues);
-        validateRows(draft.optionRows, catalog, issues);
+        validateRows(draft.optionRows, catalog, issues, knownTemplateVariableSet);
     }
 
     return issues;
@@ -105,7 +107,8 @@ function validateFormat(
     value: string,
     formats: string[],
     issues: ValidationIssue[],
-    required: boolean
+    required: boolean,
+    knownTemplateVariables: Set<string>
 ): void {
     const trimmed = value.trim();
     if (!trimmed && !required) return;
@@ -114,7 +117,7 @@ function validateFormat(
         return;
     }
     if (hasTemplateVariable(trimmed)) {
-        validateKnownTemplateVariables(trimmed, field, issues);
+        validateKnownTemplateVariables(trimmed, field, issues, knownTemplateVariables);
         return;
     }
     if (formats.length > 0 && !formats.includes(stripExtensions(trimmed))) {
@@ -125,7 +128,8 @@ function validateFormat(
 function validateRows(
     rows: ProfileOptionRow[],
     catalog: PandocOptionCatalog,
-    issues: ValidationIssue[]
+    issues: ValidationIssue[],
+    knownTemplateVariables: Set<string>
 ): void {
     const singletonKeys = new Set<string>();
     const coreFields = new Set<OptionField>();
@@ -133,7 +137,7 @@ function validateRows(
     for (const row of rows) {
         if (!row.enabled) continue;
         if (row.role === 'input') {
-            validateInputRow(row, issues);
+            validateInputRow(row, issues, knownTemplateVariables);
             continue;
         }
         if (!row.key.trim()) continue;
@@ -142,12 +146,16 @@ function validateRows(
             addWarning(issues, `Unknown Pandoc option "${row.key}".`, 'optionRows', row.id);
             continue;
         }
-        validateRowValue(row, spec, issues);
+        validateRowValue(row, spec, issues, knownTemplateVariables);
         validateDuplicate(row, spec, singletonKeys, coreFields, issues);
     }
 }
 
-function validateInputRow(row: ProfileOptionRow, issues: ValidationIssue[]): void {
+function validateInputRow(
+    row: ProfileOptionRow,
+    issues: ValidationIssue[],
+    knownTemplateVariables: Set<string>
+): void {
     const value = row.value.trim();
     if (!value) {
         addError(issues, 'input file requires a value.', 'optionRows', row.id);
@@ -160,13 +168,14 @@ function validateInputRow(row: ProfileOptionRow, issues: ValidationIssue[]): voi
         name: 'input file',
         description: '',
         valueKind: 'file'
-    }, issues, row.id);
+    }, issues, row.id, knownTemplateVariables);
 }
 
 function validateRowValue(
     row: ProfileOptionRow,
     spec: OptionSpec,
-    issues: ValidationIssue[]
+    issues: ValidationIssue[],
+    knownTemplateVariables: Set<string>
 ): void {
     const value = row.value.trim();
     if (spec.mapsTo === 'from' && !value) return;
@@ -180,7 +189,7 @@ function validateRowValue(
         addWarning(issues, `"${value}" is not a known value for ${spec.key}.`, 'optionRows', row.id);
     }
     if (value && isPathKind(spec)) {
-        validatePathTemplateValue(value, spec, issues, row.id);
+        validatePathTemplateValue(value, spec, issues, row.id, knownTemplateVariables);
     }
 }
 
@@ -188,10 +197,11 @@ function validatePathTemplateValue(
     value: string,
     spec: OptionSpec,
     issues: ValidationIssue[],
-    rowId: string
+    rowId: string,
+    knownTemplateVariables: Set<string> = KNOWN_TEMPLATE_VARIABLES
 ): void {
     const unknownVariables = getExportTemplateVariableNames(value)
-        .filter(name => !KNOWN_TEMPLATE_VARIABLES.has(name));
+        .filter(name => !knownTemplateVariables.has(name));
 
     if (unknownVariables.length > 0) {
         addWarning(
@@ -273,10 +283,11 @@ function hasTemplateVariable(value: string): boolean {
 function validateKnownTemplateVariables(
     value: string,
     field: string,
-    issues: ValidationIssue[]
+    issues: ValidationIssue[],
+    knownTemplateVariables: Set<string>
 ): void {
     const unknownVariables = getExportTemplateVariableNames(value)
-        .filter(name => !KNOWN_TEMPLATE_VARIABLES.has(name));
+        .filter(name => !knownTemplateVariables.has(name));
 
     if (unknownVariables.length > 0) {
         addWarning(

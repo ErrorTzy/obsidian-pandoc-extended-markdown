@@ -1,4 +1,5 @@
 import { renderExportTemplate } from './template';
+import { buildTemplateVariableContext } from './templateVariables';
 import { ExportVariables } from './types';
 
 const DEFAULT_ENV: Record<string, string> = {
@@ -20,12 +21,9 @@ export function buildPandocEnv(
     userEnv: Record<string, string> | undefined,
     variables: ExportVariables
 ): Record<string, string> {
-    const runtime = getRuntimeEnv();
-    const templateVariables = {
-        ...runtime,
-        ...variables,
-        HOME: runtime.HOME ?? runtime.USERPROFILE ?? ''
-    };
+    const templateVariables = buildTemplateVariableContext(variables, {
+        includeRuntimeEnv: true
+    }).variables;
     const merged = {
         ...DEFAULT_ENV,
         ...getPlatformDefaults(),
@@ -50,21 +48,6 @@ function getPlatformDefaults(): Record<string, string> {
     }
 
     return {};
-}
-
-function getRuntimeEnv(): Record<string, string> {
-    const processLike = globalThis as typeof globalThis & {
-        process?: { env?: Record<string, string | undefined> };
-    };
-    const result: Record<string, string> = {};
-
-    for (const [key, value] of Object.entries(processLike.process?.env ?? {})) {
-        if (value !== undefined) {
-            result[key] = value;
-        }
-    }
-
-    return result;
 }
 
 function getPlatform(): string {

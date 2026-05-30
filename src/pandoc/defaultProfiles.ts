@@ -73,7 +73,8 @@ export const DEFAULT_PANDOC_EXPORT_SETTINGS: PandocExportSettings = {
     showOverwriteConfirmation: true,
     openOutputFile: true,
     revealOutputFile: false,
-    showProgress: true
+    showProgress: true,
+    suggestRuntimeEnvVariables: false
 };
 
 export function cloneDefaultProfiles(): ExportProfile[] {

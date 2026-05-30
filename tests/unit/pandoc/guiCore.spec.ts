@@ -495,6 +495,40 @@ ignored
         ]));
     });
 
+    it('accepts runtime env variables when they are part of the template context', () => {
+        const draft = {
+            id: 'paths',
+            name: 'Paths',
+            type: 'pandoc' as const,
+            extension: '.html',
+            from: 'markdown',
+            to: 'html',
+            standalone: false,
+            resourcePaths: [],
+            luaFilters: [],
+            metadata: {},
+            optionRows: [
+                { id: 'input', key: 'input file', value: '${currentPath}', enabled: true, role: 'input' as const },
+                { id: 'from', key: '-f', value: 'markdown', enabled: true },
+                { id: 'to', key: '-t', value: 'html', enabled: true },
+                { id: 'output', key: '-o', value: '${PEM_OUTPUT_DIR}/note.html', enabled: true }
+            ],
+            customCommandTemplate: '',
+            customShell: false
+        };
+
+        expect(validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG))
+            .toEqual(expect.arrayContaining([
+                expect.objectContaining({ rowId: 'output', message: expect.stringContaining('PEM_OUTPUT_DIR') })
+            ]));
+        expect(validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG, [
+            ...Object.keys(variables),
+            'PEM_OUTPUT_DIR'
+        ])).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ rowId: 'output' })
+        ]));
+    });
+
     it('round-trips a default profile through the draft model', () => {
         const profile = DEFAULT_EXPORT_PROFILES.find(item => item.id === 'docx');
         expect(profile?.type).toBe('pandoc');

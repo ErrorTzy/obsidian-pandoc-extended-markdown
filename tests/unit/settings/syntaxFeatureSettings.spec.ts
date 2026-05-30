@@ -42,7 +42,18 @@ describe('Syntax feature settings', () => {
         expect(settings.enableFencedDivs).toBe(true);
         expect(settings.pandocExport?.enabled).toBe(true);
         expect(settings.pandocExport?.pandocPath).toBe('');
+        expect(settings.pandocExport?.suggestRuntimeEnvVariables).toBe(false);
         expect(settings.pandocExport?.profiles.some(profile => profile.id === 'html')).toBe(true);
+    });
+
+    it('preserves the opt-in runtime env suggestion setting', () => {
+        const settings = normalizeSettings({
+            pandocExport: {
+                suggestRuntimeEnvVariables: true
+            }
+        } as Partial<ReturnType<typeof normalizeSettings>>);
+
+        expect(settings.pandocExport?.suggestRuntimeEnvVariables).toBe(true);
     });
 
     it('keeps custom labels enabled in processor config when strict mode is enabled', () => {
