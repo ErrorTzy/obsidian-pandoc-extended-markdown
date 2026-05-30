@@ -176,7 +176,7 @@ function buildSpec(tokens: string[], description: string, sourceText: string): O
     const aliases = normalized.filter(token => token !== key);
     const valueKind = inferValueKind(key, sourceText);
     const valuePlaceholder = inferValuePlaceholder(sourceText, valueKind);
-    const valueAlternatives = inferValueAlternatives(key, valuePlaceholder);
+    const valueAlternatives = inferValueAlternatives(valuePlaceholder);
 
     return {
         key,
@@ -220,8 +220,9 @@ function inferValueKind(key: string, text: string): OptionValueKind {
     if (!placeholder) return 'none';
     if (/FORMAT/.test(placeholder)) return 'format';
     if (/DIRECTORY|DIRNAME/.test(placeholder)) return 'directory';
-    if (/FILE|SCRIPT|SCRIPTPATH|THEMEPATH/.test(placeholder)) return 'file';
     if (/SEARCHPATH/.test(placeholder)) return 'pathList';
+    if (placeholder === 'STYLE') return 'enum';
+    if (/FILE|SCRIPT|SCRIPTPATH|THEMEPATH/.test(placeholder)) return 'file';
     if (/PATH|URL/.test(placeholder)) return 'path';
     if (/NUMBER|NUMBERS/.test(placeholder)) return 'integer';
     if (/KEY|VALUE|VAL|JSON/.test(placeholder)) return 'keyValue';
@@ -247,10 +248,7 @@ function inferValues(text: string, valueKind: OptionValueKind): string[] | undef
     return values.length > 0 ? Array.from(new Set(values)) : undefined;
 }
 
-function inferValueAlternatives(
-    key: string,
-    placeholder: string | undefined
-): OptionValueAlternative[] | undefined {
+function inferValueAlternatives(placeholder: string | undefined): OptionValueAlternative[] | undefined {
     if (!placeholder?.includes('|')) return undefined;
     const tokens = placeholder.split('|').map(value => ({
         value,
@@ -258,17 +256,15 @@ function inferValueAlternatives(
     }));
     const alternatives: OptionValueAlternative[] = [];
     const literals = tokens.filter(token => !token.placeholder).map(token => token.value);
-    if (literals.length > 0 || tokens.some(token => token.value === 'STYLE' && key.includes('highlight'))) {
+    if (literals.length > 0) {
         alternatives.push({
-            id: 'preset',
-            label: 'preset',
+            id: 'ENUM',
+            label: 'ENUM',
             valueKind: 'enum',
-            placeholder: key.includes('highlight') ? 'STYLE' : undefined,
             values: literals
         });
     }
     for (const token of tokens.filter(token => token.placeholder)) {
-        if (token.value === 'STYLE' && key.includes('highlight')) continue;
         addUniqueAlternative(alternatives, alternativeFromPlaceholder(token.value));
     }
     return alternatives.length > 0 ? alternatives : undefined;
@@ -284,15 +280,28 @@ function addUniqueAlternative(
 
 function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative {
     const valueKind = inferValueKind('', placeholder);
-    if (valueKind === 'file') return { id: 'file', label: 'file', valueKind, placeholder };
-    if (valueKind === 'directory') return { id: 'directory', label: 'folder', valueKind, placeholder };
-    if (valueKind === 'pathList') return { id: 'pathList', label: 'folder', valueKind, placeholder };
-    if (/^URL$/i.test(placeholder)) return { id: 'url', label: 'URL', valueKind: 'string', placeholder };
-    if (valueKind === 'format') return { id: 'format', label: 'format', valueKind, placeholder };
-    if (valueKind === 'integer') return { id: 'integer', label: 'number', valueKind, placeholder };
-    if (valueKind === 'number') return { id: 'number', label: 'number', valueKind, placeholder };
-    if (valueKind === 'keyValue') return { id: 'keyValue', label: placeholder, valueKind, placeholder };
-    return { id: 'custom', label: placeholder, valueKind: 'string', placeholder };
+    if (valueKind === 'file') return pandocTypeAlternative(placeholder, valueKind);
+    if (valueKind === 'directory') return pandocTypeAlternative(placeholder, valueKind);
+    if (valueKind === 'pathList') return pandocTypeAlternative(placeholder, valueKind);
+    if (/^URL$/i.test(placeholder)) return pandocTypeAlternative(placeholder, 'string');
+    if (valueKind === 'format') return pandocTypeAlternative(placeholder, valueKind);
+    if (valueKind === 'integer') return pandocTypeAlternative(placeholder, valueKind);
+    if (valueKind === 'number') return pandocTypeAlternative(placeholder, valueKind);
+    if (valueKind === 'keyValue') return pandocTypeAlternative(placeholder, valueKind);
+    if (placeholder === 'STYLE') return pandocTypeAlternative(placeholder, 'enum');
+    return pandocTypeAlternative(placeholder, 'string');
+}
+
+function pandocTypeAlternative(
+    placeholder: string,
+    valueKind: OptionValueKind
+): OptionValueAlternative {
+    return {
+        id: placeholder,
+        label: placeholder,
+        valueKind,
+        placeholder
+    };
 }
 
 function inferMapsTo(key: string): OptionSpec['mapsTo'] {
@@ -345,25 +354,23 @@ function enrichOption(
 ): OptionSpec {
     if (spec.mapsTo === 'from') return { ...spec, values: inputFormats };
     if (spec.mapsTo === 'to') return { ...spec, values: outputFormats };
-    if (spec.name.includes('highlight')) return enrichPresetValues(spec, styles);
+    if (spec.name.includes('highlight')) return enrichHighlightStyleValues(spec, styles);
     return spec;
 }
 
-function enrichPresetValues(spec: OptionSpec, values: string[]): OptionSpec {
-    const merged = mergeValues(spec.values, values);
+function enrichHighlightStyleValues(spec: OptionSpec, values: string[]): OptionSpec {
     return {
         ...spec,
-        values: merged,
-        valueAlternatives: mergeAlternativePresetValues(spec.valueAlternatives, merged)
+        valueAlternatives: mergeAlternativeStyleValues(spec.valueAlternatives, values)
     };
 }
 
-function mergeAlternativePresetValues(
+function mergeAlternativeStyleValues(
     alternatives: OptionValueAlternative[] | undefined,
     values: string[] | undefined
 ): OptionValueAlternative[] | undefined {
     if (!alternatives || !values) return alternatives;
-    return alternatives.map(alternative => alternative.id === 'preset'
+    return alternatives.map(alternative => alternative.id === 'STYLE'
         ? { ...alternative, values: mergeValues(alternative.values, values) }
         : alternative);
 }

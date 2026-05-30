@@ -13,18 +13,7 @@ export type OptionValueKind =
     | 'pathList'
     | 'keyValue';
 
-export type OptionValueAlternativeId =
-    | 'preset'
-    | 'custom'
-    | 'format'
-    | 'file'
-    | 'directory'
-    | 'path'
-    | 'pathList'
-    | 'url'
-    | 'integer'
-    | 'number'
-    | 'keyValue';
+export type OptionValueAlternativeId = string;
 
 export interface OptionValueAlternative {
     id: OptionValueAlternativeId;

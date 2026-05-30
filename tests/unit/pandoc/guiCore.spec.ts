@@ -137,7 +137,7 @@ describe('pandoc GUI core', () => {
             values: ['auto', 'none', 'preserve'],
             valueAlternatives: [
                 expect.objectContaining({
-                    id: 'preset',
+                    id: 'ENUM',
                     values: ['auto', 'none', 'preserve']
                 })
             ]
@@ -147,11 +147,15 @@ describe('pandoc GUI core', () => {
                 valueKind: 'enum',
                 valueAlternatives: [
                     expect.objectContaining({
-                        id: 'preset',
+                        id: 'ENUM',
                         values: ['default', 'none', 'idiomatic']
                     }),
                     expect.objectContaining({
-                        id: 'file',
+                        id: 'STYLE',
+                        valueKind: 'enum'
+                    }),
+                    expect.objectContaining({
+                        id: 'FILE',
                         valueKind: 'file'
                     })
                 ]
@@ -160,8 +164,8 @@ describe('pandoc GUI core', () => {
             .toMatchObject({
                 valueKind: 'file',
                 valueAlternatives: [
-                    expect.objectContaining({ id: 'file', valueKind: 'file' }),
-                    expect.objectContaining({ id: 'url', placeholder: 'URL' })
+                    expect.objectContaining({ id: 'FILE', valueKind: 'file' }),
+                    expect.objectContaining({ id: 'URL', placeholder: 'URL' })
                 ]
             });
     });
@@ -335,20 +339,22 @@ EXIT CODES
             valueKind: 'enum',
             values: ['auto', 'none', 'preserve']
         });
-        expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')?.values)
-            .toEqual(expect.arrayContaining(['default', 'none', 'idiomatic', 'pygments']));
         const alternatives = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')?.valueAlternatives;
         expect(alternatives).toEqual(expect.arrayContaining([
             expect.objectContaining({
-                id: 'preset',
-                values: expect.arrayContaining(['default', 'none', 'idiomatic', 'pygments'])
+                id: 'ENUM',
+                values: expect.arrayContaining(['default', 'none', 'idiomatic'])
             }),
-            expect.objectContaining({ id: 'file' })
+            expect.objectContaining({
+                id: 'STYLE',
+                values: expect.arrayContaining(['pygments'])
+            }),
+            expect.objectContaining({ id: 'FILE' })
         ]));
-        expect(alternatives?.find(alternative => alternative.id === 'file')?.values).toBeUndefined();
+        expect(alternatives?.find(alternative => alternative.id === 'FILE')?.values).toBeUndefined();
     });
 
-    it('enriches runtime highlight styles on the preset alternative only', async () => {
+    it('enriches runtime highlight styles on the STYLE alternative only', async () => {
         const service = new PandocService({
             runner: async request => pandocResult(request.args, runtimeOutputForArgs(request.args))
         });
@@ -363,10 +369,13 @@ OPTIONS
         });
         const catalog = await catalogService.loadCatalog();
         const spec = findOptionSpec(catalog, '--syntax-highlighting');
-        const preset = spec?.valueAlternatives?.find(alternative => alternative.id === 'preset');
-        const file = spec?.valueAlternatives?.find(alternative => alternative.id === 'file');
+        const enumAlternative = spec?.valueAlternatives?.find(alternative => alternative.id === 'ENUM');
+        const style = spec?.valueAlternatives?.find(alternative => alternative.id === 'STYLE');
+        const file = spec?.valueAlternatives?.find(alternative => alternative.id === 'FILE');
 
-        expect(preset?.values).toEqual(expect.arrayContaining(['default', 'none', 'idiomatic', 'solarized']));
+        expect(enumAlternative?.values).toEqual(expect.arrayContaining(['default', 'none', 'idiomatic']));
+        expect(enumAlternative?.values).not.toContain('solarized');
+        expect(style?.values).toEqual(expect.arrayContaining(['solarized']));
         expect(file?.values).toBeUndefined();
     });
 
@@ -463,9 +472,12 @@ ignored
 
     it('formats option value type labels shared by command and search panels', () => {
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--toc'))).toBe('type: flag');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toBe('type: format string');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toBe('type: folder path');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-L'))).toBe('type: file path');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toBe('type: FORMAT');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toBe('type: SEARCHPATH');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-L'))).toBe('type: SCRIPT');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--eol'))).toBe('type: ENUM');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')))
+            .toBe('type: ENUM | STYLE | FILE');
         expect(optionValueTypeText()).toBe('type: unknown');
     });
 

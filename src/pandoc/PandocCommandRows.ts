@@ -235,7 +235,7 @@ function createAlternativeControl(
     spec: OptionSpec,
     actions: PandocCommandRowActions
 ): ValueControl {
-    if (alternative.id === 'preset' && alternative.values?.length) {
+    if (alternative.values?.length) {
         const select = createSelect(container);
         for (const value of alternative.values) select.createEl('option', { value, text: value });
         select.value = row.value;
@@ -332,7 +332,7 @@ function createSelect(
 
 function hybridAlternatives(spec: OptionSpec | undefined): OptionValueAlternative[] | undefined {
     const alternatives = spec?.valueAlternatives?.filter(alternative => {
-        if (alternative.id === 'preset') return Boolean(alternative.values?.length);
+        if (alternative.valueKind === 'enum') return Boolean(alternative.values?.length);
         return true;
     });
     return alternatives && alternatives.length > 1 ? alternatives : undefined;
@@ -346,8 +346,8 @@ function selectedAlternative(
     const stored = alternatives.find(alternative => alternative.id === hybridValueSelections.get(row));
     if (stored && (!row.value || valueBelongsToAlternative(row.value, stored, alternatives))) return stored;
 
-    const preset = alternatives.find(alternative => alternative.id === 'preset');
-    if (preset?.values?.includes(row.value)) return preset;
+    const valueAlternative = alternatives.find(alternative => alternative.values?.includes(row.value));
+    if (valueAlternative) return valueAlternative;
     const custom = alternatives.find(alternative =>
         isCustomAlternative(alternative) && valueBelongsToAlternative(row.value, alternative, alternatives));
     if (custom && row.value) return custom;
@@ -365,16 +365,15 @@ function valueBelongsToAlternative(
     alternatives: OptionValueAlternative[]
 ): boolean {
     if (!value) return true;
-    if (alternative.id === 'preset') return Boolean(alternative.values?.includes(value));
-    const preset = alternatives.find(item => item.id === 'preset');
-    if (preset?.values?.includes(value)) return false;
-    if (alternative.id === 'url') return looksLikeUrlValue(value);
+    if (alternative.values) return alternative.values.includes(value);
+    if (alternatives.some(item => item.values?.includes(value))) return false;
+    if (alternative.id === 'URL') return looksLikeUrlValue(value);
     if (isPathValueKind(alternative.valueKind)) return looksLikePathValue(value);
     return true;
 }
 
 function looksLikeUrlValue(value: string): boolean {
-    return /^[a-z][a-z0-9+.-]*:/i.test(value) || value.includes('${');
+    return /^[a-z][a-z0-9+.-]*:/i.test(value);
 }
 
 function looksLikePathValue(value: string): boolean {
@@ -382,7 +381,7 @@ function looksLikePathValue(value: string): boolean {
 }
 
 function isCustomAlternative(alternative: OptionValueAlternative): boolean {
-    return alternative.id !== 'preset' && !isPathValueKind(alternative.valueKind);
+    return alternative.valueKind !== 'enum' && !isPathValueKind(alternative.valueKind);
 }
 
 function isPathValueKind(valueKind: OptionValueKind): boolean {

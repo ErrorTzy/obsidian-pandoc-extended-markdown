@@ -306,8 +306,9 @@ function isPathKind(spec: OptionSpec): boolean {
 function shouldValidateEnumValue(value: string, spec: OptionSpec): boolean {
     const alternative = selectedAlternative(value, spec);
     if (alternative) {
-        return alternative.id === 'preset' && Boolean(alternative.values?.length) &&
-            !alternative.values.includes(value);
+        const values = alternative.values;
+        if (alternative.valueKind !== 'enum' || !values?.length) return false;
+        return !values.includes(value);
     }
     return spec.valueKind === 'enum' && Boolean(spec.values?.length) && !spec.values?.includes(value);
 }
@@ -324,14 +325,30 @@ function selectedAlternative(
 ): OptionValueAlternative | undefined {
     const alternatives = spec.valueAlternatives;
     if (!alternatives || alternatives.length <= 1) return undefined;
-    const preset = alternatives.find(alternative => alternative.id === 'preset');
-    if (preset?.values?.includes(value)) return preset;
-    return alternatives.find(alternative => !isPathAlternative(alternative) && alternative.id !== 'preset') ??
+    const valueAlternative = alternatives.find(alternative => alternative.values?.includes(value));
+    if (valueAlternative) return valueAlternative;
+    if (looksLikeUrlValue(value)) {
+        const url = alternatives.find(alternative => alternative.id === 'URL');
+        if (url) return url;
+    }
+    if (looksLikePathValue(value)) {
+        const path = alternatives.find(isPathAlternative);
+        if (path) return path;
+    }
+    return alternatives.find(alternative => !isPathAlternative(alternative)) ??
         alternatives.find(isPathAlternative);
 }
 
 function isPathAlternative(alternative: OptionValueAlternative): boolean {
     return ['file', 'directory', 'path', 'pathList'].includes(alternative.valueKind);
+}
+
+function looksLikePathValue(value: string): boolean {
+    return /[\\/]/.test(value) || value.includes('.') || value.includes('${');
+}
+
+function looksLikeUrlValue(value: string): boolean {
+    return /^[a-z][a-z0-9+.-]*:/i.test(value);
 }
 
 function addError(

@@ -98,7 +98,7 @@ describe('Pandoc command rows', () => {
         expect(rowHasRemoveButton(rows, '--toc')).toBe(true);
     });
 
-    it('renders hybrid preset and file option values explicitly', () => {
+    it('renders hybrid enum, style, and file option values explicitly', () => {
         window.requestAnimationFrame = jest.fn(callback => {
             callback(0);
             return 0;
@@ -113,7 +113,7 @@ describe('Pandoc command rows', () => {
 
         const presetRow = findRow(presetContainer, '--syntax-highlighting');
         const presetSelects = Array.from(presetRow.querySelectorAll('.pem-pandoc-value-cell select')) as HTMLSelectElement[];
-        expect(selectValues(presetSelects[0])).toEqual(['preset', 'file']);
+        expect(selectValues(presetSelects[0])).toEqual(['ENUM', 'STYLE', 'FILE']);
         expect(selectValues(presetSelects[1])).toEqual(expect.arrayContaining(['default', 'none', 'idiomatic']));
         expect(presetSelects.every(select => Boolean(select.closest('.pem-pandoc-select-frame')))).toBe(true);
         expect(presetRow.querySelector('.pem-pandoc-value-cell input')).toBeNull();
@@ -133,7 +133,7 @@ describe('Pandoc command rows', () => {
 
         const fileRow = findRow(fileContainer, '--syntax-highlighting');
         const typeSelect = fileRow.querySelector('.pem-pandoc-value-type-select') as HTMLSelectElement;
-        expect(typeSelect.value).toBe('file');
+        expect(typeSelect.value).toBe('FILE');
         expect(typeSelect.closest('.pem-pandoc-value-type-select-frame')).not.toBeNull();
         expect(fileRow.querySelector('.pem-pandoc-value-cell input')).not.toBeNull();
         expect(rowHasBrowseButton([fileRow], '--syntax-highlighting')).toBe(true);
