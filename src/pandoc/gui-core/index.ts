@@ -40,6 +40,9 @@ export {
     searchOptions
 } from './search';
 export {
+    optionValueTypeText
+} from './optionValueTypes';
+export {
     hasValidationErrors,
     validateProfileDraft,
     validateProfileDraftNames

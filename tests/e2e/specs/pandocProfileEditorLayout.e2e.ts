@@ -64,6 +64,14 @@ describe('Pandoc profile editor layout', () => {
         await setOptionPanelFuzzySearch(true);
         expect(await getOptionPanelText()).toContain('--toc');
         expect(await isConfirmNextToSearchBar()).toBe(true);
+
+        const panelLayout = await getOptionPanelLayout();
+        expect(panelLayout.tocCells.key).toContain('--toc');
+        expect(panelLayout.tocCells.type).toBe('type: flag');
+        expect(panelLayout.tocCells.description).toContain('table of contents');
+        expect(panelLayout.tocColumnCount).toBe(3);
+        expect(panelLayout.checkboxWidth).toBeGreaterThanOrEqual(12);
+        expect(Math.abs(panelLayout.checkboxWidth - panelLayout.checkboxHeight)).toBeLessThanOrEqual(1);
     });
 
     it('enables reset and restore immediately after command option edits', async () => {
@@ -384,6 +392,33 @@ async function isConfirmNextToSearchBar(): Promise<boolean> {
     return browser.execute(() => {
         const confirm = document.querySelector('.pem-pandoc-option-search-box button');
         return confirm?.textContent === 'Confirm';
+    });
+}
+
+async function getOptionPanelLayout(): Promise<{
+    tocCells: { key: string; type: string; description: string };
+    tocColumnCount: number;
+    checkboxWidth: number;
+    checkboxHeight: number;
+}> {
+    return browser.execute(() => {
+        const rows = Array.from(document.querySelectorAll('.pem-pandoc-option-result'));
+        const tocRow = rows.find(row =>
+            row.querySelector('.pem-pandoc-option-result-key')?.textContent?.includes('--toc'));
+        const checkbox = document.querySelector('.pem-pandoc-fuzzy-toggle input') as HTMLInputElement | null;
+        if (!tocRow || !checkbox) throw new Error('Option panel layout targets not found.');
+        const rowStyle = window.getComputedStyle(tocRow);
+        const checkboxRect = checkbox.getBoundingClientRect();
+        return {
+            tocCells: {
+                key: tocRow.querySelector('.pem-pandoc-option-result-key')?.textContent ?? '',
+                type: tocRow.querySelector('.pem-pandoc-option-result-type')?.textContent ?? '',
+                description: tocRow.querySelector('.pem-pandoc-option-result-desc')?.textContent ?? ''
+            },
+            tocColumnCount: rowStyle.gridTemplateColumns.split(' ').length,
+            checkboxWidth: checkboxRect.width,
+            checkboxHeight: checkboxRect.height
+        };
     });
 }
 

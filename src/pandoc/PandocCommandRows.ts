@@ -4,6 +4,7 @@ import {
     createEmptyOptionRow,
     findOptionSpec,
     optionLabel,
+    optionValueTypeText,
     searchOptionKeys
 } from './gui-core';
 import { renderExportTemplate } from './template';
@@ -386,13 +387,7 @@ function createButton(
 
 function typeText(row: ProfileOptionRow, spec?: OptionSpec): string {
     if (row.role === 'input') return 'type: input file';
-    if (!spec) return 'type: unknown';
-    if (spec.valueKind === 'none') return 'type: flag';
-    if (spec.valueKind === 'format') return 'type: format string';
-    if (spec.valueKind === 'directory') return 'type: folder path';
-    if (spec.valueKind === 'pathList') return 'type: folder path';
-    if (spec.valueKind === 'file') return 'type: file path';
-    return `type: ${spec.valueKind}`;
+    return optionValueTypeText(spec);
 }
 
 function isRequiredRow(row: ProfileOptionRow, spec?: OptionSpec): boolean {

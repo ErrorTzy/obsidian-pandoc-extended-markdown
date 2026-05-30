@@ -13,6 +13,7 @@ import {
     findOptionSpec,
     getFormatExtensionChoices,
     mergeOptionSpecs,
+    optionValueTypeText,
     parseExtensionListOutput,
     parsePandocExtensionDescriptions,
     parsePandocFormatValue,
@@ -269,6 +270,14 @@ ignored
     it('autosuggests by option keys only', () => {
         expect(searchOptionKeys(FALLBACK_PANDOC_CATALOG, 'fr')[0].option.key).toBe('-f');
         expect(searchOptionKeys(FALLBACK_PANDOC_CATALOG, 'table contents')).toHaveLength(0);
+    });
+
+    it('formats option value type labels shared by command and search panels', () => {
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--toc'))).toBe('type: flag');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toBe('type: format string');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toBe('type: folder path');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-L'))).toBe('type: file path');
+        expect(optionValueTypeText()).toBe('type: unknown');
     });
 
     it('validates formats, integers, and unknown keys', () => {

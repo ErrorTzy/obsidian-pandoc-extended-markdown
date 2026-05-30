@@ -356,8 +356,11 @@
 
 .pem-pandoc-fuzzy-toggle input[type="checkbox"] {
     flex: 0 0 auto;
+    height: var(--checkbox-size, 16px);
     margin: 0;
-    width: auto;
+    min-height: var(--checkbox-size, 16px);
+    min-width: var(--checkbox-size, 16px);
+    width: var(--checkbox-size, 16px);
 }
 
 .pem-pandoc-option-results {
@@ -371,7 +374,7 @@
     cursor: pointer;
     display: grid;
     gap: 12px;
-    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    grid-template-columns: minmax(140px, 220px) minmax(120px, 160px) minmax(0, 1fr);
     padding: 8px 4px;
 }
 
@@ -382,6 +385,11 @@
 
 .pem-pandoc-option-result-key {
     font-family: var(--font-monospace);
+}
+
+.pem-pandoc-option-result-type {
+    color: var(--text-muted);
+    white-space: nowrap;
 }
 
 .pem-pandoc-option-result-desc {
@@ -557,6 +565,11 @@
     }
 
     .pem-pandoc-option-search-box {
+        grid-template-columns: 1fr;
+    }
+
+    .pem-pandoc-option-result {
+        gap: 4px;
         grid-template-columns: 1fr;
     }
 

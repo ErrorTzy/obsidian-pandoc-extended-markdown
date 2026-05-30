@@ -2,6 +2,7 @@ import { Modal } from 'obsidian';
 
 import {
     optionLabel,
+    optionValueTypeText,
     searchOptions
 } from './gui-core';
 import type {
@@ -88,6 +89,10 @@ export class PandocOptionSearchModal extends Modal {
         };
         row.ondblclick = () => this.choose(option);
         row.createEl('div', { cls: 'pem-pandoc-option-result-key', text: optionLabel(option) });
+        row.createEl('div', {
+            cls: 'pem-pandoc-option-result-type',
+            text: optionValueTypeText(option)
+        });
         row.createEl('div', {
             cls: 'pem-pandoc-option-result-desc',
             text: option.description || option.valueKind
