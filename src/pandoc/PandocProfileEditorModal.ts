@@ -85,7 +85,12 @@ export class PandocProfileEditorModal extends Modal {
                     }).open();
                 },
                 openOptionSearch: onChoose => {
-                    new PandocOptionSearchModal(this.app, this.catalog!, onChoose).open();
+                    new PandocOptionSearchModal(
+                        this.app,
+                        this.catalog!,
+                        onChoose,
+                        option => !['from', 'to', 'output'].includes(option.mapsTo ?? '')
+                    ).open();
                 },
                 render: () => this.render(),
                 updatePreview: current => this.updatePreview(current)

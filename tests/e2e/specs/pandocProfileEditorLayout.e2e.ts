@@ -34,13 +34,15 @@ describe('Pandoc profile editor layout', () => {
             restorePreset: true
         }));
         expect(layout.visibleTypeLabels).toBeGreaterThanOrEqual(2);
-        expect(layout.rowsWithoutSearchButtons).toBe(1);
+        expect(layout.rowsWithoutSearchButtons).toBe(4);
         expect(layout.valueColumnLeftSpread).toBeLessThanOrEqual(1);
         expect(layout.typeColumnLeftSpread).toBeLessThanOrEqual(1);
 
         const rows = await getCommandRows();
         expect(rowType(rows, 'input file')).toBe('type: input file');
-        expect(rowType(rows, '-t')).toBe('type: format string');
+        expect(rowType(rows, 'from format')).toBe('type: format string');
+        expect(rowType(rows, 'to format')).toBe('type: format string');
+        expect(rowType(rows, 'output file')).toBe('type: file path');
         expect(rowType(rows, '--resource-path')).toBe('type: folder path');
         expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
         expect(rowType(rows, '-L')).toBe('type: file path');
@@ -53,12 +55,18 @@ describe('Pandoc profile editor layout', () => {
         await addCustomOptionRow();
 
         await typeCustomOptionKey('fr');
-        expect(await getInlineSuggestionText()).toContain('--from');
+        expect(await getInlineSuggestionText()).not.toContain('--from');
+
+        await typeCustomOptionKey('resource');
+        expect(await getInlineSuggestionText()).toContain('--resource-path');
 
         await typeCustomOptionKey('table contents');
         expect(await getInlineSuggestionText()).toBe('');
 
         await openOptionSearchPanel();
+        await searchOptionPanel('from');
+        expect(await getOptionPanelText()).not.toContain('--from');
+
         await searchOptionPanel('table contents');
         expect(await getOptionPanelText()).not.toContain('--toc');
         await setOptionPanelFuzzySearch(true);

@@ -2,6 +2,7 @@ import { findOptionSpec } from './catalog';
 import { readDraftCommandRows } from './profileDraft';
 import { getExportTemplateVariableNames } from '../template';
 import type {
+    OptionField,
     OptionSpec,
     PandocOptionCatalog,
     ProfileDraft,
@@ -127,6 +128,7 @@ function validateRows(
     issues: ValidationIssue[]
 ): void {
     const singletonKeys = new Set<string>();
+    const coreFields = new Set<OptionField>();
 
     for (const row of rows) {
         if (!row.enabled) continue;
@@ -141,7 +143,7 @@ function validateRows(
             continue;
         }
         validateRowValue(row, spec, issues);
-        validateDuplicate(row, spec, singletonKeys, issues);
+        validateDuplicate(row, spec, singletonKeys, coreFields, issues);
     }
 }
 
@@ -220,13 +222,44 @@ function validateDuplicate(
     row: ProfileOptionRow,
     spec: OptionSpec,
     singletonKeys: Set<string>,
+    coreFields: Set<OptionField>,
     issues: ValidationIssue[]
 ): void {
+    if (spec.mapsTo && ['from', 'to', 'output'].includes(spec.mapsTo)) {
+        validateCoreDuplicate(row, spec, coreFields, issues);
+        return;
+    }
     if (spec.repeatable) return;
     if (singletonKeys.has(spec.key)) {
         addWarning(issues, `${spec.key} is usually used only once.`, 'optionRows', row.id);
     }
     singletonKeys.add(spec.key);
+}
+
+function validateCoreDuplicate(
+    row: ProfileOptionRow,
+    spec: OptionSpec,
+    coreFields: Set<OptionField>,
+    issues: ValidationIssue[]
+): void {
+    const field = spec.mapsTo;
+    if (!field) return;
+    if (coreFields.has(field)) {
+        addWarning(
+            issues,
+            `${coreFieldLabel(field)} is set more than once; Pandoc accepts this and the later value wins.`,
+            'optionRows',
+            row.id
+        );
+    }
+    coreFields.add(field);
+}
+
+function coreFieldLabel(field: OptionField): string {
+    if (field === 'from') return 'Input format (-f/--from)';
+    if (field === 'to') return 'Output format (-t/--to)';
+    if (field === 'output') return 'Output file (-o/--output)';
+    return field;
 }
 
 function stripExtensions(format: string): string {

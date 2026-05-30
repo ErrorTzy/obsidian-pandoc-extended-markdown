@@ -9,6 +9,7 @@ import {
 } from './gui-core';
 import { renderExportTemplate } from './template';
 import type {
+    OptionField,
     OptionSpec,
     PandocOptionCatalog,
     ProfileDraft,
@@ -42,6 +43,8 @@ const TEMPLATE_VARIABLE_NAMES = [
     'fromFormat'
 ];
 
+const PROTECTED_CORE_FIELDS: OptionField[] = ['from', 'to', 'output'];
+
 export interface PandocCommandRowActions {
     nextOptionIndex(): number;
     getVariables(draft: ProfileDraft): ExportVariables;
@@ -60,9 +63,10 @@ export function renderPandocRows(
     const section = container.createDiv({ cls: 'pem-pandoc-option-section' });
     // eslint-disable-next-line obsidianmd/ui/sentence-case
     section.createEl('h3', { text: 'Command Options' });
+    const protectedRowIds = protectedCoreRowIds(draft.optionRows, catalog);
 
     for (const row of draft.optionRows) {
-        renderOptionRow(section, draft, row, catalog, actions);
+        renderOptionRow(section, draft, row, catalog, actions, protectedRowIds);
     }
 
     createButton(section, '+', () => {
@@ -76,17 +80,18 @@ function renderOptionRow(
     draft: ProfileDraft,
     row: ProfileOptionRow,
     catalog: PandocOptionCatalog,
-    actions: PandocCommandRowActions
+    actions: PandocCommandRowActions,
+    protectedRowIds: Set<string>
 ): void {
     const spec = findOptionSpec(catalog, row.key);
     const slots = createPandocCommandRowSlots(container);
-    renderKeyCell(slots.key, row, draft, catalog, actions);
+    renderKeyCell(slots.key, row, draft, catalog, actions, protectedRowIds.has(row.id), spec);
     if (row.role === 'input' || spec?.valueKind !== 'none') {
         slots.separator.textContent = ':';
     }
     renderValueControl(slots.value, draft, row, spec, actions);
     slots.type.textContent = typeText(row, spec);
-    if (isRequiredRow(row, spec)) return;
+    if (isProtectedRow(row, protectedRowIds)) return;
 
     createButton(slots.actions, 'x', () => {
         draft.optionRows = draft.optionRows.filter(item => item.id !== row.id);
@@ -99,11 +104,18 @@ function renderKeyCell(
     row: ProfileOptionRow,
     draft: ProfileDraft,
     catalog: PandocOptionCatalog,
-    actions: PandocCommandRowActions
+    actions: PandocCommandRowActions,
+    protectedCoreRow: boolean,
+    spec?: OptionSpec
 ): void {
     if (row.role === 'input') {
         // eslint-disable-next-line obsidianmd/ui/sentence-case
         cell.createEl('span', { cls: 'pem-pandoc-key-label', text: 'input file' });
+        return;
+    }
+
+    if (protectedCoreRow) {
+        cell.createEl('span', { cls: 'pem-pandoc-key-label', text: coreOptionLabel(spec) });
         return;
     }
 
@@ -126,7 +138,10 @@ function renderKeyCell(
         actions.updatePreview(draft);
     };
     input.onblur = () => {
-        window.setTimeout(() => suggestions.empty(), 120);
+        window.setTimeout(() => {
+            suggestions.empty();
+            actions.render();
+        }, 120);
     };
 }
 
@@ -138,7 +153,8 @@ function renderKeySuggestions(
     actions: PandocCommandRowActions
 ): void {
     container.empty();
-    for (const { option } of searchOptionKeys(catalog, query, 6)) {
+    for (const { option } of searchOptionKeys(catalog, query, 6)
+        .filter(result => !isProtectedCoreOption(result.option))) {
         const button = container.createEl('button', { text: optionLabel(option) });
         button.onmousedown = event => event.preventDefault();
         button.onclick = () => {
@@ -385,11 +401,50 @@ function createButton(
     return button;
 }
 
+function coreOptionLabel(spec?: OptionSpec): string {
+    if (spec?.mapsTo === 'from') {
+        return 'from format';
+    }
+    if (spec?.mapsTo === 'to') {
+        return 'to format';
+    }
+    if (spec?.mapsTo === 'output') {
+        return 'output file';
+    }
+    return 'built-in option';
+}
+
 function typeText(row: ProfileOptionRow, spec?: OptionSpec): string {
     if (row.role === 'input') return 'type: input file';
     return optionValueTypeText(spec);
 }
 
-function isRequiredRow(row: ProfileOptionRow, spec?: OptionSpec): boolean {
-    return row.role === 'input' || ['from', 'to', 'output'].includes(spec?.mapsTo ?? '');
+function isProtectedRow(row: ProfileOptionRow, protectedRowIds: Set<string>): boolean {
+    return row.role === 'input' || protectedRowIds.has(row.id);
+}
+
+function protectedCoreRowIds(
+    rows: ProfileOptionRow[],
+    catalog: PandocOptionCatalog
+): Set<string> {
+    const ids = new Set<string>();
+    const seen = new Set<OptionField>();
+
+    for (const row of rows) {
+        const spec = findOptionSpec(catalog, row.key);
+        const field = spec?.mapsTo;
+        if (!field || !isProtectedCoreField(field) || seen.has(field)) continue;
+        ids.add(row.id);
+        seen.add(field);
+    }
+
+    return ids;
+}
+
+function isProtectedCoreOption(option: OptionSpec): boolean {
+    return Boolean(option.mapsTo && isProtectedCoreField(option.mapsTo));
+}
+
+function isProtectedCoreField(field: OptionField): boolean {
+    return PROTECTED_CORE_FIELDS.includes(field);
 }

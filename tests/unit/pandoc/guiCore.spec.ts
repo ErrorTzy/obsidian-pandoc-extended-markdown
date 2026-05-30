@@ -417,6 +417,50 @@ ignored
         ]));
     });
 
+    it('warns when manually added core options override built-in rows', () => {
+        const draft = {
+            id: 'duplicates',
+            name: 'Duplicates',
+            type: 'pandoc' as const,
+            extension: '.html',
+            from: '',
+            to: '',
+            standalone: false,
+            resourcePaths: [],
+            luaFilters: [],
+            metadata: {},
+            optionRows: [
+                { id: 'input', key: 'input file', value: '${currentPath}', enabled: true, role: 'input' as const },
+                { id: 'from', key: '-f', value: 'markdown', enabled: true },
+                { id: 'to', key: '-t', value: 'html', enabled: true },
+                { id: 'output', key: '-o', value: '${outputPath}', enabled: true },
+                { id: 'from-duplicate', key: '--from', value: 'html', enabled: true },
+                { id: 'to-duplicate', key: '--write', value: 'plain', enabled: true },
+                { id: 'output-duplicate', key: '--output', value: '${outputDir}/other.txt', enabled: true }
+            ],
+            customCommandTemplate: '',
+            customShell: false
+        };
+
+        expect(validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                severity: 'warning',
+                rowId: 'from-duplicate',
+                message: expect.stringContaining('later value wins')
+            }),
+            expect.objectContaining({
+                severity: 'warning',
+                rowId: 'to-duplicate',
+                message: expect.stringContaining('later value wins')
+            }),
+            expect.objectContaining({
+                severity: 'warning',
+                rowId: 'output-duplicate',
+                message: expect.stringContaining('later value wins')
+            })
+        ]));
+    });
+
     it('does not warn for supported path template variables', () => {
         const draft = {
             id: 'paths',

@@ -13,16 +13,23 @@ import type {
 export class PandocOptionSearchModal extends Modal {
     private readonly catalog: PandocOptionCatalog;
     private readonly onChoose: (option: OptionSpec) => void;
+    private readonly optionFilter?: (option: OptionSpec) => boolean;
     private confirmButton?: HTMLButtonElement;
     private fuzzy = false;
     private query = '';
     private resultsEl?: HTMLElement;
     private selected?: OptionSpec;
 
-    constructor(app: ConstructorParameters<typeof Modal>[0], catalog: PandocOptionCatalog, onChoose: (option: OptionSpec) => void) {
+    constructor(
+        app: ConstructorParameters<typeof Modal>[0],
+        catalog: PandocOptionCatalog,
+        onChoose: (option: OptionSpec) => void,
+        optionFilter?: (option: OptionSpec) => boolean
+    ) {
         super(app);
         this.catalog = catalog;
         this.onChoose = onChoose;
+        this.optionFilter = optionFilter;
     }
 
     onOpen(): void {
@@ -69,7 +76,9 @@ export class PandocOptionSearchModal extends Modal {
     private renderResults(): void {
         if (!this.resultsEl) return;
         this.resultsEl.empty();
-        const results = searchOptions(this.catalog, this.query, 80, this.fuzzy);
+        const results = searchOptions(this.catalog, this.query, 120, this.fuzzy)
+            .filter(result => this.optionFilter?.(result.option) ?? true)
+            .slice(0, 80);
 
         for (const { option } of results) {
             this.renderResult(this.resultsEl, option);

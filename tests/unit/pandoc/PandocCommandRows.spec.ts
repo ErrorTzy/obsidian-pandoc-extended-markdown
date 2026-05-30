@@ -58,9 +58,15 @@ describe('Pandoc command rows', () => {
         expect(rowHasSeparator(rows, '--eol')).toBe(true);
         expect(rowSelectValues(rows, '--eol')).toEqual(['crlf', 'lf', 'native']);
         expect(rowHasRemoveButton(rows, 'input file')).toBe(false);
-        expect(rowHasRemoveButton(rows, '-f')).toBe(false);
-        expect(rowHasRemoveButton(rows, '-t')).toBe(false);
-        expect(rowHasRemoveButton(rows, '-o')).toBe(false);
+        expect(rowHasRemoveButton(rows, 'from format')).toBe(false);
+        expect(rowHasRemoveButton(rows, 'to format')).toBe(false);
+        expect(rowHasRemoveButton(rows, 'output file')).toBe(false);
+        expect(rowHasKeyInput(rows, 'from format')).toBe(false);
+        expect(rowHasKeyInput(rows, 'to format')).toBe(false);
+        expect(rowHasKeyInput(rows, 'output file')).toBe(false);
+        expect(rowHasButton(rows, 'from format', 'Show -f option help')).toBe(false);
+        expect(rowHasButton(rows, 'to format', 'Show -t option help')).toBe(false);
+        expect(rowHasButton(rows, 'output file', 'Show -o option help')).toBe(false);
         expect(rowHasRemoveButton(rows, '--toc')).toBe(true);
     });
 
@@ -119,19 +125,46 @@ describe('Pandoc command rows', () => {
         });
 
         const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
-        expect(findValueInput(container, '-f').value).toBe('markdown');
-        expect(findValueInput(container, '-t').value).toBe('commonmark_x-attributes');
-        expect(rowSelectValues(rows, '-f')).toEqual([]);
-        expect(rowHasButton(rows, '-f', 'Edit pandoc format')).toBe(true);
+        expect(findValueInput(container, 'from format').value).toBe('markdown');
+        expect(findValueInput(container, 'to format').value).toBe('commonmark_x-attributes');
+        expect(rowSelectValues(rows, 'from format')).toEqual([]);
+        expect(rowHasButton(rows, 'from format', 'Edit pandoc format')).toBe(true);
         expect(container.querySelector('.pem-pandoc-format-extension')).toBeNull();
         expect(container.textContent).not.toContain('default markdown');
 
-        rowButton(rows, '-f', 'Edit pandoc format').click();
+        rowButton(rows, 'from format', 'Edit pandoc format').click();
         expect(openFormatEditor).toHaveBeenCalledWith(
             draft.optionRows.find(row => row.key === '-f'),
             expect.objectContaining({ valueKind: 'format' }),
             draft
         );
+    });
+
+    it('does not suggest core format and output options for custom rows', () => {
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+        draft.optionRows.push({ id: 'custom', key: '', value: '', enabled: true });
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            nextOptionIndex: () => 1,
+            getVariables: () => variables,
+            openFormatEditor: () => undefined,
+            openOptionSearch: () => undefined,
+            render: () => undefined,
+            updatePreview: () => undefined
+        });
+
+        const inputs = Array.from(container.querySelectorAll('.pem-pandoc-key-input'));
+        const input = inputs.at(-1) as HTMLInputElement;
+        input.value = 'fr';
+        input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        const row = input.closest('.pem-pandoc-builder-row');
+        expect(row?.querySelector('.pem-pandoc-key-suggestions')?.textContent).not.toContain('--from');
+
+        input.value = 'resource';
+        input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        expect(row?.querySelector('.pem-pandoc-key-suggestions')?.textContent).toContain('--resource-path');
     });
 
     it('opens an extension description panel from help buttons', () => {
@@ -198,6 +231,11 @@ function rowHasBrowseButton(rows: Element[], key: string): boolean | undefined {
 function rowHasValueControl(rows: Element[], key: string): boolean | undefined {
     const row = rows.find(item => getRowKey(item) === key);
     return Boolean(row?.querySelector('.pem-pandoc-value-cell input, .pem-pandoc-value-cell select'));
+}
+
+function rowHasKeyInput(rows: Element[], key: string): boolean | undefined {
+    const row = rows.find(item => getRowKey(item) === key);
+    return Boolean(row?.querySelector('.pem-pandoc-key-input'));
 }
 
 function rowHasSeparator(rows: Element[], key: string): boolean | undefined {
