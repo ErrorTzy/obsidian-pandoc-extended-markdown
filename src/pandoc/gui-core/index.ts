@@ -61,6 +61,8 @@ export type {
     FormatExtensionSpec,
     OptionField,
     OptionSpec,
+    OptionValueAlternative,
+    OptionValueAlternativeId,
     OptionValueKind,
     PandocDescriptionBlock,
     PandocOptionGroup,

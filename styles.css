@@ -84,12 +84,14 @@
     width: 100%;
 }
 
-.pem-pandoc-preset-select-frame {
+.pem-pandoc-select-frame {
+    flex: 1 1 auto;
     min-width: 0;
     position: relative;
+    width: 100%;
 }
 
-.pem-pandoc-preset-select-frame::after {
+.pem-pandoc-select-frame::after {
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
     border-top: 6px solid var(--text-muted);
@@ -101,15 +103,21 @@
     top: 50%;
     transform: translateY(-35%);
     width: 0;
+    z-index: 1;
+}
+
+.pem-pandoc-select-frame select {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 36px;
+    position: relative;
+    width: 100%;
 }
 
 .pem-pandoc-preset-select-frame select {
-    appearance: none;
     background-color: var(--background-secondary);
     border-color: var(--interactive-accent);
-    cursor: pointer;
     font-weight: 500;
-    padding-right: 36px;
 }
 
 .pem-pandoc-preset-actions {
@@ -318,6 +326,20 @@
 .pem-pandoc-value-cell input,
 .pem-pandoc-value-cell select {
     min-width: 0;
+}
+
+.pem-pandoc-value-type-select-frame {
+    flex: 0 0 112px;
+    width: 112px;
+}
+
+.pem-pandoc-hybrid-value {
+    align-items: center;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 6px;
+    min-width: 0;
+    position: relative;
 }
 
 .pem-pandoc-row-type {

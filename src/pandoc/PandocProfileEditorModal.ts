@@ -4,6 +4,7 @@ import { PandocExportPluginLike } from './ExportModal';
 import { renderPandocRows } from './PandocCommandRows';
 import { PandocFormatEditorModal } from './PandocFormatEditor';
 import { PandocOptionSearchModal } from './PandocOptionSearchModal';
+import { createPandocSelect } from './PandocSelect';
 import {
     buildOptionDisplayExportVariables,
     buildPreviewExportVariables
@@ -124,8 +125,12 @@ export class PandocProfileEditorModal extends Modal {
         const fields = section.createDiv({ cls: 'pem-pandoc-preset-fields' });
         const selectField = fields.createDiv({ cls: 'pem-pandoc-preset-field' });
         selectField.createEl('label', { text: 'Preset' });
-        const selectFrame = selectField.createDiv({ cls: 'pem-pandoc-preset-select-frame' });
-        const select = selectFrame.createEl('select', { attr: { 'aria-label': 'Load preset' } });
+        const select = createPandocSelect(
+            selectField,
+            [],
+            { 'aria-label': 'Load preset' },
+            'pem-pandoc-preset-select-frame'
+        );
         for (const item of this.presets.visibleDrafts()) {
             select.createEl('option', { value: item.id, text: item.name });
         }

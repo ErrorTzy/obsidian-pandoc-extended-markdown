@@ -5,6 +5,7 @@ import {
     parsePandocFormatValue,
     selectedCompatibleExtensions
 } from './gui-core';
+import { createPandocSelect } from './PandocSelect';
 import { renderExportTemplate } from './template';
 import type {
     FormatExtensionSpec,
@@ -78,7 +79,7 @@ export class PandocFormatEditorModal extends Modal {
         const column = container.createDiv({ cls: 'pem-pandoc-format-column' });
         const field = column.createDiv({ cls: 'pem-pandoc-format-field' });
         field.createEl('label', { text: 'Format' });
-        const select = field.createEl('select', { attr: { 'aria-label': 'Base pandoc format' } });
+        const select = createPandocSelect(field, [], { 'aria-label': 'Base pandoc format' });
         for (const format of this.availableFormats()) {
             select.createEl('option', { value: format, text: format });
         }

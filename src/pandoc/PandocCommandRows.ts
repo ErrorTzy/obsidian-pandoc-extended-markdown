@@ -1,5 +1,6 @@
 import { addBrowseButton } from './PandocPathBrowse';
 import { createPandocCommandRowSlots } from './PandocCommandRowSlots';
+import { createPandocSelect } from './PandocSelect';
 import {
     createEmptyOptionRow,
     findOptionSpec,
@@ -10,6 +11,8 @@ import {
 import { createTemplateValueInput } from './PandocTemplateValueInput';
 import type {
     OptionField,
+    OptionValueAlternative,
+    OptionValueKind,
     OptionSpec,
     PandocOptionCatalog,
     ProfileDraft,
@@ -22,6 +25,7 @@ type ValueInput = HTMLInputElement | HTMLSelectElement;
 type ValueControl = ValueInput | undefined;
 
 const PROTECTED_CORE_FIELDS: OptionField[] = ['from', 'to', 'output'];
+const hybridValueSelections = new WeakMap<ProfileOptionRow, OptionValueAlternative['id']>();
 
 export interface PandocCommandRowActions {
     nextOptionIndex(): number;
@@ -152,6 +156,11 @@ function renderValueControl(
     spec: OptionSpec | undefined,
     actions: PandocCommandRowActions
 ): void {
+    const alternatives = hybridAlternatives(spec);
+    if (alternatives) {
+        renderHybridValueControl(container, draft, row, spec!, alternatives, actions);
+        return;
+    }
     const control = createTypedValueControl(container, row, draft, spec, actions);
     if (!control) return;
     if (!isTemplateTextInput(control)) {
@@ -165,6 +174,88 @@ function renderValueControl(
         actions.updatePreview(draft);
         updateControlDisplay(control, row, draft, actions);
     });
+}
+
+function renderHybridValueControl(
+    container: HTMLElement,
+    draft: ProfileDraft,
+    row: ProfileOptionRow,
+    spec: OptionSpec,
+    alternatives: OptionValueAlternative[],
+    actions: PandocCommandRowActions
+): void {
+    const selected = selectedAlternative(row, spec, alternatives);
+    const typeSelect = createSelect(container, alternatives.map(alternative => [
+        alternative.id,
+        alternative.label
+    ]), 'pem-pandoc-value-type-select-frame');
+    const valueContainer = container.createDiv({ cls: 'pem-pandoc-hybrid-value' });
+    typeSelect.addClass('pem-pandoc-value-type-select');
+    typeSelect.value = selected.id;
+    typeSelect.onchange = () => {
+        const next = alternatives.find(alternative => alternative.id === typeSelect.value) ?? alternatives[0];
+        hybridValueSelections.set(row, next.id);
+        if (!valueBelongsToAlternative(row.value, next, alternatives)) row.value = '';
+        actions.render();
+        actions.updatePreview(draft);
+    };
+    renderAlternativeValueControl(valueContainer, draft, row, selected, spec, actions);
+}
+
+function renderAlternativeValueControl(
+    container: HTMLElement,
+    draft: ProfileDraft,
+    row: ProfileOptionRow,
+    alternative: OptionValueAlternative,
+    spec: OptionSpec,
+    actions: PandocCommandRowActions
+): void {
+    const control = createAlternativeControl(container, draft, row, alternative, spec, actions);
+    if (!control) return;
+    if (!isTemplateTextInput(control)) {
+        control.onchange = () => {
+            row.value = control.value;
+            hybridValueSelections.set(row, alternative.id);
+            actions.updatePreview(draft);
+        };
+    }
+    addBrowseButton(container, alternative.valueKind, control, value => {
+        row.value = value;
+        hybridValueSelections.set(row, alternative.id);
+        actions.updatePreview(draft);
+        updateControlDisplay(control, row, draft, actions);
+    });
+}
+
+function createAlternativeControl(
+    container: HTMLElement,
+    draft: ProfileDraft,
+    row: ProfileOptionRow,
+    alternative: OptionValueAlternative,
+    spec: OptionSpec,
+    actions: PandocCommandRowActions
+): ValueControl {
+    if (alternative.id === 'preset' && alternative.values?.length) {
+        const select = createSelect(container);
+        for (const value of alternative.values) select.createEl('option', { value, text: value });
+        select.value = row.value;
+        return select;
+    }
+    if (alternative.valueKind === 'format') {
+        const input = createTemplateValueInput(container, row, draft, actions, alternative.placeholder ?? 'FORMAT');
+        createButton(container, '...', () => {
+            actions.openFormatEditor(row, spec, draft);
+        }, 'Edit pandoc format');
+        return input;
+    }
+    if (['integer', 'number'].includes(alternative.valueKind)) {
+        return createInput(container, row.value, value => {
+            row.value = value;
+            hybridValueSelections.set(row, alternative.id);
+            actions.updatePreview(draft);
+        }, 'number', alternative.placeholder ?? 'Value');
+    }
+    return createTemplateValueInput(container, row, draft, actions, alternative.placeholder ?? 'Value');
 }
 
 function isTemplateTextInput(control: ValueInput): control is HTMLInputElement {
@@ -231,10 +322,71 @@ function createInput(
     return input;
 }
 
-function createSelect(container: HTMLElement, options: string[][] = []): HTMLSelectElement {
-    const select = container.createEl('select');
-    for (const [value, text] of options) select.createEl('option', { value, text });
-    return select;
+function createSelect(
+    container: HTMLElement,
+    options: string[][] = [],
+    frameClass = ''
+): HTMLSelectElement {
+    return createPandocSelect(container, options, {}, frameClass);
+}
+
+function hybridAlternatives(spec: OptionSpec | undefined): OptionValueAlternative[] | undefined {
+    const alternatives = spec?.valueAlternatives?.filter(alternative => {
+        if (alternative.id === 'preset') return Boolean(alternative.values?.length);
+        return true;
+    });
+    return alternatives && alternatives.length > 1 ? alternatives : undefined;
+}
+
+function selectedAlternative(
+    row: ProfileOptionRow,
+    spec: OptionSpec,
+    alternatives: OptionValueAlternative[]
+): OptionValueAlternative {
+    const stored = alternatives.find(alternative => alternative.id === hybridValueSelections.get(row));
+    if (stored && (!row.value || valueBelongsToAlternative(row.value, stored, alternatives))) return stored;
+
+    const preset = alternatives.find(alternative => alternative.id === 'preset');
+    if (preset?.values?.includes(row.value)) return preset;
+    const custom = alternatives.find(alternative =>
+        isCustomAlternative(alternative) && valueBelongsToAlternative(row.value, alternative, alternatives));
+    if (custom && row.value) return custom;
+    const path = alternatives.find(alternative => isPathValueKind(alternative.valueKind));
+    if (path && row.value && valueBelongsToAlternative(row.value, path, alternatives)) return path;
+    const openCustom = alternatives.find(isCustomAlternative);
+    if (openCustom && row.value) return openCustom;
+    if (path && row.value) return path;
+    return alternatives.find(alternative => alternative.valueKind === spec.valueKind) ?? alternatives[0];
+}
+
+function valueBelongsToAlternative(
+    value: string,
+    alternative: OptionValueAlternative,
+    alternatives: OptionValueAlternative[]
+): boolean {
+    if (!value) return true;
+    if (alternative.id === 'preset') return Boolean(alternative.values?.includes(value));
+    const preset = alternatives.find(item => item.id === 'preset');
+    if (preset?.values?.includes(value)) return false;
+    if (alternative.id === 'url') return looksLikeUrlValue(value);
+    if (isPathValueKind(alternative.valueKind)) return looksLikePathValue(value);
+    return true;
+}
+
+function looksLikeUrlValue(value: string): boolean {
+    return /^[a-z][a-z0-9+.-]*:/i.test(value) || value.includes('${');
+}
+
+function looksLikePathValue(value: string): boolean {
+    return /[\\/]/.test(value) || value.includes('.') || value.includes('${');
+}
+
+function isCustomAlternative(alternative: OptionValueAlternative): boolean {
+    return alternative.id !== 'preset' && !isPathValueKind(alternative.valueKind);
+}
+
+function isPathValueKind(valueKind: OptionValueKind): boolean {
+    return ['file', 'directory', 'path', 'pathList'].includes(valueKind);
 }
 
 function createButton(

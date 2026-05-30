@@ -13,6 +13,27 @@ export type OptionValueKind =
     | 'pathList'
     | 'keyValue';
 
+export type OptionValueAlternativeId =
+    | 'preset'
+    | 'custom'
+    | 'format'
+    | 'file'
+    | 'directory'
+    | 'path'
+    | 'pathList'
+    | 'url'
+    | 'integer'
+    | 'number'
+    | 'keyValue';
+
+export interface OptionValueAlternative {
+    id: OptionValueAlternativeId;
+    label: string;
+    valueKind: OptionValueKind;
+    placeholder?: string;
+    values?: string[];
+}
+
 export type OptionField =
     | 'from'
     | 'to'
@@ -35,6 +56,7 @@ export interface OptionSpec {
     sectionId?: string;
     valueKind: OptionValueKind;
     valuePlaceholder?: string;
+    valueAlternatives?: OptionValueAlternative[];
     values?: string[];
     repeatable?: boolean;
     mapsTo?: OptionField;
@@ -78,6 +100,7 @@ export interface PandocOptionGroup {
     descriptionBlocks: PandocDescriptionBlock[];
     valueTypeId: OptionValueKind;
     valuePlaceholder?: string;
+    valueAlternatives?: OptionValueAlternative[];
     valueTokens?: PandocValueToken[];
     repeatable: boolean;
     mapsTo?: OptionField;

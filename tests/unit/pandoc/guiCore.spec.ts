@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 
 import {
     buildPandocProfileArgs,
-    DEFAULT_EXPORT_PROFILES
+    DEFAULT_EXPORT_PROFILES,
+    PandocService
 } from '../../../src/pandoc';
 import FALLBACK_PANDOC_OPTIONS_METADATA from '../../../src/pandoc/metadata/pandoc-options.json';
 import {
@@ -23,6 +24,7 @@ import {
     parsePandocHelp,
     parsePandocManPage,
     parsePandocOptionsMetadata,
+    PandocCatalogService,
     quoteToken,
     rebuildPandocOptionsText,
     searchOptionKeys,
@@ -116,6 +118,52 @@ describe('pandoc GUI core', () => {
                 values: ['auto', 'none', 'preserve']
             })
         ]));
+    });
+
+    it('parses union placeholders into value alternatives', () => {
+        const options = parsePandocManPage(`
+     --wrap=auto|none|preserve
+          Determine how text is wrapped.
+
+     --syntax-highlighting=default|none|idiomatic|STYLE|FILE
+          Set the syntax highlighting source.
+
+     --template=FILE|URL
+          Use the specified template.
+`);
+
+        expect(findOptionSpec({ ...FALLBACK_PANDOC_CATALOG, options }, '--wrap')).toMatchObject({
+            valueKind: 'enum',
+            values: ['auto', 'none', 'preserve'],
+            valueAlternatives: [
+                expect.objectContaining({
+                    id: 'preset',
+                    values: ['auto', 'none', 'preserve']
+                })
+            ]
+        });
+        expect(findOptionSpec({ ...FALLBACK_PANDOC_CATALOG, options }, '--syntax-highlighting'))
+            .toMatchObject({
+                valueKind: 'enum',
+                valueAlternatives: [
+                    expect.objectContaining({
+                        id: 'preset',
+                        values: ['default', 'none', 'idiomatic']
+                    }),
+                    expect.objectContaining({
+                        id: 'file',
+                        valueKind: 'file'
+                    })
+                ]
+            });
+        expect(findOptionSpec({ ...FALLBACK_PANDOC_CATALOG, options }, '--template'))
+            .toMatchObject({
+                valueKind: 'file',
+                valueAlternatives: [
+                    expect.objectContaining({ id: 'file', valueKind: 'file' }),
+                    expect.objectContaining({ id: 'url', placeholder: 'URL' })
+                ]
+            });
     });
 
     it('stores equivalent man page flags as separate names sharing one group', () => {
@@ -289,6 +337,37 @@ EXIT CODES
         });
         expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')?.values)
             .toEqual(expect.arrayContaining(['default', 'none', 'idiomatic', 'pygments']));
+        const alternatives = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')?.valueAlternatives;
+        expect(alternatives).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: 'preset',
+                values: expect.arrayContaining(['default', 'none', 'idiomatic', 'pygments'])
+            }),
+            expect.objectContaining({ id: 'file' })
+        ]));
+        expect(alternatives?.find(alternative => alternative.id === 'file')?.values).toBeUndefined();
+    });
+
+    it('enriches runtime highlight styles on the preset alternative only', async () => {
+        const service = new PandocService({
+            runner: async request => pandocResult(request.args, runtimeOutputForArgs(request.args))
+        });
+        const catalogService = new PandocCatalogService({
+            service,
+            shellRunner: async () => pandocResult([], `
+OPTIONS
+   General writer options
+     --syntax-highlighting=default|none|idiomatic|STYLE|FILE
+          Set the syntax highlighting source.
+`)
+        });
+        const catalog = await catalogService.loadCatalog();
+        const spec = findOptionSpec(catalog, '--syntax-highlighting');
+        const preset = spec?.valueAlternatives?.find(alternative => alternative.id === 'preset');
+        const file = spec?.valueAlternatives?.find(alternative => alternative.id === 'file');
+
+        expect(preset?.values).toEqual(expect.arrayContaining(['default', 'none', 'idiomatic', 'solarized']));
+        expect(file?.values).toBeUndefined();
     });
 
     it('parses pandoc extension lists with default inclusion state', () => {
@@ -495,6 +574,33 @@ ignored
         ]));
     });
 
+    it('does not warn for file values on hybrid enum options', () => {
+        const draft = {
+            id: 'hybrid',
+            name: 'Hybrid',
+            type: 'pandoc' as const,
+            extension: '.html',
+            from: 'markdown',
+            to: 'html',
+            standalone: false,
+            resourcePaths: [],
+            luaFilters: [],
+            metadata: {},
+            optionRows: [
+                { id: 'highlight', key: '--syntax-highlighting', value: '${pluginDir}/theme.theme', enabled: true }
+            ],
+            customCommandTemplate: '',
+            customShell: false
+        };
+
+        expect(validateProfileDraft(draft, FALLBACK_PANDOC_CATALOG)).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                rowId: 'highlight',
+                message: expect.stringContaining('not a known value')
+            })
+        ]));
+    });
+
     it('accepts runtime env variables when they are part of the template context', () => {
         const draft = {
             id: 'paths',
@@ -646,6 +752,32 @@ function normalizePandocOptionsSource(text: string): string {
     }
 
     return chunks.join('\n');
+}
+
+function runtimeOutputForArgs(args: string[]): string {
+    const command = args.join(' ');
+    if (command === '--version') return 'pandoc 3.6.0\n';
+    if (command === '--help') {
+        return '--syntax-highlighting=default|none|idiomatic|STYLE|FILE\n';
+    }
+    if (command === '--list-input-formats') return 'markdown\n';
+    if (command === '--list-output-formats') return 'html\n';
+    if (command === '--list-highlight-styles') return 'pygments\nsolarized\n';
+    return '';
+}
+
+function pandocResult(args: string[], stdout: string) {
+    return {
+        executable: 'pandoc',
+        args,
+        exitCode: 0,
+        signal: null,
+        stdout,
+        stderr: '',
+        timedOut: false,
+        durationMs: 0,
+        ok: true
+    };
 }
 
 function isFixtureSectionHeading(line: string): boolean {

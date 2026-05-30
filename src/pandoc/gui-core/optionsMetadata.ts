@@ -1,4 +1,5 @@
 import type {
+    OptionValueAlternative,
     OptionField,
     OptionSpec,
     OptionValueKind,
@@ -199,7 +200,9 @@ function createOptionGroup(
     descriptionBlocks: PandocDescriptionBlock[]
 ): PandocOptionGroup {
     const valuePlaceholder = inferGroupPlaceholder(forms);
-    const valueTypeId = inferValueKind(forms[0].name, valuePlaceholder);
+    const valueTokens = valuePlaceholder ? parseValueTokens(valuePlaceholder) : undefined;
+    const valueAlternatives = inferValueAlternatives(forms[0].name, valuePlaceholder, valueTokens);
+    const valueTypeId = primaryValueKind(forms[0].name, valuePlaceholder, valueAlternatives);
 
     return {
         id,
@@ -209,7 +212,8 @@ function createOptionGroup(
         descriptionBlocks,
         valueTypeId,
         valuePlaceholder,
-        valueTokens: valuePlaceholder ? parseValueTokens(valuePlaceholder) : undefined,
+        valueAlternatives,
+        valueTokens,
         repeatable: inferRepeatable(forms.map(form => form.name)),
         mapsTo: inferMapsTo(forms.map(form => form.name))
     };
@@ -290,6 +294,11 @@ function optionSpecFromGroup(group: PandocOptionGroup, names: PandocOptionName[]
         sectionId: group.sectionId,
         valueKind: group.valueTypeId,
         valuePlaceholder: group.valuePlaceholder,
+        valueAlternatives: group.valueAlternatives ?? inferValueAlternatives(
+            key,
+            group.valuePlaceholder,
+            group.valueTokens
+        ),
         values: valuesFromTokens(group.valueTokens),
         repeatable: group.repeatable,
         mapsTo: group.mapsTo
@@ -309,6 +318,81 @@ function parseValueTokens(placeholder: string): PandocValueToken[] | undefined {
         value,
         kind: /^[A-Z][A-Z0-9_.-]*(?:\[.*\])?$/.test(value) ? 'placeholder' : 'literal'
     }));
+}
+
+function inferValueAlternatives(
+    key: string,
+    placeholder: string | undefined,
+    tokens: PandocValueToken[] | undefined
+): OptionValueAlternative[] | undefined {
+    if (!placeholder || !tokens) return undefined;
+    const alternatives: OptionValueAlternative[] = [];
+    const literalValues = tokens
+        .filter(token => token.kind === 'literal')
+        .map(token => token.value);
+    const styleAsPreset = isHighlightOption(key);
+    if (literalValues.length > 0 || hasStylePlaceholder(tokens, styleAsPreset)) {
+        alternatives.push({
+            id: 'preset',
+            label: 'preset',
+            valueKind: 'enum',
+            placeholder: styleAsPreset ? 'STYLE' : undefined,
+            values: literalValues
+        });
+    }
+    for (const token of tokens.filter(token => token.kind === 'placeholder')) {
+        if (styleAsPreset && token.value === 'STYLE') continue;
+        addUniqueAlternative(alternatives, alternativeFromPlaceholder(token.value));
+    }
+    return alternatives.length > 0 ? alternatives : undefined;
+}
+
+function hasStylePlaceholder(tokens: PandocValueToken[], enabled: boolean): boolean {
+    return enabled && tokens.some(token => token.kind === 'placeholder' && token.value === 'STYLE');
+}
+
+function isHighlightOption(key: string): boolean {
+    return key.includes('highlight');
+}
+
+function addUniqueAlternative(
+    alternatives: OptionValueAlternative[],
+    alternative: OptionValueAlternative
+): void {
+    if (alternatives.some(existing => existing.id === alternative.id)) return;
+    alternatives.push(alternative);
+}
+
+function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative {
+    const valueKind = inferValueKind('', placeholder);
+    if (valueKind === 'file') return pathAlternative('file', 'file', 'file', placeholder);
+    if (valueKind === 'directory') return pathAlternative('directory', 'folder', 'directory', placeholder);
+    if (valueKind === 'pathList') return pathAlternative('pathList', 'folder', 'pathList', placeholder);
+    if (/^URL$/i.test(placeholder)) {
+        return { id: 'url', label: 'URL', valueKind: 'string', placeholder };
+    }
+    if (valueKind === 'format') return { id: 'format', label: 'format', valueKind, placeholder };
+    if (valueKind === 'integer') return { id: 'integer', label: 'number', valueKind, placeholder };
+    if (valueKind === 'number') return { id: 'number', label: 'number', valueKind, placeholder };
+    if (valueKind === 'keyValue') return { id: 'keyValue', label: placeholder, valueKind, placeholder };
+    return { id: 'custom', label: placeholder, valueKind: 'string', placeholder };
+}
+
+function pathAlternative(
+    id: OptionValueAlternative['id'],
+    label: string,
+    valueKind: OptionValueKind,
+    placeholder: string
+): OptionValueAlternative {
+    return { id, label, valueKind, placeholder };
+}
+
+function primaryValueKind(
+    key: string,
+    placeholder: string | undefined,
+    alternatives: OptionValueAlternative[] | undefined
+): OptionValueKind {
+    return alternatives?.[0]?.valueKind ?? inferValueKind(key, placeholder);
 }
 
 function inferValueKind(key: string, placeholder: string | undefined): OptionValueKind {

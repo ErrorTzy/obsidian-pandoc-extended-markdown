@@ -4,6 +4,7 @@ import { getExportTemplateVariableNames } from '../template';
 import type {
     OptionField,
     OptionSpec,
+    OptionValueAlternative,
     PandocOptionCatalog,
     ProfileDraft,
     ProfileOptionRow,
@@ -185,10 +186,10 @@ function validateRowValue(
     if (value && ['integer', 'number'].includes(spec.valueKind)) {
         validateNumberValue(value, spec, issues, row.id);
     }
-    if (value && spec.valueKind === 'enum' && spec.values?.length && !spec.values.includes(value)) {
+    if (value && shouldValidateEnumValue(value, spec)) {
         addWarning(issues, `"${value}" is not a known value for ${spec.key}.`, 'optionRows', row.id);
     }
-    if (value && isPathKind(spec)) {
+    if (value && isPathValue(value, spec)) {
         validatePathTemplateValue(value, spec, issues, row.id, knownTemplateVariables);
     }
 }
@@ -300,6 +301,37 @@ function validateKnownTemplateVariables(
 
 function isPathKind(spec: OptionSpec): boolean {
     return ['file', 'directory', 'path', 'pathList'].includes(spec.valueKind);
+}
+
+function shouldValidateEnumValue(value: string, spec: OptionSpec): boolean {
+    const alternative = selectedAlternative(value, spec);
+    if (alternative) {
+        return alternative.id === 'preset' && Boolean(alternative.values?.length) &&
+            !alternative.values.includes(value);
+    }
+    return spec.valueKind === 'enum' && Boolean(spec.values?.length) && !spec.values?.includes(value);
+}
+
+function isPathValue(value: string, spec: OptionSpec): boolean {
+    const alternative = selectedAlternative(value, spec);
+    if (alternative) return isPathAlternative(alternative);
+    return isPathKind(spec);
+}
+
+function selectedAlternative(
+    value: string,
+    spec: OptionSpec
+): OptionValueAlternative | undefined {
+    const alternatives = spec.valueAlternatives;
+    if (!alternatives || alternatives.length <= 1) return undefined;
+    const preset = alternatives.find(alternative => alternative.id === 'preset');
+    if (preset?.values?.includes(value)) return preset;
+    return alternatives.find(alternative => !isPathAlternative(alternative) && alternative.id !== 'preset') ??
+        alternatives.find(isPathAlternative);
+}
+
+function isPathAlternative(alternative: OptionValueAlternative): boolean {
+    return ['file', 'directory', 'path', 'pathList'].includes(alternative.valueKind);
 }
 
 function addError(

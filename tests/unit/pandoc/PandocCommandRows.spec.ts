@@ -84,6 +84,7 @@ describe('Pandoc command rows', () => {
         expect(rowHasSeparator(rows, '--toc')).toBe(false);
         expect(rowHasSeparator(rows, '--eol')).toBe(true);
         expect(rowSelectValues(rows, '--eol')).toEqual(['crlf', 'lf', 'native']);
+        expect(rowSelectHasDropdownFrame(rows, '--eol')).toBe(true);
         expect(rowHasRemoveButton(rows, 'input file')).toBe(false);
         expect(rowHasRemoveButton(rows, 'from format')).toBe(false);
         expect(rowHasRemoveButton(rows, 'to format')).toBe(false);
@@ -95,6 +96,47 @@ describe('Pandoc command rows', () => {
         expect(rowHasButton(rows, 'to format', 'Show -t option help')).toBe(false);
         expect(rowHasButton(rows, 'output file', 'Show -o option help')).toBe(false);
         expect(rowHasRemoveButton(rows, '--toc')).toBe(true);
+    });
+
+    it('renders hybrid preset and file option values explicitly', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const presetContainer = enhanceElement(document.createElement('div'));
+        const presetDraft = createDraft();
+        presetDraft.optionRows = [
+            { id: 'highlight', key: '--syntax-highlighting', value: 'default', enabled: true }
+        ];
+
+        renderPandocRows(presetContainer, presetDraft, FALLBACK_PANDOC_CATALOG, commandActions());
+
+        const presetRow = findRow(presetContainer, '--syntax-highlighting');
+        const presetSelects = Array.from(presetRow.querySelectorAll('.pem-pandoc-value-cell select')) as HTMLSelectElement[];
+        expect(selectValues(presetSelects[0])).toEqual(['preset', 'file']);
+        expect(selectValues(presetSelects[1])).toEqual(expect.arrayContaining(['default', 'none', 'idiomatic']));
+        expect(presetSelects.every(select => Boolean(select.closest('.pem-pandoc-select-frame')))).toBe(true);
+        expect(presetRow.querySelector('.pem-pandoc-value-cell input')).toBeNull();
+
+        const fileContainer = enhanceElement(document.createElement('div'));
+        const fileDraft = createDraft();
+        fileDraft.optionRows = [
+            {
+                id: 'highlight-file',
+                key: '--syntax-highlighting',
+                value: '${pluginDir}/theme.theme',
+                enabled: true
+            }
+        ];
+
+        renderPandocRows(fileContainer, fileDraft, FALLBACK_PANDOC_CATALOG, commandActions());
+
+        const fileRow = findRow(fileContainer, '--syntax-highlighting');
+        const typeSelect = fileRow.querySelector('.pem-pandoc-value-type-select') as HTMLSelectElement;
+        expect(typeSelect.value).toBe('file');
+        expect(typeSelect.closest('.pem-pandoc-value-type-select-frame')).not.toBeNull();
+        expect(fileRow.querySelector('.pem-pandoc-value-cell input')).not.toBeNull();
+        expect(rowHasBrowseButton([fileRow], '--syntax-highlighting')).toBe(true);
     });
 
     it('renders template variable suggestions with resolved preview values', () => {
@@ -372,6 +414,28 @@ function createDraft(): ProfileDraft {
     };
 }
 
+function commandActions() {
+    return {
+        nextOptionIndex: () => 1,
+        getVariables: () => variables,
+        openFormatEditor: () => undefined,
+        openOptionSearch: () => undefined,
+        render: () => undefined,
+        updatePreview: () => undefined
+    };
+}
+
+function findRow(container: HTMLElement, key: string): Element {
+    const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
+    const row = rows.find(item => getRowKey(item) === key);
+    if (!row) throw new Error(`Row not found for ${key}.`);
+    return row;
+}
+
+function selectValues(select: HTMLSelectElement): string[] {
+    return Array.from(select.options).map(option => option.value);
+}
+
 function rowHasBrowseButton(rows: Element[], key: string): boolean | undefined {
     const row = rows.find(item => getRowKey(item) === key);
     return Array.from(row?.querySelectorAll('button') ?? [])
@@ -397,6 +461,12 @@ function rowSelectValues(rows: Element[], key: string): string[] {
     const row = rows.find(item => getRowKey(item) === key);
     const select = row?.querySelector('.pem-pandoc-value-cell select') as HTMLSelectElement | null;
     return Array.from(select?.options ?? []).map(option => option.value);
+}
+
+function rowSelectHasDropdownFrame(rows: Element[], key: string): boolean {
+    const row = rows.find(item => getRowKey(item) === key);
+    const select = row?.querySelector('.pem-pandoc-value-cell select') as HTMLSelectElement | null;
+    return Boolean(select?.closest('.pem-pandoc-select-frame'));
 }
 
 function rowHasRemoveButton(rows: Element[], key: string): boolean | undefined {

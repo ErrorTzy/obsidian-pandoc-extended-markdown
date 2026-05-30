@@ -73,12 +73,22 @@ export const FALLBACK_PANDOC_CATALOG: PandocOptionCatalog = {
 
 function enrichFallbackOptionValues(option: OptionSpec): OptionSpec {
     if (option.key === '--highlight-style') {
-        return { ...option, values: HIGHLIGHT_STYLES };
+        return enrichPresetValues(option, HIGHLIGHT_STYLES);
     }
     if (option.key === '--syntax-highlighting') {
-        return { ...option, values: mergeValues(option.values, HIGHLIGHT_STYLES) };
+        return enrichPresetValues(option, mergeValues(option.values, HIGHLIGHT_STYLES));
     }
     return option;
+}
+
+function enrichPresetValues(option: OptionSpec, values: string[]): OptionSpec {
+    return {
+        ...option,
+        values,
+        valueAlternatives: option.valueAlternatives?.map(alternative => alternative.id === 'preset'
+            ? { ...alternative, values: mergeValues(alternative.values, values) }
+            : alternative)
+    };
 }
 
 function mergeValues(...groups: Array<string[] | undefined>): string[] {

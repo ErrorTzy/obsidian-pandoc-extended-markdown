@@ -18,6 +18,7 @@ import {
 } from './optionsMetadata';
 import type {
     FormatExtensionSpec,
+    OptionValueAlternative,
     OptionSpec,
     OptionValueKind,
     PandocOptionCatalog
@@ -174,14 +175,17 @@ function buildSpec(tokens: string[], description: string, sourceText: string): O
     const key = long ?? normalized[0];
     const aliases = normalized.filter(token => token !== key);
     const valueKind = inferValueKind(key, sourceText);
+    const valuePlaceholder = inferValuePlaceholder(sourceText, valueKind);
+    const valueAlternatives = inferValueAlternatives(key, valuePlaceholder);
 
     return {
         key,
         aliases,
         name: key.replace(/^--?/, ''),
         description,
-        valueKind,
-        valuePlaceholder: inferValuePlaceholder(sourceText, valueKind),
+        valueKind: valueAlternatives?.[0]?.valueKind ?? valueKind,
+        valuePlaceholder,
+        valueAlternatives,
         values: inferValues(sourceText, valueKind),
         repeatable: inferRepeatable(key),
         mapsTo: inferMapsTo(key)
@@ -243,6 +247,54 @@ function inferValues(text: string, valueKind: OptionValueKind): string[] | undef
     return values.length > 0 ? Array.from(new Set(values)) : undefined;
 }
 
+function inferValueAlternatives(
+    key: string,
+    placeholder: string | undefined
+): OptionValueAlternative[] | undefined {
+    if (!placeholder?.includes('|')) return undefined;
+    const tokens = placeholder.split('|').map(value => ({
+        value,
+        placeholder: /^[A-Z][A-Z0-9_.-]*(?:\[.*\])?$/.test(value)
+    }));
+    const alternatives: OptionValueAlternative[] = [];
+    const literals = tokens.filter(token => !token.placeholder).map(token => token.value);
+    if (literals.length > 0 || tokens.some(token => token.value === 'STYLE' && key.includes('highlight'))) {
+        alternatives.push({
+            id: 'preset',
+            label: 'preset',
+            valueKind: 'enum',
+            placeholder: key.includes('highlight') ? 'STYLE' : undefined,
+            values: literals
+        });
+    }
+    for (const token of tokens.filter(token => token.placeholder)) {
+        if (token.value === 'STYLE' && key.includes('highlight')) continue;
+        addUniqueAlternative(alternatives, alternativeFromPlaceholder(token.value));
+    }
+    return alternatives.length > 0 ? alternatives : undefined;
+}
+
+function addUniqueAlternative(
+    alternatives: OptionValueAlternative[],
+    alternative: OptionValueAlternative
+): void {
+    if (alternatives.some(existing => existing.id === alternative.id)) return;
+    alternatives.push(alternative);
+}
+
+function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative {
+    const valueKind = inferValueKind('', placeholder);
+    if (valueKind === 'file') return { id: 'file', label: 'file', valueKind, placeholder };
+    if (valueKind === 'directory') return { id: 'directory', label: 'folder', valueKind, placeholder };
+    if (valueKind === 'pathList') return { id: 'pathList', label: 'folder', valueKind, placeholder };
+    if (/^URL$/i.test(placeholder)) return { id: 'url', label: 'URL', valueKind: 'string', placeholder };
+    if (valueKind === 'format') return { id: 'format', label: 'format', valueKind, placeholder };
+    if (valueKind === 'integer') return { id: 'integer', label: 'number', valueKind, placeholder };
+    if (valueKind === 'number') return { id: 'number', label: 'number', valueKind, placeholder };
+    if (valueKind === 'keyValue') return { id: 'keyValue', label: placeholder, valueKind, placeholder };
+    return { id: 'custom', label: placeholder, valueKind: 'string', placeholder };
+}
+
 function inferMapsTo(key: string): OptionSpec['mapsTo'] {
     if (['--from', '-f', '--read', '-r'].includes(key)) return 'from';
     if (['--to', '-t', '--write', '-w'].includes(key)) return 'to';
@@ -293,8 +345,27 @@ function enrichOption(
 ): OptionSpec {
     if (spec.mapsTo === 'from') return { ...spec, values: inputFormats };
     if (spec.mapsTo === 'to') return { ...spec, values: outputFormats };
-    if (spec.name.includes('highlight')) return { ...spec, values: mergeValues(spec.values, styles) };
+    if (spec.name.includes('highlight')) return enrichPresetValues(spec, styles);
     return spec;
+}
+
+function enrichPresetValues(spec: OptionSpec, values: string[]): OptionSpec {
+    const merged = mergeValues(spec.values, values);
+    return {
+        ...spec,
+        values: merged,
+        valueAlternatives: mergeAlternativePresetValues(spec.valueAlternatives, merged)
+    };
+}
+
+function mergeAlternativePresetValues(
+    alternatives: OptionValueAlternative[] | undefined,
+    values: string[] | undefined
+): OptionValueAlternative[] | undefined {
+    if (!alternatives || !values) return alternatives;
+    return alternatives.map(alternative => alternative.id === 'preset'
+        ? { ...alternative, values: mergeValues(alternative.values, values) }
+        : alternative);
 }
 
 function mergeValues(...groups: Array<string[] | undefined>): string[] | undefined {
@@ -317,10 +388,30 @@ function mergeOptionSpec(base: OptionSpec, incoming: OptionSpec): OptionSpec {
         description: incoming.description || base.description,
         valueKind: incoming.valueKind ?? base.valueKind,
         valuePlaceholder: incoming.valuePlaceholder ?? base.valuePlaceholder,
+        valueAlternatives: mergeValueAlternatives(base.valueAlternatives, incoming.valueAlternatives),
         values: incoming.values ?? base.values,
         repeatable: base.repeatable || incoming.repeatable,
         mapsTo: incoming.mapsTo ?? base.mapsTo
     };
+}
+
+function mergeValueAlternatives(
+    base: OptionValueAlternative[] | undefined,
+    incoming: OptionValueAlternative[] | undefined
+): OptionValueAlternative[] | undefined {
+    if (!base) return incoming;
+    if (!incoming) return base;
+    const merged = base.map(alternative => ({ ...alternative }));
+    for (const alternative of incoming) {
+        const existing = merged.find(item => item.id === alternative.id);
+        if (!existing) {
+            merged.push({ ...alternative });
+            continue;
+        }
+        existing.values = mergeValues(existing.values, alternative.values);
+        existing.placeholder = alternative.placeholder ?? existing.placeholder;
+    }
+    return merged;
 }
 
 function cloneCatalog(catalog: PandocOptionCatalog): PandocOptionCatalog {
