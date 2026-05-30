@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
     buildExportVariables,
+    buildOptionDisplayExportVariables,
     buildPreviewExportVariables,
     renderExportTemplate
 } from '../../../src/pandoc';
@@ -141,5 +142,102 @@ describe('export variables', () => {
             luaFilterDir: '/vault/.obsidian/plugins/pandoc-extended-markdown/lua_filter',
             attachmentFolderPath: '/vault/assets'
         });
+    });
+
+    it('builds option display variables without expanding relative paths to vault paths', () => {
+        const variables = buildOptionDisplayExportVariables({
+            app: {
+                vault: {
+                    adapter: {
+                        getBasePath: () => '/vault',
+                        getFullPath: (path: string) => `/vault/${path}`
+                    },
+                    config: {
+                        attachmentFolderPath: './attachments'
+                    }
+                },
+                metadataCache: {
+                    getCache: () => ({
+                        embeds: [{ link: 'image.png' }]
+                    }),
+                    getFirstLinkpathDest: () => ({ path: 'folder/attachments/image.png' })
+                },
+                workspace: {
+                    getActiveFile: () => ({
+                        path: 'folder/note.md',
+                        name: 'note.md',
+                        basename: 'note'
+                    })
+                }
+            } as any,
+            manifest: {
+                id: 'pandoc-extended-markdown',
+                dir: '.obsidian/plugins/pandoc-extended-markdown'
+            } as any,
+            settings: {
+                defaultOutputFolderMode: 'custom',
+                customOutputFolder: 'exports'
+            } as any,
+            extension: '.html'
+        });
+
+        expect(variables).toMatchObject({
+            currentPath: 'folder/note.md',
+            currentDir: 'folder',
+            outputPath: 'exports/note.html',
+            outputDir: 'exports',
+            pluginDir: '.obsidian/plugins/pandoc-extended-markdown',
+            luaFilterDir: '.obsidian/plugins/pandoc-extended-markdown/lua_filter',
+            attachmentFolderPath: 'folder/attachments',
+            embedDirs: 'folder/attachments'
+        });
+    });
+
+    it('keeps root-level current directory display variables empty', () => {
+        const variables = buildOptionDisplayExportVariables({
+            app: {
+                vault: {
+                    adapter: {
+                        getBasePath: () => '/vault',
+                        getFullPath: (path: string) => `/vault/${path}`
+                    },
+                    config: {
+                        attachmentFolderPath: './attachments'
+                    }
+                },
+                metadataCache: {
+                    getCache: () => ({
+                        embeds: [{ link: 'image.png' }]
+                    }),
+                    getFirstLinkpathDest: () => ({ path: 'image.png' })
+                },
+                workspace: {
+                    getActiveFile: () => ({
+                        path: 'note.md',
+                        name: 'note.md',
+                        basename: 'note'
+                    })
+                }
+            } as any,
+            manifest: {
+                id: 'pandoc-extended-markdown',
+                dir: '.obsidian/plugins/pandoc-extended-markdown'
+            } as any,
+            settings: {
+                defaultOutputFolderMode: 'current',
+                customOutputFolder: ''
+            } as any,
+            extension: '.html'
+        });
+
+        expect(variables).toMatchObject({
+            currentPath: 'note.md',
+            currentDir: '',
+            outputPath: 'note.html',
+            outputDir: '',
+            attachmentFolderPath: 'attachments',
+            embedDirs: ''
+        });
+        expect(renderExportTemplate('${currentDir}/assets', variables)).toBe('/assets');
     });
 });

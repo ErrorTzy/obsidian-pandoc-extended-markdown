@@ -29,6 +29,32 @@ const variables: ExportVariables = {
     metadata: {}
 };
 
+const relativeVariables: ExportVariables = {
+    ...variables,
+    pluginDir: '.obsidian/plugins/pandoc-extended-markdown',
+    luaFilterDir: '.obsidian/plugins/pandoc-extended-markdown/lua_filter',
+    currentPath: 'folder/note.md',
+    currentDir: 'folder',
+    outputPath: 'exports/note.html',
+    outputDir: 'exports',
+    attachmentFolderPath: 'folder/assets',
+    embedDirs: 'folder/assets',
+    outputExtension: '.html'
+};
+
+const absoluteFolderVariables: ExportVariables = {
+    ...variables,
+    pluginDir: '/vault/.obsidian/plugins/pandoc-extended-markdown',
+    luaFilterDir: '/vault/.obsidian/plugins/pandoc-extended-markdown/lua_filter',
+    currentPath: '/vault/folder/note.md',
+    currentDir: '/vault/folder',
+    outputPath: '/vault/exports/note.html',
+    outputDir: '/vault/exports',
+    attachmentFolderPath: '/vault/folder/assets',
+    embedDirs: '/vault/folder/assets',
+    outputExtension: '.html'
+};
+
 describe('Pandoc command rows', () => {
     it('renders path browse buttons, flag rows, and enum choices', () => {
         window.requestAnimationFrame = jest.fn(callback => {
@@ -102,6 +128,76 @@ describe('Pandoc command rows', () => {
             .toBe('${currentPath}');
         expect(firstSuggestion?.querySelector('.pem-pandoc-variable-suggestion-value')?.textContent)
             .toBe('/vault/note.md');
+    });
+
+    it('renders blurred option values as absolute paths with appended prefixes muted', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            nextOptionIndex: () => 1,
+            getVariables: () => absoluteFolderVariables,
+            getDisplayVariables: () => relativeVariables,
+            openFormatEditor: () => undefined,
+            openOptionSearch: () => undefined,
+            render: () => undefined,
+            updatePreview: () => undefined
+        });
+
+        expect(findValueInput(container, 'input file').value).toBe('/vault/folder/note.md');
+        expect(valueDisplayParts(container, 'input file')).toEqual([
+            { text: '/vault/', muted: true },
+            { text: 'folder/note.md', muted: false }
+        ]);
+        expect(valueDisplayFrame(container, 'input file').classList.contains('has-muted-display-prefix')).toBe(true);
+        expect(valueDisplayParts(container, 'output file')).toEqual([
+            { text: '/vault/', muted: true },
+            { text: 'exports/note.html', muted: false }
+        ]);
+        expect(valueDisplayParts(container, '--resource-path')).toEqual([
+            { text: '/vault/', muted: true },
+            { text: 'folder', muted: false }
+        ]);
+        expect(valueDisplayParts(container, '-L')).toEqual([
+            { text: '/vault/', muted: true },
+            { text: '.obsidian/plugins/pandoc-extended-markdown/lua_filter/CustomLabelList.lua', muted: false }
+        ]);
+    });
+
+    it('mutes the whole resolved path when a root-level directory variable is empty', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            nextOptionIndex: () => 1,
+            getVariables: () => variables,
+            getDisplayVariables: () => ({
+                ...variables,
+                currentPath: 'note.md',
+                currentDir: '',
+                outputPath: 'note.html',
+                outputDir: '',
+                attachmentFolderPath: 'assets',
+                embedDirs: '',
+                outputExtension: '.html'
+            }),
+            openFormatEditor: () => undefined,
+            openOptionSearch: () => undefined,
+            render: () => undefined,
+            updatePreview: () => undefined
+        });
+
+        expect(valueDisplayParts(container, '--resource-path')).toEqual([
+            { text: '/vault', muted: true }
+        ]);
     });
 
     it('renders format rows as text fields with editor helpers', () => {
@@ -272,6 +368,26 @@ function findValueInput(container: HTMLElement, key: string): HTMLInputElement {
     const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
     if (!input) throw new Error(`Value input not found for ${key}.`);
     return input;
+}
+
+function valueDisplayParts(container: HTMLElement, key: string): Array<{ text: string; muted: boolean }> {
+    const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
+    const row = rows.find(item => getRowKey(item) === key);
+    const display = row?.querySelector('.pem-pandoc-string-display');
+    if (!display) throw new Error(`Value display not found for ${key}.`);
+
+    return Array.from(display.querySelectorAll('.pem-pandoc-string-display-content > span')).map(span => ({
+        text: span.textContent ?? '',
+        muted: span.classList.contains('pem-pandoc-string-display-muted')
+    }));
+}
+
+function valueDisplayFrame(container: HTMLElement, key: string): HTMLElement {
+    const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
+    const row = rows.find(item => getRowKey(item) === key);
+    const frame = row?.querySelector('.pem-pandoc-string-input-frame') as HTMLElement | null;
+    if (!frame) throw new Error(`Value display frame not found for ${key}.`);
+    return frame;
 }
 
 function getRowKey(row: Element): string {

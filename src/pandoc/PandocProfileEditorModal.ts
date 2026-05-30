@@ -4,7 +4,10 @@ import { PandocExportPluginLike } from './ExportModal';
 import { renderPandocRows } from './PandocCommandRows';
 import { PandocFormatEditorModal } from './PandocFormatEditor';
 import { PandocOptionSearchModal } from './PandocOptionSearchModal';
-import { buildPreviewExportVariables } from './previewVariables';
+import {
+    buildOptionDisplayExportVariables,
+    buildPreviewExportVariables
+} from './previewVariables';
 import {
     buildProfileDraftPreview,
     compileProfileDraft,
@@ -70,13 +73,14 @@ export class PandocProfileEditorModal extends Modal {
             renderPandocRows(content, draft, this.catalog, {
                 nextOptionIndex: () => this.optionIndex++,
                 getVariables: current => this.buildPreviewVariables(current),
+                getDisplayVariables: current => this.buildOptionDisplayVariables(current),
                 openFormatEditor: (row, spec, current) => {
                     new PandocFormatEditorModal(this.app, {
                         draft: current,
                         row,
                         spec,
                         catalog: this.catalog!,
-                        getVariables: editorDraft => this.buildPreviewVariables(editorDraft),
+                        getVariables: editorDraft => this.buildOptionDisplayVariables(editorDraft),
                         onApply: value => {
                             row.value = value;
                             this.updatePreview(current);
@@ -287,6 +291,19 @@ export class PandocProfileEditorModal extends Modal {
             undefined;
 
         return buildPreviewExportVariables({
+            app: this.plugin.app,
+            manifest: this.plugin.manifest,
+            settings: this.plugin.settings.pandocExport,
+            extension: profile?.extension ?? draft.extension
+        });
+    }
+
+    private buildOptionDisplayVariables(draft: ProfileDraft) {
+        const profile = draft.type === 'pandoc' && this.catalog ?
+            compileProfileDraft(draft, this.catalog) :
+            undefined;
+
+        return buildOptionDisplayExportVariables({
             app: this.plugin.app,
             manifest: this.plugin.manifest,
             settings: this.plugin.settings.pandocExport,

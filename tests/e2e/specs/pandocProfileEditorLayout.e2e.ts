@@ -153,6 +153,8 @@ describe('Pandoc profile editor layout', () => {
         expect(state.maxScrollLeft - state.scrollLeft).toBeLessThanOrEqual(1);
         expect(state.indicatorContent).toContain('...');
         expect(state.indicatorDisplay).not.toBe('none');
+        expect(state.displayContentRightDelta).toBeLessThanOrEqual(1);
+        expect(state.displayContentClipsLeft).toBe(true);
     });
 });
 
@@ -333,6 +335,8 @@ async function getFirstResourcePathOverflowState(): Promise<{
     overflowSide: string | null;
     indicatorContent: string;
     indicatorDisplay: string;
+    displayContentRightDelta: number;
+    displayContentClipsLeft: boolean;
 }> {
     return browser.execute(() => {
         const modal = Array.from(document.querySelectorAll('.pem-pandoc-command-modal')).at(-1);
@@ -341,8 +345,15 @@ async function getFirstResourcePathOverflowState(): Promise<{
             (item.querySelector('.pem-pandoc-key-input') as HTMLInputElement | null)?.value === '--resource-path');
         const frame = row?.querySelector('.pem-pandoc-string-input-frame') as HTMLElement | null;
         const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
+        const display = row?.querySelector('.pem-pandoc-string-display') as HTMLElement | null;
+        const displayContent = row?.querySelector('.pem-pandoc-string-display-content') as HTMLElement | null;
         if (!frame || !input) throw new Error('Resource path string input frame not found.');
         const indicator = window.getComputedStyle(frame, '::before');
+        const displayRect = display?.getBoundingClientRect();
+        const contentRect = displayContent?.getBoundingClientRect();
+        const displayStyle = display ? window.getComputedStyle(display) : undefined;
+        const paddingLeft = displayStyle ? parseFloat(displayStyle.paddingLeft) : 0;
+        const paddingRight = displayStyle ? parseFloat(displayStyle.paddingRight) : 0;
         return {
             overflows: input.scrollWidth > input.clientWidth + 1,
             scrollLeft: input.scrollLeft,
@@ -350,7 +361,12 @@ async function getFirstResourcePathOverflowState(): Promise<{
             textAlign: window.getComputedStyle(input).textAlign,
             overflowSide: frame.getAttribute('data-overflow-side'),
             indicatorContent: indicator.content,
-            indicatorDisplay: indicator.display
+            indicatorDisplay: indicator.display,
+            displayContentRightDelta: displayRect && contentRect ?
+                Math.abs(displayRect.right - paddingRight - contentRect.right) :
+                Number.POSITIVE_INFINITY,
+            displayContentClipsLeft: Boolean(displayRect && contentRect &&
+                contentRect.left < displayRect.left + paddingLeft)
         };
     });
 }

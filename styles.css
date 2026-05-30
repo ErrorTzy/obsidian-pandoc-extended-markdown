@@ -260,11 +260,54 @@
     display: flex;
 }
 
+.pem-pandoc-string-input-frame.is-display-mode.has-muted-display-prefix::before {
+    color: var(--text-faint);
+}
+
 .pem-pandoc-string-input-frame .pem-pandoc-string-input {
     box-sizing: border-box;
     direction: ltr;
     position: relative;
     z-index: 0;
+}
+
+.pem-pandoc-string-display {
+    align-items: center;
+    box-sizing: border-box;
+    color: var(--text-normal);
+    display: none;
+    font-size: var(--font-ui-small);
+    inset: 0;
+    line-height: var(--input-height);
+    overflow: hidden;
+    padding: 0 10px;
+    position: absolute;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.pem-pandoc-string-input-frame.is-display-mode .pem-pandoc-string-display {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.pem-pandoc-string-input-frame.is-display-mode.is-overflowing .pem-pandoc-string-display {
+    justify-content: flex-end;
+}
+
+.pem-pandoc-string-display-content {
+    flex: 0 0 auto;
+    min-width: max-content;
+}
+
+.pem-pandoc-string-input-frame.is-display-mode .pem-pandoc-string-input {
+    color: transparent;
+    caret-color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+.pem-pandoc-string-display-muted {
+    color: var(--text-faint);
 }
 
 .pem-pandoc-string-input-frame.is-overflowing .pem-pandoc-string-input {

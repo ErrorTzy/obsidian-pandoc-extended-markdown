@@ -15,6 +15,7 @@ export {
     buildExportVariables
 } from './variables';
 export {
+    buildOptionDisplayExportVariables,
     buildPreviewExportVariables
 } from './previewVariables';
 export {
