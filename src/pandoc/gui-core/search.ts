@@ -40,8 +40,7 @@ export function searchOptionKeys(
 
 export function optionLabel(option: OptionSpec): string {
     const tokens = [option.key, ...option.aliases];
-    const suffix = option.valuePlaceholder ? ` ${option.valuePlaceholder}` : '';
-    return `${tokens.join(', ')}${suffix}`;
+    return tokens.join(', ');
 }
 
 function scoreOptionKeys(option: OptionSpec, query: string): number {

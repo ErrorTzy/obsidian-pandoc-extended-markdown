@@ -6,6 +6,7 @@ import { App } from 'obsidian';
 
 import { PandocFormatEditorModal } from '../../../src/pandoc/PandocFormatEditor';
 import { renderPandocRows } from '../../../src/pandoc/PandocCommandRows';
+import { PandocOptionSearchModal } from '../../../src/pandoc/PandocOptionSearchModal';
 import { buildTemplateVariableContext } from '../../../src/pandoc/templateVariables';
 import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/gui-core';
 import type { ProfileDraft } from '../../../src/pandoc/gui-core';
@@ -357,6 +358,24 @@ describe('Pandoc command rows', () => {
         input.value = 'resource';
         input.dispatchEvent(new InputEvent('input', { bubbles: true }));
         expect(row?.querySelector('.pem-pandoc-key-suggestions')?.textContent).toContain('--resource-path');
+    });
+
+    it('renders option search column headers and bare argument types', () => {
+        const modal = new PandocOptionSearchModal(
+            new App(),
+            FALLBACK_PANDOC_CATALOG,
+            () => undefined
+        );
+
+        modal.open();
+
+        const header = modal.contentEl.querySelector('.pem-pandoc-option-result-header');
+        const firstResult = modal.contentEl.querySelector('.pem-pandoc-option-result');
+
+        expect(header?.textContent).toBe('FlagArgument typeDescription');
+        expect(firstResult?.querySelector('.pem-pandoc-option-result-type')?.textContent).not.toContain('type:');
+
+        modal.close();
     });
 
     it('opens an extension description panel from help buttons', () => {

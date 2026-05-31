@@ -434,13 +434,27 @@
     overflow-y: auto;
 }
 
-.pem-pandoc-option-result {
+.pem-pandoc-option-result,
+.pem-pandoc-option-result-header {
     border-bottom: 1px solid var(--background-modifier-border);
-    cursor: pointer;
     display: grid;
     gap: 12px;
     grid-template-columns: minmax(140px, 220px) minmax(120px, 160px) minmax(0, 1fr);
     padding: 8px 4px;
+}
+
+.pem-pandoc-option-result {
+    cursor: pointer;
+}
+
+.pem-pandoc-option-result-header {
+    background: var(--background-primary);
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    font-weight: var(--font-semibold);
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .pem-pandoc-option-result:hover,

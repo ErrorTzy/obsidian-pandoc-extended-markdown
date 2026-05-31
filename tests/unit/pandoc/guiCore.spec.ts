@@ -16,6 +16,7 @@ import {
     findOptionSpec,
     getFormatExtensionChoices,
     mergeOptionSpecs,
+    metadataToOptionSpecs,
     optionLabel,
     optionValueTypeText,
     parseExtensionListOutput,
@@ -63,6 +64,7 @@ describe('pandoc GUI core', () => {
                         --columns=NUMBER
                         --eol=crlf|lf|native
                         --toc[=true|false], --table-of-contents[=true|false]
+  -H FILE              --include-in-header=FILE|URL
 `);
 
         expect(options).toEqual(expect.arrayContaining([
@@ -87,6 +89,21 @@ describe('pandoc GUI core', () => {
             expect.objectContaining({
                 key: '--toc',
                 valueKind: 'none'
+            }),
+            expect.objectContaining({
+                key: '-H',
+                aliases: [],
+                valuePlaceholder: 'FILE',
+                valueKind: 'file'
+            }),
+            expect.objectContaining({
+                key: '--include-in-header',
+                aliases: [],
+                valuePlaceholder: 'FILE|URL',
+                valueAlternatives: [
+                    expect.objectContaining({ id: 'FILE' }),
+                    expect.objectContaining({ id: 'URL' })
+                ]
             })
         ]));
     });
@@ -168,6 +185,45 @@ describe('pandoc GUI core', () => {
                     expect.objectContaining({ id: 'URL', placeholder: 'URL' })
                 ]
             });
+    });
+
+    it('preserves distinct value syntax for aliases in one man page signature', () => {
+        const options = parsePandocManPage(`
+     -H FILE, --include-in-header=FILE|URL
+          Include contents of FILE, verbatim, at the end of the header.
+
+     -f FORMAT, --from=FORMAT
+          Specify input format.
+`);
+        const catalog = { ...FALLBACK_PANDOC_CATALOG, options };
+        const shortInclude = findOptionSpec(catalog, '-H');
+        const longInclude = findOptionSpec(catalog, '--include-in-header');
+        const from = findOptionSpec(catalog, '--from');
+
+        expect(shortInclude).toMatchObject({
+            key: '-H',
+            aliases: [],
+            valuePlaceholder: 'FILE',
+            valueKind: 'file',
+            description: expect.stringContaining('Include contents')
+        });
+        expect(shortInclude?.valueAlternatives).toBeUndefined();
+        expect(longInclude).toMatchObject({
+            key: '--include-in-header',
+            aliases: [],
+            valuePlaceholder: 'FILE|URL',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'FILE', valueKind: 'file' }),
+                expect.objectContaining({ id: 'URL', placeholder: 'URL' })
+            ],
+            description: shortInclude?.description
+        });
+        expect(from).toMatchObject({
+            key: '-f',
+            aliases: ['--from'],
+            valuePlaceholder: 'FORMAT',
+            valueKind: 'format'
+        });
     });
 
     it('stores equivalent man page flags as separate names sharing one group', () => {
@@ -266,6 +322,24 @@ EXIT CODES
         }
     });
 
+    it('keeps bundled option specs aligned with each option name value syntax', () => {
+        const metadata = FALLBACK_PANDOC_OPTIONS_METADATA as PandocOptionsMetadata;
+        const options = metadataToOptionSpecs(metadata);
+
+        for (const name of metadata.optionNames) {
+            const matches = options.filter(option => [option.key, ...option.aliases].includes(name.name));
+            const expectedPlaceholder = normalizeFixtureValueSyntax(name.valueSyntax);
+
+            expect(matches).toHaveLength(1);
+            expect(matches[0].valuePlaceholder).toBe(expectedPlaceholder);
+        }
+
+        for (const option of options) {
+            if (!option.valuePlaceholder) continue;
+            expect(optionLabel(option)).not.toContain(option.valuePlaceholder);
+        }
+    });
+
     it('ignores man page prose that only mentions options', () => {
         const options = parsePandocManPage(`
      --from and --to options below. Pandoc can also produce PDF output.
@@ -352,6 +426,37 @@ EXIT CODES
             expect.objectContaining({ id: 'FILE' })
         ]));
         expect(alternatives?.find(alternative => alternative.id === 'FILE')?.values).toBeUndefined();
+    });
+
+    it('formats fallback labels and mixed placeholder value types without leaking placeholders', () => {
+        const idPrefix = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--id-prefix');
+        const extractMedia = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--extract-media');
+        const shortHeader = findOptionSpec(FALLBACK_PANDOC_CATALOG, '-H');
+        const longHeader = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--include-in-header');
+
+        expect(optionLabel(idPrefix!)).toBe('--id-prefix');
+        expect(optionValueTypeText(idPrefix)).toBe('STRING');
+        expect(optionValueTypeText(extractMedia)).toBe('DIR | FILE.zip');
+        expect(extractMedia?.valueAlternatives).toEqual([
+            expect.objectContaining({ id: 'DIR', valueKind: 'directory' }),
+            expect.objectContaining({ id: 'FILE.zip', valueKind: 'file' })
+        ]);
+        expect(shortHeader).toMatchObject({
+            key: '-H',
+            aliases: [],
+            valuePlaceholder: 'FILE',
+            valueKind: 'file'
+        });
+        expect(longHeader).toMatchObject({
+            key: '--include-in-header',
+            aliases: [],
+            valuePlaceholder: 'FILE|URL',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'FILE' }),
+                expect.objectContaining({ id: 'URL' })
+            ]
+        });
+        expect(shortHeader?.description).toBe(longHeader?.description);
     });
 
     it('enriches runtime highlight styles on the STYLE alternative only', async () => {
@@ -457,7 +562,7 @@ ignored
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'from')[0].option.key).toBe('-f');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, '--from')[0].option.key).toBe('-f');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, '--read')[0].option.key).toBe('-f');
-        expect(optionLabel(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--read')!)).toBe('-f, -r, --from, --read FORMAT');
+        expect(optionLabel(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--read')!)).toBe('-f, -r, --from, --read');
         expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--from')?.description).toContain('FORMAT can be:');
         expect(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--from')?.description).toContain('markdown (Pandoc');
         expect(searchOptions(FALLBACK_PANDOC_CATALOG, 'table of contents')[0].option.key).toBe('--toc');
@@ -471,14 +576,14 @@ ignored
     });
 
     it('formats option value type labels shared by command and search panels', () => {
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--toc'))).toBe('type: flag');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toBe('type: FORMAT');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toBe('type: SEARCHPATH');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-L'))).toBe('type: SCRIPT');
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--eol'))).toBe('type: ENUM');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--toc'))).toBe('');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toBe('FORMAT');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toBe('SEARCHPATH');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-L'))).toBe('SCRIPT');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--eol'))).toBe('ENUM');
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')))
-            .toBe('type: ENUM | STYLE | FILE');
-        expect(optionValueTypeText()).toBe('type: unknown');
+            .toBe('ENUM | STYLE | FILE');
+        expect(optionValueTypeText()).toBe('unknown');
     });
 
     it('validates formats, integers, and unknown keys', () => {
@@ -764,6 +869,14 @@ function normalizePandocOptionsSource(text: string): string {
     }
 
     return chunks.join('\n');
+}
+
+function normalizeFixtureValueSyntax(valueSyntax: string | undefined): string | undefined {
+    if (!valueSyntax) return undefined;
+    if (/^\[=?true\|false\]$/.test(valueSyntax) || /^=\[true\|false\]$/.test(valueSyntax)) {
+        return undefined;
+    }
+    return valueSyntax.replace(/^=/, '').trim() || undefined;
 }
 
 function runtimeOutputForArgs(args: string[]): string {

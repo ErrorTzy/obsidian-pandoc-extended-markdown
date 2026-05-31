@@ -76,6 +76,7 @@ export class PandocOptionSearchModal extends Modal {
     private renderResults(): void {
         if (!this.resultsEl) return;
         this.resultsEl.empty();
+        this.renderHeader(this.resultsEl);
         const results = searchOptions(this.catalog, this.query, 120, this.fuzzy)
             .filter(result => this.optionFilter?.(result.option) ?? true)
             .slice(0, 80);
@@ -85,6 +86,13 @@ export class PandocOptionSearchModal extends Modal {
         }
 
         if (this.confirmButton) this.confirmButton.disabled = !this.selected;
+    }
+
+    private renderHeader(container: HTMLElement): void {
+        const header = container.createDiv({ cls: 'pem-pandoc-option-result-header' });
+        header.createEl('div', { text: 'Flag' });
+        header.createEl('div', { text: 'Argument type' });
+        header.createEl('div', { text: 'Description' });
     }
 
     private renderResult(container: HTMLElement, option: OptionSpec): void {

@@ -39,13 +39,13 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.typeColumnLeftSpread).toBeLessThanOrEqual(1);
 
         const rows = await getCommandRows();
-        expect(rowType(rows, 'input file')).toBe('type: input file');
-        expect(rowType(rows, 'from format')).toBe('type: format string');
-        expect(rowType(rows, 'to format')).toBe('type: format string');
-        expect(rowType(rows, 'output file')).toBe('type: file path');
-        expect(rowType(rows, '--resource-path')).toBe('type: folder path');
+        expect(rowType(rows, 'input file')).toBe('input file');
+        expect(rowType(rows, 'from format')).toBe('FORMAT');
+        expect(rowType(rows, 'to format')).toBe('FORMAT');
+        expect(rowType(rows, 'output file')).toBe('FILE');
+        expect(rowType(rows, '--resource-path')).toBe('SEARCHPATH');
         expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
-        expect(rowType(rows, '-L')).toBe('type: file path');
+        expect(rowType(rows, '-L')).toBe('SCRIPT');
         expect(rowHasBrowseButton(rows, '-L')).toBe(true);
     });
 
@@ -74,8 +74,9 @@ describe('Pandoc profile editor layout', () => {
         expect(await isConfirmNextToSearchBar()).toBe(true);
 
         const panelLayout = await getOptionPanelLayout();
+        expect(panelLayout.header).toBe('FlagArgument typeDescription');
         expect(panelLayout.tocCells.key).toContain('--toc');
-        expect(panelLayout.tocCells.type).toBe('type: flag');
+        expect(panelLayout.tocCells.type).toBe('');
         expect(panelLayout.tocCells.description).toContain('table of contents');
         expect(panelLayout.tocColumnCount).toBe(3);
         expect(panelLayout.checkboxWidth).toBeGreaterThanOrEqual(12);
@@ -476,6 +477,7 @@ async function isConfirmNextToSearchBar(): Promise<boolean> {
 }
 
 async function getOptionPanelLayout(): Promise<{
+    header: string;
     tocCells: { key: string; type: string; description: string };
     tocColumnCount: number;
     checkboxWidth: number;
@@ -485,11 +487,13 @@ async function getOptionPanelLayout(): Promise<{
         const rows = Array.from(document.querySelectorAll('.pem-pandoc-option-result'));
         const tocRow = rows.find(row =>
             row.querySelector('.pem-pandoc-option-result-key')?.textContent?.includes('--toc'));
+        const header = document.querySelector('.pem-pandoc-option-result-header');
         const checkbox = document.querySelector('.pem-pandoc-fuzzy-toggle input') as HTMLInputElement | null;
         if (!tocRow || !checkbox) throw new Error('Option panel layout targets not found.');
         const rowStyle = window.getComputedStyle(tocRow);
         const checkboxRect = checkbox.getBoundingClientRect();
         return {
+            header: header?.textContent ?? '',
             tocCells: {
                 key: tocRow.querySelector('.pem-pandoc-option-result-key')?.textContent ?? '',
                 type: tocRow.querySelector('.pem-pandoc-option-result-type')?.textContent ?? '',
