@@ -379,6 +379,32 @@ describe('Pandoc command rows', () => {
         modal.close();
     });
 
+    it('highlights matching option search text', () => {
+        const modal = new PandocOptionSearchModal(
+            new App(),
+            FALLBACK_PANDOC_CATALOG,
+            () => undefined
+        );
+
+        modal.open();
+        const input = modal.contentEl.querySelector('.pem-pandoc-option-search-box input') as HTMLInputElement;
+        input.value = 'biblio';
+        input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        const rows = Array.from(modal.contentEl.querySelectorAll('.pem-pandoc-option-result'));
+        const bibliographyRow = rows.find(row =>
+            row.querySelector('.pem-pandoc-option-result-key')?.textContent?.includes('--bibliography'));
+        const highlightedText = Array.from(
+            bibliographyRow?.querySelectorAll('.pem-pandoc-option-search-highlight') ?? []
+        ).map(mark => mark.textContent);
+
+        expect(highlightedText).toEqual(expect.arrayContaining(['biblio']));
+        expect(bibliographyRow?.querySelector('.pem-pandoc-option-result-key mark')?.textContent).toBe('biblio');
+        expect(bibliographyRow?.querySelector('.pem-pandoc-option-result-desc mark')?.textContent).toBe('biblio');
+
+        modal.close();
+    });
+
     it('opens an extension description panel from help buttons', () => {
         const draft = createDraft();
         const row = draft.optionRows.find(item => item.key === '-f')!;

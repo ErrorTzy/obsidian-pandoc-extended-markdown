@@ -466,6 +466,13 @@
     font-family: var(--font-monospace);
 }
 
+.pem-pandoc-option-search-highlight {
+    background: var(--text-highlight-bg);
+    color: inherit;
+    font: inherit;
+    padding: 0 1px;
+}
+
 .pem-pandoc-option-result-type {
     color: var(--text-muted);
     white-space: nowrap;

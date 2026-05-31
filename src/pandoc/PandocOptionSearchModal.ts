@@ -105,15 +105,16 @@ export class PandocOptionSearchModal extends Modal {
             this.renderResults();
         };
         row.ondblclick = () => this.choose(option);
-        row.createEl('div', { cls: 'pem-pandoc-option-result-key', text: optionLabel(option) });
+        this.renderHighlightedCell(row, 'pem-pandoc-option-result-key', optionLabel(option));
         row.createEl('div', {
             cls: 'pem-pandoc-option-result-type',
             text: optionValueTypeText(option)
         });
-        row.createEl('div', {
-            cls: 'pem-pandoc-option-result-desc',
-            text: option.description || option.valueKind
-        });
+        this.renderHighlightedCell(
+            row,
+            'pem-pandoc-option-result-desc',
+            option.description || option.valueKind
+        );
     }
 
     private confirmSelected(): void {
@@ -125,4 +126,95 @@ export class PandocOptionSearchModal extends Modal {
         this.onChoose(option);
         this.close();
     }
+
+    private renderHighlightedCell(row: HTMLElement, className: string, text: string): void {
+        const cell = row.createEl('div', { cls: className });
+        const ranges = matchRanges(text, this.query, this.fuzzy);
+        let position = 0;
+
+        for (const range of ranges) {
+            if (range.start > position) {
+                cell.appendChild(document.createTextNode(text.slice(position, range.start)));
+            }
+            cell.createEl('mark', {
+                cls: 'pem-pandoc-option-search-highlight',
+                text: text.slice(range.start, range.end)
+            });
+            position = range.end;
+        }
+
+        if (position < text.length) {
+            cell.appendChild(document.createTextNode(text.slice(position)));
+        }
+    }
+}
+
+interface MatchRange {
+    start: number;
+    end: number;
+}
+
+function matchRanges(text: string, query: string, fuzzy: boolean): MatchRange[] {
+    const terms = highlightTerms(query);
+    if (terms.length === 0) return [];
+
+    const exactRanges = mergeRanges(terms.flatMap(term => exactMatchRanges(text, term)));
+    if (exactRanges.length > 0 || !fuzzy) return exactRanges;
+
+    return fuzzyMatchRanges(text, terms.join(''));
+}
+
+function highlightTerms(query: string): string[] {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return [];
+
+    const terms = [normalizedQuery, ...normalizedQuery.split(/\s+/)]
+        .filter(term => term.length > 0);
+    return Array.from(new Set(terms));
+}
+
+function exactMatchRanges(text: string, term: string): MatchRange[] {
+    const ranges: MatchRange[] = [];
+    const normalizedText = text.toLowerCase();
+    let position = 0;
+
+    while (position < text.length) {
+        const start = normalizedText.indexOf(term, position);
+        if (start < 0) break;
+        ranges.push({ start, end: start + term.length });
+        position = start + term.length;
+    }
+
+    return ranges;
+}
+
+function fuzzyMatchRanges(text: string, query: string): MatchRange[] {
+    const ranges: MatchRange[] = [];
+    const normalizedText = text.toLowerCase();
+    let position = 0;
+
+    for (const char of query) {
+        const start = normalizedText.indexOf(char, position);
+        if (start < 0) return [];
+        ranges.push({ start, end: start + 1 });
+        position = start + 1;
+    }
+
+    return mergeRanges(ranges);
+}
+
+function mergeRanges(ranges: MatchRange[]): MatchRange[] {
+    const sorted = [...ranges].sort((a, b) => a.start - b.start || b.end - a.end);
+    const merged: MatchRange[] = [];
+
+    for (const range of sorted) {
+        const previous = merged.length > 0 ? merged[merged.length - 1] : undefined;
+        if (previous && range.start <= previous.end) {
+            previous.end = Math.max(previous.end, range.end);
+        } else {
+            merged.push({ ...range });
+        }
+    }
+
+    return merged;
 }
