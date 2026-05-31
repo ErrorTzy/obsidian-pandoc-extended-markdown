@@ -80,9 +80,10 @@ describe('Pandoc command rows', () => {
         expect(rowHasBrowseButton(rows, '-L')).toBe(true);
         expect(rowHasBrowseButton(rows, '--columns')).toBe(false);
         expect(rowHasValueControl(rows, '-s')).toBe(false);
-        expect(rowHasValueControl(rows, '--toc')).toBe(false);
+        expect(rowHasValueControl(rows, '--toc')).toBe(true);
         expect(rowHasSeparator(rows, '-s')).toBe(false);
-        expect(rowHasSeparator(rows, '--toc')).toBe(false);
+        expect(rowHasSeparator(rows, '--toc')).toBe(true);
+        expect(rowSelectValues(rows, '--toc')).toEqual(['none', 'BOOLEAN']);
         expect(rowHasSeparator(rows, '--eol')).toBe(true);
         expect(rowSelectValues(rows, '--eol')).toEqual(['crlf', 'lf', 'native']);
         expect(rowSelectHasDropdownFrame(rows, '--eol')).toBe(true);

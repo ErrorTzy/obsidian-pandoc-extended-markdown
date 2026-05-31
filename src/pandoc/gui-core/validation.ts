@@ -325,6 +325,7 @@ function selectedAlternative(
 ): OptionValueAlternative | undefined {
     const alternatives = spec.valueAlternatives;
     if (!alternatives || alternatives.length <= 1) return undefined;
+    if (!value) return alternatives.find(alternative => alternative.valueKind === 'none');
     const valueAlternative = alternatives.find(alternative => alternative.values?.includes(value));
     if (valueAlternative) return valueAlternative;
     if (looksLikeUrlValue(value)) {
@@ -335,7 +336,7 @@ function selectedAlternative(
         const path = alternatives.find(isPathAlternative);
         if (path) return path;
     }
-    return alternatives.find(alternative => !isPathAlternative(alternative)) ??
+    return alternatives.find(alternative => alternative.valueKind !== 'none' && !isPathAlternative(alternative)) ??
         alternatives.find(isPathAlternative);
 }
 

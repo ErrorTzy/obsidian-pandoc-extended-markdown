@@ -163,6 +163,7 @@ export function findOptionSpec(
 interface HelpOptionToken {
     token: string;
     valuePlaceholder?: string;
+    valueSeparator?: 'space' | 'equals';
 }
 
 function parseHelpLine(line: string): OptionSpec[] {
@@ -194,6 +195,7 @@ function buildSpec(tokens: HelpOptionToken[], description: string): OptionSpec {
     const key = long ?? normalized[0];
     const aliases = normalized.filter(token => token !== key);
     const valuePlaceholder = tokens[0]?.valuePlaceholder;
+    const valueSeparator = tokens[0]?.valueSeparator;
     const valueKind = valuePlaceholder ? inferValueKind(key, `${key}=${valuePlaceholder}`) : 'none';
     const valueAlternatives = inferValueAlternatives(valuePlaceholder);
 
@@ -204,6 +206,8 @@ function buildSpec(tokens: HelpOptionToken[], description: string): OptionSpec {
         description,
         valueKind: valueAlternatives?.[0]?.valueKind ?? valueKind,
         valuePlaceholder,
+        valueSeparator,
+        valueSeparators: valueSeparatorsFromHelpTokens(tokens),
         valueAlternatives,
         values: inferValues(valuePlaceholder ? `${key}=${valuePlaceholder}` : key, valueKind),
         repeatable: inferRepeatable(key),
@@ -211,12 +215,33 @@ function buildSpec(tokens: HelpOptionToken[], description: string): OptionSpec {
     };
 }
 
+function valueSeparatorsFromHelpTokens(
+    tokens: HelpOptionToken[]
+): Record<string, 'space' | 'equals'> | undefined {
+    const entries = tokens
+        .map(token => [normalizeOptionToken(token.token), token.valueSeparator] as const)
+        .filter((entry): entry is readonly [string, 'space' | 'equals'] => entry[1] !== undefined);
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 function optionTokenMatches(line: string): HelpOptionToken[] {
-    return Array.from(line.matchAll(/(?:^|\s|,)(-{1,2}[A-Za-z0-9][A-Za-z0-9-]*)(?:[ =]([A-Za-z][A-Za-z0-9_:|.[\]<>-]*))?/g))
+    return Array.from(line.matchAll(
+        /(?:^|\s|,)(-{1,2}[A-Za-z0-9][A-Za-z0-9-]*)(?:(\[[^\]]+\])|([ =])([A-Za-z[][A-Za-z0-9_:|.[\]<>-]*))?/g
+    ))
         .map(match => ({
             token: match[1],
-            valuePlaceholder: normalizeHelpValueSyntax(match[2])
+            valuePlaceholder: normalizeHelpValueSyntax(match[2] ?? match[4]),
+            valueSeparator: helpValueSeparator(match[2], match[3])
         }));
+}
+
+function helpValueSeparator(
+    optionalSyntax: string | undefined,
+    separator: string | undefined
+): 'space' | 'equals' | undefined {
+    if (!optionalSyntax && !separator) return undefined;
+    if (optionalSyntax?.startsWith('[=') || separator === '=') return 'equals';
+    return 'space';
 }
 
 function normalizeOptionToken(token: string): string {
@@ -230,13 +255,42 @@ function inferPlaceholder(text: string): string | undefined {
 
 function normalizeHelpValueSyntax(valueSyntax: string | undefined): string | undefined {
     if (!valueSyntax) return undefined;
-    return valueSyntax.trim() || undefined;
+    return expandOptionalValueSyntax(valueSyntax.trim()) || undefined;
+}
+
+function expandOptionalValueSyntax(valueSyntax: string): string {
+    const wholeOptional = valueSyntax.match(/^\[(.*)\]$/);
+    if (wholeOptional) {
+        return joinValueSyntax('NONE', expandOptionalValueSyntax(wholeOptional[1].replace(/^=/, '')));
+    }
+
+    const booleanSyntax = normalizeBooleanSyntax(valueSyntax);
+    if (booleanSyntax) return booleanSyntax;
+
+    const optionalSuffix = valueSyntax.match(/^(.+)\[([^\]]+)\]$/);
+    if (optionalSuffix) {
+        return joinValueSyntax(
+            expandOptionalValueSyntax(optionalSuffix[1]),
+            expandOptionalValueSyntax(`${optionalSuffix[1]}${optionalSuffix[2]}`)
+        );
+    }
+
+    return valueSyntax.replace(/^=/, '');
+}
+
+function normalizeBooleanSyntax(valueSyntax: string): string | undefined {
+    return /^=?\[?true\|false\]?$/.test(valueSyntax) ? 'BOOLEAN' : undefined;
+}
+
+function joinValueSyntax(...values: string[]): string {
+    return Array.from(new Set(values.filter(Boolean))).join('|');
 }
 
 function inferValueKind(key: string, text: string): OptionValueKind {
-    if (hasOptionalFlagModifier(text)) return 'none';
     const placeholder = inferPlaceholder(text);
     if (!placeholder) return 'none';
+    if (placeholder === 'NONE') return 'none';
+    if (placeholder === 'BOOLEAN') return 'enum';
     if (/FORMAT/.test(placeholder)) return 'format';
     if (/DIRECTORY|DIRNAME|^DIR$/.test(placeholder)) return 'directory';
     if (/SEARCHPATH/.test(placeholder)) return 'pathList';
@@ -247,10 +301,6 @@ function inferValueKind(key: string, text: string): OptionValueKind {
     if (/KEY|VALUE|VAL|JSON/.test(placeholder)) return 'keyValue';
     if (placeholder.includes('|')) return 'enum';
     return 'string';
-}
-
-function hasOptionalFlagModifier(text: string): boolean {
-    return /\[(?:=)?true\|false\]/.test(text);
 }
 
 function inferValues(text: string, valueKind: OptionValueKind): string[] | undefined {
@@ -298,10 +348,25 @@ function addUniqueAlternative(
 }
 
 function isPlaceholderToken(value: string): boolean {
-    return /^[A-Z][A-Za-z0-9_.-]*(?:\[.*\])?$/.test(value);
+    return /^[A-Z][A-Za-z0-9_.,:=-]*(?:\[.*\])?$/.test(value);
 }
 
 function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative {
+    if (placeholder === 'NONE') return {
+        id: 'none',
+        label: 'none',
+        valueKind: 'none',
+        placeholder
+    };
+    if (placeholder === 'BOOLEAN') {
+        return {
+            id: placeholder,
+            label: placeholder,
+            valueKind: 'enum',
+            placeholder,
+            values: ['true', 'false']
+        };
+    }
     const valueKind = inferValueKind('', placeholder);
     if (valueKind === 'file') return pandocTypeAlternative(placeholder, valueKind);
     if (valueKind === 'directory') return pandocTypeAlternative(placeholder, valueKind);
@@ -317,11 +382,12 @@ function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative
 
 function pandocTypeAlternative(
     placeholder: string,
-    valueKind: OptionValueKind
+    valueKind: OptionValueKind,
+    label = placeholder
 ): OptionValueAlternative {
     return {
         id: placeholder,
-        label: placeholder,
+        label,
         valueKind,
         placeholder
     };
@@ -444,11 +510,22 @@ function mergeOptionSpec(base: OptionSpec, incoming: OptionSpec): OptionSpec {
         description: incoming.description || base.description,
         valueKind: incoming.valueKind ?? base.valueKind,
         valuePlaceholder: incoming.valuePlaceholder ?? base.valuePlaceholder,
+        valueSeparator: incoming.valueSeparator ?? base.valueSeparator,
+        valueSeparators: mergeValueSeparators(base.valueSeparators, incoming.valueSeparators),
         valueAlternatives: mergeValueAlternatives(base.valueAlternatives, incoming.valueAlternatives),
         values: incoming.values ?? base.values,
         repeatable: base.repeatable || incoming.repeatable,
         mapsTo: incoming.mapsTo ?? base.mapsTo
     };
+}
+
+function mergeValueSeparators(
+    base: OptionSpec['valueSeparators'],
+    incoming: OptionSpec['valueSeparators']
+): OptionSpec['valueSeparators'] {
+    if (!base) return incoming;
+    if (!incoming) return base;
+    return { ...base, ...incoming };
 }
 
 function mergeValueAlternatives(

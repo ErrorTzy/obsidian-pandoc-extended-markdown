@@ -229,10 +229,35 @@ function inferGroupPlaceholder(forms: OptionForm[]): string | undefined {
 
 function normalizeValueSyntax(valueSyntax: string | undefined): string | undefined {
     if (!valueSyntax) return undefined;
-    if (/^\[=?true\|false\]$/.test(valueSyntax) || /^=\[true\|false\]$/.test(valueSyntax)) {
-        return undefined;
+    return expandOptionalValueSyntax(valueSyntax.replace(/^=/, '').trim()) || undefined;
+}
+
+function expandOptionalValueSyntax(valueSyntax: string): string {
+    const wholeOptional = valueSyntax.match(/^\[(.*)\]$/);
+    if (wholeOptional) {
+        return joinValueSyntax('NONE', expandOptionalValueSyntax(wholeOptional[1].replace(/^=/, '')));
     }
-    return valueSyntax.replace(/^=/, '').trim() || undefined;
+
+    const booleanSyntax = normalizeBooleanSyntax(valueSyntax);
+    if (booleanSyntax) return booleanSyntax;
+
+    const optionalSuffix = valueSyntax.match(/^(.+)\[([^\]]+)\]$/);
+    if (optionalSuffix) {
+        return joinValueSyntax(
+            expandOptionalValueSyntax(optionalSuffix[1]),
+            expandOptionalValueSyntax(`${optionalSuffix[1]}${optionalSuffix[2]}`)
+        );
+    }
+
+    return valueSyntax;
+}
+
+function normalizeBooleanSyntax(valueSyntax: string): string | undefined {
+    return /^=?\[?true\|false\]?$/.test(valueSyntax) ? 'BOOLEAN' : undefined;
+}
+
+function joinValueSyntax(...values: string[]): string {
+    return Array.from(new Set(values.filter(Boolean))).join('|');
 }
 
 function parseDescriptionBlocks(lines: string[]): PandocDescriptionBlock[] {
@@ -282,15 +307,17 @@ function optionSpecsFromGroup(group: PandocOptionGroup, names: PandocOptionName[
     const buckets = groupNamesByValueSyntax(orderedNames);
 
     if (buckets.length === 0) {
-        return [optionSpecFromNames(group, [])];
+        return [optionSpecFromNames(group, [], group.valuePlaceholder)];
     }
 
-    return buckets.map(bucket => optionSpecFromNames(group, bucket.names, bucket.valuePlaceholder));
+    return buckets.map(bucket =>
+        optionSpecFromNames(group, bucket.names, bucket.valuePlaceholder, bucket.valueSeparator));
 }
 
 interface OptionNameBucket {
     key: string;
     valuePlaceholder?: string;
+    valueSeparator?: 'space' | 'equals';
     names: PandocOptionName[];
 }
 
@@ -302,7 +329,12 @@ function groupNamesByValueSyntax(names: PandocOptionName[]): OptionNameBucket[] 
         const key = valuePlaceholder ?? '';
         let bucket = buckets.find(item => item.key === key);
         if (!bucket) {
-            bucket = { key, valuePlaceholder, names: [] };
+            bucket = {
+                key,
+                valuePlaceholder,
+                valueSeparator: valueSeparatorFromSyntax(name.valueSyntax),
+                names: []
+            };
             buckets.push(bucket);
         }
         bucket.names.push(name);
@@ -314,7 +346,8 @@ function groupNamesByValueSyntax(names: PandocOptionName[]): OptionNameBucket[] 
 function optionSpecFromNames(
     group: PandocOptionGroup,
     names: PandocOptionName[],
-    valuePlaceholder = group.valuePlaceholder
+    valuePlaceholder: string | undefined,
+    valueSeparator?: 'space' | 'equals'
 ): OptionSpec {
     const orderedNames = names.map(name => name.name);
     const key = orderedNames[0] ?? group.signature;
@@ -333,11 +366,27 @@ function optionSpecFromNames(
         sectionId: group.sectionId,
         valueKind: primaryValueKind(key, valuePlaceholder, valueAlternatives) ?? group.valueTypeId,
         valuePlaceholder,
+        valueSeparator,
+        valueSeparators: valueSeparatorsFromNames(names),
         valueAlternatives,
         values: valuesFromTokens(valueTokens),
         repeatable: group.repeatable,
         mapsTo: group.mapsTo
     };
+}
+
+function valueSeparatorFromSyntax(valueSyntax: string | undefined): 'space' | 'equals' | undefined {
+    if (!valueSyntax) return undefined;
+    return valueSyntax.startsWith('=') || valueSyntax.startsWith('[=') ? 'equals' : 'space';
+}
+
+function valueSeparatorsFromNames(
+    names: PandocOptionName[]
+): Record<string, 'space' | 'equals'> | undefined {
+    const entries = names
+        .map(name => [name.name, valueSeparatorFromSyntax(name.valueSyntax)] as const)
+        .filter((entry): entry is readonly [string, 'space' | 'equals'] => entry[1] !== undefined);
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function valuesFromTokens(tokens: PandocValueToken[] | undefined): string[] | undefined {
@@ -356,7 +405,7 @@ function parseValueTokens(placeholder: string): PandocValueToken[] | undefined {
 }
 
 function isPlaceholderToken(value: string): boolean {
-    return /^[A-Z][A-Za-z0-9_.-]*(?:\[.*\])?$/.test(value);
+    return /^[A-Z][A-Za-z0-9_.,:=-]*(?:\[.*\])?$/.test(value);
 }
 
 function inferValueAlternatives(
@@ -391,6 +440,21 @@ function addUniqueAlternative(
 }
 
 function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative {
+    if (placeholder === 'NONE') return {
+        id: 'none',
+        label: 'none',
+        valueKind: 'none',
+        placeholder
+    };
+    if (placeholder === 'BOOLEAN') {
+        return {
+            id: placeholder,
+            label: placeholder,
+            valueKind: 'enum',
+            placeholder,
+            values: ['true', 'false']
+        };
+    }
     const valueKind = inferValueKind('', placeholder);
     if (valueKind === 'file') return pandocTypeAlternative(placeholder, valueKind);
     if (valueKind === 'directory') return pandocTypeAlternative(placeholder, valueKind);
@@ -409,10 +473,11 @@ function alternativeFromPlaceholder(placeholder: string): OptionValueAlternative
 function pandocTypeAlternative(
     placeholder: string,
     valueKind: OptionValueKind,
+    label = placeholder
 ): OptionValueAlternative {
     return {
         id: placeholder,
-        label: placeholder,
+        label,
         valueKind,
         placeholder
     };
@@ -428,6 +493,8 @@ function primaryValueKind(
 
 function inferValueKind(key: string, placeholder: string | undefined): OptionValueKind {
     if (!placeholder) return 'none';
+    if (placeholder === 'NONE') return 'none';
+    if (placeholder === 'BOOLEAN') return 'enum';
     if (/FORMAT/.test(placeholder)) return 'format';
     if (/DIRECTORY|DIRNAME|^DIR$/.test(placeholder)) return 'directory';
     if (/SEARCHPATH/.test(placeholder)) return 'pathList';

@@ -45,6 +45,8 @@ export interface OptionSpec {
     sectionId?: string;
     valueKind: OptionValueKind;
     valuePlaceholder?: string;
+    valueSeparator?: 'space' | 'equals';
+    valueSeparators?: Record<string, 'space' | 'equals'>;
     valueAlternatives?: OptionValueAlternative[];
     values?: string[];
     repeatable?: boolean;

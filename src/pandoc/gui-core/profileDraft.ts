@@ -253,16 +253,30 @@ function compileOptionRow(
     const spec = catalog ? findOptionSpec(catalog, row.key) : undefined;
     const key = normalizeRowKey(row.key, spec);
     const value = row.value.trim();
+    const hasArgumentAlternative = spec?.valueAlternatives?.some(alternative =>
+        alternative.valueKind !== 'none') ?? false;
 
-    if (spec?.valueKind === 'none') return [key];
+    if (spec?.valueKind === 'none' && !hasArgumentAlternative) return [key];
     if (!value) return [key];
+    if (valueSeparatorForKey(spec, key) === 'equals') return [`${key}=${value}`];
     return [key, value];
 }
 
 function normalizeRowKey(key: string, spec?: OptionSpec): string {
     const trimmed = key.trim();
-    if (spec) return spec.key;
+    const requested = splitEqualsOption(trimmed).key;
+    if (spec) {
+        const tokens = [spec.key, ...spec.aliases];
+        return tokens.includes(requested) ? requested : spec.key;
+    }
     return splitEqualsOption(trimmed).key;
+}
+
+function valueSeparatorForKey(
+    spec: OptionSpec | undefined,
+    key: string
+): 'space' | 'equals' | undefined {
+    return spec?.valueSeparators?.[key] ?? spec?.valueSeparator;
 }
 
 function applyMappedRow(

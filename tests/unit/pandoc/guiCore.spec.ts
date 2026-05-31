@@ -71,7 +71,13 @@ describe('pandoc GUI core', () => {
             expect.objectContaining({
                 key: '--from',
                 aliases: expect.arrayContaining(['-f', '-r', '--read']),
-                valueKind: 'format'
+                valueKind: 'format',
+                valueSeparators: {
+                    '-f': 'space',
+                    '-r': 'space',
+                    '--from': 'equals',
+                    '--read': 'equals'
+                }
             }),
             expect.objectContaining({
                 key: '--columns',
@@ -88,7 +94,16 @@ describe('pandoc GUI core', () => {
             }),
             expect.objectContaining({
                 key: '--toc',
-                valueKind: 'none'
+                valueKind: 'none',
+                valuePlaceholder: 'NONE|BOOLEAN',
+                valueAlternatives: [
+                    expect.objectContaining({ id: 'none', valueKind: 'none' }),
+                    expect.objectContaining({
+                        id: 'BOOLEAN',
+                        valueKind: 'enum',
+                        values: ['true', 'false']
+                    })
+                ]
             }),
             expect.objectContaining({
                 key: '-H',
@@ -187,6 +202,82 @@ describe('pandoc GUI core', () => {
             });
     });
 
+    it('expands optional bracket value syntax into explicit alternatives', () => {
+        const options = parsePandocManPage(`
+     --list-extensions[=FORMAT]
+          List supported extensions.
+
+     -M KEY[=VAL], --metadata=KEY[:VAL]
+          Set metadata.
+
+     -p, --preserve-tabs[=true|false]
+          Preserve tabs.
+
+     -N, --number-sections=[true|false]
+          Number section headings.
+
+     --number-offset=NUMBER[,NUMBER,...]
+          Offsets for section heading numbers.
+`);
+        const catalog = { ...FALLBACK_PANDOC_CATALOG, options };
+
+        expect(findOptionSpec(catalog, '--list-extensions')).toMatchObject({
+            valuePlaceholder: 'NONE|FORMAT',
+            valueKind: 'none',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'none', valueKind: 'none' }),
+                expect.objectContaining({ id: 'FORMAT', valueKind: 'format' })
+            ]
+        });
+        expect(findOptionSpec(catalog, '-M')).toMatchObject({
+            valuePlaceholder: 'KEY|KEY=VAL',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'KEY', valueKind: 'keyValue' }),
+                expect.objectContaining({ id: 'KEY=VAL', valueKind: 'keyValue' })
+            ]
+        });
+        expect(findOptionSpec(catalog, '--metadata')).toMatchObject({
+            valuePlaceholder: 'KEY|KEY:VAL',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'KEY', valueKind: 'keyValue' }),
+                expect.objectContaining({ id: 'KEY:VAL', valueKind: 'keyValue' })
+            ]
+        });
+        expect(findOptionSpec(catalog, '-p')).toMatchObject({
+            key: '-p',
+            aliases: [],
+            valueKind: 'none',
+            valuePlaceholder: undefined
+        });
+        expect(findOptionSpec(catalog, '--preserve-tabs')).toMatchObject({
+            valuePlaceholder: 'NONE|BOOLEAN',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'none', valueKind: 'none' }),
+                expect.objectContaining({
+                    id: 'BOOLEAN',
+                    valueKind: 'enum',
+                    values: ['true', 'false']
+                })
+            ]
+        });
+        expect(findOptionSpec(catalog, '-N')).toMatchObject({
+            key: '-N',
+            aliases: [],
+            valueKind: 'none',
+            valuePlaceholder: undefined
+        });
+        expect(findOptionSpec(catalog, '--number-sections')).toMatchObject({
+            valuePlaceholder: 'NONE|BOOLEAN'
+        });
+        expect(findOptionSpec(catalog, '--number-offset')).toMatchObject({
+            valuePlaceholder: 'NUMBER|NUMBER,NUMBER,...',
+            valueAlternatives: [
+                expect.objectContaining({ id: 'NUMBER', valueKind: 'integer' }),
+                expect.objectContaining({ id: 'NUMBER,NUMBER,...', valueKind: 'integer' })
+            ]
+        });
+    });
+
     it('preserves distinct value syntax for aliases in one man page signature', () => {
         const options = parsePandocManPage(`
      -H FILE, --include-in-header=FILE|URL
@@ -222,7 +313,11 @@ describe('pandoc GUI core', () => {
             key: '-f',
             aliases: ['--from'],
             valuePlaceholder: 'FORMAT',
-            valueKind: 'format'
+            valueKind: 'format',
+            valueSeparators: {
+                '-f': 'space',
+                '--from': 'equals'
+            }
         });
     });
 
@@ -329,9 +424,13 @@ EXIT CODES
         for (const name of metadata.optionNames) {
             const matches = options.filter(option => [option.key, ...option.aliases].includes(name.name));
             const expectedPlaceholder = normalizeFixtureValueSyntax(name.valueSyntax);
+            const expectedSeparator = normalizeFixtureValueSeparator(name.valueSyntax);
 
             expect(matches).toHaveLength(1);
             expect(matches[0].valuePlaceholder).toBe(expectedPlaceholder);
+            if (expectedSeparator) {
+                expect(matches[0].valueSeparators?.[name.name]).toBe(expectedSeparator);
+            }
         }
 
         for (const option of options) {
@@ -576,11 +675,19 @@ ignored
     });
 
     it('formats option value type labels shared by command and search panels', () => {
-        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--toc'))).toBe('');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--standalone'))).toBe('');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--toc'))).toBe('none | BOOLEAN');
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toBe('FORMAT');
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toBe('SEARCHPATH');
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-L'))).toBe('SCRIPT');
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--eol'))).toBe('ENUM');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--list-extensions')))
+            .toBe('none | FORMAT');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-M'))).toBe('KEY | KEY=VAL');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--metadata'))).toBe('KEY | KEY:VAL');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-p'))).toBe('');
+        expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--preserve-tabs')))
+            .toBe('none | BOOLEAN');
         expect(optionValueTypeText(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--syntax-highlighting')))
             .toBe('ENUM | STYLE | FILE');
         expect(optionValueTypeText()).toBe('unknown');
@@ -816,6 +923,36 @@ ignored
         expect(preview.display).toContain('pandoc');
     });
 
+    it('uses parsed equals syntax for long option values in command previews', () => {
+        const preview = buildProfileDraftPreview({
+            id: 'html',
+            name: 'HTML',
+            type: 'pandoc',
+            extension: '.html',
+            from: 'markdown',
+            to: 'html',
+            standalone: false,
+            resourcePaths: [],
+            luaFilters: [],
+            metadata: {},
+            optionRows: [
+                { id: 'tabs', key: '--preserve-tabs', value: 'false', enabled: true },
+                { id: 'header', key: '-H', value: 'header.html', enabled: true },
+                { id: 'long-header', key: '--include-in-header', value: 'header-url', enabled: true }
+            ],
+            customCommandTemplate: '',
+            customShell: false
+        }, FALLBACK_PANDOC_CATALOG, variables);
+
+        expect(preview.tokens).toEqual(expect.arrayContaining([
+            '--preserve-tabs=false',
+            '-H',
+            'header.html',
+            '--include-in-header=header-url'
+        ]));
+        expect(preview.tokens).not.toEqual(expect.arrayContaining(['--preserve-tabs', 'false']));
+    });
+
     it('quotes Windows path tokens without doubling path separators', () => {
         const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
         Object.defineProperty(process, 'platform', { value: 'win32' });
@@ -873,10 +1010,35 @@ function normalizePandocOptionsSource(text: string): string {
 
 function normalizeFixtureValueSyntax(valueSyntax: string | undefined): string | undefined {
     if (!valueSyntax) return undefined;
-    if (/^\[=?true\|false\]$/.test(valueSyntax) || /^=\[true\|false\]$/.test(valueSyntax)) {
-        return undefined;
+    return expandFixtureOptionalValueSyntax(valueSyntax.replace(/^=/, '').trim()) || undefined;
+}
+
+function normalizeFixtureValueSeparator(valueSyntax: string | undefined): 'space' | 'equals' | undefined {
+    if (!valueSyntax) return undefined;
+    return valueSyntax.startsWith('=') || valueSyntax.startsWith('[=') ? 'equals' : 'space';
+}
+
+function expandFixtureOptionalValueSyntax(valueSyntax: string): string {
+    const wholeOptional = valueSyntax.match(/^\[(.*)\]$/);
+    if (wholeOptional) {
+        return joinFixtureValueSyntax(
+            'NONE',
+            expandFixtureOptionalValueSyntax(wholeOptional[1].replace(/^=/, ''))
+        );
     }
-    return valueSyntax.replace(/^=/, '').trim() || undefined;
+    if (/^=?\[?true\|false\]?$/.test(valueSyntax)) return 'BOOLEAN';
+    const optionalSuffix = valueSyntax.match(/^(.+)\[([^\]]+)\]$/);
+    if (optionalSuffix) {
+        return joinFixtureValueSyntax(
+            expandFixtureOptionalValueSyntax(optionalSuffix[1]),
+            expandFixtureOptionalValueSyntax(`${optionalSuffix[1]}${optionalSuffix[2]}`)
+        );
+    }
+    return valueSyntax;
+}
+
+function joinFixtureValueSyntax(...values: string[]): string {
+    return Array.from(new Set(values.filter(Boolean))).join('|');
 }
 
 function runtimeOutputForArgs(args: string[]): string {

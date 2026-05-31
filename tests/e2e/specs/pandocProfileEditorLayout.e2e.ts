@@ -76,7 +76,7 @@ describe('Pandoc profile editor layout', () => {
         const panelLayout = await getOptionPanelLayout();
         expect(panelLayout.header).toBe('FlagArgument typeDescription');
         expect(panelLayout.tocCells.key).toContain('--toc');
-        expect(panelLayout.tocCells.type).toBe('');
+        expect(panelLayout.tocCells.type).toBe('none | BOOLEAN');
         expect(panelLayout.tocCells.description).toContain('table of contents');
         expect(panelLayout.tocColumnCount).toBe(3);
         expect(panelLayout.checkboxWidth).toBeGreaterThanOrEqual(12);

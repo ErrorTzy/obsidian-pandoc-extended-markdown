@@ -71,7 +71,7 @@ function renderOptionRow(
     const spec = findOptionSpec(catalog, row.key);
     const slots = createPandocCommandRowSlots(container);
     renderKeyCell(slots.key, row, draft, catalog, actions, protectedRowIds.has(row.id), spec);
-    if (row.role === 'input' || spec?.valueKind !== 'none') {
+    if (row.role === 'input' || spec?.valueKind !== 'none' || hybridAlternatives(spec)) {
         slots.separator.textContent = ':';
     }
     renderValueControl(slots.value, draft, row, spec, actions);
@@ -235,6 +235,7 @@ function createAlternativeControl(
     spec: OptionSpec,
     actions: PandocCommandRowActions
 ): ValueControl {
+    if (alternative.valueKind === 'none') return undefined;
     if (alternative.values?.length) {
         const select = createSelect(container);
         for (const value of alternative.values) select.createEl('option', { value, text: value });
@@ -365,6 +366,7 @@ function valueBelongsToAlternative(
     alternatives: OptionValueAlternative[]
 ): boolean {
     if (!value) return true;
+    if (alternative.valueKind === 'none') return false;
     if (alternative.values) return alternative.values.includes(value);
     if (alternatives.some(item => item.values?.includes(value))) return false;
     if (alternative.id === 'URL') return looksLikeUrlValue(value);
@@ -381,7 +383,9 @@ function looksLikePathValue(value: string): boolean {
 }
 
 function isCustomAlternative(alternative: OptionValueAlternative): boolean {
-    return alternative.valueKind !== 'enum' && !isPathValueKind(alternative.valueKind);
+    return alternative.valueKind !== 'none' &&
+        alternative.valueKind !== 'enum' &&
+        !isPathValueKind(alternative.valueKind);
 }
 
 function isPathValueKind(valueKind: OptionValueKind): boolean {
