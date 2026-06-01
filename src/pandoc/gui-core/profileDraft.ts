@@ -329,9 +329,17 @@ function splitEqualsOption(token: string): { key: string; value?: string } {
 }
 
 function parseSingleKeyValue(text: string): Record<string, string> {
-    const index = text.indexOf('=');
+    const index = keyValueSeparatorIndex(text);
     if (index < 1) return {};
     return { [text.slice(0, index).trim()]: text.slice(index + 1).trim() };
+}
+
+function keyValueSeparatorIndex(text: string): number {
+    const equalsIndex = text.indexOf('=');
+    const colonIndex = text.indexOf(':');
+    if (equalsIndex < 0) return colonIndex;
+    if (colonIndex < 0) return equalsIndex;
+    return Math.min(equalsIndex, colonIndex);
 }
 
 function cleanList(values: string[]): string[] | undefined {

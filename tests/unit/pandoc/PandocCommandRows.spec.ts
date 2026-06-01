@@ -141,6 +141,57 @@ describe('Pandoc command rows', () => {
         expect(rowHasBrowseButton([fileRow], '--syntax-highlighting')).toBe(true);
     });
 
+    it('routes KEY:VAL and KEY=VAL options to paired key and value inputs', () => {
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+        const updatePreview = jest.fn();
+        draft.optionRows = [
+            { id: 'metadata-long', key: '--metadata', value: 'title:My note', enabled: true },
+            { id: 'metadata-short', key: '-M', value: 'author=Jane Doe', enabled: true }
+        ];
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            ...commandActions(),
+            updatePreview
+        });
+
+        const row = findRow(container, '--metadata');
+        const typeSelect = row.querySelector('.pem-pandoc-value-type-select') as HTMLSelectElement;
+        const inputs = keyValueInputs(row);
+        expect(typeSelect.value).toBe('KEY:VAL');
+        expect(keyValueSeparator(row)).toBe(':');
+        expect(inputs.map(input => input.getAttribute('placeholder'))).toEqual(['key', 'value']);
+        expect(inputs.map(input => input.value)).toEqual(['title', 'My note']);
+
+        const equalsRow = findRow(container, '-M');
+        const equalsTypeSelect = equalsRow.querySelector('.pem-pandoc-value-type-select') as HTMLSelectElement;
+        const equalsInputs = keyValueInputs(equalsRow);
+        expect(equalsTypeSelect.value).toBe('KEY=VAL');
+        expect(keyValueSeparator(equalsRow)).toBe('=');
+        expect(equalsInputs.map(input => input.value)).toEqual(['author', 'Jane Doe']);
+
+        inputs[0].value = 'author';
+        inputs[0].dispatchEvent(new InputEvent('input', { bubbles: true }));
+        inputs[1].value = 'Jane Doe';
+        inputs[1].dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        expect(draft.optionRows[0].value).toBe('author:Jane Doe');
+        expect(updatePreview).toHaveBeenCalledTimes(2);
+
+        const keyOnlyContainer = enhanceElement(document.createElement('div'));
+        const keyOnlyDraft = createDraft();
+        keyOnlyDraft.optionRows = [
+            { id: 'metadata', key: '--metadata', value: 'title', enabled: true }
+        ];
+        renderPandocRows(keyOnlyContainer, keyOnlyDraft, FALLBACK_PANDOC_CATALOG, commandActions());
+        const keyOnlyRow = findRow(keyOnlyContainer, '--metadata');
+        const keyOnlyTypeSelect = keyOnlyRow.querySelector('.pem-pandoc-value-type-select') as HTMLSelectElement;
+        keyOnlyTypeSelect.value = 'KEY:VAL';
+        keyOnlyTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(keyOnlyDraft.optionRows[0].value).toBe('title');
+    });
+
     it('renders template variable suggestions with resolved preview values', () => {
         window.requestAnimationFrame = jest.fn(callback => {
             callback(0);
@@ -538,6 +589,14 @@ function findValueInput(container: HTMLElement, key: string): HTMLInputElement {
     const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
     if (!input) throw new Error(`Value input not found for ${key}.`);
     return input;
+}
+
+function keyValueInputs(row: Element): HTMLInputElement[] {
+    return Array.from(row.querySelectorAll('.pem-pandoc-key-value-control input')) as HTMLInputElement[];
+}
+
+function keyValueSeparator(row: Element): string {
+    return row.querySelector('.pem-pandoc-key-value-separator')?.textContent ?? '';
 }
 
 function variableSuggestionTexts(input: HTMLInputElement): string[] {

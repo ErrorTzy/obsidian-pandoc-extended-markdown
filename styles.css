@@ -345,6 +345,20 @@
     position: relative;
 }
 
+.pem-pandoc-key-value-control {
+    align-items: center;
+    display: grid;
+    flex: 1 1 auto;
+    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
+    min-width: 0;
+}
+
+.pem-pandoc-key-value-separator {
+    color: var(--text-muted);
+    text-align: center;
+}
+
 .pem-pandoc-row-type {
     grid-area: type;
     overflow: hidden;

@@ -43,6 +43,15 @@ export {
     optionValueTypeText
 } from './optionValueTypes';
 export {
+    pandocValueWidgetTypeMap,
+    resolvePandocValueWidget
+} from './valueWidgets';
+export type {
+    PandocValueWidgetRoute,
+    PandocValueWidgetSource,
+    PandocValueWidgetType
+} from './valueWidgets';
+export {
     metadataToOptionSpecs,
     parsePandocOptionsMetadata,
     rebuildPandocOptionsText

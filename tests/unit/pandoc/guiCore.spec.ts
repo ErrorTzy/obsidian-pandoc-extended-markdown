@@ -19,6 +19,7 @@ import {
     metadataToOptionSpecs,
     optionLabel,
     optionValueTypeText,
+    pandocValueWidgetTypeMap,
     parseExtensionListOutput,
     parsePandocExtensionDescriptions,
     parsePandocFormatValue,
@@ -28,6 +29,7 @@ import {
     PandocCatalogService,
     quoteToken,
     rebuildPandocOptionsText,
+    resolvePandocValueWidget,
     searchOptionKeys,
     searchOptions,
     validateProfileDraft
@@ -693,6 +695,38 @@ ignored
         expect(optionValueTypeText()).toBe('unknown');
     });
 
+    it('routes pandoc value types to internal command-builder widgets', () => {
+        const typeMap = pandocValueWidgetTypeMap();
+        expect(typeMap).toMatchObject({
+            KEY: 'keyWidget',
+            'KEY=VAL': 'keyValueWidget',
+            'KEY:VAL': 'keyValueWidget',
+            FORMAT: 'formatWidget',
+            PATH: 'pathWidget'
+        });
+        expect(resolvePandocValueWidget(
+            findOptionSpec(FALLBACK_PANDOC_CATALOG, '--metadata')?.valueAlternatives?.[1]
+        )).toMatchObject({
+            widgetType: 'keyValueWidget',
+            separator: ':'
+        });
+        expect(resolvePandocValueWidget(
+            findOptionSpec(FALLBACK_PANDOC_CATALOG, '-M')?.valueAlternatives?.[1]
+        )).toMatchObject({
+            widgetType: 'keyValueWidget',
+            separator: '='
+        });
+        expect(resolvePandocValueWidget(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toMatchObject({
+            widgetType: 'formatWidget'
+        });
+        expect(resolvePandocValueWidget(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toMatchObject({
+            widgetType: 'pathWidget'
+        });
+        expect(resolvePandocValueWidget(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--eol'))).toMatchObject({
+            widgetType: 'selectWidget'
+        });
+    });
+
     it('validates formats, integers, and unknown keys', () => {
         const draft = {
             id: 'bad',
@@ -921,6 +955,30 @@ ignored
         ]));
         expect(preview.display).not.toContain('${');
         expect(preview.display).toContain('pandoc');
+    });
+
+    it('compiles colon-separated metadata rows from the command builder', () => {
+        const compiled = compileProfileDraft({
+            id: 'html',
+            name: 'HTML',
+            type: 'pandoc',
+            extension: '.html',
+            from: 'markdown',
+            to: 'html',
+            standalone: false,
+            resourcePaths: [],
+            luaFilters: [],
+            metadata: {},
+            optionRows: [
+                { id: 'title', key: '--metadata', value: 'title:My note', enabled: true }
+            ],
+            customCommandTemplate: '',
+            customShell: false
+        }, FALLBACK_PANDOC_CATALOG);
+
+        expect(compiled).toMatchObject({
+            metadata: { title: 'My note' }
+        });
     });
 
     it('uses parsed equals syntax for long option values in command previews', () => {
