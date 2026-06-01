@@ -16,6 +16,7 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.contentOverflows).toBe(false);
         expect(layout.builderOverflows).toBe(false);
         expect(layout.previewOverflows).toBe(false);
+        expect(layout.previewUserSelect).toBe('text');
         expect(layout.sectionTitles).toEqual(expect.arrayContaining([
             'Preset Options',
             'Command Options'
@@ -548,6 +549,7 @@ async function getCommandBuilderLayout(): Promise<{
     contentOverflows: boolean;
     builderOverflows: boolean;
     previewOverflows: boolean;
+    previewUserSelect: string;
     sectionTitles: string[];
     footerButtons: string[];
     hasPresetIdField: boolean;
@@ -601,6 +603,7 @@ async function getCommandBuilderLayout(): Promise<{
             contentOverflows: overflows(content),
             builderOverflows: overflows(builder),
             previewOverflows: overflows(preview),
+            previewUserSelect: preview ? getComputedStyle(preview).userSelect : '',
             sectionTitles: Array.from(modal?.querySelectorAll('h3') ?? [])
                 .map(title => title.textContent ?? ''),
             footerButtons: Array.from(modal?.querySelectorAll('.pem-pandoc-command-footer button') ?? [])

@@ -35,12 +35,15 @@
 
 .pem-pandoc-command-preview {
     box-sizing: border-box;
+    cursor: text;
     display: block;
     font-size: var(--font-ui-small);
     max-height: 170px;
     max-width: 100%;
     overflow: auto;
     overflow-wrap: anywhere;
+    user-select: text;
+    -webkit-user-select: text;
     width: 100%;
     white-space: pre-wrap;
     word-break: break-all;
