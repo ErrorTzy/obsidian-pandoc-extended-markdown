@@ -4,8 +4,11 @@ import {
 } from './defaultProfiles';
 import {
     ExportProfile,
+    OdtPreviewAddonInstallStatus,
+    OdtPreviewAddonSettings,
     PandocExportSettings,
-    PandocOutputFolderMode
+    PandocOutputFolderMode,
+    PandocPreviewSettings
 } from './types';
 
 const OUTPUT_FOLDER_MODES = new Set<PandocOutputFolderMode>([
@@ -13,6 +16,12 @@ const OUTPUT_FOLDER_MODES = new Set<PandocOutputFolderMode>([
     'current',
     'vault',
     'custom'
+]);
+
+const ODT_ADDON_STATUSES = new Set<OdtPreviewAddonInstallStatus>([
+    'not-installed',
+    'installed',
+    'failed'
 ]);
 
 export function normalizePandocExportSettings(
@@ -36,7 +45,8 @@ export function normalizePandocExportSettings(
         revealOutputFile: source.revealOutputFile ?? DEFAULT_PANDOC_EXPORT_SETTINGS.revealOutputFile,
         showProgress: source.showProgress ?? DEFAULT_PANDOC_EXPORT_SETTINGS.showProgress,
         suggestRuntimeEnvVariables: source.suggestRuntimeEnvVariables ??
-            DEFAULT_PANDOC_EXPORT_SETTINGS.suggestRuntimeEnvVariables
+            DEFAULT_PANDOC_EXPORT_SETTINGS.suggestRuntimeEnvVariables,
+        preview: normalizePreviewSettings(source.preview)
     };
 }
 
@@ -67,4 +77,34 @@ function normalizeProfiles(profiles?: ExportProfile[]): ExportProfile[] {
 
 function isValidProfile(profile: ExportProfile | undefined): profile is ExportProfile {
     return Boolean(profile?.id && profile.name && profile.extension && profile.type);
+}
+
+function normalizePreviewSettings(settings?: Partial<PandocPreviewSettings>): PandocPreviewSettings {
+    const defaults = DEFAULT_PANDOC_EXPORT_SETTINGS.preview;
+    return {
+        enabled: settings?.enabled ?? defaults.enabled,
+        debounceMs: normalizeDebounceMs(settings?.debounceMs ?? defaults.debounceMs),
+        odtAddon: normalizeOdtAddonSettings(settings?.odtAddon)
+    };
+}
+
+function normalizeOdtAddonSettings(settings?: Partial<OdtPreviewAddonSettings>): OdtPreviewAddonSettings {
+    const defaults = DEFAULT_PANDOC_EXPORT_SETTINGS.preview.odtAddon;
+    const status = settings?.status && ODT_ADDON_STATUSES.has(settings.status) ?
+        settings.status :
+        defaults.status;
+
+    return {
+        enabled: settings?.enabled ?? defaults.enabled,
+        status,
+        version: settings?.version,
+        checksum: settings?.checksum,
+        installPath: settings?.installPath,
+        lastError: settings?.lastError
+    };
+}
+
+function normalizeDebounceMs(value: number): number {
+    if (!Number.isFinite(value)) return DEFAULT_PANDOC_EXPORT_SETTINGS.preview.debounceMs;
+    return Math.max(250, Math.min(5000, Math.round(value)));
 }

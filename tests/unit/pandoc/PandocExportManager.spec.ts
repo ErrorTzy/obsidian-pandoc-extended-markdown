@@ -231,4 +231,57 @@ describe('PandocExportManager', () => {
             outputPath: '/exports/note.html'
         });
     });
+
+    it('runs previews with a temp output override without persisting settings', async () => {
+        const requests: PandocRunRequest[] = [];
+        const saveSettings = jest.fn<() => Promise<void>>(async () => undefined);
+        const settings = normalizePandocExportSettings({
+            profiles: [{
+                id: 'html',
+                name: 'HTML',
+                type: 'pandoc',
+                to: 'html',
+                extension: '.html',
+                extraArgs: ['--output=real.html']
+            }]
+        });
+        const manager = new PandocExportManager({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown', dir: '.obsidian/plugins/pem' } as any,
+            settings,
+            saveSettings,
+            service: {
+                run: (args: string[], options: { pandocPath?: string; cwd?: string; env?: Record<string, string> }) => {
+                    const request = {
+                        executable: options.pandocPath ?? 'pandoc',
+                        args,
+                        cwd: options.cwd,
+                        env: options.env
+                    };
+                    requests.push(request);
+                    return Promise.resolve(createResult(request));
+                }
+            } as any,
+            fileSystem: {
+                exists: async () => false,
+                ensureDir: async () => undefined
+            }
+        });
+
+        const result = await manager.previewFile({
+            currentFilePath: 'note.md',
+            currentFileName: 'note.md',
+            currentFileBaseName: 'note',
+            profileId: 'html',
+            outputFolder: '/exports',
+            outputFileName: 'note.html'
+        }, '/tmp/preview.html');
+
+        expect(result.ok).toBe(true);
+        expect(requests[0].args.slice(-2)).toEqual(['-o', '/tmp/preview.html']);
+        expect(requests[0].args).not.toContain('--output=real.html');
+        expect(saveSettings).not.toHaveBeenCalled();
+        expect(settings.lastExportProfileId).toBeUndefined();
+        expect(settings.lastOutputFolder).toBeUndefined();
+    });
 });

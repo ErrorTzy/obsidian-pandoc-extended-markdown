@@ -9,7 +9,16 @@
     width: min(1040px, calc(100vw - 48px));
 }
 
+.pem-pandoc-export-preview-modal {
+    max-width: calc(100vw - 48px);
+    width: min(1280px, calc(100vw - 48px));
+}
+
 .pem-pandoc-command-modal .modal-content {
+    overflow-x: hidden;
+}
+
+.pem-pandoc-export-preview-modal .modal-content {
     overflow-x: hidden;
 }
 
@@ -18,6 +27,133 @@
     max-width: 100%;
     min-width: 0;
     width: 100%;
+}
+
+.pem-pandoc-export-preview-layout {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(300px, 0.95fr) minmax(420px, 1.25fr);
+    min-width: 0;
+}
+
+.pem-pandoc-preview-pane {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    display: grid;
+    grid-template-rows: auto minmax(320px, 1fr);
+    min-height: min(68vh, 760px);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.pem-pandoc-preview-header {
+    align-items: center;
+    border-bottom: 1px solid var(--background-modifier-border);
+    display: grid;
+    gap: 8px;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    padding: 8px 10px;
+}
+
+.pem-pandoc-preview-header h3 {
+    margin: 0;
+}
+
+.pem-pandoc-preview-status {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pem-pandoc-preview-body {
+    background: var(--background-primary);
+    min-width: 0;
+    overflow: auto;
+    position: relative;
+}
+
+.pem-pandoc-preview-frame,
+.pem-pandoc-preview-object,
+.pem-pandoc-odt-preview {
+    border: 0;
+    display: block;
+    height: 100%;
+    min-height: 520px;
+    width: 100%;
+}
+
+.pem-pandoc-preview-text {
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-small);
+    margin: 0;
+    min-height: 100%;
+    overflow: auto;
+    padding: 12px;
+    white-space: pre-wrap;
+}
+
+.pem-pandoc-preview-message {
+    color: var(--text-muted);
+    margin: 12px;
+}
+
+.pem-pandoc-pdf-pages,
+.pem-pandoc-docx-preview {
+    display: grid;
+    gap: 14px;
+    justify-content: center;
+    padding: 14px;
+}
+
+.pem-pandoc-pdf-page,
+.pem-pandoc-docx .docx {
+    background: white;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+    height: auto;
+    max-width: 100%;
+}
+
+.pem-pandoc-preview-controls {
+    align-items: center;
+    border-bottom: 1px solid var(--background-modifier-border);
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+}
+
+.pem-pandoc-preview-counter {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+.pem-pandoc-epub-preview,
+.pem-pandoc-pptx-preview {
+    display: grid;
+    grid-template-rows: auto minmax(420px, 1fr);
+    min-height: 100%;
+}
+
+.pem-pandoc-epub-viewport {
+    min-height: 520px;
+    overflow: hidden;
+}
+
+.pem-pandoc-pptx-canvas {
+    align-self: start;
+    background: white;
+    justify-self: center;
+    max-height: 70vh;
+    max-width: 100%;
+}
+
+.pem-pandoc-odt-preview {
+    background: white;
+}
+
+.pem-pandoc-export-builder {
+    min-width: 0;
 }
 
 .pem-pandoc-command-panel {
@@ -650,6 +786,14 @@
 }
 
 @media (max-width: 720px) {
+    .pem-pandoc-export-preview-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pem-pandoc-preview-pane {
+        min-height: 420px;
+    }
+
     .pem-pandoc-preset-actions {
         grid-template-columns: 1fr;
     }

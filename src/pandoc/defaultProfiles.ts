@@ -74,7 +74,15 @@ export const DEFAULT_PANDOC_EXPORT_SETTINGS: PandocExportSettings = {
     openOutputFile: true,
     revealOutputFile: false,
     showProgress: true,
-    suggestRuntimeEnvVariables: false
+    suggestRuntimeEnvVariables: false,
+    preview: {
+        enabled: true,
+        debounceMs: 700,
+        odtAddon: {
+            enabled: false,
+            status: 'not-installed'
+        }
+    }
 };
 
 export function cloneDefaultProfiles(): ExportProfile[] {

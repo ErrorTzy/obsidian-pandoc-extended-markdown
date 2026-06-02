@@ -75,6 +75,24 @@ export interface PandocExportSettings {
     revealOutputFile: boolean;
     showProgress: boolean;
     suggestRuntimeEnvVariables: boolean;
+    preview: PandocPreviewSettings;
+}
+
+export type OdtPreviewAddonInstallStatus = 'not-installed' | 'installed' | 'failed';
+
+export interface OdtPreviewAddonSettings {
+    enabled: boolean;
+    status: OdtPreviewAddonInstallStatus;
+    version?: string;
+    checksum?: string;
+    installPath?: string;
+    lastError?: string;
+}
+
+export interface PandocPreviewSettings {
+    enabled: boolean;
+    debounceMs: number;
+    odtAddon: OdtPreviewAddonSettings;
 }
 
 export interface ExportVariables extends Record<string, unknown> {

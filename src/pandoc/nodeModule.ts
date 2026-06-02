@@ -1,5 +1,5 @@
 type NodeRequire = (moduleName: string) => unknown;
-type DesktopModuleName = 'child_process' | 'electron' | 'fs' | 'process';
+type DesktopModuleName = 'child_process' | 'crypto' | 'electron' | 'fs' | 'os' | 'process';
 
 interface NodeRequireHost {
     require?: NodeRequire;
@@ -28,11 +28,17 @@ function importDesktopModuleFallback<T>(moduleName: DesktopModuleName): Promise<
         case 'child_process':
             // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only Pandoc execution.
             return import('child_process') as Promise<T>;
+        case 'crypto':
+            // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only checksum verification.
+            return import('crypto') as Promise<T>;
         case 'electron':
             return import('electron') as Promise<T>;
         case 'fs':
             // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only export filesystem access.
             return import('fs') as Promise<T>;
+        case 'os':
+            // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only preview temp paths.
+            return import('os') as Promise<T>;
         case 'process':
             // eslint-disable-next-line import/no-nodejs-modules -- Optional desktop-only environment access.
             return import('process') as Promise<T>;

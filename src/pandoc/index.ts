@@ -10,6 +10,7 @@ export {
     createPandocExportRequestFromFile
 } from './PandocExportManager';
 export { buildPandocProfileArgs } from './profileArgs';
+export { overridePandocOutputArgs } from './previewOutput';
 export { normalizePandocExportSettings } from './settings';
 export {
     buildExportVariables
@@ -34,6 +35,15 @@ export {
     parsePandocVersion
 } from './pandocPath';
 export { PandocService, runPandocProcess } from './PandocService';
+export { PandocPreviewManager } from './previewManager';
+export {
+    renderPreviewFile,
+    selectPreviewRenderer
+} from './previewRenderers';
+export {
+    installOdtPreviewAddon,
+    removeOdtPreviewAddon
+} from './odtPreviewAddon';
 export {
     PandocCatalogService,
     buildProfileDraftPreview,
@@ -58,10 +68,13 @@ export type {
     CustomExportProfile,
     ExportProfile,
     ExportVariables,
+    OdtPreviewAddonInstallStatus,
+    OdtPreviewAddonSettings,
     PandocExportProfile,
     PandocExportRequest,
     PandocExportResult,
     PandocExportSettings,
+    PandocPreviewSettings,
     PandocProcessRunner,
     PandocRunRequest,
     PandocRunResult,

@@ -26,7 +26,13 @@
   "dependencies": {
     "@codemirror/language": "^6.11.3",
     "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.1"
+    "@codemirror/view": "^6.38.1",
+    "chart.js": "^4.5.1",
+    "docx-preview": "^0.3.7",
+    "epubjs": "^0.3.93",
+    "fflate": "^0.8.3",
+    "pdfjs-dist": "^6.0.227",
+    "pptxviewjs": "^1.1.9"
   },
   "devDependencies": {
     "@codemirror/lang-markdown": "^6.5.0",

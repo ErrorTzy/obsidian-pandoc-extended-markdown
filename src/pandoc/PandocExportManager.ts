@@ -9,6 +9,7 @@ import {
 import { dirname, joinPath } from './pathUtils';
 import { PandocService } from './PandocService';
 import { buildPandocProfileArgs } from './profileArgs';
+import { overridePandocOutputArgs } from './previewOutput';
 import { runShellCommand, ShellRunner } from './shellRunner';
 import { renderExportTemplate } from './template';
 import { buildTemplateVariableContext } from './templateVariables';
@@ -84,6 +85,79 @@ export class PandocExportManager {
         await this.afterSuccessfulExport(profile, finalOutputPath, request);
 
         return { ok: true, profile, outputPath: finalOutputPath, result };
+    }
+
+    async previewFile(
+        request: PandocExportRequest,
+        previewOutputPath: string
+    ): Promise<PandocExportResult> {
+        const profile = this.getProfile(request.profileId);
+        if (!profile) {
+            return { ok: false, error: 'Pandoc export profile not found.' };
+        }
+        if (profile.type !== 'pandoc') {
+            return { ok: false, profile, error: 'Preview is available for Pandoc profiles only.' };
+        }
+
+        const outputPath = this.resolveOutputPath(request, profile);
+        const variables = buildExportVariables({
+            vault: this.config.app.vault,
+            metadataCache: this.config.app.metadataCache,
+            currentFile: {
+                path: request.currentFilePath,
+                name: request.currentFileName,
+                basename: request.currentFileBaseName
+            },
+            outputPath,
+            pluginDir: this.getPluginDir()
+        });
+        const env = buildPandocEnv(this.config.settings.env, variables);
+        const templateVariables = buildTemplateVariableContext(variables, {
+            includeRuntimeEnv: this.config.settings.suggestRuntimeEnvVariables
+        }).variables;
+        const fileSystem = this.config.fileSystem ?? new NodePandocExportFileSystem();
+        await fileSystem.ensureDir(previewOutputPath);
+
+        const service = this.config.service ?? new PandocService();
+        const args = buildPandocProfileArgs({
+            profile,
+            variables: templateVariables,
+            extraArgs: request.extraArgs
+        });
+        const result = await service.run(overridePandocOutputArgs(args, previewOutputPath), {
+            pandocPath: this.config.settings.pandocPath,
+            cwd: variables.currentDir,
+            env
+        });
+
+        if (!result.ok) {
+            return { ok: false, profile, outputPath: previewOutputPath, result, error: result.error || result.stderr };
+        }
+
+        return { ok: true, profile, outputPath: previewOutputPath, result };
+    }
+
+    async convertPreviewFile(
+        inputPath: string,
+        outputPath: string,
+        to: string,
+        cwd?: string
+    ): Promise<PandocExportResult> {
+        const fileSystem = this.config.fileSystem ?? new NodePandocExportFileSystem();
+        await fileSystem.ensureDir(outputPath);
+
+        const service = this.config.service ?? new PandocService();
+        const result = await service.run([inputPath, '-t', to, '-o', outputPath], {
+            pandocPath: this.config.settings.pandocPath,
+            cwd,
+            env: this.config.settings.env
+        });
+
+        if (!result.ok) {
+            return { ok: false, outputPath, result, error: result.error || result.stderr };
+        }
+
+        return { ok: true, outputPath, result };
     }
 
     private async exportPandocProfile(
