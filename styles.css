@@ -355,7 +355,7 @@
     display: grid;
     gap: 8px;
     grid-template-areas: "key separator value type actions";
-    grid-template-columns: minmax(130px, 210px) 12px minmax(0, 1fr) minmax(110px, 160px) var(--input-height, 32px);
+    grid-template-columns: minmax(108px, 160px) 10px minmax(60%, 1fr) minmax(44px, 76px) 24px;
     margin-bottom: 8px;
     max-width: 100%;
 }
@@ -598,8 +598,8 @@
 
 .pem-pandoc-row-actions {
     grid-area: actions;
-    min-width: var(--input-height, 32px);
-    width: var(--input-height, 32px);
+    min-width: 24px;
+    width: 24px;
 }
 
 .pem-pandoc-value-cell button,
@@ -609,9 +609,25 @@
 }
 
 .pem-pandoc-row-actions button {
-    padding-left: 0;
-    padding-right: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--text-faint);
+    height: var(--input-height, 32px);
+    padding: 0;
     width: 100%;
+}
+
+.pem-pandoc-row-actions button:hover,
+.pem-pandoc-row-actions button:focus-visible {
+    background: var(--background-modifier-hover);
+    color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+    .pem-pandoc-builder-row {
+        grid-template-columns: minmax(96px, 136px) 10px minmax(0, 1fr) minmax(40px, 64px) 24px;
+    }
 }
 
 .pem-pandoc-validation {
