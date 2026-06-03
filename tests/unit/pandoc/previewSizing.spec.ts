@@ -1,6 +1,65 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { installDocxPreviewFit } from '../../../src/pandoc/previewSizing';
+import {
+    calculateNaturalPageSlices,
+    installDocxPreviewFit
+} from '../../../src/pandoc/previewSizing';
+
+describe('calculateNaturalPageSlices', () => {
+    it('moves a line that crosses the page boundary to the next page', () => {
+        expect(calculateNaturalPageSlices({
+            flowStart: 0,
+            flowEnd: 180,
+            pageHeight: 100,
+            unbreakableBoxes: [{ top: 96, bottom: 116 }]
+        })).toEqual([
+            { start: 0, height: 96 },
+            { start: 96, height: 84 }
+        ]);
+    });
+
+    it('backs up through earlier boxes until the page break cuts no line', () => {
+        expect(calculateNaturalPageSlices({
+            flowStart: 0,
+            flowEnd: 190,
+            pageHeight: 100,
+            unbreakableBoxes: [
+                { top: 90, bottom: 98 },
+                { top: 96, bottom: 116 }
+            ]
+        })).toEqual([
+            { start: 0, height: 90 },
+            { start: 90, height: 100 }
+        ]);
+    });
+
+    it('keeps making progress when an element is taller than a page', () => {
+        expect(calculateNaturalPageSlices({
+            flowStart: 0,
+            flowEnd: 140,
+            pageHeight: 100,
+            unbreakableBoxes: [{ top: 0, bottom: 120 }]
+        })).toEqual([
+            { start: 0, height: 100 },
+            { start: 100, height: 40 }
+        ]);
+    });
+
+    it('ignores oversized containers and still honors nested line boxes', () => {
+        expect(calculateNaturalPageSlices({
+            flowStart: 0,
+            flowEnd: 180,
+            pageHeight: 100,
+            unbreakableBoxes: [
+                { top: 0, bottom: 180 },
+                { top: 96, bottom: 116 }
+            ]
+        })).toEqual([
+            { start: 0, height: 96 },
+            { start: 96, height: 84 }
+        ]);
+    });
+});
 
 describe('installDocxPreviewFit', () => {
     it('scales DOCX pages into the available preview width', () => {

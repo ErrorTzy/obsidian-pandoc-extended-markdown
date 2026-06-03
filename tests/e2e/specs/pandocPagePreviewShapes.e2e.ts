@@ -76,6 +76,19 @@ interface PageShapeState {
     html: string;
 }
 
+interface OdtTextClipState {
+    pageCount: number;
+    clippedLines: Array<{
+        pageIndex: number;
+        text: string;
+        rectTop: number;
+        rectBottom: number;
+        viewportTop: number;
+        viewportBottom: number;
+    }>;
+    html: string;
+}
+
 describe('Pandoc page-based preview shapes', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -122,6 +135,16 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.content?.paintedBackground).toBe('rgb(255, 255, 255)');
         expect(state.content?.leftInset).toBeGreaterThan(state.page.width * 0.07);
         expect(state.content?.topInset).toBeGreaterThan(state.page.height * 0.05);
+    });
+
+    it('does not clip WebODF text lines across page boundaries', async function () {
+        await openPreviewFor('odt', this);
+        const state = await getOdtTextClipState();
+
+        expect(state.pageCount).toBeGreaterThan(1);
+        if (state.clippedLines.length > 0) {
+            throw new Error(`Expected ODT page breaks not to clip text lines.\n${JSON.stringify(state, null, 2)}`);
+        }
     });
 
     it('renders PPTX preview using the slide aspect ratio without shrinking the render canvas first', async function () {
@@ -174,6 +197,15 @@ function markdownForPreview(kind: PreviewKind): string {
             `![[${vaultImagePath}]]`,
             '',
             'Second paragraph for text rendering.'
+        ].join('\n');
+    }
+
+    if (kind === 'odt') {
+        const repeatedLine = 'Natural ODT pagination must keep every rendered text line whole.';
+        return [
+            '# Case 1.1',
+            '',
+            ...Array.from({ length: 260 }, (_value, index) => `${index + 1}. ${repeatedLine}`)
         ].join('\n');
     }
 
@@ -424,6 +456,58 @@ async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
             };
         }
     }, kind);
+}
+
+async function getOdtTextClipState(): Promise<OdtTextClipState> {
+    return browser.execute(() => {
+        const frame = document.querySelector('iframe.pem-pandoc-odt-preview') as HTMLIFrameElement | null;
+        const frameDocument = frame?.contentDocument;
+        const pages = Array.from(frameDocument?.querySelectorAll<HTMLElement>('.odf-page-shell') ?? []);
+        const clippedLines: OdtTextClipState['clippedLines'] = [];
+
+        for (const [pageIndex, page] of pages.entries()) {
+            const viewport = page.querySelector<HTMLElement>('.odf-page-content-viewport');
+            const content = page.querySelector<HTMLElement>('.odf-page-content');
+            if (!viewport || !content) continue;
+
+            const viewportRect = viewport.getBoundingClientRect();
+            const walker = frameDocument?.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+            let node = walker?.nextNode();
+            while (node) {
+                const text = node.textContent?.trim() ?? '';
+                if (text) {
+                    const range = frameDocument?.createRange();
+                    range?.selectNodeContents(node);
+                    for (const rect of Array.from(range?.getClientRects() ?? [])) {
+                        if (isClippedLineRect(rect, viewportRect)) {
+                            clippedLines.push({
+                                pageIndex,
+                                text: text.slice(0, 80),
+                                rectTop: Math.round(rect.top * 100) / 100,
+                                rectBottom: Math.round(rect.bottom * 100) / 100,
+                                viewportTop: Math.round(viewportRect.top * 100) / 100,
+                                viewportBottom: Math.round(viewportRect.bottom * 100) / 100
+                            });
+                        }
+                    }
+                    range?.detach();
+                }
+                node = walker?.nextNode();
+            }
+        }
+
+        return {
+            pageCount: pages.length,
+            clippedLines: clippedLines.slice(0, 10),
+            html: frameDocument?.body.outerHTML.slice(0, 3000) ?? ''
+        };
+
+        function isClippedLineRect(rect: DOMRect, viewportRect: DOMRect): boolean {
+            if (rect.width <= 1 || rect.height <= 3) return false;
+            if (rect.bottom <= viewportRect.top || rect.top >= viewportRect.bottom) return false;
+            return rect.top < viewportRect.top - 0.5 || rect.bottom > viewportRect.bottom + 0.5;
+        }
+    });
 }
 
 async function executeCommandBySuffix(suffix: string): Promise<void> {

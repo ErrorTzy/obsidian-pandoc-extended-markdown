@@ -589,6 +589,22 @@ body {
     const odtBase64 = ${scriptLiteral(odtBase64)};
     const webOdfSource = ${scriptLiteral(`${script.source}\n//# sourceURL=${sourceUrl}`)};
     const drawNamespace = 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0';
+    const maxTextLineBoxHeight = 120;
+    const nonBodyTextAncestors = new Set([
+        'automatic-styles',
+        'font-face',
+        'font-face-decls',
+        'graphic-properties',
+        'master-styles',
+        'meta',
+        'page-layout',
+        'page-layout-properties',
+        'paragraph-properties',
+        'style',
+        'styles',
+        'tab-stops',
+        'text-properties'
+    ]);
 
     const report = message => {
         const state = { ...message, token };
@@ -666,42 +682,260 @@ body {
         const contentWidth = ${contentWidthPx.toFixed(6)};
         const contentHeight = ${contentHeightPx.toFixed(6)};
         const renderedHeight = Math.max(pageHeight, element.scrollHeight, element.offsetHeight, 1);
-        const flowHeight = Math.max(contentHeight, renderedHeight - contentTop);
-        const pageCount = Math.max(1, Math.ceil(flowHeight / contentHeight));
+        const source = element.cloneNode(true);
+        const baseBoxes = collectUnbreakableBoxes(element);
+        const measuredBoxes = [];
+        const flowEnd = Math.max(contentTop + contentHeight, renderedHeight);
+        let slices = calculateNaturalPageSlices({
+            flowStart: contentTop,
+            flowEnd,
+            pageHeight: contentHeight,
+            unbreakableBoxes: baseBoxes
+        });
+        let pages = buildOdtPages(source, slices, {
+            pageWidth,
+            pageHeight,
+            contentLeft,
+            contentTop,
+            contentWidth,
+            renderedHeight
+        });
+
+        element.replaceWith(pages);
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const clippedLines = clippedTextLines(pages, slices);
+            if (clippedLines.length === 0) {
+                pages.dataset.pemOdtPageCount = String(slices.length);
+                return pages;
+            }
+            measuredBoxes.push(...clippedLines);
+            slices = calculateNaturalPageSlices({
+                flowStart: contentTop,
+                flowEnd,
+                pageHeight: contentHeight,
+                unbreakableBoxes: [...baseBoxes, ...measuredBoxes]
+            });
+            const nextPages = buildOdtPages(source, slices, {
+                pageWidth,
+                pageHeight,
+                contentLeft,
+                contentTop,
+                contentWidth,
+                renderedHeight
+            });
+            pages.replaceWith(nextPages);
+            pages = nextPages;
+        }
+
+        pages.dataset.pemOdtPageCount = String(slices.length);
+        return pages;
+    };
+    const buildOdtPages = (source, slices, options) => {
         const pages = document.createElement('div');
         pages.id = 'odf-pages';
 
-        for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
+            const slice = slices[pageIndex];
             const shell = document.createElement('div');
             shell.className = 'odf-page-shell';
-            shell.style.aspectRatio = \`\${pageWidth} / \${pageHeight}\`;
+            shell.style.aspectRatio = \`\${options.pageWidth} / \${options.pageHeight}\`;
             const viewport = document.createElement('div');
             viewport.className = 'odf-page-content-viewport';
-            viewport.style.left = \`\${contentLeft}px\`;
-            viewport.style.top = \`\${contentTop}px\`;
-            viewport.style.width = \`\${contentWidth}px\`;
-            viewport.style.height = \`\${contentHeight}px\`;
+            viewport.style.left = \`\${options.contentLeft}px\`;
+            viewport.style.top = \`\${options.contentTop}px\`;
+            viewport.style.width = \`\${options.contentWidth}px\`;
+            viewport.style.height = \`\${slice.height}px\`;
 
-            const page = element.cloneNode(true);
+            const page = source.cloneNode(true);
             if (pageIndex === 0) {
                 page.id = 'odf-canvas';
             } else {
                 page.removeAttribute('id');
             }
             page.classList.add('odf-page-content');
-            page.style.minHeight = \`\${renderedHeight}px\`;
-            page.style.transform = \`translate(-\${Math.floor(contentLeft)}px, -\${
-                Math.floor(contentTop + pageIndex * contentHeight)
-            }px)\`;
+            page.style.minHeight = \`\${options.renderedHeight}px\`;
+            page.style.transform = \`translate(-\${options.contentLeft}px, -\${slice.start}px)\`;
             applyOdtPaperBackground(page);
             viewport.appendChild(page);
             shell.appendChild(viewport);
             pages.appendChild(shell);
         }
 
-        element.replaceWith(pages);
-        pages.dataset.pemOdtPageCount = String(pageCount);
         return pages;
+    };
+    const clippedTextLines = (pages, slices) => {
+        const clippedLines = [];
+        const seen = new Set();
+        const pageElements = Array.from(pages.querySelectorAll('.odf-page-shell'));
+        for (const [pageIndex, page] of pageElements.entries()) {
+            const viewport = page.querySelector('.odf-page-content-viewport');
+            const content = page.querySelector('.odf-page-content');
+            const slice = slices[pageIndex];
+            if (!viewport || !content || !slice) continue;
+
+            const viewportRect = viewport.getBoundingClientRect();
+            const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+            while (node) {
+                if (isRenderableTextNode(node)) {
+                    const range = document.createRange();
+                    range.selectNodeContents(node);
+                    for (const rect of Array.from(range.getClientRects())) {
+                        if (!isClippedLineRect(rect, viewportRect)) continue;
+                        const line = {
+                            top: slice.start + rect.top - viewportRect.top,
+                            bottom: slice.start + rect.bottom - viewportRect.top
+                        };
+                        const key = \`\${Math.round(line.top * 10)}:\${Math.round(line.bottom * 10)}\`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            clippedLines.push(line);
+                        }
+                    }
+                    range.detach();
+                }
+                node = walker.nextNode();
+            }
+        }
+
+        return clippedLines;
+    };
+    const isClippedLineRect = (rect, viewportRect) => {
+        if (rect.width <= 1 || rect.height <= 3 || rect.height > maxTextLineBoxHeight) return false;
+        if (rect.bottom <= viewportRect.top || rect.top >= viewportRect.bottom) return false;
+        return rect.top < viewportRect.top - 0.5 || rect.bottom > viewportRect.bottom + 0.5;
+    };
+    const calculateNaturalPageSlices = options => {
+        const flowStart = Math.max(0, options.flowStart);
+        const flowEnd = Math.max(flowStart, options.flowEnd);
+        const pageHeight = Math.max(1, options.pageHeight);
+        const boxes = normalizePaginationBoxes(options.unbreakableBoxes || [], flowStart, flowEnd);
+        const slices = [];
+        let current = flowStart;
+
+        while (current < flowEnd - 0.5 && slices.length < 1000) {
+            const target = Math.min(current + pageHeight, flowEnd);
+            const boundary = target >= flowEnd - 0.5 ?
+                target :
+                naturalPageBoundary(current, target, pageHeight, boxes);
+            const next = boundary > current + 0.5 ? boundary : target;
+            slices.push({
+                start: current,
+                height: Math.max(1, Math.min(pageHeight, next - current))
+            });
+            current = next;
+        }
+
+        return slices.length > 0 ? slices : [{ start: flowStart, height: pageHeight }];
+    };
+    const collectUnbreakableBoxes = root => {
+        const rootRect = root.getBoundingClientRect();
+        return [
+            ...collectTextLineBoxes(root, rootRect),
+            ...collectAtomicElementBoxes(root, rootRect)
+        ];
+    };
+    const collectTextLineBoxes = (root, rootRect) => {
+        const boxes = [];
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+
+        while (node) {
+            if (isRenderableTextNode(node)) {
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                for (const rect of Array.from(range.getClientRects())) {
+                    if (rect.height > maxTextLineBoxHeight) continue;
+                    addRectBox(boxes, rect, rootRect);
+                }
+                range.detach();
+            }
+            node = walker.nextNode();
+        }
+
+        return boxes;
+    };
+    const isRenderableTextNode = node => {
+        if (!node.textContent || !node.textContent.trim()) return false;
+
+        let element = node.parentElement;
+        let hasOdtBody = false;
+        while (element) {
+            const name = odtLocalName(element);
+            if (nonBodyTextAncestors.has(name)) return false;
+            const nodeName = (element.nodeName || '').toLowerCase();
+            const namespace = element.namespaceURI || '';
+            if (
+                (name === 'body' || name === 'text') &&
+                (nodeName.startsWith('office:') || namespace.includes('opendocument'))
+            ) {
+                hasOdtBody = true;
+            }
+            element = element.parentElement;
+        }
+
+        return hasOdtBody;
+    };
+    const odtLocalName = element => {
+        const localName = (element.localName || '').toLowerCase();
+        return localName.includes(':') ? localName.split(':').pop() : localName;
+    };
+    const collectAtomicElementBoxes = (root, rootRect) => {
+        return Array.from(root.querySelectorAll('*'))
+            .filter(isAtomicPreviewElement)
+            .flatMap(element => Array.from(element.getClientRects()))
+            .reduce((boxes, rect) => {
+                addRectBox(boxes, rect, rootRect);
+                return boxes;
+            }, []);
+    };
+    const isAtomicPreviewElement = element => {
+        const localName = (element.localName || '').toLowerCase().split(':').pop() || '';
+        return [
+            'canvas',
+            'embed',
+            'frame',
+            'iframe',
+            'image',
+            'img',
+            'object',
+            'pre',
+            'svg',
+            'table',
+            'video'
+        ].includes(localName);
+    };
+    const addRectBox = (boxes, rect, rootRect) => {
+        if (rect.height <= 0.5 || rect.width <= 0.5) return;
+        boxes.push({
+            top: rect.top - rootRect.top,
+            bottom: rect.bottom - rootRect.top
+        });
+    };
+    const normalizePaginationBoxes = (boxes, flowStart, flowEnd) => {
+        return boxes
+            .map(box => ({
+                top: Math.max(flowStart, box.top),
+                bottom: Math.min(flowEnd, box.bottom)
+            }))
+            .filter(box => box.bottom > box.top + 0.5)
+            .sort((first, second) => first.top - second.top || first.bottom - second.bottom);
+    };
+    const naturalPageBoundary = (start, target, pageHeight, boxes) => {
+        let boundary = target;
+
+        for (let attempts = 0; attempts < boxes.length; attempts += 1) {
+            const crossing = boxes.find(box =>
+                box.bottom - box.top <= pageHeight - 0.5 &&
+                box.top > start + 0.5 &&
+                box.top < boundary - 0.5 &&
+                box.bottom > boundary + 0.5
+            );
+            if (!crossing) return boundary;
+            boundary = crossing.top;
+        }
+
+        return boundary;
     };
     const applyOdtPaperBackground = page => {
         ensureOdtPaperCss();

@@ -5,6 +5,10 @@ import {
 } from './previewPageMetadata';
 
 const previewSizingObservers = new WeakMap<HTMLElement, ResizeObserver>();
+const MAX_TEXT_LINE_BOX_HEIGHT = 120;
+const ATOMIC_PREVIEW_LOCAL_NAMES = new Set([
+    'canvas', 'embed', 'frame', 'iframe', 'image', 'img', 'object', 'pre', 'svg', 'table', 'video'
+]);
 
 interface DocxPreviewPage {
     page: HTMLElement;
@@ -22,6 +26,41 @@ interface PageContentRect {
     top: number;
     width: number;
     height: number;
+}
+
+export interface PreviewPaginationBox { top: number; bottom: number; }
+
+export interface PreviewPageSlice { start: number; height: number; }
+
+export function calculateNaturalPageSlices(
+    options: {
+        flowStart: number;
+        flowEnd: number;
+        pageHeight: number;
+        unbreakableBoxes?: PreviewPaginationBox[];
+    }
+): PreviewPageSlice[] {
+    const flowStart = Math.max(0, options.flowStart);
+    const flowEnd = Math.max(flowStart, options.flowEnd);
+    const pageHeight = Math.max(1, options.pageHeight);
+    const boxes = normalizePaginationBoxes(options.unbreakableBoxes ?? [], flowStart, flowEnd);
+    const slices: PreviewPageSlice[] = [];
+    let current = flowStart;
+
+    while (current < flowEnd - 0.5 && slices.length < 1000) {
+        const target = Math.min(current + pageHeight, flowEnd);
+        const boundary = target >= flowEnd - 0.5 ?
+            target :
+            naturalPageBoundary(current, target, pageHeight, boxes);
+        const next = boundary > current + 0.5 ? boundary : target;
+        slices.push({
+            start: current,
+            height: Math.max(1, Math.min(pageHeight, next - current))
+        });
+        current = next;
+    }
+
+    return slices.length > 0 ? slices : [{ start: flowStart, height: pageHeight }];
 }
 
 export function resetPreviewSizing(container: HTMLElement): void {
@@ -106,20 +145,26 @@ function paginateDocxPreviewPage(
     applyDocxPageSize(page, pageSize, true);
     const contentRect = docxContentRect(pageSize);
     const renderedHeight = renderedDocxHeight(page, pageSize);
-    const flowHeight = Math.max(contentRect.height, renderedHeight - contentRect.top);
-    const pageCount = Math.max(1, Math.ceil(flowHeight / contentRect.height));
+    const flowEnd = docxFlowEnd(renderedHeight, pageSize, contentRect);
+    const slices = calculateNaturalPageSlices({
+        flowStart: contentRect.top,
+        flowEnd,
+        pageHeight: contentRect.height,
+        unbreakableBoxes: collectUnbreakableBoxes(page)
+    });
     const pages: DocxPreviewPage[] = [];
     const anchor = page.nextSibling;
 
-    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+    for (let pageIndex = 0; pageIndex < slices.length; pageIndex += 1) {
+        const slice = slices[pageIndex];
         const fragmentPage = pageIndex === 0 ? page : page.cloneNode(true) as HTMLElement;
         const shell = createDocxPageShell(pageSize);
         const fragment = document.createElement('div');
         fragment.className = 'pem-pandoc-docx-page-fragment';
-        const viewport = createDocxPageViewport(contentRect);
+        const viewport = createDocxPageViewport(contentRect, slice.height);
 
         applyDocxPageSize(fragment, pageSize, false);
-        prepareDocxFragmentPage(fragmentPage, renderedHeight, pageSize, contentRect, pageIndex);
+        prepareDocxFragmentPage(fragmentPage, renderedHeight, pageSize, contentRect, slice);
         wrapper.insertBefore(shell, anchor);
         viewport.appendChild(fragmentPage);
         fragment.appendChild(viewport);
@@ -141,13 +186,13 @@ function createDocxPageShell(pageSize: PreviewPageSize): HTMLElement {
     return shell;
 }
 
-function createDocxPageViewport(contentRect: PageContentRect): HTMLElement {
+function createDocxPageViewport(contentRect: PageContentRect, height: number): HTMLElement {
     const viewport = document.createElement('div');
     viewport.className = 'pem-pandoc-docx-page-viewport';
     viewport.style.left = `${contentRect.left}px`;
     viewport.style.top = `${contentRect.top}px`;
     viewport.style.width = `${contentRect.width}px`;
-    viewport.style.height = `${contentRect.height}px`;
+    viewport.style.height = `${height}px`;
     return viewport;
 }
 
@@ -156,12 +201,12 @@ function prepareDocxFragmentPage(
     renderedHeight: number,
     pageSize: PreviewPageSize,
     contentRect: PageContentRect,
-    pageIndex: number
+    slice: PreviewPageSlice
 ): void {
     applyDocxPageSize(page, pageSize, true);
     page.style.minHeight = `${renderedHeight}px`;
     page.style.transform = `translate(-${Math.floor(contentRect.left)}px, -${
-        Math.floor(contentRect.top + pageIndex * contentRect.height)
+        Math.floor(slice.start)
     }px)`;
 }
 
@@ -237,6 +282,103 @@ function docxContentRect(pageSize: PreviewPageSize): PageContentRect {
 
 function clampInset(value: number, available: number): number {
     return Math.max(0, Math.min(value, Math.max(0, available - 1)));
+}
+
+function docxFlowEnd(
+    renderedHeight: number,
+    pageSize: PreviewPageSize,
+    contentRect: PageContentRect
+): number {
+    const bottomMargin = Math.max(0, pageSize.heightPx - contentRect.top - contentRect.height);
+    return Math.max(contentRect.top + contentRect.height, renderedHeight - bottomMargin);
+}
+
+function collectUnbreakableBoxes(root: HTMLElement): PreviewPaginationBox[] {
+    const rootRect = root.getBoundingClientRect();
+    return [
+        ...collectTextLineBoxes(root, rootRect),
+        ...collectAtomicElementBoxes(root, rootRect)
+    ];
+}
+
+function collectTextLineBoxes(root: HTMLElement, rootRect: DOMRect): PreviewPaginationBox[] {
+    const boxes: PreviewPaginationBox[] = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+
+    while (node) {
+        if (node.textContent?.trim()) {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            for (const rect of Array.from(range.getClientRects())) {
+                if (rect.height > MAX_TEXT_LINE_BOX_HEIGHT) continue;
+                addRectBox(boxes, rect, rootRect);
+            }
+            range.detach();
+        }
+        node = walker.nextNode();
+    }
+
+    return boxes;
+}
+
+function collectAtomicElementBoxes(root: HTMLElement, rootRect: DOMRect): PreviewPaginationBox[] {
+    return Array.from(root.querySelectorAll<HTMLElement>('*'))
+        .filter(isAtomicPreviewElement)
+        .flatMap(element => Array.from(element.getClientRects()))
+        .reduce<PreviewPaginationBox[]>((boxes, rect) => {
+            addRectBox(boxes, rect, rootRect);
+            return boxes;
+        }, []);
+}
+
+function isAtomicPreviewElement(element: HTMLElement): boolean {
+    const localName = element.localName.toLowerCase().split(':').pop() ?? '';
+    return ATOMIC_PREVIEW_LOCAL_NAMES.has(localName);
+}
+
+function addRectBox(boxes: PreviewPaginationBox[], rect: DOMRect, rootRect: DOMRect): void {
+    if (rect.height <= 0.5 || rect.width <= 0.5) return;
+    boxes.push({
+        top: rect.top - rootRect.top,
+        bottom: rect.bottom - rootRect.top
+    });
+}
+
+function normalizePaginationBoxes(
+    boxes: PreviewPaginationBox[],
+    flowStart: number,
+    flowEnd: number
+): PreviewPaginationBox[] {
+    return boxes
+        .map(box => ({
+            top: Math.max(flowStart, box.top),
+            bottom: Math.min(flowEnd, box.bottom)
+        }))
+        .filter(box => box.bottom > box.top + 0.5)
+        .sort((first, second) => first.top - second.top || first.bottom - second.bottom);
+}
+
+function naturalPageBoundary(
+    start: number,
+    target: number,
+    pageHeight: number,
+    boxes: PreviewPaginationBox[]
+): number {
+    let boundary = target;
+
+    for (let attempts = 0; attempts < boxes.length; attempts += 1) {
+        const crossing = boxes.find(box =>
+            box.bottom - box.top <= pageHeight - 0.5 &&
+            box.top > start + 0.5 &&
+            box.top < boundary - 0.5 &&
+            box.bottom > boundary + 0.5
+        );
+        if (!crossing) return boundary;
+        boundary = crossing.top;
+    }
+
+    return boundary;
 }
 
 function naturalWidth(pageSize: PreviewPageSize): number {
