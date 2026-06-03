@@ -40,10 +40,10 @@ describe('Pandoc profile editor layout', () => {
         expect(layout.typeColumnLeftSpread).toBeLessThanOrEqual(1);
 
         const rows = await getCommandRows();
-        expect(rowType(rows, 'input file')).toBe('input file');
+        expect(rowType(rows, 'input file')).toBe('FILE');
         expect(rowType(rows, 'from format')).toBe('FORMAT');
         expect(rowType(rows, 'to format')).toBe('FORMAT');
-        expect(rowType(rows, 'output file')).toBe('FILE');
+        expect(rowType(rows, 'output file')).toBe('OFILE');
         expect(rowType(rows, '--resource-path')).toBe('SEARCHPATH');
         expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
         expect(rowType(rows, '-L')).toBe('SCRIPT');
@@ -153,7 +153,7 @@ describe('Pandoc profile editor layout', () => {
             timeoutMsg: 'Expected resource path value input'
         });
 
-        await typeFirstResourcePathValue('/tmp/pandoc-export-profile/very/deep/path/final-output-name.html');
+        await typeFirstResourcePathValue('/tmp/pandoc-export-profile/very/deep/path/with/a/long/chain/of/directories/that/forces/overflow/final-output-name.html');
         await blurFirstResourcePathInput();
         await browser.waitUntil(async () => {
             const state = await getFirstResourcePathOverflowState();
@@ -172,6 +172,14 @@ describe('Pandoc profile editor layout', () => {
         expect(state.indicatorDisplay).not.toBe('none');
         expect(state.displayContentRightDelta).toBeLessThanOrEqual(1);
         expect(state.displayContentClipsLeft).toBe(true);
+
+        await focusFirstResourcePathInput();
+        const focusedState = await getFirstResourcePathOverflowState();
+        expect(focusedState.indicatorDisplay).toBe('none');
+
+        await blurFirstResourcePathInput();
+        const blurredState = await getFirstResourcePathOverflowState();
+        expect(blurredState.indicatorDisplay).not.toBe('none');
     });
 });
 

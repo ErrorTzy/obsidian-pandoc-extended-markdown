@@ -169,7 +169,7 @@ function coreOptionLabel(spec?: OptionSpec): string {
 }
 
 function typeText(row: ProfileOptionRow, spec?: OptionSpec): string {
-    if (row.role === 'input') return 'input file';
+    if (row.role === 'input') return 'FILE';
     return optionValueTypeText(spec);
 }
 

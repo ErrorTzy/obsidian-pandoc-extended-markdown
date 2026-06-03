@@ -486,6 +486,10 @@
     display: flex;
 }
 
+.pem-pandoc-string-input-frame.is-overflowing:focus-within::before {
+    display: none;
+}
+
 .pem-pandoc-string-input-frame.is-display-mode.has-muted-display-prefix::before {
     color: var(--text-faint);
 }
