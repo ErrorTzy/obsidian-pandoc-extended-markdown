@@ -1,4 +1,8 @@
 import type { OdtPreviewAddonSettings } from './types';
+import {
+    installDocxPreviewFit,
+    resetPreviewSizing
+} from './previewSizing';
 
 export type PandocPreviewRendererKind =
     | 'html'
@@ -93,6 +97,7 @@ export function selectPreviewRenderer(
 
 export async function renderPreviewFile(request: PandocPreviewRenderRequest): Promise<void> {
     const { container, renderer } = request;
+    resetPreviewSizing(container);
     container.empty();
     container.addClass('pem-pandoc-preview-rendered');
 
@@ -185,6 +190,7 @@ async function renderDocxPreview(request: PandocPreviewRenderRequest): Promise<v
         renderHeaders: true,
         renderFooters: true
     });
+    installDocxPreviewFit(request.container);
 }
 
 async function renderEpubPreview(request: PandocPreviewRenderRequest): Promise<void> {
@@ -407,16 +413,25 @@ html, body {
 body {
     box-sizing: border-box;
     font-family: sans-serif;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 12px;
 }
-#odf-canvas {
+#odf-viewport {
     min-height: calc(100vh - 24px);
+    overflow: hidden;
+}
+#odf-canvas {
+    margin: 0 auto;
+    min-height: calc(100vh - 24px);
+    transform-origin: top left;
 }
 </style>
 </head>
 <body>
+<div id="odf-viewport">
 <div id="odf-canvas" aria-label="ODT preview"></div>
+</div>
 <script>
 (() => {
     const token = ${scriptLiteral(token)};
@@ -467,6 +482,28 @@ body {
     const visibleText = element => (
         element.innerText || element.textContent || ''
     ).replace(/^Loading.*\\.\\.\\.$/, '').trim();
+    const fitOdtPreview = element => {
+        const viewport = element.parentElement;
+        if (!viewport) return;
+
+        element.style.marginLeft = '';
+        element.style.marginRight = '';
+        element.style.transform = '';
+        viewport.style.height = '';
+        const availableWidth = Math.max(1, viewport.clientWidth);
+        const naturalWidth = Math.max(element.scrollWidth, element.offsetWidth, 1);
+        const naturalHeight = Math.max(element.scrollHeight, element.offsetHeight, 1);
+        const scale = Math.min(1, availableWidth / naturalWidth);
+        const scaledWidth = naturalWidth * scale;
+        const horizontalInset = Math.max(0, (availableWidth - scaledWidth) / 2);
+        element.style.marginLeft = \`\${Math.floor(horizontalInset)}px\`;
+        element.style.marginRight = \`\${Math.floor(horizontalInset)}px\`;
+        element.style.transform = \`scale(\${scale})\`;
+        viewport.style.height = \`\${Math.ceil(naturalHeight * scale)}px\`;
+    };
+    const scheduleOdtFit = element => {
+        window.requestAnimationFrame(() => fitOdtPreview(element));
+    };
     const imageBackgroundRuleCount = () => {
         let count = 0;
         for (const sheet of Array.from(document.styleSheets)) {
@@ -533,6 +570,7 @@ body {
             const images = document.getElementsByTagNameNS(drawNamespace, 'image');
             const imageRules = imageBackgroundRuleCount();
             const rect = element.getBoundingClientRect();
+            fitOdtPreview(element);
             if (text && rect.width > 0 && rect.height > 0 && (images.length === 0 || imageRules > 0)) {
                 report({ type: 'ready', text, imageCount: images.length });
                 return;
@@ -565,6 +603,7 @@ body {
         installDocument(data);
         const element = document.getElementById('odf-canvas');
         const canvas = new window.odf.OdfCanvas(element);
+        window.addEventListener('resize', () => scheduleOdtFit(element));
         canvas.addListener('statereadychange', container => {
             if (container.state === window.odf.OdfContainer.DONE) {
                 reportWhenPaintable(element, canvas);

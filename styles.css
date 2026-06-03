@@ -70,7 +70,8 @@
 .pem-pandoc-preview-body {
     background: var(--background-primary);
     min-width: 0;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     position: relative;
 }
 
@@ -78,9 +79,11 @@
 .pem-pandoc-preview-object,
 .pem-pandoc-odt-preview {
     border: 0;
+    box-sizing: border-box;
     display: block;
     height: 100%;
     min-height: 520px;
+    max-width: 100%;
     width: 100%;
 }
 
@@ -104,15 +107,50 @@
     display: grid;
     gap: 14px;
     justify-content: center;
+    min-width: 0;
+    overflow-x: hidden;
     padding: 14px;
 }
 
 .pem-pandoc-pdf-page,
-.pem-pandoc-docx .docx {
+.pem-pandoc-docx-preview section.pem-pandoc-docx {
     background: white;
     box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
     height: auto;
+}
+
+.pem-pandoc-pdf-page {
     max-width: 100%;
+}
+
+.pem-pandoc-docx-preview section.pem-pandoc-docx {
+    max-width: none;
+}
+
+.pem-pandoc-docx-preview .pem-pandoc-docx-wrapper {
+    background: transparent !important;
+    box-sizing: border-box;
+    display: grid !important;
+    gap: 14px;
+    justify-content: center;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0 !important;
+    width: 100%;
+}
+
+.pem-pandoc-docx-page-shell {
+    display: flex;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.pem-pandoc-docx-page-shell > section.pem-pandoc-docx {
+    flex: 0 0 auto;
+    margin-bottom: 0 !important;
+    transform: scale(var(--pem-pandoc-docx-page-scale, 1));
+    transform-origin: top center;
 }
 
 .pem-pandoc-preview-controls {
