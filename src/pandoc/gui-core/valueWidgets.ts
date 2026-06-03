@@ -9,6 +9,7 @@ export type PandocValueWidgetType =
     | 'selectWidget'
     | 'formatWidget'
     | 'numberWidget'
+    | 'outputFileWidget'
     | 'keyWidget'
     | 'keyValueWidget'
     | 'pathWidget'
@@ -39,6 +40,7 @@ const PANDOC_VALUE_WIDGET_TYPES: Record<string, PandocValueWidgetType> = {
     NUMBER: 'numberWidget',
     NUMBERS: 'numberWidget',
     FORMAT: 'formatWidget',
+    OFILE: 'outputFileWidget',
     FILE: 'pathWidget',
     SCRIPT: 'pathWidget',
     SCRIPTPATH: 'pathWidget',

@@ -1,6 +1,7 @@
 import type { OptionSpec, PandocOptionCatalog } from './types';
 import { FALLBACK_EXTENSION_DESCRIPTIONS } from './fallbackExtensionDescriptions';
 import FALLBACK_PANDOC_OPTIONS_METADATA from '../metadata/pandoc-options.json';
+import { postProcessOptionMetadata } from './metadataPostProcessor';
 import { metadataToOptionSpecs } from './optionsMetadata';
 import type { PandocOptionsMetadata } from './types';
 
@@ -56,8 +57,8 @@ const MARKDOWN_EXTENSIONS: string[] = [];
 
 const HIGHLIGHT_STYLES = ['default', 'breezedark', 'espresso', 'haddock', 'kate', 'monochrome', 'pygments', 'tango', 'zenburn'];
 
-export const FALLBACK_OPTIONS: OptionSpec[] = metadataToOptionSpecs(
-    FALLBACK_PANDOC_OPTIONS_METADATA as PandocOptionsMetadata
+export const FALLBACK_OPTIONS: OptionSpec[] = postProcessOptionMetadata(
+    metadataToOptionSpecs(FALLBACK_PANDOC_OPTIONS_METADATA as PandocOptionsMetadata)
 ).map(enrichFallbackOptionValues);
 
 export const FALLBACK_PANDOC_CATALOG: PandocOptionCatalog = {

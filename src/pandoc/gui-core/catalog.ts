@@ -12,6 +12,7 @@ import {
     parsePandocExtensionDescriptions,
     parseExtensionListOutput
 } from './formatExtensions';
+import { postProcessOptionMetadata } from './metadataPostProcessor';
 import {
     metadataToOptionSpecs,
     parsePandocOptionsMetadata
@@ -84,7 +85,7 @@ export class PandocCatalogService {
         return {
             version: versionResult.version ?? parsePandocVersion(versionResult.result.stdout),
             source: 'runtime',
-            options: enrichOptions(parsedOptions, inputFormats, outputFormats, styles),
+            options: postProcessOptionMetadata(enrichOptions(parsedOptions, inputFormats, outputFormats, styles)),
             inputFormats: inputFormatList,
             outputFormats: outputFormatList,
             markdownExtensions: markdownExtensions.map(extension => extension.name),

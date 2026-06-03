@@ -78,6 +78,7 @@ describe('Pandoc command rows', () => {
         const rows = Array.from(container.querySelectorAll('.pem-pandoc-builder-row'));
         expect(rowHasBrowseButton(rows, '--resource-path')).toBe(true);
         expect(rowHasBrowseButton(rows, '-L')).toBe(true);
+        expect(rowHasBrowseButton(rows, 'output file')).toBe(true);
         expect(rowHasBrowseButton(rows, '--columns')).toBe(false);
         expect(rowHasValueControl(rows, '-s')).toBe(false);
         expect(rowHasValueControl(rows, '--toc')).toBe(true);
@@ -303,9 +304,9 @@ describe('Pandoc command rows', () => {
             { text: 'folder/note.md', muted: false }
         ]);
         expect(valueDisplayFrame(container, 'input file').classList.contains('has-muted-display-prefix')).toBe(true);
-        expect(valueDisplayParts(container, 'output file')).toEqual([
-            { text: '/vault/', muted: true },
-            { text: 'exports/note.html', muted: false }
+        expect(outputFileInputs(container).map(input => input.value)).toEqual([
+            '${outputDir}',
+            '${currentFileName}${outputExtension}'
         ]);
         expect(valueDisplayParts(container, '--resource-path')).toEqual([
             { text: '/vault/', muted: true },
@@ -315,6 +316,29 @@ describe('Pandoc command rows', () => {
             { text: '/vault/', muted: true },
             { text: '.obsidian/plugins/pandoc-extended-markdown/lua_filter/CustomLabelList.lua', muted: false }
         ]);
+    });
+
+    it('renders output files as folder and file-name controls', () => {
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+        const updatePreview = jest.fn();
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, {
+            ...commandActions(),
+            updatePreview
+        });
+
+        const [folderInput, fileInput] = outputFileInputs(container);
+        expect(folderInput.value).toBe('${outputDir}');
+        expect(fileInput.value).toBe('${currentFileName}${outputExtension}');
+
+        folderInput.value = '/exports';
+        folderInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        fileInput.value = 'custom.docx';
+        fileInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        expect(draft.optionRows.find(row => row.key === '-o')?.value).toBe('/exports/custom.docx');
+        expect(updatePreview).toHaveBeenCalledTimes(2);
     });
 
     it('mutes the whole resolved path when a root-level directory variable is empty', () => {
@@ -597,6 +621,14 @@ function keyValueInputs(row: Element): HTMLInputElement[] {
 
 function keyValueSeparator(row: Element): string {
     return row.querySelector('.pem-pandoc-key-value-separator')?.textContent ?? '';
+}
+
+function outputFileInputs(container: HTMLElement): HTMLInputElement[] {
+    const row = findRow(container, 'output file');
+    return [
+        row.querySelector('.pem-pandoc-output-folder-input') as HTMLInputElement,
+        row.querySelector('.pem-pandoc-output-file-name-input') as HTMLInputElement
+    ];
 }
 
 function variableSuggestionTexts(input: HTMLInputElement): string[] {

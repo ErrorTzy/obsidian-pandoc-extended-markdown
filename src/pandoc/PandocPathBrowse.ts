@@ -19,6 +19,16 @@ export function addBrowseButton(
     });
 }
 
+export function addFolderBrowseButton(
+    container: HTMLElement,
+    input: ValueInput,
+    onChoose: (value: string) => void
+): void {
+    createButton(container, 'Browse', () => {
+        void choosePath('folder', input, onChoose);
+    });
+}
+
 function browseKindForValue(valueKind: OptionValueKind | undefined): BrowseKind | undefined {
     if (valueKind === 'file') return 'file';
     if (valueKind === 'directory' || valueKind === 'pathList') return 'folder';

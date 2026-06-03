@@ -20,6 +20,7 @@ export interface OptionValueAlternative {
     label: string;
     valueKind: OptionValueKind;
     placeholder?: string;
+    valuePlaceholder?: string;
     values?: string[];
 }
 

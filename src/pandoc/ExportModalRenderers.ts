@@ -3,16 +3,11 @@ import { Setting } from 'obsidian';
 import type { ExportProfile } from './types';
 import type { ValidationIssue } from './gui-core';
 
-export interface ExportTargetState {
-    outputFileName: string;
-    outputFolder: string;
+export interface OverwriteOptionState {
     overwrite: boolean;
 }
 
-export interface ExportTargetActions {
-    onFileNameChange(value: string): void;
-    onFolderChange(value: string): void;
-    onChooseFolder(): Promise<void>;
+export interface OverwriteOptionActions {
     onOverwriteChange(value: boolean): void;
 }
 
@@ -63,32 +58,12 @@ export function renderPresetOptions(
     select.onchange = () => onSelect(select.value);
 }
 
-export function renderExportTarget(
+export function renderOverwriteOption(
     container: HTMLElement,
-    state: ExportTargetState,
-    actions: ExportTargetActions
+    state: OverwriteOptionState,
+    actions: OverwriteOptionActions
 ): void {
     const section = container.createDiv({ cls: 'pem-pandoc-preset-section' });
-    // eslint-disable-next-line obsidianmd/ui/sentence-case
-    section.createEl('h3', { text: 'Export Target' });
-
-    new Setting(section)
-        .setName('Output file')
-        .addText(text => text
-            .setValue(state.outputFileName)
-            .onChange(value => actions.onFileNameChange(value)));
-
-    new Setting(section)
-        .setName('Output folder')
-        .addText(text => text
-            .setValue(state.outputFolder)
-            .onChange(value => actions.onFolderChange(value)))
-        .addExtraButton(button => button
-            .setIcon('folder')
-            .setTooltip('Choose folder')
-            .onClick(() => {
-                void actions.onChooseFolder();
-            }));
 
     new Setting(section)
         .setName('Replace existing file')

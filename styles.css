@@ -569,6 +569,15 @@
     min-width: 0;
 }
 
+.pem-pandoc-output-file-control {
+    align-items: center;
+    display: grid;
+    flex: 1 1 auto;
+    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) max-content minmax(140px, 0.55fr);
+    min-width: 0;
+}
+
 .pem-pandoc-key-value-separator {
     color: var(--text-muted);
     text-align: center;
@@ -888,6 +897,14 @@
             "type type"
             "actions actions";
         grid-template-columns: minmax(96px, 1fr) 12px;
+    }
+
+    .pem-pandoc-output-file-control {
+        grid-template-columns: minmax(0, 1fr) max-content;
+    }
+
+    .pem-pandoc-output-file-name-input {
+        grid-column: 1 / -1;
     }
 
     .pem-pandoc-option-search-box {

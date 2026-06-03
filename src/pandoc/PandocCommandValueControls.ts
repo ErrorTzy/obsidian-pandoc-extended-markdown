@@ -1,6 +1,14 @@
-import { addBrowseButton } from './PandocPathBrowse';
+import {
+    addBrowseButton,
+    addFolderBrowseButton
+} from './PandocPathBrowse';
 import { createPandocSelect } from './PandocSelect';
 import { createTemplateValueInput } from './PandocTemplateValueInput';
+import {
+    basename,
+    dirname,
+    joinPath
+} from './pathUtils';
 import type { PandocCommandRowActions } from './PandocCommandRows';
 import { resolvePandocValueWidget } from './gui-core';
 import type {
@@ -116,6 +124,10 @@ function createWidgetControl(
         renderKeyValueControl(container, row, draft, route, actions);
         return undefined;
     }
+    if (route.widgetType === 'outputFileWidget') {
+        renderOutputFileControl(container, row, draft, actions);
+        return undefined;
+    }
     if (route.widgetType === 'formatWidget') {
         const spec = formatSpec ?? (source as OptionSpec | undefined);
         const input = createTemplateValueInput(container, row, draft, actions, route.placeholder);
@@ -188,6 +200,47 @@ function renderKeyValueControl(
         row.value = joinKeyValue(keyInput.value, valueInput.value, route.separator ?? '=');
         actions.updatePreview(draft);
     }
+}
+
+function renderOutputFileControl(
+    container: HTMLElement,
+    row: ProfileOptionRow,
+    draft: ProfileDraft,
+    actions: PandocCommandRowActions
+): void {
+    const value = splitOutputFileValue(row.value);
+    const control = container.createDiv({ cls: 'pem-pandoc-output-file-control' });
+    const folderInput = createInput(control, value.folder, update, 'text', 'Folder');
+    addFolderBrowseButton(control, folderInput, value => {
+        folderInput.value = value;
+        update();
+    });
+    const fileInput = createInput(control, value.fileName, update, 'text', 'File name');
+    folderInput.addClass('pem-pandoc-output-folder-input');
+    fileInput.addClass('pem-pandoc-output-file-name-input');
+
+    function update(): void {
+        row.value = joinOutputFileValue(folderInput.value, fileInput.value);
+        actions.updatePreview(draft);
+    }
+}
+
+function splitOutputFileValue(value: string): { folder: string; fileName: string } {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === '-') return { folder: '', fileName: trimmed };
+
+    return {
+        folder: dirname(trimmed),
+        fileName: basename(trimmed)
+    };
+}
+
+function joinOutputFileValue(folder: string, fileName: string): string {
+    const trimmedFolder = folder.trim();
+    const trimmedFileName = fileName.trim();
+    if (!trimmedFolder) return trimmedFileName;
+    if (!trimmedFileName) return trimmedFolder;
+    return joinPath(trimmedFolder, trimmedFileName);
 }
 
 function splitKeyValue(value: string, separator: string): { key: string; value: string } {

@@ -530,11 +530,13 @@ EXIT CODES
     });
 
     it('formats fallback labels and mixed placeholder value types without leaking placeholders', () => {
+        const output = findOptionSpec(FALLBACK_PANDOC_CATALOG, '-o');
         const idPrefix = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--id-prefix');
         const extractMedia = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--extract-media');
         const shortHeader = findOptionSpec(FALLBACK_PANDOC_CATALOG, '-H');
         const longHeader = findOptionSpec(FALLBACK_PANDOC_CATALOG, '--include-in-header');
 
+        expect(optionValueTypeText(output)).toBe('OFILE');
         expect(optionLabel(idPrefix!)).toBe('--id-prefix');
         expect(optionValueTypeText(idPrefix)).toBe('STRING');
         expect(optionValueTypeText(extractMedia)).toBe('DIR | FILE.zip');
@@ -702,6 +704,7 @@ ignored
             'KEY=VAL': 'keyValueWidget',
             'KEY:VAL': 'keyValueWidget',
             FORMAT: 'formatWidget',
+            OFILE: 'outputFileWidget',
             PATH: 'pathWidget'
         });
         expect(resolvePandocValueWidget(
@@ -718,6 +721,9 @@ ignored
         });
         expect(resolvePandocValueWidget(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-t'))).toMatchObject({
             widgetType: 'formatWidget'
+        });
+        expect(resolvePandocValueWidget(findOptionSpec(FALLBACK_PANDOC_CATALOG, '-o'))).toMatchObject({
+            widgetType: 'outputFileWidget'
         });
         expect(resolvePandocValueWidget(findOptionSpec(FALLBACK_PANDOC_CATALOG, '--resource-path'))).toMatchObject({
             widgetType: 'pathWidget'

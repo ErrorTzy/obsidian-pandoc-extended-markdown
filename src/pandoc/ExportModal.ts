@@ -7,7 +7,6 @@ import {
 } from 'obsidian';
 
 import { PandocExtendedMarkdownSettings } from '../shared/types/settingsTypes';
-import { ElectronPandocDesktopAdapter } from './desktopAdapter';
 import {
     buildModalDisplayVariables,
     buildModalVariables,
@@ -23,12 +22,17 @@ import { PandocFormatEditorModal } from './PandocFormatEditor';
 import { PandocOptionSearchModal } from './PandocOptionSearchModal';
 import {
     renderCommandPreview,
-    renderExportTarget,
     renderFooter,
+    renderOverwriteOption,
     renderPresetOptions,
     renderPreviewPane,
     renderValidation
 } from './ExportModalRenderers';
+import {
+    basename,
+    dirname
+} from './pathUtils';
+import { renderExportTemplate } from './template';
 import { renderPandocRows } from './PandocCommandRows';
 import {
     buildProfileDraftPreview,
@@ -135,20 +139,9 @@ export class PandocExportModal extends Modal {
             this.draft.id,
             profileId => this.selectProfile(profileId)
         );
-        renderExportTarget(builder, {
-            outputFileName: this.outputFileName,
-            outputFolder: this.outputFolder,
+        renderOverwriteOption(builder, {
             overwrite: this.overwrite
         }, {
-            onFileNameChange: value => {
-                this.outputFileName = value;
-                this.updateAfterDraftChange();
-            },
-            onFolderChange: value => {
-                this.outputFolder = value;
-                this.updateAfterDraftChange();
-            },
-            onChooseFolder: () => this.chooseOutputFolder(),
             onOverwriteChange: value => {
                 this.overwrite = value;
             }
@@ -236,15 +229,6 @@ export class PandocExportModal extends Modal {
         ).display;
     }
 
-    private async chooseOutputFolder(): Promise<void> {
-        const selected = await new ElectronPandocDesktopAdapter().chooseFolder(this.outputFolder);
-        if (selected) {
-            this.outputFolder = selected;
-            this.render();
-            this.refreshPreviewDebounced();
-        }
-    }
-
     private refreshPreviewDebounced(delay = this.previewDelayMs()): void {
         window.clearTimeout(this.refreshTimer);
         this.refreshTimer = window.setTimeout(() => {
@@ -271,6 +255,7 @@ export class PandocExportModal extends Modal {
         }
 
         const profile = this.currentProfile();
+        const target = this.currentOutputTarget(profile);
         if (profile.type !== 'pandoc') {
             this.setPreviewMessage('Preview is available for Pandoc profiles only.');
             return;
@@ -287,12 +272,12 @@ export class PandocExportModal extends Modal {
                 request: createModalExportRequest(
                     this.currentFile,
                     profile,
-                    this.outputFolder,
-                    this.outputFileName,
+                    target.outputFolder,
+                    target.outputFileName,
                     this.overwrite
                 ),
                 to: profile.to,
-                extension: outputExtension(this.outputFileName, profile.extension),
+                extension: outputExtension(target.outputFileName, profile.extension),
                 container: this.previewBodyEl
             });
             if (!result) return;
@@ -320,12 +305,13 @@ export class PandocExportModal extends Modal {
 
         await this.previewManager?.cleanup();
         const profile = this.currentProfile();
+        const target = this.currentOutputTarget(profile);
         const manager = createModalExportManager(this.plugin, profile, true);
         const result = await manager.exportFile(createModalExportRequest(
             this.currentFile,
             profile,
-            this.outputFolder,
-            this.outputFileName,
+            target.outputFolder,
+            target.outputFileName,
             this.overwrite
         ));
 
@@ -345,6 +331,27 @@ export class PandocExportModal extends Modal {
         }
 
         return compileProfileDraft(this.draft, this.catalog);
+    }
+
+    private currentOutputTarget(profile = this.currentProfile()): { outputFolder: string; outputFileName: string } {
+        const outputFileName = replaceExtension(this.outputFileName, profile.extension);
+        const variables = buildTemplateVariableContext(buildModalVariables(
+            this.plugin,
+            this.currentFile,
+            this.outputFolder,
+            outputFileName
+        ), {
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+        }).variables;
+        const outputPath = renderExportTemplate(
+            profile.type === 'pandoc' ? profile.outputPath ?? '${outputPath}' : '${outputPath}',
+            variables
+        );
+
+        return {
+            outputFolder: dirname(outputPath),
+            outputFileName: basename(outputPath)
+        };
     }
 
     private getPreviewManager(): PandocPreviewManager {
