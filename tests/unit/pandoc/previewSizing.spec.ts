@@ -22,11 +22,36 @@ describe('installDocxPreviewFit', () => {
         defineDimension(page, 'offsetHeight', 1000);
         defineDimension(page, 'scrollHeight', 1000);
 
-        installDocxPreviewFit(container);
+        installDocxPreviewFit(container, [{
+            widthPx: 800,
+            heightPx: 1000,
+            marginsPx: {
+                top: 80,
+                right: 70,
+                bottom: 60,
+                left: 50
+            }
+        }]);
 
-        const shell = page.parentElement as HTMLElement;
+        const viewport = page.parentElement as HTMLElement;
+        const fragment = viewport.parentElement as HTMLElement;
+        const shell = fragment.parentElement as HTMLElement;
+        expect(viewport.classList.contains('pem-pandoc-docx-page-viewport')).toBe(true);
+        expect(fragment.classList.contains('pem-pandoc-docx-page-fragment')).toBe(true);
         expect(shell.classList.contains('pem-pandoc-docx-page-shell')).toBe(true);
         expect(preview.style.getPropertyValue('--pem-pandoc-docx-page-scale')).toBe('0.4900');
+        expect(page.style.width).toBe('800px');
+        expect(page.style.minHeight).toBe('1000px');
+        expect(page.style.aspectRatio).toBe('800 / 1000');
+        expect(page.style.paddingTop).toBe('80px');
+        expect(page.style.paddingRight).toBe('70px');
+        expect(page.style.paddingBottom).toBe('60px');
+        expect(page.style.paddingLeft).toBe('50px');
+        expect(fragment.style.paddingLeft).toBe('');
+        expect(viewport.style.left).toBe('50px');
+        expect(viewport.style.top).toBe('80px');
+        expect(viewport.style.width).toBe('680px');
+        expect(viewport.style.height).toBe('860px');
         expect(shell.style.width).toBe('392px');
         expect(shell.style.height).toBe('490px');
     });

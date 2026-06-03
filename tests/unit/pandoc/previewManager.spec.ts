@@ -178,7 +178,7 @@ describe('PandocPreviewManager', () => {
         });
         expect(renderFile.mock.calls[1][0]).toMatchObject({
             filePath: expect.stringMatching(/-1\.html$/),
-            renderer: { kind: 'html' }
+            renderer: { kind: 'paged-html' }
         });
     });
 });

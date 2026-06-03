@@ -5,6 +5,11 @@ import {
     selectPreviewRenderer,
     type PandocPreviewRenderer
 } from './previewRenderers';
+import {
+    DEFAULT_ODT_PAGE_SIZE,
+    extractOdtPageSizes,
+    pageSizeAt
+} from './previewPageMetadata';
 import type { PandocExportManager } from './PandocExportManager';
 import type { PandocExportFileSystem } from './fileSystem';
 import { NodePandocExportFileSystem } from './fileSystem';
@@ -79,23 +84,60 @@ export class PandocPreviewManager {
         runId: number,
         result: PandocExportResult
     ): Promise<PandocExportResult | undefined> {
-        const renderPath = renderer.kind === 'odt-pandoc-fallback' ?
-            await this.renderOdtFallback(outputPath, runId) :
-            outputPath;
-        const renderKind = renderer.kind === 'odt-pandoc-fallback' ?
-            { kind: 'html' as const, label: 'ODT fallback preview' } :
-            renderer;
+        if (renderer.kind === 'odt-addon') {
+            try {
+                await this.renderFile(container, outputPath, renderer);
+                return result;
+            } catch {
+                if (!this.isCurrentRun(runId)) return undefined;
+                return this.renderOdtFallbackResult(container, outputPath, runId, result);
+            }
+        }
+
+        if (renderer.kind === 'odt-pandoc-fallback') {
+            return this.renderOdtFallbackResult(container, outputPath, runId, result);
+        }
 
         if (!this.isCurrentRun(runId)) return undefined;
-        await (this.config.renderFile ?? renderPreviewFile)({
-            container,
-            filePath: renderPath,
-            renderer: renderKind,
-            readText: path => this.readText(path),
-            readBinary: path => this.readBinary(path)
+        await this.renderFile(container, outputPath, renderer);
+        return result;
+    }
+
+    private async renderOdtFallbackResult(
+        container: HTMLElement,
+        outputPath: string,
+        runId: number,
+        result: PandocExportResult
+    ): Promise<PandocExportResult | undefined> {
+        const renderPath = await this.renderOdtFallback(outputPath, runId);
+        const pageSize = pageSizeAt(
+            extractOdtPageSizes(await this.readBinary(outputPath)),
+            0,
+            DEFAULT_ODT_PAGE_SIZE
+        );
+
+        if (!this.isCurrentRun(runId)) return undefined;
+        await this.renderFile(container, renderPath, {
+            kind: 'paged-html',
+            label: 'ODT fallback preview',
+            pageSize
         });
 
         return result;
+    }
+
+    private async renderFile(
+        container: HTMLElement,
+        filePath: string,
+        renderer: PandocPreviewRenderer
+    ): Promise<void> {
+        await (this.config.renderFile ?? renderPreviewFile)({
+            container,
+            filePath,
+            renderer,
+            readText: path => this.readText(path),
+            readBinary: path => this.readBinary(path)
+        });
     }
 
     private async renderOdtFallback(outputPath: string, runId: number): Promise<string> {

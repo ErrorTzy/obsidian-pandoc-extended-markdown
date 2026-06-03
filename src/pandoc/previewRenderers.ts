@@ -1,8 +1,18 @@
 import type { OdtPreviewAddonSettings } from './types';
 import {
+    installFixedPagePreviewFit,
     installDocxPreviewFit,
     resetPreviewSizing
 } from './previewSizing';
+import {
+    DEFAULT_ODT_PAGE_SIZE,
+    DEFAULT_PPTX_PAGE_SIZE,
+    extractDocxPageSizes,
+    extractOdtPageSizes,
+    extractPptxPageSize,
+    pageSizeAt,
+    type PreviewPageSize
+} from './previewPageMetadata';
 
 export type PandocPreviewRendererKind =
     | 'html'
@@ -11,6 +21,7 @@ export type PandocPreviewRendererKind =
     | 'docx'
     | 'epub'
     | 'pptx'
+    | 'paged-html'
     | 'odt-addon'
     | 'odt-pandoc-fallback'
     | 'unsupported';
@@ -20,6 +31,7 @@ export interface PandocPreviewRenderer {
     label: string;
     addonInstallPath?: string;
     addonVersion?: string;
+    pageSize?: PreviewPageSize;
 }
 
 export interface PandocPreviewRenderRequest {
@@ -125,6 +137,10 @@ export async function renderPreviewFile(request: PandocPreviewRenderRequest): Pr
         await renderPptxPreview(request);
         return;
     }
+    if (renderer.kind === 'paged-html') {
+        await renderPagedHtmlPreview(request);
+        return;
+    }
     if (renderer.kind === 'odt-addon') {
         await renderOdtAddonPreview(request);
         return;
@@ -181,16 +197,18 @@ async function renderPdfPreview(request: PandocPreviewRenderRequest): Promise<vo
 async function renderDocxPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const { renderAsync } = await import('docx-preview');
     const data = await request.readBinary(request.filePath);
+    const pageSizes = extractDocxPageSizes(data);
     const wrapper = request.container.createDiv({ cls: 'pem-pandoc-docx-preview' });
     await renderAsync(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength), wrapper, undefined, {
         className: 'pem-pandoc-docx',
         inWrapper: true,
         ignoreWidth: false,
         ignoreHeight: false,
+        breakPages: true,
         renderHeaders: true,
         renderFooters: true
     });
-    installDocxPreviewFit(request.container);
+    installDocxPreviewFit(request.container, pageSizes);
 }
 
 async function renderEpubPreview(request: PandocPreviewRenderRequest): Promise<void> {
@@ -215,28 +233,47 @@ async function renderEpubPreview(request: PandocPreviewRenderRequest): Promise<v
 async function renderPptxPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const { PPTXViewer } = await import('pptxviewjs');
     const data = await request.readBinary(request.filePath);
+    const pageSize = extractPptxPageSize(data) ?? DEFAULT_PPTX_PAGE_SIZE;
     const frame = request.container.createDiv({ cls: 'pem-pandoc-pptx-preview' });
     const controls = frame.createDiv({ cls: 'pem-pandoc-preview-controls' });
-    const previous = controls.createEl('button', { text: 'Previous' });
     const counter = controls.createEl('span', { cls: 'pem-pandoc-preview-counter' });
-    const next = controls.createEl('button', { text: 'Next' });
-    const canvas = frame.createEl('canvas', { cls: 'pem-pandoc-pptx-canvas' });
-    const viewer = new PPTXViewer({ canvas, slideSizeMode: 'fit' });
+    const pages = frame.createDiv({ cls: 'pem-pandoc-pptx-pages' });
+    const viewer = new PPTXViewer({
+        slideSizeMode: 'fit',
+        autoRenderFirstSlide: false
+    });
     await viewer.loadFile(data);
 
-    const updateCounter = () => {
-        counter.setText(`${viewer.getCurrentSlideIndex() + 1} / ${Math.max(1, viewer.getSlideCount())}`);
-    };
-    previous.onclick = async () => {
-        await viewer.previousSlide(canvas);
-        updateCounter();
-    };
-    next.onclick = async () => {
-        await viewer.nextSlide(canvas);
-        updateCounter();
-    };
-    await viewer.render(canvas, { quality: 'high' });
-    updateCounter();
+    const slideCount = Math.max(1, viewer.getSlideCount());
+    counter.setText(`${slideCount} ${slideCount === 1 ? 'slide' : 'slides'}`);
+    for (let slideIndex = 0; slideIndex < slideCount; slideIndex += 1) {
+        const shell = pages.createDiv({ cls: 'pem-pandoc-pptx-page-shell' });
+        applyPageSizeStyle(shell, pageSize);
+        const canvas = shell.createEl('canvas', { cls: 'pem-pandoc-pptx-canvas' });
+        applyPageSizeStyle(canvas, pageSize);
+        canvas.style.width = `${pageSize.widthPx}px`;
+        canvas.style.height = `${pageSize.heightPx}px`;
+        await viewer.render(canvas, { quality: 'high', slideIndex });
+    }
+    installFixedPagePreviewFit(request.container, {
+        previewSelector: '.pem-pandoc-pptx-pages',
+        shellSelector: '.pem-pandoc-pptx-page-shell',
+        scaleProperty: '--pem-pandoc-pptx-page-scale',
+        pageSizes: Array.from({ length: slideCount }, () => pageSize)
+    });
+}
+
+async function renderPagedHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
+    const html = await request.readText(request.filePath);
+    const pageSize = request.renderer.pageSize ?? DEFAULT_ODT_PAGE_SIZE;
+    const iframe = request.container.createEl('iframe', {
+        cls: 'pem-pandoc-preview-frame pem-pandoc-paged-html-preview',
+        attr: {
+            sandbox: '',
+            title: 'Pandoc paged export preview'
+        }
+    });
+    iframe.srcdoc = pagedHtmlSource(html, pageSize);
 }
 
 async function renderOdtAddonPreview(request: PandocPreviewRenderRequest): Promise<void> {
@@ -247,6 +284,7 @@ async function renderOdtAddonPreview(request: PandocPreviewRenderRequest): Promi
 
     const script = await readWebOdfScript(installPath, request.renderer.addonVersion, request.readText);
     const data = await request.readBinary(request.filePath);
+    const pageSize = pageSizeAt(extractOdtPageSizes(data), 0, DEFAULT_ODT_PAGE_SIZE);
     const frame = request.container.createEl('iframe', {
         cls: 'pem-pandoc-odt-preview',
         attr: {
@@ -255,7 +293,64 @@ async function renderOdtAddonPreview(request: PandocPreviewRenderRequest): Promi
         }
     });
 
-    await renderOdtInWebOdfFrame(frame, script, data);
+    await renderOdtInWebOdfFrame(frame, script, data, pageSize);
+}
+
+function applyPageSizeStyle(element: HTMLElement, pageSize: PreviewPageSize): void {
+    element.style.setProperty('--pem-pandoc-page-width', `${pageSize.widthPx}px`);
+    element.style.setProperty('--pem-pandoc-page-height', `${pageSize.heightPx}px`);
+    element.style.aspectRatio = `${pageSize.widthPx} / ${pageSize.heightPx}`;
+}
+
+function pagedHtmlSource(html: string, pageSize: PreviewPageSize): string {
+    const parsed = parseHtmlDocument(html);
+    const pageWidth = `${pageSize.widthPx.toFixed(2)}px`;
+    const pageHeight = `${pageSize.heightPx.toFixed(2)}px`;
+
+    return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+${parsed.head}
+<style>
+html {
+    background: #f3f3f3;
+}
+body {
+    box-sizing: border-box;
+    color: #111;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 16px;
+}
+.pem-pandoc-html-page {
+    background: #fff;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
+    margin: 0 auto 16px;
+    min-height: ${pageHeight};
+    overflow: hidden;
+    padding: 48px;
+    width: min(100%, ${pageWidth});
+}
+</style>
+</head>
+<body>
+<main class="pem-pandoc-html-page">
+${parsed.body}
+</main>
+</body>
+</html>`;
+}
+
+function parseHtmlDocument(html: string): { head: string; body: string } {
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    return {
+        head: parsed.head?.innerHTML ?? '',
+        body: parsed.body?.innerHTML ?? html
+    };
 }
 
 function renderUnsupportedPreview(container: HTMLElement, label: string): void {
@@ -284,7 +379,8 @@ function pathToFileUrl(filePath: string): string {
 function renderOdtInWebOdfFrame(
     frame: HTMLIFrameElement,
     script: { source: string; path: string },
-    data: Uint8Array
+    data: Uint8Array,
+    pageSize: PreviewPageSize
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         let settled = false;
@@ -322,7 +418,7 @@ function renderOdtInWebOdfFrame(
         frame.addEventListener('error', () => {
             fail(new Error('WebODF iframe failed to load.'));
         }, { once: true });
-        frame.srcdoc = webOdfFrameSource(token, script, bytesToBase64(data));
+        frame.srcdoc = webOdfFrameSource(token, script, bytesToBase64(data), pageSize);
     });
 }
 
@@ -394,10 +490,24 @@ type WebOdfFrameMessage = WebOdfFrameReadyMessage | WebOdfFrameErrorMessage;
 function webOdfFrameSource(
     token: string,
     script: { source: string; path: string },
-    odtBase64: string
+    odtBase64: string,
+    pageSize: PreviewPageSize
 ): string {
     const documentUrl = `pandoc-preview-odt://${token}`;
     const sourceUrl = pathToFileUrl(script.path);
+    const margins = pageSize.marginsPx ?? { top: 0, right: 0, bottom: 0, left: 0 };
+    const contentLeftPx = margins.left;
+    const contentTopPx = margins.top + (pageSize.headerHeightPx ?? 0);
+    const contentRightPx = margins.right;
+    const contentBottomPx = margins.bottom + (pageSize.footerHeightPx ?? 0);
+    const contentWidthPx = Math.max(1, pageSize.widthPx - contentLeftPx - contentRightPx);
+    const contentHeightPx = Math.max(1, pageSize.heightPx - contentTopPx - contentBottomPx);
+    const pageWidth = `${pageSize.widthPx.toFixed(2)}px`;
+    const pageHeight = `${pageSize.heightPx.toFixed(2)}px`;
+    const contentLeft = `${contentLeftPx.toFixed(2)}px`;
+    const contentTop = `${contentTopPx.toFixed(2)}px`;
+    const contentWidth = `${contentWidthPx.toFixed(2)}px`;
+    const contentHeight = `${contentHeightPx.toFixed(2)}px`;
 
     return `<!doctype html>
 <html>
@@ -405,12 +515,15 @@ function webOdfFrameSource(
 <meta charset="utf-8">
 <style>
 html, body {
-    background: #fff;
     color: #000;
     margin: 0;
     min-height: 100%;
 }
+html {
+    background: #f3f3f3;
+}
 body {
+    background: #f3f3f3;
     box-sizing: border-box;
     font-family: sans-serif;
     overflow-x: hidden;
@@ -418,13 +531,50 @@ body {
     padding: 12px;
 }
 #odf-viewport {
+    box-sizing: border-box;
     min-height: calc(100vh - 24px);
     overflow: hidden;
 }
-#odf-canvas {
-    margin: 0 auto;
-    min-height: calc(100vh - 24px);
+#odf-pages {
+    display: grid;
+    gap: 14px;
+    justify-content: center;
     transform-origin: top left;
+    width: ${pageWidth};
+}
+.odf-page-shell {
+    background: #fff !important;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+    width: ${pageWidth};
+    height: ${pageHeight};
+}
+.odf-page-content-viewport {
+    background: #fff !important;
+    box-sizing: border-box;
+    height: ${contentHeight};
+    left: ${contentLeft};
+    overflow: hidden;
+    position: absolute;
+    top: ${contentTop};
+    width: ${contentWidth};
+}
+#odf-canvas,
+.odf-page-content {
+    background: #fff !important;
+    box-sizing: border-box;
+    min-height: ${pageHeight};
+    transform-origin: top left;
+    width: ${pageWidth};
+}
+.odf-page-content {
+    left: 0;
+    margin: 0;
+    position: absolute;
+    top: 0;
 }
 </style>
 </head>
@@ -483,26 +633,115 @@ body {
         element.innerText || element.textContent || ''
     ).replace(/^Loading.*\\.\\.\\.$/, '').trim();
     const fitOdtPreview = element => {
-        const viewport = element.parentElement;
+        const pages = element.id === 'odf-pages' ? element : document.getElementById('odf-pages') || element;
+        const viewport = pages.parentElement;
         if (!viewport) return;
 
-        element.style.marginLeft = '';
-        element.style.marginRight = '';
-        element.style.transform = '';
+        pages.style.marginLeft = '';
+        pages.style.marginRight = '';
+        pages.style.transform = '';
         viewport.style.height = '';
         const availableWidth = Math.max(1, viewport.clientWidth);
-        const naturalWidth = Math.max(element.scrollWidth, element.offsetWidth, 1);
-        const naturalHeight = Math.max(element.scrollHeight, element.offsetHeight, 1);
+        const naturalWidth = ${pageSize.widthPx.toFixed(6)};
+        const naturalHeight = Math.max(${pageSize.heightPx.toFixed(6)}, pages.scrollHeight, pages.offsetHeight, 1);
         const scale = Math.min(1, availableWidth / naturalWidth);
         const scaledWidth = naturalWidth * scale;
         const horizontalInset = Math.max(0, (availableWidth - scaledWidth) / 2);
-        element.style.marginLeft = \`\${Math.floor(horizontalInset)}px\`;
-        element.style.marginRight = \`\${Math.floor(horizontalInset)}px\`;
-        element.style.transform = \`scale(\${scale})\`;
+        pages.style.marginLeft = \`\${Math.floor(horizontalInset)}px\`;
+        pages.style.marginRight = \`\${Math.floor(horizontalInset)}px\`;
+        pages.style.transform = \`scale(\${scale})\`;
         viewport.style.height = \`\${Math.ceil(naturalHeight * scale)}px\`;
     };
     const scheduleOdtFit = element => {
         window.requestAnimationFrame(() => fitOdtPreview(element));
+    };
+    const paginateOdtPreview = element => {
+        const existingPages = document.getElementById('odf-pages');
+        if (existingPages) return existingPages;
+
+        const pageWidth = ${pageSize.widthPx.toFixed(6)};
+        const pageHeight = ${pageSize.heightPx.toFixed(6)};
+        const contentLeft = ${contentLeftPx.toFixed(6)};
+        const contentTop = ${contentTopPx.toFixed(6)};
+        const contentWidth = ${contentWidthPx.toFixed(6)};
+        const contentHeight = ${contentHeightPx.toFixed(6)};
+        const renderedHeight = Math.max(pageHeight, element.scrollHeight, element.offsetHeight, 1);
+        const flowHeight = Math.max(contentHeight, renderedHeight - contentTop);
+        const pageCount = Math.max(1, Math.ceil(flowHeight / contentHeight));
+        const pages = document.createElement('div');
+        pages.id = 'odf-pages';
+
+        for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+            const shell = document.createElement('div');
+            shell.className = 'odf-page-shell';
+            shell.style.aspectRatio = \`\${pageWidth} / \${pageHeight}\`;
+            const viewport = document.createElement('div');
+            viewport.className = 'odf-page-content-viewport';
+            viewport.style.left = \`\${contentLeft}px\`;
+            viewport.style.top = \`\${contentTop}px\`;
+            viewport.style.width = \`\${contentWidth}px\`;
+            viewport.style.height = \`\${contentHeight}px\`;
+
+            const page = element.cloneNode(true);
+            if (pageIndex === 0) {
+                page.id = 'odf-canvas';
+            } else {
+                page.removeAttribute('id');
+            }
+            page.classList.add('odf-page-content');
+            page.style.minHeight = \`\${renderedHeight}px\`;
+            page.style.transform = \`translate(-\${Math.floor(contentLeft)}px, -\${
+                Math.floor(contentTop + pageIndex * contentHeight)
+            }px)\`;
+            applyOdtPaperBackground(page);
+            viewport.appendChild(page);
+            shell.appendChild(viewport);
+            pages.appendChild(shell);
+        }
+
+        element.replaceWith(pages);
+        pages.dataset.pemOdtPageCount = String(pageCount);
+        return pages;
+    };
+    const applyOdtPaperBackground = page => {
+        ensureOdtPaperCss();
+        setImportantBackground(page, '#fff');
+        for (const element of Array.from(page.querySelectorAll('*'))) {
+            if (!isOdtStructuralPaperElement(element)) continue;
+            setImportantBackground(element, 'transparent');
+        }
+    };
+    const ensureOdtPaperCss = () => {
+        if (document.getElementById('pem-webodf-paper-css')) return;
+
+        const style = document.createElement('style');
+        style.id = 'pem-webodf-paper-css';
+        style.textContent = [
+            '@namespace office url(urn:oasis:names:tc:opendocument:xmlns:office:1.0);',
+            '.odf-page-content, #odf-canvas { background: #fff !important; background-color: #fff !important; }',
+            '.odf-page-content office|body,',
+            '.odf-page-content office|document-content,',
+            '.odf-page-content office|text { background: transparent !important; background-color: transparent !important; }'
+        ].join('\\n');
+        document.head.appendChild(style);
+    };
+    const setImportantBackground = (element, value) => {
+        const style = element.getAttribute('style') || '';
+        element.setAttribute(
+            'style',
+            \`\${style}; background: \${value} !important; background-color: \${value} !important;\`
+        );
+        element.style?.setProperty?.('background', value, 'important');
+        element.style?.setProperty?.('background-color', value, 'important');
+    };
+    const isOdtStructuralPaperElement = element => {
+        const localName = (element.localName || '').toLowerCase();
+        const nodeName = (element.nodeName || '').toLowerCase();
+        const name = localName.includes(':') ? localName.split(':').pop() : localName;
+        if (!name || !['document-content', 'body', 'text'].includes(name)) return false;
+
+        const namespace = element.namespaceURI || '';
+        return namespace.includes('opendocument') || nodeName.startsWith('office:');
     };
     const imageBackgroundRuleCount = () => {
         let count = 0;
@@ -572,6 +811,7 @@ body {
             const rect = element.getBoundingClientRect();
             fitOdtPreview(element);
             if (text && rect.width > 0 && rect.height > 0 && (images.length === 0 || imageRules > 0)) {
+                fitOdtPreview(paginateOdtPreview(element));
                 report({ type: 'ready', text, imageCount: images.length });
                 return;
             }
