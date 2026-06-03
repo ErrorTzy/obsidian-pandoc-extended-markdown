@@ -305,8 +305,15 @@ describe('Pandoc command rows', () => {
         ]);
         expect(valueDisplayFrame(container, 'input file').classList.contains('has-muted-display-prefix')).toBe(true);
         expect(outputFileInputs(container).map(input => input.value)).toEqual([
-            '${outputDir}',
-            '${currentFileName}${outputExtension}'
+            '/vault/exports',
+            'note.html'
+        ]);
+        expect(outputFileDisplayParts(container, 'folder')).toEqual([
+            { text: '/vault/', muted: true },
+            { text: 'exports', muted: false }
+        ]);
+        expect(outputFileDisplayParts(container, 'file-name')).toEqual([
+            { text: 'note.html', muted: false }
         ]);
         expect(valueDisplayParts(container, '--resource-path')).toEqual([
             { text: '/vault/', muted: true },
@@ -329,16 +336,45 @@ describe('Pandoc command rows', () => {
         });
 
         const [folderInput, fileInput] = outputFileInputs(container);
+        expect(draft.optionRows.find(row => row.key === '-o')?.value)
+            .toBe('${outputDir}/${currentFileName}${outputExtension}');
+
+        folderInput.dispatchEvent(new FocusEvent('focus'));
         expect(folderInput.value).toBe('${outputDir}');
+        fileInput.dispatchEvent(new FocusEvent('focus'));
         expect(fileInput.value).toBe('${currentFileName}${outputExtension}');
 
+        folderInput.dispatchEvent(new FocusEvent('focus'));
         folderInput.value = '/exports';
         folderInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        fileInput.dispatchEvent(new FocusEvent('focus'));
         fileInput.value = 'custom.docx';
         fileInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
 
         expect(draft.optionRows.find(row => row.key === '-o')?.value).toBe('/exports/custom.docx');
         expect(updatePreview).toHaveBeenCalledTimes(2);
+    });
+
+    it('suggests variables from output file folder and name controls', () => {
+        window.requestAnimationFrame = jest.fn(callback => {
+            callback(0);
+            return 0;
+        });
+        const container = enhanceElement(document.createElement('div'));
+        const draft = createDraft();
+
+        renderPandocRows(container, draft, FALLBACK_PANDOC_CATALOG, commandActions());
+
+        const [folderInput, fileInput] = outputFileInputs(container);
+        folderInput.focus();
+        folderInput.value = '$';
+        folderInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        expect(outputFileVariableSuggestionTexts(container, 'folder')).toContain('${currentDir}');
+
+        fileInput.focus();
+        fileInput.value = '${output';
+        fileInput.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        expect(outputFileVariableSuggestionTexts(container, 'file-name')).toContain('${outputFileName}');
     });
 
     it('mutes the whole resolved path when a root-level directory variable is empty', () => {
@@ -629,6 +665,30 @@ function outputFileInputs(container: HTMLElement): HTMLInputElement[] {
         row.querySelector('.pem-pandoc-output-folder-input') as HTMLInputElement,
         row.querySelector('.pem-pandoc-output-file-name-input') as HTMLInputElement
     ];
+}
+
+function outputFileDisplayParts(
+    container: HTMLElement,
+    part: 'folder' | 'file-name'
+): Array<{ text: string; muted: boolean }> {
+    const row = findRow(container, 'output file');
+    const display = row.querySelector(`.pem-pandoc-output-${part}-part .pem-pandoc-string-display`);
+    if (!display) throw new Error(`Output file ${part} display not found.`);
+
+    return Array.from(display.querySelectorAll('.pem-pandoc-string-display-content > span')).map(span => ({
+        text: span.textContent ?? '',
+        muted: span.classList.contains('pem-pandoc-string-display-muted')
+    }));
+}
+
+function outputFileVariableSuggestionTexts(
+    container: HTMLElement,
+    part: 'folder' | 'file-name'
+): string[] {
+    const row = findRow(container, 'output file');
+    return Array.from(row
+        .querySelectorAll(`.pem-pandoc-output-${part}-part .pem-pandoc-variable-suggestion-name`))
+        .map(suggestion => suggestion.textContent ?? '');
 }
 
 function variableSuggestionTexts(input: HTMLInputElement): string[] {

@@ -210,19 +210,48 @@ function renderOutputFileControl(
 ): void {
     const value = splitOutputFileValue(row.value);
     const control = container.createDiv({ cls: 'pem-pandoc-output-file-control' });
-    const folderInput = createInput(control, value.folder, update, 'text', 'Folder');
-    addFolderBrowseButton(control, folderInput, value => {
-        folderInput.value = value;
-        update();
-    });
-    const fileInput = createInput(control, value.fileName, update, 'text', 'File name');
+    const folderRow = outputFilePartRow(row, 'folder', value.folder);
+    const fileNameRow = outputFilePartRow(row, 'file-name', value.fileName);
+    const outputActions = outputFilePartActions(actions, row, folderRow, fileNameRow);
+    const folderSlot = control.createDiv({ cls: 'pem-pandoc-output-file-part pem-pandoc-output-folder-part' });
+    const folderInput = createTemplateValueInput(folderSlot, folderRow, draft, outputActions, 'Folder');
     folderInput.addClass('pem-pandoc-output-folder-input');
-    fileInput.addClass('pem-pandoc-output-file-name-input');
-
-    function update(): void {
-        row.value = joinOutputFileValue(folderInput.value, fileInput.value);
+    addFolderBrowseButton(control, folderInput, value => {
+        folderRow.value = value;
+        row.value = joinOutputFileValue(folderRow.value, fileNameRow.value);
         actions.updatePreview(draft);
-    }
+        updateControlDisplay(folderInput, folderRow, draft, outputActions);
+    });
+    const fileNameSlot = control.createDiv({ cls: 'pem-pandoc-output-file-part pem-pandoc-output-file-name-part' });
+    const fileInput = createTemplateValueInput(fileNameSlot, fileNameRow, draft, outputActions, 'File name');
+    fileInput.addClass('pem-pandoc-output-file-name-input');
+}
+
+function outputFilePartRow(
+    row: ProfileOptionRow,
+    part: string,
+    value: string
+): ProfileOptionRow {
+    return {
+        ...row,
+        id: `${row.id}-${part}`,
+        value
+    };
+}
+
+function outputFilePartActions(
+    actions: PandocCommandRowActions,
+    row: ProfileOptionRow,
+    folderRow: ProfileOptionRow,
+    fileNameRow: ProfileOptionRow
+): PandocCommandRowActions {
+    return {
+        ...actions,
+        updatePreview: draft => {
+            row.value = joinOutputFileValue(folderRow.value, fileNameRow.value);
+            actions.updatePreview(draft);
+        }
+    };
 }
 
 function splitOutputFileValue(value: string): { folder: string; fileName: string } {
