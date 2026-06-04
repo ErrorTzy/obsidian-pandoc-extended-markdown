@@ -41,6 +41,7 @@
     border-radius: 8px;
     display: grid;
     grid-template-rows: auto minmax(320px, 1fr);
+    height: min(68vh, 760px);
     min-height: min(68vh, 760px);
     min-width: 0;
     overflow: hidden;
@@ -156,13 +157,29 @@
     padding-right: 10px;
 }
 
+.pem-pandoc-paged-preview-zoom-value {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    height: 26px;
+    padding: 0;
+    text-align: center;
+    width: 48px;
+}
+
+.pem-pandoc-paged-preview-zoom-value:focus {
+    background: var(--background-primary);
+    box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
 .pem-pandoc-paged-preview-page-controls input {
     width: 64px;
 }
 
 .pem-pandoc-paged-preview-page-label,
-.pem-pandoc-paged-preview-page-total,
-.pem-pandoc-paged-preview-zoom-value {
+.pem-pandoc-paged-preview-page-total {
     color: var(--text-muted);
     font-size: var(--font-ui-smaller);
     white-space: nowrap;
@@ -193,6 +210,29 @@
     transform-origin: top center;
     width: max-content;
     zoom: var(--pem-pandoc-preview-zoom, 1);
+}
+
+.pem-pandoc-flow-preview {
+    background: var(--background-secondary);
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 420px;
+    min-width: 0;
+    overflow: auto;
+    padding: 14px;
+}
+
+.pem-pandoc-flow-preview-frame {
+    background: white;
+    min-height: 100%;
+    width: 100%;
+}
+
+.pem-pandoc-flow-preview-text {
+    margin: 0;
+    min-height: 100%;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
 }
 
 .pem-pandoc-scrollable-page {

@@ -3,6 +3,95 @@ import { describe, expect, it } from '@jest/globals';
 import { PreviewPager } from '../../../src/pandoc/previewControls';
 
 describe('PreviewPager', () => {
+    it('counts the viewport-fitted size as 100%', () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const pager = new PreviewPager(container);
+        const page = pager.stage.createDiv();
+        page.style.width = '800px';
+        page.style.height = '1000px';
+        defineDimension(pager.viewport, 'clientWidth', 1000);
+        defineDimension(pager.viewport, 'clientHeight', 420);
+
+        pager.refreshFit();
+
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-fit-scale')).toBe('0.4200');
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-zoom')).toBe('0.4200');
+        expect(pager.host.querySelector<HTMLInputElement>('[aria-label="Zoom percentage"]')?.value).toBe('100%');
+    });
+
+    it('applies edited zoom percentages relative to the fitted size', () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const pager = new PreviewPager(container);
+        const page = pager.stage.createDiv();
+        page.style.width = '800px';
+        page.style.height = '1000px';
+        defineDimension(pager.viewport, 'clientWidth', 400);
+        defineDimension(pager.viewport, 'clientHeight', 500);
+        pager.refreshFit();
+        const zoomInput = pager.host.querySelector<HTMLInputElement>('[aria-label="Zoom percentage"]');
+
+        expect(zoomInput).not.toBeNull();
+        zoomInput!.value = '114%';
+        zoomInput!.dispatchEvent(new Event('change'));
+
+        expect(zoomInput?.value).toBe('114%');
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-fit-scale')).toBe('0.5000');
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-zoom')).toBe('0.5700');
+    });
+
+    it('does not treat existing scroll overflow as available viewport space', () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const pager = new PreviewPager(container);
+        const page = pager.stage.createDiv();
+        page.style.width = '800px';
+        page.style.height = '1000px';
+        defineDimension(pager.viewport, 'clientWidth', 1000);
+        defineDimension(pager.viewport, 'clientHeight', 500);
+        defineDimension(pager.viewport, 'offsetWidth', 1200);
+        defineDimension(pager.viewport, 'offsetHeight', 1200);
+        defineDimension(pager.viewport, 'scrollWidth', 1200);
+        defineDimension(pager.viewport, 'scrollHeight', 1200);
+
+        pager.refreshFit();
+
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-fit-scale')).toBe('0.5000');
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-zoom')).toBe('0.5000');
+    });
+
+    it('fits scrollable previews by width without shrinking long content to height', () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const pager = new PreviewPager(container, { fitMode: 'width' });
+        const page = pager.stage.createDiv();
+        page.style.width = '800px';
+        page.style.height = '3000px';
+        defineDimension(pager.viewport, 'clientWidth', 400);
+        defineDimension(pager.viewport, 'clientHeight', 500);
+
+        pager.refreshFit();
+
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-fit-scale')).toBe('0.5000');
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-zoom')).toBe('0.5000');
+    });
+
+    it('fits DOCX page shells without measuring clipped source fragments', () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const pager = new PreviewPager(container);
+        const preview = pager.stage.createDiv({ cls: 'pem-pandoc-docx-preview' });
+        const shell = preview.createDiv({ cls: 'pem-pandoc-docx-page-shell' });
+        const viewport = shell.createDiv({ cls: 'pem-pandoc-docx-page-viewport' });
+        const sourcePage = viewport.createEl('section', { cls: 'pem-pandoc-docx' });
+        shell.style.width = '800px';
+        shell.style.height = '1000px';
+        sourcePage.style.width = '800px';
+        sourcePage.style.height = '3000px';
+        defineDimension(pager.viewport, 'clientWidth', 400);
+        defineDimension(pager.viewport, 'clientHeight', 500);
+
+        pager.refreshFit();
+
+        expect(pager.host.style.getPropertyValue('--pem-pandoc-preview-fit-scale')).toBe('0.5000');
+    });
+
     it('keeps side navigation outside the scroll viewport', () => {
         const container = withObsidianDomHelpers(document.createElement('div'));
         const pager = new PreviewPager(container);
@@ -74,4 +163,11 @@ function withObsidianDomHelpers(element: HTMLElement): HTMLElement {
     };
 
     return helper;
+}
+
+function defineDimension(element: HTMLElement, name: string, value: number): void {
+    Object.defineProperty(element, name, {
+        configurable: true,
+        value
+    });
 }

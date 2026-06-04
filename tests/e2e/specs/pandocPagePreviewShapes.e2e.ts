@@ -41,7 +41,7 @@ const embeddedPngBase64 = [
     '0xbUiQAAAABJRU5ErkJggg=='
 ].join('');
 
-type PreviewKind = 'docx' | 'odt' | 'pptx';
+type PreviewKind = 'docx' | 'markdown' | 'odt' | 'pptx';
 
 interface PageShapeState {
     status: string;
@@ -125,6 +125,35 @@ interface SideNavButtonState {
     text: string;
 }
 
+interface PreviewFitState {
+    zoomValue: string;
+    fitScale: string;
+    appliedZoom: string;
+    overflowsX: boolean;
+    overflowsY: boolean;
+    viewport: {
+        clientWidth: number;
+        clientHeight: number;
+        scrollWidth: number;
+        scrollHeight: number;
+    };
+    html: string;
+}
+
+interface NonPagedTextPreviewState {
+    flowPreviewCount: number;
+    pagedPreviewCount: number;
+    pageControlCount: number;
+    sideNavButtonCount: number;
+    zoomInputCount: number;
+    overflowsX: boolean;
+    canScrollY: boolean;
+    flowCanScrollY: boolean;
+    bodyCanScrollY: boolean;
+    text: string;
+    html: string;
+}
+
 interface RectState {
     left: number;
     right: number;
@@ -159,6 +188,31 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.visiblePageCount).toBe(1);
         expect(state.content?.leftInset).toBeGreaterThan(state.page.width * 0.07);
         expect(state.content?.topInset).toBeGreaterThan(state.page.height * 0.05);
+    });
+
+    it('fits the initial DOCX preview page to the viewport at 100%', async function () {
+        await openPreviewFor('docx', this);
+        await waitForPageShape('docx');
+        const state = await waitForPreviewFit();
+
+        expect(state.zoomValue).toBe('100%');
+        if (state.overflowsX || state.overflowsY) {
+            throw new Error(`Expected initial 100% preview to fit without scroll overflow.\n${JSON.stringify(state, null, 2)}`);
+        }
+    });
+
+    it('renders Markdown text preview as non-paged scrollable content', async function () {
+        await openPreviewFor('markdown', this);
+        const state = await waitForNonPagedTextPreview();
+
+        expect(state.flowPreviewCount).toBe(1);
+        expect(state.pagedPreviewCount).toBe(0);
+        expect(state.pageControlCount).toBe(0);
+        expect(state.sideNavButtonCount).toBe(0);
+        expect(state.zoomInputCount).toBe(0);
+        expect(state.overflowsX).toBe(false);
+        expect(state.canScrollY).toBe(true);
+        expect(state.text).toContain('Markdown text preview');
     });
 
     it('renders WebODF preview inside a page-shaped canvas', async function () {
@@ -350,10 +404,27 @@ async function openPreviewFor(kind: PreviewKind, context: Mocha.Context): Promis
 
     await executeCommandBySuffix('pandoc-export');
     await waitForExportModal();
+    if (kind === 'markdown') {
+        await waitForTextPreviewReady();
+        return;
+    }
     await waitForPreviewReady(kind);
 }
 
 function markdownForPreview(kind: PreviewKind): string {
+    if (kind === 'markdown') {
+        return [
+            '# Markdown text preview',
+            '',
+            ...Array.from({ length: 80 }, (_value, index) => [
+                `## Warning ${index + 1}`,
+                '',
+                `This is Markdown preview line ${index + 1}. It should stay readable at the initial fitted zoom.`,
+                ''
+            ]).flat()
+        ].join('\n');
+    }
+
     if (kind === 'pptx') {
         return [
             '# Preview page shape',
@@ -466,7 +537,15 @@ async function configurePandocExport(
         };
 
         await plugin.saveSettings();
-    }, pandocPath, outputDir, `${profileBaseId}-${kind}`, kind, `.${kind}`, addonPath, webOdfVersion, webOdfSha256);
+    }, pandocPath, outputDir, `${profileBaseId}-${kind}`, toFormatForPreview(kind), extensionForPreview(kind), addonPath, webOdfVersion, webOdfSha256);
+}
+
+function toFormatForPreview(kind: PreviewKind): string {
+    return kind === 'markdown' ? 'commonmark' : kind;
+}
+
+function extensionForPreview(kind: PreviewKind): string {
+    return kind === 'markdown' ? '.md' : `.${kind}`;
 }
 
 async function waitForPreviewReady(kind: PreviewKind): Promise<void> {
@@ -480,6 +559,17 @@ async function waitForPreviewReady(kind: PreviewKind): Promise<void> {
     });
 }
 
+async function waitForTextPreviewReady(): Promise<void> {
+    await browser.waitUntil(async () => {
+        const state = await getNonPagedTextPreviewState();
+        return state.flowPreviewCount === 1 && state.text.includes('Markdown text preview');
+    }, {
+        timeout: 30000,
+        interval: 500,
+        timeoutMsg: 'Expected Markdown text preview to render'
+    });
+}
+
 async function waitForPageShape(kind: PreviewKind): Promise<PageShapeState> {
     try {
         await waitForPreviewReady(kind);
@@ -490,6 +580,56 @@ async function waitForPageShape(kind: PreviewKind): Promise<PageShapeState> {
             cause: error
         });
     }
+}
+
+async function waitForNonPagedTextPreview(): Promise<NonPagedTextPreviewState> {
+    try {
+        await browser.waitUntil(async () => {
+            const state = await getNonPagedTextPreviewState();
+            return (
+                state.flowPreviewCount === 1 &&
+                state.pagedPreviewCount === 0 &&
+                state.pageControlCount === 0 &&
+                state.sideNavButtonCount === 0 &&
+                state.zoomInputCount === 0 &&
+                !state.overflowsX &&
+                state.canScrollY
+            );
+        }, {
+            timeout: 5000,
+            interval: 250,
+            timeoutMsg: 'Expected Markdown text preview to render without page controls'
+        });
+    } catch (error) {
+        const state = await getNonPagedTextPreviewState();
+        throw new Error(`Expected Markdown text preview to render without page controls.\n${JSON.stringify(state, null, 2)}`, {
+            cause: error
+        });
+    }
+
+    return getNonPagedTextPreviewState();
+}
+
+async function getNonPagedTextPreviewState(): Promise<NonPagedTextPreviewState> {
+    return browser.execute(() => {
+        const flowPreview = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview');
+        const previewBody = document.querySelector<HTMLElement>('.pem-pandoc-preview-body');
+        const flowCanScrollY = flowPreview ? flowPreview.scrollHeight > flowPreview.clientHeight + 2 : false;
+        const bodyCanScrollY = previewBody ? previewBody.scrollHeight > previewBody.clientHeight + 2 : false;
+        return {
+            flowPreviewCount: document.querySelectorAll('.pem-pandoc-flow-preview').length,
+            pagedPreviewCount: document.querySelectorAll('.pem-pandoc-paged-preview').length,
+            pageControlCount: document.querySelectorAll('.pem-pandoc-paged-preview-page-controls').length,
+            sideNavButtonCount: document.querySelectorAll('.pem-pandoc-paged-preview-side-nav').length,
+            zoomInputCount: document.querySelectorAll('.pem-pandoc-paged-preview-zoom-value').length,
+            overflowsX: flowPreview ? flowPreview.scrollWidth > flowPreview.clientWidth + 2 : false,
+            canScrollY: flowCanScrollY || bodyCanScrollY,
+            flowCanScrollY,
+            bodyCanScrollY,
+            text: flowPreview?.textContent ?? '',
+            html: document.querySelector('.pem-pandoc-preview-body')?.innerHTML.slice(0, 2000) ?? ''
+        };
+    });
 }
 
 async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
@@ -776,7 +916,7 @@ async function getOdtTextClipState(): Promise<OdtTextClipState> {
 
         function isClippedLineRect(rect: DOMRect, viewportRect: DOMRect): boolean {
             if (rect.width <= 1 || rect.height <= 3) return false;
-            if (rect.bottom <= viewportRect.top || rect.top >= viewportRect.bottom) return false;
+            if (rect.bottom <= viewportRect.top + 0.5 || rect.top >= viewportRect.bottom - 0.5) return false;
             return rect.top < viewportRect.top - 0.5 || rect.bottom > viewportRect.bottom + 0.5;
         }
     });
@@ -851,6 +991,52 @@ async function scrollPreviewViewportHorizontally(): Promise<SideNavState> {
         viewport.scrollLeft = viewport.scrollWidth;
     });
     return getSideNavState();
+}
+
+async function waitForPreviewFit(): Promise<PreviewFitState> {
+    try {
+        await browser.waitUntil(async () => {
+            const state = await getPreviewFitState();
+            return state.zoomValue === '100%' && !state.overflowsX && !state.overflowsY;
+        }, {
+            timeout: 5000,
+            interval: 250,
+            timeoutMsg: 'Expected initial 100% preview to fit inside the viewport'
+        });
+    } catch (error) {
+        const state = await getPreviewFitState();
+        throw new Error(`Expected initial 100% preview to fit inside the viewport.\n${JSON.stringify(state, null, 2)}`, {
+            cause: error
+        });
+    }
+
+    return getPreviewFitState();
+}
+
+async function getPreviewFitState(): Promise<PreviewFitState> {
+    return browser.execute(() => {
+        const host = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview');
+        const viewport = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport');
+        const zoomInput = document.querySelector<HTMLInputElement>('.pem-pandoc-paged-preview-zoom-value');
+        if (!host || !viewport || !zoomInput) {
+            throw new Error('Preview fit controls were not found.');
+        }
+
+        return {
+            zoomValue: zoomInput.value,
+            fitScale: host.style.getPropertyValue('--pem-pandoc-preview-fit-scale'),
+            appliedZoom: host.style.getPropertyValue('--pem-pandoc-preview-zoom'),
+            overflowsX: viewport.scrollWidth > viewport.clientWidth + 2,
+            overflowsY: viewport.scrollHeight > viewport.clientHeight + 2,
+            viewport: {
+                clientWidth: viewport.clientWidth,
+                clientHeight: viewport.clientHeight,
+                scrollWidth: viewport.scrollWidth,
+                scrollHeight: viewport.scrollHeight
+            },
+            html: document.querySelector('.pem-pandoc-preview-body')?.innerHTML.slice(0, 2000) ?? ''
+        };
+    });
 }
 
 async function executeCommandBySuffix(suffix: string): Promise<void> {

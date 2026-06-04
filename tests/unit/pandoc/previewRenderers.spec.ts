@@ -43,6 +43,38 @@ describe('selectPreviewRenderer', () => {
         expect(selectPreviewRenderer('pptx', '.pptx').kind).toBe('pptx');
     });
 
+    it('renders text previews as non-paged scrollable content', async () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        await renderPreviewFile({
+            container,
+            filePath: '/tmp/preview.md',
+            renderer: { kind: 'text', label: 'Text preview' },
+            readText: async () => '# Heading\n\nBody',
+            readBinary: async () => new Uint8Array()
+        });
+
+        expect(container.querySelector('.pem-pandoc-flow-preview')).not.toBeNull();
+        expect(container.querySelector('.pem-pandoc-paged-preview')).toBeNull();
+        expect(container.querySelector('.pem-pandoc-paged-preview-page-controls')).toBeNull();
+        expect(container.querySelector('.pem-pandoc-preview-text')?.textContent).toBe('# Heading\n\nBody');
+    });
+
+    it('renders HTML previews as non-paged scrollable content', async () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        await renderPreviewFile({
+            container,
+            filePath: '/tmp/preview.html',
+            renderer: { kind: 'html', label: 'HTML preview' },
+            readText: async () => '<h1>Rendered HTML</h1>',
+            readBinary: async () => new Uint8Array()
+        });
+
+        const frame = container.querySelector<HTMLIFrameElement>('iframe.pem-pandoc-flow-preview-frame');
+        expect(container.querySelector('.pem-pandoc-flow-preview')).not.toBeNull();
+        expect(container.querySelector('.pem-pandoc-paged-preview')).toBeNull();
+        expect(frame?.srcdoc).toBe('<h1>Rendered HTML</h1>');
+    });
+
     it('loads an installed WebODF add-on into a sandboxed iframe with the generated ODT bytes', async () => {
         const readPaths: string[] = [];
         const container = withObsidianDomHelpers(document.createElement('div'));
@@ -133,7 +165,10 @@ function withObsidianDomHelpers(element: HTMLElement): HTMLElement {
         return div;
     };
     helper.createEl = (tag, options) => {
-        const child = document.createElement(tag);
+        const child = withObsidianDomHelpers(document.createElement(tag));
+        (child as HTMLElement & { setText(text: string): void }).setText = text => {
+            child.textContent = text;
+        };
         Object.entries(options?.attr ?? {}).forEach(([name, value]) => child.setAttribute(name, value));
         if (options?.cls) child.className = options.cls;
         if (tag === 'iframe') installReadyIframe(child as HTMLIFrameElement, element);

@@ -1,9 +1,30 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+    calculateViewportFitScale,
     calculateNaturalPageSlices,
     installDocxPreviewFit
 } from '../../../src/pandoc/previewSizing';
+
+describe('calculateViewportFitScale', () => {
+    it('uses the smaller width or height scale to avoid viewport overflow', () => {
+        expect(calculateViewportFitScale({
+            availableWidth: 1000,
+            availableHeight: 420,
+            contentWidth: 800,
+            contentHeight: 1000
+        })).toBeCloseTo(0.42);
+    });
+
+    it('falls back to natural scale while dimensions are unavailable', () => {
+        expect(calculateViewportFitScale({
+            availableWidth: 0,
+            availableHeight: 420,
+            contentWidth: 800,
+            contentHeight: 1000
+        })).toBe(1);
+    });
+});
 
 describe('calculateNaturalPageSlices', () => {
     it('moves a line that crosses the page boundary to the next page', () => {
@@ -98,7 +119,7 @@ describe('installDocxPreviewFit', () => {
         expect(viewport.classList.contains('pem-pandoc-docx-page-viewport')).toBe(true);
         expect(fragment.classList.contains('pem-pandoc-docx-page-fragment')).toBe(true);
         expect(shell.classList.contains('pem-pandoc-docx-page-shell')).toBe(true);
-        expect(preview.style.getPropertyValue('--pem-pandoc-docx-page-scale')).toBe('0.4900');
+        expect(preview.style.getPropertyValue('--pem-pandoc-docx-page-scale')).toBe('1.0000');
         expect(page.style.width).toBe('800px');
         expect(page.style.minHeight).toBe('1000px');
         expect(page.style.aspectRatio).toBe('800 / 1000');
@@ -111,8 +132,8 @@ describe('installDocxPreviewFit', () => {
         expect(viewport.style.top).toBe('80px');
         expect(viewport.style.width).toBe('680px');
         expect(viewport.style.height).toBe('860px');
-        expect(shell.style.width).toBe('392px');
-        expect(shell.style.height).toBe('490px');
+        expect(shell.style.width).toBe('800px');
+        expect(shell.style.height).toBe('1000px');
     });
 });
 

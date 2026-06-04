@@ -173,10 +173,9 @@ export async function renderPreviewFile(request: PandocPreviewRenderRequest): Pr
 }
 
 async function renderHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
-    const pager = new PreviewPager(request.container);
-    const page = createScrollablePage(pager, DEFAULT_DOCX_PAGE_SIZE, 'pem-pandoc-html-page-preview');
-    const iframe = page.createEl('iframe', {
-        cls: 'pem-pandoc-preview-frame',
+    const viewport = createFlowPreview(request.container, 'pem-pandoc-html-flow-preview');
+    const iframe = viewport.createEl('iframe', {
+        cls: 'pem-pandoc-preview-frame pem-pandoc-flow-preview-frame',
         attr: {
             sandbox: '',
             title: 'Pandoc export preview'
@@ -187,9 +186,8 @@ async function renderHtmlPreview(request: PandocPreviewRenderRequest): Promise<v
 
 async function renderTextPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const text = await request.readText(request.filePath);
-    const pager = new PreviewPager(request.container);
-    createScrollablePage(pager, DEFAULT_DOCX_PAGE_SIZE, 'pem-pandoc-text-page-preview')
-        .createEl('pre', { cls: 'pem-pandoc-preview-text' })
+    createFlowPreview(request.container, 'pem-pandoc-text-flow-preview')
+        .createEl('pre', { cls: 'pem-pandoc-preview-text pem-pandoc-flow-preview-text' })
         .createEl('code')
         .setText(text);
 }
@@ -210,7 +208,9 @@ async function renderPdfPreview(request: PandocPreviewRenderRequest): Promise<vo
         canvas.width = Math.floor(viewport.width * outputScale);
         canvas.height = Math.floor(viewport.height * outputScale);
         canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
         canvas.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
+        pager.refreshFit();
         const context = canvas.getContext('2d');
         if (!context) throw new Error('Canvas rendering is unavailable.');
         await page.render({
@@ -237,6 +237,7 @@ async function renderDocxPreview(request: PandocPreviewRenderRequest): Promise<v
     let pager: PreviewPager;
     const showPage = (pageIndex: number) => {
         showOnlyPage(pager.stage, '.pem-pandoc-docx-page-shell', pageIndex);
+        pager.refreshFit();
     };
     pager = new PreviewPager(request.container, { onPageChange: showPage });
     const wrapper = pager.stage.createDiv({ cls: 'pem-pandoc-docx-preview' });
@@ -302,6 +303,7 @@ async function renderPptxPreview(request: PandocPreviewRenderRequest): Promise<v
         applyPageSizeStyle(canvas, pageSize);
         canvas.style.width = `${pageSize.widthPx}px`;
         canvas.style.height = `${pageSize.heightPx}px`;
+        pager.refreshFit();
         await viewer.render(canvas, { quality: 'high', slideIndex });
     };
     pager = new PreviewPager(request.container, {
@@ -361,6 +363,7 @@ async function renderOdtAddonPreview(request: PandocPreviewRenderRequest): Promi
     applyPageSizeStyle(frame, pageSize);
     frame.style.width = `${pageSize.widthPx}px`;
     frame.style.height = `${pageSize.heightPx}px`;
+    pager.refreshFit();
 
     const message = await renderOdtInWebOdfFrame(frame, script, data, pageSize);
     frame.dataset.pemOdtToken = message.token;
@@ -383,7 +386,19 @@ function createScrollablePage(
     applyPageSizeStyle(page, pageSize);
     page.style.width = `${pageSize.widthPx}px`;
     page.style.height = `${pageSize.heightPx}px`;
+    pager.refreshFit();
     return page;
+}
+
+function createFlowPreview(container: HTMLElement, cls: string): HTMLElement {
+    clearPagerToolbar(container);
+    return container.createDiv({ cls: `pem-pandoc-flow-preview ${cls}` });
+}
+
+function clearPagerToolbar(container: HTMLElement): void {
+    const pane = container.closest('.pem-pandoc-preview-pane');
+    pane?.querySelector<HTMLElement>('.pem-pandoc-preview-toolbar-left')?.replaceChildren();
+    pane?.querySelector<HTMLElement>('.pem-pandoc-preview-toolbar-center')?.replaceChildren();
 }
 
 function showOnlyPage(root: HTMLElement, selector: string, pageIndex: number): void {

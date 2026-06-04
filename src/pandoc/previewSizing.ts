@@ -28,9 +28,26 @@ interface PageContentRect {
     height: number;
 }
 
+export interface PreviewFitScaleOptions {
+    availableWidth: number;
+    availableHeight: number;
+    contentWidth: number;
+    contentHeight: number;
+}
+
 export interface PreviewPaginationBox { top: number; bottom: number; }
 
 export interface PreviewPageSlice { start: number; height: number; }
+
+export function calculateViewportFitScale(options: PreviewFitScaleOptions): number {
+    const availableWidth = finitePositive(options.availableWidth);
+    const availableHeight = finitePositive(options.availableHeight);
+    const contentWidth = finitePositive(options.contentWidth);
+    const contentHeight = finitePositive(options.contentHeight);
+    if (!availableWidth || !availableHeight || !contentWidth || !contentHeight) return 1;
+
+    return Math.max(0.01, Math.min(availableWidth / contentWidth, availableHeight / contentHeight));
+}
 
 export function calculateNaturalPageSlices(
     options: {
@@ -215,14 +232,11 @@ function renderedDocxHeight(page: HTMLElement, pageSize: PreviewPageSize): numbe
 }
 
 function fitDocxPreviewPages(preview: HTMLElement, pages: DocxPreviewPage[]): void {
-    const availableWidth = Math.max(1, preview.clientWidth - horizontalPadding(preview));
-    const widestPage = Math.max(...pages.map(({ pageSize }) => naturalWidth(pageSize)), 1);
-    const scale = Math.min(1, availableWidth / widestPage);
-
+    const scale = 1;
     preview.style.setProperty('--pem-pandoc-docx-page-scale', scale.toFixed(4));
     for (const { pageSize, shell } of pages) {
-        shell.style.width = `${Math.ceil(naturalWidth(pageSize) * scale)}px`;
-        shell.style.height = `${Math.ceil(naturalHeight(pageSize) * scale)}px`;
+        shell.style.width = `${Math.ceil(naturalWidth(pageSize))}px`;
+        shell.style.height = `${Math.ceil(naturalHeight(pageSize))}px`;
     }
 }
 
@@ -397,4 +411,8 @@ function horizontalPadding(element: HTMLElement): number {
 function cssPixels(value: string): number {
     const pixels = Number.parseFloat(value);
     return Number.isFinite(pixels) ? pixels : 0;
+}
+
+function finitePositive(value: number): number {
+    return Number.isFinite(value) && value > 0 ? value : 0;
 }
