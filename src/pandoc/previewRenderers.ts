@@ -1,12 +1,13 @@
 import type { OdtPreviewAddonSettings } from './types';
+import { PreviewPager } from './previewControls';
 import {
-    installFixedPagePreviewFit,
     installDocxPreviewFit,
     resetPreviewSizing
 } from './previewSizing';
 import {
     DEFAULT_ODT_PAGE_SIZE,
     DEFAULT_PPTX_PAGE_SIZE,
+    DEFAULT_DOCX_PAGE_SIZE,
     extractDocxPageSizes,
     extractOdtPageSizes,
     extractPptxPageSize,
@@ -40,6 +41,28 @@ export interface PandocPreviewRenderRequest {
     renderer: PandocPreviewRenderer;
     readText: (path: string) => Promise<string>;
     readBinary: (path: string) => Promise<Uint8Array>;
+}
+
+interface EpubFactory {
+    (data: ArrayBuffer): EpubBook;
+}
+
+interface EpubBook {
+    ready: Promise<unknown>;
+    locations: {
+        cfiFromLocation(location: number): string | undefined;
+        generate(chars: number): Promise<unknown>;
+        length(): number;
+    };
+    renderTo(element: HTMLElement, options: {
+        height: string;
+        spread: string;
+        width: string;
+    }): EpubRendition;
+}
+
+interface EpubRendition {
+    display(target?: string): Promise<unknown>;
 }
 
 const HTML_FORMATS = new Set([
@@ -150,7 +173,9 @@ export async function renderPreviewFile(request: PandocPreviewRenderRequest): Pr
 }
 
 async function renderHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
-    const iframe = request.container.createEl('iframe', {
+    const pager = new PreviewPager(request.container);
+    const page = createScrollablePage(pager, DEFAULT_DOCX_PAGE_SIZE, 'pem-pandoc-html-page-preview');
+    const iframe = page.createEl('iframe', {
         cls: 'pem-pandoc-preview-frame',
         attr: {
             sandbox: '',
@@ -162,7 +187,9 @@ async function renderHtmlPreview(request: PandocPreviewRenderRequest): Promise<v
 
 async function renderTextPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const text = await request.readText(request.filePath);
-    request.container.createEl('pre', { cls: 'pem-pandoc-preview-text' })
+    const pager = new PreviewPager(request.container);
+    createScrollablePage(pager, DEFAULT_DOCX_PAGE_SIZE, 'pem-pandoc-text-page-preview')
+        .createEl('pre', { cls: 'pem-pandoc-preview-text' })
         .createEl('code')
         .setText(text);
 }
@@ -173,13 +200,13 @@ async function renderPdfPreview(request: PandocPreviewRenderRequest): Promise<vo
     const data = await request.readBinary(request.filePath);
     const loadingTask = pdfjs.getDocument({ data });
     const document = await loadingTask.promise;
-    const pages = request.container.createDiv({ cls: 'pem-pandoc-pdf-pages' });
-
-    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-        const page = await document.getPage(pageNumber);
+    let pager: PreviewPager;
+    const renderPage = async (pageIndex: number) => {
+        pager.clearStage();
+        const page = await document.getPage(pageIndex + 1);
         const viewport = page.getViewport({ scale: 1.35 });
         const outputScale = window.devicePixelRatio || 1;
-        const canvas = pages.createEl('canvas', { cls: 'pem-pandoc-pdf-page' });
+        const canvas = pager.stage.createEl('canvas', { cls: 'pem-pandoc-pdf-page' });
         canvas.width = Math.floor(viewport.width * outputScale);
         canvas.height = Math.floor(viewport.height * outputScale);
         canvas.style.width = `${viewport.width}px`;
@@ -191,14 +218,28 @@ async function renderPdfPreview(request: PandocPreviewRenderRequest): Promise<vo
             viewport,
             transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : undefined
         }).promise;
-    }
+    };
+    pager = new PreviewPager(request.container, {
+        initialPageCount: document.numPages,
+        onPageChange: pageIndex => {
+            void renderPage(pageIndex);
+        }
+    });
+    pager.setPageCount(document.numPages);
+
+    await renderPage(0);
 }
 
 async function renderDocxPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const { renderAsync } = await import('docx-preview');
     const data = await request.readBinary(request.filePath);
     const pageSizes = extractDocxPageSizes(data);
-    const wrapper = request.container.createDiv({ cls: 'pem-pandoc-docx-preview' });
+    let pager: PreviewPager;
+    const showPage = (pageIndex: number) => {
+        showOnlyPage(pager.stage, '.pem-pandoc-docx-page-shell', pageIndex);
+    };
+    pager = new PreviewPager(request.container, { onPageChange: showPage });
+    const wrapper = pager.stage.createDiv({ cls: 'pem-pandoc-docx-preview' });
     await renderAsync(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength), wrapper, undefined, {
         className: 'pem-pandoc-docx',
         inWrapper: true,
@@ -209,35 +250,42 @@ async function renderDocxPreview(request: PandocPreviewRenderRequest): Promise<v
         renderFooters: true
     });
     installDocxPreviewFit(request.container, pageSizes);
+    const pageCount = pager.stage.querySelectorAll('.pem-pandoc-docx-page-shell').length;
+    pager.setPageCount(pageCount);
+    showPage(pager.currentPageIndex);
 }
 
 async function renderEpubPreview(request: PandocPreviewRenderRequest): Promise<void> {
-    const epub = (await import('epubjs')).default;
+    const epub = (await import('epubjs')).default as EpubFactory;
     const data = await request.readBinary(request.filePath);
-    const frame = request.container.createDiv({ cls: 'pem-pandoc-epub-preview' });
-    const controls = frame.createDiv({ cls: 'pem-pandoc-preview-controls' });
-    const previous = controls.createEl('button', { text: 'Previous' });
-    const next = controls.createEl('button', { text: 'Next' });
-    const viewport = frame.createDiv({ cls: 'pem-pandoc-epub-viewport' });
     const book = epub(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
-    const rendition = book.renderTo(viewport, {
+    let locationCount = 1;
+    let rendition: EpubRendition | undefined;
+    const pager = new PreviewPager(request.container, {
+        pageLabel: 'Location',
+        onPageChange: pageIndex => {
+            if (!rendition) return;
+            const cfi = book.locations.cfiFromLocation(Math.min(pageIndex, locationCount - 1));
+            if (cfi) void rendition.display(cfi);
+        }
+    });
+    const viewport = createScrollablePage(pager, DEFAULT_DOCX_PAGE_SIZE, 'pem-pandoc-epub-viewport');
+    rendition = book.renderTo(viewport, {
         width: '100%',
         height: '100%',
         spread: 'none'
     });
-    previous.onclick = () => { void rendition.prev(); };
-    next.onclick = () => { void rendition.next(); };
     await rendition.display();
+    await book.ready;
+    await book.locations.generate(1000);
+    locationCount = Math.max(1, book.locations.length());
+    pager.setPageCount(locationCount);
 }
 
 async function renderPptxPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const { PPTXViewer } = await import('pptxviewjs');
     const data = await request.readBinary(request.filePath);
     const pageSize = extractPptxPageSize(data) ?? DEFAULT_PPTX_PAGE_SIZE;
-    const frame = request.container.createDiv({ cls: 'pem-pandoc-pptx-preview' });
-    const controls = frame.createDiv({ cls: 'pem-pandoc-preview-controls' });
-    const counter = controls.createEl('span', { cls: 'pem-pandoc-preview-counter' });
-    const pages = frame.createDiv({ cls: 'pem-pandoc-pptx-pages' });
     const viewer = new PPTXViewer({
         slideSizeMode: 'fit',
         autoRenderFirstSlide: false
@@ -245,28 +293,35 @@ async function renderPptxPreview(request: PandocPreviewRenderRequest): Promise<v
     await viewer.loadFile(data);
 
     const slideCount = Math.max(1, viewer.getSlideCount());
-    counter.setText(`${slideCount} ${slideCount === 1 ? 'slide' : 'slides'}`);
-    for (let slideIndex = 0; slideIndex < slideCount; slideIndex += 1) {
-        const shell = pages.createDiv({ cls: 'pem-pandoc-pptx-page-shell' });
+    let pager: PreviewPager;
+    const renderSlide = async (slideIndex: number) => {
+        pager.clearStage();
+        const shell = pager.stage.createDiv({ cls: 'pem-pandoc-pptx-page-shell' });
         applyPageSizeStyle(shell, pageSize);
         const canvas = shell.createEl('canvas', { cls: 'pem-pandoc-pptx-canvas' });
         applyPageSizeStyle(canvas, pageSize);
         canvas.style.width = `${pageSize.widthPx}px`;
         canvas.style.height = `${pageSize.heightPx}px`;
         await viewer.render(canvas, { quality: 'high', slideIndex });
-    }
-    installFixedPagePreviewFit(request.container, {
-        previewSelector: '.pem-pandoc-pptx-pages',
-        shellSelector: '.pem-pandoc-pptx-page-shell',
-        scaleProperty: '--pem-pandoc-pptx-page-scale',
-        pageSizes: Array.from({ length: slideCount }, () => pageSize)
+    };
+    pager = new PreviewPager(request.container, {
+        pageLabel: 'Slide',
+        initialPageCount: slideCount,
+        onPageChange: slideIndex => {
+            void renderSlide(slideIndex);
+        }
     });
+    pager.setPageCount(slideCount);
+
+    await renderSlide(0);
 }
 
 async function renderPagedHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const html = await request.readText(request.filePath);
     const pageSize = request.renderer.pageSize ?? DEFAULT_ODT_PAGE_SIZE;
-    const iframe = request.container.createEl('iframe', {
+    const pager = new PreviewPager(request.container);
+    const page = createScrollablePage(pager, pageSize, 'pem-pandoc-paged-html-page-preview');
+    const iframe = page.createEl('iframe', {
         cls: 'pem-pandoc-preview-frame pem-pandoc-paged-html-preview',
         attr: {
             sandbox: '',
@@ -285,21 +340,57 @@ async function renderOdtAddonPreview(request: PandocPreviewRenderRequest): Promi
     const script = await readWebOdfScript(installPath, request.renderer.addonVersion, request.readText);
     const data = await request.readBinary(request.filePath);
     const pageSize = pageSizeAt(extractOdtPageSizes(data), 0, DEFAULT_ODT_PAGE_SIZE);
-    const frame = request.container.createEl('iframe', {
-        cls: 'pem-pandoc-odt-preview',
+    let pager: PreviewPager;
+    let frame: HTMLIFrameElement;
+    const showPage = (pageIndex: number) => {
+        if (!frame) return;
+        frame.contentWindow?.postMessage({
+            token: frame.dataset.pemOdtToken,
+            type: 'set-page',
+            pageIndex
+        }, '*');
+    };
+    pager = new PreviewPager(request.container, { onPageChange: showPage });
+    frame = pager.stage.createEl('iframe', {
+        cls: 'pem-pandoc-scrollable-page pem-pandoc-odt-preview',
         attr: {
             sandbox: 'allow-scripts allow-same-origin',
             title: 'Odt preview'
         }
     });
+    applyPageSizeStyle(frame, pageSize);
+    frame.style.width = `${pageSize.widthPx}px`;
+    frame.style.height = `${pageSize.heightPx}px`;
 
-    await renderOdtInWebOdfFrame(frame, script, data, pageSize);
+    const message = await renderOdtInWebOdfFrame(frame, script, data, pageSize);
+    frame.dataset.pemOdtToken = message.token;
+    pager.setPageCount(message.pageCount);
+    showPage(pager.currentPageIndex);
 }
 
 function applyPageSizeStyle(element: HTMLElement, pageSize: PreviewPageSize): void {
     element.style.setProperty('--pem-pandoc-page-width', `${pageSize.widthPx}px`);
     element.style.setProperty('--pem-pandoc-page-height', `${pageSize.heightPx}px`);
     element.style.aspectRatio = `${pageSize.widthPx} / ${pageSize.heightPx}`;
+}
+
+function createScrollablePage(
+    pager: PreviewPager,
+    pageSize: PreviewPageSize,
+    cls: string
+): HTMLElement {
+    const page = pager.stage.createDiv({ cls: `pem-pandoc-scrollable-page ${cls}` });
+    applyPageSizeStyle(page, pageSize);
+    page.style.width = `${pageSize.widthPx}px`;
+    page.style.height = `${pageSize.heightPx}px`;
+    return page;
+}
+
+function showOnlyPage(root: HTMLElement, selector: string, pageIndex: number): void {
+    Array.from(root.querySelectorAll<HTMLElement>(selector))
+        .forEach((page, index) => {
+            page.classList.toggle('is-hidden', index !== pageIndex);
+        });
 }
 
 function pagedHtmlSource(html: string, pageSize: PreviewPageSize): string {
@@ -381,7 +472,7 @@ function renderOdtInWebOdfFrame(
     script: { source: string; path: string },
     data: Uint8Array,
     pageSize: PreviewPageSize
-): Promise<void> {
+): Promise<WebOdfFrameReadyMessage> {
     return new Promise((resolve, reject) => {
         let settled = false;
         const token = `pandoc-odt-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -400,7 +491,8 @@ function renderOdtInWebOdfFrame(
             frame.dataset.pemOdtReady = 'true';
             frame.dataset.pemOdtText = message.text;
             frame.dataset.pemOdtImageCount = String(message.imageCount);
-            resolve();
+            frame.dataset.pemOdtPageCount = String(message.pageCount);
+            resolve(message);
         };
         const timeout = window.setTimeout(() => {
             fail(new Error('WebODF loaded the add-on but did not render the ODT preview.'));
@@ -477,6 +569,7 @@ interface WebOdfFrameBaseMessage {
 interface WebOdfFrameReadyMessage extends WebOdfFrameBaseMessage {
     type: 'ready';
     imageCount: number;
+    pageCount: number;
     text: string;
 }
 
@@ -485,7 +578,12 @@ interface WebOdfFrameErrorMessage extends WebOdfFrameBaseMessage {
     message: string;
 }
 
-type WebOdfFrameMessage = WebOdfFrameReadyMessage | WebOdfFrameErrorMessage;
+interface WebOdfFrameSetPageMessage extends WebOdfFrameBaseMessage {
+    type: 'set-page';
+    pageIndex: number;
+}
+
+type WebOdfFrameMessage = WebOdfFrameReadyMessage | WebOdfFrameErrorMessage | WebOdfFrameSetPageMessage;
 
 function webOdfFrameSource(
     token: string,
@@ -515,45 +613,42 @@ function webOdfFrameSource(
 <meta charset="utf-8">
 <style>
 html, body {
+    background: #fff;
     color: #000;
+    height: 100%;
     margin: 0;
-    min-height: 100%;
-}
-html {
-    background: #f3f3f3;
+    overflow: hidden;
+    width: 100%;
 }
 body {
-    background: #f3f3f3;
     box-sizing: border-box;
     font-family: sans-serif;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 12px;
+    padding: 0;
 }
 #odf-viewport {
     box-sizing: border-box;
-    min-height: calc(100vh - 24px);
+    height: ${pageHeight};
     overflow: hidden;
+    width: ${pageWidth};
 }
 #odf-pages {
-    display: grid;
-    gap: 14px;
-    justify-content: center;
-    transform-origin: top left;
+    display: block;
+    height: ${pageHeight};
+    margin: 0;
     width: ${pageWidth};
 }
 .odf-page-shell {
-    background: #fff !important;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+    background: transparent !important;
+    box-shadow: none;
     box-sizing: border-box;
-    margin: 0 auto;
+    height: ${pageHeight};
+    margin: 0;
     overflow: hidden;
     position: relative;
     width: ${pageWidth};
-    height: ${pageHeight};
 }
 .odf-page-content-viewport {
-    background: #fff !important;
+    background: transparent !important;
     box-sizing: border-box;
     height: ${contentHeight};
     left: ${contentLeft};
@@ -605,6 +700,7 @@ body {
         'tab-stops',
         'text-properties'
     ]);
+    let currentPageIndex = 0;
 
     const report = message => {
         const state = { ...message, token };
@@ -656,17 +752,19 @@ body {
         pages.style.marginLeft = '';
         pages.style.marginRight = '';
         pages.style.transform = '';
-        viewport.style.height = '';
-        const availableWidth = Math.max(1, viewport.clientWidth);
-        const naturalWidth = ${pageSize.widthPx.toFixed(6)};
-        const naturalHeight = Math.max(${pageSize.heightPx.toFixed(6)}, pages.scrollHeight, pages.offsetHeight, 1);
-        const scale = Math.min(1, availableWidth / naturalWidth);
-        const scaledWidth = naturalWidth * scale;
-        const horizontalInset = Math.max(0, (availableWidth - scaledWidth) / 2);
-        pages.style.marginLeft = \`\${Math.floor(horizontalInset)}px\`;
-        pages.style.marginRight = \`\${Math.floor(horizontalInset)}px\`;
-        pages.style.transform = \`scale(\${scale})\`;
-        viewport.style.height = \`\${Math.ceil(naturalHeight * scale)}px\`;
+        viewport.style.height = '${pageHeight}';
+        if (pages.id === 'odf-pages') applyOdtPageVisibility(pages);
+    };
+    const applyOdtPageVisibility = pages => {
+        const pageElements = Array.from(pages.querySelectorAll('.odf-page-shell'));
+        const pageCount = Math.max(1, pageElements.length);
+        currentPageIndex = Math.max(0, Math.min(pageCount - 1, currentPageIndex));
+        for (const [index, page] of pageElements.entries()) {
+            page.hidden = index !== currentPageIndex;
+            page.style.display = index === currentPageIndex ? '' : 'none';
+        }
+        pages.dataset.pemOdtPageCount = String(pageCount);
+        return pageCount;
     };
     const scheduleOdtFit = element => {
         window.requestAnimationFrame(() => fitOdtPreview(element));
@@ -685,9 +783,10 @@ body {
         const source = element.cloneNode(true);
         const baseBoxes = collectUnbreakableBoxes(element);
         const measuredBoxes = [];
-        const flowEnd = Math.max(contentTop + contentHeight, renderedHeight);
+        const flowStart = naturalFlowStart(contentTop, baseBoxes);
+        const flowEnd = Math.max(flowStart + contentHeight, renderedHeight);
         let slices = calculateNaturalPageSlices({
-            flowStart: contentTop,
+            flowStart,
             flowEnd,
             pageHeight: contentHeight,
             unbreakableBoxes: baseBoxes
@@ -705,12 +804,13 @@ body {
         for (let attempt = 0; attempt < 12; attempt += 1) {
             const clippedLines = clippedTextLines(pages, slices);
             if (clippedLines.length === 0) {
-                pages.dataset.pemOdtPageCount = String(slices.length);
+                applyOdtPageVisibility(pages);
                 return pages;
             }
             measuredBoxes.push(...clippedLines);
+            const refinedFlowStart = naturalFlowStart(flowStart, measuredBoxes);
             slices = calculateNaturalPageSlices({
-                flowStart: contentTop,
+                flowStart: refinedFlowStart,
                 flowEnd,
                 pageHeight: contentHeight,
                 unbreakableBoxes: [...baseBoxes, ...measuredBoxes]
@@ -727,8 +827,16 @@ body {
             pages = nextPages;
         }
 
-        pages.dataset.pemOdtPageCount = String(slices.length);
+        applyOdtPageVisibility(pages);
         return pages;
+    };
+    const naturalFlowStart = (fallbackStart, boxes) => {
+        return boxes.reduce((start, box) => {
+            if (box.top < start - 0.5 && box.bottom > start + 0.5) {
+                return Math.max(0, box.top);
+            }
+            return start;
+        }, fallbackStart);
     };
     const buildOdtPages = (source, slices, options) => {
         const pages = document.createElement('div');
@@ -1045,8 +1153,10 @@ body {
             const rect = element.getBoundingClientRect();
             fitOdtPreview(element);
             if (text && rect.width > 0 && rect.height > 0 && (images.length === 0 || imageRules > 0)) {
-                fitOdtPreview(paginateOdtPreview(element));
-                report({ type: 'ready', text, imageCount: images.length });
+                const pages = paginateOdtPreview(element);
+                const pageCount = applyOdtPageVisibility(pages);
+                fitOdtPreview(pages);
+                report({ type: 'ready', text, imageCount: images.length, pageCount });
                 return;
             }
             if (images.length > 0 && imageRules === 0 && !requestedImageCss) {
@@ -1068,6 +1178,13 @@ body {
         });
         window.addEventListener('unhandledrejection', event => {
             fail(event.reason || 'Unhandled WebODF promise rejection.');
+        });
+        window.addEventListener('message', event => {
+            const message = event.data || {};
+            if (message.token !== token || message.type !== 'set-page') return;
+            currentPageIndex = Number.isFinite(message.pageIndex) ? message.pageIndex : currentPageIndex;
+            const pages = document.getElementById('odf-pages');
+            if (pages) fitOdtPreview(pages);
         });
         (0, eval)(webOdfSource);
         if (!window.odf?.OdfCanvas || !window.runtime?.readFile) {

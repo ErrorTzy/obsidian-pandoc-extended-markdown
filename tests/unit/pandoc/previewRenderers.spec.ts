@@ -69,11 +69,15 @@ describe('selectPreviewRenderer', () => {
         expect(frames).toHaveLength(1);
         expect(frames[0].getAttribute('sandbox')).toBe('allow-scripts allow-same-origin');
         expect(frames[0].classList.contains('pem-pandoc-odt-preview')).toBe(true);
+        expect(frames[0].classList.contains('pem-pandoc-scrollable-page')).toBe(true);
+        expect(container.querySelector('.pem-pandoc-scrollable-page.pem-pandoc-odt-page-preview')).toBeNull();
+        expect(frames[0].parentElement?.classList.contains('pem-pandoc-paged-preview-stage')).toBe(true);
         expect(frames[0].srcdoc).toContain('AQID');
         expect(frames[0].srcdoc).toContain('file:///addons/webodf-0.5.9/webodf.js-0.5.9/webodf.js');
         expect(frames[0].dataset.pemOdtReady).toBe('true');
         expect(frames[0].dataset.pemOdtText).toBe('Rendered ODT');
         expect(frames[0].dataset.pemOdtImageCount).toBe('1');
+        expect(frames[0].dataset.pemOdtPageCount).toBe('3');
     });
 
     it('reports WebODF iframe errors instead of falling back to another renderer', async () => {
@@ -148,7 +152,7 @@ function installReadyIframe(frame: HTMLIFrameElement, container: HTMLElement): v
             srcdoc = value;
             const token = value.match(/const token = "([^"]+)"/)?.[1];
             if (!token) return;
-            const error = container.dataset.pemFrameError;
+            const error = container.closest<HTMLElement>('[data-pem-frame-error]')?.dataset.pemFrameError;
             window.setTimeout(() => {
                 window.dispatchEvent(new MessageEvent('message', {
                     data: error ? {
@@ -159,7 +163,8 @@ function installReadyIframe(frame: HTMLIFrameElement, container: HTMLElement): v
                         token,
                         type: 'ready',
                         text: 'Rendered ODT',
-                        imageCount: 1
+                        imageCount: 1,
+                        pageCount: 3
                     }
                 }));
             }, 0);

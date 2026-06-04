@@ -14,15 +14,20 @@ export interface OverwriteOptionActions {
 export function renderPreviewPane(
     container: HTMLElement,
     onRefresh: () => void
-): { statusEl: HTMLElement; bodyEl: HTMLElement } {
+): { statusEl: HTMLElement; bodyEl: HTMLElement; refreshButtonEl: HTMLButtonElement } {
     const pane = container.createDiv({ cls: 'pem-pandoc-preview-pane' });
     const header = pane.createDiv({ cls: 'pem-pandoc-preview-header' });
-    header.createEl('h3', { text: 'Preview' });
-    const statusEl = header.createEl('span', { cls: 'pem-pandoc-preview-status' });
-    createButton(header, 'Refresh', onRefresh);
+    header.createDiv({ cls: 'pem-pandoc-preview-toolbar-left' });
+    header.createDiv({ cls: 'pem-pandoc-preview-toolbar-center' });
+    const right = header.createDiv({ cls: 'pem-pandoc-preview-toolbar-right' });
+    const statusEl = right.createEl('span', {
+        cls: 'pem-pandoc-preview-status',
+        attr: { 'aria-live': 'polite' }
+    });
+    const refreshButtonEl = createButton(right, 'Refresh', onRefresh);
     const bodyEl = pane.createDiv({ cls: 'pem-pandoc-preview-body' });
 
-    return { statusEl, bodyEl };
+    return { statusEl, bodyEl, refreshButtonEl };
 }
 
 export function renderCommandPreview(

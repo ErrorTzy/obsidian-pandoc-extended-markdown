@@ -46,6 +46,7 @@ type PreviewKind = 'docx' | 'odt' | 'pptx';
 interface PageShapeState {
     status: string;
     pageCount: number;
+    visiblePageCount: number;
     page: {
         width: number;
         height: number;
@@ -89,6 +90,47 @@ interface OdtTextClipState {
     html: string;
 }
 
+interface OdtFrameArchitectureState {
+    previewFrameCount: number;
+    obsoleteWrapperCount: number;
+    internalPageCount: number;
+    internalVisiblePageCount: number;
+    internalShadowedPageCount: number;
+    internalGrayPageCount: number;
+    html: string;
+}
+
+interface OdtPageSwitchState {
+    pageCount: number;
+    visiblePageIndex: number;
+    visiblePageCount: number;
+    visibleText: string;
+}
+
+interface SideNavState {
+    pageCount: number;
+    hostRect: RectState;
+    viewportRect: RectState;
+    viewportScrollLeft: number;
+    previous: SideNavButtonState;
+    next: SideNavButtonState;
+}
+
+interface SideNavButtonState {
+    disabled: boolean;
+    opacity: string;
+    pointerEvents: string;
+    rect: RectState;
+    svgCount: number;
+    text: string;
+}
+
+interface RectState {
+    left: number;
+    right: number;
+    width: number;
+}
+
 describe('Pandoc page-based preview shapes', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -114,10 +156,9 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.page.ratio).toBeCloseTo(8.5 / 11, 1);
         expect(state.page.background).toBe('rgb(255, 255, 255)');
         expect(state.page.shadow).not.toBe('none');
+        expect(state.visiblePageCount).toBe(1);
         expect(state.content?.leftInset).toBeGreaterThan(state.page.width * 0.07);
         expect(state.content?.topInset).toBeGreaterThan(state.page.height * 0.05);
-        expect(state.content?.secondLeftInset).toBeGreaterThan(state.page.width * 0.07);
-        expect(state.content?.secondTopInset).toBeGreaterThan(state.page.height * 0.05);
     });
 
     it('renders WebODF preview inside a page-shaped canvas', async function () {
@@ -128,23 +169,148 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.page.ratio).toBeCloseTo(8.5 / 11, 1);
         expect(state.page.background).toBe('rgb(255, 255, 255)');
         expect(state.page.shadow).not.toBe('none');
-        expect(state.content?.background).toBe('rgb(255, 255, 255)');
-        if (state.content?.paintedBackground !== 'rgb(255, 255, 255)') {
-            throw new Error(`Expected white ODT page paint.\n${JSON.stringify(state.content, null, 2)}`);
-        }
-        expect(state.content?.paintedBackground).toBe('rgb(255, 255, 255)');
         expect(state.content?.leftInset).toBeGreaterThan(state.page.width * 0.07);
         expect(state.content?.topInset).toBeGreaterThan(state.page.height * 0.05);
     });
 
+    it('renders WebODF preview with one outer frame and no nested page chrome', async function () {
+        await openPreviewFor('odt', this);
+        const state = await getOdtFrameArchitectureState();
+
+        expect(state.previewFrameCount).toBe(1);
+        expect(state.obsoleteWrapperCount).toBe(0);
+        expect(state.internalPageCount).toBeGreaterThan(1);
+        expect(state.internalVisiblePageCount).toBe(1);
+        if (state.internalShadowedPageCount > 0 || state.internalGrayPageCount > 0) {
+            throw new Error(`Expected ODT iframe pages to be layout slices, not nested visual frames.\n${JSON.stringify(state, null, 2)}`);
+        }
+    });
+
+    it('switches visible WebODF content when the preview page changes', async function () {
+        await openPreviewFor('odt', this);
+        const firstPage = await getOdtPageSwitchState();
+
+        expect(firstPage.pageCount).toBeGreaterThan(1);
+        expect(firstPage.visiblePageCount).toBe(1);
+        expect(firstPage.visiblePageIndex).toBe(0);
+
+        await setPreviewPage(2);
+        await browser.waitUntil(async () => {
+            const state = await getOdtPageSwitchState();
+            return state.visiblePageIndex === 1 && state.visibleText !== firstPage.visibleText;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected ODT preview page 2 to show different visible content'
+        });
+        const secondPage = await getOdtPageSwitchState();
+        expect(secondPage.visiblePageCount).toBe(1);
+        expect(secondPage.visiblePageIndex).toBe(1);
+    });
+
+    it('shows shared side navigation over the WebODF iframe preview', async function () {
+        await openPreviewFor('odt', this);
+        const firstPage = await getOdtPageSwitchState();
+
+        expect(firstPage.pageCount).toBeGreaterThan(1);
+        expect(firstPage.visiblePageIndex).toBe(0);
+
+        await hoverPreviewSide('right');
+        await browser.waitUntil(async () => {
+            const state = await getSideNavState();
+            return !state.next.disabled && Number.parseFloat(state.next.opacity) > 0;
+        }, {
+            timeout: 1000,
+            timeoutMsg: 'Expected ODT next page button to become visible on right hover'
+        });
+
+        const nextButton = await browser.$('.pem-pandoc-paged-preview-side-nav.is-right');
+        await nextButton.click();
+        await browser.waitUntil(async () => {
+            const state = await getOdtPageSwitchState();
+            return state.visiblePageIndex === 1 && state.visibleText !== firstPage.visibleText;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected ODT next page button to show page 2'
+        });
+    });
+
     it('does not clip WebODF text lines across page boundaries', async function () {
         await openPreviewFor('odt', this);
-        const state = await getOdtTextClipState();
+        let state = await getOdtTextClipState();
 
         expect(state.pageCount).toBeGreaterThan(1);
         if (state.clippedLines.length > 0) {
             throw new Error(`Expected ODT page breaks not to clip text lines.\n${JSON.stringify(state, null, 2)}`);
         }
+
+        await setPreviewPage(2);
+        await browser.waitUntil(async () => {
+            return (await getOdtPageSwitchState()).visiblePageIndex === 1;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected ODT preview to switch to page 2 before clip inspection'
+        });
+        state = await getOdtTextClipState();
+        if (state.clippedLines.length > 0) {
+            throw new Error(`Expected ODT page 2 not to clip text lines.\n${JSON.stringify(state, null, 2)}`);
+        }
+    });
+
+    it('keeps side page navigation pinned to the frame and uses SVG buttons', async function () {
+        await openPreviewFor('docx', this);
+        await waitForPageShape('docx');
+
+        await hoverPreviewSide('left');
+        let state = await getSideNavState();
+        expect(state.pageCount).toBeGreaterThan(1);
+        expect(state.previous.disabled).toBe(true);
+        expect(state.previous.opacity).toBe('0');
+        expect(state.next.svgCount).toBe(1);
+        expect(state.next.text).toBe('');
+        expect(state.previous.svgCount).toBe(1);
+        expect(state.previous.text).toBe('');
+
+        await hoverPreviewSide('right');
+        await browser.waitUntil(async () => {
+            const nextState = await getSideNavState();
+            return !nextState.next.disabled && Number.parseFloat(nextState.next.opacity) > 0;
+        }, {
+            timeout: 1000,
+            timeoutMsg: 'Expected next page button to become visible on right hover'
+        });
+        state = await getSideNavState();
+        expect(state.next.disabled).toBe(false);
+        expect(Number.parseFloat(state.next.opacity)).toBeGreaterThan(0);
+
+        await setPreviewPage(state.pageCount);
+        await hoverPreviewSide('right');
+        await browser.waitUntil(async () => {
+            const nextState = await getSideNavState();
+            return nextState.next.disabled && nextState.next.opacity === '0';
+        }, {
+            timeout: 1000,
+            timeoutMsg: 'Expected next page button to hide on the last page'
+        });
+        state = await getSideNavState();
+        expect(state.next.disabled).toBe(true);
+        expect(state.next.opacity).toBe('0');
+
+        await hoverPreviewSide('left');
+        await browser.waitUntil(async () => {
+            const nextState = await getSideNavState();
+            return !nextState.previous.disabled && Number.parseFloat(nextState.previous.opacity) > 0;
+        }, {
+            timeout: 1000,
+            timeoutMsg: 'Expected previous page button to become visible on left hover'
+        });
+        state = await getSideNavState();
+        expect(state.previous.disabled).toBe(false);
+        expect(Number.parseFloat(state.previous.opacity)).toBeGreaterThan(0);
+
+        const pinned = await scrollPreviewViewportHorizontally();
+        expect(pinned.viewportScrollLeft).toBeGreaterThanOrEqual(0);
+        expect(Math.abs(pinned.previous.rect.left - (pinned.viewportRect.left + 8))).toBeLessThan(3);
+        expect(Math.abs(pinned.next.rect.right - (pinned.viewportRect.right - 8))).toBeLessThan(3);
     });
 
     it('renders PPTX preview using the slide aspect ratio without shrinking the render canvas first', async function () {
@@ -341,7 +507,23 @@ async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
             const frame = document.querySelector('iframe.pem-pandoc-odt-preview') as HTMLIFrameElement | null;
             const frameDocument = frame?.contentDocument;
             const pages = Array.from(frameDocument?.querySelectorAll<HTMLElement>('.odf-page-shell') ?? []);
-            return shapeState(status, pages, frameDocument?.body.outerHTML ?? '', odtContentState(pages[0]));
+            const visiblePages = pages.filter(isVisiblePage);
+            const frameRect = frame?.getBoundingClientRect();
+            const frameStyle = frame ? window.getComputedStyle(frame) : undefined;
+            return {
+                status,
+                pageCount: pages.length,
+                visiblePageCount: visiblePages.length,
+                page: {
+                    width: frameRect?.width ?? 0,
+                    height: frameRect?.height ?? 0,
+                    ratio: frameRect && frameRect.height > 0 ? frameRect.width / frameRect.height : 0,
+                    background: frameStyle?.backgroundColor ?? '',
+                    shadow: frameStyle?.boxShadow ?? ''
+                },
+                content: odtContentState(visiblePages[0] ?? pages[0]),
+                html: frameDocument?.body.outerHTML ?? ''
+            };
         }
 
         const pages = Array.from(document.querySelectorAll<HTMLElement>('.pem-pandoc-pptx-page-shell'));
@@ -364,13 +546,15 @@ async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
             html = '',
             content?: PageShapeState['content']
         ): PageShapeState {
-            const element = elements[0];
+            const visibleElements = elements.filter(isVisiblePage);
+            const element = visibleElements[0] ?? elements[0];
             const rect = element?.getBoundingClientRect();
             const elementWindow = element?.ownerDocument.defaultView ?? window;
             const style = element ? elementWindow.getComputedStyle(element) : undefined;
             return {
                 status: currentStatus,
                 pageCount: elements.length,
+                visiblePageCount: visibleElements.length,
                 page: {
                     width: rect?.width ?? 0,
                     height: rect?.height ?? 0,
@@ -383,24 +567,24 @@ async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
             };
         }
 
+        function isVisiblePage(element: HTMLElement): boolean {
+            const rect = element.getBoundingClientRect();
+            const style = (element.ownerDocument.defaultView ?? window).getComputedStyle(element);
+            return !element.hidden && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+        }
+
         function docxContentState(pages: HTMLElement[]): PageShapeState['content'] {
-            const page = pages[0];
+            const page = pages.find(isVisiblePage) ?? pages[0];
             if (!page) return undefined;
 
-            const secondPage = pages[1];
             const viewport = page.querySelector<HTMLElement>('.pem-pandoc-docx-page-viewport');
-            const secondViewport = secondPage?.querySelector<HTMLElement>('.pem-pandoc-docx-page-viewport');
             const text = page.querySelector<HTMLElement>('p, h1, h2, h3, span');
             const pageRect = page.getBoundingClientRect();
             const textRect = (viewport ?? text)?.getBoundingClientRect();
-            const secondPageRect = secondPage?.getBoundingClientRect();
-            const secondTextRect = secondViewport?.getBoundingClientRect();
             const style = text ? window.getComputedStyle(text) : undefined;
             return {
                 leftInset: textRect ? textRect.left - pageRect.left : 0,
                 topInset: textRect ? textRect.top - pageRect.top : 0,
-                secondLeftInset: secondPageRect && secondTextRect ? secondTextRect.left - secondPageRect.left : 0,
-                secondTopInset: secondPageRect && secondTextRect ? secondTextRect.top - secondPageRect.top : 0,
                 background: style?.backgroundColor ?? ''
             };
         }
@@ -458,6 +642,94 @@ async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
     }, kind);
 }
 
+async function getOdtFrameArchitectureState(): Promise<OdtFrameArchitectureState> {
+    return browser.execute(() => {
+        const frame = document.querySelector('iframe.pem-pandoc-odt-preview') as HTMLIFrameElement | null;
+        const frameDocument = frame?.contentDocument;
+        const pages = Array.from(frameDocument?.querySelectorAll<HTMLElement>('.odf-page-shell') ?? []);
+        const obsoleteWrapperCount = document.querySelectorAll(
+            '.pem-pandoc-scrollable-page.pem-pandoc-odt-page-preview'
+        ).length;
+        const internalShadowedPageCount = pages.filter(page => {
+            const style = frameDocument?.defaultView?.getComputedStyle(page);
+            return Boolean(style?.boxShadow && style.boxShadow !== 'none');
+        }).length;
+        const internalGrayPageCount = pages.filter(page => {
+            const style = frameDocument?.defaultView?.getComputedStyle(page);
+            return Boolean(style?.backgroundColor && ![
+                'rgba(0, 0, 0, 0)',
+                'transparent'
+            ].includes(style.backgroundColor));
+        }).length;
+        const visiblePages = pages.filter(page => {
+            const style = frameDocument?.defaultView?.getComputedStyle(page);
+            const rect = page.getBoundingClientRect();
+            return !page.hidden && style?.display !== 'none' && rect.width > 0 && rect.height > 0;
+        });
+
+        return {
+            previewFrameCount: document.querySelectorAll('iframe.pem-pandoc-odt-preview').length,
+            obsoleteWrapperCount,
+            internalPageCount: pages.length,
+            internalVisiblePageCount: visiblePages.length,
+            internalShadowedPageCount,
+            internalGrayPageCount,
+            html: frameDocument?.body.outerHTML.slice(0, 3000) ?? ''
+        };
+    });
+}
+
+async function getOdtPageSwitchState(): Promise<OdtPageSwitchState> {
+    return browser.execute(() => {
+        const frame = document.querySelector('iframe.pem-pandoc-odt-preview') as HTMLIFrameElement | null;
+        const frameDocument = frame?.contentDocument;
+        const pages = Array.from(frameDocument?.querySelectorAll<HTMLElement>('.odf-page-shell') ?? []);
+        const visiblePages = pages
+            .map((page, index) => ({ page, index }))
+            .filter(({ page }) => {
+                const style = frameDocument?.defaultView?.getComputedStyle(page);
+                const rect = page.getBoundingClientRect();
+                return !page.hidden && style?.display !== 'none' && rect.width > 0 && rect.height > 0;
+            });
+        const visiblePage = visiblePages[0]?.page;
+
+        return {
+            pageCount: pages.length,
+            visiblePageIndex: visiblePages[0]?.index ?? -1,
+            visiblePageCount: visiblePages.length,
+            visibleText: visiblePage && frameDocument ? renderedTextInPageSlice(frameDocument, visiblePage) : ''
+        };
+
+        function renderedTextInPageSlice(pageDocument: Document, page: HTMLElement): string {
+            const viewport = page.querySelector<HTMLElement>('.odf-page-content-viewport');
+            const content = page.querySelector<HTMLElement>('.odf-page-content');
+            if (!viewport || !content) return '';
+
+            const viewportRect = viewport.getBoundingClientRect();
+            const walker = pageDocument.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+            const values: string[] = [];
+            let node = walker.nextNode();
+            while (node) {
+                const text = node.textContent?.trim() ?? '';
+                if (text) {
+                    const range = pageDocument.createRange();
+                    range.selectNodeContents(node);
+                    const isVisible = Array.from(range.getClientRects()).some(rect => (
+                        rect.width > 1 &&
+                        rect.height > 3 &&
+                        rect.bottom > viewportRect.top &&
+                        rect.top < viewportRect.bottom
+                    ));
+                    if (isVisible) values.push(text);
+                    range.detach();
+                }
+                node = walker.nextNode();
+            }
+            return values.join(' ').replace(/\s+/g, ' ').slice(0, 500);
+        }
+    });
+}
+
 async function getOdtTextClipState(): Promise<OdtTextClipState> {
     return browser.execute(() => {
         const frame = document.querySelector('iframe.pem-pandoc-odt-preview') as HTMLIFrameElement | null;
@@ -508,6 +780,77 @@ async function getOdtTextClipState(): Promise<OdtTextClipState> {
             return rect.top < viewportRect.top - 0.5 || rect.bottom > viewportRect.bottom + 0.5;
         }
     });
+}
+
+async function setPreviewPage(pageNumber: number): Promise<void> {
+    await browser.execute((nextPage: number) => {
+        const input = document.querySelector<HTMLInputElement>('.pem-pandoc-paged-preview-page-controls input');
+        if (!input) {
+            throw new Error('Preview page input was not found.');
+        }
+        input.value = String(nextPage);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, pageNumber);
+}
+
+async function hoverPreviewSide(side: 'left' | 'right'): Promise<void> {
+    const zone = await browser.$(`.pem-pandoc-paged-preview-side-nav-zone.is-${side}`);
+    await zone.moveTo();
+}
+
+async function getSideNavState(): Promise<SideNavState> {
+    return browser.execute(() => {
+        const host = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview');
+        const viewport = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport-shell');
+        const scrollViewport = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport');
+        const previous = document.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-left');
+        const next = document.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-right');
+        const total = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-page-total');
+
+        if (!host || !viewport || !scrollViewport || !previous || !next) {
+            throw new Error('Preview side navigation was not found.');
+        }
+
+        return {
+            pageCount: Number.parseInt(total?.textContent?.replace(/\D+/g, '') ?? '1', 10),
+            hostRect: rectState(host.getBoundingClientRect()),
+            viewportRect: rectState(viewport.getBoundingClientRect()),
+            viewportScrollLeft: scrollViewport.scrollLeft,
+            previous: buttonState(previous),
+            next: buttonState(next)
+        };
+
+        function buttonState(button: HTMLButtonElement): SideNavButtonState {
+            const style = window.getComputedStyle(button);
+            return {
+                disabled: button.disabled,
+                opacity: style.opacity,
+                pointerEvents: style.pointerEvents,
+                rect: rectState(button.getBoundingClientRect()),
+                svgCount: button.querySelectorAll('svg').length,
+                text: button.textContent ?? ''
+            };
+        }
+
+        function rectState(rect: DOMRect): RectState {
+            return {
+                left: rect.left,
+                right: rect.right,
+                width: rect.width
+            };
+        }
+    });
+}
+
+async function scrollPreviewViewportHorizontally(): Promise<SideNavState> {
+    await browser.execute(() => {
+        const viewport = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport');
+        if (!viewport) {
+            throw new Error('Preview scroll viewport was not found.');
+        }
+        viewport.scrollLeft = viewport.scrollWidth;
+    });
+    return getSideNavState();
 }
 
 async function executeCommandBySuffix(suffix: string): Promise<void> {

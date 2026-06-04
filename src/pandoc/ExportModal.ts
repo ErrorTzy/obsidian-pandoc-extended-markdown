@@ -68,6 +68,7 @@ export class PandocExportModal extends Modal {
     private overwrite = false;
     private previewEl?: HTMLElement;
     private previewStatusEl?: HTMLElement;
+    private previewRefreshButtonEl?: HTMLButtonElement;
     private previewBodyEl?: HTMLElement;
     private previewManager?: PandocPreviewManager;
     private refreshTimer?: number;
@@ -130,6 +131,7 @@ export class PandocExportModal extends Modal {
         const layout = content.createDiv({ cls: 'pem-pandoc-export-preview-layout' });
         const previewPane = renderPreviewPane(layout, () => this.refreshPreviewDebounced(0));
         this.previewStatusEl = previewPane.statusEl;
+        this.previewRefreshButtonEl = previewPane.refreshButtonEl;
         this.previewBodyEl = previewPane.bodyEl;
         const builder = layout.createDiv({ cls: 'pem-pandoc-command-builder pem-pandoc-export-builder' });
         this.previewEl = renderCommandPreview(builder, this.commandPreviewDisplay());
@@ -417,7 +419,20 @@ export class PandocExportModal extends Modal {
 
     private previewDelayMs(): number { return this.plugin.settings.pandocExport?.preview.debounceMs ?? 700; }
 
-    private setPreviewStatus(text: string): void { this.previewStatusEl?.setText(text); }
+    private setPreviewStatus(text: string): void {
+        this.previewStatusEl?.setText(text);
+        this.updatePreviewRefreshButton(text);
+    }
+
+    private updatePreviewRefreshButton(status: string): void {
+        if (!this.previewRefreshButtonEl) return;
+
+        const loading = status === 'Refreshing...' || status === 'Preview pending';
+        this.previewRefreshButtonEl.disabled = loading;
+        this.previewRefreshButtonEl.classList.toggle('is-loading', loading);
+        this.previewRefreshButtonEl.setText(loading ? '' : 'Refresh');
+        this.previewRefreshButtonEl.setAttribute('aria-label', loading ? status : 'Refresh');
+    }
 
     private setPreviewMessage(text: string): void {
         this.previewBodyEl?.empty(); this.previewBodyEl?.createEl('p', { cls: 'pem-pandoc-preview-message', text });

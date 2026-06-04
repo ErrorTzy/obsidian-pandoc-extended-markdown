@@ -51,20 +51,63 @@
     border-bottom: 1px solid var(--background-modifier-border);
     display: grid;
     gap: 8px;
-    grid-template-columns: max-content minmax(0, 1fr) max-content;
-    padding: 8px 10px;
+    grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+    min-height: 38px;
+    padding: 6px 10px;
 }
 
-.pem-pandoc-preview-header h3 {
-    margin: 0;
+.pem-pandoc-preview-toolbar-left,
+.pem-pandoc-preview-toolbar-center,
+.pem-pandoc-preview-toolbar-right {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+}
+
+.pem-pandoc-preview-toolbar-left {
+    justify-content: flex-start;
+}
+
+.pem-pandoc-preview-toolbar-center {
+    justify-content: center;
+}
+
+.pem-pandoc-preview-toolbar-right {
+    justify-content: flex-end;
 }
 
 .pem-pandoc-preview-status {
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
+    height: 1px;
     overflow: hidden;
-    text-overflow: ellipsis;
+    position: absolute;
     white-space: nowrap;
+    width: 1px;
+}
+
+.pem-pandoc-preview-toolbar-right button.is-loading {
+    min-width: 72px;
+    position: relative;
+}
+
+.pem-pandoc-preview-toolbar-right button.is-loading::after {
+    animation: pem-pandoc-preview-spin 0.8s linear infinite;
+    border: 2px solid var(--text-muted);
+    border-right-color: transparent;
+    border-radius: 50%;
+    box-sizing: border-box;
+    content: "";
+    height: 16px;
+    left: calc(50% - 8px);
+    position: absolute;
+    top: calc(50% - 8px);
+    width: 16px;
+}
+
+@keyframes pem-pandoc-preview-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .pem-pandoc-preview-body {
@@ -73,6 +116,181 @@
     overflow-x: hidden;
     overflow-y: auto;
     position: relative;
+}
+
+.pem-pandoc-paged-preview {
+    display: grid;
+    grid-template-rows: minmax(420px, 1fr);
+    height: 100%;
+    min-height: 100%;
+}
+
+.pem-pandoc-paged-preview-topbar {
+    align-items: center;
+    border-bottom: 1px solid var(--background-modifier-border);
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    padding: 8px;
+}
+
+.pem-pandoc-paged-preview-zoom,
+.pem-pandoc-paged-preview-page-controls,
+.pem-pandoc-paged-preview-bottombar {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.pem-pandoc-paged-preview-zoom {
+    justify-self: start;
+}
+
+.pem-pandoc-paged-preview-page-controls {
+    justify-self: center;
+}
+
+.pem-pandoc-paged-preview-zoom button {
+    min-width: 32px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.pem-pandoc-paged-preview-page-controls input {
+    width: 64px;
+}
+
+.pem-pandoc-paged-preview-page-label,
+.pem-pandoc-paged-preview-page-total,
+.pem-pandoc-paged-preview-zoom-value {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    white-space: nowrap;
+}
+
+.pem-pandoc-paged-preview-viewport-shell {
+    background: var(--background-secondary);
+    box-sizing: border-box;
+    min-height: 420px;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.pem-pandoc-paged-preview-viewport {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 420px;
+    min-width: 0;
+    overflow: auto;
+    padding: 14px;
+    position: relative;
+}
+
+.pem-pandoc-paged-preview-stage {
+    margin: 0 auto;
+    max-width: none;
+    transform-origin: top center;
+    width: max-content;
+    zoom: var(--pem-pandoc-preview-zoom, 1);
+}
+
+.pem-pandoc-scrollable-page {
+    background: white;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+    box-sizing: border-box;
+    max-width: none;
+    overflow: auto;
+}
+
+.pem-pandoc-paged-preview-stage > .pem-pandoc-odt-preview {
+    height: var(--pem-pandoc-page-height);
+    max-width: none;
+    overflow: hidden;
+    width: var(--pem-pandoc-page-width);
+}
+
+.pem-pandoc-paged-preview .is-hidden {
+    display: none !important;
+}
+
+.pem-pandoc-paged-preview-side-nav-overlay {
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+}
+
+.pem-pandoc-paged-preview-side-nav-zone {
+    bottom: 0;
+    pointer-events: auto;
+    position: absolute;
+    top: 0;
+    width: 20%;
+}
+
+.pem-pandoc-paged-preview-side-nav-zone.is-left {
+    left: 0;
+}
+
+.pem-pandoc-paged-preview-side-nav-zone.is-right {
+    right: 0;
+}
+
+.pem-pandoc-paged-preview-side-nav {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--text-muted);
+    height: 112px;
+    line-height: 1;
+    opacity: 0;
+    padding: 0;
+    pointer-events: none;
+    position: absolute;
+    top: calc(50% - 56px);
+    transition: opacity 120ms ease;
+    width: 72px;
+    z-index: 2;
+}
+
+.pem-pandoc-paged-preview-side-nav svg {
+    height: 64px;
+    width: 64px;
+}
+
+.pem-pandoc-paged-preview-side-nav.is-left {
+    left: 8px;
+}
+
+.pem-pandoc-paged-preview-side-nav.is-right {
+    right: 8px;
+}
+
+.pem-pandoc-paged-preview.is-hovering-left .pem-pandoc-paged-preview-side-nav.is-left:not(:disabled),
+.pem-pandoc-paged-preview.is-hovering-right .pem-pandoc-paged-preview-side-nav.is-right:not(:disabled) {
+    opacity: 0.42;
+    pointer-events: auto;
+}
+
+.pem-pandoc-paged-preview-side-nav:disabled {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+.pem-pandoc-paged-preview-side-nav:hover:not(:disabled) {
+    opacity: 0.72 !important;
+}
+
+.pem-pandoc-paged-preview-stage > .pem-pandoc-docx-preview {
+    background: transparent;
+    overflow: visible;
+    padding: 0;
+}
+
+.pem-pandoc-paged-preview .pem-pandoc-pptx-page-shell {
+    max-width: none;
+    width: var(--pem-pandoc-page-width);
 }
 
 .pem-pandoc-preview-frame,
