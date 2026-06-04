@@ -6,7 +6,7 @@ import {
     PandocPresetManager,
     validateProfileDraftNames
 } from '../../../src/pandoc';
-import type { ExportProfile } from '../../../src/pandoc/types';
+import type { ExportProfile } from '../../../src/pandoc/core/export/types';
 
 describe('Pandoc preset manager', () => {
     it('creates new presets with unique user-facing names and hidden ids', () => {

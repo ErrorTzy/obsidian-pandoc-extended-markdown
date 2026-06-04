@@ -29,7 +29,7 @@ import { createListAutocompletionKeymap } from '../editor-extensions/listAutocom
 import { pluginStateManager } from './state/pluginStateManager';
 import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
 import { registerPandocExportCommands } from '../pandoc/registerPandocCommands';
-import { releaseBundledPandocLuaFilters } from '../pandoc/resources';
+import { releaseBundledPandocLuaFilters } from '../pandoc/gui/obsidian/workspace/resources';
 
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;

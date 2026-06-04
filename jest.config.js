@@ -2,7 +2,9 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   moduleNameMapper: {
-    'obsidian': '<rootDir>/__mocks__/obsidian.ts',
+    '^.*__mocks__/obsidian$': '<rootDir>/__mocks__/obsidian.ts',
+    '^.*obsidian-extended$': '<rootDir>/__mocks__/obsidian.ts',
+    '^obsidian$': '<rootDir>/__mocks__/obsidian.ts',
     '\\.lua$': '<rootDir>/__mocks__/luaFilter.ts',
     '@codemirror/state': '<rootDir>/__mocks__/codemirror.ts',
     '@codemirror/view': '<rootDir>/__mocks__/codemirror.ts',

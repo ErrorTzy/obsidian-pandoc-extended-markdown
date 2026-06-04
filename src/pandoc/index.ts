@@ -1,49 +1,36 @@
-export { buildPandocConvertArgs } from './pandocArgs';
-export { splitCommandLineArgs } from './argParser';
-export { buildPandocEnv } from './environment';
+export { buildPandocConvertArgs } from './core/args/pandocArgs';
+export { splitCommandLineArgs } from './core/args/argParser';
+export { buildPandocEnv } from './core/export/environment';
 export {
     DEFAULT_EXPORT_PROFILES,
     DEFAULT_PANDOC_EXPORT_SETTINGS
-} from './defaultProfiles';
+} from './core/settings/defaultProfiles';
 export {
     PandocExportManager,
     createPandocExportRequestFromFile
 } from './PandocExportManager';
-export { buildPandocProfileArgs } from './profileArgs';
-export { overridePandocOutputArgs } from './previewOutput';
-export { normalizePandocExportSettings } from './settings';
+export { buildPandocProfileArgs } from './core/args/profileArgs';
+export { overridePandocOutputArgs } from './core/args/previewOutput';
+export { normalizePandocExportSettings } from './core/settings/settings';
 export {
     buildExportVariables
-} from './variables';
-export {
-    buildOptionDisplayExportVariables,
-    buildPreviewExportVariables
-} from './previewVariables';
+} from './core/export/variables';
 export {
     renderExportTemplate,
     getExportTemplateVariableNames,
     renderExportTemplates
-} from './template';
+} from './core/templates/template';
 export {
     buildTemplateVariableContext,
     getRuntimeEnv
-} from './templateVariables';
+} from './core/templates/templateVariables';
 export {
     DEFAULT_PANDOC_EXECUTABLE,
     getPandocVersionLine,
     normalizePandocExecutable,
     parsePandocVersion
-} from './pandocPath';
-export { PandocService, runPandocProcess } from './PandocService';
-export { PandocPreviewManager } from './previewManager';
-export {
-    renderPreviewFile,
-    selectPreviewRenderer
-} from './previewRenderers';
-export {
-    installOdtPreviewAddon,
-    removeOdtPreviewAddon
-} from './odtPreviewAddon';
+} from './core/args/pandocPath';
+export { PandocService, runPandocProcess } from './os/common';
 export {
     PandocCatalogService,
     buildProfileDraftPreview,
@@ -61,7 +48,7 @@ export {
     searchOptions,
     validateProfileDraft,
     validateProfileDraftNames
-} from './gui-core';
+} from './core';
 export type {
     PandocCommandOptions,
     PandocConvertRequest,
@@ -80,7 +67,7 @@ export type {
     PandocRunResult,
     PandocServiceConfig,
     PandocVersionInfo
-} from './types';
+} from './core/export/types';
 export type {
     CommandPreview,
     OptionSpec,
@@ -89,11 +76,11 @@ export type {
     ProfileDraft,
     ProfileOptionRow,
     ValidationIssue
-} from './gui-core';
+} from './core';
 export type {
     BuildExportVariablesRequest,
     ExportVariableFile
-} from './variables';
+} from './core/export/variables';
 export type {
     TemplateVariableContext
-} from './templateVariables';
+} from './core/templates/templateVariables';

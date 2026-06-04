@@ -5,7 +5,7 @@ import {
     extractDocxPageSizes,
     extractOdtPageSizes,
     extractPptxPageSize
-} from '../../../src/pandoc/previewPageMetadata';
+} from '../../../src/pandoc/gui/obsidian/renderers/previewPageMetadata';
 
 describe('preview page metadata', () => {
     it('extracts DOCX page sizes from section properties', () => {

@@ -1,5 +1,5 @@
-import type { PandocOptionCatalog } from '../../../src/pandoc/gui-core';
-import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/gui-core';
+import type { PandocOptionCatalog } from '../../../src/pandoc/core';
+import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/core';
 
 export const FORMAT_EXTENSION_FIXTURE_CATALOG: PandocOptionCatalog = {
     ...FALLBACK_PANDOC_CATALOG,

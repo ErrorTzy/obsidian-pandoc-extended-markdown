@@ -10,6 +10,7 @@ This folder holds the detailed documentation for Pandoc Extended Markdown. The r
 - [List panel](list-panel.md): how the sidebar panel works and what each panel shows.
 - [Pandoc export](pandoc-export.md): how to use the bundled Lua filters with Pandoc.
 - [Pandoc variables and Lua filters](pandoc-variables-and-filters.md): export template variables, resource paths, and bundled filter deployment.
+- [Pandoc architecture proposal](pandoc-architecture.md): GUI-agnostic target architecture for the optional Pandoc export module.
 
 ## Development
 

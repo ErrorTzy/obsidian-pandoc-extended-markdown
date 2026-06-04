@@ -4,7 +4,7 @@ import { zipSync } from 'fflate';
 import {
     renderPreviewFile,
     selectPreviewRenderer
-} from '../../../src/pandoc';
+} from '../../../src/pandoc/gui/obsidian/renderers/previewRenderers';
 
 describe('selectPreviewRenderer', () => {
     it('uses HTML preview for HTML and slide formats', () => {

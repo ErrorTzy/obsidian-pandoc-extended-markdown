@@ -22,7 +22,7 @@ import { PANEL_SETTINGS, SETTINGS_UI } from './constants';
 import { VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
 import { OrderedListOrderControl } from './settingsOrderedListOrder';
 import { UnorderedListOrderControl } from './settingsUnorderedListOrder';
-import { renderPandocExportSettingsSection } from './pandocExportSettingsSection';
+import { renderPandocExportSettingsSection } from '../pandoc/pandocExportSettingsSection';
 
 export type { PandocExtendedMarkdownSettings };
 export {

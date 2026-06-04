@@ -2,10 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
     buildExportVariables,
-    buildOptionDisplayExportVariables,
-    buildPreviewExportVariables,
     renderExportTemplate
 } from '../../../src/pandoc';
+import {
+    buildOptionDisplayExportVariables,
+    buildPreviewExportVariables
+} from '../../../src/pandoc/gui/obsidian/workspace/previewVariables';
 
 describe('export variables', () => {
     it('resolves vault, current file, output, plugin, filter, attachment, and embed paths', () => {

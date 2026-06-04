@@ -13,8 +13,8 @@ import {
     normalizeUnorderedListMarkerOrder
 } from './unorderedListTypes';
 import { FencedDivReference } from './fencedDivTypes';
-import { normalizePandocExportSettings } from '../../pandoc/settings';
-import type { PandocExportSettings } from '../../pandoc/types';
+import { normalizePandocExportSettings } from '../../pandoc/core/settings/settings';
+import type { PandocExportSettings } from '../../pandoc/core/export/types';
 
 /**
  * View modes supported by the plugin

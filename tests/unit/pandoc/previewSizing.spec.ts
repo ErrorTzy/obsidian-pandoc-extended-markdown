@@ -4,7 +4,7 @@ import {
     calculateViewportFitScale,
     calculateNaturalPageSlices,
     installDocxPreviewFit
-} from '../../../src/pandoc/previewSizing';
+} from '../../../src/pandoc/gui/obsidian/renderers/previewSizing';
 
 describe('calculateViewportFitScale', () => {
     it('uses the smaller width or height scale to avoid viewport overflow', () => {

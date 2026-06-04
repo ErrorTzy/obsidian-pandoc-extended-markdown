@@ -4,13 +4,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { App } from 'obsidian';
 
-import { PandocFormatEditorModal } from '../../../src/pandoc/PandocFormatEditor';
-import { renderPandocRows } from '../../../src/pandoc/PandocCommandRows';
-import { PandocOptionSearchModal } from '../../../src/pandoc/PandocOptionSearchModal';
-import { buildTemplateVariableContext } from '../../../src/pandoc/templateVariables';
-import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/gui-core';
-import type { ProfileDraft } from '../../../src/pandoc/gui-core';
-import type { ExportVariables } from '../../../src/pandoc/types';
+import { PandocFormatEditorModal } from '../../../src/pandoc/gui/obsidian/modals/PandocFormatEditor';
+import { renderPandocRows } from '../../../src/pandoc/gui/obsidian/modals/PandocCommandRows';
+import { PandocOptionSearchModal } from '../../../src/pandoc/gui/obsidian/modals/PandocOptionSearchModal';
+import { buildTemplateVariableContext } from '../../../src/pandoc/core/templates/templateVariables';
+import { FALLBACK_PANDOC_CATALOG } from '../../../src/pandoc/core';
+import type { ProfileDraft } from '../../../src/pandoc/core';
+import type { ExportVariables } from '../../../src/pandoc/core/export/types';
 import { FORMAT_EXTENSION_FIXTURE_CATALOG } from './formatExtensionFixture';
 
 const variables: ExportVariables = {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { PreviewPager } from '../../../src/pandoc/previewControls';
+import { PreviewPager } from '../../../src/pandoc/gui/obsidian/renderers/previewControls';
 
 describe('PreviewPager', () => {
     it('counts the viewport-fitted size as 100%', () => {

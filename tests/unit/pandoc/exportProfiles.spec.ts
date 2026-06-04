@@ -7,7 +7,7 @@ import {
     DEFAULT_EXPORT_PROFILES,
     splitCommandLineArgs
 } from '../../../src/pandoc';
-import { ExportVariables, PandocExportProfile } from '../../../src/pandoc/types';
+import type { ExportVariables, PandocExportProfile } from '../../../src/pandoc/core/export/types';
 
 const variables: ExportVariables = {
     vaultDir: '/vault',
@@ -140,15 +140,17 @@ describe('export profiles', () => {
         ]));
     });
 
-    it('merges platform defaults, user env, and runtime variables', () => {
+    it('merges injected platform defaults, user env, and runtime variables', () => {
         const env = buildPandocEnv({
             TEXINPUTS: '${pluginDir}/tex:',
             CUSTOM_OUT: '${outputPath}'
-        }, variables);
+        }, variables, {
+            PATH: '/opt/homebrew/bin:${PATH}'
+        });
 
         expect(env.TEXINPUTS).toBe('/plugin/tex:');
         expect(env.CUSTOM_OUT).toBe('/exports/note.html');
-        expect(env.PATH).toBeDefined();
+        expect(env.PATH).toContain('/opt/homebrew/bin');
     });
 
     it('resolves opted-in runtime env variables in profile arguments', () => {

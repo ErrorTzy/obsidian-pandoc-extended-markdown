@@ -5,7 +5,7 @@ import { zipSync } from 'fflate';
 import {
     installOdtPreviewAddon,
     removeOdtPreviewAddon
-} from '../../../src/pandoc';
+} from '../../../src/pandoc/odtPreviewAddon';
 
 function sha256(data: Uint8Array): string {
     return createHash('sha256').update(data).digest('hex');

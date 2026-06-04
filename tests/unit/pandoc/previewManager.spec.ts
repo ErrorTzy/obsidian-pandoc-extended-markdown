@@ -2,9 +2,9 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import {
     normalizePandocExportSettings,
-    PandocPreviewManager,
     PandocRunResult
 } from '../../../src/pandoc';
+import { PandocPreviewManager } from '../../../src/pandoc/previewManager';
 
 function resultFor(args: string[] = []): PandocRunResult {
     return {

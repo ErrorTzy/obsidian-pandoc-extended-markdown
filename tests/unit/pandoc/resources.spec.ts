@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { releaseBundledPandocLuaFilters } from '../../../src/pandoc/resources';
+import { releaseBundledPandocLuaFilters } from '../../../src/pandoc/gui/obsidian/workspace/resources';
 
 describe('Pandoc Lua filter resources', () => {
     it('writes bundled filters into the plugin lua_filter directory', async () => {
