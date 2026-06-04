@@ -11,10 +11,12 @@ const DEFAULT_ENV: Record<string, string> = {
 export function buildPandocEnv(
     userEnv: Record<string, string> | undefined,
     variables: ExportVariables,
-    platformEnv: Record<string, string> = {}
+    platformEnv: Record<string, string> = {},
+    runtimeEnv?: Record<string, string | undefined>
 ): Record<string, string> {
     const templateVariables = buildTemplateVariableContext(variables, {
-        includeRuntimeEnv: true
+        includeRuntimeEnv: true,
+        runtimeEnv
     }).variables;
     const merged = {
         ...DEFAULT_ENV,

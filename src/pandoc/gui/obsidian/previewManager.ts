@@ -7,19 +7,13 @@ import type {
     PandocExportRequest,
     PandocExportResult,
     PandocExportSettings,
+    PandocPreviewPlan,
+    PandocPreviewRendererPort,
     PandocPreviewRenderTask,
+    PandocPreviewRenderReaderPort,
     PandocPreviewSessionPort,
     PandocSystemPort
 } from '../../core';
-import {
-    renderPreviewFile,
-    type PandocPreviewRenderer
-} from './renderers/previewRenderers';
-import {
-    DEFAULT_ODT_PAGE_SIZE,
-    extractOdtPageSizes,
-    pageSizeAt
-} from './renderers/previewPageMetadata';
 import type { PandocExportManager } from './export';
 
 export interface PandocPreviewManagerConfig {
@@ -27,14 +21,14 @@ export interface PandocPreviewManagerConfig {
     settings: PandocExportSettings;
     makeTempPath: PandocPreviewSessionPort['makeTempPath'];
     system: Pick<PandocSystemPort, 'readBinary' | 'readText' | 'removeFile'>;
-    renderFile?: typeof renderPreviewFile;
+    renderer?: PandocPreviewRendererPort;
 }
 
 export interface PandocPreviewRefreshRequest {
     request: PandocExportRequest;
     to: string;
     extension: string;
-    container: HTMLElement;
+    renderer?: PandocPreviewRendererPort;
 }
 
 export class PandocPreviewManager {
@@ -50,11 +44,11 @@ export class PandocPreviewManager {
         });
     }
 
-    async refresh(request: PandocPreviewRefreshRequest): Promise<PandocExportResult | undefined> {
+    async refresh(request: PandocPreviewRefreshRequest): Promise<PandocPreviewPlan | undefined> {
         const task = await this.workflow.startPreview(request);
-        if (!isPandocPreviewRenderTask(task)) return task;
+        if (!isPandocPreviewRenderTask(task)) return this.exportResultToPlan(task);
 
-        return this.renderResult(request.container, task);
+        return this.renderResult(task, request.renderer ?? this.config.renderer);
     }
 
     async cleanup(): Promise<void> {
@@ -62,63 +56,14 @@ export class PandocPreviewManager {
     }
 
     private async renderResult(
-        container: HTMLElement,
-        task: PandocPreviewRenderTask
-    ): Promise<PandocExportResult | undefined> {
-        const renderer = task.renderer as PandocPreviewRenderer;
-        if (renderer.kind === 'odt-addon') {
-            try {
-                await this.renderFile(container, task.outputPath, renderer);
-                return task.result;
-            } catch {
-                if (!this.workflow.isCurrentRun(task.run)) return undefined;
-                return this.renderOdtFallbackResult(container, task);
-            }
+        task: PandocPreviewRenderTask,
+        renderer: PandocPreviewRendererPort | undefined
+    ): Promise<PandocPreviewPlan | undefined> {
+        if (!renderer) {
+            return { profile: task.result.profile, error: 'Pandoc preview renderer is not configured.' };
         }
 
-        if (renderer.kind === 'odt-pandoc-fallback') {
-            return this.renderOdtFallbackResult(container, task);
-        }
-
-        if (!this.workflow.isCurrentRun(task.run)) return undefined;
-        await this.renderFile(container, task.outputPath, renderer);
-        return task.result;
-    }
-
-    private async renderOdtFallbackResult(
-        container: HTMLElement,
-        task: PandocPreviewRenderTask
-    ): Promise<PandocExportResult | undefined> {
-        const renderPath = await this.workflow.convertOdtFallback(task.run, task.outputPath);
-        if (!renderPath) return undefined;
-        const pageSize = pageSizeAt(
-            extractOdtPageSizes(await this.readBinary(task.outputPath)),
-            0,
-            DEFAULT_ODT_PAGE_SIZE
-        );
-
-        if (!this.workflow.isCurrentRun(task.run)) return undefined;
-        await this.renderFile(container, renderPath, {
-            kind: 'paged-html',
-            label: 'ODT fallback preview',
-            pageSize
-        });
-
-        return task.result;
-    }
-
-    private async renderFile(
-        container: HTMLElement,
-        filePath: string,
-        renderer: PandocPreviewRenderer
-    ): Promise<void> {
-        await (this.config.renderFile ?? renderPreviewFile)({
-            container,
-            filePath,
-            renderer,
-            readText: path => this.readText(path),
-            readBinary: path => this.readBinary(path)
-        });
+        return this.workflow.renderPreviewTask(task, renderer, this.readerPort());
     }
 
     private async readText(path: string): Promise<string> {
@@ -127,6 +72,23 @@ export class PandocPreviewManager {
 
     private async readBinary(path: string): Promise<Uint8Array> {
         return this.config.system.readBinary(path);
+    }
+
+    private exportResultToPlan(
+        result: PandocExportResult | undefined
+    ): PandocPreviewPlan | undefined {
+        if (!result) return undefined;
+        return {
+            profile: result.profile,
+            error: result.ok ? undefined : result.error ?? 'Pandoc preview failed.'
+        };
+    }
+
+    private readerPort(): PandocPreviewRenderReaderPort {
+        return {
+            readText: path => this.readText(path),
+            readBinary: path => this.readBinary(path)
+        };
     }
 
     private createSessionPort(): PandocPreviewSessionPort {

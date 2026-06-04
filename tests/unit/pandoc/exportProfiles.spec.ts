@@ -146,11 +146,15 @@ describe('export profiles', () => {
             CUSTOM_OUT: '${outputPath}'
         }, variables, {
             PATH: '/opt/homebrew/bin:${PATH}'
+        }, {
+            HOME: '/home/test',
+            PATH: '/usr/bin'
         });
 
         expect(env.TEXINPUTS).toBe('/plugin/tex:');
         expect(env.CUSTOM_OUT).toBe('/exports/note.html');
-        expect(env.PATH).toContain('/opt/homebrew/bin');
+        expect(env.HOME).toBe('/home/test');
+        expect(env.PATH).toBe('/opt/homebrew/bin:/usr/bin');
     });
 
     it('resolves opted-in runtime env variables in profile arguments', () => {
@@ -181,15 +185,15 @@ describe('export profiles', () => {
         ]));
     });
 
-    it('reads runtime env variables when no test env map is injected', () => {
+    it('does not read runtime env variables when no env map is injected', () => {
         try {
             process.env.PEM_RUNTIME_RESOURCE_DIR = '/runtime/resources';
             const context = buildTemplateVariableContext(variables, {
                 includeRuntimeEnv: true
             });
 
-            expect(context.runtimeEnvNames).toContain('PEM_RUNTIME_RESOURCE_DIR');
-            expect(context.variables.PEM_RUNTIME_RESOURCE_DIR).toBe('/runtime/resources');
+            expect(context.runtimeEnvNames).not.toContain('PEM_RUNTIME_RESOURCE_DIR');
+            expect(context.variables.PEM_RUNTIME_RESOURCE_DIR).toBeUndefined();
         } finally {
             delete process.env.PEM_RUNTIME_RESOURCE_DIR;
         }

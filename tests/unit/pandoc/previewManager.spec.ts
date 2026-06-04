@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import {
     normalizePandocExportSettings,
+    PandocPreviewRendererPort,
     PandocRunResult
 } from '../../../src/pandoc';
 import { PandocPreviewManager } from '../../../src/pandoc/previewManager';
@@ -51,14 +52,13 @@ describe('PandocPreviewManager', () => {
                     removed.push(path);
                 }
             },
-            renderFile: async () => undefined
+            renderer: rendererPort()
         });
 
         await manager.refresh({
             request: request(),
             to: 'html',
-            extension: '.html',
-            container: document.createElement('div')
+            extension: '.html'
         });
         await manager.cleanup();
 
@@ -68,7 +68,7 @@ describe('PandocPreviewManager', () => {
 
     it('ignores stale preview runs and removes their temp file', async () => {
         const removed: string[] = [];
-        const renderFile = jest.fn(async () => undefined);
+        const renderer = rendererPort();
         let resolveFirst: ((value: unknown) => void) | undefined;
         const first = new Promise(resolve => {
             resolveFirst = resolve;
@@ -98,28 +98,25 @@ describe('PandocPreviewManager', () => {
                     removed.push(path);
                 }
             },
-            renderFile
+            renderer
         });
 
-        const container = document.createElement('div');
         const stale = manager.refresh({
             request: request(),
             to: 'html',
-            extension: '.html',
-            container
+            extension: '.html'
         });
         const current = manager.refresh({
             request: request(),
             to: 'html',
-            extension: '.html',
-            container
+            extension: '.html'
         });
 
         await current;
         resolveFirst?.(undefined);
         await stale;
 
-        expect(renderFile).toHaveBeenCalledTimes(1);
+        expect(renderer.render).toHaveBeenCalledTimes(1);
         expect(removed).toHaveLength(1);
         expect(removed[0]).toMatch(/-1\.html$/);
     });
@@ -130,11 +127,14 @@ describe('PandocPreviewManager', () => {
             outputPath,
             result: resultFor()
         }));
-        const renderFile = jest.fn(async ({ renderer }: { renderer: { kind: string } }) => {
-            if (renderer.kind === 'odt-addon') {
-                throw new Error('WebODF failed');
-            }
-        });
+        const renderer: PandocPreviewRendererPort = {
+            render: jest.fn(async ({ artifact }) => {
+                if (artifact.kind === 'odt-addon') {
+                    throw new Error('WebODF failed');
+                }
+            })
+        };
+        const render = jest.mocked(renderer.render);
         const settings = normalizePandocExportSettings();
         settings.preview.odtAddon = {
             enabled: true,
@@ -160,25 +160,35 @@ describe('PandocPreviewManager', () => {
                 readBinary: async () => new Uint8Array([1, 2, 3]),
                 removeFile: async () => undefined
             },
-            renderFile
+            renderer
         });
 
         await manager.refresh({
             request: request(),
             to: 'odt',
-            extension: '.odt',
-            container: document.createElement('div')
+            extension: '.odt'
         });
 
         expect(convertPreviewFile).toHaveBeenCalledTimes(1);
-        expect(renderFile).toHaveBeenCalledTimes(2);
-        expect(renderFile.mock.calls[0][0]).toMatchObject({
-            filePath: expect.stringMatching(/-1\.odt$/),
-            renderer: { kind: 'odt-addon' }
+        expect(render).toHaveBeenCalledTimes(2);
+        expect(render.mock.calls[0][0]).toMatchObject({
+            artifact: {
+                filePath: expect.stringMatching(/-1\.odt$/),
+                kind: 'odt-addon'
+            }
         });
-        expect(renderFile.mock.calls[1][0]).toMatchObject({
-            filePath: expect.stringMatching(/-1\.html$/),
-            renderer: { kind: 'paged-html' }
+        expect(render.mock.calls[1][0]).toMatchObject({
+            artifact: {
+                filePath: expect.stringMatching(/-1\.html$/),
+                kind: 'paged-html',
+                sourcePath: expect.stringMatching(/-1\.odt$/)
+            }
         });
     });
 });
+
+function rendererPort(): PandocPreviewRendererPort {
+    return {
+        render: jest.fn(async () => undefined)
+    };
+}

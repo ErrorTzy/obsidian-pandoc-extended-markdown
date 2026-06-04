@@ -118,13 +118,25 @@ describe('Pandoc profile editor layout', () => {
         expect(blurredValue).not.toContain('${');
 
         await focusFirstResourcePathInput();
-        expect(await getFirstResourcePathInputValue()).toBe('${currentDir}');
+        await browser.waitUntil(async () =>
+            await getFirstResourcePathInputValue() === '${currentDir}', {
+            timeout: 5000,
+            timeoutMsg: 'Expected focused resource path to show the raw template variable'
+        });
 
         await blurFirstResourcePathInput();
-        expect(await getFirstResourcePathInputValue()).toBe(blurredValue);
+        await browser.waitUntil(async () =>
+            await getFirstResourcePathInputValue() === blurredValue, {
+            timeout: 5000,
+            timeoutMsg: 'Expected blurred resource path to show the expanded value'
+        });
 
         await typeFirstResourcePathValue('$');
-        expect(await getVariableSuggestionText()).toContain('${currentDir}');
+        await browser.waitUntil(async () =>
+            (await getVariableSuggestionText()).includes('${currentDir}'), {
+            timeout: 5000,
+            timeoutMsg: 'Expected currentDir variable suggestion'
+        });
         const variableSuggestions = await getVariableSuggestions();
         expect(variableSuggestions.some(suggestion =>
             suggestion.name === '${currentDir}' && suggestion.value === blurredValue)).toBe(true);
@@ -154,10 +166,18 @@ describe('Pandoc profile editor layout', () => {
         });
 
         await typeFirstResourcePathValue('/tmp/pandoc-export-profile/very/deep/path/with/a/long/chain/of/directories/that/forces/overflow/final-output-name.html');
+        await browser.waitUntil(async () =>
+            (await getFirstResourcePathInputValue()).includes('final-output-name.html'), {
+            timeout: 5000,
+            timeoutMsg: 'Expected long resource path value to be applied'
+        });
         await blurFirstResourcePathInput();
         await browser.waitUntil(async () => {
             const state = await getFirstResourcePathOverflowState();
-            return state.overflows && state.scrollLeft > 0;
+            return state.overflows &&
+                state.scrollLeft > 0 &&
+                state.displayContentClipsLeft &&
+                state.displayContentRightDelta <= 1;
         }, {
             timeout: 5000,
             timeoutMsg: 'Expected resource path value to overflow on the left'
@@ -194,15 +214,32 @@ async function configurePandocExport(options: {
         if (!plugin?.settings) {
             throw new Error('Pandoc Extended Markdown plugin did not load.');
         }
+        const profiles = [{
+            id: 'html',
+            name: 'HTML',
+            type: 'pandoc',
+            to: 'html',
+            extension: '.html',
+            standalone: true,
+            resourcePaths: ['${currentDir}', '${attachmentFolderPath}', '${vaultDir}', '${embedDirs}'],
+            luaFilters: ['${luaFilterDir}/FencedDivExtendedSyntax.lua', '${luaFilterDir}/CustomLabelList.lua'],
+            extraArgs: [
+                '--embed-resources',
+                '--metadata',
+                'title=${currentFileName}',
+                '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js'
+            ]
+        }];
 
         plugin.settings.pandocExport = {
             ...(plugin.settings.pandocExport ?? {}),
             enabled: true,
             pandocPath: '',
+            lastExportProfileId: 'html',
+            profiles,
             showProgress: false,
             suggestRuntimeEnvVariables: nextOptions.suggestRuntimeEnvVariables ?? false
         };
-        await plugin.saveSettings();
     }, options);
 }
 
@@ -363,6 +400,7 @@ async function focusFirstResourcePathInput(): Promise<void> {
         const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
         if (!input) throw new Error('Resource path value input not found.');
         input.focus();
+        input.dispatchEvent(new FocusEvent('focus'));
     });
 }
 
@@ -375,6 +413,7 @@ async function blurFirstResourcePathInput(): Promise<void> {
         const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
         if (!input) throw new Error('Resource path value input not found.');
         input.blur();
+        input.dispatchEvent(new FocusEvent('blur'));
     });
 }
 
@@ -387,6 +426,7 @@ async function typeFirstResourcePathValue(value: string): Promise<void> {
         const input = row?.querySelector('.pem-pandoc-value-cell input') as HTMLInputElement | null;
         if (!input) throw new Error('Resource path value input not found.');
         input.focus();
+        input.dispatchEvent(new FocusEvent('focus'));
         input.value = nextValue;
         input.setSelectionRange(nextValue.length, nextValue.length);
         input.dispatchEvent(new InputEvent('input', { bubbles: true }));

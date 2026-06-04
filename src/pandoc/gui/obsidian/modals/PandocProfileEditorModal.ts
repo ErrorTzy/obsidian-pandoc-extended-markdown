@@ -343,13 +343,15 @@ export class PandocProfileEditorModal extends Modal {
 
     private buildPreviewTemplateVariableContext(draft: ProfileDraft) {
         return buildTemplateVariableContext(this.buildPreviewVariables(draft), {
-            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true,
+            runtimeEnv: this.dependencies.runtimeEnv
         });
     }
 
     private buildOptionDisplayTemplateVariableContext(draft: ProfileDraft) {
         return buildTemplateVariableContext(this.buildOptionDisplayVariables(draft), {
-            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true,
+            runtimeEnv: this.dependencies.runtimeEnv
         });
     }
 

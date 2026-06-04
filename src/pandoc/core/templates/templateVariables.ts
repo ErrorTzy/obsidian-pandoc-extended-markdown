@@ -20,7 +20,7 @@ export function buildTemplateVariableContext(
     const builtInNames = validVariableNames(variables);
     const builtInNameSet = new Set(builtInNames);
     const runtimeEnv = options.includeRuntimeEnv ?
-        options.runtimeEnv ? normalizeRuntimeEnv(options.runtimeEnv) : getRuntimeEnv() :
+        normalizeRuntimeEnv(options.runtimeEnv) :
         {};
     const runtimeEnvNames = validVariableNames(runtimeEnv)
         .filter(name => !builtInNameSet.has(name))
@@ -34,19 +34,6 @@ export function buildTemplateVariableContext(
         builtInNames,
         runtimeEnvNames
     };
-}
-
-export function getRuntimeEnv(): Record<string, string> {
-    const processLike = getRuntimeProcess();
-
-    return normalizeRuntimeEnv(processLike?.env);
-}
-
-function getRuntimeProcess(): { env?: Record<string, string | undefined> } | undefined {
-    const processLike = globalThis as typeof globalThis & {
-        process?: { env?: Record<string, string | undefined> };
-    };
-    return processLike.process?.env ? processLike.process : undefined;
 }
 
 function normalizeRuntimeEnv(env?: Record<string, string | undefined>): Record<string, string> {

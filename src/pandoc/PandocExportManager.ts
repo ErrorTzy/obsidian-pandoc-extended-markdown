@@ -13,7 +13,7 @@ import type {
 } from './obsidianDependencies';
 
 export interface PandocExportManagerConfig
-    extends Omit<ObsidianPandocExportManagerConfig, 'platformEnvDefaults' | 'system' | 'user'>,
+    extends Omit<ObsidianPandocExportManagerConfig, 'platformEnvDefaults' | 'runtimeEnv' | 'system' | 'user'>,
     ObsidianPandocOsDependencyConfig {
 }
 
@@ -23,6 +23,7 @@ export class PandocExportManager extends ObsidianPandocExportManager {
         super({
             ...config,
             platformEnvDefaults: dependencies.platformEnvDefaults,
+            runtimeEnv: dependencies.runtimeEnv,
             system: dependencies.system,
             user: dependencies.user
         });

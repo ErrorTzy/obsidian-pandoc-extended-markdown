@@ -283,7 +283,8 @@ export class PandocExportModal extends Modal {
             outputFileName,
             this.pathDelimiter()
         ), {
-            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true,
+            runtimeEnv: this.dependencies.runtimeEnv
         }).variables;
         return this.controller!.exportRequest(this.currentFile, variables);
     }
@@ -296,13 +297,15 @@ export class PandocExportModal extends Modal {
 
     private buildTemplateContext(draft: ProfileDraft) {
         return buildTemplateVariableContext(this.buildVariables(), {
-            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true,
+            runtimeEnv: this.dependencies.runtimeEnv
         });
     }
 
     private buildDisplayTemplateContext(draft: ProfileDraft) {
         return buildTemplateVariableContext(this.buildDisplayVariables(draft), {
-            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true
+            includeRuntimeEnv: this.plugin.settings.pandocExport?.suggestRuntimeEnvVariables === true,
+            runtimeEnv: this.dependencies.runtimeEnv
         });
     }
 

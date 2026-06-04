@@ -136,6 +136,7 @@ export type {
     PandocCommandPreviewPlatform
 } from './preview';
 export {
+    createPreviewArtifact,
     selectPreviewRendererPlan
 } from './preview/previewArtifact';
 export type {
@@ -156,6 +157,7 @@ export {
 } from './preview/previewWorkflow';
 export type {
     PandocPreviewExportPort,
+    PandocPreviewRenderReaderPort,
     PandocPreviewRenderTask,
     PandocPreviewWorkflowConfig,
     StartPandocPreviewRequest
@@ -215,7 +217,6 @@ export {
 } from './templates/template';
 export {
     buildTemplateVariableContext,
-    getRuntimeEnv,
     TEMPLATE_VARIABLE_NAME
 } from './templates/templateVariables';
 export type {

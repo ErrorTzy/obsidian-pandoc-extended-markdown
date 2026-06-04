@@ -126,6 +126,9 @@ export interface PandocPreviewArtifact {
     kind: PandocPreviewArtifactKind;
     label: string;
     filePath: string;
+    sourcePath?: string;
+    addonInstallPath?: string;
+    addonVersion?: string;
     pageSize?: PandocPreviewPageSize;
 }
 

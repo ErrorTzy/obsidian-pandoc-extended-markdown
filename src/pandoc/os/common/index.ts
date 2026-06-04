@@ -9,6 +9,7 @@ export type {
     PandocDesktopAdapter
 } from './desktopAdapter';
 export {
+    getPandocRuntimeEnv,
     getPandocPlatformEnvDefaults
 } from './environment';
 export {

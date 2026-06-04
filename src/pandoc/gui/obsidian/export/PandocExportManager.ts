@@ -29,6 +29,7 @@ export interface PandocExportManagerConfig {
     system: PandocExportSystemPort & Pick<PandocSystemPort, 'pathDelimiter' | 'platform'>;
     saveSettings?: () => Promise<void>;
     platformEnvDefaults?: Record<string, string>;
+    runtimeEnv?: Record<string, string>;
     user?: Partial<PandocExportWorkflowUserPort>;
 }
 
@@ -105,10 +106,12 @@ export class PandocExportManager {
             env: buildPandocEnv(
                 this.config.settings.env,
                 variables,
-                this.config.platformEnvDefaults ?? {}
+                this.config.platformEnvDefaults ?? {},
+                this.config.runtimeEnv
             ),
             templateVariables: buildTemplateVariableContext(variables, {
-                includeRuntimeEnv: this.config.settings.suggestRuntimeEnvVariables
+                includeRuntimeEnv: this.config.settings.suggestRuntimeEnvVariables,
+                runtimeEnv: this.config.runtimeEnv
             }).variables
         };
     }

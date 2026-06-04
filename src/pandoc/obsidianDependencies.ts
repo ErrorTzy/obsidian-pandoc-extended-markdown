@@ -2,6 +2,7 @@ import {
     CommonPandocSystemPort,
     ElectronPandocDesktopAdapter,
     getPandocPlatformEnvDefaults,
+    getPandocRuntimeEnv,
     NodePandocExportFileSystem,
     PandocService,
     createPandocPreviewTempPath,
@@ -29,6 +30,7 @@ export interface ObsidianPandocOsDependencyConfig {
     service?: PandocService;
     shellRunner?: ShellRunner;
     system?: PandocSystemPort;
+    runtimeEnv?: Record<string, string>;
 }
 
 export interface ObsidianPandocOsDependencies {
@@ -36,6 +38,7 @@ export interface ObsidianPandocOsDependencies {
     fileSystem: PandocExportFileSystem;
     gui: ObsidianPandocGuiDependencies;
     platformEnvDefaults: Record<string, string>;
+    runtimeEnv: Record<string, string>;
     system: PandocSystemPort;
     user: PandocExportWorkflowUserPort;
 }
@@ -53,6 +56,7 @@ export function createObsidianPandocOsDependencies(
     const userPort = new ObsidianPandocUserInteractionPort({ desktop });
 
     const platformEnvDefaults = getPandocPlatformEnvDefaults(system.platform());
+    const runtimeEnv = config.runtimeEnv ?? getPandocRuntimeEnv();
     const user: PandocExportWorkflowUserPort = {
         confirmOverwrite: path => userPort.confirmOverwrite(path),
         openOutput: path => userPort.openOutput(path),
@@ -77,6 +81,7 @@ export function createObsidianPandocOsDependencies(
         }),
         pathBrowser: desktop,
         platformEnvDefaults,
+        runtimeEnv,
         removeOdtPreviewAddon: async settings => {
             const { removeOdtPreviewAddon } = await import('./gui/obsidian/workspace/odtPreviewAddon');
             return removeOdtPreviewAddon(settings, fileSystem);
@@ -88,6 +93,7 @@ export function createObsidianPandocOsDependencies(
         fileSystem,
         gui,
         platformEnvDefaults,
+        runtimeEnv,
         system,
         user
     };

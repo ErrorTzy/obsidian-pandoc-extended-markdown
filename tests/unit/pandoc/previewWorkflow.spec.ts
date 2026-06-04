@@ -7,6 +7,7 @@ import {
 } from '../../../src/pandoc/core';
 import type {
     PandocExportRequest,
+    PandocPreviewRendererPort,
     PandocRunResult
 } from '../../../src/pandoc/core';
 
@@ -108,7 +109,71 @@ describe('PandocPreviewWorkflowService', () => {
             outputPath: '/tmp/preview-1.html'
         }]);
     });
+
+    it('hands preview artifacts to a renderer port', async () => {
+        const artifacts: string[] = [];
+        const renderer: PandocPreviewRendererPort = {
+            render: async ({ artifact }) => {
+                artifacts.push(`${artifact.kind}:${artifact.filePath}`);
+            }
+        };
+        const service = createWorkflow();
+        const task = await service.startPreview({
+            request: request(),
+            to: 'html',
+            extension: '.html'
+        });
+        if (!isPandocPreviewRenderTask(task)) throw new Error('Expected render task.');
+
+        const plan = await service.renderPreviewTask(task, renderer, readerPort());
+
+        expect(plan?.artifact).toMatchObject({
+            kind: 'html',
+            label: 'HTML preview',
+            filePath: '/tmp/preview-1.html'
+        });
+        expect(artifacts).toEqual(['html:/tmp/preview-1.html']);
+    });
+
+    it('renders ODT fallback artifacts with the source ODT path', async () => {
+        const artifacts: Array<{ kind: string; filePath: string; sourcePath?: string }> = [];
+        const service = createWorkflow();
+        const task = await service.startPreview({
+            request: request(),
+            to: 'odt',
+            extension: '.odt'
+        });
+        if (!isPandocPreviewRenderTask(task)) throw new Error('Expected render task.');
+
+        const plan = await service.renderPreviewTask(task, {
+            render: async ({ artifact }) => {
+                artifacts.push({
+                    kind: artifact.kind,
+                    filePath: artifact.filePath,
+                    sourcePath: artifact.sourcePath
+                });
+            }
+        }, readerPort());
+
+        expect(plan?.artifact).toMatchObject({
+            kind: 'paged-html',
+            filePath: '/tmp/preview-1.html',
+            sourcePath: '/tmp/preview-1.odt'
+        });
+        expect(artifacts).toEqual([{
+            kind: 'paged-html',
+            filePath: '/tmp/preview-1.html',
+            sourcePath: '/tmp/preview-1.odt'
+        }]);
+    });
 });
+
+function readerPort() {
+    return {
+        readText: async () => '',
+        readBinary: async () => new Uint8Array()
+    };
+}
 
 function createWorkflow(overrides: {
     removed?: string[];

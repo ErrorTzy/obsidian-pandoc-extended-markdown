@@ -1,15 +1,17 @@
 import type {
     PandocPlatformInfo
 } from '../../core';
-import {
-    LINUX_PANDOC_ENV_DEFAULTS
-} from '../linux/environment';
-import {
-    MAC_PANDOC_ENV_DEFAULTS
-} from '../mac/environment';
-import {
-    WINDOWS_PANDOC_ENV_DEFAULTS
-} from '../win/environment';
+
+const LINUX_PANDOC_ENV_DEFAULTS: Record<string, string> = {};
+
+const MAC_PANDOC_ENV_DEFAULTS: Record<string, string> = {
+    PATH: '/opt/homebrew/bin:/usr/local/bin:/Library/TeX/texbin:${PATH}'
+};
+
+const WINDOWS_PANDOC_ENV_DEFAULTS: Record<string, string> = {
+    PATH: '${HOME}\\AppData\\Local\\Pandoc;${PATH}',
+    TEXINPUTS: '${pluginDir}/textemplate/;'
+};
 
 export function getPandocPlatformEnvDefaults(
     platform: Pick<PandocPlatformInfo, 'os'>
@@ -25,4 +27,27 @@ export function getPandocPlatformEnvDefaults(
     }
 
     return {};
+}
+
+export function getPandocRuntimeEnv(): Record<string, string> {
+    const processLike = globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+    };
+
+    return normalizeRuntimeEnv(processLike.process?.env);
+}
+
+function normalizeRuntimeEnv(env?: Record<string, string | undefined>): Record<string, string> {
+    const result: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(env ?? {})) {
+        if (value !== undefined) {
+            result[key] = value;
+        }
+    }
+    if (!result.HOME && result.USERPROFILE) {
+        result.HOME = result.USERPROFILE;
+    }
+
+    return result;
 }

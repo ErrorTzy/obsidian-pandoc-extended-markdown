@@ -6,6 +6,9 @@ export type {
     PreviewPagerOptions
 } from './previewControls';
 export {
+    ObsidianPandocPreviewRendererPort
+} from './previewRendererPort';
+export {
     renderPreviewFile,
     selectPreviewRenderer
 } from './previewRenderers';

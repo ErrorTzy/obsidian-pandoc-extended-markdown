@@ -1,4 +1,8 @@
 import type { OdtPreviewAddonSettings } from '../export/types';
+import type {
+    PandocPreviewArtifact,
+    PandocPreviewArtifactKind
+} from '../ports';
 
 export type PandocPreviewRendererKind =
     | 'html'
@@ -70,6 +74,25 @@ export function selectPreviewRendererPlan(
     if (normalizedExtension === '.pptx' || normalizedFormat === 'pptx') return { kind: 'pptx', label: 'PPTX preview' };
 
     return { kind: 'unsupported', label: 'Preview unavailable' };
+}
+
+export function createPreviewArtifact(
+    renderer: PandocPreviewRendererPlan,
+    filePath: string,
+    sourcePath?: string
+): PandocPreviewArtifact {
+    return {
+        kind: artifactKindForRenderer(renderer.kind),
+        label: renderer.label,
+        filePath,
+        sourcePath,
+        addonInstallPath: renderer.addonInstallPath,
+        addonVersion: renderer.addonVersion
+    };
+}
+
+function artifactKindForRenderer(kind: PandocPreviewRendererKind): PandocPreviewArtifactKind {
+    return kind === 'odt-pandoc-fallback' ? 'paged-html' : kind;
 }
 
 function selectOdtPreviewRenderer(

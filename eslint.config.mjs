@@ -49,6 +49,16 @@ export default defineConfig([
     {
         files: ['src/pandoc/core/**/*.ts'],
         rules: {
+            'no-restricted-globals': ['error', {
+                name: 'process',
+                message: 'Pandoc core must receive runtime environment through injected ports.'
+            }, {
+                name: 'window',
+                message: 'Pandoc core must not depend on browser globals.'
+            }, {
+                name: 'document',
+                message: 'Pandoc core must not depend on DOM globals.'
+            }],
             'no-restricted-imports': ['error', {
                 paths: [
                     'obsidian',
@@ -99,6 +109,13 @@ export default defineConfig([
                     '../../types',
                     '../../variables',
                 ],
+            }],
+            'no-restricted-syntax': ['error', {
+                selector: "MemberExpression[object.name='globalThis'][property.name=/^(process|window|document)$/]",
+                message: 'Pandoc core must receive host runtime access through injected ports.'
+            }, {
+                selector: "TSTypeReference > Identifier[name=/^(Document|HTMLElement|HTMLButtonElement|HTMLDivElement|Node|Window)$/]",
+                message: 'Pandoc core must not use DOM types.'
             }],
         },
     },

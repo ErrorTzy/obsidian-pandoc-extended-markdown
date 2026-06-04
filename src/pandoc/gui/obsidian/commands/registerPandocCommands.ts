@@ -95,6 +95,7 @@ async function exportActiveFileWithPreviousSettings(
         saveSettings: () => plugin.saveSettings(),
         system: dependencies.exportSystem,
         platformEnvDefaults: dependencies.platformEnvDefaults,
+        runtimeEnv: dependencies.runtimeEnv,
         user: dependencies.exportUser
     });
     const result = await manager.exportFile(createPandocExportRequestFromFile(file, {

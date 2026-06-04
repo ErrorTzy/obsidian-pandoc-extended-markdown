@@ -21,8 +21,7 @@ export {
     renderExportTemplates
 } from './core/templates/template';
 export {
-    buildTemplateVariableContext,
-    getRuntimeEnv
+    buildTemplateVariableContext
 } from './core/templates/templateVariables';
 export {
     DEFAULT_PANDOC_EXECUTABLE,
@@ -30,7 +29,11 @@ export {
     normalizePandocExecutable,
     parsePandocVersion
 } from './core/args/pandocPath';
-export { PandocService, runPandocProcess } from './os/common';
+export {
+    getPandocRuntimeEnv as getRuntimeEnv,
+    PandocService,
+    runPandocProcess
+} from './os/common';
 export {
     PandocCatalogService,
     buildProfileDraftPreview,

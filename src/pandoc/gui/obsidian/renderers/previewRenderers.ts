@@ -15,7 +15,9 @@ import {
     DEFAULT_PPTX_PAGE_SIZE,
     DEFAULT_DOCX_PAGE_SIZE,
     extractDocxPageSizes,
+    extractOdtPageSizes,
     extractPptxPageSize,
+    pageSizeAt,
     type PreviewPageSize
 } from './previewPageMetadata';
 import {
@@ -28,6 +30,7 @@ export type {
 
 export interface PandocPreviewRenderer extends PandocPreviewRendererPlan {
     pageSize?: PreviewPageSize;
+    sourcePath?: string;
 }
 
 export interface PandocPreviewRenderRequest {
@@ -258,7 +261,7 @@ async function renderPptxPreview(request: PandocPreviewRenderRequest): Promise<v
 
 async function renderPagedHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
     const html = await request.readText(request.filePath);
-    const pageSize = request.renderer.pageSize ?? DEFAULT_ODT_PAGE_SIZE;
+    const pageSize = await resolvePagedHtmlPageSize(request);
     const pager = new PreviewPager(request.container);
     const page = createScrollablePage(pager, pageSize, 'pem-pandoc-paged-html-page-preview');
     const iframe = page.createEl('iframe', {
@@ -269,6 +272,17 @@ async function renderPagedHtmlPreview(request: PandocPreviewRenderRequest): Prom
         }
     });
     iframe.srcdoc = pagedHtmlSource(html, pageSize);
+}
+
+async function resolvePagedHtmlPageSize(request: PandocPreviewRenderRequest): Promise<PreviewPageSize> {
+    if (request.renderer.pageSize) return request.renderer.pageSize;
+    if (!request.renderer.sourcePath) return DEFAULT_ODT_PAGE_SIZE;
+
+    return pageSizeAt(
+        extractOdtPageSizes(await request.readBinary(request.renderer.sourcePath)),
+        0,
+        DEFAULT_ODT_PAGE_SIZE
+    );
 }
 
 function applyPageSizeStyle(element: HTMLElement, pageSize: PreviewPageSize): void {
@@ -365,4 +379,3 @@ function renderUnsupportedPreview(container: HTMLElement, label: string): void {
         text: `${label}. Export still works; use an external app to inspect this format.`
     });
 }
-

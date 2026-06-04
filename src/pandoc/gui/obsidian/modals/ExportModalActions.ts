@@ -9,11 +9,12 @@ import {
     type PandocControllerPreviewRequest,
     type PandocCoreExportController,
     type PandocExportSettings,
-    type PandocPreviewArtifactKind,
-    type PandocPreviewPlan,
-    selectPreviewRendererPlan
+    type PandocPreviewPlan
 } from '../../../core';
 import { PandocPreviewManager } from '../previewManager';
+import {
+    ObsidianPandocPreviewRendererPort
+} from '../renderers';
 import type { PandocExportPluginLike } from './ExportModal';
 
 interface ExportModalActionsConfig {
@@ -110,28 +111,10 @@ export class PandocExportModalActions {
             return { error: 'Pandoc preview container is not ready.' };
         }
 
-        const result = await this.getPreviewManager().refresh({ ...request, container });
-        if (!result) return {};
-        if (!result.ok || !result.outputPath) {
-            return {
-                profile: result.profile,
-                error: result.error ?? 'Pandoc preview failed.'
-            };
-        }
-
-        const renderer = selectPreviewRendererPlan(
-            request.to,
-            request.extension,
-            this.settings().preview.odtAddon
-        );
-        return {
-            profile: result.profile,
-            artifact: {
-                kind: artifactKind(renderer.kind),
-                label: renderer.label,
-                filePath: result.outputPath
-            }
-        };
+        return await this.getPreviewManager().refresh({
+            ...request,
+            renderer: new ObsidianPandocPreviewRendererPort(container)
+        }) ?? {};
     }
 
     private getPreviewManager(): PandocPreviewManager {
@@ -180,8 +163,4 @@ export class PandocExportModalActions {
     private settings(): PandocExportSettings {
         return this.config.plugin.settings.pandocExport!;
     }
-}
-
-function artifactKind(kind: string): PandocPreviewArtifactKind {
-    return kind === 'odt-pandoc-fallback' ? 'paged-html' : kind as PandocPreviewArtifactKind;
 }

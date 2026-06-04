@@ -28,6 +28,7 @@ export interface ObsidianPandocGuiDependencies {
     pathBrowser?: PandocPathBrowser;
     platformEnvDefaults?: Record<string, string>;
     removeOdtPreviewAddon(settings: OdtPreviewAddonSettings): Promise<OdtPreviewAddonSettings>;
+    runtimeEnv?: Record<string, string>;
 }
 
 export type OptionalObsidianPandocGuiDependencies = Partial<ObsidianPandocGuiDependencies>;

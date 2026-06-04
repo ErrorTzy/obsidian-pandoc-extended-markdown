@@ -122,6 +122,7 @@ export function createModalExportManager(
         saveSettings: persist ? () => plugin.saveSettings() : undefined,
         system: dependencies.exportSystem,
         platformEnvDefaults: dependencies.platformEnvDefaults,
+        runtimeEnv: dependencies.runtimeEnv,
         user: dependencies.exportUser
     });
 }
