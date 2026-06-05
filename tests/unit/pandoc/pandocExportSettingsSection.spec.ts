@@ -27,6 +27,12 @@ describe('Pandoc export settings section', () => {
             saveSettings
         }, container, dependencies);
 
+        let odtRow = getSettingRow(container, 'ODT preview support');
+        expect(odtRow.textContent).toContain('Not installed');
+        expect(odtRow.querySelector('input[type="checkbox"]')).toBeNull();
+        expect(getButton(odtRow, 'Install').disabled).toBe(false);
+        expect(getButton(odtRow, 'Remove').disabled).toBe(true);
+
         await clickButton(container, 'Install');
 
         expect(dependencies.installOdtPreviewAddon).toHaveBeenCalledWith({
@@ -38,14 +44,10 @@ describe('Pandoc export settings section', () => {
             installPath: '/addons/webodf-test'
         });
         expect(saveSettings).toHaveBeenCalledTimes(1);
-
-        container.innerHTML = '';
-        renderPandocExportSettingsSection({
-            app: createApp(),
-            manifest: { id: 'pandoc-extended-markdown' } as never,
-            settings: { pandocExport: settings } as never,
-            saveSettings
-        }, container, dependencies);
+        odtRow = getSettingRow(container, 'ODT preview support');
+        expect(odtRow.textContent).toContain('Installed (test).');
+        expect(getButton(odtRow, 'Install').disabled).toBe(true);
+        expect(getButton(odtRow, 'Remove').disabled).toBe(false);
 
         await clickButton(container, 'Remove');
 
@@ -57,6 +59,10 @@ describe('Pandoc export settings section', () => {
             status: 'not-installed'
         });
         expect(saveSettings).toHaveBeenCalledTimes(2);
+        odtRow = getSettingRow(container, 'ODT preview support');
+        expect(odtRow.textContent).toContain('Not installed');
+        expect(getButton(odtRow, 'Install').disabled).toBe(false);
+        expect(getButton(odtRow, 'Remove').disabled).toBe(true);
 
         confirmSpy.mockRestore();
     });
@@ -131,10 +137,23 @@ function createRunResult() {
 }
 
 async function clickButton(container: HTMLElement, label: string): Promise<void> {
+    getButton(container, label).click();
+    await Promise.resolve();
+    await Promise.resolve();
+}
+
+function getButton(container: HTMLElement, label: string): HTMLButtonElement {
     const button = Array.from(container.querySelectorAll('button'))
         .find(item => item.textContent === label);
     if (!button) throw new Error(`Button not found: ${label}`);
 
-    button.click();
-    await Promise.resolve();
+    return button;
+}
+
+function getSettingRow(container: HTMLElement, name: string): HTMLElement {
+    const rows = Array.from(container.querySelectorAll<HTMLElement>('.setting-item'));
+    const row = rows.find(item => item.querySelector('.setting-item-name')?.textContent === name);
+    if (!row) throw new Error(`Setting not found: ${name}`);
+
+    return row;
 }

@@ -173,46 +173,50 @@ function renderOdtAddonSettings(
     dependencies: ObsidianPandocGuiDependencies
 ): void {
     const settings = plugin.settings.pandocExport;
-    const addon = settings?.preview.odtAddon;
-    if (!settings || !addon) return;
+    if (!settings?.preview.odtAddon) return;
 
-    new Setting(containerEl)
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
-        .setName('ODT preview support')
-        .setDesc(odtAddonStatusText(addon))
-        .addToggle(toggle => toggle
-            .setValue(addon.enabled && addon.status === 'installed')
-            .onChange(async value => {
-                if (addon.status !== 'installed') {
-                    addon.enabled = false;
-                    return;
-                }
-                addon.enabled = value;
-                await plugin.saveSettings();
-            }))
-        .addButton(button => button
-            .setButtonText('Install')
-            .onClick(async () => {
-                if (addon.status === 'installed') return;
-                if (!confirmOdtAddonInstall()) return;
-                const result = await dependencies.installOdtPreviewAddon({
-                    installDir: getAddonInstallDir(plugin)
-                });
-                settings.preview.odtAddon = result;
-                await plugin.saveSettings();
-                new Notice(result.status === 'installed' ?
-                    'ODT preview support installed.' :
-                    result.lastError ?? 'ODT preview support install failed.');
-            }))
-        .addButton(button => button
-            .setButtonText('Remove')
-            .onClick(async () => {
-                if (addon.status !== 'installed') return;
-                settings.preview.odtAddon = await dependencies.removeOdtPreviewAddon(addon);
-                await plugin.saveSettings();
-                // eslint-disable-next-line obsidianmd/ui/sentence-case
-                new Notice('ODT preview support removed.');
-            }));
+    const wrapper = document.createElement('div');
+    containerEl.appendChild(wrapper);
+
+    const render = (): void => {
+        wrapper.innerHTML = '';
+        const addon = settings.preview.odtAddon;
+
+        new Setting(wrapper)
+            // eslint-disable-next-line obsidianmd/ui/sentence-case
+            .setName('ODT preview support')
+            .setDesc(odtAddonStatusText(addon))
+            .addButton(button => button
+                .setButtonText('Install')
+                .setDisabled(addon.status === 'installed')
+                .onClick(async () => {
+                    if (settings.preview.odtAddon.status === 'installed') return;
+                    if (!confirmOdtAddonInstall()) return;
+                    const result = await dependencies.installOdtPreviewAddon({
+                        installDir: getAddonInstallDir(plugin)
+                    });
+                    settings.preview.odtAddon = result;
+                    await plugin.saveSettings();
+                    render();
+                    new Notice(result.status === 'installed' ?
+                        'ODT preview support installed.' :
+                        result.lastError ?? 'ODT preview support install failed.');
+                }))
+            .addButton(button => button
+                .setButtonText('Remove')
+                .setDisabled(addon.status !== 'installed')
+                .onClick(async () => {
+                    const currentAddon = settings.preview.odtAddon;
+                    if (currentAddon.status !== 'installed') return;
+                    settings.preview.odtAddon = await dependencies.removeOdtPreviewAddon(currentAddon);
+                    await plugin.saveSettings();
+                    render();
+                    // eslint-disable-next-line obsidianmd/ui/sentence-case
+                    new Notice('ODT preview support removed.');
+                }));
+    };
+
+    render();
 }
 
 function odtAddonStatusText(addon: NonNullable<PandocExportSettingsPlugin['settings']['pandocExport']>['preview']['odtAddon']): string {

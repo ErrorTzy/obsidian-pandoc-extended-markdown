@@ -335,6 +335,11 @@ class ButtonComponent {
     return this;
   }
 
+  setDisabled(value: boolean): this {
+    this.buttonEl.disabled = value;
+    return this;
+  }
+
   onClick(callback: () => void | Promise<void>): this {
     this.buttonEl.addEventListener('click', () => {
       void callback();
