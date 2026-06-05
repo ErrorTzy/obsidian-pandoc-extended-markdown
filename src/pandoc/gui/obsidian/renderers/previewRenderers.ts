@@ -11,18 +11,17 @@ import {
     resetPreviewSizing
 } from './previewSizing';
 import {
-    DEFAULT_ODT_PAGE_SIZE,
     DEFAULT_PPTX_PAGE_SIZE,
     DEFAULT_DOCX_PAGE_SIZE,
     extractDocxPageSizes,
-    extractOdtPageSizes,
     extractPptxPageSize,
-    pageSizeAt,
     type PreviewPageSize
 } from './previewPageMetadata';
 import {
     renderOdtAddonPreview
 } from './previewOdtRenderer';
+
+const ODT_FALLBACK_PREVIEW_NOTICE = 'This preview is a fallback. Download odt support in plugin settings for the recommended renderer.';
 
 export type {
     PandocPreviewRendererKind
@@ -101,10 +100,6 @@ export async function renderPreviewFile(request: PandocPreviewRenderRequest): Pr
         await renderPptxPreview(request);
         return;
     }
-    if (renderer.kind === 'paged-html') {
-        await renderPagedHtmlPreview(request);
-        return;
-    }
     if (renderer.kind === 'odt-addon') {
         await renderOdtAddonPreview(request);
         return;
@@ -114,7 +109,11 @@ export async function renderPreviewFile(request: PandocPreviewRenderRequest): Pr
 }
 
 async function renderHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
-    const viewport = createFlowPreview(request.container, 'pem-pandoc-html-flow-preview');
+    const viewport = createFlowPreview(
+        request.container,
+        'pem-pandoc-html-flow-preview',
+        flowPreviewNoticeFor(request.renderer)
+    );
     const iframe = viewport.createEl('iframe', {
         cls: 'pem-pandoc-preview-frame pem-pandoc-flow-preview-frame',
         attr: {
@@ -259,32 +258,6 @@ async function renderPptxPreview(request: PandocPreviewRenderRequest): Promise<v
     await renderSlide(0);
 }
 
-async function renderPagedHtmlPreview(request: PandocPreviewRenderRequest): Promise<void> {
-    const html = await request.readText(request.filePath);
-    const pageSize = await resolvePagedHtmlPageSize(request);
-    const pager = new PreviewPager(request.container);
-    const page = createScrollablePage(pager, pageSize, 'pem-pandoc-paged-html-page-preview');
-    const iframe = page.createEl('iframe', {
-        cls: 'pem-pandoc-preview-frame pem-pandoc-paged-html-preview',
-        attr: {
-            sandbox: '',
-            title: 'Pandoc paged export preview'
-        }
-    });
-    iframe.srcdoc = pagedHtmlSource(html, pageSize);
-}
-
-async function resolvePagedHtmlPageSize(request: PandocPreviewRenderRequest): Promise<PreviewPageSize> {
-    if (request.renderer.pageSize) return request.renderer.pageSize;
-    if (!request.renderer.sourcePath) return DEFAULT_ODT_PAGE_SIZE;
-
-    return pageSizeAt(
-        extractOdtPageSizes(await request.readBinary(request.renderer.sourcePath)),
-        0,
-        DEFAULT_ODT_PAGE_SIZE
-    );
-}
-
 function applyPageSizeStyle(element: HTMLElement, pageSize: PreviewPageSize): void {
     element.style.setProperty('--pem-pandoc-page-width', `${pageSize.widthPx}px`);
     element.style.setProperty('--pem-pandoc-page-height', `${pageSize.heightPx}px`);
@@ -304,9 +277,32 @@ function createScrollablePage(
     return page;
 }
 
-function createFlowPreview(container: HTMLElement, cls: string): HTMLElement {
+function createFlowPreview(container: HTMLElement, cls: string, noticeText?: string): HTMLElement {
     clearPagerToolbar(container);
-    return container.createDiv({ cls: `pem-pandoc-flow-preview ${cls}` });
+    const preview = container.createDiv({
+        cls: `pem-pandoc-flow-preview ${cls}${noticeText ? ' has-notice' : ''}`
+    });
+    if (noticeText) {
+        preview.createEl('div', {
+            cls: 'pem-pandoc-flow-preview-notice',
+            text: noticeText,
+            attr: { 'aria-live': 'polite' }
+        });
+    }
+
+    return preview.createDiv({ cls: 'pem-pandoc-flow-preview-viewport' });
+}
+
+function flowPreviewNoticeFor(renderer: PandocPreviewRenderer): string | undefined {
+    if (
+        renderer.kind === 'html' &&
+        renderer.label === 'ODT fallback preview' &&
+        renderer.sourcePath?.toLowerCase().endsWith('.odt')
+    ) {
+        return ODT_FALLBACK_PREVIEW_NOTICE;
+    }
+
+    return undefined;
 }
 
 function clearPagerToolbar(container: HTMLElement): void {
@@ -320,57 +316,6 @@ function showOnlyPage(root: HTMLElement, selector: string, pageIndex: number): v
         .forEach((page, index) => {
             page.classList.toggle('is-hidden', index !== pageIndex);
         });
-}
-
-function pagedHtmlSource(html: string, pageSize: PreviewPageSize): string {
-    const parsed = parseHtmlDocument(html);
-    const pageWidth = `${pageSize.widthPx.toFixed(2)}px`;
-    const pageHeight = `${pageSize.heightPx.toFixed(2)}px`;
-
-    return `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-${parsed.head}
-<style>
-html {
-    background: #f3f3f3;
-}
-body {
-    box-sizing: border-box;
-    color: #111;
-    margin: 0;
-    min-height: 100vh;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 16px;
-}
-.pem-pandoc-html-page {
-    background: #fff;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
-    box-sizing: border-box;
-    margin: 0 auto 16px;
-    min-height: ${pageHeight};
-    overflow: hidden;
-    padding: 48px;
-    width: min(100%, ${pageWidth});
-}
-</style>
-</head>
-<body>
-<main class="pem-pandoc-html-page">
-${parsed.body}
-</main>
-</body>
-</html>`;
-}
-
-function parseHtmlDocument(html: string): { head: string; body: string } {
-    const parsed = new DOMParser().parseFromString(html, 'text/html');
-    return {
-        head: parsed.head?.innerHTML ?? '',
-        body: parsed.body?.innerHTML ?? html
-    };
 }
 
 function renderUnsupportedPreview(container: HTMLElement, label: string): void {

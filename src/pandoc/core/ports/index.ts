@@ -118,7 +118,6 @@ export type PandocPreviewArtifactKind =
     'docx' |
     'epub' |
     'pptx' |
-    'paged-html' |
     'odt-addon' |
     'unsupported';
 

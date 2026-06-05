@@ -27,7 +27,8 @@ export interface PandocPreviewExportPort {
         inputPath: string,
         outputPath: string,
         to: string,
-        cwd?: string
+        cwd?: string,
+        extraArgs?: string[]
     ): Promise<PandocExportResult>;
 }
 
@@ -100,7 +101,8 @@ export class PandocPreviewWorkflowService {
             outputPath,
             fallbackPath,
             'html',
-            undefined
+            undefined,
+            ['--standalone', '--embed-resources']
         );
         if (!result.ok) {
             throw new Error(result.error ?? 'ODT fallback preview failed.');
@@ -169,7 +171,7 @@ export class PandocPreviewWorkflowService {
         if (!renderPath) return undefined;
 
         const artifact = createPreviewArtifact({
-            kind: 'paged-html',
+            kind: 'html',
             label: 'ODT fallback preview'
         }, renderPath, task.outputPath);
         await renderer.render({

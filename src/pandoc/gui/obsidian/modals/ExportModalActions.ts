@@ -129,14 +129,14 @@ export class PandocExportModalActions {
                             this.config.dependencies
                         )
                             .previewFile(request, outputPath),
-                    convertPreviewFile: (inputPath, outputPath, to, cwd) =>
+                    convertPreviewFile: (inputPath, outputPath, to, cwd, extraArgs) =>
                         createModalExportManager(
                             this.config.plugin,
                             this.config.getProfile(),
                             false,
                             this.config.dependencies
                         )
-                            .convertPreviewFile(inputPath, outputPath, to, cwd)
+                            .convertPreviewFile(inputPath, outputPath, to, cwd, extraArgs)
                 },
                 settings: this.settings(),
                 makeTempPath: (extension, runId) =>

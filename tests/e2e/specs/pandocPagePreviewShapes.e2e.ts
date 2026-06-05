@@ -41,7 +41,7 @@ const embeddedPngBase64 = [
     '0xbUiQAAAABJRU5ErkJggg=='
 ].join('');
 
-type PreviewKind = 'docx' | 'markdown' | 'odt' | 'pptx';
+type PreviewKind = 'docx' | 'markdown' | 'odt' | 'pdf' | 'pptx';
 
 interface PageShapeState {
     status: string;
@@ -154,6 +154,33 @@ interface NonPagedTextPreviewState {
     html: string;
 }
 
+interface OdtFallbackNoticeLayoutState {
+    status: string;
+    noticeText: string;
+    noticeHeight: number;
+    headerHeight: number;
+    bodyHeight: number;
+    paneHeight: number;
+    flowPreviewHeight: number;
+    viewportHeight: number;
+    viewportGap: number;
+    frameTopGap: number;
+    flowPreviewCount: number;
+    pagedPreviewCount: number;
+    frameCount: number;
+    legacyPaneNoticeCount: number;
+    html: string;
+}
+
+interface PreviewFrameworkState {
+    bodyHeight: number;
+    paneHeight: number;
+    flowPreviewCount: number;
+    pagedPreviewCount: number;
+    fallbackNoticeCount: number;
+    html: string;
+}
+
 interface RectState {
     left: number;
     right: number;
@@ -213,6 +240,37 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.overflowsX).toBe(false);
         expect(state.canScrollY).toBe(true);
         expect(state.text).toContain('Markdown text preview');
+    });
+
+    it('keeps the ODT fallback notice compact above the unpaged preview', async function () {
+        await openOdtFallbackPreview(this);
+        const state = await waitForOdtFallbackNoticeLayout();
+
+        expect(state.flowPreviewCount).toBe(1);
+        expect(state.pagedPreviewCount).toBe(0);
+        expect(state.frameCount).toBe(1);
+        expect(state.noticeText).toContain('This preview is a fallback.');
+        expect(state.noticeHeight).toBeGreaterThan(0);
+        expect(state.noticeHeight).toBeLessThan(56);
+        expect(state.bodyHeight).toBeGreaterThan(state.paneHeight * 0.65);
+        expect(state.viewportHeight).toBeGreaterThan(state.flowPreviewHeight - state.noticeHeight - 40);
+        expect(state.viewportGap).toBeLessThanOrEqual(12);
+        expect(state.frameTopGap).toBeLessThanOrEqual(2);
+        expect(state.legacyPaneNoticeCount).toBe(0);
+    });
+
+    it('keeps PDF preview on the paginated framework without fallback notice', async function () {
+        await openPreviewFor('pdf', this);
+        const state = await waitForPageShape('pdf');
+        const framework = await getPreviewFrameworkState();
+
+        expect(state.pageCount).toBeGreaterThan(0);
+        expect(state.visiblePageCount).toBe(1);
+        expect(state.page.ratio).toBeGreaterThan(0.6);
+        expect(framework.pagedPreviewCount).toBe(1);
+        expect(framework.flowPreviewCount).toBe(0);
+        expect(framework.fallbackNoticeCount).toBe(0);
+        expect(framework.bodyHeight).toBeGreaterThan(framework.paneHeight * 0.65);
     });
 
     it('renders WebODF preview inside a page-shaped canvas', async function () {
@@ -387,6 +445,10 @@ async function openPreviewFor(kind: PreviewKind, context: Mocha.Context): Promis
         context.skip();
         return;
     }
+    if (kind === 'pdf' && !getPdfEnginePath()) {
+        context.skip();
+        return;
+    }
 
     const addonPath = kind === 'odt' ? await installWebOdfAddonForE2E() : undefined;
     if (kind === 'odt' && !addonPath) {
@@ -409,6 +471,26 @@ async function openPreviewFor(kind: PreviewKind, context: Mocha.Context): Promis
         return;
     }
     await waitForPreviewReady(kind);
+}
+
+async function openOdtFallbackPreview(context: Mocha.Context): Promise<void> {
+    const pandocPath = getPandocPath();
+    if (!pandocPath) {
+        context.skip();
+        return;
+    }
+
+    await rm(outputDir, { recursive: true, force: true });
+    await mkdir(outputDir, { recursive: true });
+    await createOrReplaceBinaryFile(vaultImagePath, embeddedPngBase64);
+    await createOrReplaceFile(vaultNotePath, markdownForPreview('odt'));
+    await openFileInActiveLeaf(vaultNotePath);
+    await waitForActiveFile(vaultNotePath);
+    await configurePandocExport(pandocPath, 'odt');
+
+    await executeCommandBySuffix('pandoc-export');
+    await waitForExportModal();
+    await waitForOdtFallbackNoticeLayout();
 }
 
 function markdownForPreview(kind: PreviewKind): string {
@@ -434,6 +516,19 @@ function markdownForPreview(kind: PreviewKind): string {
             `![[${vaultImagePath}]]`,
             '',
             'Second paragraph for text rendering.'
+        ].join('\n');
+    }
+
+    if (kind === 'pdf') {
+        return [
+            '# PDF preview page shape',
+            '',
+            ...Array.from({ length: 8 }, (_value, index) => [
+                `## Section ${index + 1}`,
+                '',
+                `This is PDF preview paragraph ${index + 1}. It should stay in the paginated preview framework.`,
+                ''
+            ]).flat()
         ].join('\n');
     }
 
@@ -470,6 +565,16 @@ function getPandocPath(): string | undefined {
     }
 }
 
+function getPdfEnginePath(): string | undefined {
+    try {
+        const enginePath = execFileSync('which', ['pdflatex'], { encoding: 'utf8' }).trim();
+        execFileSync(enginePath, ['--version'], { stdio: 'ignore' });
+        return enginePath;
+    } catch {
+        return undefined;
+    }
+}
+
 async function configurePandocExport(
     pandocPath: string,
     kind: PreviewKind,
@@ -492,6 +597,7 @@ async function configurePandocExport(
         }
 
         const previous = plugin.settings.pandocExport ?? {};
+        const extraArgs = toFormat === 'pdf' ? ['--pdf-engine=pdflatex'] : undefined;
         plugin.settings.pandocExport = {
             ...previous,
             enabled: true,
@@ -532,7 +638,8 @@ async function configurePandocExport(
                     '${currentDir}',
                     '${attachmentFolderPath}',
                     '${vaultDir}'
-                ]
+                ],
+                ...(extraArgs ? { extraArgs } : {})
             }]
         };
 
@@ -610,11 +717,44 @@ async function waitForNonPagedTextPreview(): Promise<NonPagedTextPreviewState> {
     return getNonPagedTextPreviewState();
 }
 
+async function waitForOdtFallbackNoticeLayout(): Promise<OdtFallbackNoticeLayoutState> {
+    try {
+        await browser.waitUntil(async () => {
+            const state = await getOdtFallbackNoticeLayoutState();
+            return (
+                state.status === 'Preview ready' &&
+                state.flowPreviewCount === 1 &&
+                state.pagedPreviewCount === 0 &&
+                state.frameCount === 1 &&
+                state.noticeHeight > 0 &&
+                state.noticeHeight < 56 &&
+                state.bodyHeight > state.paneHeight * 0.65 &&
+                state.viewportHeight > state.flowPreviewHeight - state.noticeHeight - 40 &&
+                state.viewportGap <= 12 &&
+                state.frameTopGap <= 2 &&
+                state.legacyPaneNoticeCount === 0
+            );
+        }, {
+            timeout: 30000,
+            interval: 500,
+            timeoutMsg: 'Expected ODT fallback notice to stay compact above the unpaged preview'
+        });
+    } catch (error) {
+        const state = await getOdtFallbackNoticeLayoutState();
+        throw new Error(`Expected compact ODT fallback notice layout.\n${JSON.stringify(state, null, 2)}`, {
+            cause: error
+        });
+    }
+
+    return getOdtFallbackNoticeLayoutState();
+}
+
 async function getNonPagedTextPreviewState(): Promise<NonPagedTextPreviewState> {
     return browser.execute(() => {
         const flowPreview = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview');
+        const flowViewport = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview-viewport');
         const previewBody = document.querySelector<HTMLElement>('.pem-pandoc-preview-body');
-        const flowCanScrollY = flowPreview ? flowPreview.scrollHeight > flowPreview.clientHeight + 2 : false;
+        const flowCanScrollY = flowViewport ? flowViewport.scrollHeight > flowViewport.clientHeight + 2 : false;
         const bodyCanScrollY = previewBody ? previewBody.scrollHeight > previewBody.clientHeight + 2 : false;
         return {
             flowPreviewCount: document.querySelectorAll('.pem-pandoc-flow-preview').length,
@@ -622,12 +762,68 @@ async function getNonPagedTextPreviewState(): Promise<NonPagedTextPreviewState> 
             pageControlCount: document.querySelectorAll('.pem-pandoc-paged-preview-page-controls').length,
             sideNavButtonCount: document.querySelectorAll('.pem-pandoc-paged-preview-side-nav').length,
             zoomInputCount: document.querySelectorAll('.pem-pandoc-paged-preview-zoom-value').length,
-            overflowsX: flowPreview ? flowPreview.scrollWidth > flowPreview.clientWidth + 2 : false,
+            overflowsX: flowViewport ? flowViewport.scrollWidth > flowViewport.clientWidth + 2 : false,
             canScrollY: flowCanScrollY || bodyCanScrollY,
             flowCanScrollY,
             bodyCanScrollY,
             text: flowPreview?.textContent ?? '',
             html: document.querySelector('.pem-pandoc-preview-body')?.innerHTML.slice(0, 2000) ?? ''
+        };
+    });
+}
+
+async function getOdtFallbackNoticeLayoutState(): Promise<OdtFallbackNoticeLayoutState> {
+    return browser.execute(() => {
+        const pane = document.querySelector<HTMLElement>('.pem-pandoc-preview-pane');
+        const header = document.querySelector<HTMLElement>('.pem-pandoc-preview-header');
+        const flowPreview = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview');
+        const notice = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview-notice');
+        const viewport = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview-viewport');
+        const body = document.querySelector<HTMLElement>('.pem-pandoc-preview-body');
+        const frame = document.querySelector<HTMLElement>('.pem-pandoc-flow-preview-frame');
+        const paneRect = pane?.getBoundingClientRect();
+        const headerRect = header?.getBoundingClientRect();
+        const flowPreviewRect = flowPreview?.getBoundingClientRect();
+        const noticeRect = notice?.getBoundingClientRect();
+        const viewportRect = viewport?.getBoundingClientRect();
+        const bodyRect = body?.getBoundingClientRect();
+        const frameRect = frame?.getBoundingClientRect();
+
+        return {
+            status: document.querySelector('.pem-pandoc-preview-status')?.textContent ?? '',
+            noticeText: notice?.textContent ?? '',
+            noticeHeight: noticeRect?.height ?? 0,
+            headerHeight: headerRect?.height ?? 0,
+            bodyHeight: bodyRect?.height ?? 0,
+            paneHeight: paneRect?.height ?? 0,
+            flowPreviewHeight: flowPreviewRect?.height ?? 0,
+            viewportHeight: viewportRect?.height ?? 0,
+            viewportGap: noticeRect && viewportRect ? Math.round((viewportRect.top - noticeRect.bottom) * 100) / 100 : 0,
+            frameTopGap: viewportRect && frameRect ? Math.round((frameRect.top - viewportRect.top) * 100) / 100 : 0,
+            flowPreviewCount: document.querySelectorAll('.pem-pandoc-flow-preview').length,
+            pagedPreviewCount: document.querySelectorAll('.pem-pandoc-paged-preview').length,
+            frameCount: document.querySelectorAll('.pem-pandoc-flow-preview-frame').length,
+            legacyPaneNoticeCount: document.querySelectorAll('.pem-pandoc-preview-fallback-notice').length,
+            html: pane?.outerHTML.slice(0, 3000) ?? ''
+        };
+    });
+}
+
+async function getPreviewFrameworkState(): Promise<PreviewFrameworkState> {
+    return browser.execute(() => {
+        const pane = document.querySelector<HTMLElement>('.pem-pandoc-preview-pane');
+        const body = document.querySelector<HTMLElement>('.pem-pandoc-preview-body');
+        const paneRect = pane?.getBoundingClientRect();
+        const bodyRect = body?.getBoundingClientRect();
+
+        return {
+            bodyHeight: bodyRect?.height ?? 0,
+            paneHeight: paneRect?.height ?? 0,
+            flowPreviewCount: document.querySelectorAll('.pem-pandoc-flow-preview').length,
+            pagedPreviewCount: document.querySelectorAll('.pem-pandoc-paged-preview').length,
+            fallbackNoticeCount: document.querySelectorAll('.pem-pandoc-flow-preview-notice').length +
+                document.querySelectorAll('.pem-pandoc-preview-fallback-notice').length,
+            html: pane?.outerHTML.slice(0, 2000) ?? ''
         };
     });
 }
@@ -664,6 +860,11 @@ async function getPageShapeState(kind: PreviewKind): Promise<PageShapeState> {
                 content: odtContentState(visiblePages[0] ?? pages[0]),
                 html: frameDocument?.body.outerHTML ?? ''
             };
+        }
+
+        if (previewKind === 'pdf') {
+            const pages = Array.from(document.querySelectorAll<HTMLElement>('.pem-pandoc-pdf-page'));
+            return shapeState(status, pages);
         }
 
         const pages = Array.from(document.querySelectorAll<HTMLElement>('.pem-pandoc-pptx-page-shell'));

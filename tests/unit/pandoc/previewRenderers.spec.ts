@@ -75,6 +75,30 @@ describe('selectPreviewRenderer', () => {
         expect(frame?.srcdoc).toBe('<h1>Rendered HTML</h1>');
     });
 
+    it('renders the ODT fallback notice inside the non-paged preview framework', async () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        await renderPreviewFile({
+            container,
+            filePath: '/tmp/preview.html',
+            renderer: {
+                kind: 'html',
+                label: 'ODT fallback preview',
+                sourcePath: '/tmp/preview.odt'
+            },
+            readText: async () => '<h1>Fallback HTML</h1>',
+            readBinary: async () => new Uint8Array()
+        });
+
+        const notice = container.querySelector<HTMLElement>('.pem-pandoc-flow-preview-notice');
+        expect(container.querySelector('.pem-pandoc-flow-preview')).not.toBeNull();
+        expect(container.querySelector('.pem-pandoc-paged-preview')).toBeNull();
+        expect(container.querySelector('.pem-pandoc-preview-fallback-notice')).toBeNull();
+        expect(notice?.textContent).toBe(
+            'This preview is a fallback. Download odt support in plugin settings for the recommended renderer.'
+        );
+        expect(notice?.parentElement?.classList.contains('pem-pandoc-flow-preview')).toBe(true);
+    });
+
     it('loads an installed WebODF add-on into a sandboxed iframe with the generated ODT bytes', async () => {
         const readPaths: string[] = [];
         const container = withObsidianDomHelpers(document.createElement('div'));
@@ -150,7 +174,10 @@ function withObsidianDomHelpers(element: HTMLElement): HTMLElement {
         empty(): void;
         addClass(cls: string): void;
         createDiv(options?: { cls?: string }): HTMLElement;
-        createEl(tag: string, options?: { cls?: string; attr?: Record<string, string> }): HTMLElement;
+        createEl(
+            tag: string,
+            options?: { cls?: string; text?: string; attr?: Record<string, string> }
+        ): HTMLElement;
     };
     helper.empty = () => {
         element.replaceChildren();
@@ -171,6 +198,7 @@ function withObsidianDomHelpers(element: HTMLElement): HTMLElement {
         };
         Object.entries(options?.attr ?? {}).forEach(([name, value]) => child.setAttribute(name, value));
         if (options?.cls) child.className = options.cls;
+        if (options?.text) child.textContent = options.text;
         if (tag === 'iframe') installReadyIframe(child as HTMLIFrameElement, element);
         element.appendChild(child);
         return child;

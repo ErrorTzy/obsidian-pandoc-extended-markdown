@@ -57,6 +57,7 @@ export interface ConvertPreviewFileRequest {
     to: string;
     cwd?: string;
     env?: Record<string, string>;
+    extraArgs?: string[];
 }
 
 export class PandocExportExecutionService {
@@ -85,7 +86,14 @@ export class PandocExportExecutionService {
 
     convertPreviewFile(request: ConvertPreviewFileRequest): Promise<PandocRunResult> {
         return this.runPandoc(
-            [request.inputPath, '-t', request.to, '-o', request.outputPath],
+            [
+                request.inputPath,
+                '-t',
+                request.to,
+                '-o',
+                request.outputPath,
+                ...(request.extraArgs ?? [])
+            ],
             request.cwd,
             request.env
         );

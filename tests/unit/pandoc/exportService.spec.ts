@@ -120,6 +120,35 @@ describe('PandocExportExecutionService', () => {
         expect(requests[0].args.slice(-2)).toEqual(['-o', '/tmp/preview.html']);
     });
 
+    it('adds extra args when converting preview files', async () => {
+        const requests: PandocRunRequest[] = [];
+        const service = new PandocExportExecutionService({
+            system: createSystemPort({
+                runProcess: async request => {
+                    requests.push(request);
+                    return createResult(request);
+                }
+            })
+        });
+
+        await service.convertPreviewFile({
+            inputPath: '/tmp/preview.odt',
+            outputPath: '/tmp/preview.html',
+            to: 'html',
+            extraArgs: ['--standalone', '--embed-resources']
+        });
+
+        expect(requests[0].args).toEqual([
+            '/tmp/preview.odt',
+            '-t',
+            'html',
+            '-o',
+            '/tmp/preview.html',
+            '--standalone',
+            '--embed-resources'
+        ]);
+    });
+
     it('runs opted-in custom profiles through the shell port', async () => {
         const shellRequests: Array<{ command: string; cwd?: string }> = [];
         const service = new PandocExportExecutionService({

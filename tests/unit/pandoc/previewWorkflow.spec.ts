@@ -85,11 +85,16 @@ describe('PandocPreviewWorkflowService', () => {
         expect(removed).toEqual(['/tmp/preview-1.html']);
     });
 
-    it('converts ODT fallback previews to HTML', async () => {
-        const conversions: Array<{ inputPath: string; outputPath: string }> = [];
+    it('converts ODT fallback previews to embedded-resource HTML', async () => {
+        const conversions: Array<{
+            inputPath: string;
+            outputPath: string;
+            to?: string;
+            extraArgs?: string[];
+        }> = [];
         const service = createWorkflow({
-            convertPreviewFile: async (inputPath, outputPath) => {
-                conversions.push({ inputPath, outputPath });
+            convertPreviewFile: async (inputPath, outputPath, to, _cwd, extraArgs) => {
+                conversions.push({ inputPath, outputPath, to, extraArgs });
                 return { ok: true, outputPath, result: resultFor(outputPath) };
             }
         });
@@ -106,7 +111,9 @@ describe('PandocPreviewWorkflowService', () => {
         expect(fallbackPath).toBe('/tmp/preview-1.html');
         expect(conversions).toEqual([{
             inputPath: '/tmp/preview-1.odt',
-            outputPath: '/tmp/preview-1.html'
+            outputPath: '/tmp/preview-1.html',
+            to: 'html',
+            extraArgs: ['--standalone', '--embed-resources']
         }]);
     });
 
@@ -156,12 +163,12 @@ describe('PandocPreviewWorkflowService', () => {
         }, readerPort());
 
         expect(plan?.artifact).toMatchObject({
-            kind: 'paged-html',
+            kind: 'html',
             filePath: '/tmp/preview-1.html',
             sourcePath: '/tmp/preview-1.odt'
         });
         expect(artifacts).toEqual([{
-            kind: 'paged-html',
+            kind: 'html',
             filePath: '/tmp/preview-1.html',
             sourcePath: '/tmp/preview-1.odt'
         }]);
@@ -183,7 +190,10 @@ function createWorkflow(overrides: {
     ) => Promise<{ ok: boolean; outputPath?: string; result?: PandocRunResult }>;
     convertPreviewFile?: (
         inputPath: string,
-        outputPath: string
+        outputPath: string,
+        to: string,
+        cwd?: string,
+        extraArgs?: string[]
     ) => Promise<{ ok: boolean; outputPath?: string; result?: PandocRunResult }>;
 } = {}): PandocPreviewWorkflowService {
     return new PandocPreviewWorkflowService({

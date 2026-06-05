@@ -16,7 +16,11 @@ export interface OverwriteOptionActions {
 export function renderPreviewPane(
     container: HTMLElement,
     onRefresh: () => void
-): { statusEl: HTMLElement; bodyEl: HTMLElement; refreshButtonEl: HTMLButtonElement } {
+): {
+    statusEl: HTMLElement;
+    bodyEl: HTMLElement;
+    refreshButtonEl: HTMLButtonElement;
+} {
     const pane = container.createDiv({ cls: 'pem-pandoc-preview-pane' });
     const header = pane.createDiv({ cls: 'pem-pandoc-preview-header' });
     header.createDiv({ cls: 'pem-pandoc-preview-toolbar-left' });

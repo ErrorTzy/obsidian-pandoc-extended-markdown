@@ -81,13 +81,15 @@ export class PandocExportManager {
         inputPath: string,
         outputPath: string,
         to: string,
-        cwd?: string
+        cwd?: string,
+        extraArgs?: string[]
     ): Promise<PandocExportResult> {
         return this.workflow.convertPreviewFile({
             inputPath,
             outputPath,
             to,
-            cwd
+            cwd,
+            extraArgs
         });
     }
 

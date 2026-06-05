@@ -11,7 +11,6 @@ export type PandocPreviewRendererKind =
     | 'docx'
     | 'epub'
     | 'pptx'
-    | 'paged-html'
     | 'odt-addon'
     | 'odt-pandoc-fallback'
     | 'unsupported';
@@ -92,7 +91,7 @@ export function createPreviewArtifact(
 }
 
 function artifactKindForRenderer(kind: PandocPreviewRendererKind): PandocPreviewArtifactKind {
-    return kind === 'odt-pandoc-fallback' ? 'paged-html' : kind;
+    return kind === 'odt-pandoc-fallback' ? 'html' : kind;
 }
 
 function selectOdtPreviewRenderer(

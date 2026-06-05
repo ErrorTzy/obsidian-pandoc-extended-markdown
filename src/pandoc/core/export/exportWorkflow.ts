@@ -58,6 +58,7 @@ export interface ConvertPandocPreviewWorkflowRequest {
     outputPath: string;
     to: string;
     cwd?: string;
+    extraArgs?: string[];
 }
 
 export class PandocExportWorkflowService {

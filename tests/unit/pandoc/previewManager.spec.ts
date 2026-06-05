@@ -180,7 +180,7 @@ describe('PandocPreviewManager', () => {
         expect(render.mock.calls[1][0]).toMatchObject({
             artifact: {
                 filePath: expect.stringMatching(/-1\.html$/),
-                kind: 'paged-html',
+                kind: 'html',
                 sourcePath: expect.stringMatching(/-1\.odt$/)
             }
         });
