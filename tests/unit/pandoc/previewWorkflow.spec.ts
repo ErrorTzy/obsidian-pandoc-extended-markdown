@@ -7,6 +7,7 @@ import {
 } from '../../../src/pandoc/core';
 import type {
     PandocExportRequest,
+    OdtPreviewAddonSettings,
     PandocPreviewRendererPort,
     PandocRunResult
 } from '../../../src/pandoc/core';
@@ -85,7 +86,7 @@ describe('PandocPreviewWorkflowService', () => {
         expect(removed).toEqual(['/tmp/preview-1.html']);
     });
 
-    it('converts ODT fallback previews to embedded-resource HTML', async () => {
+    it('runs an ODT fallback stage that converts to embedded-resource HTML', async () => {
         const conversions: Array<{
             inputPath: string;
             outputPath: string;
@@ -106,9 +107,16 @@ describe('PandocPreviewWorkflowService', () => {
         });
         if (!isPandocPreviewRenderTask(task)) throw new Error('Expected render task.');
 
-        const fallbackPath = await service.convertOdtFallback(task.run, task.outputPath);
+        const plan = await service.renderPreviewTask(task, {
+            render: async () => undefined
+        }, readerPort());
 
-        expect(fallbackPath).toBe('/tmp/preview-1.html');
+        expect(plan?.artifact).toMatchObject({
+            kind: 'html',
+            rendererId: 'html',
+            filePath: '/tmp/preview-1.html',
+            sourcePath: '/tmp/preview-1.odt'
+        });
         expect(conversions).toEqual([{
             inputPath: '/tmp/preview-1.odt',
             outputPath: '/tmp/preview-1.html',
@@ -117,11 +125,48 @@ describe('PandocPreviewWorkflowService', () => {
         }]);
     });
 
+    it('continues a generic multi-stage pipeline after a render failure', async () => {
+        const artifacts: string[] = [];
+        const service = createWorkflow({
+            odtAddon: {
+                enabled: true,
+                status: 'installed',
+                installPath: '/addons/webodf'
+            }
+        });
+        const task = await service.startPreview({
+            request: request(),
+            to: 'odt',
+            extension: '.odt'
+        });
+        if (!isPandocPreviewRenderTask(task)) throw new Error('Expected render task.');
+
+        const plan = await service.renderPreviewTask(task, {
+            render: async ({ artifact }) => {
+                artifacts.push(`${artifact.rendererId}:${artifact.filePath}`);
+                if (artifact.rendererId === 'odt-webodf') {
+                    throw new Error('WebODF failed');
+                }
+            }
+        }, readerPort());
+
+        expect(plan?.artifact).toMatchObject({
+            kind: 'html',
+            rendererId: 'html',
+            filePath: '/tmp/preview-1.html',
+            sourcePath: '/tmp/preview-1.odt'
+        });
+        expect(artifacts).toEqual([
+            'odt-webodf:/tmp/preview-1.odt',
+            'html:/tmp/preview-1.html'
+        ]);
+    });
+
     it('hands preview artifacts to a renderer port', async () => {
         const artifacts: string[] = [];
         const renderer: PandocPreviewRendererPort = {
             render: async ({ artifact }) => {
-                artifacts.push(`${artifact.kind}:${artifact.filePath}`);
+                artifacts.push(`${artifact.rendererId}:${artifact.filePath}`);
             }
         };
         const service = createWorkflow();
@@ -136,6 +181,7 @@ describe('PandocPreviewWorkflowService', () => {
 
         expect(plan?.artifact).toMatchObject({
             kind: 'html',
+            rendererId: 'html',
             label: 'HTML preview',
             filePath: '/tmp/preview-1.html'
         });
@@ -183,6 +229,7 @@ function readerPort() {
 }
 
 function createWorkflow(overrides: {
+    odtAddon?: OdtPreviewAddonSettings;
     removed?: string[];
     previewFile?: (
         request: PandocExportRequest,
@@ -209,6 +256,7 @@ function createWorkflow(overrides: {
                 result: resultFor(outputPath)
             }))
         },
+        odtAddon: overrides.odtAddon,
         session: new PandocPreviewSession({
             makeTempPath: async (extension, runId) => `/tmp/preview-${runId}${extension}`,
             removeFile: async path => {

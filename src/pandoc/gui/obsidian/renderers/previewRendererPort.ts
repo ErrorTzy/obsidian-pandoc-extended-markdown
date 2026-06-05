@@ -1,37 +1,51 @@
 import type {
-    PandocPreviewArtifact,
     PandocPreviewRendererPort
 } from '../../../core';
 import {
-    renderPreviewFile,
-    type PandocPreviewRenderer
-} from './previewRenderers';
+    createDefaultObsidianPandocPreviewRendererRegistry
+} from './defaultRegistry';
+import type {
+    ObsidianPandocPreviewRendererRegistry
+} from './registry';
+import {
+    resetPreviewSizing
+} from './previewSizing';
+import {
+    renderUnsupportedPreview
+} from './shared/unsupportedPreview';
 
 export class ObsidianPandocPreviewRendererPort implements PandocPreviewRendererPort {
     private readonly container: HTMLElement;
+    private readonly registry: ObsidianPandocPreviewRendererRegistry;
 
-    constructor(container: HTMLElement) {
+    constructor(
+        container: HTMLElement,
+        registry = createDefaultObsidianPandocPreviewRendererRegistry()
+    ) {
         this.container = container;
+        this.registry = registry;
     }
 
     async render(request: Parameters<PandocPreviewRendererPort['render']>[0]): Promise<void> {
-        await renderPreviewFile({
+        resetPreviewContainer(this.container);
+        const rendererId = request.artifact.rendererId ?? request.artifact.kind;
+        const renderer = this.registry.get(rendererId);
+        if (!renderer) {
+            renderUnsupportedPreview(this.container, request.artifact.label);
+            return;
+        }
+
+        await renderer.render({
             container: this.container,
-            filePath: request.artifact.filePath,
-            renderer: rendererFromArtifact(request.artifact),
+            artifact: request.artifact,
             readText: request.readText,
             readBinary: request.readBinary
         });
     }
 }
 
-function rendererFromArtifact(artifact: PandocPreviewArtifact): PandocPreviewRenderer {
-    return {
-        kind: artifact.kind,
-        label: artifact.label,
-        pageSize: artifact.pageSize,
-        sourcePath: artifact.sourcePath,
-        addonInstallPath: artifact.addonInstallPath,
-        addonVersion: artifact.addonVersion
-    };
+export function resetPreviewContainer(container: HTMLElement): void {
+    resetPreviewSizing(container);
+    container.empty();
+    container.addClass('pem-pandoc-preview-rendered');
 }

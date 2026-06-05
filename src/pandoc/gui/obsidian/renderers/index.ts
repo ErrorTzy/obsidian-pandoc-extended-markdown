@@ -9,6 +9,16 @@ export {
     ObsidianPandocPreviewRendererPort
 } from './previewRendererPort';
 export {
+    createDefaultObsidianPandocPreviewRendererRegistry
+} from './defaultRegistry';
+export {
+    ObsidianPandocPreviewRendererRegistry
+} from './registry';
+export type {
+    ObsidianPandocPreviewRendererModule,
+    ObsidianPandocPreviewRenderRequest
+} from './types';
+export {
     renderPreviewFile,
     selectPreviewRenderer
 } from './previewRenderers';

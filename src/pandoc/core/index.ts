@@ -144,6 +144,20 @@ export type {
     PandocPreviewRendererPlan
 } from './preview/previewArtifact';
 export {
+    createDefaultPandocPreviewFormatRegistry
+} from './preview/defaultRegistry';
+export {
+    PandocPreviewFormatRegistry
+} from './preview/registry';
+export type {
+    PandocPreviewFormatModule,
+    PandocPreviewMatchRequest,
+    PandocPreviewPipeline,
+    PandocPreviewRendererId,
+    PandocPreviewStage,
+    PandocPreviewStageRequest
+} from './preview/types';
+export {
     normalizePreviewExtension,
     PandocPreviewSession
 } from './preview/previewSession';

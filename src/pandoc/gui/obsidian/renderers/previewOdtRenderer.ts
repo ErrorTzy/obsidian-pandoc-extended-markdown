@@ -6,20 +6,22 @@ import {
     type PreviewPageSize
 } from './previewPageMetadata';
 import type {
-    PandocPreviewRenderRequest
-} from './previewRenderers';
+    ObsidianPandocPreviewRenderRequest
+} from './types';
 import {
     renderOdtInWebOdfFrame
 } from './previewOdtFrameSource';
 
-export async function renderOdtAddonPreview(request: PandocPreviewRenderRequest): Promise<void> {
-    const installPath = request.renderer.addonInstallPath;
+export async function renderOdtAddonPreview(
+    request: ObsidianPandocPreviewRenderRequest
+): Promise<void> {
+    const installPath = request.artifact.addonInstallPath;
     if (!installPath) {
         throw new Error('ODT preview add-on path is missing.');
     }
 
-    const script = await readWebOdfScript(installPath, request.renderer.addonVersion, request.readText);
-    const data = await request.readBinary(request.filePath);
+    const script = await readWebOdfScript(installPath, request.artifact.addonVersion, request.readText);
+    const data = await request.readBinary(request.artifact.filePath);
     const pageSize = pageSizeAt(extractOdtPageSizes(data), 0, DEFAULT_ODT_PAGE_SIZE);
     let pager: PreviewPager;
     let frame: HTMLIFrameElement;

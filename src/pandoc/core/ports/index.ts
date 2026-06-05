@@ -123,12 +123,15 @@ export type PandocPreviewArtifactKind =
 
 export interface PandocPreviewArtifact {
     kind: PandocPreviewArtifactKind;
+    formatId?: string;
+    rendererId?: string;
     label: string;
     filePath: string;
     sourcePath?: string;
     addonInstallPath?: string;
     addonVersion?: string;
     pageSize?: PandocPreviewPageSize;
+    metadata?: Record<string, unknown>;
 }
 
 export interface PandocPreviewPlan {

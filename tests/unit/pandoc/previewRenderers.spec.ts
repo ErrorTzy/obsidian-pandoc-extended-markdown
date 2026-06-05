@@ -5,6 +5,10 @@ import {
     renderPreviewFile,
     selectPreviewRenderer
 } from '../../../src/pandoc/gui/obsidian/renderers/previewRenderers';
+import {
+    ObsidianPandocPreviewRendererPort,
+    ObsidianPandocPreviewRendererRegistry
+} from '../../../src/pandoc/gui/obsidian/renderers';
 
 describe('selectPreviewRenderer', () => {
     it('uses HTML preview for HTML and slide formats', () => {
@@ -151,6 +155,77 @@ describe('selectPreviewRenderer', () => {
             readText: async () => 'window.odf = { OdfCanvas: function () {} };',
             readBinary: async () => odtWithImage()
         })).rejects.toThrow('WebODF rendered an empty ODT preview.');
+    });
+});
+
+describe('ObsidianPandocPreviewRendererPort', () => {
+    it('dispatches by rendererId and falls back to artifact kind', async () => {
+        const rendered: string[] = [];
+        const registry = new ObsidianPandocPreviewRendererRegistry();
+        registry.register({
+            id: 'custom-html',
+            label: 'Custom HTML',
+            render: async request => {
+                rendered.push(`${request.artifact.rendererId}:${request.artifact.filePath}`);
+            }
+        });
+        registry.register({
+            id: 'text',
+            label: 'Text',
+            render: async request => {
+                rendered.push(`${request.artifact.kind}:${request.artifact.filePath}`);
+            }
+        });
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const port = new ObsidianPandocPreviewRendererPort(container, registry);
+
+        await port.render({
+            artifact: {
+                kind: 'html',
+                rendererId: 'custom-html',
+                label: 'Custom',
+                filePath: '/tmp/custom.html'
+            },
+            readText: async () => '',
+            readBinary: async () => new Uint8Array()
+        });
+        await port.render({
+            artifact: {
+                kind: 'text',
+                label: 'Text',
+                filePath: '/tmp/preview.txt'
+            },
+            readText: async () => '',
+            readBinary: async () => new Uint8Array()
+        });
+
+        expect(rendered).toEqual([
+            'custom-html:/tmp/custom.html',
+            'text:/tmp/preview.txt'
+        ]);
+    });
+
+    it('renders unsupported output for unknown renderer ids', async () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const port = new ObsidianPandocPreviewRendererPort(
+            container,
+            new ObsidianPandocPreviewRendererRegistry()
+        );
+
+        await port.render({
+            artifact: {
+                kind: 'html',
+                rendererId: 'missing',
+                label: 'Missing preview',
+                filePath: '/tmp/missing.html'
+            },
+            readText: async () => '',
+            readBinary: async () => new Uint8Array()
+        });
+
+        expect(container.querySelector('.pem-pandoc-preview-message')?.textContent).toBe(
+            'Missing preview. Export still works; use an external app to inspect this format.'
+        );
     });
 });
 

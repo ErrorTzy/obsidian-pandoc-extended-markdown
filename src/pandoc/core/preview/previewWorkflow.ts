@@ -4,12 +4,15 @@ import type {
     OdtPreviewAddonSettings
 } from '../export/types';
 import {
-    createPreviewArtifact,
-    selectPreviewRendererPlan
-} from './previewArtifact';
+    createDefaultPandocPreviewFormatRegistry
+} from './defaultRegistry';
 import type {
+    PandocPreviewFormatRegistry
+} from './registry';
+import type {
+    PandocPreviewPipeline,
     PandocPreviewRendererPlan
-} from './previewArtifact';
+} from './types';
 import type {
     PandocPreviewPlan,
     PandocPreviewRendererPort
@@ -34,6 +37,7 @@ export interface PandocPreviewExportPort {
 
 export interface PandocPreviewWorkflowConfig {
     exportManager: PandocPreviewExportPort;
+    formatRegistry?: PandocPreviewFormatRegistry;
     odtAddon?: OdtPreviewAddonSettings;
     session: PandocPreviewSession;
 }
@@ -51,6 +55,7 @@ export interface PandocPreviewRenderReaderPort {
 
 export interface PandocPreviewRenderTask {
     run: PandocPreviewRun;
+    pipeline: PandocPreviewPipeline;
     renderer: PandocPreviewRendererPlan;
     outputPath: string;
     result: PandocExportResult;
@@ -58,20 +63,24 @@ export interface PandocPreviewRenderTask {
 
 export class PandocPreviewWorkflowService {
     private readonly config: PandocPreviewWorkflowConfig;
+    private readonly formatRegistry: PandocPreviewFormatRegistry;
 
     constructor(config: PandocPreviewWorkflowConfig) {
         this.config = config;
+        this.formatRegistry = config.formatRegistry ?? createDefaultPandocPreviewFormatRegistry();
     }
 
     async startPreview(
         request: StartPandocPreviewRequest
     ): Promise<PandocPreviewRenderTask | PandocExportResult | undefined> {
         const run = await this.config.session.beginRun(request.extension);
-        const renderer = selectPreviewRendererPlan(
-            request.to,
-            request.extension,
-            this.config.odtAddon
-        );
+        const registryRequest = {
+            to: request.to,
+            extension: request.extension,
+            odtAddon: this.config.odtAddon
+        };
+        const pipeline = this.formatRegistry.select(registryRequest);
+        const renderer = this.formatRegistry.selectRendererPlan(registryRequest);
         const result = await this.config.exportManager.previewFile(
             request.request,
             run.outputPath
@@ -86,32 +95,11 @@ export class PandocPreviewWorkflowService {
 
         return {
             run,
+            pipeline,
             renderer,
             outputPath: result.outputPath,
             result
         };
-    }
-
-    async convertOdtFallback(
-        run: PandocPreviewRun,
-        outputPath: string
-    ): Promise<string | undefined> {
-        const fallbackPath = await this.config.session.createTempFile(run, '.html');
-        const result = await this.config.exportManager.convertPreviewFile(
-            outputPath,
-            fallbackPath,
-            'html',
-            undefined,
-            ['--standalone', '--embed-resources']
-        );
-        if (!result.ok) {
-            throw new Error(result.error ?? 'ODT fallback preview failed.');
-        }
-        if (!this.config.session.isCurrentRun(run)) {
-            return undefined;
-        }
-
-        return fallbackPath;
     }
 
     async renderPreviewTask(
@@ -119,21 +107,35 @@ export class PandocPreviewWorkflowService {
         renderer: PandocPreviewRendererPort,
         reader: PandocPreviewRenderReaderPort
     ): Promise<PandocPreviewPlan | undefined> {
-        if (task.renderer.kind === 'odt-addon') {
+        for (const stage of task.pipeline.stages) {
+            if (!this.isCurrentRun(task.run)) return undefined;
+            const artifact = await stage.createArtifact({
+                run: task.run,
+                outputPath: task.outputPath,
+                result: task.result,
+                exportManager: this.config.exportManager,
+                session: this.config.session
+            });
+            if (!artifact) continue;
+            if (!this.isCurrentRun(task.run)) return undefined;
+
             try {
-                return await this.renderArtifact(task, renderer, reader);
-            } catch {
-                if (!this.isCurrentRun(task.run)) return undefined;
-                return this.renderOdtFallbackArtifact(task, renderer, reader);
+                await renderer.render({
+                    artifact,
+                    readText: path => reader.readText(path),
+                    readBinary: path => reader.readBinary(path)
+                });
+
+                return {
+                    profile: task.result.profile,
+                    artifact
+                };
+            } catch (error) {
+                if (!stage.continueOnRenderError) throw error;
             }
         }
 
-        if (task.renderer.kind === 'odt-pandoc-fallback') {
-            return this.renderOdtFallbackArtifact(task, renderer, reader);
-        }
-
-        if (!this.isCurrentRun(task.run)) return undefined;
-        return this.renderArtifact(task, renderer, reader);
+        return undefined;
     }
 
     isCurrentRun(run: PandocPreviewRun): boolean {
@@ -142,48 +144,6 @@ export class PandocPreviewWorkflowService {
 
     cleanup(): Promise<void> {
         return this.config.session.cleanup();
-    }
-
-    private async renderArtifact(
-        task: PandocPreviewRenderTask,
-        renderer: PandocPreviewRendererPort,
-        reader: PandocPreviewRenderReaderPort
-    ): Promise<PandocPreviewPlan> {
-        const artifact = createPreviewArtifact(task.renderer, task.outputPath);
-        await renderer.render({
-            artifact,
-            readText: path => reader.readText(path),
-            readBinary: path => reader.readBinary(path)
-        });
-
-        return {
-            profile: task.result.profile,
-            artifact
-        };
-    }
-
-    private async renderOdtFallbackArtifact(
-        task: PandocPreviewRenderTask,
-        renderer: PandocPreviewRendererPort,
-        reader: PandocPreviewRenderReaderPort
-    ): Promise<PandocPreviewPlan | undefined> {
-        const renderPath = await this.convertOdtFallback(task.run, task.outputPath);
-        if (!renderPath) return undefined;
-
-        const artifact = createPreviewArtifact({
-            kind: 'html',
-            label: 'ODT fallback preview'
-        }, renderPath, task.outputPath);
-        await renderer.render({
-            artifact,
-            readText: path => reader.readText(path),
-            readBinary: path => reader.readBinary(path)
-        });
-
-        return {
-            profile: task.result.profile,
-            artifact
-        };
     }
 }
 

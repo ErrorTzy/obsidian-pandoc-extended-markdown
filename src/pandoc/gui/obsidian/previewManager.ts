@@ -1,4 +1,5 @@
 import {
+    createDefaultPandocPreviewFormatRegistry,
     isPandocPreviewRenderTask,
     PandocPreviewSession,
     PandocPreviewWorkflowService
@@ -39,6 +40,7 @@ export class PandocPreviewManager {
         this.config = config;
         this.workflow = new PandocPreviewWorkflowService({
             exportManager: config.exportManager,
+            formatRegistry: createDefaultPandocPreviewFormatRegistry(),
             odtAddon: config.settings.preview.odtAddon,
             session: new PandocPreviewSession(this.createSessionPort())
         });

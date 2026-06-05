@@ -2,7 +2,7 @@
 
 This document records the current architecture of the optional Pandoc export module and the remaining gaps toward a portable, GUI-agnostic design.
 
-Status date: 2026-06-04.
+Status date: 2026-06-05.
 
 The implementation has moved well past the original proposal. `src/pandoc/core/` now contains most profile, catalog, argument, validation, export, preview-planning, and port contracts. `src/pandoc/gui/obsidian/` contains the Obsidian command, modal, settings, workspace, notice, and DOM preview code. `src/pandoc/os/common/` contains the desktop filesystem, process, shell, Electron desktop adapter, hashing, temp-path, and system-port implementations.
 
@@ -73,7 +73,7 @@ The Obsidian workspace port is implemented by `src/pandoc/gui/obsidian/workspace
 
 The Obsidian user-interaction port is implemented by `src/pandoc/gui/obsidian/notices/userInteractionPort.ts`.
 
-`PandocPreviewRendererPort` is the active preview integration point. Core preview workflow hands a `PandocPreviewArtifact` to the GUI-supplied port, and the Obsidian implementation adapts that artifact to concrete `HTMLElement` rendering.
+`PandocPreviewRendererPort` is the active preview integration point. Core preview workflow hands a `PandocPreviewArtifact` to the GUI-supplied port, and the Obsidian implementation dispatches that artifact through an internal renderer registry to concrete `HTMLElement` rendering.
 
 ## Current Implementation Map
 
@@ -88,8 +88,8 @@ The Obsidian user-interaction port is implemented by `src/pandoc/gui/obsidian/no
 | Obsidian modals/settings/commands | `gui/obsidian/modals/*`, `gui/obsidian/settings/*`, `gui/obsidian/commands/*` | Moved to GUI layer. `ExportModal.ts` and `PandocProfileEditorModal.ts` are still sizeable but under the correct ownership boundary. |
 | Workspace adaptation | `gui/obsidian/workspace/*` | Implemented. Vault paths, plugin paths, frontmatter, embeds, attachment paths, Lua filter resources, and ODT add-on file handling are Obsidian-owned. |
 | User interaction | `gui/obsidian/notices/*`, `os/common/desktopAdapter.ts` | Implemented through a GUI user port plus an Electron desktop adapter. |
-| Preview planning | `core/preview/*` | Implemented for renderer selection, stale-run cleanup, temp artifacts, and ODT fallback conversion planning. |
-| Preview rendering | `gui/obsidian/renderers/*`, `gui/obsidian/previewManager.ts` | Moved to the Obsidian GUI layer. The active path uses `PandocPreviewRendererPort`; Obsidian owns the DOM adapter. |
+| Preview planning | `core/preview/*` | Implemented through an internal format registry. Format modules select preview pipelines for HTML, text-like formats, PDF, DOCX, EPUB, PPTX, ODT, and unsupported formats; ODT owns WebODF plus Pandoc HTML fallback stages. |
+| Preview rendering | `gui/obsidian/renderers/*`, `gui/obsidian/previewManager.ts` | Implemented through an internal Obsidian renderer registry. The active path dispatches by `artifact.rendererId`, falls back to `artifact.kind` for compatibility, and keeps DOM rendering in per-renderer modules. |
 | OS adapters | `os/common/*` | Implemented for dynamic desktop module loading, process execution, shell execution, filesystem, hashing, temp paths, desktop dialogs, and system-port composition. |
 | Platform defaults | `os/common/environment.ts` | Implemented. Defaults are used by Obsidian dependency composition and injected into export environment construction. |
 
@@ -129,7 +129,7 @@ The constants-only per-OS files have been removed. Git does not preserve empty d
 | Introduce core port interfaces for system, workspace, user interaction, and preview rendering | Complete. |
 | Extract core export services from `PandocExportManager.ts` | Mostly complete. Core services own execution and workflow; the Obsidian manager now composes adapters. |
 | Move Obsidian commands, settings, modals, notices, menus, current-file selection, vault adaptation, and metadata adaptation into `gui/obsidian/` | Complete, with root compatibility wrappers still present. |
-| Split preview planning from DOM rendering | Complete. Core owns preview workflow, stale-run cleanup, and renderer-port handoff; Obsidian owns DOM rendering. |
+| Split preview planning from DOM rendering | Complete. Core owns registry-selected preview pipelines, stale-run cleanup, conversion stages, and renderer-port handoff; Obsidian owns registry-selected DOM rendering. |
 | Move OS implementations into `os/{common,linux,mac,win}/` | Adjusted. `os/common` is the concrete desktop adapter layer; constants-only per-OS files were removed. |
 | Add import-boundary enforcement | Complete through ESLint rules in `eslint.config.mjs`. |
 
@@ -144,6 +144,7 @@ These scenarios should continue to be preserved by tests:
 - Disabled export and mobile startup do not load desktop-only Pandoc dependencies.
 - Preview cleanup removes stale temporary files and ignores stale render results.
 - ODT preview uses the add-on when installed and falls back through Pandoc conversion when unavailable or failed.
+- Preview format and renderer registries preserve current dispatch behavior while allowing format-specific preview modules.
 - WebODF add-on install and remove update settings and files correctly.
 - Custom shell profiles run only when explicitly opted in.
 - Windows paths, environment variables, and path delimiters are handled correctly.
@@ -155,9 +156,9 @@ These scenarios should continue to be preserved by tests:
 Current focused coverage includes:
 
 - Core export planning and workflow tests under `tests/unit/pandoc/exportPlan.spec.ts` and `tests/unit/pandoc/exportWorkflow.spec.ts`.
-- Core catalog, profile, argument, preview-artifact, output, and variable tests under `tests/unit/pandoc/`.
+- Core catalog, profile, argument, preview-artifact, preview-workflow, output, and variable tests under `tests/unit/pandoc/`.
 - `CommonPandocSystemPort` and platform environment default tests in `tests/unit/pandoc/systemPort.spec.ts`.
 - Obsidian workspace and user port tests in `tests/unit/pandoc/obsidianPandocPorts.spec.ts`.
-- Obsidian command, modal row, settings UI, export manager, preview manager, ODT add-on, and E2E preview/layout tests across `tests/unit/pandoc/` and `tests/e2e/specs/`.
+- Obsidian command, modal row, settings UI, export manager, preview manager, preview renderer registry, ODT add-on, and E2E preview/layout tests across `tests/unit/pandoc/` and `tests/e2e/specs/`.
 
 Future tests should focus on any source change that adds real platform-specific OS modules.
