@@ -40,8 +40,10 @@
 - Pandoc export/rendering support belongs in an isolated optional module under `src/pandoc/`.
 - Keep Pandoc as an optional desktop-only dependency. Do not require Pandoc, Node process APIs, or Electron APIs during normal plugin startup or existing Live Preview/Reading mode rendering.
 - The core rendering features must continue to work when Pandoc is missing, disabled, or unavailable on mobile.
-- Prefer a service boundary that accepts argument arrays and uses an injectable process runner; avoid shell-string command construction except for a future explicitly advanced/custom-command mode.
-- Future UI should be task-oriented around export profiles, output paths, bundled Lua filters, extra args, and output preview rather than exposing raw command templates as the primary workflow.
+- Develop the Pandoc module in three layers: keep pure export/profile/preview logic in `src/pandoc/core/`, Obsidian UI/workspace/rendering code in `src/pandoc/gui/obsidian/`, and process/filesystem/Electron/platform behavior in `src/pandoc/os/common/`.
+- Add new host capabilities through core ports instead of importing Obsidian, DOM, Node, or Electron APIs into core; keep preview support registration-based with core format modules and GUI renderer modules.
+- Prefer service boundaries that accept argument arrays and injectable process runners; avoid shell-string command construction except for explicit custom shell profiles with `type: "custom"` and `shell: true`.
+- UI should be task-oriented around export profiles, output paths, bundled Lua filters, extra args, and output preview rather than exposing raw command templates as the primary workflow.
 
 ## Commit & Pull Request Guidelines
 - Recent commits are short, imperative, one-line summaries (e.g., “Fix…”, “Add…”, “Address…”); follow that style and avoid scopes unless needed.

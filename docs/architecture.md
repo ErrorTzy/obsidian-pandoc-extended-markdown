@@ -779,7 +779,7 @@ interface InlineTextProcessor extends ReadingModeProcessor {
 
 The Pandoc export backend lives in `/src/pandoc/` and is intentionally isolated from the Live Preview and Reading mode pipelines. Existing rendering features must keep working when Pandoc is missing, the export setting is disabled, or the plugin is running on mobile.
 
-For the GUI-agnostic target architecture and future migration plan, see [Pandoc Module GUI-Agnostic Architecture](pandoc-architecture.md).
+For the current layer design, export flow, preview registries, and development guide, see [Pandoc Module Architecture](pandoc-architecture.md).
 
 ### Runtime Boundaries
 
