@@ -73,7 +73,6 @@ export interface PandocExportSettings {
     showOverwriteConfirmation: boolean;
     openOutputFile: boolean;
     revealOutputFile: boolean;
-    showProgress: boolean;
     suggestRuntimeEnvVariables: boolean;
     preview: PandocPreviewSettings;
 }

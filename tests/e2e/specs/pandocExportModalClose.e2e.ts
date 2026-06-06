@@ -115,7 +115,6 @@ async function configurePandocExport(pandocPath: string): Promise<void> {
             showOverwriteConfirmation: false,
             openOutputFile: true,
             revealOutputFile: false,
-            showProgress: false,
             profiles: [{
                 id: profile,
                 name: 'E2E HTML fragment',
@@ -161,7 +160,6 @@ async function configurePandocExportForPreview(): Promise<void> {
             lastOutputFolder: folder,
             lastExportProfileId: profile,
             showOverwriteConfirmation: false,
-            showProgress: false,
             profiles: [{
                 id: profile,
                 name: 'E2E output extension',

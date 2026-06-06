@@ -6,11 +6,35 @@ import {
 import {
     renderPandocExportSettingsSection
 } from '../../../src/pandoc/gui/obsidian/settings/pandocExportSettingsSection';
+import {
+    PandocExportAdvancedSettingsModal
+} from '../../../src/pandoc/gui/obsidian/settings/PandocExportAdvancedSettingsModal';
 import type {
     ObsidianPandocGuiDependencies
 } from '../../../src/pandoc/gui/obsidian/dependencies';
 
 describe('Pandoc export settings section', () => {
+    it('keeps advanced-only controls out of the main settings section', () => {
+        const settings = normalizePandocExportSettings({
+            enabled: true,
+            env: { TEXINPUTS: '${pluginDir}/textemplate/:' }
+        });
+        const container = document.createElement('div');
+
+        renderPandocExportSettingsSection({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings: async () => undefined
+        }, container, createDependencies());
+
+        expect(getSettingRow(container, 'Advanced Pandoc settings')).toBeTruthy();
+        expect(findSettingRow(container, 'Show progress notices')).toBeUndefined();
+        expect(findSettingRow(container, 'Environment overrides')).toBeUndefined();
+        expect(findSettingRow(container, 'Suggest runtime environment variables')).toBeUndefined();
+        expect(container.querySelector('textarea')).toBeNull();
+    });
+
     it('updates ODT add-on settings through injected install and remove dependencies', async () => {
         const settings = normalizePandocExportSettings({
             enabled: true
@@ -66,9 +90,136 @@ describe('Pandoc export settings section', () => {
 
         confirmSpy.mockRestore();
     });
+
+    it('saves and removes advanced environment rows from a local draft', async () => {
+        const settings = normalizePandocExportSettings({
+            env: {
+                TEXINPUTS: '${pluginDir}/textemplate/:',
+                REMOVE_ME: 'old'
+            }
+        });
+        const saveSettings = jest.fn(async () => undefined);
+        const modal = new PandocExportAdvancedSettingsModal({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings
+        }, createDependencies());
+
+        modal.open();
+        getEnvRows(modal)[1].querySelector<HTMLButtonElement>('button')?.click();
+        const inputs = getEnvRows(modal)[0].querySelectorAll<HTMLInputElement>('input');
+        inputs[1].focus();
+        fireInput(inputs[1], '${currentDir}/tex:');
+        clickButtonSync(modal.contentEl, 'Add variable');
+        const blankInputs = getEnvRows(modal)[1].querySelectorAll<HTMLInputElement>('input');
+        fireInput(blankInputs[0], 'EMPTY_VALUE');
+        fireInput(blankInputs[1], '');
+        await clickButton(modal.contentEl, 'Save and close');
+
+        expect(settings.env).toEqual({
+            TEXINPUTS: '${currentDir}/tex:',
+            EMPTY_VALUE: ''
+        });
+        expect(saveSettings).toHaveBeenCalledTimes(1);
+        expect(modal.contentEl.textContent).toBe('');
+    });
+
+    it('discards advanced draft changes when cancelled', async () => {
+        const settings = normalizePandocExportSettings({
+            env: { TEXINPUTS: '${pluginDir}/textemplate/:' }
+        });
+        const saveSettings = jest.fn(async () => undefined);
+        const modal = new PandocExportAdvancedSettingsModal({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings
+        }, createDependencies());
+
+        modal.open();
+        clickButtonSync(modal.contentEl, 'Add variable');
+        const inputs = getEnvRows(modal)[1].querySelectorAll<HTMLInputElement>('input');
+        fireInput(inputs[0], 'NEW_VAR');
+        fireInput(inputs[1], 'new');
+        await clickButton(modal.contentEl, 'Cancel changes');
+
+        expect(settings.env).toEqual({ TEXINPUTS: '${pluginDir}/textemplate/:' });
+        expect(saveSettings).not.toHaveBeenCalled();
+    });
+
+    it('ignores blank env rows and rejects duplicate or nameless env rows', async () => {
+        const settings = normalizePandocExportSettings();
+        const saveSettings = jest.fn(async () => undefined);
+        const plugin = {
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings
+        };
+        const validModal = new PandocExportAdvancedSettingsModal(plugin, createDependencies());
+
+        validModal.open();
+        clickButtonSync(validModal.contentEl, 'Add variable');
+        clickButtonSync(validModal.contentEl, 'Add variable');
+        fireInput(getEnvRows(validModal)[0].querySelectorAll<HTMLInputElement>('input')[0], 'PATH');
+        fireInput(getEnvRows(validModal)[0].querySelectorAll<HTMLInputElement>('input')[1], '/bin');
+        await clickButton(validModal.contentEl, 'Save and close');
+
+        expect(settings.env).toEqual({ PATH: '/bin' });
+        expect(saveSettings).toHaveBeenCalledTimes(1);
+
+        const duplicateModal = new PandocExportAdvancedSettingsModal(plugin, createDependencies());
+        duplicateModal.open();
+        clickButtonSync(duplicateModal.contentEl, 'Add variable');
+        const duplicateInputs = getEnvRows(duplicateModal)[1].querySelectorAll<HTMLInputElement>('input');
+        fireInput(duplicateInputs[0], 'PATH');
+        fireInput(duplicateInputs[1], '/other');
+        await clickButton(duplicateModal.contentEl, 'Save and close');
+
+        expect(settings.env).toEqual({ PATH: '/bin' });
+        expect(saveSettings).toHaveBeenCalledTimes(1);
+
+        const namelessModal = new PandocExportAdvancedSettingsModal(plugin, createDependencies());
+        namelessModal.open();
+        clickButtonSync(namelessModal.contentEl, 'Add variable');
+        fireInput(getEnvRows(namelessModal)[1].querySelectorAll<HTMLInputElement>('input')[1], 'value');
+        await clickButton(namelessModal.contentEl, 'Save and close');
+
+        expect(settings.env).toEqual({ PATH: '/bin' });
+        expect(saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('suggests runtime env variables only from the advanced opt-in toggle', () => {
+        const settings = normalizePandocExportSettings({
+            env: { TEXINPUTS: '' },
+            suggestRuntimeEnvVariables: false
+        });
+        const modal = new PandocExportAdvancedSettingsModal({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings: async () => undefined
+        }, createDependencies({ runtimeEnv: { HOME: '/home/test' } }));
+
+        modal.open();
+        typeEnvValueForSuggestions(modal, '${H');
+        expect(envSuggestionNames(modal)).not.toContain('${HOME}');
+
+        const toggle = getSettingRow(modal.contentEl, 'Suggest runtime environment variables')
+            .querySelector<HTMLInputElement>('input[type="checkbox"]');
+        if (!toggle) throw new Error('Runtime env toggle not found.');
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change', { bubbles: true }));
+
+        typeEnvValueForSuggestions(modal, '${H');
+        expect(envSuggestionNames(modal)).toContain('${HOME}');
+    });
 });
 
-function createDependencies(): ObsidianPandocGuiDependencies {
+function createDependencies(
+    overrides: Partial<ObsidianPandocGuiDependencies> = {}
+): ObsidianPandocGuiDependencies {
     return {
         catalogProcess: {
             run: async () => createRunResult(),
@@ -107,17 +258,27 @@ function createDependencies(): ObsidianPandocGuiDependencies {
         removeOdtPreviewAddon: jest.fn(async () => ({
             enabled: false,
             status: 'not-installed'
-        }))
+        })),
+        ...overrides
     };
 }
 
 function createApp() {
     return {
+        workspace: {
+            getActiveFile: () => null
+        },
         vault: {
             adapter: {
-                getBasePath: () => '/vault'
+                getBasePath: () => '/vault',
+                getFullPath: (path: string) => `/vault/${path}`
             },
+            config: {},
             configDir: '.obsidian'
+        },
+        metadataCache: {
+            getCache: () => null,
+            getFirstLinkpathDest: () => null
         }
     } as never;
 }
@@ -137,9 +298,13 @@ function createRunResult() {
 }
 
 async function clickButton(container: HTMLElement, label: string): Promise<void> {
+    clickButtonSync(container, label);
+    await Promise.resolve();
+    await Promise.resolve();
+}
+
+function clickButtonSync(container: HTMLElement, label: string): void {
     getButton(container, label).click();
-    await Promise.resolve();
-    await Promise.resolve();
 }
 
 function getButton(container: HTMLElement, label: string): HTMLButtonElement {
@@ -150,10 +315,39 @@ function getButton(container: HTMLElement, label: string): HTMLButtonElement {
     return button;
 }
 
-function getSettingRow(container: HTMLElement, name: string): HTMLElement {
+function findSettingRow(container: HTMLElement, name: string): HTMLElement | undefined {
     const rows = Array.from(container.querySelectorAll<HTMLElement>('.setting-item'));
-    const row = rows.find(item => item.querySelector('.setting-item-name')?.textContent === name);
+    return rows.find(item => item.querySelector('.setting-item-name')?.textContent === name);
+}
+
+function getSettingRow(container: HTMLElement, name: string): HTMLElement {
+    const row = findSettingRow(container, name);
     if (!row) throw new Error(`Setting not found: ${name}`);
 
     return row;
+}
+
+function getEnvRows(modal: PandocExportAdvancedSettingsModal): HTMLElement[] {
+    return Array.from(modal.contentEl.querySelectorAll<HTMLElement>('.pem-pandoc-env-row'))
+        .filter(row => !row.classList.contains('pem-pandoc-env-header'));
+}
+
+function fireInput(input: HTMLInputElement, value: string): void {
+    input.value = value;
+    input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+}
+
+function typeEnvValueForSuggestions(
+    modal: PandocExportAdvancedSettingsModal,
+    value: string
+): void {
+    const input = getEnvRows(modal)[0]
+        .querySelectorAll<HTMLInputElement>('input')[1];
+    input.focus();
+    fireInput(input, value);
+}
+
+function envSuggestionNames(modal: PandocExportAdvancedSettingsModal): string[] {
+    return Array.from(modal.contentEl.querySelectorAll<HTMLElement>('.pem-pandoc-variable-suggestion-name'))
+        .map(item => item.textContent ?? '');
 }

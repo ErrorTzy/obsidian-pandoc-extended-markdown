@@ -43,7 +43,6 @@ export function normalizePandocExportSettings(
             DEFAULT_PANDOC_EXPORT_SETTINGS.showOverwriteConfirmation,
         openOutputFile: source.openOutputFile ?? DEFAULT_PANDOC_EXPORT_SETTINGS.openOutputFile,
         revealOutputFile: source.revealOutputFile ?? DEFAULT_PANDOC_EXPORT_SETTINGS.revealOutputFile,
-        showProgress: source.showProgress ?? DEFAULT_PANDOC_EXPORT_SETTINGS.showProgress,
         suggestRuntimeEnvVariables: source.suggestRuntimeEnvVariables ??
             DEFAULT_PANDOC_EXPORT_SETTINGS.suggestRuntimeEnvVariables,
         preview: normalizePreviewSettings(source.preview)

@@ -6,7 +6,7 @@ The Pandoc export backend is optional and desktop-only. It lives under `src/pand
 
 Export profiles, environment overrides, resource paths, Lua filter paths, metadata values, and advanced custom shell commands use simple `${name}` replacement. Unknown variables are preserved literally. JavaScript expressions are not evaluated.
 
-The command builder suggests built-in export variables first. Runtime environment variable suggestions are disabled by default because their values may contain sensitive information. Enable **Suggest runtime environment variables** in Pandoc export settings to include current environment variables after the built-in export variables. The template syntax remains `${NAME}` on every operating system because the plugin resolves these placeholders before passing arguments or environment overrides to Pandoc.
+The command builder and environment value editor suggest built-in export variables first. Runtime environment variable suggestions are disabled by default because their values may contain sensitive information. Open **Advanced Pandoc settings** and enable **Suggest runtime environment variables** to include current environment variables after the built-in export variables. The template syntax remains `${NAME}` on every operating system because the plugin resolves these placeholders before passing arguments or environment overrides to Pandoc.
 
 | Variable | Meaning |
 | --- | --- |
@@ -40,6 +40,12 @@ Default export profiles use:
 ```
 
 `embedDirs` may be empty. Empty rendered template values are skipped for repeated path options.
+
+## Process Environment Overrides
+
+Open **Advanced Pandoc settings** to edit global Pandoc process environment overrides. The **Pandoc process environment** table stores one variable per row with separate **Variable** and **Value** fields. Variable names must use conventional environment variable syntax such as `TEXINPUTS` or `PATH`; blank rows are ignored, duplicate names are rejected, and an empty value is allowed when a variable name is present.
+
+Values preserve the text you type and support the same `${name}` template variables as export profiles. For example, `TEXINPUTS` can use `${pluginDir}/textemplate/:`.
 
 ## Bundled Lua Filters
 

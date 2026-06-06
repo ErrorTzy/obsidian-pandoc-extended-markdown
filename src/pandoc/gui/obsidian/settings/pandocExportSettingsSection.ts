@@ -2,6 +2,7 @@ import { Notice, Platform, Setting } from 'obsidian';
 import type { App, PluginManifest } from 'obsidian';
 
 import { PandocExtendedMarkdownSettings } from '../../../../shared/types/settingsTypes';
+import { PandocExportAdvancedSettingsModal } from './PandocExportAdvancedSettingsModal';
 import { PandocProfileEditorModal } from '../modals/PandocProfileEditorModal';
 import type {
     ObsidianPandocGuiDependencies
@@ -93,7 +94,8 @@ export function renderPandocExportSettingsSection(
 
     renderBooleanSettings(plugin, containerEl);
     renderPreviewSettings(plugin, containerEl, dependencies);
-    renderJsonSettings(plugin, containerEl, dependencies);
+    renderAdvancedSettings(plugin, containerEl, dependencies);
+    renderProfileSettings(plugin, containerEl, dependencies);
 }
 
 function renderBooleanSettings(
@@ -110,13 +112,7 @@ function renderBooleanSettings(
     }> = [
         { name: 'Confirm before replacing files', key: 'showOverwriteConfirmation' },
         { name: 'Open output file after export', key: 'openOutputFile' },
-        { name: 'Reveal output file after export', key: 'revealOutputFile' },
-        { name: 'Show progress notices', key: 'showProgress' },
-        {
-            name: 'Suggest runtime environment variables',
-            key: 'suggestRuntimeEnvVariables',
-            desc: 'Shows environment variables in template suggestions. Values may include sensitive information.'
-        }
+        { name: 'Reveal output file after export', key: 'revealOutputFile' }
     ];
 
     for (const item of toggles) {
@@ -255,42 +251,29 @@ function getAddonInstallDir(plugin: PandocExportSettingsPlugin): string {
     );
 }
 
-function renderJsonSettings(
+function renderAdvancedSettings(
     plugin: PandocExportSettingsPlugin,
     containerEl: HTMLElement,
     dependencies: ObsidianPandocGuiDependencies
 ): void {
-    const settings = plugin.settings.pandocExport;
-    if (!settings) return;
-
     new Setting(containerEl)
-        .setName('Environment overrides')
-        .setDesc('JSON object. Values support simple ${name} variables.')
-        .addTextArea(text => text
-            .setValue(JSON.stringify(settings.env, null, 2))
-            .onChange(async value => {
-                await updateJson(value, object => {
-                    settings.env = object as Record<string, string>;
-                }, plugin);
-            }));
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
+        .setName('Advanced Pandoc settings')
+        .setDesc('Edit process environment variables and template suggestion privacy options.')
+        .addButton(button => button
+            .setButtonText('Open advanced')
+            .onClick(() => new PandocExportAdvancedSettingsModal(plugin, dependencies).open()));
+}
 
+function renderProfileSettings(
+    plugin: PandocExportSettingsPlugin,
+    containerEl: HTMLElement,
+    dependencies: ObsidianPandocGuiDependencies
+): void {
     new Setting(containerEl)
         .setName('Export profiles')
         .setDesc('Open the structured pandoc profile editor.')
         .addButton(button => button
             .setButtonText('Edit pandoc export')
             .onClick(() => new PandocProfileEditorModal(plugin, dependencies).open()));
-}
-
-async function updateJson(
-    value: string,
-    update: (parsed: unknown) => void,
-    plugin: PandocExportSettingsPlugin
-): Promise<void> {
-    try {
-        update(JSON.parse(value));
-        await plugin.saveSettings();
-    } catch {
-        new Notice('Invalid JSON; changes were not saved.');
-    }
 }

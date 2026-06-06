@@ -237,7 +237,6 @@ async function configurePandocExport(options: {
             pandocPath: '',
             lastExportProfileId: 'html',
             profiles,
-            showProgress: false,
             suggestRuntimeEnvVariables: nextOptions.suggestRuntimeEnvVariables ?? false
         };
     }, options);

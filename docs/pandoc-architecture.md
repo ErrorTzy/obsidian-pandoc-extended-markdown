@@ -156,10 +156,11 @@ the selected input format.
 
 Environment construction is separate:
 
-- User overrides live in `settings.pandocExport.env`.
+- User overrides live in `settings.pandocExport.env` and are edited from
+  **Advanced Pandoc settings** as key/value rows rather than raw JSON.
 - Platform defaults come from `os/common/environment.ts`.
 - Runtime env can be exposed to template suggestions only when
-  `suggestRuntimeEnvVariables` is enabled.
+  `suggestRuntimeEnvVariables` is enabled in the same Advanced modal.
 
 Unknown template variables are preserved literally. JavaScript expressions are
 not evaluated.

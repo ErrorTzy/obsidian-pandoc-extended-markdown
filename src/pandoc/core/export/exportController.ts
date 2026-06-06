@@ -157,9 +157,7 @@ export class PandocCoreExportController implements PandocExportController {
         }
 
         await this.runtime.cleanupPreview?.();
-        const progress = this.runtime.settings.showProgress ?
-            this.runtime.user?.showProgress('Exporting with Pandoc...') :
-            undefined;
+        const progress = this.runtime.user?.showProgress('Exporting with Pandoc...');
 
         try {
             const result = await this.runtime.runExport(this.runtime.getExportRequest());

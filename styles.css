@@ -921,9 +921,69 @@
     color: var(--text-muted);
 }
 
+.pem-pandoc-advanced-settings-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pem-pandoc-env-editor h3 {
+    font-size: var(--font-ui-medium);
+    margin: 0 0 8px;
+}
+
+.pem-pandoc-env-table {
+    display: grid;
+    gap: 8px;
+}
+
+.pem-pandoc-env-row {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(128px, 0.35fr) minmax(0, 1fr) 24px;
+    position: relative;
+}
+
+.pem-pandoc-env-header {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+}
+
+.pem-pandoc-env-row input {
+    min-width: 0;
+    width: 100%;
+}
+
+.pem-pandoc-env-value-cell {
+    display: flex;
+    min-width: 0;
+    position: relative;
+}
+
+.pem-pandoc-env-row-actions button {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--text-faint);
+    height: var(--input-height, 32px);
+    padding: 0;
+    width: 24px;
+}
+
+.pem-pandoc-env-row-actions button:hover,
+.pem-pandoc-env-row-actions button:focus-visible {
+    background: var(--background-modifier-hover);
+    color: var(--text-muted);
+}
+
 @media (max-width: 760px) {
     .pem-pandoc-builder-row {
         grid-template-columns: minmax(96px, 136px) 10px minmax(0, 1fr) minmax(40px, 64px) 24px;
+    }
+
+    .pem-pandoc-env-row {
+        grid-template-columns: minmax(96px, 0.4fr) minmax(0, 1fr) 24px;
     }
 }
 

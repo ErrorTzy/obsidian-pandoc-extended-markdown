@@ -73,7 +73,6 @@ export const DEFAULT_PANDOC_EXPORT_SETTINGS: PandocExportSettings = {
     showOverwriteConfirmation: true,
     openOutputFile: true,
     revealOutputFile: false,
-    showProgress: true,
     suggestRuntimeEnvVariables: false,
     preview: {
         enabled: true,

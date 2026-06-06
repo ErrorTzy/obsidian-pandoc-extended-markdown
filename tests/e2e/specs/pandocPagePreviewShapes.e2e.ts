@@ -592,7 +592,6 @@ async function configurePandocExport(
             showOverwriteConfirmation: false,
             openOutputFile: false,
             revealOutputFile: false,
-            showProgress: false,
             preview: {
                 ...(previous.preview ?? {}),
                 enabled: true,

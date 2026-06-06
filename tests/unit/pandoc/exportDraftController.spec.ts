@@ -127,7 +127,6 @@ describe('PandocExportDraftController', () => {
             showOverwriteConfirmation: true,
             openOutputFile: false,
             revealOutputFile: false,
-            showProgress: true,
             suggestRuntimeEnvVariables: false,
             preview: {
                 enabled: true,

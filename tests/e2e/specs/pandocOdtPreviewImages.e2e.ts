@@ -221,7 +221,6 @@ async function configurePandocOdtExport(pandocPath: string, installPath: string)
             showOverwriteConfirmation: false,
             openOutputFile: false,
             revealOutputFile: false,
-            showProgress: false,
             preview: {
                 ...(previous.preview ?? {}),
                 enabled: true,
