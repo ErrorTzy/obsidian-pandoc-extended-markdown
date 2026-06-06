@@ -35,14 +35,14 @@ export function scanExampleLabels(
     const docText = view.state.doc.toString();
     const lines = docText.split('\n');
     
-    // In strict mode, validate list blocks first
-    const invalidListBlocks = settings.strictPandocMode 
+    // When requested, validate list blocks first.
+    const invalidListBlocks = settings.enforcePandocListSpacing
         ? ListBlockValidator.validateListBlocks(lines, settings) 
         : new Set<number>();
     
     for (let i = 0; i < lines.length; i++) {
-        // Skip invalid lines in strict mode
-        if (settings.strictPandocMode && invalidListBlocks.has(i)) {
+        // Skip invalid lines when Pandoc list spacing enforcement is on.
+        if (settings.enforcePandocListSpacing && invalidListBlocks.has(i)) {
             continue;
         }
         

@@ -59,7 +59,7 @@ This keeps the normal Obsidian release assets simple while still ensuring instal
 
 ## Filter Responsibilities
 
-`FencedDivExtendedSyntax.lua` provides export behavior for non-strict fenced-div features:
+`FencedDivExtendedSyntax.lua` provides export behavior for plugin-specific fenced-div titles, references, and readable shorthand:
 
 - readable shorthand normalization
 - visible generated titles

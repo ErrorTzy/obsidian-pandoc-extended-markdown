@@ -5,10 +5,21 @@ describe('Syntax feature settings', () => {
     it('enables custom labels and list renumbering by default', () => {
         const settings = normalizeSettings({});
 
-        expect(settings.strictPandocMode).toBe(false);
+        expect(settings.enforcePandocListSpacing).toBe(false);
+        expect(settings.enableReadableFencedDivSyntax).toBe(true);
         expect(settings.enableCustomLabelLists).toBe(true);
         expect(settings.enableFencedDivExtras).toBe(true);
         expect(settings.autoRenumberLists).toBe(true);
+    });
+
+    it('ignores the legacy strict Pandoc mode setting', () => {
+        const settings = normalizeSettings({
+            strictPandocMode: true
+        } as Partial<ReturnType<typeof normalizeSettings>> & { strictPandocMode: boolean });
+
+        expect(settings.enforcePandocListSpacing).toBe(false);
+        expect(settings.enableReadableFencedDivSyntax).toBe(true);
+        expect(settings).not.toHaveProperty('strictPandocMode');
     });
 
     it('keeps custom labels disabled when only the granular toggle is false', () => {
@@ -56,16 +67,17 @@ describe('Syntax feature settings', () => {
         expect(settings.pandocExport?.suggestRuntimeEnvVariables).toBe(true);
     });
 
-    it('keeps custom labels enabled in processor config when strict mode is enabled', () => {
+    it('keeps custom labels enabled when Pandoc list spacing enforcement is enabled', () => {
         const config = createProcessorConfig(
             { strictLineBreaks: false },
             {
-                strictPandocMode: true,
+                enforcePandocListSpacing: true,
                 enableCustomLabelLists: true
             }
         );
 
         expect(config.enableCustomLabelLists).toBe(true);
+        expect(config.enforcePandocListSpacing).toBe(true);
     });
 
     it('defaults fenced div extras on and disables them when either fenced div toggle is off', () => {

@@ -24,7 +24,7 @@ describe('fenced div reading mode rendering', () => {
         overrides: Partial<ProcessorConfig & { enableFencedDivs: boolean }> = {}
     ): ProcessorConfig & { enableFencedDivs: boolean } => ({
         strictLineBreaks: false,
-        strictPandocMode: false,
+        enforcePandocListSpacing: false,
         enableSuperSubscripts: false,
         enableCustomLabelLists: false,
         enableFencedDivs: true,
@@ -159,7 +159,7 @@ describe('fenced div reading mode rendering', () => {
         expect(element.textContent).not.toContain(':::');
     });
 
-    it('renders readable shorthand and later @id citations in non-strict mode', () => {
+    it('renders readable shorthand and later @id citations when readable shorthand is enabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: Theorem #thm title="Theorem &" data=1</p>',
@@ -234,7 +234,7 @@ describe('fenced div reading mode rendering', () => {
         expect(blocks[2].classList.contains('pem-fenced-div-&')).toBe(false);
     });
 
-    it('renders explicit title shorthand and later @id citations in non-strict mode', () => {
+    it('renders explicit title shorthand and later @id citations when readable shorthand is enabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: {.logic #logic:a} explicit title after attributes &</p>',
@@ -319,7 +319,7 @@ describe('fenced div reading mode rendering', () => {
         ]);
     });
 
-    it('leaves readable shorthand untouched in strict mode', () => {
+    it('leaves readable shorthand untouched when readable shorthand is disabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: Theorem #thm data=1</p>',
@@ -331,7 +331,7 @@ describe('fenced div reading mode rendering', () => {
         processReadingMode(
             element,
             createContext('::: Theorem #thm data=1\nReadable content.\n:::\n\nSee @thm.'),
-            createConfig({ strictPandocMode: true })
+            createConfig({ enableReadableFencedDivSyntax: false })
         );
 
         expect(element.querySelector('.pem-fenced-div')).toBeNull();
@@ -339,7 +339,7 @@ describe('fenced div reading mode rendering', () => {
         expect(element.textContent).toContain('::: Theorem #thm data=1');
     });
 
-    it('renders Pandoc fenced div titles and references in strict mode when extras are enabled', () => {
+    it('renders Pandoc fenced div titles and references when readable shorthand is disabled', () => {
         const element = document.createElement('div');
         element.innerHTML = [
             '<p>::: {.theorem #thm title="Theorem &"}</p>',
@@ -351,7 +351,7 @@ describe('fenced div reading mode rendering', () => {
         processReadingMode(
             element,
             createContext('::: {.theorem #thm title="Theorem &"}\nStrict content.\n:::\n\nSee @thm.'),
-            createConfig({ strictPandocMode: true })
+            createConfig({ enableReadableFencedDivSyntax: false })
         );
 
         expect(element.querySelector('.pem-fenced-div')).not.toBeNull();

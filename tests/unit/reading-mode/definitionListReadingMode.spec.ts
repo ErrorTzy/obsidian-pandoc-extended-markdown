@@ -29,7 +29,7 @@ describe('definition list reading mode rendering', () => {
         pluginStateManager.resetDocumentCounters(docPath);
         config = {
             strictLineBreaks: false,
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             enableDefinitionLists: true,
             enableFencedDivs: false,
             enableSuperSubscripts: false,

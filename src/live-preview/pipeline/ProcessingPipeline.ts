@@ -111,7 +111,7 @@ function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSet
 
     const counter = { value: 1 };
     const lines = doc.toString().split('\n');
-    const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : new Set<number>();
+    const invalidLines = settings.enforcePandocListSpacing ? validateListBlocks(doc) : new Set<number>();
     const duplicateLineNumbers = new Set<number>();
     
     for (let i = 0; i < lines.length; i++) {
@@ -271,7 +271,7 @@ export class ProcessingPipeline {
         const placeholderContext = this.getPlaceholderContext(docPath);
         const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext, codeRegions);
         const fencedDivLabels = scanFencedDivs(doc, settings, codeRegions);
-        const invalidLines = settings.strictPandocMode ? validateListBlocks(doc) : new Set<number>();
+        const invalidLines = settings.enforcePandocListSpacing ? validateListBlocks(doc) : new Set<number>();
         
         // Update state manager
         if (docPath && customScanResult.placeholderContext) {
@@ -305,7 +305,7 @@ export class ProcessingPipeline {
             const line = doc.line(lineNum);
             context.fencedDivCanOpenAtCurrentLine = fencedDivCanOpenAtCurrentLine;
             
-            // Skip invalid lines in strict mode
+            // Skip lines blocked by Pandoc list spacing enforcement.
             if (context.invalidLines.has(lineNum)) {
                 fencedDivCanOpenAtCurrentLine = false;
                 continue;

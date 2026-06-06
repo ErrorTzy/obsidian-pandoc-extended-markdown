@@ -12,29 +12,29 @@ interface NonNativeSyntaxState {
     rawText: string;
 }
 
-const filePath = 'strict-non-native-syntax-toggles-e2e.md';
-const readingCustomOffPath = 'strict-non-native-syntax-custom-off-e2e.md';
-const readingExtrasOffPath = 'strict-non-native-syntax-extras-off-e2e.md';
-const readingFencedOffPath = 'strict-non-native-syntax-fenced-off-e2e.md';
+const filePath = 'list-spacing-non-native-syntax-toggles-e2e.md';
+const readingCustomOffPath = 'list-spacing-non-native-syntax-custom-off-e2e.md';
+const readingExtrasOffPath = 'list-spacing-non-native-syntax-extras-off-e2e.md';
+const readingFencedOffPath = 'list-spacing-non-native-syntax-fenced-off-e2e.md';
 const content = [
     '{::P(#a)} Custom premise.',
     '',
     'Therefore {::P(#a)}.',
     '',
     '::: {.theorem #thm:strict title="Theorem &"}',
-    'Strict-mode theorem.',
+    'List-spacing theorem.',
     ':::',
     '',
     'See @thm:strict.'
 ].join('\n');
 
-describe('Strict mode non-native syntax toggles', () => {
+describe('Pandoc list spacing non-native syntax toggles', () => {
     before(async () => {
         await browser.reloadObsidian({
             vault: './tests/e2e/vaults/test-vault'
         });
         await setSyntaxSettings({
-            strictPandocMode: true,
+            enforcePandocListSpacing: true,
             enableCustomLabelLists: true,
             enableFencedDivs: true,
             enableFencedDivExtras: true
@@ -44,7 +44,7 @@ describe('Strict mode non-native syntax toggles', () => {
 
     after(async () => {
         await setSyntaxSettings({
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             enableCustomLabelLists: true,
             enableFencedDivs: true,
             enableFencedDivExtras: true
@@ -55,7 +55,7 @@ describe('Strict mode non-native syntax toggles', () => {
         await deleteFileIfExists(readingFencedOffPath);
     });
 
-    it('keeps custom labels and fenced div extras rendering in strict Live Preview', async () => {
+    it('keeps custom labels and fenced div extras rendering in Live Preview with list spacing enforcement', async () => {
         await openFileInActiveLeaf(filePath);
         await ensureLivePreviewMode();
         await moveCursorToLine(6);
@@ -124,9 +124,9 @@ describe('Strict mode non-native syntax toggles', () => {
         expect(state.rawText).toContain('::: {.theorem #thm:strict title="Theorem &"}');
     });
 
-    it('keeps custom labels and fenced div extras rendering in strict Reading mode', async () => {
+    it('keeps custom labels and fenced div extras rendering in Reading mode with list spacing enforcement', async () => {
         await setSyntaxSettings({
-            strictPandocMode: true,
+            enforcePandocListSpacing: true,
             enableCustomLabelLists: true,
             enableFencedDivs: true,
             enableFencedDivExtras: true
@@ -245,7 +245,7 @@ async function getState(mode: 'live' | 'reading'): Promise<NonNativeSyntaxState>
 }
 
 async function setSyntaxSettings(settings: Partial<{
-    strictPandocMode: boolean;
+    enforcePandocListSpacing: boolean;
     enableCustomLabelLists: boolean;
     enableFencedDivs: boolean;
     enableFencedDivExtras: boolean;

@@ -69,7 +69,7 @@ describe('fenced div parser', () => {
     });
 
     describe('readable shorthand openings', () => {
-        it('parses classes, id, and key-values in non-strict mode', () => {
+        it('parses classes, id, and key-values when readable shorthand is enabled', () => {
             const parsed = parseFencedDivOpening('::: Theorem #thm data=1');
 
             expect(parsed?.classes).toEqual(['Theorem']);
@@ -130,21 +130,21 @@ describe('fenced div parser', () => {
             expect(parsed?.keyValues.get('title')).toBe('explicit title before attributes');
         });
 
-        it('keeps braced title shorthand disabled in strict mode', () => {
+        it('keeps braced title shorthand disabled when readable shorthand is disabled', () => {
             expect(parseFencedDivOpening(
                 '::: {.class #id} explicit title with space',
-                { strictPandocMode: true }
+                { enableReadableFencedDivSyntax: false }
             )).toBeNull();
             expect(parseFencedDivOpening(
                 '::: explicit title before attributes {.class #id}',
-                { strictPandocMode: true }
+                { enableReadableFencedDivSyntax: false }
             )).toBeNull();
         });
 
-        it('does not parse readable shorthand in strict mode', () => {
+        it('does not parse readable shorthand when readable shorthand is disabled', () => {
             expect(parseFencedDivOpening(
                 '::: Theorem #thm data=1',
-                { strictPandocMode: true }
+                { enableReadableFencedDivSyntax: false }
             )).toBeNull();
         });
     });

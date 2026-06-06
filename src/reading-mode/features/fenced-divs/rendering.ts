@@ -115,7 +115,8 @@ export function processHydratedFencedDivReferences(
             sourcePath: docPath,
             config: {
                 strictLineBreaks: false,
-                strictPandocMode: false,
+                enforcePandocListSpacing: false,
+                enableReadableFencedDivSyntax: true,
                 enableFencedDivs: true,
                 enableFencedDivExtras: true
             },

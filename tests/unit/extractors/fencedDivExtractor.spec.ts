@@ -3,11 +3,11 @@ import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 
 describe('extractFencedDivs', () => {
     const settings = {
-        strictPandocMode: false,
+        enforcePandocListSpacing: false,
         enableFencedDivs: true
     } as PandocExtendedMarkdownSettings;
 
-    it('extracts readable shorthand for panel rows in non-strict mode', () => {
+    it('extracts readable shorthand for panel rows when readable shorthand is enabled', () => {
         const items = extractFencedDivs([
             '::: Theorem #thm data=1',
             'Panel content.',
@@ -182,14 +182,14 @@ describe('extractFencedDivs', () => {
         ]);
     });
 
-    it('does not extract readable shorthand for panel rows in strict mode', () => {
+    it('does not extract readable shorthand for panel rows when readable shorthand is disabled', () => {
         const items = extractFencedDivs([
             '::: Theorem #thm data=1',
             'Panel content.',
             ':::'
         ].join('\n'), {
             ...settings,
-            strictPandocMode: true
+            enableReadableFencedDivSyntax: false
         });
 
         expect(items).toHaveLength(0);

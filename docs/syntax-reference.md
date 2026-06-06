@@ -49,7 +49,7 @@ List editing helpers:
 - Ordered marker cycling can choose marker styles by nesting depth.
 - Auto-renumbering can update affected list items when inserting in the middle of a list.
 
-Strict Pandoc mode requires blank lines around list blocks, requires at least two spaces after uppercase period markers such as `A.  Item`, disables custom label lists completely, and disables extended fenced div syntax.
+Pandoc list spacing enforcement requires blank lines around list blocks and at least two spaces after uppercase period markers such as `A.  Item` before list enhancements render.
 
 ## Unordered Lists
 
@@ -107,7 +107,7 @@ Every compact metric space is complete.
 See @compact.
 ```
 
-Fenced divs support native Pandoc attributes and, when strict Pandoc mode is off, plugin rendering for visible titles, generated numbering, readable shorthand, and document-local `@id` references.
+Fenced divs support native Pandoc attributes, optional plugin rendering for visible titles and generated numbering, optional readable shorthand, and document-local `@id` references.
 
 Fenced div CSS can be customized in Obsidian snippets with cross-mode hooks such as `cm-pem-fenced-div-theorem` for Live Preview and `pem-fenced-div-theorem` for Reading mode. See [Customizing CSS](customizing-css.md) for snippet examples.
 
@@ -115,7 +115,7 @@ See [Fenced divs](fenced-divs.md) for the full guide.
 
 ## Custom Label Lists
 
-Custom label lists are a plugin-specific core extension. They are enabled by default and disabled completely when Strict Pandoc mode is on.
+Custom label lists are a plugin-specific core extension. They are enabled by default and can be disabled with the `Custom label lists` setting.
 
 ```markdown
 {::P} All humans are mortal.
@@ -163,7 +163,7 @@ The plugin does not replace Obsidian's footnote renderer. It extracts footnote d
 
 The plugin adds these commands:
 
-- `Check pandoc formatting`: reports strict Pandoc spacing issues in the active document.
+- `Check pandoc formatting`: reports Pandoc spacing issues in the active document.
 - `Format document to pandoc standard`: adds blank lines around lists/headings and fixes uppercase letter list spacing.
 - `Toggle definition list bold style`: toggles explicit `**Term**` markup on definition terms.
 - `Toggle definition list underline style`: toggles explicit `<span class="underline">Term</span>` markup on definition terms.
@@ -173,7 +173,8 @@ The plugin adds these commands:
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| Strict Pandoc mode | Off | Enforces stricter Pandoc formatting, disables custom label lists completely, and disables extended fenced div syntax. |
+| Pandoc list spacing enforcement | Off | Requires Pandoc-compatible list spacing before list enhancements render. |
+| Readable fenced div shorthand | On | Enables plugin-specific readable fenced div opener forms in addition to native Pandoc attributes. |
 | Hash auto-number lists | On | Enables `#.` rendering and continuation. |
 | Fancy lists | On | Enables alphabetic and Roman numeral lists. |
 | Example lists | On | Enables `(@label)` examples and references. |

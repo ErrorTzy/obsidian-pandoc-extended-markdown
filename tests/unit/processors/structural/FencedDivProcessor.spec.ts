@@ -27,7 +27,7 @@ describe('FencedDivProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                strictPandocMode: false,
+                enforcePandocListSpacing: false,
                 enableFencedDivs: true,
                 ...settings
             } as PandocExtendedMarkdownSettings,
@@ -104,15 +104,15 @@ describe('FencedDivProcessor', () => {
             expect(processor.canProcess(context.document.line(1), context)).toBe(true);
         });
 
-        it('recognizes readable shorthand in non-strict mode', () => {
+        it('recognizes readable shorthand when readable shorthand is enabled', () => {
             const context = createContext('::: Theorem #thm data=1\ncontent\n:::');
             expect(processor.canProcess(context.document.line(1), context)).toBe(true);
         });
 
-        it('does not recognize readable shorthand in strict mode', () => {
+        it('does not recognize readable shorthand when readable shorthand is disabled', () => {
             const context = createContext(
                 '::: Theorem #thm data=1\ncontent\n:::',
-                { strictPandocMode: true }
+                { enableReadableFencedDivSyntax: false }
             );
             expect(processor.canProcess(context.document.line(1), context)).toBe(false);
         });

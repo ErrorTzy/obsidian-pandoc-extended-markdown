@@ -6,7 +6,7 @@ The toolbar switches between panel modules. The panel order can be changed in pl
 
 ## Custom Label Lists
 
-Available when `Custom label lists` is enabled and Strict Pandoc mode is off.
+Available when `Custom label lists` is enabled.
 
 - Shows all `{::LABEL}` custom label list items.
 - Displays processed labels and content.
@@ -33,7 +33,7 @@ Available when `Custom label lists` is enabled and Strict Pandoc mode is off.
 ## Fenced Divs
 
 - Shows fenced div blocks from the active document.
-- Includes readable shorthand when strict Pandoc mode is off.
+- Includes readable shorthand when `Readable fenced div shorthand` is enabled.
 - Displays title metadata, citation label, and content.
 - Click a label to copy citation syntax such as `@thm`.
 - Click content to jump to the fenced div in the editor.

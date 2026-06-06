@@ -65,7 +65,8 @@ async function setSubscriptEnabled(): Promise<void> {
         }
 
         if (plugin?.settings) {
-            plugin.settings.strictPandocMode = false;
+            plugin.settings.enforcePandocListSpacing = false;
+            plugin.settings.enableReadableFencedDivSyntax = true;
             plugin.settings.enableSubscript = true;
             await plugin.saveSettings();
             // @ts-ignore

@@ -102,10 +102,10 @@ describe('fenced div parser', () => {
             expect(opening?.keyValues.get('data-x')).toBe('yes');
         });
 
-        it('does not parse readable shorthand in strict mode', () => {
+        it('does not parse readable shorthand when readable shorthand is disabled', () => {
             expect(parseFencedDivOpening(
                 '::: Theorem #thm data=1',
-                { strictPandocMode: true }
+                { enableReadableFencedDivSyntax: false }
             )).toBeNull();
         });
     });

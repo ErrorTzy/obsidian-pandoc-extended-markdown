@@ -58,7 +58,7 @@ describe('ProcessingPipeline', () => {
         pipeline = new ProcessingPipeline(stateManager);
         
         settings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             autoRenumberLists: false,
             enableCustomLabelLists: false,
             panelOrder: [],

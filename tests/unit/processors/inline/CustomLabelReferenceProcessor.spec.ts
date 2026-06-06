@@ -29,7 +29,7 @@ describe('CustomLabelReferenceProcessor', () => {
         document: view.state.doc,
         view,
         settings: {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             autoRenumberLists: false,
             enableCustomLabelLists,
             panelOrder: [],
@@ -169,8 +169,8 @@ describe('CustomLabelReferenceProcessor', () => {
             expect(matches).toHaveLength(0);
         });
 
-        it('should find matches in strict mode when custom label lists are enabled', () => {
-            context.settings.strictPandocMode = true;
+        it('should find matches when Pandoc list spacing enforcement and custom label lists are enabled', () => {
+            context.settings.enforcePandocListSpacing = true;
             context.customLabels.set('label', 'Label content');
             const text = 'Text with {::label} reference';
             const region: ContentRegion = {

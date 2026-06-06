@@ -76,7 +76,7 @@ describe('Nested Standard Lists', () => {
         pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
         
         settings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             enableCustomLabelLists: false
         } as PandocExtendedMarkdownSettings;
     });

@@ -46,7 +46,7 @@ function applyStrictFancyValidation(
     lines: string[],
     context: ReadingModeContext
 ): void {
-    if (!context.config.strictPandocMode) {
+    if (!context.config.enforcePandocListSpacing) {
         return;
     }
 
@@ -161,7 +161,7 @@ function validateListInStrictMode(
         currentLine: lineNum
     };
 
-    return isStrictPandocFormatting(validationContext, config.strictPandocMode);
+    return isStrictPandocFormatting(validationContext, config.enforcePandocListSpacing);
 }
 
 function isSemanticListBlock(parsedLines: ParsedLine[]): boolean {

@@ -58,7 +58,8 @@ export interface ModeChangeEvent {
  * Settings interface for the Pandoc Extended Markdown plugin.
  */
 export interface PandocExtendedMarkdownSettings {
-    strictPandocMode: boolean;
+    enforcePandocListSpacing: boolean;
+    enableReadableFencedDivSyntax: boolean;
     autoRenumberLists: boolean;
     enableHashAutoNumber?: boolean;
     enableFancyLists?: boolean;
@@ -80,7 +81,8 @@ export interface PandocExtendedMarkdownSettings {
 }
 
 export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
-    strictPandocMode: false,
+    enforcePandocListSpacing: false,
+    enableReadableFencedDivSyntax: true,
     autoRenumberLists: true,
     enableHashAutoNumber: true,
     enableFancyLists: true,
@@ -140,7 +142,10 @@ export function normalizeSettings(
 ): PandocExtendedMarkdownSettings {
     const sourceSettings = settings ?? {};
     const normalized: PandocExtendedMarkdownSettings = {
-        strictPandocMode: sourceSettings.strictPandocMode ?? DEFAULT_SETTINGS.strictPandocMode,
+        enforcePandocListSpacing: sourceSettings.enforcePandocListSpacing ??
+            DEFAULT_SETTINGS.enforcePandocListSpacing,
+        enableReadableFencedDivSyntax: sourceSettings.enableReadableFencedDivSyntax ??
+            DEFAULT_SETTINGS.enableReadableFencedDivSyntax,
         autoRenumberLists: sourceSettings.autoRenumberLists ?? DEFAULT_SETTINGS.autoRenumberLists,
         enableHashAutoNumber: isSyntaxFeatureEnabled(sourceSettings, 'enableHashAutoNumber'),
         enableFancyLists: isSyntaxFeatureEnabled(sourceSettings, 'enableFancyLists'),

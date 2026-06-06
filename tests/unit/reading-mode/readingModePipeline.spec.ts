@@ -29,7 +29,7 @@ describe('reading mode pipeline', () => {
 
     const createConfig = (overrides: Partial<ProcessorConfig> = {}): ProcessorConfig => ({
         strictLineBreaks: false,
-        strictPandocMode: false,
+        enforcePandocListSpacing: false,
         enableHashLists: true,
         enableFancyLists: true,
         enableExampleLists: true,
@@ -150,13 +150,13 @@ describe('reading mode pipeline', () => {
         expect(element.textContent).toBe('H2O and x2');
     });
 
-    it('renders custom labels in strict mode when custom label lists are enabled', () => {
+    it('renders custom labels when Pandoc list spacing enforcement is enabled and custom label lists are enabled', () => {
         const element = document.createElement('div');
         element.innerHTML = '<p>{::P} Premise.</p><p>Therefore {::P}.</p>';
         const context = createPostProcessorContext('{::P} Premise.\n\nTherefore {::P}.');
 
         processReadingMode(element, context, createConfig({
-            strictPandocMode: true,
+            enforcePandocListSpacing: true,
             enableCustomLabelLists: true
         }));
 
@@ -171,7 +171,7 @@ describe('reading mode pipeline', () => {
         const context = createPostProcessorContext('{::P} Premise.\n\nTherefore {::P}.');
 
         processReadingMode(element, context, createConfig({
-            strictPandocMode: true,
+            enforcePandocListSpacing: true,
             enableCustomLabelLists: false
         }));
 

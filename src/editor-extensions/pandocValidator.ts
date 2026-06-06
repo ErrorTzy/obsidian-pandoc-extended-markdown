@@ -5,13 +5,13 @@ import { INDENTATION } from '../core/constants';
 import { ListPatterns } from '../shared/patterns';
 
 /**
- * Validates whether the current line conforms to strict Pandoc formatting rules.
- * In strict mode, lists must be surrounded by empty lines and capital letter lists
+ * Validates whether the current line conforms to Pandoc list spacing rules.
+ * When enforcement is on, lists must be surrounded by empty lines and capital letter lists
  * with periods require double spacing.
  * 
  * @param context - The validation context containing lines and current position
- * @param strictMode - Whether to enforce strict Pandoc formatting rules
- * @returns True if formatting is valid or strict mode is disabled, false otherwise
+ * @param strictMode - Whether to enforce Pandoc formatting rules
+ * @returns True if formatting is valid or enforcement is disabled, false otherwise
  * @throws Does not throw exceptions - returns false for validation failures
  * @example
  * const context = { lines: ['', 'A. First item', ''], currentLine: 1 };
@@ -52,7 +52,7 @@ export function isStrictPandocFormatting(context: ValidationContext, strictMode:
         const nextIsListItem = isListItem(nextLine, false);
         
         if (!nextIsListItem && nextLine.trim() !== '') {
-            // Next line is not a list item and not empty - invalid in strict mode
+            // Next line is not a list item and not empty.
             return false;
         }
     }

@@ -165,7 +165,7 @@ export function validateCustomLabelBlocks(
 ): Set<number> {
     const invalidLines = new Set<number>();
     
-    if (!isCustomLabelListsEnabled(settings) || !settings.strictPandocMode) {
+    if (!isCustomLabelListsEnabled(settings) || !settings.enforcePandocListSpacing) {
         return invalidLines;
     }
     

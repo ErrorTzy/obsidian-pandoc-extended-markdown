@@ -25,7 +25,7 @@ describe('SuperscriptProcessor', () => {
         document: view.state.doc,
         view,
         settings: {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             autoRenumberLists: false,
             enableCustomLabelLists: false,
             panelOrder: [],

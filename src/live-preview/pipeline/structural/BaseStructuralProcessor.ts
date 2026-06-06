@@ -34,10 +34,10 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
     }
 
     /**
-     * Check if strict mode validation should block processing
+     * Check if Pandoc list spacing enforcement should block processing
      */
     protected isInvalidInStrictMode(line: Line, context: ProcessingContext): boolean {
-        return context.settings.strictPandocMode && context.invalidLines.has(line.number);
+        return context.settings.enforcePandocListSpacing && context.invalidLines.has(line.number);
     }
 
     /**

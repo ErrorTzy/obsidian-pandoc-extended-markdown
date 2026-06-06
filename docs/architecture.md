@@ -102,7 +102,7 @@ The optional Pandoc export backend is a separate desktop-only module. It is not 
 
 All structural processors extend `BaseStructuralProcessor` which provides:
 - `isCursorInMarker()`: Check if cursor is within marker range
-- `isInvalidInStrictMode()`: Validate strict mode compliance
+- `isInvalidInStrictMode()`: Check whether Pandoc list spacing enforcement blocks rendering
 - `createLineDecoration()`: Create standard line decorations
 - `createContentMarkDecoration()`: Create content area decorations
 - `createMarkerReplacement()`: Create marker replacement widgets
@@ -116,7 +116,7 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 * CustomLabelProcessor is modularized into `/customLabel/` subdirectory for better organization
 | **HashListProcessor** | 10 | Auto-number `#.` lists | `^\s*#\.` | BaseStructuralProcessor |
 | **CustomLabelProcessor*** | 15 | Process `{::LABEL}` markers | `^\s*\{::` | StructuralProcessor |
-| **FencedDivProcessor** | 18 | Render fenced div open/content/close lines | unindented `:::` with Pandoc-recognized attributes, plus readable shorthand when strict mode is off, at block boundaries | BaseStructuralProcessor |
+| **FencedDivProcessor** | 18 | Render fenced div open/content/close lines | unindented `:::` with Pandoc-recognized attributes, plus readable shorthand when enabled, at block boundaries | BaseStructuralProcessor |
 | **FancyListProcessor** | 20 | Letter/Roman lists | `^\s*[A-Za-z0-9]+[.)]` | BaseStructuralProcessor |
 | **DefinitionProcessor** | 20 | Definition list items | `^:\s` or `^~\s` | StructuralProcessor |
 | **ExampleListProcessor** | 30 | Example lists `(@label)` | `^\s*\(@` | BaseStructuralProcessor |
@@ -181,7 +181,7 @@ Reading mode uses a small processor pipeline around rendered preview DOM. The pu
 | **types.ts** | Defines `ReadingModeContext`, `ReadingModeProcessor`, `BlockDomProcessor`, `InlineTextProcessor`, and Obsidian app adapter types |
 | **registry.ts** | Builds the default processor set and shared context |
 
-`ReadingModeContext` contains the rendered root element, Obsidian post-processor context, preview section and section info, source path, optional full source, processor config, render context, document counters, app adapter, and strict-mode validation lines.
+`ReadingModeContext` contains the rendered root element, Obsidian post-processor context, preview section and section info, source path, optional full source, processor config, render context, document counters, app adapter, and Pandoc list-spacing validation lines.
 
 #### Block/DOM Processors (`/reading-mode/pipeline/processors/`)
 
@@ -335,10 +335,10 @@ listAutocompletion/
 2. Document Scanning
    - Extract example labels → Map<label, number>
    - Extract custom labels → Map<label, processed>
-   - Extract labeled fenced divs, including non-strict readable shorthand title templates → Map<label, reference metadata>
+   - Extract labeled fenced divs, including readable shorthand title templates when enabled → Map<label, reference metadata>
    - Skip code regions
 
-3. Validation (Strict Mode)
+3. Validation (Pandoc List Spacing Enforcement)
    - Check Pandoc compliance
    - Mark invalid lines
 
@@ -401,7 +401,7 @@ For each content region from Phase 1:
    - source path and section info
    - ProcessorConfig and RenderContext
    - document counters and label maps from PluginStateManager
-   - strict-mode validation lines
+   - Pandoc list-spacing validation lines
 3. createDefaultReadingModePipeline() registers block and inline processors
 4. ReadingModePipeline runs enabled processors by priority:
    - source-aware marker classes

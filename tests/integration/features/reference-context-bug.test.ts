@@ -15,7 +15,7 @@ describe('Reference context preservation', () => {
         pluginStateManager.resetDocumentCounters(docPath);
         
         config = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true

@@ -54,7 +54,7 @@ describe('Widget Editability', () => {
             // Process the content
             const decorations = pipeline.process(view, {
                 enableCustomLabelLists: true,
-                strictPandocMode: false
+                enforcePandocListSpacing: false
             });
             
             // Check that decorations don't explicitly set contentEditable
@@ -94,7 +94,7 @@ describe('Widget Editability', () => {
             
             const decorations = pipeline.process(view, {
                 enableCustomLabelLists: true,
-                strictPandocMode: false
+                enforcePandocListSpacing: false
             });
             
             decorations.iter({

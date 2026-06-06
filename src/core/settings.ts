@@ -80,12 +80,25 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
 
     private renderGeneralSettings(containerEl: HTMLElement): void {
         new Setting(containerEl)
-            .setName(SETTINGS_UI.STRICT_MODE.NAME)
-            .setDesc(SETTINGS_UI.STRICT_MODE.DESCRIPTION)
+            .setName(SETTINGS_UI.PANDOC_LIST_SPACING.NAME)
+            .setDesc(SETTINGS_UI.PANDOC_LIST_SPACING.DESCRIPTION)
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.strictPandocMode)
+                .setValue(this.plugin.settings.enforcePandocListSpacing)
                 .onChange(async (value) => {
-                    this.plugin.settings.strictPandocMode = value;
+                    this.plugin.settings.enforcePandocListSpacing = value;
+                    await this.plugin.saveSettings();
+                    this.app.workspace.updateOptions();
+                    this.refreshListPanels();
+                    this.refreshPanelOrderList();
+                }));
+
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.READABLE_FENCED_DIV_SYNTAX.NAME)
+            .setDesc(SETTINGS_UI.READABLE_FENCED_DIV_SYNTAX.DESCRIPTION)
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableReadableFencedDivSyntax)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableReadableFencedDivSyntax = value;
                     await this.plugin.saveSettings();
                     this.app.workspace.updateOptions();
                     this.refreshListPanels();

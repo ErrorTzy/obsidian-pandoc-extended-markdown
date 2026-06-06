@@ -28,7 +28,7 @@ describe('CustomLabelProcessor', () => {
             view,
             settings: {
                 enableCustomLabelLists: true,
-                strictPandocMode: false,
+                enforcePandocListSpacing: false,
                 ...settings
             } as PandocExtendedMarkdownSettings,
             exampleLabels: new Map(),
@@ -77,8 +77,8 @@ describe('CustomLabelProcessor', () => {
             expect(processor.canProcess(line, context)).toBe(false);
         });
 
-        it('should return true in strict mode when custom label lists are enabled', () => {
-            context = createContext('{::Label} Content', { strictPandocMode: true });
+        it('should return true when Pandoc list spacing enforcement and custom label lists are enabled', () => {
+            context = createContext('{::Label} Content', { enforcePandocListSpacing: true });
             const line = context.document.line(1);
             expect(processor.canProcess(line, context)).toBe(true);
         });
@@ -169,9 +169,9 @@ describe('CustomLabelProcessor', () => {
             expect(duplicateWidget).toBeDefined();
         });
         
-        it('should skip processing in strict mode for invalid lines', () => {
-            context = createContext('{::Label} Content', { strictPandocMode: true });
-            context.invalidLines.add(0); // Mark line as invalid
+        it('should skip processing when Pandoc list spacing enforcement marks a line invalid', () => {
+            context = createContext('{::Label} Content', { enforcePandocListSpacing: true });
+            context.invalidLines.add(1); // Mark line as invalid
             
             const line = context.document.line(1);
             const result = processor.process(line, context);

@@ -45,7 +45,7 @@ describe('Definition List Crash Bug', () => {
         const doc = 'Term\n: Definition';
         const view = createView(doc);
         const settings: PandocExtendedMarkdownSettings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableCustomLabelLists: false,
             panelOrder: []
@@ -61,7 +61,7 @@ describe('Definition List Crash Bug', () => {
         const doc = 'Term\n: First definition\n: Second definition\n~ Third definition';
         const view = createView(doc);
         const settings: PandocExtendedMarkdownSettings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableCustomLabelLists: false,
             panelOrder: []
@@ -77,7 +77,7 @@ describe('Definition List Crash Bug', () => {
         const doc = 'Term\n: Definition\n    Indented paragraph\n    More content';
         const view = createView(doc);
         const settings: PandocExtendedMarkdownSettings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableCustomLabelLists: false,
             panelOrder: []
@@ -93,7 +93,7 @@ describe('Definition List Crash Bug', () => {
         const doc = '';
         const view = createView(doc);
         const settings: PandocExtendedMarkdownSettings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableCustomLabelLists: false,
             panelOrder: []
@@ -109,7 +109,7 @@ describe('Definition List Crash Bug', () => {
         const doc = ': Definition without term';
         const view = createView(doc);
         const settings: PandocExtendedMarkdownSettings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableCustomLabelLists: false,
             panelOrder: []

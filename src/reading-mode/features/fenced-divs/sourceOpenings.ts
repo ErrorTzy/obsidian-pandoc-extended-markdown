@@ -31,7 +31,7 @@ export function getAllowedFencedDivOpening(
         lineText,
         sourceOpeningState,
         consumeSourceOpening,
-        allowNonStrictNestedOpening && !config.strictPandocMode
+        allowNonStrictNestedOpening && config.enableReadableFencedDivSyntax !== false
     )
         ? opening
         : null;
@@ -52,7 +52,7 @@ export function createSourceOpeningState(
             ? syntacticOpening
             : null;
         const stackOpening = allowedOpening ||
-            (!config.strictPandocMode && stackDepth > 0 ? syntacticOpening : null);
+            (config.enableReadableFencedDivSyntax !== false && stackDepth > 0 ? syntacticOpening : null);
 
         if (syntacticOpening) {
             openings.push({

@@ -15,7 +15,7 @@ describe('Debug cross-reference bug', () => {
         pluginStateManager.resetDocumentCounters(docPath);
         
         config = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true,

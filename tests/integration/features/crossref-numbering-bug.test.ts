@@ -29,7 +29,7 @@ describe('Cross-reference numbering bug', () => {
         setupElement.innerHTML = '<p>(@a) Example list</p>';
         
         const config: ProcessorConfig = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: false
@@ -124,7 +124,7 @@ describe('Cross-reference numbering bug', () => {
         `;
         
         const config: ProcessorConfig = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true  // Enable custom labels

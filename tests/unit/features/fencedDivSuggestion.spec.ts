@@ -149,8 +149,8 @@ describe('Fenced Div Reference Suggestions', () => {
             });
         });
 
-        it('skips readable shorthand labels in strict mode', () => {
-            plugin.settings.strictPandocMode = true;
+        it('skips readable shorthand labels when readable shorthand is disabled', () => {
+            plugin.settings.enableReadableFencedDivSyntax = false;
             mockEditor.getValue = jest.fn().mockReturnValue([
                 '::: Theorem #thm',
                 'Readable shorthand content.',

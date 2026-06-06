@@ -1,7 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 
 interface ReadingModeFencedDivState {
-    strictPandocMode: boolean | null;
+    enableReadableFencedDivSyntax: boolean | null;
     blockCount: number;
     fencedDivInlineMathCount: number;
     fencedDivBlockMathCount: number;
@@ -52,7 +52,8 @@ describe('Fenced div reading mode', () => {
             // @ts-ignore
             const enabledPlugin = app.plugins.plugins['pandoc-extended-markdown'];
             if (enabledPlugin?.settings) {
-                enabledPlugin.settings.strictPandocMode = false;
+                enabledPlugin.settings.enforcePandocListSpacing = false;
+                enabledPlugin.settings.enableReadableFencedDivSyntax = true;
                 enabledPlugin.settings.enableFencedDivs = true;
                 enabledPlugin.settings.enableFencedDivExtras = true;
                 await enabledPlugin.saveSettings();
@@ -246,8 +247,8 @@ describe('Fenced div reading mode', () => {
         await deleteFileIfExists(filePath);
     });
 
-    it('renders fenced div titles and @id references in strict Pandoc mode when extras are enabled', async () => {
-        const filePath = 'fenced-div-reading-mode-strict-e2e.md';
+    it('renders fenced div titles and @id references when readable shorthand is disabled', async () => {
+        const filePath = 'fenced-div-reading-mode-readable-shorthand-off-e2e.md';
         const content = [
             '::: {.theorem #thm:strict title="Theorem &"}',
             'Strict-mode content.',
@@ -256,7 +257,7 @@ describe('Fenced div reading mode', () => {
             'See @thm:strict for the result.'
         ].join('\n');
 
-        await setStrictPandocMode(true);
+        await setReadableFencedDivSyntax(false);
         try {
             await createOrReplaceFile(filePath, content);
             await openFileInActiveLeaf(filePath);
@@ -265,14 +266,14 @@ describe('Fenced div reading mode', () => {
             try {
                 await browser.waitUntil(async () => {
                     const state = await getReadingModeFencedDivState();
-                    return state.strictPandocMode === true &&
+                    return state.enableReadableFencedDivSyntax === false &&
                         state.blockCount === 1 &&
                         state.titleElementCount === 1 &&
                         state.referenceTexts.includes('Theorem 1') &&
                         !state.rawText.includes('@thm:strict');
                 }, {
                     timeout: 5000,
-                    timeoutMsg: 'Expected strict Pandoc reading mode to render fenced-div citation text'
+                    timeoutMsg: 'Expected reading mode to render fenced-div citation text with readable shorthand disabled'
                 });
             } catch (error) {
                 const state = await getReadingModeFencedDivState();
@@ -292,7 +293,7 @@ describe('Fenced div reading mode', () => {
             expect(state.rawText).not.toContain('@thm:strict');
             expect(state.rawText).not.toContain('::: {.theorem #thm:strict title="Theorem &"}');
         } finally {
-            await setStrictPandocMode(false);
+            await setReadableFencedDivSyntax(true);
             await deleteFileIfExists(filePath);
         }
     });
@@ -546,7 +547,7 @@ async function getReadingModeFencedDivState(): Promise<ReadingModeFencedDivState
         const previewRect = preview?.getBoundingClientRect();
 
         return {
-            strictPandocMode: plugin?.settings?.strictPandocMode ?? null,
+            enableReadableFencedDivSyntax: plugin?.settings?.enableReadableFencedDivSyntax ?? null,
             blockCount: blocks.length,
             fencedDivInlineMathCount: preview?.querySelectorAll('.pem-fenced-div .math-inline').length ?? 0,
             fencedDivBlockMathCount: preview?.querySelectorAll('.pem-fenced-div .math-block').length ?? 0,
@@ -659,12 +660,12 @@ async function ensureReadingMode(): Promise<void> {
     await browser.pause(500);
 }
 
-async function setStrictPandocMode(value: boolean): Promise<void> {
-    await browser.execute(async (strictPandocMode: boolean) => {
+async function setReadableFencedDivSyntax(value: boolean): Promise<void> {
+    await browser.execute(async (enableReadableFencedDivSyntax: boolean) => {
         // @ts-ignore
         const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         if (plugin?.settings) {
-            plugin.settings.strictPandocMode = strictPandocMode;
+            plugin.settings.enableReadableFencedDivSyntax = enableReadableFencedDivSyntax;
             await plugin.saveSettings();
             // @ts-ignore
             app.workspace.updateOptions();

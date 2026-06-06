@@ -22,8 +22,8 @@ export function parseCustomLabel(line: Line, context: ProcessingContext): Parsed
         return null;
     }
 
-    // Check strict mode requirements
-    if (context.settings.strictPandocMode && context.invalidLines.has(lineNum - 1)) {
+    // Check Pandoc list spacing enforcement.
+    if (context.settings.enforcePandocListSpacing && context.invalidLines.has(lineNum)) {
         return null;
     }
 

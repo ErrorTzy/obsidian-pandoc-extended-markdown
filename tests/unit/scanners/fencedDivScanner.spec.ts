@@ -27,7 +27,7 @@ describe('scanFencedDivs', () => {
         expect(labels.get('sibling')?.referenceText).toBe('Sibling 1');
     });
 
-    it('collects labels from readable shorthand in non-strict mode', () => {
+    it('collects labels from readable shorthand when readable shorthand is enabled', () => {
         const labels = scan([
             '::: Theorem #thm title="Theorem &"',
             'Readable content.',
@@ -178,7 +178,7 @@ describe('scanFencedDivs', () => {
         expect(labels.get('double')?.referenceText).toBe('AT&T-1.1');
     });
 
-    it('does not collect labels from readable shorthand in strict mode', () => {
+    it('does not collect labels from readable shorthand when readable shorthand is disabled', () => {
         const labels = scanFencedDivs(
             Text.of([
                 '::: Theorem #thm data=1',
@@ -187,14 +187,14 @@ describe('scanFencedDivs', () => {
             ]),
             {
                 ...settings,
-                strictPandocMode: true
+                enableReadableFencedDivSyntax: false
             }
         );
 
         expect(labels.has('thm')).toBe(false);
     });
 
-    it('collects native labels in strict mode when fenced div extras are enabled', () => {
+    it('collects native labels when readable shorthand is disabled and fenced div extras are enabled', () => {
         const labels = scanFencedDivs(
             Text.of([
                 '::: {.theorem #thm title="Theorem &"}',
@@ -203,7 +203,7 @@ describe('scanFencedDivs', () => {
             ]),
             {
                 ...settings,
-                strictPandocMode: true
+                enableReadableFencedDivSyntax: false
             }
         );
 

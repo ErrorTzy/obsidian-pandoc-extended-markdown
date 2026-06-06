@@ -51,7 +51,7 @@ describe('fenced div live-preview pipeline', () => {
         pipeline.registerStructuralProcessor(new DefinitionProcessor());
         pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
         settings = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             autoRenumberLists: false,
             enableFencedDivs: true,
             enableListPanel: true,
@@ -98,7 +98,7 @@ describe('fenced div live-preview pipeline', () => {
         expect(widgetNames).toContain('FencedDivReferenceWidget');
     });
 
-    it('renders readable shorthand blocks and known @id citations in non-strict mode', () => {
+    it('renders readable shorthand blocks and known @id citations when readable shorthand is enabled', () => {
         updateView('::: Theorem #thm data=1\ncontent\n:::\n\nsee @thm.');
 
         const widgetNames = getWidgetNames();
@@ -108,8 +108,8 @@ describe('fenced div live-preview pipeline', () => {
         expect(widgetNames).toContain('FencedDivReferenceWidget');
     });
 
-    it('leaves readable shorthand unrendered in strict mode', () => {
-        settings.strictPandocMode = true;
+    it('leaves readable shorthand unrendered when readable shorthand is disabled', () => {
+        settings.enableReadableFencedDivSyntax = false;
         updateView('::: Theorem #thm data=1\ncontent\n:::\n\nsee @thm.');
 
         const widgetNames = getWidgetNames();
@@ -119,8 +119,8 @@ describe('fenced div live-preview pipeline', () => {
         expect(widgetNames).not.toContain('FencedDivReferenceWidget');
     });
 
-    it('renders Pandoc fenced div titles and references in strict mode when extras are enabled', () => {
-        settings.strictPandocMode = true;
+    it('renders Pandoc fenced div titles and references when readable shorthand is disabled', () => {
+        settings.enableReadableFencedDivSyntax = false;
         updateView('::: {.theorem #thm:label}\ncontent\n:::\n\nsee @thm:label.');
 
         const widgetNames = getWidgetNames();

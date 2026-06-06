@@ -25,7 +25,7 @@ describe('ExampleListProcessor', () => {
         document: view.state.doc,
         view,
         settings: {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             autoRenumberLists: false,
             enableCustomLabelLists: false,
             panelOrder: [],
@@ -145,8 +145,8 @@ describe('ExampleListProcessor', () => {
             expect(result.contentRegion?.metadata.isDuplicate).toBe(false);
         });
         
-        it('should skip invalid lines in strict mode', () => {
-            context.settings.strictPandocMode = true;
+        it('should skip invalid lines when Pandoc list spacing enforcement is enabled', () => {
+            context.settings.enforcePandocListSpacing = true;
             context.invalidLines.add(1); // Line 1 is invalid
             
             const line = view.state.doc.line(1);

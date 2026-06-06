@@ -86,7 +86,7 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
 
         applySourceDefinitionBoundaries(parsedLines, lines, context);
 
-        if (context.config.strictPandocMode) {
+        if (context.config.enforcePandocListSpacing) {
             parsedLines.forEach((parsedLine, index) => {
                 if (parsedLine.type === 'fancy' &&
                     context.validationLines.length > 0 &&
@@ -355,7 +355,7 @@ function validateListInStrictMode(
             currentLine: lineNum
         };
 
-        return isStrictPandocFormatting(validationContext, config.strictPandocMode);
+        return isStrictPandocFormatting(validationContext, config.enforcePandocListSpacing);
     }
 
     return true;

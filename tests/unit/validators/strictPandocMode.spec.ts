@@ -1,9 +1,9 @@
 import { ListBlockValidator } from '../../../src/live-preview/validators/listBlockValidator';
 import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 
-describe('Strict Pandoc Mode Validation', () => {
+describe('Pandoc list spacing validation', () => {
     const settings: PandocExtendedMarkdownSettings = {
-        strictPandocMode: true,
+        enforcePandocListSpacing: true,
         fancyLists: true,
         enableCustomLabelLists: true
     } as PandocExtendedMarkdownSettings;
@@ -167,11 +167,11 @@ describe('Strict Pandoc Mode Validation', () => {
         });
     });
 
-    describe('When strict mode is disabled', () => {
+    describe('When Pandoc list spacing enforcement is disabled', () => {
         it('should not mark any lines as invalid', () => {
             const nonStrictSettings: PandocExtendedMarkdownSettings = {
                 ...settings,
-                strictPandocMode: false
+                enforcePandocListSpacing: false
             };
             
             const lines = [

@@ -18,7 +18,7 @@ See [Pandoc variables and Lua filters](pandoc-variables-and-filters.md) for the 
 
 ## Fenced Divs
 
-Use `FencedDivExtendedSyntax.lua` when you want Pandoc output to match non-strict plugin fenced-div behavior:
+Use `FencedDivExtendedSyntax.lua` when you want Pandoc output to match plugin fenced-div titles/references and readable shorthand behavior:
 
 ```bash
 pandoc input.md --lua-filter=lua_filter/FencedDivExtendedSyntax.lua -o output.docx
@@ -55,11 +55,11 @@ pandoc input.md \
     -o output.docx
 ```
 
-## Strict Pandoc Mode
+## Matching Plugin-Specific Syntax
 
-Strict Pandoc mode in Obsidian is useful when you want source that stays closer to native Pandoc Markdown. It disables custom label lists completely and disables extended fenced div syntax, including plugin-specific fenced-div shorthand and fenced-div reference rendering in Obsidian.
+Disable `Readable fenced div shorthand` in Obsidian when you want fenced div source that stays closer to native Pandoc Markdown. Native fenced div rendering, generated titles/references, and custom label lists are controlled by their own settings.
 
-When strict mode is off, custom label lists are plugin-specific, so export documents containing `{::LABEL}` with `CustomLabelList.lua`.
+Custom label lists are plugin-specific, so export documents containing `{::LABEL}` with `CustomLabelList.lua`.
 
 ## Literal Ampersands In Fenced Div Titles
 

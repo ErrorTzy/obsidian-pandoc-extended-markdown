@@ -11,8 +11,9 @@ Fenced div support has two layers:
 1. Rendering behavior: native Pandoc fenced divs get readable block titles and
    document-local `@id` cross-references in Live Preview, Reading mode, and
    Pandoc export with the bundled Lua filter.
-2. Shortcut syntax: non-strict mode accepts additional readable authoring forms
-   that normalize to native Pandoc div attributes.
+2. Shortcut syntax: the `Readable fenced div shorthand` setting accepts
+   additional readable authoring forms that normalize to native Pandoc div
+   attributes.
 
 The guiding principle is Markdown's plain-text readability. A fenced div should
 remain easy to read and write as source text, while still exporting to standard
@@ -86,27 +87,24 @@ Pandoc fenced divs can be nested. Nesting is structural source nesting, but the
 numbering behavior added by this plugin is not based on physical nesting; see
 "Numbering Model".
 
-## Strict Pandoc Mode
+## Fenced Div Settings
 
-Strict Pandoc mode is intended to keep syntax close to native Pandoc.
+Fenced div behavior is split across explicit settings.
 
-In the plugin:
+- `Fenced divs` controls whether native Pandoc fenced div structure is
+  recognized in Live Preview, Reading mode, scanners, and panels.
+- `Fenced div titles and references` controls generated visible titles,
+  numbering, and document-local `@id` reference rendering.
+- `Readable fenced div shorthand` controls plugin-specific readable opener
+  forms that are not native Pandoc syntax.
 
-- Live Preview still recognizes native fenced div structure.
-- Readable shorthand is disabled.
-- Extended `@id` fenced-div reference rendering is disabled.
-- Extended visible block-title rendering is suppressed in Live Preview and
-  Reading mode.
-- Custom label lists are disabled completely.
-
-Important nuance: the shared parser may still compute title metadata for native
-forms internally, because the same parser is reused by scanning, suggestions,
-and panels. Strict mode should therefore be understood as a rendering/syntax
-mode, not as "no internal metadata is computed".
+Disabling readable shorthand keeps authoring closer to native Pandoc while still
+allowing native braced fenced divs, title rendering, and `@id` references when
+their own settings are enabled.
 
 ## Extended Rendering Layer
 
-When fenced divs are enabled and strict Pandoc mode is off, the plugin adds
+When fenced divs and fenced div titles/references are enabled, the plugin adds
 theorem-style rendering to fenced divs.
 
 ### CSS Customization Hooks
@@ -203,7 +201,7 @@ Content
 See @thm.
 ```
 
-In non-strict mode, `@thm` renders as:
+When fenced div titles and references are enabled, `@thm` renders as:
 
 ```text
 Theorem
@@ -259,7 +257,7 @@ Control classes do not become titles:
 
 ## Readable Shorthand: Token Form
 
-Non-strict mode accepts this plugin-specific shorthand:
+Readable fenced div shorthand accepts this plugin-specific form:
 
 ```markdown
 ::: classname1 classname2 #id title="xxx"
@@ -340,7 +338,7 @@ Theorem Compact
 
 ## Readable Shorthand: Title Text With Braced Attributes
 
-Non-strict mode also accepts a readable title outside the braced attribute set.
+Readable fenced div shorthand also accepts a readable title outside the braced attribute set.
 The title text runs until the line break.
 
 Title after attributes:
@@ -390,7 +388,7 @@ Content
 ```
 
 These forms are plugin-specific. They are only recognized when there is
-whitespace after the opening fence and strict Pandoc mode is off.
+whitespace after the opening fence and readable fenced div shorthand is enabled.
 
 ## Special Case: `title="titlename"`
 
@@ -406,7 +404,7 @@ Native Pandoc treats it as an unbraced class named literally
 `title="titlename"`, not as a title attribute.
 
 The current plugin/Lua behavior intentionally treats this as a title-only
-readable shorthand in non-strict mode. It renders as:
+readable shorthand when readable fenced div shorthand is enabled. It renders as:
 
 ```text
 titlename
@@ -960,7 +958,8 @@ the Lua implementation, plus tests for both.
 
 ## Lua Filter Behavior
 
-The Lua filter provides export behavior analogous to non-strict plugin mode:
+The Lua filter provides export behavior analogous to enabling both fenced div
+titles/references and readable fenced div shorthand:
 
 - normalizes readable shorthand into native Pandoc `Div` nodes
 - inserts generated title blocks
@@ -984,8 +983,8 @@ write `title="AT\\&T-&.&"` in source Markdown.
 ## Maintenance Hazards
 
 1. `::: title="titlename"` is highly confusing because native Pandoc sees a
-   class token, while this plugin treats it as a readable title shorthand in
-   non-strict mode.
+   class token, while this plugin treats it as a readable title shorthand when
+   readable fenced div shorthand is enabled.
 2. "Class present means a title renders" is too broad. Control classes and
    placeholder-only classes are excluded.
 3. Numbering is not tied to visual nesting. Use "manual depth" or "counter
@@ -998,9 +997,9 @@ write `title="AT\\&T-&.&"` in source Markdown.
    characters remain literal.
 6. The readable shorthand title-synthesis algorithm uses only selected class
    tokens, not every class token. This is useful but non-obvious.
-7. Strict mode disables custom label lists, readable shorthand, and extended
-   reference/title rendering, but internal scanners may still compute metadata
-   for native fenced divs.
+7. Readable fenced div shorthand is independent from native fenced div
+   title/reference rendering; keep parser, scanner, suggestion, panel, Live
+   Preview, and Reading mode behavior aligned for both settings.
 8. Reading mode relies on source section text to match Live Preview/scanner
    block-boundary behavior. DOM-only helper calls cannot fully reconstruct
    source blank-line boundaries.

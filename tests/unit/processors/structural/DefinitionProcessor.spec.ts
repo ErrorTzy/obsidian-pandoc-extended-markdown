@@ -25,7 +25,7 @@ describe('DefinitionProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                strictPandocMode: false,
+                enforcePandocListSpacing: false,
                 ...settings
             } as PandocExtendedMarkdownSettings,
             exampleLabels: new Map(),
@@ -216,9 +216,9 @@ describe('DefinitionProcessor', () => {
                 expect(context.definitionState.pendingBlankLine).toBe(false);
             });
             
-            it('should skip processing in strict mode for invalid lines', () => {
-                context = createContext(': Definition', { strictPandocMode: true });
-                context.invalidLines.add(0);
+            it('should skip processing when Pandoc list spacing enforcement marks a line invalid', () => {
+                context = createContext(': Definition', { enforcePandocListSpacing: true });
+                context.invalidLines.add(1);
                 
                 const line = context.document.line(1);
                 const result = processor.process(line, context);

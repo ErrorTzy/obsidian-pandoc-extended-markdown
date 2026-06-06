@@ -65,7 +65,8 @@ export const COMMANDS = {
 
 // Settings keys
 export const SETTINGS = {
-    STRICT_MODE: 'strictPandocMode',
+    PANDOC_LIST_SPACING: 'enforcePandocListSpacing',
+    READABLE_FENCED_DIV_SYNTAX: 'enableReadableFencedDivSyntax',
     AUTO_RENUMBER: 'autoRenumberLists',
     HASH_AUTO_NUMBER: 'enableHashAutoNumber',
     FANCY_LISTS: 'enableFancyLists',
@@ -97,9 +98,13 @@ export const SETTINGS_UI = {
         NAME: 'Panel features',
         DESCRIPTION: 'Configure sidebar panel visibility and ordering.'
     },
-    STRICT_MODE: {
-        NAME: 'Strict Pandoc mode',
-        DESCRIPTION: 'Validate Pandoc-compatible list formatting. When enabled, lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
+    PANDOC_LIST_SPACING: {
+        NAME: 'Pandoc list spacing enforcement',
+        DESCRIPTION: 'Require Pandoc-compatible list formatting before rendering list enhancements. Lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
+    },
+    READABLE_FENCED_DIV_SYNTAX: {
+        NAME: 'Readable fenced div shorthand',
+        DESCRIPTION: 'Recognize plugin-specific fenced div shorthand such as readable titles outside braced attributes. Native Pandoc fenced div attributes remain controlled by the Fenced divs setting.'
     },
     AUTO_RENUMBER: {
         NAME: 'Auto-renumber lists',

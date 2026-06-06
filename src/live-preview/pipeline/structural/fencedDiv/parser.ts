@@ -32,7 +32,7 @@ interface ParsedAttributeTokens {
 }
 
 interface FencedDivParserSettings {
-    strictPandocMode?: boolean;
+    enableReadableFencedDivSyntax?: boolean;
 }
 
 export function isFencedDivClosing(lineText: string): boolean {
@@ -93,7 +93,7 @@ function parseOpeningAttributes(
             parseReadableBracedTitleAfterAttributes(rawAttributes, rawTextAfterFence, settings);
     }
 
-    if (!settings?.strictPandocMode && /^[ \t]+/.test(rawTextAfterFence)) {
+    if (settings?.enableReadableFencedDivSyntax !== false && /^[ \t]+/.test(rawTextAfterFence)) {
         return parseReadableBracedTitleBeforeAttributes(rawAttributes) ||
             parseReadableShorthandAttributes(rawAttributes) ||
             parseUnbracedAttributes(rawAttributes);
@@ -187,7 +187,7 @@ function parseReadableBracedTitleAfterAttributes(
     rawTextAfterFence: string,
     settings?: FencedDivParserSettings
 ): ParsedAttributeTokens | null {
-    if (settings?.strictPandocMode || !/^[ \t]+/.test(rawTextAfterFence)) {
+    if (settings?.enableReadableFencedDivSyntax === false || !/^[ \t]+/.test(rawTextAfterFence)) {
         return null;
     }
 

@@ -37,7 +37,7 @@ export class ListBlockValidator {
 
     static validateListBlocks(lines: string[], settings: PandocExtendedMarkdownSettings): Set<number> {
         const invalidListBlocks = new Set<number>();
-        if (!settings.strictPandocMode) {
+        if (!settings.enforcePandocListSpacing) {
             return invalidListBlocks;
         }
 
@@ -100,7 +100,10 @@ export class ListBlockValidator {
 // Helper function for use with Text objects
 export function validateListBlocks(doc: Text): Set<number> {
     const lines = doc.toString().split('\n');
-    const zeroBasedIndices = ListBlockValidator.validateListBlocks(lines, { strictPandocMode: true } as PandocExtendedMarkdownSettings);
+    const zeroBasedIndices = ListBlockValidator.validateListBlocks(
+        lines,
+        { enforcePandocListSpacing: true } as PandocExtendedMarkdownSettings
+    );
     
     // Convert to 1-based line numbers for CodeMirror
     const oneBasedLineNumbers = new Set<number>();

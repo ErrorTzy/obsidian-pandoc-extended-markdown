@@ -17,7 +17,7 @@ describe('Custom label and example reference interaction bug', () => {
         pluginStateManager.clearAllStates();
         
         config = {
-            strictPandocMode: false,
+            enforcePandocListSpacing: false,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true,
