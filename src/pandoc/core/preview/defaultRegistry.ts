@@ -2,6 +2,9 @@ import {
     PandocPreviewFormatRegistry
 } from './registry';
 import {
+    createChunkedHtmlPreviewFormatModule
+} from './formats/chunkedHtml';
+import {
     createDocxPreviewFormatModule
 } from './formats/docx';
 import {
@@ -29,6 +32,7 @@ import {
 export function createDefaultPandocPreviewFormatRegistry(): PandocPreviewFormatRegistry {
     const registry = new PandocPreviewFormatRegistry();
     registry.register(createOdtPreviewFormatModule());
+    registry.register(createChunkedHtmlPreviewFormatModule());
     registry.register(createHtmlPreviewFormatModule());
     registry.register(createTextPreviewFormatModule());
     registry.register(createPdfPreviewFormatModule());

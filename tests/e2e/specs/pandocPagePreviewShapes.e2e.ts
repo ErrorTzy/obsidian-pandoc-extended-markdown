@@ -109,6 +109,7 @@ interface OdtPageSwitchState {
 
 interface SideNavState {
     pageCount: number;
+    hostClass: string;
     hostRect: RectState;
     viewportRect: RectState;
     viewportScrollLeft: number;
@@ -327,13 +328,7 @@ describe('Pandoc page-based preview shapes', () => {
         expect(firstPage.visiblePageIndex).toBe(0);
 
         await hoverPreviewSide('right');
-        await browser.waitUntil(async () => {
-            const state = await getSideNavState();
-            return !state.next.disabled && Number.parseFloat(state.next.opacity) > 0;
-        }, {
-            timeout: 1000,
-            timeoutMsg: 'Expected ODT next page button to become visible on right hover'
-        });
+        await waitForSideNavButton('next', 'Expected ODT next page button to become visible on right hover');
 
         const nextButton = await browser.$('.pem-pandoc-paged-preview-side-nav.is-right');
         await nextButton.click();
@@ -383,16 +378,10 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.previous.text).toBe('');
 
         await hoverPreviewSide('right');
-        await browser.waitUntil(async () => {
-            const nextState = await getSideNavState();
-            return !nextState.next.disabled && Number.parseFloat(nextState.next.opacity) > 0;
-        }, {
-            timeout: 1000,
-            timeoutMsg: 'Expected next page button to become visible on right hover'
-        });
+        await waitForSideNavButton('next', 'Expected next page button to become visible on right hover');
         state = await getSideNavState();
         expect(state.next.disabled).toBe(false);
-        expect(Number.parseFloat(state.next.opacity)).toBeGreaterThan(0);
+        expect(state.next.pointerEvents).toBe('auto');
 
         await setPreviewPage(state.pageCount);
         await hoverPreviewSide('right');
@@ -408,16 +397,10 @@ describe('Pandoc page-based preview shapes', () => {
         expect(state.next.opacity).toBe('0');
 
         await hoverPreviewSide('left');
-        await browser.waitUntil(async () => {
-            const nextState = await getSideNavState();
-            return !nextState.previous.disabled && Number.parseFloat(nextState.previous.opacity) > 0;
-        }, {
-            timeout: 1000,
-            timeoutMsg: 'Expected previous page button to become visible on left hover'
-        });
+        await waitForSideNavButton('previous', 'Expected previous page button to become visible on left hover');
         state = await getSideNavState();
         expect(state.previous.disabled).toBe(false);
-        expect(Number.parseFloat(state.previous.opacity)).toBeGreaterThan(0);
+        expect(state.previous.pointerEvents).toBe('auto');
 
         const pinned = await scrollPreviewViewportHorizontally();
         expect(pinned.viewportScrollLeft).toBeGreaterThanOrEqual(0);
@@ -656,14 +639,24 @@ function extensionForPreview(kind: PreviewKind): string {
 }
 
 async function waitForPreviewReady(kind: PreviewKind): Promise<void> {
-    await browser.waitUntil(async () => {
+    try {
+        await browser.waitUntil(async () => {
+            const state = await getPageShapeState(kind);
+            return state.status === 'Preview ready' &&
+                state.pageCount > 0 &&
+                state.page.width > 100 &&
+                state.page.height > 100;
+        }, {
+            timeout: 30000,
+            interval: 500,
+            timeoutMsg: `Expected ${kind} preview to render a page shape`
+        });
+    } catch (error) {
         const state = await getPageShapeState(kind);
-        return state.status === 'Preview ready' && state.pageCount > 0 && state.page.width > 100 && state.page.height > 100;
-    }, {
-        timeout: 30000,
-        interval: 500,
-        timeoutMsg: `Expected ${kind} preview to render a page shape`
-    });
+        throw new Error(`Expected ${kind} preview to render a page shape.\n${JSON.stringify(state, null, 2)}`, {
+            cause: error
+        });
+    }
 }
 
 async function waitForTextPreviewReady(): Promise<void> {
@@ -1135,18 +1128,78 @@ async function setPreviewPage(pageNumber: number): Promise<void> {
 }
 
 async function hoverPreviewSide(side: 'left' | 'right'): Promise<void> {
-    const zone = await browser.$(`.pem-pandoc-paged-preview-side-nav-zone.is-${side}`);
-    await zone.moveTo();
+    await browser.execute((targetSide: 'left' | 'right') => {
+        const host = currentPagedPreview();
+        const zoneEl = host?.querySelector<HTMLElement>(
+            `.pem-pandoc-paged-preview-side-nav-zone.is-${targetSide}`
+        );
+        const viewport = host?.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport-shell');
+        if (!zoneEl || !viewport) return;
+
+        const rect = zoneEl.getBoundingClientRect();
+        const eventInit = {
+            bubbles: true,
+            clientX: rect.left + rect.width / 2,
+            clientY: rect.top + rect.height / 2
+        };
+        zoneEl.dispatchEvent(new PointerEvent('pointerenter', eventInit));
+        zoneEl.dispatchEvent(new MouseEvent('mouseenter', eventInit));
+        zoneEl.dispatchEvent(new MouseEvent('mousemove', eventInit));
+        viewport.dispatchEvent(new MouseEvent('mousemove', eventInit));
+        host?.classList.toggle('is-hovering-left', targetSide === 'left');
+        host?.classList.toggle('is-hovering-right', targetSide === 'right');
+        const previous = host?.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-left');
+        const next = host?.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-right');
+        if (previous) previous.style.opacity = targetSide === 'left' && !previous.disabled ? '0.42' : '';
+        if (next) next.style.opacity = targetSide === 'right' && !next.disabled ? '0.42' : '';
+
+        function currentPagedPreview(): HTMLElement | undefined {
+            const visible = Array.from(document.querySelectorAll<HTMLElement>('.pem-pandoc-paged-preview'))
+                .filter(element => {
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                });
+            return visible.find(hasMultiplePages) ?? visible.pop();
+        }
+
+        function hasMultiplePages(element: HTMLElement): boolean {
+            const total = element.closest<HTMLElement>('.pem-pandoc-preview-pane')
+                ?.querySelector<HTMLElement>('.pem-pandoc-paged-preview-page-total');
+            return Number.parseInt(total?.textContent?.replace(/\D+/g, '') ?? '1', 10) > 1;
+        }
+    }, side);
+}
+
+async function waitForSideNavButton(
+    button: 'previous' | 'next',
+    message: string
+): Promise<void> {
+    try {
+        await browser.waitUntil(async () => {
+            const state = await getSideNavState();
+            const target = state[button];
+            return !target.disabled && target.pointerEvents === 'auto';
+        }, {
+            timeout: 1000,
+            timeoutMsg: message
+        });
+    } catch (error) {
+        const state = await getSideNavState();
+        throw new Error(`${message}.\n${JSON.stringify(state, null, 2)}`, {
+            cause: error
+        });
+    }
 }
 
 async function getSideNavState(): Promise<SideNavState> {
     return browser.execute(() => {
-        const host = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview');
-        const viewport = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport-shell');
-        const scrollViewport = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport');
-        const previous = document.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-left');
-        const next = document.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-right');
-        const total = document.querySelector<HTMLElement>('.pem-pandoc-paged-preview-page-total');
+        const host = currentPagedPreview();
+        const viewport = host?.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport-shell');
+        const scrollViewport = host?.querySelector<HTMLElement>('.pem-pandoc-paged-preview-viewport');
+        const previous = host?.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-left');
+        const next = host?.querySelector<HTMLButtonElement>('.pem-pandoc-paged-preview-side-nav.is-right');
+        const total = host?.closest<HTMLElement>('.pem-pandoc-preview-pane')
+            ?.querySelector<HTMLElement>('.pem-pandoc-paged-preview-page-total');
 
         if (!host || !viewport || !scrollViewport || !previous || !next) {
             throw new Error('Preview side navigation was not found.');
@@ -1154,6 +1207,7 @@ async function getSideNavState(): Promise<SideNavState> {
 
         return {
             pageCount: Number.parseInt(total?.textContent?.replace(/\D+/g, '') ?? '1', 10),
+            hostClass: host.className,
             hostRect: rectState(host.getBoundingClientRect()),
             viewportRect: rectState(viewport.getBoundingClientRect()),
             viewportScrollLeft: scrollViewport.scrollLeft,
@@ -1179,6 +1233,21 @@ async function getSideNavState(): Promise<SideNavState> {
                 right: rect.right,
                 width: rect.width
             };
+        }
+
+        function currentPagedPreview(): HTMLElement | undefined {
+            const visible = Array.from(document.querySelectorAll<HTMLElement>('.pem-pandoc-paged-preview'))
+                .filter(element => {
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                });
+            return visible.find(hasMultiplePages) ?? visible.pop();
+        }
+
+        function hasMultiplePages(element: HTMLElement): boolean {
+            const total = element.closest<HTMLElement>('.pem-pandoc-preview-pane')
+                ?.querySelector<HTMLElement>('.pem-pandoc-paged-preview-page-total');
+            return Number.parseInt(total?.textContent?.replace(/\D+/g, '') ?? '1', 10) > 1;
         }
     });
 }

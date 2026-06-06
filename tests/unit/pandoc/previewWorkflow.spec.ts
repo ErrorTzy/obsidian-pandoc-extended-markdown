@@ -188,6 +188,31 @@ describe('PandocPreviewWorkflowService', () => {
         expect(artifacts).toEqual(['html:/tmp/preview-1.html']);
     });
 
+    it('renders chunked HTML previews from the generated index page', async () => {
+        const artifacts: string[] = [];
+        const service = createWorkflow();
+        const task = await service.startPreview({
+            request: request(),
+            to: 'chunkedhtml',
+            extension: '.html'
+        });
+        if (!isPandocPreviewRenderTask(task)) throw new Error('Expected render task.');
+
+        const plan = await service.renderPreviewTask(task, {
+            render: async ({ artifact }) => {
+                artifacts.push(`${artifact.rendererId}:${artifact.filePath}:${artifact.sourcePath}`);
+            }
+        }, readerPort());
+
+        expect(plan?.artifact).toMatchObject({
+            kind: 'html',
+            rendererId: 'html',
+            filePath: '/tmp/preview-1.html/index.html',
+            sourcePath: '/tmp/preview-1.html'
+        });
+        expect(artifacts).toEqual(['html:/tmp/preview-1.html/index.html:/tmp/preview-1.html']);
+    });
+
     it('renders ODT fallback artifacts with the source ODT path', async () => {
         const artifacts: Array<{ kind: string; filePath: string; sourcePath?: string }> = [];
         const service = createWorkflow();

@@ -334,14 +334,17 @@
 }
 
 .pem-pandoc-paged-preview.is-hovering-left .pem-pandoc-paged-preview-side-nav.is-left:not(:disabled),
-.pem-pandoc-paged-preview.is-hovering-right .pem-pandoc-paged-preview-side-nav.is-right:not(:disabled) {
-    opacity: 0.42;
+.pem-pandoc-paged-preview.is-hovering-right .pem-pandoc-paged-preview-side-nav.is-right:not(:disabled),
+.pem-pandoc-paged-preview-side-nav-zone.is-left:hover .pem-pandoc-paged-preview-side-nav.is-left:not(:disabled),
+.pem-pandoc-paged-preview-side-nav-zone.is-right:hover .pem-pandoc-paged-preview-side-nav.is-right:not(:disabled) {
+    opacity: 0.42 !important;
     pointer-events: auto;
 }
 
 .pem-pandoc-paged-preview-side-nav:disabled {
     opacity: 0 !important;
     pointer-events: none;
+    transition: none;
 }
 
 .pem-pandoc-paged-preview-side-nav:hover:not(:disabled) {

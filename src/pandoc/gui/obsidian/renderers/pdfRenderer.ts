@@ -30,13 +30,16 @@ export function createPdfPreviewRenderer(): ObsidianPandocPreviewRendererModule 
                 pager.refreshFit();
                 const context = canvas.getContext('2d');
                 if (!context) throw new Error('Canvas rendering is unavailable.');
-                await page.render({
+                void page.render({
                     canvasContext: context,
                     viewport,
                     transform: outputScale !== 1 ?
                         [outputScale, 0, 0, outputScale, 0, 0] :
                         undefined
-                }).promise;
+                }).promise.catch(error => {
+                    // PDF.js can leave the render promise unsettled in embedded Electron contexts.
+                    console.error('PDF preview page render failed', error);
+                });
             };
             pager = new PreviewPager(request.container, {
                 initialPageCount: document.numPages,

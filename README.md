@@ -90,7 +90,7 @@ The plugin settings let you enable or disable individual syntax families, list m
 
 Pandoc export is an optional desktop-only module. It is disabled by default, is not loaded as a hard requirement for normal rendering, and is not available on mobile. Live Preview and Reading mode continue to work when Pandoc is missing, disabled, or unavailable.
 
-Enable **Pandoc export** in plugin settings, optionally set a Pandoc executable path, then run **Export with pandoc** or **Export with previous pandoc settings**. Built-in profiles cover common Pandoc formats such as Markdown, HTML, PDF, DOCX, ODT, RTF, EPUB, LaTeX, Typst, PPTX, and bibliography export.
+Enable **Pandoc export** in plugin settings, optionally set a Pandoc executable path, then run **Export with pandoc** or **Export with previous pandoc settings**. Built-in profiles cover common Pandoc formats such as Markdown, HTML, PDF, DOCX, ODT, RTF, EPUB, LaTeX, Typst, PPTX, and bibliography export. The export preview selector covers Pandoc's output format list: browser-renderable formats use HTML/text previews, and PDF, DOCX, EPUB, ODT, and PPTX use bundled JavaScript renderers or the ODT fallback path.
 
 Obsidian rendering does not automatically change Pandoc CLI output. The plugin bundles Lua filters for plugin-specific export behavior and writes them into the installed plugin folder on startup:
 

@@ -111,6 +111,34 @@ describe('PreviewPager', () => {
         expect(zones[1].contains(next)).toBe(true);
     });
 
+    it('sets side navigation hover state when entering side zones', () => {
+        const container = withObsidianDomHelpers(document.createElement('div'));
+        const pager = new PreviewPager(container, { initialPageCount: 3 });
+        const leftZone = pager.host.querySelector<HTMLElement>(
+            '.pem-pandoc-paged-preview-side-nav-zone.is-left'
+        );
+        const rightZone = pager.host.querySelector<HTMLElement>(
+            '.pem-pandoc-paged-preview-side-nav-zone.is-right'
+        );
+        const previous = pager.host.querySelector<HTMLButtonElement>('[aria-label="Previous page"]');
+        const next = pager.host.querySelector<HTMLButtonElement>('[aria-label="Next page"]');
+        pager.setPage(1);
+
+        leftZone?.dispatchEvent(new MouseEvent('mouseenter'));
+
+        expect(pager.host.classList.contains('is-hovering-left')).toBe(true);
+        expect(pager.host.classList.contains('is-hovering-right')).toBe(false);
+        expect(previous?.style.opacity).toBe('0.42');
+        expect(next?.style.opacity).toBe('');
+
+        rightZone?.dispatchEvent(new MouseEvent('mouseenter'));
+
+        expect(pager.host.classList.contains('is-hovering-left')).toBe(false);
+        expect(pager.host.classList.contains('is-hovering-right')).toBe(true);
+        expect(previous?.style.opacity).toBe('');
+        expect(next?.style.opacity).toBe('0.42');
+    });
+
     it('uses SVG chevrons for side navigation buttons', () => {
         const container = withObsidianDomHelpers(document.createElement('div'));
         const pager = new PreviewPager(container);

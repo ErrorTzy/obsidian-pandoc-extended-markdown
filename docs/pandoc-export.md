@@ -6,6 +6,10 @@ Enable **Pandoc export** in the plugin settings, optionally set a Pandoc executa
 
 Export profiles use argument arrays for built-in Pandoc formats. Advanced custom shell profiles can be added in the profile JSON, but they must use `type: "custom"` and `shell: true`.
 
+## Export Preview
+
+The export modal preview covers every format reported by `pandoc --list-output-formats`. HTML writers, including slide formats and `chunkedhtml`, render through the HTML preview. Text, XML, JSON, TeX, roff, wiki, bibliography, and other markup writers render as text. PDF, DOCX, EPUB, and PPTX render with bundled browser-side JavaScript libraries. ODT uses the optional WebODF add-on when installed and falls back to Pandoc-generated embedded-resource HTML otherwise.
+
 The **Edit pandoc export** command builder separates preset management from command editing. **Preset Options** manages the selected preset, its name, and actions such as save current, reset current, delete current, and restore built-in presets. **Command Options** contains the Pandoc argument rows or custom command fields. The final footer can cancel editor changes or **Save and close** the current preset list as shown; **Save current** persists only the selected preset immediately.
 
 For plugin-specific syntax, use the bundled Lua filters in `lua_filter/`. The filters are embedded into `main.js` at build time and released into the installed plugin folder on startup, so users do not need to download them separately.

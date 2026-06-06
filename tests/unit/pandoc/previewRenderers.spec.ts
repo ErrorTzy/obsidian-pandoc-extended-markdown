@@ -2,8 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 import { zipSync } from 'fflate';
 
 import {
+    inferOutputExtension,
+    selectPreviewRendererPlan
+} from '../../../src/pandoc/core';
+import {
     renderPreviewFile,
-    selectPreviewRenderer
+    selectPreviewRenderer as selectObsidianPreviewRenderer
 } from '../../../src/pandoc/gui/obsidian/renderers/previewRenderers';
 import {
     ObsidianPandocPreviewRendererPort,
@@ -12,17 +16,20 @@ import {
 
 describe('selectPreviewRenderer', () => {
     it('uses HTML preview for HTML and slide formats', () => {
-        expect(selectPreviewRenderer('html', '.html').kind).toBe('html');
-        expect(selectPreviewRenderer('revealjs', '.html').kind).toBe('html');
+        expect(selectObsidianPreviewRenderer('html', '.html').kind).toBe('html');
+        expect(selectObsidianPreviewRenderer('revealjs', '.html').kind).toBe('html');
+        expect(selectObsidianPreviewRenderer('chunkedhtml', '.html').kind).toBe('html');
     });
 
     it('uses text preview for text-like extensions', () => {
-        expect(selectPreviewRenderer('latex', '.tex').kind).toBe('text');
-        expect(selectPreviewRenderer('commonmark_x', '.md').kind).toBe('text');
+        expect(selectObsidianPreviewRenderer('latex', '.tex').kind).toBe('text');
+        expect(selectObsidianPreviewRenderer('commonmark_x', '.md').kind).toBe('text');
+        expect(selectObsidianPreviewRenderer('bbcode_xenforo', '.bbcode').kind).toBe('text');
+        expect(selectObsidianPreviewRenderer('opendocument', '.fodt').kind).toBe('text');
     });
 
     it('uses the ODT add-on only when installed and enabled', () => {
-        expect(selectPreviewRenderer('odt', '.odt', {
+        expect(selectObsidianPreviewRenderer('odt', '.odt', {
             enabled: true,
             status: 'installed',
             version: '0.5.9',
@@ -33,7 +40,7 @@ describe('selectPreviewRenderer', () => {
             addonVersion: '0.5.9'
         });
 
-        expect(selectPreviewRenderer('odt', '.odt', {
+        expect(selectObsidianPreviewRenderer('odt', '.odt', {
             enabled: false,
             status: 'installed',
             installPath: '/addons/webodf'
@@ -41,10 +48,21 @@ describe('selectPreviewRenderer', () => {
     });
 
     it('selects bundled renderers for PDF, DOCX, EPUB, and PPTX', () => {
-        expect(selectPreviewRenderer('pdf', '.pdf').kind).toBe('pdf');
-        expect(selectPreviewRenderer('docx', '.docx').kind).toBe('docx');
-        expect(selectPreviewRenderer('epub', '.epub').kind).toBe('epub');
-        expect(selectPreviewRenderer('pptx', '.pptx').kind).toBe('pptx');
+        expect(selectObsidianPreviewRenderer('pdf', '.pdf').kind).toBe('pdf');
+        expect(selectObsidianPreviewRenderer('docx', '.docx').kind).toBe('docx');
+        expect(selectObsidianPreviewRenderer('epub', '.epub').kind).toBe('epub');
+        expect(selectObsidianPreviewRenderer('pptx', '.pptx').kind).toBe('pptx');
+    });
+
+    it('selects a preview renderer for every pandoc output format', () => {
+        const unsupported = PANDOC_OUTPUT_FORMATS
+            .map(format => ({
+                format,
+                renderer: selectPreviewRendererPlan(format, inferOutputExtension(format))
+            }))
+            .filter(({ renderer }) => renderer.kind === 'unsupported');
+
+        expect(unsupported).toEqual([]);
     });
 
     it('renders text previews as non-paged scrollable content', async () => {
@@ -157,6 +175,84 @@ describe('selectPreviewRenderer', () => {
         })).rejects.toThrow('WebODF rendered an empty ODT preview.');
     });
 });
+
+const PANDOC_OUTPUT_FORMATS = [
+    'ansi',
+    'asciidoc',
+    'asciidoc_legacy',
+    'asciidoctor',
+    'bbcode',
+    'bbcode_fluxbb',
+    'bbcode_hubzilla',
+    'bbcode_phpbb',
+    'bbcode_steam',
+    'bbcode_xenforo',
+    'beamer',
+    'biblatex',
+    'bibtex',
+    'chunkedhtml',
+    'commonmark',
+    'commonmark_x',
+    'context',
+    'csljson',
+    'djot',
+    'docbook',
+    'docbook4',
+    'docbook5',
+    'docx',
+    'dokuwiki',
+    'dzslides',
+    'epub',
+    'epub2',
+    'epub3',
+    'fb2',
+    'gfm',
+    'haddock',
+    'html',
+    'html4',
+    'html5',
+    'icml',
+    'ipynb',
+    'jats',
+    'jats_archiving',
+    'jats_articleauthoring',
+    'jats_publishing',
+    'jira',
+    'json',
+    'latex',
+    'man',
+    'markdown',
+    'markdown_github',
+    'markdown_mmd',
+    'markdown_phpextra',
+    'markdown_strict',
+    'markua',
+    'mediawiki',
+    'ms',
+    'muse',
+    'native',
+    'odt',
+    'opendocument',
+    'opml',
+    'org',
+    'pdf',
+    'plain',
+    'pptx',
+    'revealjs',
+    'rst',
+    'rtf',
+    's5',
+    'slideous',
+    'slidy',
+    'tei',
+    'texinfo',
+    'textile',
+    'typst',
+    'vimdoc',
+    'xml',
+    'xwiki',
+    'zimwiki'
+];
 
 describe('ObsidianPandocPreviewRendererPort', () => {
     it('dispatches by rendererId and falls back to artifact kind', async () => {

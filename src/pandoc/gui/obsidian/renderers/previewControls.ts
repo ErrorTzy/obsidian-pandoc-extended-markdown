@@ -85,6 +85,8 @@ export class PreviewPager {
         const nextZone = sideNavOverlay.createDiv({
             cls: 'pem-pandoc-paged-preview-side-nav-zone is-right'
         });
+        this.installSideNavigationZoneHover(previousZone, 'left');
+        this.installSideNavigationZoneHover(nextZone, 'right');
 
         this.previousButton = this.createSideNavButton(previousZone, 'left', `Previous ${this.pageLabel.toLowerCase()}`, () => {
             this.setPage(this.pageIndex - 1);
@@ -275,8 +277,28 @@ export class PreviewPager {
     private updateSideNavigation(event: MouseEvent): void {
         const rect = this.viewportShell.getBoundingClientRect();
         const position = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
-        this.host.classList.toggle('is-hovering-left', position <= 0.2);
-        this.host.classList.toggle('is-hovering-right', position >= 0.8);
+        this.setSideNavigationHover(
+            position <= 0.2 ? 'left' :
+                position >= 0.8 ? 'right' :
+                    undefined
+        );
+    }
+
+    private setSideNavigationHover(side: 'left' | 'right' | undefined): void {
+        this.host.classList.toggle('is-hovering-left', side === 'left');
+        this.host.classList.toggle('is-hovering-right', side === 'right');
+        this.previousButton.style.opacity = side === 'left' && !this.previousButton.disabled ? '0.42' : '';
+        this.nextButton.style.opacity = side === 'right' && !this.nextButton.disabled ? '0.42' : '';
+    }
+
+    private installSideNavigationZoneHover(
+        zone: HTMLElement,
+        side: 'left' | 'right'
+    ): void {
+        const activate = () => this.setSideNavigationHover(side);
+        zone.onmouseenter = activate;
+        zone.onpointerenter = activate;
+        zone.onmousemove = activate;
     }
 
     private createSideNavButton(

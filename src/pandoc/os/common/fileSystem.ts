@@ -47,7 +47,12 @@ export class NodePandocExportFileSystem implements PandocExportFileSystem {
     async removeFile(path: string): Promise<void> {
         const fs = await importFs();
         if (fs.existsSync(path)) {
-            fs.unlinkSync(path);
+            const stat = fs.statSync(path);
+            if (stat.isDirectory()) {
+                fs.rmSync(path, { recursive: true, force: true });
+            } else {
+                fs.unlinkSync(path);
+            }
         }
     }
 
