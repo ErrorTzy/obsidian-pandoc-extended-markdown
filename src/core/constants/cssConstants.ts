@@ -76,6 +76,7 @@ export const CSS_CLASSES = {
     UNORDERED_LIST_MARKER_DASH: 'pem-unordered-list-marker-dash',
     UNORDERED_LIST_MARKER_PLUS: 'pem-unordered-list-marker-plus',
     UNORDERED_LIST_MARKER_STAR: 'pem-unordered-list-marker-star',
+    PANDOC_INVALID_NATIVE_LIST: 'pem-pandoc-invalid-native-list',
     DEFINITION_MARKER_CURSOR: 'cm-pem-definition-marker-cursor',
     LIST_CONTINUATION_WIDGET: 'pem-list-continuation-widget',
 

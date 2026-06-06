@@ -1349,6 +1349,31 @@
     list-style-type: circle;
 }
 
+/* Pandoc list spacing enforcement: invalid native lists render as source text */
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list {
+    padding-inline-start: 0 !important;
+    text-indent: 0 !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list::before {
+    content: none !important;
+    display: none !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list .cm-formatting-list,
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list .cm-formatting-list .list-bullet {
+    color: inherit !important;
+    font-size: inherit !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list .cm-formatting-list::before,
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list .cm-formatting-list::after,
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list .cm-formatting-list .list-bullet::before,
+.markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list .cm-formatting-list .list-bullet::after {
+    content: none !important;
+    display: none !important;
+}
+
 /* Custom Label Placeholder Styles */
 .pem-custom-label-placeholder {
     text-decoration: underline;

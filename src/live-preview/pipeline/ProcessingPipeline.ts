@@ -15,6 +15,9 @@ import { CodeRegion } from '../../shared/types/codeTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
 import { isCustomLabelListsEnabled, isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
+// Constants
+import { CSS_CLASSES } from '../../core/constants';
+
 // Patterns
 import { ListPatterns } from '../../shared/patterns';
 
@@ -89,6 +92,11 @@ function isCodeRegionEndLine(
         line.from >= region.from &&
         line.to === region.to
     );
+}
+
+function isNativeListLine(line: string): boolean {
+    return ListPatterns.UNORDERED_LIST.test(line) ||
+        ListPatterns.NUMBERED_LIST_WITH_SPACE.test(line);
 }
 
 // Helper: Create empty example scan result
@@ -307,6 +315,7 @@ export class ProcessingPipeline {
             
             // Skip lines blocked by Pandoc list spacing enforcement.
             if (context.invalidLines.has(lineNum)) {
+                this.decorateInvalidNativeListLine(line, context);
                 fencedDivCanOpenAtCurrentLine = false;
                 continue;
             }
@@ -373,6 +382,23 @@ export class ProcessingPipeline {
             fencedDivCanOpenAtCurrentLine = allowsFencedDivOpeningAfterLine(line.text) ||
                 context.fencedDivBoundaryLine === lineNum;
         }
+    }
+
+    private decorateInvalidNativeListLine(
+        line: { from: number; text: string },
+        context: ProcessingContext
+    ): void {
+        if (!isNativeListLine(line.text)) {
+            return;
+        }
+
+        context.structuralDecorations.push({
+            from: line.from,
+            to: line.from,
+            decoration: Decoration.line({
+                class: CSS_CLASSES.PANDOC_INVALID_NATIVE_LIST
+            })
+        });
     }
     
     /**
