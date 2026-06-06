@@ -8,7 +8,7 @@ export {
 export {
     PandocExportManager,
     createPandocExportRequestFromFile
-} from './PandocExportManager';
+} from './gui/obsidian/export';
 export { buildPandocProfileArgs } from './core/args/profileArgs';
 export { overridePandocOutputArgs } from './core/args/previewOutput';
 export { normalizePandocExportSettings } from './core/settings/settings';

@@ -5,7 +5,7 @@ import {
     PandocPreviewRendererPort,
     PandocRunResult
 } from '../../../src/pandoc';
-import { PandocPreviewManager } from '../../../src/pandoc/previewManager';
+import { PandocPreviewManager } from '../../../src/pandoc/gui/obsidian/previewManager';
 
 function resultFor(args: string[] = []): PandocRunResult {
     return {
@@ -43,11 +43,10 @@ describe('PandocPreviewManager', () => {
                 convertPreviewFile: async () => ({ ok: true, outputPath: '/tmp/fallback.html' })
             },
             settings: normalizePandocExportSettings(),
-            tempDir: '/tmp/pem',
-            fileSystem: {
-                exists: async () => false,
-                ensureDir: async () => undefined,
+            makeTempPath: makeTempPath('/tmp/pem'),
+            system: {
                 readText: async () => '<p>ok</p>',
+                readBinary: async () => new Uint8Array(),
                 removeFile: async path => {
                     removed.push(path);
                 }
@@ -89,11 +88,10 @@ describe('PandocPreviewManager', () => {
                 convertPreviewFile: async () => ({ ok: true, outputPath: '/tmp/fallback.html' })
             },
             settings: normalizePandocExportSettings(),
-            tempDir: '/tmp/pem',
-            fileSystem: {
-                exists: async () => false,
-                ensureDir: async () => undefined,
+            makeTempPath: makeTempPath('/tmp/pem'),
+            system: {
                 readText: async () => '<p>ok</p>',
+                readBinary: async () => new Uint8Array(),
                 removeFile: async path => {
                     removed.push(path);
                 }
@@ -152,10 +150,8 @@ describe('PandocPreviewManager', () => {
                 convertPreviewFile
             },
             settings,
-            tempDir: '/tmp/pem',
-            fileSystem: {
-                exists: async () => false,
-                ensureDir: async () => undefined,
+            makeTempPath: makeTempPath('/tmp/pem'),
+            system: {
                 readText: async () => '<p>fallback</p>',
                 readBinary: async () => new Uint8Array([1, 2, 3]),
                 removeFile: async () => undefined
@@ -191,4 +187,8 @@ function rendererPort(): PandocPreviewRendererPort {
     return {
         render: jest.fn(async () => undefined)
     };
+}
+
+function makeTempPath(tempDir: string): (extension: string, runId: number) => Promise<string> {
+    return async (extension, runId) => `${tempDir}/pandoc-preview-${Date.now()}-${runId}${extension}`;
 }

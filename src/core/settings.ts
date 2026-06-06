@@ -22,7 +22,8 @@ import { PANEL_SETTINGS, SETTINGS_UI } from './constants';
 import { VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
 import { OrderedListOrderControl } from './settingsOrderedListOrder';
 import { UnorderedListOrderControl } from './settingsUnorderedListOrder';
-import { renderPandocExportSettingsSection } from '../pandoc/pandocExportSettingsSection';
+import { renderPandocExportSettingsSection } from '../pandoc/gui/obsidian/settings/pandocExportSettingsSection';
+import { createObsidianPandocOsDependencies } from '../pandoc/obsidianDependencies';
 
 export type { PandocExtendedMarkdownSettings };
 export {
@@ -70,7 +71,11 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         this.renderNonNativeSyntaxSettings(containerEl);
         this.renderListAutocompletionSettings(containerEl);
         this.renderPanelFeatureSettings(containerEl);
-        renderPandocExportSettingsSection(this.plugin, containerEl);
+        renderPandocExportSettingsSection(
+            this.plugin,
+            containerEl,
+            createObsidianPandocOsDependencies().gui
+        );
     }
 
     private renderGeneralSettings(containerEl: HTMLElement): void {

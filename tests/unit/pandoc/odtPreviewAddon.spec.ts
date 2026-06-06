@@ -5,7 +5,7 @@ import { zipSync } from 'fflate';
 import {
     installOdtPreviewAddon,
     removeOdtPreviewAddon
-} from '../../../src/pandoc/odtPreviewAddon';
+} from '../../../src/pandoc/gui/obsidian/workspace/odtPreviewAddon';
 
 function sha256(data: Uint8Array): string {
     return createHash('sha256').update(data).digest('hex');
@@ -24,8 +24,8 @@ describe('ODT preview add-on installer', () => {
             version: 'test',
             expectedSha256: sha256(archive),
             download: async () => archive,
+            hash: async data => sha256(data),
             fileSystem: {
-                exists: async () => false,
                 ensureDir: async () => undefined,
                 writeFile: async (path, data) => {
                     written.set(path, Buffer.from(data).toString('utf8'));
@@ -49,9 +49,10 @@ describe('ODT preview add-on installer', () => {
             version: 'test',
             expectedSha256: 'not-a-real-checksum',
             download: async () => Buffer.from('bad archive'),
+            hash: async data => sha256(data),
             fileSystem: {
-                exists: async () => false,
-                ensureDir: async () => undefined
+                ensureDir: async () => undefined,
+                writeFile: async () => undefined
             }
         });
 
@@ -67,8 +68,6 @@ describe('ODT preview add-on installer', () => {
             status: 'installed',
             installPath: '/addons/webodf-test'
         }, {
-            exists: async () => true,
-            ensureDir: async () => undefined,
             removeDir: async path => {
                 removed.push(path);
             }

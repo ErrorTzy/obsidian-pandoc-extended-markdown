@@ -148,7 +148,7 @@ Implement the refactor in this order:
 - Pandoc export and preview must remain optional and desktop-oriented.
 - Core preview code must not import Obsidian, DOM, Node, Electron, or concrete OS modules.
 - GUI code must not import concrete OS modules.
-- Existing root compatibility wrappers under `src/pandoc/*.ts` should continue to work.
+- Root compatibility wrappers under `src/pandoc/*.ts` have been removed; use the package barrel or concrete `core/`, `gui/obsidian/`, and `os/common/` modules.
 - Existing exports should remain available during the first refactor:
     - `selectPreviewRendererPlan`
     - `createPreviewArtifact`
@@ -188,4 +188,4 @@ npm run test:e2e -- --spec tests/e2e/specs/pandocOdtPreviewImages.e2e.ts
 - Adding preview support for every format returned by `pandoc --list-output-formats`.
 - Adding a documented third-party plugin API for preview renderer registration.
 - Changing export profile settings, Pandoc argument construction, or normal Live Preview/Reading mode rendering.
-- Removing root compatibility wrappers.
+- Reintroducing root compatibility wrappers.

@@ -28,8 +28,9 @@ import { formatToPandocStandard, checkPandocFormatting } from '../editor-extensi
 import { createListAutocompletionKeymap } from '../editor-extensions/listAutocompletion';
 import { pluginStateManager } from './state/pluginStateManager';
 import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
-import { registerPandocExportCommands } from '../pandoc/registerPandocCommands';
+import { registerPandocExportCommands } from '../pandoc/gui/obsidian/commands/registerPandocCommands';
 import { releaseBundledPandocLuaFilters } from '../pandoc/gui/obsidian/workspace/resources';
+import { createObsidianPandocOsDependencies } from '../pandoc/obsidianDependencies';
 
 export class PandocExtendedMarkdownPlugin extends Plugin {
     private suggester: ExampleReferenceSuggest;
@@ -77,7 +78,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         
         // Register all commands
         this.registerCommands();
-        registerPandocExportCommands(this);
+        registerPandocExportCommands(this, createObsidianPandocOsDependencies().gui);
 
         this.updateListPanelAvailability();
 

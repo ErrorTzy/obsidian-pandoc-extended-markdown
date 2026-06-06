@@ -21,26 +21,36 @@ import {
 import {
     ObsidianPandocWorkspacePort
 } from '../workspace/workspacePort';
+import {
+    createObsidianPandocOsDependencies
+} from '../../../obsidianDependencies';
+import type {
+    ObsidianPandocOsDependencyConfig
+} from '../../../obsidianDependencies';
 
-export interface PandocExportManagerConfig {
+export interface PandocExportManagerConfig extends Omit<ObsidianPandocOsDependencyConfig, 'system'> {
     app: App;
     manifest: PluginManifest;
     settings: PandocExportSettings;
-    system: PandocExportSystemPort & Pick<PandocSystemPort, 'pathDelimiter' | 'platform'>;
+    system?: PandocExportSystemPort & Pick<PandocSystemPort, 'pathDelimiter' | 'platform'>;
     saveSettings?: () => Promise<void>;
     platformEnvDefaults?: Record<string, string>;
     runtimeEnv?: Record<string, string>;
     user?: Partial<PandocExportWorkflowUserPort>;
 }
 
+type ResolvedPandocExportManagerConfig = Omit<PandocExportManagerConfig, 'system'> & {
+    system: PandocExportSystemPort & Pick<PandocSystemPort, 'pathDelimiter' | 'platform'>;
+};
+
 export class PandocExportManager {
-    private readonly config: PandocExportManagerConfig;
+    private readonly config: ResolvedPandocExportManagerConfig;
     private readonly user: ObsidianPandocUserInteractionPort;
     private readonly workspace: ObsidianPandocWorkspacePort;
     private readonly workflow: PandocExportWorkflowService;
 
     constructor(config: PandocExportManagerConfig) {
-        this.config = config;
+        this.config = resolvePandocExportManagerConfig(config);
         this.user = new ObsidianPandocUserInteractionPort();
         this.workspace = new ObsidianPandocWorkspacePort({
             app: config.app,
@@ -156,5 +166,19 @@ export function createPandocExportRequestFromFile(
         currentFileName: file.name,
         currentFileBaseName: file.basename,
         ...partial
+    };
+}
+
+function resolvePandocExportManagerConfig(
+    config: PandocExportManagerConfig
+): ResolvedPandocExportManagerConfig {
+    const dependencies = createObsidianPandocOsDependencies(config);
+
+    return {
+        ...config,
+        platformEnvDefaults: config.platformEnvDefaults ?? dependencies.platformEnvDefaults,
+        runtimeEnv: config.runtimeEnv ?? dependencies.runtimeEnv,
+        system: config.system ?? dependencies.system,
+        user: config.user ?? dependencies.user
     };
 }

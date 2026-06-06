@@ -31,10 +31,10 @@ src/pandoc/
 |       `-- workspace/
 |-- os/
 |   `-- common/
-`-- compatibility wrappers at src/pandoc/*.ts
+`-- index.ts and dependency/declaration files
 ```
 
-The root files such as `src/pandoc/PandocExportManager.ts`, `src/pandoc/ExportModal.ts`, `src/pandoc/previewManager.ts`, `src/pandoc/registerPandocCommands.ts`, and `src/pandoc/pandocExportSettingsSection.ts` are compatibility wrappers. They preserve existing imports while delegating to the Obsidian GUI layer and composing OS dependencies.
+Root compatibility wrappers have been removed. Obsidian-facing functionality lives under `src/pandoc/gui/obsidian/`, OS dependency composition lives in `src/pandoc/obsidianDependencies.ts`, and the public Pandoc barrel remains in `src/pandoc/index.ts`.
 
 ## Dependency Rule
 
@@ -50,7 +50,7 @@ Current boundary status:
 
 | Boundary | Status |
 | --- | --- |
-| Core avoids Obsidian imports | Implemented. Obsidian imports are in `gui/obsidian/*` and root compatibility wrappers. |
+| Core avoids Obsidian imports | Implemented. Obsidian imports are in `gui/obsidian/*`. |
 | Core avoids DOM rendering | Implemented. `HTMLElement` rendering lives in `gui/obsidian/renderers/*`; preview workflow hands artifacts to a renderer port. |
 | Core avoids Node/Electron imports | Implemented. Core does not import Node or Electron modules, and runtime environment values are injected from the OS dependency bundle. |
 | GUI imports core contracts | Implemented. Obsidian workspace/user adapters and UI controllers consume core contracts. |
@@ -88,7 +88,7 @@ The Obsidian user-interaction port is implemented by `src/pandoc/gui/obsidian/no
 | Obsidian modals/settings/commands | `gui/obsidian/modals/*`, `gui/obsidian/settings/*`, `gui/obsidian/commands/*` | Moved to GUI layer. `ExportModal.ts` and `PandocProfileEditorModal.ts` are still sizeable but under the correct ownership boundary. |
 | Workspace adaptation | `gui/obsidian/workspace/*` | Implemented. Vault paths, plugin paths, frontmatter, embeds, attachment paths, Lua filter resources, and ODT add-on file handling are Obsidian-owned. |
 | User interaction | `gui/obsidian/notices/*`, `os/common/desktopAdapter.ts` | Implemented through a GUI user port plus an Electron desktop adapter. |
-| Preview planning | `core/preview/*` | Implemented through an internal format registry. Format modules select preview pipelines for HTML, text-like formats, PDF, DOCX, EPUB, PPTX, ODT, and unsupported formats; ODT owns WebODF plus Pandoc HTML fallback stages. |
+| Preview planning | `core/preview/*` | Implemented through an internal format registry. Format modules select preview pipelines for every format reported by Pandoc's output format list. HTML and `chunkedhtml` use HTML previews, text-like writers use text previews, PDF/DOCX/EPUB/PPTX use bundled renderers, and ODT owns WebODF plus Pandoc HTML fallback stages. |
 | Preview rendering | `gui/obsidian/renderers/*`, `gui/obsidian/previewManager.ts` | Implemented through an internal Obsidian renderer registry. The active path dispatches by `artifact.rendererId`, falls back to `artifact.kind` for compatibility, and keeps DOM rendering in per-renderer modules. |
 | OS adapters | `os/common/*` | Implemented for dynamic desktop module loading, process execution, shell execution, filesystem, hashing, temp paths, desktop dialogs, and system-port composition. |
 | Platform defaults | `os/common/environment.ts` | Implemented. Defaults are used by Obsidian dependency composition and injected into export environment construction. |
@@ -117,9 +117,7 @@ The constants-only per-OS files have been removed. Git does not preserve empty d
 
 ## Remaining Gaps
 
-1. Reduce compatibility-wrapper permanence.
-
-   Root files in `src/pandoc/*.ts` are useful for preserving existing imports. They should remain until internal and external imports have migrated, then be reviewed as public API shims.
+1. Keep root-level Pandoc files limited to the barrel, dependency composition, declarations, and metadata.
 
 ## Migration Status
 
@@ -128,7 +126,7 @@ The constants-only per-OS files have been removed. Git does not preserve empty d
 | Move pure modules from `gui-core/*` into `core/*` | Complete. |
 | Introduce core port interfaces for system, workspace, user interaction, and preview rendering | Complete. |
 | Extract core export services from `PandocExportManager.ts` | Mostly complete. Core services own execution and workflow; the Obsidian manager now composes adapters. |
-| Move Obsidian commands, settings, modals, notices, menus, current-file selection, vault adaptation, and metadata adaptation into `gui/obsidian/` | Complete, with root compatibility wrappers still present. |
+| Move Obsidian commands, settings, modals, notices, menus, current-file selection, vault adaptation, and metadata adaptation into `gui/obsidian/` | Complete. |
 | Split preview planning from DOM rendering | Complete. Core owns registry-selected preview pipelines, stale-run cleanup, conversion stages, and renderer-port handoff; Obsidian owns registry-selected DOM rendering. |
 | Move OS implementations into `os/{common,linux,mac,win}/` | Adjusted. `os/common` is the concrete desktop adapter layer; constants-only per-OS files were removed. |
 | Add import-boundary enforcement | Complete through ESLint rules in `eslint.config.mjs`. |

@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { App, Platform } from 'obsidian';
 
 import { DEFAULT_SETTINGS } from '../../../src/core/settings';
-import { registerPandocExportCommands } from '../../../src/pandoc/registerPandocCommands';
+import { registerPandocExportCommands } from '../../../src/pandoc/gui/obsidian/commands/registerPandocCommands';
 
 describe('registerPandocExportCommands', () => {
     it('skips desktop commands on mobile', () => {
@@ -17,7 +17,7 @@ describe('registerPandocExportCommands', () => {
             registerEvent: jest.fn()
         } as any;
 
-        registerPandocExportCommands(plugin);
+        registerPandocExportCommands(plugin, {} as never);
 
         expect(plugin.addCommand).not.toHaveBeenCalled();
         Platform.isDesktop = original;
