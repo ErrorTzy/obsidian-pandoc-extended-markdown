@@ -251,12 +251,19 @@ export class PandocExportModal extends Modal {
 
     private updateAfterDraftChange(): void {
         this.updateCommandPreview();
+        this.refreshTemplateDisplays();
         this.actions.refreshPreviewDebounced();
     }
 
     private updateCommandPreview(): void {
         if (!this.previewEl || !this.controller || !this.catalog) return;
         this.previewEl.setText(this.commandPreviewDisplay());
+    }
+
+    private refreshTemplateDisplays(): void {
+        this.contentEl
+            .querySelectorAll<HTMLInputElement>('.pem-pandoc-string-input')
+            .forEach(input => input.dispatchEvent(new Event('pem-pandoc-refresh-display')));
     }
 
     private commandPreviewDisplay(): string {
@@ -319,7 +326,7 @@ export class PandocExportModal extends Modal {
             this.plugin,
             this.currentFile,
             this.controller?.currentOutputFolder() ?? currentFileFolder(this.plugin, this.currentFile),
-            this.controller?.currentOutputFileName() ?? `${this.currentFile.basename}.html`,
+            this.outputFileNameForVariables(),
             this.pathDelimiter()
         );
     }
@@ -329,11 +336,15 @@ export class PandocExportModal extends Modal {
             this.plugin,
             this.currentFile,
             this.controller?.currentOutputFolder() ?? currentFileFolder(this.plugin, this.currentFile),
-            this.controller?.currentOutputFileName() ?? `${this.currentFile.basename}.html`,
+            this.outputFileNameForVariables(),
             draft,
             this.catalog,
             this.pathDelimiter()
         );
+    }
+
+    private outputFileNameForVariables(): string {
+        return this.controller?.outputFileNameForProfile() ?? `${this.currentFile.basename}.html`;
     }
 
     private commandPreviewPlatform(): 'posix' | 'windows' {
