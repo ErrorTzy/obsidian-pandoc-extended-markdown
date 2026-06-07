@@ -628,13 +628,20 @@
 .pem-pandoc-preset-actions {
     align-items: end;
     display: grid;
-    gap: 8px;
-    grid-template-columns: minmax(180px, 1fr) repeat(5, max-content);
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
     margin-bottom: 10px;
+    min-width: 0;
+}
+
+.pem-pandoc-preset-actions .pem-pandoc-preset-field {
+    grid-column: 1 / -1;
 }
 
 .pem-pandoc-preset-actions button {
+    min-width: 0;
     white-space: nowrap;
+    width: 100%;
 }
 
 .pem-pandoc-builder-row {
@@ -1259,7 +1266,7 @@
         grid-template-columns: 1fr;
     }
 
-    .pem-pandoc-preset-actions button {
+    .pem-pandoc-preset-actions .pem-pandoc-preset-field {
         width: 100%;
     }
 
