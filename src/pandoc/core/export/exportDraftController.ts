@@ -5,9 +5,11 @@ import type {
     PandocCommandPreviewPlatform
 } from '../preview';
 import {
-    compileProfileDraft,
-    createProfileDraft
+    compileProfileDraft
 } from '../profileDraft';
+import {
+    PandocPresetManager
+} from '../presetManager';
 import type {
     CommandPreview,
     PandocOptionCatalog,
@@ -53,8 +55,8 @@ export interface PandocExportDraftCurrentFile {
 }
 
 export class PandocExportDraftController {
-    private readonly profiles: ExportProfile[];
     private readonly catalog: PandocOptionCatalog;
+    private readonly presets: PandocPresetManager;
     private draft: ProfileDraft;
     private outputFolder: string;
     private outputFileName: string;
@@ -63,9 +65,16 @@ export class PandocExportDraftController {
     private readonly commandPreviewPlatform: PandocCommandPreviewPlatform;
 
     constructor(config: PandocExportDraftControllerConfig) {
-        this.profiles = [...config.profiles];
         this.catalog = config.catalog;
-        this.draft = createProfileDraft(selectInitialProfile(config));
+        this.presets = new PandocPresetManager(config.profiles);
+        if (config.initialProfileId) {
+            this.presets.select(config.initialProfileId);
+        }
+        const draft = this.presets.selectedDraft();
+        if (!draft) {
+            throw new Error('Pandoc export profile not found.');
+        }
+        this.draft = draft;
         this.outputFolder = config.initialOutputFolder;
         this.outputFileName = `${config.currentFileBaseName}${this.currentProfile().extension}`;
         this.overwrite = config.initialOverwrite;
@@ -93,13 +102,82 @@ export class PandocExportDraftController {
         return this.optionIndex - 1;
     }
 
-    selectProfile(profileId: string): ProfileDraft | undefined {
-        const profile = this.profiles.find(item => item.id === profileId);
-        if (!profile) return undefined;
+    visibleDrafts(): ProfileDraft[] {
+        return this.presets.visibleDrafts();
+    }
 
-        this.draft = createProfileDraft(profile);
+    selectedDraftId(): string {
+        return this.presets.selectedDraftId();
+    }
+
+    selectProfile(profileId: string): ProfileDraft | undefined {
+        this.presets.select(profileId);
+        const draft = this.presets.selectedDraft();
+        if (!draft || draft.id !== profileId) return undefined;
+
+        this.draft = draft;
         this.outputFileName = replaceExtension(this.outputFileName, this.currentProfile().extension);
         return this.draft;
+    }
+
+    addPreset(): ProfileDraft {
+        this.draft = this.presets.addPreset();
+        this.outputFileName = replaceExtension(this.outputFileName, this.currentProfile().extension);
+        return this.draft;
+    }
+
+    deleteSelectedPreset(): boolean {
+        if (!this.presets.deleteSelected()) return false;
+        const draft = this.presets.selectedDraft();
+        if (draft) {
+            this.draft = draft;
+            this.outputFileName = replaceExtension(this.outputFileName, this.currentProfile().extension);
+        }
+        return true;
+    }
+
+    resetSelectedPreset(): boolean {
+        if (!this.presets.resetSelected()) return false;
+        const draft = this.presets.selectedDraft();
+        if (draft) {
+            this.draft = draft;
+            this.outputFileName = replaceExtension(this.outputFileName, this.currentProfile().extension);
+        }
+        return true;
+    }
+
+    restoreSelectedPreset(): boolean {
+        if (!this.presets.restoreSelected()) return false;
+        const draft = this.presets.selectedDraft();
+        if (draft) {
+            this.draft = draft;
+            this.outputFileName = replaceExtension(this.outputFileName, this.currentProfile().extension);
+        }
+        return true;
+    }
+
+    canDeleteSelectedPreset(): boolean {
+        return this.presets.canDeleteSelected();
+    }
+
+    canResetSelectedPreset(): boolean {
+        return this.presets.canResetSelected();
+    }
+
+    canRestoreSelectedPreset(): boolean {
+        return this.presets.canRestoreSelected();
+    }
+
+    saveSelectedPreset(): ExportProfile[] {
+        const profiles = this.presets.saveSelected(this.catalog);
+        this.refreshSelectedDraft();
+        return profiles;
+    }
+
+    saveAllPresets(): ExportProfile[] {
+        const profiles = this.presets.saveAll(this.catalog);
+        this.refreshSelectedDraft();
+        return profiles;
     }
 
     outputTarget(variables: ExportVariables): PandocExportOutputTarget {
@@ -172,16 +250,14 @@ export class PandocExportDraftController {
     currentOutputFileName(): string {
         return this.outputFileName;
     }
-}
 
-function selectInitialProfile(config: PandocExportDraftControllerConfig): ExportProfile {
-    const profile = config.profiles.find(item => item.id === config.initialProfileId) ??
-        config.profiles[0];
-    if (!profile) {
-        throw new Error('Pandoc export profile not found.');
+    private refreshSelectedDraft(): void {
+        const draft = this.presets.selectedDraft();
+        if (!draft) return;
+
+        this.draft = draft;
+        this.outputFileName = replaceExtension(this.outputFileName, this.currentProfile().extension);
     }
-
-    return profile;
 }
 
 export function replaceExportFileExtension(fileName: string, extension: string): string {

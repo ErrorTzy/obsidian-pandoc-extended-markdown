@@ -1,16 +1,38 @@
 import { Setting } from 'obsidian';
 
+import { createPandocSelect } from './PandocSelect';
 import type {
-    ExportProfile,
+    PandocExportSettings,
+    ProfileDraft,
     ValidationIssue
 } from '../../../core';
 
-export interface OverwriteOptionState {
-    overwrite: boolean;
+export interface OutputActionOptionState {
+    settings: PandocExportSettings;
 }
 
-export interface OverwriteOptionActions {
-    onOverwriteChange(value: boolean): void;
+export interface OutputActionOptionActions {
+    onShowOverwriteConfirmationChange(value: boolean): void;
+    onOpenOutputFileChange(value: boolean): void;
+    onRevealOutputFileChange(value: boolean): void;
+}
+
+export interface PresetOptionState {
+    drafts: ProfileDraft[];
+    selectedId: string;
+    canDelete: boolean;
+    canReset: boolean;
+    canRestore: boolean;
+}
+
+export interface PresetOptionActions {
+    onSelect(profileId: string): void;
+    onNameChange(value: string): void;
+    onNewPreset(): void;
+    onSaveCurrent(): void;
+    onResetCurrent(): void;
+    onDeleteCurrent(): void;
+    onRestorePreset(): void;
 }
 
 export function renderPreviewPane(
@@ -50,37 +72,68 @@ export function renderCommandPreview(
 
 export function renderPresetOptions(
     container: HTMLElement,
-    profiles: ExportProfile[],
-    selectedId: string,
-    onSelect: (profileId: string) => void
+    state: PresetOptionState,
+    actions: PresetOptionActions
 ): void {
     const section = container.createDiv({ cls: 'pem-pandoc-preset-section' });
     // eslint-disable-next-line obsidianmd/ui/sentence-case
     section.createEl('h3', { text: 'Preset Options' });
     const fields = section.createDiv({ cls: 'pem-pandoc-preset-fields' });
-    const field = fields.createDiv({ cls: 'pem-pandoc-preset-field' });
-    field.createEl('label', { text: 'Preset' });
-    const select = field.createEl('select');
+    const selectField = fields.createDiv({ cls: 'pem-pandoc-preset-field' });
+    selectField.createEl('label', { text: 'Preset' });
+    const select = createPandocSelect(
+        selectField,
+        [],
+        { 'aria-label': 'Load preset' },
+        'pem-pandoc-preset-select-frame'
+    );
 
-    for (const profile of profiles) {
-        select.createEl('option', { value: profile.id, text: profile.name });
+    for (const draft of state.drafts) {
+        select.createEl('option', { value: draft.id, text: draft.name });
     }
-    select.value = selectedId;
-    select.onchange = () => onSelect(select.value);
+    select.value = state.selectedId;
+    select.onchange = () => actions.onSelect(select.value);
+
+    const draft = state.drafts.find(item => item.id === state.selectedId);
+    const actionRow = section.createDiv({ cls: 'pem-pandoc-preset-actions' });
+    if (draft) {
+        const nameField = actionRow.createDiv({ cls: 'pem-pandoc-preset-field' });
+        nameField.createEl('label', { text: 'Name' });
+        const nameInput = nameField.createEl('input', { type: 'text' });
+        nameInput.value = draft.name;
+        nameInput.oninput = () => actions.onNameChange(nameInput.value);
+    }
+    createButton(actionRow, 'New preset', () => actions.onNewPreset());
+    createButton(actionRow, 'Save current', () => actions.onSaveCurrent());
+    createButton(actionRow, 'Reset current', () => actions.onResetCurrent()).disabled = !state.canReset;
+    createButton(actionRow, 'Delete current', () => actions.onDeleteCurrent()).disabled = !state.canDelete;
+    createButton(actionRow, 'Restore preset', () => actions.onRestorePreset()).disabled = !state.canRestore;
 }
 
-export function renderOverwriteOption(
+export function renderOutputActionOptions(
     container: HTMLElement,
-    state: OverwriteOptionState,
-    actions: OverwriteOptionActions
+    state: OutputActionOptionState,
+    actions: OutputActionOptionActions
 ): void {
     const section = container.createDiv({ cls: 'pem-pandoc-preset-section' });
+    // eslint-disable-next-line obsidianmd/ui/sentence-case
+    section.createEl('h3', { text: 'Output Actions' });
 
     new Setting(section)
-        .setName('Replace existing file')
+        .setName('Confirm before replacing files')
         .addToggle(toggle => toggle
-            .setValue(state.overwrite)
-            .onChange(value => actions.onOverwriteChange(value)));
+            .setValue(state.settings.showOverwriteConfirmation)
+            .onChange(value => actions.onShowOverwriteConfirmationChange(value)));
+    new Setting(section)
+        .setName('Open output file after export')
+        .addToggle(toggle => toggle
+            .setValue(state.settings.openOutputFile)
+            .onChange(value => actions.onOpenOutputFileChange(value)));
+    new Setting(section)
+        .setName('Reveal output file after export')
+        .addToggle(toggle => toggle
+            .setValue(state.settings.revealOutputFile)
+            .onChange(value => actions.onRevealOutputFileChange(value)));
 }
 
 export function renderValidation(container: HTMLElement, issues: ValidationIssue[]): void {

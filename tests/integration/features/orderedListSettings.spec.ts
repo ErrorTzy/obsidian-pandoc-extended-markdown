@@ -86,7 +86,7 @@ describe('Ordered list marker settings', () => {
             'Ordered list marker order',
             'Panel features',
             'Panel Order',
-            'Pandoc export'
+            'Pandoc export (beta)'
         ]);
         expect(indexOfSetting('Hash auto-number lists')).toBeGreaterThan(indexOfSetting('Syntax features'));
         expect(indexOfSetting('Hash auto-number lists')).toBeLessThan(indexOfSetting('List auto-completion'));

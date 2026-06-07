@@ -23,11 +23,15 @@ import type {
 import {
     renderCommandPreview,
     renderFooter,
-    renderOverwriteOption,
-    renderPresetOptions,
     renderPreviewPane,
     renderValidation
 } from './ExportModalRenderers';
+import {
+    renderExportModalOutputActions
+} from './ExportModalOutputActions';
+import {
+    renderExportModalPresetOptions
+} from './ExportModalPresetActions';
 import { renderPandocRows } from './PandocCommandRows';
 import {
     buildTemplateVariableContext,
@@ -167,20 +171,18 @@ export class PandocExportModal extends Modal {
         this.previewBodyEl = previewPane.bodyEl;
         const builder = layout.createDiv({ cls: 'pem-pandoc-command-builder pem-pandoc-export-builder' });
         this.previewEl = renderCommandPreview(builder, this.commandPreviewDisplay());
-        renderPresetOptions(
-            builder,
-            this.plugin.settings.pandocExport?.profiles ?? [],
-            draft.id,
-            profileId => {
+        renderExportModalOutputActions(builder, this.plugin, this.controller);
+        renderExportModalPresetOptions(builder, {
+            plugin: this.plugin,
+            controller: this.controller,
+            catalog: this.catalog,
+            knownTemplateNames: draft => this.knownTemplateNames(draft),
+            selectProfile: profileId => {
                 void this.selectProfile(profileId);
-            }
-        );
-        renderOverwriteOption(builder, {
-            overwrite: this.controller.currentOverwrite()
-        }, {
-            onOverwriteChange: value => {
-                void this.controller?.setOutputTarget({ overwrite: value });
-            }
+            },
+            onDraftChange: () => this.updateAfterDraftChange(),
+            render: () => this.render(),
+            refreshPreviewNow: () => this.actions.refreshPreviewDebounced(0)
         });
         if (draft.type === 'pandoc') {
             this.renderCommandRows(builder, draft);

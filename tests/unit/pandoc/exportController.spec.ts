@@ -66,6 +66,31 @@ describe('PandocCoreExportController', () => {
         expect(controller.currentOverwrite()).toBe(true);
     });
 
+    it('manages preset drafts while preserving the active export profile', async () => {
+        const controller = createController();
+
+        const draft = controller.addPreset();
+        draft.name = 'Temporary HTML';
+        expect(controller.selectedDraftId()).toBe(draft.id);
+        expect(controller.currentProfile()).toMatchObject({
+            id: draft.id,
+            name: 'Temporary HTML'
+        });
+
+        const savedProfiles = controller.saveSelectedPreset();
+        expect(savedProfiles.map(item => item.name)).toContain('Temporary HTML');
+
+        controller.currentDraft().name = 'Edited temporary HTML';
+        expect(controller.canResetSelectedPreset()).toBe(true);
+        expect(controller.resetSelectedPreset()).toBe(true);
+        expect(controller.currentDraft().name).toBe('Temporary HTML');
+
+        await controller.selectProfile('docx');
+        expect(controller.deleteSelectedPreset()).toBe(true);
+        expect(controller.saveAllPresets().map(item => item.id)).toEqual(['html', draft.id]);
+        expect(controller.currentProfile().id).toBe('html');
+    });
+
     it('delegates preview, export, and cancel callbacks when supplied', async () => {
         let cancelled = false;
         const controller = createController({

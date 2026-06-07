@@ -186,6 +186,50 @@ export class PandocCoreExportController implements PandocExportController {
         return this.draftController.currentDraft();
     }
 
+    visibleDrafts(): ProfileDraft[] {
+        return this.draftController.visibleDrafts();
+    }
+
+    selectedDraftId(): string {
+        return this.draftController.selectedDraftId();
+    }
+
+    addPreset(): ProfileDraft {
+        return this.draftController.addPreset();
+    }
+
+    deleteSelectedPreset(): boolean {
+        return this.draftController.deleteSelectedPreset();
+    }
+
+    resetSelectedPreset(): boolean {
+        return this.draftController.resetSelectedPreset();
+    }
+
+    restoreSelectedPreset(): boolean {
+        return this.draftController.restoreSelectedPreset();
+    }
+
+    canDeleteSelectedPreset(): boolean {
+        return this.draftController.canDeleteSelectedPreset();
+    }
+
+    canResetSelectedPreset(): boolean {
+        return this.draftController.canResetSelectedPreset();
+    }
+
+    canRestoreSelectedPreset(): boolean {
+        return this.draftController.canRestoreSelectedPreset();
+    }
+
+    saveSelectedPreset(): ExportProfile[] {
+        return this.draftController.saveSelectedPreset();
+    }
+
+    saveAllPresets(): ExportProfile[] {
+        return this.draftController.saveAllPresets();
+    }
+
     currentOutputFileName(): string {
         return this.draftController.currentOutputFileName();
     }

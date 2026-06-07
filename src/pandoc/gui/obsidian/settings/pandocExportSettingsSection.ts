@@ -28,7 +28,7 @@ export function renderPandocExportSettingsSection(
     if (!settings) return;
 
     new Setting(containerEl)
-        .setName('Pandoc export')
+        .setName('Pandoc export (beta)')
         .setDesc(Platform.isDesktop ?
             'Optional desktop-only export backend using Pandoc.' :
             'Pandoc export is available on desktop only.')
@@ -92,41 +92,9 @@ export function renderPandocExportSettingsSection(
                 await plugin.saveSettings();
             }));
 
-    renderBooleanSettings(plugin, containerEl);
     renderPreviewSettings(plugin, containerEl, dependencies);
     renderAdvancedSettings(plugin, containerEl, dependencies);
     renderProfileSettings(plugin, containerEl, dependencies);
-}
-
-function renderBooleanSettings(
-    plugin: PandocExportSettingsPlugin,
-    containerEl: HTMLElement
-): void {
-    const settings = plugin.settings.pandocExport;
-    if (!settings) return;
-
-    const toggles: Array<{
-        name: string;
-        key: keyof typeof settings;
-        desc?: string;
-    }> = [
-        { name: 'Confirm before replacing files', key: 'showOverwriteConfirmation' },
-        { name: 'Open output file after export', key: 'openOutputFile' },
-        { name: 'Reveal output file after export', key: 'revealOutputFile' }
-    ];
-
-    for (const item of toggles) {
-        const setting = new Setting(containerEl)
-            .setName(item.name);
-        if (item.desc) setting.setDesc(item.desc);
-        setting
-            .addToggle(toggle => toggle
-                .setValue(Boolean(settings[item.key]))
-                .onChange(async value => {
-                    settings[item.key] = value as never;
-                    await plugin.saveSettings();
-                }));
-    }
 }
 
 function renderPreviewSettings(

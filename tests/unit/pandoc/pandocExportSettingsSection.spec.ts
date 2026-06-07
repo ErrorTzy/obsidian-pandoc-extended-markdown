@@ -28,7 +28,12 @@ describe('Pandoc export settings section', () => {
             saveSettings: async () => undefined
         }, container, createDependencies());
 
+        expect(getSettingRow(container, 'Pandoc export (beta)')).toBeTruthy();
         expect(getSettingRow(container, 'Advanced Pandoc settings')).toBeTruthy();
+        expect(findSettingRow(container, 'Pandoc export')).toBeUndefined();
+        expect(findSettingRow(container, 'Confirm before replacing files')).toBeUndefined();
+        expect(findSettingRow(container, 'Open output file after export')).toBeUndefined();
+        expect(findSettingRow(container, 'Reveal output file after export')).toBeUndefined();
         expect(findSettingRow(container, 'Show progress notices')).toBeUndefined();
         expect(findSettingRow(container, 'Environment overrides')).toBeUndefined();
         expect(findSettingRow(container, 'Suggest runtime environment variables')).toBeUndefined();
