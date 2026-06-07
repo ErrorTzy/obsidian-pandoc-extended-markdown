@@ -20,7 +20,7 @@
 - TypeScript-first; follow ESLint rules in `eslint.config.mjs`.
 - Use 4-space indentation, single quotes, and semicolons as seen in `src/`.
 - Import order follows the architecture guide: External → Types → Constants → Patterns → Utils → Internal.
-- Keep typescript files in src ≤400 lines and functions ≤50 lines
+- Try to keep typescript files in src ≤500 lines and functions ≤50 lines (this is not a hard constraint)
 - Naming: `PascalCase` for classes/types, `camelCase` for functions/vars, `UPPER_SNAKE_CASE` for constants.
 
 ## Testing Guidelines
