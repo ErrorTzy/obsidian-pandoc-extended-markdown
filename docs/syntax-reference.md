@@ -49,7 +49,7 @@ List editing helpers:
 - Ordered marker cycling can choose marker styles by nesting depth.
 - Auto-renumbering can update affected list items when inserting in the middle of a list.
 
-Pandoc list spacing enforcement requires blank lines around list blocks and at least two spaces after uppercase period markers such as `A.  Item` before list enhancements render.
+Pandoc list lenient spacing is enabled by default and allows list enhancements to render with looser spacing. Disable it to require blank lines around list blocks and at least two spaces after uppercase period markers such as `A.  Item` before list enhancements render.
 
 ## Unordered Lists
 
@@ -173,7 +173,7 @@ The plugin adds these commands:
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| Pandoc list spacing enforcement | Off | Requires Pandoc-compatible list spacing before list enhancements render. |
+| Pandoc list lenient spacing | On | Allows list enhancements to render with looser spacing. Turn it off to require Pandoc-compatible list spacing. |
 | Readable fenced div shorthand | On | Enables plugin-specific readable fenced div opener forms in addition to native Pandoc attributes. |
 | Hash auto-number lists | On | Enables `#.` rendering and continuation. |
 | Fancy lists | On | Enables alphabetic and Roman numeral lists. |

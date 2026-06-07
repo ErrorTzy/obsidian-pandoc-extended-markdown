@@ -102,7 +102,7 @@ The optional Pandoc export backend is a separate desktop-only module. It is not 
 
 All structural processors extend `BaseStructuralProcessor` which provides:
 - `isCursorInMarker()`: Check if cursor is within marker range
-- `isInvalidInStrictMode()`: Check whether Pandoc list spacing enforcement blocks rendering
+- `isInvalidInStrictMode()`: Check whether strict Pandoc list spacing blocks rendering
 - `createLineDecoration()`: Create standard line decorations
 - `createContentMarkDecoration()`: Create content area decorations
 - `createMarkerReplacement()`: Create marker replacement widgets

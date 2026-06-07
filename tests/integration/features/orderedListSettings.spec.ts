@@ -90,6 +90,10 @@ describe('Ordered list marker settings', () => {
         ]);
         expect(indexOfSetting('Hash auto-number lists')).toBeGreaterThan(indexOfSetting('Syntax features'));
         expect(indexOfSetting('Hash auto-number lists')).toBeLessThan(indexOfSetting('List auto-completion'));
+        expect(indexOfSetting('Pandoc list lenient spacing')).toBeGreaterThan(indexOfSetting('Non-native Pandoc syntax'));
+        expect(indexOfSetting('Pandoc list lenient spacing')).toBeLessThan(indexOfSetting('Readable fenced div shorthand'));
+        expect(indexOfSetting('Readable fenced div shorthand')).toBeGreaterThan(indexOfSetting('Non-native Pandoc syntax'));
+        expect(indexOfSetting('Readable fenced div shorthand')).toBeLessThan(indexOfSetting('Fenced div titles and references'));
         expect(indexOfSetting('Custom label lists')).toBeGreaterThan(indexOfSetting('Non-native Pandoc syntax'));
         expect(indexOfSetting('Custom label lists')).toBeLessThan(indexOfSetting('List auto-completion'));
         expect(indexOfSetting('Fenced div titles and references')).toBeGreaterThan(indexOfSetting('Non-native Pandoc syntax'));
@@ -100,6 +104,26 @@ describe('Ordered list marker settings', () => {
         expect(indexOfSetting('Cycle ordered list markers')).toBeLessThan(indexOfSetting('Unordered list marker order'));
         expect(indexOfSetting('List panel')).toBeGreaterThan(indexOfSetting('Panel features'));
         expect(indexOfSetting('List panel')).toBeLessThan(indexOfSetting('Panel Order'));
+    });
+
+    it('stores lenient list spacing as the inverse of Pandoc list spacing enforcement', async () => {
+        const { plugin, tab } = createSettingTab();
+
+        tab.display();
+
+        const lenientSpacingToggle = Array.from(tab.containerEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))
+            .find(input => input.closest('.setting-item')?.textContent?.includes('Pandoc list lenient spacing'));
+
+        expect(lenientSpacingToggle).toBeDefined();
+        expect(lenientSpacingToggle!.checked).toBe(true);
+
+        lenientSpacingToggle!.checked = false;
+        lenientSpacingToggle!.dispatchEvent(new Event('change'));
+
+        await Promise.resolve();
+
+        expect(plugin.settings.enforcePandocListSpacing).toBe(true);
+        expect(plugin.saveSettings).toHaveBeenCalled();
     });
 
     it('toggles syntax features without rebuilding the settings tab', async () => {

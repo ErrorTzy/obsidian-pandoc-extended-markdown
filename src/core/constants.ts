@@ -99,8 +99,8 @@ export const SETTINGS_UI = {
         DESCRIPTION: 'Configure sidebar panel visibility and ordering.'
     },
     PANDOC_LIST_SPACING: {
-        NAME: 'Pandoc list spacing enforcement',
-        DESCRIPTION: 'Require Pandoc-compatible list formatting before rendering list enhancements. Lists must have empty lines before and after them, and capital letter lists require double spacing after markers.'
+        NAME: 'Pandoc list lenient spacing',
+        DESCRIPTION: 'Allow list enhancements to render with looser spacing. Turn this off to require Pandoc-compatible blank lines around list blocks and double spacing after capital letter markers.'
     },
     READABLE_FENCED_DIV_SYNTAX: {
         NAME: 'Readable fenced div shorthand',

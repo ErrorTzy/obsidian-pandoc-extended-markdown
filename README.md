@@ -82,7 +82,7 @@ Start here if you want more than the quick start:
 - Live Preview is the main editing surface.
 - Reading mode renders the implemented syntax after Obsidian has produced its HTML.
 - Source mode preserves plain Markdown.
-- Pandoc list spacing enforcement can require blank lines around list blocks before list enhancements render.
+- Pandoc list lenient spacing allows list enhancements to render with looser spacing; disabling it requires Pandoc-compatible spacing.
 - Readable fenced div shorthand can be disabled separately when you want source closer to native Pandoc Markdown.
 
 The plugin settings let you enable or disable individual syntax families, list marker cycling, auto-renumbering, distinct unordered-list marker rendering, and the sidebar list panel.

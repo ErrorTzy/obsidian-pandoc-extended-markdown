@@ -66,7 +66,6 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
         containerEl.empty();
         this.plugin.settings = normalizeSettings(this.plugin.settings);
 
-        this.renderGeneralSettings(containerEl);
         this.renderSyntaxFeatureSettings(containerEl);
         this.renderNonNativeSyntaxSettings(containerEl);
         this.renderListAutocompletionSettings(containerEl);
@@ -76,34 +75,6 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             containerEl,
             createObsidianPandocOsDependencies().gui
         );
-    }
-
-    private renderGeneralSettings(containerEl: HTMLElement): void {
-        new Setting(containerEl)
-            .setName(SETTINGS_UI.PANDOC_LIST_SPACING.NAME)
-            .setDesc(SETTINGS_UI.PANDOC_LIST_SPACING.DESCRIPTION)
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enforcePandocListSpacing)
-                .onChange(async (value) => {
-                    this.plugin.settings.enforcePandocListSpacing = value;
-                    await this.plugin.saveSettings();
-                    this.app.workspace.updateOptions();
-                    this.refreshListPanels();
-                    this.refreshPanelOrderList();
-                }));
-
-        new Setting(containerEl)
-            .setName(SETTINGS_UI.READABLE_FENCED_DIV_SYNTAX.NAME)
-            .setDesc(SETTINGS_UI.READABLE_FENCED_DIV_SYNTAX.DESCRIPTION)
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.enableReadableFencedDivSyntax)
-                .onChange(async (value) => {
-                    this.plugin.settings.enableReadableFencedDivSyntax = value;
-                    await this.plugin.saveSettings();
-                    this.app.workspace.updateOptions();
-                    this.refreshListPanels();
-                    this.refreshPanelOrderList();
-                }));
     }
 
     private renderSyntaxFeatureSettings(containerEl: HTMLElement): void {
@@ -168,6 +139,9 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             .setDesc(SETTINGS_UI.NON_NATIVE_SYNTAX.DESCRIPTION)
             .setHeading();
 
+        this.renderPandocListSpacingSetting(containerEl);
+        this.renderReadableFencedDivSyntaxSetting(containerEl);
+
         this.createFeatureToggle(
             containerEl,
             SETTINGS_UI.FENCED_DIV_EXTRAS.NAME,
@@ -182,6 +156,36 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
                 .setValue(isSyntaxFeatureEnabled(this.plugin.settings, 'enableCustomLabelLists'))
                 .onChange(async (value) => {
                     this.plugin.settings.enableCustomLabelLists = value;
+                    await this.plugin.saveSettings();
+                    this.app.workspace.updateOptions();
+                    this.refreshListPanels();
+                    this.refreshPanelOrderList();
+                }));
+    }
+
+    private renderPandocListSpacingSetting(containerEl: HTMLElement): void {
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.PANDOC_LIST_SPACING.NAME)
+            .setDesc(SETTINGS_UI.PANDOC_LIST_SPACING.DESCRIPTION)
+            .addToggle(toggle => toggle
+                .setValue(!this.plugin.settings.enforcePandocListSpacing)
+                .onChange(async (value) => {
+                    this.plugin.settings.enforcePandocListSpacing = !value;
+                    await this.plugin.saveSettings();
+                    this.app.workspace.updateOptions();
+                    this.refreshListPanels();
+                    this.refreshPanelOrderList();
+                }));
+    }
+
+    private renderReadableFencedDivSyntaxSetting(containerEl: HTMLElement): void {
+        new Setting(containerEl)
+            .setName(SETTINGS_UI.READABLE_FENCED_DIV_SYNTAX.NAME)
+            .setDesc(SETTINGS_UI.READABLE_FENCED_DIV_SYNTAX.DESCRIPTION)
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enableReadableFencedDivSyntax)
+                .onChange(async (value) => {
+                    this.plugin.settings.enableReadableFencedDivSyntax = value;
                     await this.plugin.saveSettings();
                     this.app.workspace.updateOptions();
                     this.refreshListPanels();
