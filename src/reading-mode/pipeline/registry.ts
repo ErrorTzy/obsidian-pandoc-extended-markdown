@@ -14,6 +14,7 @@ import { DefinitionListNormalizationProcessor } from './processors/definitionLis
 import { ExtendedListBlockProcessor } from './processors/extendedListBlockProcessor';
 import { FencedDivBlockProcessor } from './processors/fencedDivBlockProcessor';
 import { InlineTextEngineProcessor } from './processors/inlineTextProcessor';
+import { NativeListSpacingProcessor } from './processors/nativeListSpacingProcessor';
 import { UnorderedListMarkerProcessor } from './processors/unorderedListMarkerProcessor';
 import { ReadingModeContext } from './types';
 
@@ -28,6 +29,7 @@ export function createDefaultReadingModePipeline(): ReadingModePipeline {
     ];
 
     pipeline.registerProcessor(new UnorderedListMarkerProcessor());
+    pipeline.registerProcessor(new NativeListSpacingProcessor());
     pipeline.registerProcessor(new DefinitionListNormalizationProcessor());
     pipeline.registerProcessor(new FencedDivBlockProcessor());
     pipeline.registerProcessor(new ExtendedListBlockProcessor());
