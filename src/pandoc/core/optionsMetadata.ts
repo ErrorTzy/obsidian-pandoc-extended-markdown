@@ -2,7 +2,6 @@ import type {
     PandocDescriptionBlock,
     OptionField,
     OptionSpec,
-    OptionValueKind,
     PandocOptionGroup,
     PandocOptionName,
     PandocOptionSection,
