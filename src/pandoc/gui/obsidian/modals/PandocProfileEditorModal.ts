@@ -242,6 +242,7 @@ export class PandocProfileEditorModal extends Modal {
         ]
             .filter(issue => issue.severity === 'error');
         if (errors.length > 0) {
+            this.render();
             new Notice(`Fix ${errors.length} Pandoc preset error(s) before saving.`);
             return;
         }
@@ -260,6 +261,7 @@ export class PandocProfileEditorModal extends Modal {
         const errors = this.allValidationIssues()
             .filter(issue => issue.severity === 'error');
         if (errors.length > 0) {
+            this.render();
             new Notice(`Fix ${errors.length} Pandoc preset error(s) before saving.`);
             return;
         }

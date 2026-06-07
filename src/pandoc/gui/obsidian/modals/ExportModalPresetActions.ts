@@ -71,6 +71,7 @@ async function saveCurrentPreset(context: ExportModalPresetActionsContext): Prom
     const errors = currentPresetValidationIssues(context)
         .filter(issue => issue.severity === 'error');
     if (errors.length > 0) {
+        rerenderAndRefresh(context);
         new Notice(`Fix ${errors.length} Pandoc preset error(s) before saving.`);
         return;
     }

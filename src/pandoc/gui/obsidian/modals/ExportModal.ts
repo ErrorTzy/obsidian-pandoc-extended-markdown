@@ -37,7 +37,8 @@ import { renderPandocRows } from './PandocCommandRows';
 import {
     buildTemplateVariableContext,
     PandocCatalogService,
-    PandocCoreExportController
+    PandocCoreExportController,
+    validateProfileDraftNames
 } from '../../../core';
 import {
     ObsidianPandocUserInteractionPort
@@ -315,7 +316,10 @@ export class PandocExportModal extends Modal {
     private currentValidationIssues(): ValidationIssue[] {
         if (!this.controller || !this.catalog) return [];
         const draft = this.controller.currentDraft();
-        return this.controller.validationIssues(this.knownTemplateNames(draft));
+        return [
+            ...validateProfileDraftNames(this.controller.visibleDrafts()),
+            ...this.controller.validationIssues(this.knownTemplateNames(draft))
+        ];
     }
 
     private buildTemplateContext(draft: ProfileDraft) {

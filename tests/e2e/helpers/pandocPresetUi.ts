@@ -208,7 +208,10 @@ export async function getPresetPanelState(title: string): Promise<PresetPanelSta
             nameValue: nameInput?.value ?? '',
             commandPreview: modal.querySelector('.pem-pandoc-command-preview')?.textContent ?? '',
             validationText: modal.querySelector('.pem-pandoc-validation')?.textContent ?? '',
-            hasPresetIdField: fieldLabels.some(label => label.trim().toLowerCase() === 'id'),
+            hasPresetIdField: fieldLabels.some(label => {
+                const normalized = label.trim().toLowerCase().replace(/\s+/g, ' ');
+                return normalized === 'id' || normalized === 'preset id';
+            }),
             presetFieldLabels: fieldLabels,
             outputFileName: outputInput?.value,
             persistedProfiles: JSON.parse(JSON.stringify(
@@ -362,11 +365,31 @@ export async function waitForNoticeContaining(text: string): Promise<void> {
     });
 }
 
+export async function waitForNewNoticeContaining(text: string, previousCount: number): Promise<void> {
+    await browser.waitUntil(async () => {
+        const notices = await getNoticeTexts();
+        return notices.length > previousCount &&
+            notices.slice(previousCount).some(notice => notice.includes(text));
+    }, {
+        timeout: 5000,
+        timeoutMsg: `Expected new notice containing ${text}`
+    });
+}
+
 export async function getPersistedProfiles(): Promise<E2ePandocProfile[]> {
     return browser.execute(() => {
         // @ts-ignore
         const plugin = app.plugins.plugins['pandoc-extended-markdown'];
         return JSON.parse(JSON.stringify(plugin.settings.pandocExport?.profiles ?? []));
+    });
+}
+
+export async function getSavedDataProfiles(): Promise<E2ePandocProfile[]> {
+    return browser.execute(async () => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        const savedData = await plugin.loadData();
+        return JSON.parse(JSON.stringify(savedData?.pandocExport?.profiles ?? []));
     });
 }
 
@@ -386,13 +409,11 @@ export async function installSettingsSaveHarness(): Promise<void> {
     await browser.execute(() => {
         type SaveCall = {
             resolved: boolean;
-            sequence: number;
             resolve: () => void;
             snapshot: Record<string, unknown>;
         };
         type HarnessWindow = Window & {
             __pemPersistedSettings?: Record<string, unknown>;
-            __pemPersistedSaveSequence?: number;
             __pemRestoreSettingsSave?: () => void;
             __pemSettingsSaveCalls?: SaveCall[];
         };
@@ -404,33 +425,25 @@ export async function installSettingsSaveHarness(): Promise<void> {
         }
 
         host.__pemRestoreSettingsSave?.();
-        const originalSaveSettings = plugin.saveSettings.bind(plugin);
+        const originalSaveData = plugin.saveData.bind(plugin);
         const calls: SaveCall[] = [];
-        let sequence = 0;
         host.__pemSettingsSaveCalls = calls;
         host.__pemPersistedSettings = undefined;
-        host.__pemPersistedSaveSequence = 0;
         host.__pemRestoreSettingsSave = () => {
-            plugin.saveSettings = originalSaveSettings;
+            plugin.saveData = originalSaveData;
             delete host.__pemRestoreSettingsSave;
             delete host.__pemSettingsSaveCalls;
-            delete host.__pemPersistedSaveSequence;
+            delete host.__pemPersistedSettings;
         };
 
-        plugin.saveSettings = () => {
-            sequence += 1;
-            const callSequence = sequence;
-            const snapshot = JSON.parse(JSON.stringify(plugin.settings));
+        plugin.saveData = (data: Record<string, unknown>) => {
+            const snapshot = JSON.parse(JSON.stringify(data));
             return new Promise<void>(resolve => {
                 calls.push({
                     resolved: false,
-                    sequence: callSequence,
                     snapshot,
                     resolve: () => {
-                        if (callSequence >= (host.__pemPersistedSaveSequence ?? 0)) {
-                            host.__pemPersistedSaveSequence = callSequence;
-                            host.__pemPersistedSettings = snapshot;
-                        }
+                        host.__pemPersistedSettings = snapshot;
                         resolve();
                     }
                 });
@@ -448,11 +461,10 @@ export async function restoreSettingsSaveHarness(): Promise<void> {
     });
 }
 
-export async function resolveSettingsSavesOldestLast(): Promise<void> {
+export async function resolveSettingsSavesInOrder(): Promise<void> {
     await browser.execute(async () => {
         type SaveCall = {
             resolved: boolean;
-            sequence: number;
             resolve: () => void;
         };
         type HarnessWindow = Window & {
@@ -464,18 +476,16 @@ export async function resolveSettingsSavesOldestLast(): Promise<void> {
 
         let idleRounds = 0;
         for (let safety = 0; safety < 30 && idleRounds < 2; safety += 1) {
-            const pending = calls
-                .filter(call => !call.resolved)
-                .sort((a, b) => b.sequence - a.sequence);
-            if (pending.length === 0) {
+            const pendingIndex = calls.findIndex(call => !call.resolved);
+            if (pendingIndex === -1) {
                 idleRounds += 1;
                 await delay(25);
                 continue;
             }
 
             idleRounds = 0;
-            pending[0].resolved = true;
-            pending[0].resolve();
+            calls[pendingIndex].resolved = true;
+            calls[pendingIndex].resolve();
             await delay(25);
         }
     });

@@ -10,18 +10,21 @@ import {
     editResourcePath,
     editToFormat,
     getHarnessPersistedProfiles,
+    getNoticeTexts,
     getPersistedProfiles,
     getPresetPanelState,
+    getSavedDataProfiles,
     installSettingsSaveHarness,
     openCommandPresetPanel,
     openExportPresetPanel,
     renamePreset,
     researchHtmlProfile,
-    resolveSettingsSavesOldestLast,
+    resolveSettingsSavesInOrder,
     restoreSettingsSaveHarness,
     seedPandocExportSettings,
     seedProfiles,
     selectPreset,
+    waitForNewNoticeContaining,
     waitForNoticeContaining
 } from '../helpers/pandocPresetUi';
 import type {
@@ -32,11 +35,12 @@ import type {
 const commandTitle = 'Pandoc export command';
 const exportTitle = 'Export with pandoc';
 const notePath = 'pandoc-preset-workflows.md';
+const testVault = './tests/e2e/vaults/test-vault';
 
 describe('Pandoc preset workflows', () => {
     before(async () => {
         await browser.reloadObsidian({
-            vault: './tests/e2e/vaults/test-vault'
+            vault: testVault
         });
     });
 
@@ -86,6 +90,10 @@ describe('Pandoc preset workflows', () => {
         await selectPreset(commandTitle, 'Session HTML');
         expect((await getPresetPanelState(commandTitle)).selectedPresetName).toBe('Session HTML');
         await clickCancel(commandTitle);
+
+        profiles = await getSavedDataProfiles();
+        expect(profileNamed(profiles, 'Published Research')?.id).toBe('research-html');
+        expect(profileById(profiles, 'html')?.name).toBe('HTML');
 
         await openCommandPresetPanel();
         let state = await getPresetPanelState(commandTitle);
@@ -137,7 +145,9 @@ describe('Pandoc preset workflows', () => {
         await openCommandPresetPanel();
         await selectPreset(commandTitle, 'DOCX');
         await clickPresetAction(commandTitle, 'Delete current');
-        expect((await getPresetPanelState(commandTitle)).optionLabels).toEqual(['HTML', 'Research HTML']);
+        let state = await getPresetPanelState(commandTitle);
+        expect(state.optionLabels).toEqual(['HTML', 'Research HTML']);
+        expect(state.selectedPresetName).toBe('HTML');
         expect(profileById(await getPersistedProfiles(), 'docx')).toBeDefined();
 
         await clickPresetAction(commandTitle, 'Save current');
@@ -166,7 +176,9 @@ describe('Pandoc preset workflows', () => {
             timeout: 5000,
             timeoutMsg: 'Expected export modal deletion to persist immediately'
         });
-        expect((await getPresetPanelState(exportTitle)).optionLabels).toEqual(['HTML', 'Research HTML']);
+        state = await getPresetPanelState(exportTitle);
+        expect(state.optionLabels).toEqual(['HTML', 'Research HTML']);
+        expect(state.selectedPresetName).toBe('HTML');
 
         const singleProfile = [researchHtmlProfile()];
         await seedPandocExportSettings(singleProfile, 'research-html');
@@ -251,7 +263,7 @@ describe('Pandoc preset workflows', () => {
         await runValidationWorkflow(exportTitle, async () => openExportPresetPanel(notePath));
     });
 
-    it('keeps the latest rapid Save current snapshot when saves resolve out of order', async () => {
+    it('flushes the latest rapid Save current snapshot after a pending save', async () => {
         await seedPandocExportSettings(seedProfiles(), 'research-html');
         await installSettingsSaveHarness();
         await openCommandPresetPanel();
@@ -261,7 +273,7 @@ describe('Pandoc preset workflows', () => {
         await clickPresetAction(commandTitle, 'Save current');
         await renamePreset(commandTitle, 'Rapid two');
         await clickPresetAction(commandTitle, 'Save current');
-        await resolveSettingsSavesOldestLast();
+        await resolveSettingsSavesInOrder();
 
         const profiles = await getHarnessPersistedProfiles();
         expect(profileById(profiles, 'research-html')?.name).toBe('Rapid two');
@@ -371,31 +383,49 @@ async function runValidationWorkflow(
     const originalProfiles = JSON.stringify(await getPersistedProfiles());
 
     await renamePreset(title, '   ');
-    await clickPresetAction(title, 'Save current');
-    await waitForNoticeContaining('Pandoc preset error(s) before saving.');
+    await expectSaveBlocked(title, 'Save current', 'Preset name is required.');
     expect(JSON.stringify(await getPersistedProfiles())).toBe(originalProfiles);
     if (title === commandTitle) {
+        const noticeCount = (await getNoticeTexts()).length;
         await clickSaveAndClose();
-        await waitForNoticeContaining('Pandoc preset error(s) before saving.');
+        await waitForNewNoticeContaining('Pandoc preset error(s) before saving.', noticeCount);
         expect(await hasModal(commandTitle)).toBe(true);
+        await waitForValidationContaining(title, 'Preset name is required.');
     }
 
     await renamePreset(title, 'HTML');
     await selectPreset(title, 'Research HTML');
     await renamePreset(title, ' html ');
-    await clickPresetAction(title, 'Save current');
-    await waitForNoticeContaining('Pandoc preset error(s) before saving.');
+    await expectSaveBlocked(title, 'Save current', 'Preset name "html" is already used.');
     expect(JSON.stringify(await getPersistedProfiles())).toBe(originalProfiles);
 
     await renamePreset(title, 'Research HTML');
     await editToFormat(title, '');
     let state = await getPresetPanelState(title);
     expect(state.actionDisabled.resetCurrent).toBe(false);
-    await clickPresetAction(title, 'Save current');
-    await waitForNoticeContaining('Pandoc preset error(s) before saving.');
+    await expectSaveBlocked(title, 'Save current', 'to format is required.');
     state = await getPresetPanelState(title);
     expect(state.actionDisabled.resetCurrent).toBe(false);
     expect(JSON.stringify(await getPersistedProfiles())).toBe(originalProfiles);
+}
+
+async function expectSaveBlocked(
+    title: string,
+    action: string,
+    validationText: string
+): Promise<void> {
+    const noticeCount = (await getNoticeTexts()).length;
+    await clickPresetAction(title, action);
+    await waitForNewNoticeContaining('Pandoc preset error(s) before saving.', noticeCount);
+    await waitForValidationContaining(title, validationText);
+}
+
+async function waitForValidationContaining(title: string, text: string): Promise<void> {
+    await browser.waitUntil(async () =>
+        (await getPresetPanelState(title)).validationText.includes(text), {
+        timeout: 5000,
+        timeoutMsg: `Expected validation text containing ${text}`
+    });
 }
 
 function profileById(profiles: E2ePandocProfile[], id: string): E2ePandocProfile | undefined {

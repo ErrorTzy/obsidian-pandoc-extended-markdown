@@ -37,6 +37,9 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     private customLabelSuggester: CustomLabelReferenceSuggest;
     private fencedDivSuggester: FencedDivReferenceSuggest;
     private listPanelRibbonIcon: HTMLElement | null = null;
+    private settingsSavePending = false;
+    private settingsSaveRunning = false;
+    private settingsSavePromise = Promise.resolve();
     settings: PandocExtendedMarkdownSettings;
 
     async onload() {
@@ -303,9 +306,26 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         this.settings = normalizeSettings(loadedSettings ?? undefined);
     }
 
-    async saveSettings() {
-        this.settings = normalizeSettings(this.settings);
-        await this.saveData(this.settings);
+    saveSettings(): Promise<void> {
+        this.settingsSavePending = true;
+        if (!this.settingsSaveRunning) {
+            this.settingsSaveRunning = true;
+            this.settingsSavePromise = this.flushSettingsSaves();
+        }
+
+        return this.settingsSavePromise;
+    }
+
+    private async flushSettingsSaves(): Promise<void> {
+        try {
+            while (this.settingsSavePending) {
+                this.settingsSavePending = false;
+                this.settings = normalizeSettings(this.settings);
+                await this.saveData(JSON.parse(JSON.stringify(this.settings)));
+            }
+        } finally {
+            this.settingsSaveRunning = false;
+        }
     }
     
     private isDefinitionTerm(lines: string[], index: number): boolean {
