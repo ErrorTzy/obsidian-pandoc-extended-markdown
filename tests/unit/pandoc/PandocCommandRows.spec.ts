@@ -101,6 +101,31 @@ describe('Pandoc command rows', () => {
         expect(rowHasRemoveButton(rows, '--toc')).toBe(true);
     });
 
+    it('can fold command options by default for compact panels', () => {
+        const openContainer = enhanceElement(document.createElement('div'));
+        renderPandocRows(openContainer, createDraft(), FALLBACK_PANDOC_CATALOG, commandActions());
+
+        expect(openContainer.querySelector<HTMLDetailsElement>('.pem-pandoc-option-section')?.open)
+            .toBe(true);
+
+        const foldedContainer = enhanceElement(document.createElement('div'));
+        const onToggle = jest.fn();
+        renderPandocRows(
+            foldedContainer,
+            createDraft(),
+            FALLBACK_PANDOC_CATALOG,
+            commandActions(),
+            { open: false, onToggle }
+        );
+
+        const section = foldedContainer.querySelector<HTMLDetailsElement>('.pem-pandoc-option-section');
+        expect(section?.open).toBe(false);
+        expect(section?.querySelector('summary')?.textContent).toBe('Command Options');
+        section!.open = true;
+        section!.dispatchEvent(new Event('toggle'));
+        expect(onToggle).toHaveBeenCalledWith(true);
+    });
+
     it('renders hybrid enum, style, and file option values explicitly', () => {
         window.requestAnimationFrame = jest.fn(callback => {
             callback(0);

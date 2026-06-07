@@ -563,6 +563,20 @@
     margin: 0 0 10px;
 }
 
+.pem-pandoc-option-summary {
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.pem-pandoc-option-summary h3 {
+    display: inline-block;
+    margin: 0;
+}
+
+.pem-pandoc-option-section[open] .pem-pandoc-option-summary h3 {
+    margin-bottom: 10px;
+}
+
 .pem-pandoc-preset-fields {
     align-items: end;
     display: grid;

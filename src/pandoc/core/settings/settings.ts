@@ -81,7 +81,7 @@ function isValidProfile(profile: ExportProfile | undefined): profile is ExportPr
 function normalizePreviewSettings(settings?: Partial<PandocPreviewSettings>): PandocPreviewSettings {
     const defaults = DEFAULT_PANDOC_EXPORT_SETTINGS.preview;
     return {
-        enabled: settings?.enabled ?? defaults.enabled,
+        enabled: defaults.enabled,
         debounceMs: normalizeDebounceMs(settings?.debounceMs ?? defaults.debounceMs),
         odtAddon: normalizeOdtAddonSettings(settings?.odtAddon)
     };

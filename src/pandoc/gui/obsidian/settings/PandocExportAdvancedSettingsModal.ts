@@ -29,6 +29,7 @@ interface EnvRowDraft {
 }
 
 interface AdvancedDraft {
+    previewDebounceMs: number;
     suggestRuntimeEnvVariables: boolean;
     envRows: EnvRowDraft[];
 }
@@ -47,6 +48,7 @@ export class PandocExportAdvancedSettingsModal extends Modal {
         this.dependencies = dependencies;
         const settings = plugin.settings.pandocExport;
         this.draft = {
+            previewDebounceMs: settings?.preview.debounceMs ?? 700,
             suggestRuntimeEnvVariables: settings?.suggestRuntimeEnvVariables === true,
             envRows: Object.entries(settings?.env ?? {})
                 .map(([key, value]) => ({ key, value }))
@@ -67,9 +69,24 @@ export class PandocExportAdvancedSettingsModal extends Modal {
 
     private render(): void {
         this.contentEl.empty();
+        this.renderPreviewDelaySetting();
         this.renderRuntimeEnvToggle();
         this.renderEnvEditor();
         this.renderActions();
+    }
+
+    private renderPreviewDelaySetting(): void {
+        new Setting(this.contentEl)
+            .setName('Preview refresh delay')
+            .setDesc('Milliseconds to wait after command edits before refreshing.')
+            .addText(text => text
+                .setValue(String(this.draft.previewDebounceMs))
+                .onChange(value => {
+                    const parsed = Number.parseInt(value, 10);
+                    if (Number.isFinite(parsed)) {
+                        this.draft.previewDebounceMs = Math.max(250, Math.min(5000, parsed));
+                    }
+                }));
     }
 
     private renderRuntimeEnvToggle(): void {
@@ -200,6 +217,7 @@ export class PandocExportAdvancedSettingsModal extends Modal {
         if (!settings) return;
 
         settings.suggestRuntimeEnvVariables = this.draft.suggestRuntimeEnvVariables;
+        settings.preview.debounceMs = this.draft.previewDebounceMs;
         settings.env = env;
         await this.plugin.saveSettings();
         this.close();

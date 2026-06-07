@@ -45,7 +45,7 @@ export function renderPandocExportSettingsSection(
     renderEnablePandocExportSetting(plugin, containerEl, saveSettings);
     renderPandocPathSetting(plugin, containerEl, dependencies, saveSettings);
     renderOutputFolderSettings(plugin, containerEl, dependencies, saveSettings);
-    renderPreviewSettings(plugin, containerEl, dependencies);
+    renderOdtAddonSettings(plugin, containerEl, dependencies);
     renderAdvancedSettings(plugin, containerEl, dependencies);
     renderProfileSettings(plugin, containerEl, dependencies);
 }
@@ -203,40 +203,6 @@ function createQueuedSettingsSave(plugin: PandocExportSettingsPlugin): QueuedSet
 
         return currentSave;
     };
-}
-
-function renderPreviewSettings(
-    plugin: PandocExportSettingsPlugin,
-    containerEl: HTMLElement,
-    dependencies: ObsidianPandocGuiDependencies
-): void {
-    const settings = plugin.settings.pandocExport;
-    if (!settings) return;
-
-    new Setting(containerEl)
-        .setName('Pandoc preview')
-        .setDesc('Live internal preview for the export modal.')
-        .addToggle(toggle => toggle
-            .setValue(settings.preview.enabled)
-            .onChange(async value => {
-                settings.preview.enabled = value;
-                await plugin.saveSettings();
-            }));
-
-    new Setting(containerEl)
-        .setName('Preview refresh delay')
-        .setDesc('Milliseconds to wait after command edits before refreshing.')
-        .addText(text => text
-            .setValue(String(settings.preview.debounceMs))
-            .onChange(async value => {
-                const parsed = Number.parseInt(value, 10);
-                if (Number.isFinite(parsed)) {
-                    settings.preview.debounceMs = Math.max(250, Math.min(5000, parsed));
-                    await plugin.saveSettings();
-                }
-            }));
-
-    renderOdtAddonSettings(plugin, containerEl, dependencies);
 }
 
 function renderOdtAddonSettings(

@@ -38,15 +38,24 @@ export interface PandocCommandRowActions {
     updatePreview(draft: ProfileDraft): void;
 }
 
+export interface PandocCommandRowsOptions {
+    onToggle?: (open: boolean) => void;
+    open?: boolean;
+}
+
 export function renderPandocRows(
     container: HTMLElement,
     draft: ProfileDraft,
     catalog: PandocOptionCatalog,
-    actions: PandocCommandRowActions
+    actions: PandocCommandRowActions,
+    options: PandocCommandRowsOptions = {}
 ): void {
-    const section = container.createDiv({ cls: 'pem-pandoc-option-section' });
+    const section = container.createEl('details', { cls: 'pem-pandoc-option-section' });
+    section.open = options.open ?? true;
+    section.ontoggle = () => options.onToggle?.(section.open);
+    const summary = section.createEl('summary', { cls: 'pem-pandoc-option-summary' });
     // eslint-disable-next-line obsidianmd/ui/sentence-case
-    section.createEl('h3', { text: 'Command Options' });
+    summary.createEl('h3', { text: 'Command Options' });
     const protectedRowIds = protectedCoreRowIds(draft.optionRows, catalog);
 
     for (const row of draft.optionRows) {

@@ -67,6 +67,7 @@ export class PandocExportModal extends Modal {
     private previewStatusEl?: HTMLElement;
     private previewRefreshButtonEl?: HTMLButtonElement;
     private previewBodyEl?: HTMLElement;
+    private commandOptionsOpen = false;
 
     constructor(
         plugin: PandocExportPluginLike,
@@ -199,44 +200,55 @@ export class PandocExportModal extends Modal {
     }
 
     private renderCommandRows(container: HTMLElement, draft: ProfileDraft): void {
-        renderPandocRows(container, draft, this.catalog!, {
-            nextOptionIndex: () => this.controller!.nextOptionIndex(),
-            getVariables: () => this.buildVariables(),
-            getDisplayVariables: current => this.buildDisplayVariables(current),
-            getTemplateVariableContext: current => this.buildTemplateContext(current),
-            getDisplayTemplateVariableContext: current => this.buildDisplayTemplateContext(current),
-            pathBrowser: this.dependencies.pathBrowser,
-            openFormatEditor: (row, spec, current) => {
-                new PandocFormatEditorModal(this.app, {
-                    draft: current,
-                    row,
-                    spec,
-                    catalog: this.catalog!,
-                    getVariables: editorDraft => this.buildDisplayVariables(editorDraft),
-                    onApply: value => {
-                        row.value = value;
-                        this.updateAfterDraftChange();
-                        this.render();
-                    }
-                }).open();
+        renderPandocRows(
+            container,
+            draft,
+            this.catalog!,
+            {
+                nextOptionIndex: () => this.controller!.nextOptionIndex(),
+                getVariables: () => this.buildVariables(),
+                getDisplayVariables: current => this.buildDisplayVariables(current),
+                getTemplateVariableContext: current => this.buildTemplateContext(current),
+                getDisplayTemplateVariableContext: current => this.buildDisplayTemplateContext(current),
+                pathBrowser: this.dependencies.pathBrowser,
+                openFormatEditor: (row, spec, current) => {
+                    new PandocFormatEditorModal(this.app, {
+                        draft: current,
+                        row,
+                        spec,
+                        catalog: this.catalog!,
+                        getVariables: editorDraft => this.buildDisplayVariables(editorDraft),
+                        onApply: value => {
+                            row.value = value;
+                            this.updateAfterDraftChange();
+                            this.render();
+                        }
+                    }).open();
+                },
+                openOptionSearch: onChoose => {
+                    new PandocOptionSearchModal(
+                        this.app,
+                        this.catalog!,
+                        option => {
+                            onChoose(option);
+                            this.updateAfterDraftChange();
+                        },
+                        option => !['from', 'to', 'output'].includes(option.mapsTo ?? '')
+                    ).open();
+                },
+                render: () => {
+                    this.render();
+                    this.actions.refreshPreviewDebounced();
+                },
+                updatePreview: () => this.updateAfterDraftChange()
             },
-            openOptionSearch: onChoose => {
-                new PandocOptionSearchModal(
-                    this.app,
-                    this.catalog!,
-                    option => {
-                        onChoose(option);
-                        this.updateAfterDraftChange();
-                    },
-                    option => !['from', 'to', 'output'].includes(option.mapsTo ?? '')
-                ).open();
-            },
-            render: () => {
-                this.render();
-                this.actions.refreshPreviewDebounced();
-            },
-            updatePreview: () => this.updateAfterDraftChange()
-        });
+            {
+                open: this.commandOptionsOpen,
+                onToggle: open => {
+                    this.commandOptionsOpen = open;
+                }
+            }
+        );
     }
 
     private async selectProfile(profileId: string): Promise<void> {

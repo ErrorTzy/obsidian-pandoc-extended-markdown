@@ -116,9 +116,6 @@ export class PandocCoreExportController implements PandocExportController {
                 error: 'Pandoc preview is not configured.'
             };
         }
-        if (this.runtime.settings.preview.enabled === false) {
-            return { error: 'Enable Pandoc preview in settings to render this pane.' };
-        }
         if (hasValidationErrors(this.runtime.getValidationIssues?.() ?? [])) {
             return { error: 'Fix command errors before previewing.' };
         }

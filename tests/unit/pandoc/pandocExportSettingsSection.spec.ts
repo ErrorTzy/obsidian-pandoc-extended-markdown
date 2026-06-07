@@ -150,6 +150,8 @@ describe('Pandoc export settings section', () => {
         expect(findSettingRow(container, 'Show progress notices')).toBeUndefined();
         expect(findSettingRow(container, 'Environment overrides')).toBeUndefined();
         expect(findSettingRow(container, 'Suggest runtime environment variables')).toBeUndefined();
+        expect(findSettingRow(container, 'Pandoc preview')).toBeUndefined();
+        expect(findSettingRow(container, 'Preview refresh delay')).toBeUndefined();
         expect(container.querySelector('textarea')).toBeNull();
     });
 
@@ -225,6 +227,10 @@ describe('Pandoc export settings section', () => {
         }, createDependencies());
 
         modal.open();
+        const delayInput = getSettingRow(modal.contentEl, 'Preview refresh delay')
+            .querySelector<HTMLInputElement>('input');
+        if (!delayInput) throw new Error('Preview refresh delay input not found.');
+        fireInput(delayInput, '1200');
         getEnvRows(modal)[1].querySelector<HTMLButtonElement>('button')?.click();
         const inputs = getEnvRows(modal)[0].querySelectorAll<HTMLInputElement>('input');
         inputs[1].focus();
@@ -239,6 +245,7 @@ describe('Pandoc export settings section', () => {
             TEXINPUTS: '${currentDir}/tex:',
             EMPTY_VALUE: ''
         });
+        expect(settings.preview.debounceMs).toBe(1200);
         expect(saveSettings).toHaveBeenCalledTimes(1);
         expect(modal.contentEl.textContent).toBe('');
     });

@@ -132,8 +132,8 @@ describe('PandocCoreExportController', () => {
         });
     });
 
-    it('blocks preview through runtime settings and validation', async () => {
-        const disabled = createController({
+    it('ignores stale disabled preview settings and blocks preview through validation', async () => {
+        const staleDisabled = createController({
             runtime: {
                 settings: createSettings({ preview: { enabled: false } }),
                 getExportRequest: createRequest,
@@ -147,8 +147,8 @@ describe('PandocCoreExportController', () => {
                 })
             }
         });
-        await expect(disabled.refreshPreview()).resolves.toMatchObject({
-            error: 'Enable Pandoc preview in settings to render this pane.'
+        await expect(staleDisabled.refreshPreview()).resolves.toMatchObject({
+            artifact: { kind: 'html' }
         });
 
         const invalid = createController({

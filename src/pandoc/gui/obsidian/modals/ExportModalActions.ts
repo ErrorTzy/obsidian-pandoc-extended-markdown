@@ -153,7 +153,6 @@ export class PandocExportModalActions {
     }
 
     private statusForPreviewError(error: string): string {
-        if (error.startsWith('Enable Pandoc preview')) return 'Preview disabled';
         if (error.startsWith('Preview is available')) return 'Preview unavailable';
         if (error.startsWith('Fix command errors')) return 'Preview blocked';
 
