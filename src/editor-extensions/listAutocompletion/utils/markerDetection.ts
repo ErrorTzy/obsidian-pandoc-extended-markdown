@@ -1,6 +1,10 @@
 import { EditorView } from '@codemirror/view';
 import { ListPatterns } from '../../../shared/patterns';
 import {
+    isOrderedMarkerStyleAvailable,
+    parseOrderedListMarker
+} from '../../../shared/utils/orderedListMarkers';
+import {
     PandocExtendedMarkdownSettings,
     isCustomLabelListsEnabled,
     isSyntaxFeatureEnabled
@@ -88,8 +92,11 @@ export function detectListMarker(
  * @returns True if the line is an extended list type
  */
 export function isExtendedList(lineText: string, settings: PandocExtendedMarkdownSettings): boolean {
+    const orderedMarker = parseOrderedListMarker(lineText);
+
     return !!(
         (isSyntaxFeatureEnabled(settings, 'enableFancyLists') && ListPatterns.isFancyList(lineText)) ||
+        (orderedMarker && isOrderedMarkerStyleAvailable(orderedMarker.style, settings)) ||
         (isSyntaxFeatureEnabled(settings, 'enableExampleLists') && ListPatterns.isExampleList(lineText)) ||
         (isCustomLabelListsEnabled(settings) && ListPatterns.isCustomLabelList(lineText)) ||
         (isSyntaxFeatureEnabled(settings, 'enableHashAutoNumber') && ListPatterns.isHashList(lineText)) ||

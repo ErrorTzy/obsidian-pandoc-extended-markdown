@@ -46,7 +46,7 @@ List editing helpers:
 
 - Press Enter after a supported list item to continue the list.
 - Press Tab or Shift+Tab at the start of a list item to indent or outdent.
-- Ordered marker cycling can choose marker styles by nesting depth.
+- Ordered marker cycling chooses marker styles from the surrounding ordered-list context and configured order.
 - Auto-renumbering can update affected list items when inserting in the middle of a list.
 
 Pandoc list lenient spacing is enabled by default and allows list enhancements to render with looser spacing. Disable it to require blank lines around list blocks and at least two spaces after uppercase period markers such as `A.  Item` before list enhancements render.
@@ -186,5 +186,5 @@ The plugin adds these commands:
 | Custom label lists | On | Enables plugin-specific `{::LABEL}` lists and references. |
 | Auto-renumber lists | On | Renumbers affected ordered/fancy list items after insertion. |
 | Cycle unordered list markers | On | Chooses `-`, `+`, or `*` by depth on indent/outdent. |
-| Cycle ordered list markers | On | Chooses ordered marker styles by depth on indent/outdent. |
+| Cycle ordered list markers | On | Chooses ordered marker styles by surrounding list context and configured order on indent/outdent. |
 | List panel | On | Enables the sidebar panel and ribbon icon. |

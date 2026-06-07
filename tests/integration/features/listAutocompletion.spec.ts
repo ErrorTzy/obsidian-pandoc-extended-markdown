@@ -496,6 +496,104 @@ describe('List Autocompletion', () => {
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('    1) ');
         });
+
+        it('should derive nested ordered markers from the surrounding alpha context', () => {
+            const listText = 'a. item\nb. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    i. ');
+        });
+
+        it('should use configured ordered context when nesting an alpha list', () => {
+            mockSettings.orderedListMarkerOrder = [
+                'lower-alpha-period',
+                'decimal-period',
+                'upper-alpha-period'
+            ];
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = 'a. item\nb. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    1. ');
+        });
+
+        it('should resolve outdented decimal items to the alpha parent context', () => {
+            const listText = 'a. parent\n    1. child';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('a. child');
+        });
+
+        it('should move an ordered list item subtree when indenting', () => {
+            const doc = [
+                'a. parent',
+                '    1. child',
+                'b. sibling'
+            ].join('\n');
+            const cursorPos = 'a. '.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe([
+                '    i. parent',
+                '        A. child'
+            ].join('\n'));
+        });
+    });
+
+    describe('Enter key handling for ordered lists', () => {
+        it('should continue decimal child lists inside fancy ordered parents', () => {
+            const doc = 'a. parent\n    1. child';
+            const cursorPos = doc.length - 1;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('\n    2. ');
+        });
     });
 
     describe('Enter key handling for empty unordered list items', () => {

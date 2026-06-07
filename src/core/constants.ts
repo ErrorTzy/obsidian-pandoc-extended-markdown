@@ -160,7 +160,7 @@ export const SETTINGS_UI = {
     },
     ORDERED_LIST_MARKER_CYCLING: {
         NAME: 'Cycle ordered list markers',
-        DESCRIPTION: 'When indenting or outdenting ordered list items, choose the marker style from the final nesting depth.'
+        DESCRIPTION: 'When indenting or outdenting ordered list items, choose the marker style from the surrounding list context and configured order.'
     },
     LIST_PANEL: {
         NAME: 'List panel',
@@ -365,7 +365,7 @@ export const PANEL_SETTINGS = {
         UNORDERED_LIST_ORDER_HEADING: 'Unordered list marker order',
         UNORDERED_LIST_ORDER_DESC: 'Select an unordered list marker and use the buttons to change its nesting-depth order',
         ORDERED_LIST_ORDER_HEADING: 'Ordered list marker order',
-        ORDERED_LIST_ORDER_DESC: 'Select an ordered list marker style and use the buttons to change its nesting-depth order',
+        ORDERED_LIST_ORDER_DESC: 'Select an ordered list marker style and use the buttons to change its context-cycling order',
         BTN_MOVE_UP: 'Move up',
         BTN_MOVE_DOWN: 'Move down',
         BTN_MOVE_TOP: 'Move to top',

@@ -69,7 +69,7 @@ The optional Pandoc export backend is a separate desktop-only module. It is not 
    - Settings UI groups syntax toggles separately from list auto-completion controls and sidebar panel controls
    - Unordered list marker cycling and source-aware marker rendering are separate settings so keyboard behavior and visual styling can be enabled independently
    - Unordered list marker cycling has a configurable nesting-depth order for `-`, `+`, and `*`
-   - Ordered list marker cycling is a keyboard-only setting with a configurable nesting-depth order for supported non-auto ordered markers: decimal, alpha, and roman variants using `.` or `)`
+   - Ordered list marker cycling is a keyboard-only setting with a configurable context order for supported non-auto ordered markers: decimal, alpha, and roman variants using `.` or `)`
 
 6. **Error Handling**
    - Centralized error handling with `errorHandler.ts`
@@ -277,7 +277,7 @@ listAutocompletion/
     ├── lineInfo.ts        # Line information utilities
     ├── markerDetection.ts # List marker detection
     ├── indentation.ts     # Indentation utilities
-    ├── orderedMarkers.ts  # Ordered marker depth cycling
+    ├── orderedMarkers.ts  # Ordered marker context cycling
     ├── unorderedMarkers.ts # Unordered marker depth cycling
     └── continuationUtils.ts # Continuation helpers
 ```

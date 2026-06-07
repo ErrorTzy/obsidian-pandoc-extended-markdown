@@ -9,11 +9,16 @@ import { ListPatterns } from '../patterns';
 import { NUMERIC_CONSTANTS, LIST_MARKERS, LIST_TYPES } from '../../core/constants';
 
 import { getNextLetter, getNextRoman } from './listHelpers';
+import {
+    formatOrderedListMarker,
+    isOrderedMarkerStyleAvailable,
+    parseOrderedListMarker
+} from './orderedListMarkers';
 
 /**
  * Types of list markers that can be detected
  */
-export type ListType = 'hash' | 'custom-label' | 'letter' | 'roman' | 'example' | 'definition' | 'unknown';
+export type ListType = 'decimal' | 'hash' | 'custom-label' | 'letter' | 'roman' | 'example' | 'definition' | 'unknown';
 
 /**
  * Parsed components of a list marker
@@ -53,7 +58,12 @@ export interface ListContext {
  * // Returns: { type: 'hash', indent: '', marker: '#.', spaces: ' ' }
  * ```
  */
-function parseMarkerParts(line: string, settings?: Partial<PandocExtendedMarkdownSettings>): MarkerComponents | null {
+function parseMarkerParts(
+    line: string,
+    settings?: Partial<PandocExtendedMarkdownSettings>,
+    allLines?: string[],
+    lineIndex?: number
+): MarkerComponents | null {
     // Check for hash auto-numbering
     const hashMatch = isSyntaxFeatureEnabled(settings || {}, 'enableHashAutoNumber')
         ? ListPatterns.isHashList(line)
@@ -80,17 +90,19 @@ function parseMarkerParts(line: string, settings?: Partial<PandocExtendedMarkdow
         };
     }
     
-    // Check for letters or roman numerals
-    const listMatch = isSyntaxFeatureEnabled(settings || {}, 'enableFancyLists')
-        ? line.match(ListPatterns.LETTER_OR_ROMAN_LIST)
-        : null;
-    if (listMatch) {
+    const orderedMatch = parseOrderedListMarker(line, allLines, lineIndex);
+    if (orderedMatch && isOrderedMarkerStyleAvailable(orderedMatch.style, settings || {})) {
+        const markerMatch = line.match(/^(\s*)(\d+|[A-Za-z]+)([.)])(\s+)/);
+        if (!markerMatch) {
+            return null;
+        }
+
         return {
-            type: 'unknown', // Will be determined by detectListType
-            indent: listMatch[1],
-            marker: listMatch[2],
-            punctuation: listMatch[3],
-            spaces: listMatch[4]
+            type: orderedMatch.style.startsWith('decimal') ? 'decimal' : 'unknown',
+            indent: markerMatch[1],
+            marker: markerMatch[2],
+            punctuation: markerMatch[3],
+            spaces: markerMatch[4]
         };
     }
     
@@ -328,6 +340,19 @@ function incrementNumericMarker(components: MarkerComponents): ListMarkerInfo | 
     };
 }
 
+function incrementDecimalMarker(components: MarkerComponents): ListMarkerInfo | null {
+    const ordinal = Number.parseInt(components.marker, 10) + 1;
+
+    return {
+        marker: formatOrderedListMarker(
+            components.punctuation === ')' ? 'decimal-one-paren' : 'decimal-period',
+            ordinal
+        ),
+        indent: components.indent,
+        spaces: components.spaces
+    };
+}
+
 /**
  * Increment an alphabetic list marker.
  * 
@@ -457,7 +482,7 @@ export function getNextListMarker(
     const context: ListContext = { currentLine, allLines, currentLineIndex };
     
     // Parse the marker components from the current line
-    const components = parseMarkerParts(currentLine, settings);
+    const components = parseMarkerParts(currentLine, settings, allLines, currentLineIndex);
     if (!components) {
         return null;
     }
@@ -470,6 +495,9 @@ export function getNextListMarker(
     switch (listType) {
         case 'hash':
             return incrementNumericMarker(components);
+
+        case 'decimal':
+            return incrementDecimalMarker(components);
             
         case 'letter':
             return incrementAlphabeticMarker(components);

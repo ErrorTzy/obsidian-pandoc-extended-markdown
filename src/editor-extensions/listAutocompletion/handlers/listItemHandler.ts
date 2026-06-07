@@ -69,11 +69,6 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     const { currentLine, settings } = config;
     const { lineText } = currentLine;
 
-    // Skip regular numbered lists - let Obsidian handle those
-    if (lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
-        return false;
-    }
-
     // Get all lines and current line index for context
     const state = config.view.state;
     const allLines = state.doc.toString().split('\n');

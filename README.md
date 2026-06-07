@@ -15,7 +15,7 @@ It focuses on syntax that is useful while writing notes: fancy lists, definition
 | Example lists | `(@label) Example` and `(@label)` | Numbers examples and resolves local example references. |
 | Fenced divs | `::: {.theorem #thm title="Theorem &"}` | Renders Pandoc fenced divs with optional titles, numbering, local `@id` references, and rail-drag block moves in Live Preview. |
 | Custom label lists | `{::P} Premise` | Adds custom labels, references, and placeholder numbering. |
-| List editing helpers | Enter, Tab, Shift+Tab | Continues lists, cycles marker styles by depth, and can renumber affected list items. |
+| List editing helpers | Enter, Tab, Shift+Tab | Continues lists, cycles ordered marker styles by context, and can renumber affected list items. |
 | List panel | Command: `Open list panel` | Shows custom labels, examples, definition lists, fenced divs, and footnotes from the active note. |
 
 ## Quick Start

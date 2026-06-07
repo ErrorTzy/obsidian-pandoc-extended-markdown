@@ -2,6 +2,10 @@ import { EditorSelection } from '@codemirror/state';
 import { ListPatterns } from '../../../shared/patterns';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import { renumberListItems } from '../../../shared/utils/listRenumbering';
+import {
+    isOrderedMarkerStyleAvailable,
+    parseOrderedListMarker
+} from '../../../shared/utils/orderedListMarkers';
 import { ContinuationLineConfig } from '../types';
 import { findLastListItem } from '../utils/continuationUtils';
 
@@ -20,7 +24,9 @@ export function handleContinuationLine(config: ContinuationLineConfig): boolean 
     const indentMatch = lineText.match(/^(\s+)/);
     const isIndented = indentMatch && (indentMatch[1].length >= 2 || indentMatch[1].includes('\t'));
 
-    if (!isIndented || lineText.match(ListPatterns.ANY_LIST_MARKER)) {
+    const orderedMarker = parseOrderedListMarker(lineText);
+    if (!isIndented || lineText.match(ListPatterns.ANY_LIST_MARKER) ||
+        (orderedMarker && isOrderedMarkerStyleAvailable(orderedMarker.style, settings))) {
         return false; // Not a continuation line or already has a marker
     }
 

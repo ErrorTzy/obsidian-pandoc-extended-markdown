@@ -1,5 +1,4 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
-import { ListPatterns } from '../../../shared/patterns';
 import { getCurrentLineInfo } from '../utils/lineInfo';
 import { detectListMarker } from '../utils/markerDetection';
 import { handleEmptyListSpecialCases, handleEmptyListItem } from './emptyListHandler';
@@ -60,11 +59,6 @@ export function createEnterHandler(settingsProvider: SettingsProvider): KeyBindi
             };
 
                 return handleEmptyListSpecialCases(specialConfig);
-            }
-
-            // Skip regular numbered lists - let Obsidian handle those
-            if (currentLine.lineText.match(ListPatterns.NUMBERED_LIST_WITH_SPACE)) {
-                return false;
             }
 
             // Handle empty list items (dedent or remove)
