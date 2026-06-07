@@ -4,6 +4,7 @@ import type { App, PluginManifest } from 'obsidian';
 import { PandocExtendedMarkdownSettings } from '../../../../shared/types/settingsTypes';
 import { PandocExportAdvancedSettingsModal } from './PandocExportAdvancedSettingsModal';
 import { PandocProfileEditorModal } from '../modals/PandocProfileEditorModal';
+import { addFolderBrowseButton } from '../modals/PandocPathBrowse';
 import type {
     ObsidianPandocGuiDependencies
 } from '../dependencies';
@@ -11,6 +12,7 @@ import {
     WEBODF_ADDON_VERSION
 } from '../workspace/odtPreviewAddon';
 import { joinPath } from '../../../core';
+import type { PandocExportSettings } from '../../../core';
 
 export interface PandocExportSettingsPlugin {
     app: App;
@@ -19,13 +21,15 @@ export interface PandocExportSettingsPlugin {
     saveSettings: () => Promise<void>;
 }
 
+type QueuedSettingsSave = () => Promise<void>;
+
 export function renderPandocExportSettingsSection(
     plugin: PandocExportSettingsPlugin,
     containerEl: HTMLElement,
     dependencies: ObsidianPandocGuiDependencies
 ): void {
-    const settings = plugin.settings.pandocExport;
-    if (!settings) return;
+    if (!plugin.settings.pandocExport) return;
+    const saveSettings = createQueuedSettingsSave(plugin);
 
     new Setting(containerEl)
         .setName('Pandoc export (beta)')
@@ -38,35 +42,78 @@ export function renderPandocExportSettingsSection(
         return;
     }
 
+    renderEnablePandocExportSetting(plugin, containerEl, saveSettings);
+    renderPandocPathSetting(plugin, containerEl, dependencies, saveSettings);
+    renderOutputFolderSettings(plugin, containerEl, dependencies, saveSettings);
+    renderPreviewSettings(plugin, containerEl, dependencies);
+    renderAdvancedSettings(plugin, containerEl, dependencies);
+    renderProfileSettings(plugin, containerEl, dependencies);
+}
+
+function renderEnablePandocExportSetting(
+    plugin: PandocExportSettingsPlugin,
+    containerEl: HTMLElement,
+    saveSettings: QueuedSettingsSave
+): void {
     new Setting(containerEl)
         .setName('Enable pandoc export')
         .addToggle(toggle => toggle
-            .setValue(settings.enabled)
+            .setValue(plugin.settings.pandocExport?.enabled ?? false)
             .onChange(async value => {
-                settings.enabled = value;
-                await plugin.saveSettings();
+                updatePandocExportSettings(plugin, settings => {
+                    settings.enabled = value;
+                });
+                await saveSettings();
             }));
+}
 
+function renderPandocPathSetting(
+    plugin: PandocExportSettingsPlugin,
+    containerEl: HTMLElement,
+    dependencies: ObsidianPandocGuiDependencies,
+    saveSettings: QueuedSettingsSave
+): void {
     new Setting(containerEl)
         .setName('Pandoc path')
         .setDesc('Leave blank to use pandoc from path.')
         .addText(text => text
             .setPlaceholder('Pandoc')
-            .setValue(settings.pandocPath)
+            .setValue(plugin.settings.pandocExport?.pandocPath ?? '')
             .onChange(async value => {
-                settings.pandocPath = value;
-                await plugin.saveSettings();
+                updatePandocExportSettings(plugin, settings => {
+                    settings.pandocPath = value;
+                });
+                await saveSettings();
             }))
         .addButton(button => button
             .setButtonText('Check')
             .onClick(async () => {
+                const settings = plugin.settings.pandocExport;
                 const version = await dependencies.catalogProcess?.getVersion({
-                    pandocPath: settings.pandocPath
+                    pandocPath: settings?.pandocPath ?? ''
                 });
                 new Notice(version?.available ?
                     `Pandoc ${version.version} found` :
                     'Pandoc was not found');
             }));
+}
+
+function renderOutputFolderSettings(
+    plugin: PandocExportSettingsPlugin,
+    containerEl: HTMLElement,
+    dependencies: ObsidianPandocGuiDependencies,
+    saveSettings: QueuedSettingsSave
+): void {
+    const customOutputFolderContainer = document.createElement('div');
+    const renderCustomOutputFolder = (): void => {
+        customOutputFolderContainer.innerHTML = '';
+        renderCustomOutputFolderSetting(
+            plugin,
+            customOutputFolderContainer,
+            dependencies,
+            saveSettings
+        );
+    };
 
     new Setting(containerEl)
         .setName('Default output folder')
@@ -77,24 +124,85 @@ export function renderPandocExportSettingsSection(
                 vault: 'Vault root',
                 custom: 'Custom folder'
             })
-            .setValue(settings.defaultOutputFolderMode)
+            .setValue(plugin.settings.pandocExport?.defaultOutputFolderMode ?? 'current')
             .onChange(async value => {
-                settings.defaultOutputFolderMode = value as typeof settings.defaultOutputFolderMode;
-                await plugin.saveSettings();
+                updatePandocExportSettings(plugin, settings => {
+                    settings.defaultOutputFolderMode = value as typeof settings.defaultOutputFolderMode;
+                });
+                renderCustomOutputFolder();
+                await saveSettings();
             }));
+
+    containerEl.appendChild(customOutputFolderContainer);
+    renderCustomOutputFolder();
+}
+
+function renderCustomOutputFolderSetting(
+    plugin: PandocExportSettingsPlugin,
+    containerEl: HTMLElement,
+    dependencies: ObsidianPandocGuiDependencies,
+    saveSettings: QueuedSettingsSave
+): void {
+    const settings = plugin.settings.pandocExport;
+    if (!settings || settings.defaultOutputFolderMode !== 'custom') return;
 
     new Setting(containerEl)
         .setName('Custom output folder')
-        .addText(text => text
-            .setValue(settings.customOutputFolder)
-            .onChange(async value => {
-                settings.customOutputFolder = value;
-                await plugin.saveSettings();
-            }));
+        .addText(text => {
+            text
+                .setValue(settings.customOutputFolder)
+                .onChange(async value => {
+                    updatePandocExportSettings(plugin, currentSettings => {
+                        currentSettings.customOutputFolder = value;
+                    });
+                    await saveSettings();
+                });
+            addFolderBrowseButton(
+                text.inputEl.parentElement ?? containerEl,
+                text.inputEl,
+                value => {
+                    updatePandocExportSettings(plugin, currentSettings => {
+                        currentSettings.customOutputFolder = value;
+                    });
+                    void saveSettings();
+                },
+                { browser: dependencies.pathBrowser }
+            );
+        });
+}
 
-    renderPreviewSettings(plugin, containerEl, dependencies);
-    renderAdvancedSettings(plugin, containerEl, dependencies);
-    renderProfileSettings(plugin, containerEl, dependencies);
+function updatePandocExportSettings(
+    plugin: PandocExportSettingsPlugin,
+    update: (settings: PandocExportSettings) => void
+): void {
+    const settings = plugin.settings.pandocExport;
+    if (!settings) return;
+    update(settings);
+}
+
+function createQueuedSettingsSave(plugin: PandocExportSettingsPlugin): QueuedSettingsSave {
+    let pending = false;
+    let running = false;
+    let currentSave = Promise.resolve();
+
+    return () => {
+        pending = true;
+        if (!running) {
+            running = true;
+            currentSave = (async () => {
+                try {
+                    while (pending) {
+                        pending = false;
+                        await plugin.saveSettings();
+                    }
+                } finally {
+                    running = false;
+                }
+            })();
+        }
+
+        return currentSave;
+    };
 }
 
 function renderPreviewSettings(

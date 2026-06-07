@@ -14,6 +14,119 @@ import type {
 } from '../../../src/pandoc/gui/obsidian/dependencies';
 
 describe('Pandoc export settings section', () => {
+    it('shows the custom output folder setting only when custom output is selected', async () => {
+        const settings = normalizePandocExportSettings({
+            defaultOutputFolderMode: 'current'
+        });
+        const saveSettings = jest.fn(async () => undefined);
+        const container = document.createElement('div');
+
+        renderPandocExportSettingsSection({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings
+        }, container, createDependencies());
+
+        expect(findSettingRow(container, 'Custom output folder')).toBeUndefined();
+
+        const select = getSettingRow(container, 'Default output folder')
+            .querySelector<HTMLSelectElement>('select');
+        if (!select) throw new Error('Default output folder select not found.');
+        fireSelectChange(select, 'custom');
+
+        expect(getSettingRow(container, 'Custom output folder')).toBeTruthy();
+        await flushPromises();
+        expect(settings.defaultOutputFolderMode).toBe('custom');
+        expect(saveSettings).toHaveBeenCalledTimes(1);
+
+        fireSelectChange(select, 'vault');
+
+        expect(findSettingRow(container, 'Custom output folder')).toBeUndefined();
+    });
+
+    it('selects the custom output folder through the folder browser', async () => {
+        const settings = normalizePandocExportSettings({
+            defaultOutputFolderMode: 'custom',
+            customOutputFolder: '/old'
+        });
+        const saveSettings = jest.fn(async () => undefined);
+        const dependencies = createDependencies({
+            pathBrowser: {
+                chooseFile: jest.fn(async () => undefined),
+                chooseFolder: jest.fn(async () => '/exports')
+            }
+        });
+        const container = document.createElement('div');
+
+        renderPandocExportSettingsSection({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings
+        }, container, dependencies);
+
+        await clickButton(getSettingRow(container, 'Custom output folder'), 'Browse');
+
+        expect(dependencies.pathBrowser?.chooseFolder).toHaveBeenCalledWith('/old');
+        expect(settings.customOutputFolder).toBe('/exports');
+        expect(getSettingRow(container, 'Custom output folder')
+            .querySelector<HTMLInputElement>('input')?.value).toBe('/exports');
+        expect(saveSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('saves the latest custom output folder after an older save finishes', async () => {
+        const settings = normalizePandocExportSettings({
+            defaultOutputFolderMode: 'custom'
+        });
+        let persisted = '';
+        const pendingSaves: Array<{
+            value: string;
+            resolve: () => void;
+        }> = [];
+        const saveSettings = jest.fn(() => new Promise<void>(resolve => {
+            const value = settings.customOutputFolder;
+            pendingSaves.push({
+                value,
+                resolve: () => {
+                    persisted = value;
+                    resolve();
+                }
+            });
+        }));
+        const container = document.createElement('div');
+
+        renderPandocExportSettingsSection({
+            app: createApp(),
+            manifest: { id: 'pandoc-extended-markdown' } as never,
+            settings: { pandocExport: settings } as never,
+            saveSettings
+        }, container, createDependencies());
+
+        const input = getSettingRow(container, 'Custom output folder')
+            .querySelector<HTMLInputElement>('input');
+        if (!input) throw new Error('Custom output folder input not found.');
+
+        fireInput(input, '/');
+        fireInput(input, '/t');
+        fireInput(input, '/tm');
+        fireInput(input, '/tmp');
+        fireInput(input, '/tmp/');
+
+        expect(pendingSaves.map(save => save.value)).toEqual(['/']);
+
+        pendingSaves[0].resolve();
+        await flushPromises();
+
+        expect(pendingSaves.map(save => save.value)).toEqual(['/', '/tmp/']);
+
+        pendingSaves[1].resolve();
+        await flushPromises();
+
+        expect(persisted).toBe('/tmp/');
+        expect(saveSettings).toHaveBeenCalledTimes(2);
+    });
+
     it('keeps advanced-only controls out of the main settings section', () => {
         const settings = normalizePandocExportSettings({
             enabled: true,
@@ -340,6 +453,16 @@ function getEnvRows(modal: PandocExportAdvancedSettingsModal): HTMLElement[] {
 function fireInput(input: HTMLInputElement, value: string): void {
     input.value = value;
     input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+}
+
+function fireSelectChange(select: HTMLSelectElement, value: string): void {
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+async function flushPromises(): Promise<void> {
+    await Promise.resolve();
+    await Promise.resolve();
 }
 
 function typeEnvValueForSuggestions(
