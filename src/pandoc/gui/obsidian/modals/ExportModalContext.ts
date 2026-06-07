@@ -5,7 +5,8 @@ import {
     compileProfileDraft,
     dirname,
     extname,
-    joinPath
+    joinPath,
+    resolveDefaultOutputFolder
 } from '../../../core';
 import { buildOptionDisplayExportVariables } from '../workspace/previewVariables';
 import {
@@ -89,6 +90,25 @@ export function currentFileFolder(plugin: PandocExportPluginLike, currentFile: T
         getFullPath?: (path: string) => string;
     };
     return dirname(adapter.getFullPath?.(currentFile.path) ?? currentFile.path);
+}
+
+export function initialOutputFolder(plugin: PandocExportPluginLike, currentFile: TFile): string {
+    const settings = plugin.settings.pandocExport;
+    if (!settings) {
+        return currentFileFolder(plugin, currentFile);
+    }
+
+    const adapter = plugin.app.vault.adapter as typeof plugin.app.vault.adapter & {
+        getBasePath?: () => string;
+        getFullPath?: (path: string) => string;
+    };
+
+    return resolveDefaultOutputFolder({
+        settings,
+        currentFilePath: currentFile.path,
+        vaultDir: adapter.getBasePath?.() ?? '',
+        fullCurrentPath: adapter.getFullPath?.(currentFile.path) ?? currentFile.path
+    });
 }
 
 export function getPluginDir(plugin: PandocExportPluginLike): string {

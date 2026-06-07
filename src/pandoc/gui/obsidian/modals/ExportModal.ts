@@ -12,6 +12,7 @@ import {
     buildModalVariables,
     createModalExportManager,
     currentFileFolder,
+    initialOutputFolder,
     selectedInitialProfileId
 } from './ExportModalContext';
 import { PandocExportModalActions } from './ExportModalActions';
@@ -121,7 +122,7 @@ export class PandocExportModal extends Modal {
             catalog: this.catalog,
             currentFileBaseName: this.currentFile.basename,
             initialProfileId: selectedInitialProfileId(this.plugin),
-            initialOutputFolder: settings?.lastOutputFolder ?? currentFileFolder(this.plugin, this.currentFile),
+            initialOutputFolder: initialOutputFolder(this.plugin, this.currentFile),
             initialOverwrite: !settings?.showOverwriteConfirmation,
             commandPreviewPlatform: this.commandPreviewPlatform(),
             runtime: {

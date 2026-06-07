@@ -18,6 +18,7 @@ const inputFixturePath = resolve(fixtureDir, 'extended-syntax.md');
 const outputDir = resolve('tests/e2e/.tmp/pandoc-export-modal-close');
 const vaultNotePath = 'pandoc-export-modal-close.md';
 const outputExtensionNotePath = 'pandoc-export-output-extension.md';
+const outputDirSettingsNotePath = 'pandoc-export-output-dir-settings.md';
 const profileId = 'e2e-html-fragment';
 
 describe('Pandoc export modal', () => {
@@ -31,6 +32,7 @@ describe('Pandoc export modal', () => {
         await restoreElectronOpenPath();
         await deleteFileIfExists(vaultNotePath);
         await deleteFileIfExists(outputExtensionNotePath);
+        await deleteFileIfExists(outputDirSettingsNotePath);
         await rm(outputDir, { recursive: true, force: true });
     });
 
@@ -79,6 +81,30 @@ describe('Pandoc export modal', () => {
         expect(preview).toContain('pandoc-export-output-extension.docx');
         expect(preview).not.toContain('pandoc-export-output-extension.html');
         expect(await getExportModalOutputFileName()).toBe('pandoc-export-output-extension.docx');
+    });
+
+    it('updates outputDir from the configured custom output folder', async () => {
+        const customFolder = resolve(outputDir, 'custom-current');
+        const staleLastFolder = resolve(outputDir, 'stale-last');
+
+        await closeOpenModals();
+        await createOrReplaceFile(outputDirSettingsNotePath, '# Output dir settings\n');
+        await openFileInActiveLeaf(outputDirSettingsNotePath);
+        await waitForActiveFile(outputDirSettingsNotePath);
+        await configurePandocExportWithCustomOutputDir(customFolder, staleLastFolder);
+
+        await executeCommandBySuffix('pandoc-export');
+        await waitForExportModal(true);
+
+        await browser.waitUntil(async () =>
+            (await getExportModalCommandPreview()).includes(customFolder), {
+            timeout: 5000,
+            timeoutMsg: 'Expected command preview to use custom output folder'
+        });
+
+        const preview = await getExportModalCommandPreview();
+        expect(preview).toContain(customFolder);
+        expect(preview).not.toContain(staleLastFolder);
     });
 });
 
@@ -176,6 +202,46 @@ async function configurePandocExportForPreview(): Promise<void> {
     }, outputDir, profileId);
 }
 
+async function configurePandocExportWithCustomOutputDir(
+    customFolder: string,
+    staleLastFolder: string
+): Promise<void> {
+    await browser.execute(async (
+        nextCustomFolder: string,
+        nextLastFolder: string,
+        profile: string
+    ) => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        if (!plugin?.settings) {
+            throw new Error('Pandoc Extended Markdown plugin did not load.');
+        }
+
+        plugin.settings.pandocExport = {
+            ...(plugin.settings.pandocExport ?? {}),
+            enabled: true,
+            pandocPath: '',
+            defaultOutputFolderMode: 'custom',
+            customOutputFolder: nextCustomFolder,
+            lastOutputFolder: nextLastFolder,
+            lastExportProfileId: profile,
+            showOverwriteConfirmation: false,
+            profiles: [{
+                id: profile,
+                name: 'E2E output dir settings',
+                type: 'pandoc',
+                from: 'markdown',
+                to: 'html',
+                extension: '.html',
+                outputPath: '${outputDir}/${currentFileName}${outputExtension}',
+                standalone: false
+            }]
+        };
+
+        await plugin.saveSettings();
+    }, customFolder, staleLastFolder, profileId);
+}
+
 async function makeElectronOpenPathHang(): Promise<void> {
     await browser.execute(() => {
         const host = window as typeof window & {
@@ -252,6 +318,14 @@ async function waitForExportModal(expected: boolean): Promise<void> {
     await browser.waitUntil(async () => expected ? await hasExportModalReady() : !await hasExportModal(), {
         timeout: 5000,
         timeoutMsg: expected ? 'Expected Pandoc export modal to open' : 'Expected Pandoc export modal to close'
+    });
+}
+
+async function closeOpenModals(): Promise<void> {
+    await browser.execute(() => {
+        for (const button of Array.from(document.querySelectorAll('.modal-close-button'))) {
+            (button as HTMLButtonElement).click();
+        }
     });
 }
 
