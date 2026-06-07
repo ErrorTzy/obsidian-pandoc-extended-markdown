@@ -31,7 +31,7 @@ describe('Pandoc profile editor layout', () => {
             newPreset: false,
             saveCurrent: false,
             resetCurrent: true,
-            deleteCurrent: false,
+            deleteCurrent: true,
             restorePreset: true
         }));
         expect(layout.visibleTypeLabels).toBeGreaterThanOrEqual(2);

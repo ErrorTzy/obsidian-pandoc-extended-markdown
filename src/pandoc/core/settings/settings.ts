@@ -59,19 +59,19 @@ function normalizeFolderMode(mode?: PandocOutputFolderMode): PandocOutputFolderM
 
 function normalizeProfiles(profiles?: ExportProfile[]): ExportProfile[] {
     const defaults = cloneDefaultProfiles();
+    if (!profiles || profiles.length === 0) {
+        return defaults;
+    }
+
     const merged = new Map<string, ExportProfile>();
 
-    for (const profile of profiles ?? []) {
+    for (const profile of profiles) {
         if (isValidProfile(profile)) {
             merged.set(profile.id, { ...profile });
         }
     }
 
-    for (const profile of defaults) {
-        merged.set(profile.id, { ...profile, ...(merged.get(profile.id) ?? {}) });
-    }
-
-    return Array.from(merged.values());
+    return merged.size > 0 ? Array.from(merged.values()) : defaults;
 }
 
 function isValidProfile(profile: ExportProfile | undefined): profile is ExportProfile {

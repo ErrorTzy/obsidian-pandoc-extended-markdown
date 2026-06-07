@@ -5,6 +5,7 @@ import {
     buildPandocProfileArgs,
     buildTemplateVariableContext,
     DEFAULT_EXPORT_PROFILES,
+    normalizePandocExportSettings,
     splitCommandLineArgs
 } from '../../../src/pandoc';
 import type { ExportVariables, PandocExportProfile } from '../../../src/pandoc/core/export/types';
@@ -48,6 +49,20 @@ describe('export profiles', () => {
             'Bibliography',
             'PPTX'
         ]);
+    });
+
+    it('keeps an explicit saved profile list instead of re-adding deleted defaults', () => {
+        const settings = normalizePandocExportSettings({
+            profiles: [{
+                id: 'html',
+                name: 'HTML',
+                type: 'pandoc',
+                to: 'html',
+                extension: '.html'
+            }]
+        });
+
+        expect(settings.profiles.map(profile => profile.id)).toEqual(['html']);
     });
 
     it('builds argument arrays with paths, filters, metadata, and extra args', () => {

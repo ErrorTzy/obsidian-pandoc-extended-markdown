@@ -78,14 +78,20 @@ async function saveCurrentPreset(context: ExportModalPresetActionsContext): Prom
     const settings = context.plugin.settings.pandocExport;
     if (!settings) return;
     settings.profiles = context.controller.saveSelectedPreset();
+    rerenderAndRefresh(context);
     await context.plugin.saveSettings();
     new Notice('Current pandoc preset saved.');
     rerenderAndRefresh(context);
 }
 
 async function deleteCurrentPreset(context: ExportModalPresetActionsContext): Promise<void> {
+    const deletingSavedPreset = context.controller.selectedPresetIsSaved();
     if (!context.controller.deleteSelectedPreset()) {
         new Notice('At least one export preset is required.');
+        return;
+    }
+    if (!deletingSavedPreset) {
+        rerenderAndRefresh(context);
         return;
     }
 

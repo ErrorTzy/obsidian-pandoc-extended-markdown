@@ -266,6 +266,7 @@ export class PandocExportModal extends Modal {
 
     private updateAfterDraftChange(): void {
         this.updateCommandPreview();
+        this.refreshPresetActionStates();
         this.refreshTemplateDisplays();
         this.actions.refreshPreviewDebounced();
     }
@@ -383,6 +384,22 @@ export class PandocExportModal extends Modal {
         this.previewRefreshButtonEl.classList.toggle('is-loading', loading);
         this.previewRefreshButtonEl.setText(loading ? '' : 'Refresh');
         this.previewRefreshButtonEl.setAttribute('aria-label', loading ? status : 'Refresh');
+    }
+
+    private refreshPresetActionStates(): void {
+        if (!this.controller) return;
+
+        const buttons = Array.from(
+            this.contentEl.querySelectorAll<HTMLButtonElement>('.pem-pandoc-preset-actions button')
+        );
+        for (const button of buttons) {
+            if (button.textContent === 'Reset current') {
+                button.disabled = !this.controller.canResetSelectedPreset();
+            }
+            if (button.textContent === 'Restore preset') {
+                button.disabled = !this.controller.canRestoreSelectedPreset();
+            }
+        }
     }
 
     private setPreviewMessage(text: string): void {

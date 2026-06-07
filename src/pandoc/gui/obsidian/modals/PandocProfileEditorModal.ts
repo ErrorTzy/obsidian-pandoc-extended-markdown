@@ -249,6 +249,7 @@ export class PandocProfileEditorModal extends Modal {
         const settings = this.plugin.settings.pandocExport;
         if (!settings) return;
         settings.profiles = this.presets.saveSelected(this.catalog);
+        this.render();
         await this.plugin.saveSettings();
         new Notice('Current pandoc preset saved.');
         this.render();

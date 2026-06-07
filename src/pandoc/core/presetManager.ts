@@ -126,6 +126,10 @@ export class PandocPresetManager {
         return Boolean(entry?.defaultDraft && !sameDraft(entry.draft, entry.defaultDraft));
     }
 
+    selectedIsSaved(): boolean {
+        return Boolean(this.selectedEntry()?.savedDraft);
+    }
+
     saveSelected(catalog: PandocOptionCatalog): ExportProfile[] {
         const entry = this.selectedEntry();
         if (!entry) return this.compileSavedProfiles(catalog);

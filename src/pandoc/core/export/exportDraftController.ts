@@ -168,6 +168,10 @@ export class PandocExportDraftController {
         return this.presets.canRestoreSelected();
     }
 
+    selectedPresetIsSaved(): boolean {
+        return this.presets.selectedIsSaved();
+    }
+
     saveSelectedPreset(): ExportProfile[] {
         const profiles = this.presets.saveSelected(this.catalog);
         this.refreshSelectedDraft();

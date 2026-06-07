@@ -219,6 +219,10 @@ export class PandocCoreExportController implements PandocExportController {
         return this.draftController.canRestoreSelectedPreset();
     }
 
+    selectedPresetIsSaved(): boolean {
+        return this.draftController.selectedPresetIsSaved();
+    }
+
     saveSelectedPreset(): ExportProfile[] {
         return this.draftController.saveSelectedPreset();
     }
