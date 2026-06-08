@@ -3,6 +3,7 @@ import { Line } from '@codemirror/state';
 import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
 import { IndentMetrics } from '../../../shared/types/listTypes';
 import { CSS_CLASSES, INDENTATION, DECORATION_STYLES } from '../../../core/constants';
+import { parseStandardListItem } from '../../../shared/utils/listContext';
 import { ListContinuationIndentWidget } from '../../widgets';
 
 /**
@@ -19,6 +20,10 @@ export class ListContinuationProcessor implements StructuralProcessor {
         }
         
         const lineText = line.text;
+
+        if (parseStandardListItem(lineText)) {
+            return false;
+        }
         
         // Check if this line is properly indented to be a continuation using visual indentation width
         const indent = this.getIndentMetrics(lineText);

@@ -88,6 +88,34 @@ B. Second item`;
         expect(line3Decoration?.value?.spec?.class).toContain('pem-list-line');
     });
 
+    it('should not treat standard list item lines as continuations of previous fancy lists', () => {
+        const docText = `A. First item
+    a. Child item
+    - Sibling list item`;
+
+        const mockDoc = Text.of(docText.split('\n'));
+
+        mockView = {
+            state: {
+                doc: mockDoc,
+                selection: { main: { head: 0 } }
+            }
+        } as any;
+
+        const decorations = pipeline.process(mockView, settings);
+        const decorArray: any[] = [];
+        decorations.iter((from, to, value) => {
+            decorArray.push({ from, to, value });
+        });
+
+        const line3 = mockDoc.line(3);
+        const line3Decorations = decorArray.filter(d => d.from === line3.from);
+
+        expect(line3Decorations.some(d =>
+            d.value?.spec?.class?.includes('HyperMD-list-line-nobullet')
+        )).toBe(false);
+    });
+
     it('should not emit invalid decoration errors for tab-indented fancy list markers without trailing space', () => {
         const handleErrorSpy = jest.spyOn(errorHandler, 'handleError');
 

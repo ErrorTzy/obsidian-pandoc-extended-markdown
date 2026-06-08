@@ -5,6 +5,7 @@ import {
     isPluginOwnedOrderedListItem,
     resolveOrderedListItem
 } from '../../../shared/utils/orderedListMarkers';
+import { getListIndentColumns } from '../../../shared/utils/listContext';
 import { FancyListMarkerWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
@@ -58,9 +59,10 @@ export class FancyListProcessor extends BaseStructuralProcessor {
         const markerStart = line.from + indent.length;
         const markerEnd = line.from + indent.length + marker.length + delimiter.length + space.length;
         const contentStart = markerEnd;
+        const listLevel = getListLevel(indent);
 
         // Create the widget for the marker
-        const widget = new FancyListMarkerWidget(marker, delimiter, context.view, markerStart);
+        const widget = new FancyListMarkerWidget(marker, delimiter, context.view, markerStart, listLevel);
 
         // Use the base class method for standard list processing
         return this.processStandardList(
@@ -71,9 +73,13 @@ export class FancyListProcessor extends BaseStructuralProcessor {
             contentStart,
             widget,
             'fancy-list',
-            1 // Can be calculated based on indent depth
+            listLevel
         );
     }
+}
+
+function getListLevel(indent: string): number {
+    return Math.floor(getListIndentColumns(indent) / 4) + 1;
 }
 
 function getContextLines(line: Line, context: ProcessingContext): string[] {

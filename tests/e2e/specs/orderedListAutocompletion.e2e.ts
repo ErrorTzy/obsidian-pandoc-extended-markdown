@@ -38,6 +38,7 @@ interface LivePreviewLineState {
     markerText: string;
     markerCount: number;
     markerInlineStart: number | null;
+    contentInlineStart: number | null;
     paddingInlineStart: string;
     textIndent: string;
 }
@@ -345,6 +346,28 @@ describe('Ordered list autocompletion behavior', () => {
     describe('mixed whitespace hybrid lists', () => {
         beforeEach(async () => {
             await configureOrderedListSettings();
+        });
+
+        it('keeps decimal child markers aligned after returning from an alpha grandchild', async () => {
+            const path = 'ordered-list-autocompletion-decimal-child-after-alpha-grandchild.md';
+
+            await openEditableDocument(path, [
+                '- xxx',
+                `${INDENT}1. xxx`,
+                `${INDENT}2. xxx`,
+                `${INDENT}${INDENT}a. xxx`,
+                `${INDENT}${INDENT}b. xxx`,
+                `${INDENT}3. xxx`,
+                `${INDENT}4. xxx`,
+                '- xxx'
+            ].join('\n'));
+
+            const lines = await waitForLivePreviewLineStates(8);
+
+            expectListMarkersToAlign(lines, [2, 3, 6, 7]);
+            expectListContentToAlign(lines, [2, 3, 6, 7]);
+            expectMarkerToBeIndentedAfter(lines[4], lines[2]);
+            expectMarkerToBeIndentedAfter(lines[5], lines[3]);
         });
 
         it('returns from an empty ordered grandchild to a tab-indented unordered parent with Enter', async () => {
@@ -875,6 +898,7 @@ async function getLivePreviewLineStates(): Promise<Record<number, LivePreviewLin
             ) as HTMLElement | null;
             const lineStyle = window.getComputedStyle(line);
             const markerRect = markerElement?.getBoundingClientRect();
+            const contentRect = getTextRect(line, 'xxx');
 
             lineStates[lineNumber] = {
                 text: line.textContent ?? '',
@@ -882,12 +906,34 @@ async function getLivePreviewLineStates(): Promise<Record<number, LivePreviewLin
                 markerText: markers.map(marker => marker.textContent?.trim() ?? '').join(''),
                 markerCount: markers.length,
                 markerInlineStart: markerRect ? markerRect.left : null,
+                contentInlineStart: contentRect ? contentRect.left : null,
                 paddingInlineStart: lineStyle.paddingInlineStart,
                 textIndent: lineStyle.textIndent
             };
         }
 
         return lineStates;
+
+        function getTextRect(root: HTMLElement, needle: string): DOMRect | null {
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode() as Text | null;
+
+            while (node) {
+                const index = node.textContent?.indexOf(needle) ?? -1;
+                if (index >= 0) {
+                    const range = document.createRange();
+                    range.setStart(node, index);
+                    range.setEnd(node, index + needle.length);
+                    const rect = range.getBoundingClientRect();
+                    range.detach();
+                    return rect.width > 0 ? rect : null;
+                }
+
+                node = walker.nextNode() as Text | null;
+            }
+
+            return null;
+        }
     });
 }
 
@@ -966,6 +1012,21 @@ function expectListMarkersToAlign(
     });
     const leftmost = Math.min(...markerStarts);
     const rightmost = Math.max(...markerStarts);
+
+    expect(rightmost - leftmost).toBeLessThanOrEqual(3);
+}
+
+function expectListContentToAlign(
+    lines: Record<number, LivePreviewLineState>,
+    lineNumbers: number[]
+): void {
+    const contentStarts = lineNumbers.map(lineNumber => {
+        const contentStart = lines[lineNumber]?.contentInlineStart;
+        expect(contentStart).not.toBeNull();
+        return contentStart!;
+    });
+    const leftmost = Math.min(...contentStarts);
+    const rightmost = Math.max(...contentStarts);
 
     expect(rightmost - leftmost).toBeLessThanOrEqual(3);
 }

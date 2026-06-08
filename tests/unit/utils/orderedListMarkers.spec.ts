@@ -264,6 +264,30 @@ describe('orderedListMarkers', () => {
         });
     });
 
+    it('marks decimal-period items under plugin-managed unordered ancestors as bridge items', () => {
+        const items = resolveOrderedListItems([
+            '- parent',
+            '    1. child',
+            '    2. child',
+            '        a. grandchild',
+            '        b. grandchild',
+            '    3. child'
+        ], settings);
+
+        expect(items.map(item => ({
+            lineIndex: item.lineIndex,
+            style: item.style,
+            ownership: item.ownership,
+            parentLineIndex: item.parentLineIndex
+        }))).toEqual([
+            { lineIndex: 1, style: 'decimal-period', ownership: 'bridge', parentLineIndex: 0 },
+            { lineIndex: 2, style: 'decimal-period', ownership: 'bridge', parentLineIndex: 0 },
+            { lineIndex: 3, style: 'lower-alpha-period', ownership: 'extended', parentLineIndex: 2 },
+            { lineIndex: 4, style: 'lower-alpha-period', ownership: 'extended', parentLineIndex: 2 },
+            { lineIndex: 5, style: 'decimal-period', ownership: 'bridge', parentLineIndex: 0 }
+        ]);
+    });
+
     it('wraps upper-roman-one-paren children to decimal-period in the configured order', () => {
         const lines = ['I) parent', 'II) target'];
 

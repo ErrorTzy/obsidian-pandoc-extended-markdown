@@ -103,7 +103,7 @@ function getMarkerForTargetIndent(
             : getMarkerForIndent(marker, targetIndent, settings);
     }
 
-    if (previousTargetMarker) {
+    if (previousTargetMarker && isUnorderedMarker(previousTargetMarker.marker)) {
         return previousTargetMarker.marker;
     }
 
@@ -151,6 +151,10 @@ function getMarkerForTargetIndent(
     });
 
     return formatOrderedListMarker(style, ordinal);
+}
+
+function isUnorderedMarker(marker: string): boolean {
+    return marker === '-' || marker === '+' || marker === '*';
 }
 
 function getLocalOverrideMarkerType(

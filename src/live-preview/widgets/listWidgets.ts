@@ -8,13 +8,20 @@ export class FancyListMarkerWidget extends BaseWidget {
         private marker: string,
         private delimiter: string,
         view?: EditorView,
-        pos?: number
+        pos?: number,
+        private listLevel: number = 1
     ) {
         super(view, pos);
     }
 
     protected applyStyles(element: HTMLElement): void {
-        element.className = COMPOSITE_CSS.STANDARD_LIST_MARKER_CLASSES;
+        element.className = [
+            CSS_CLASSES.CM_FORMATTING,
+            CSS_CLASSES.CM_FORMATTING_LIST,
+            CSS_CLASSES.CM_FORMATTING_LIST_OL,
+            getContentClass(this.listLevel),
+            CSS_CLASSES.PANDOC_LIST_MARKER
+        ].join(' ');
     }
 
     protected setContent(element: HTMLElement): void {
@@ -26,6 +33,7 @@ export class FancyListMarkerWidget extends BaseWidget {
     eq(other: FancyListMarkerWidget): boolean {
         return other.marker === this.marker &&
                other.delimiter === this.delimiter &&
+               other.listLevel === this.listLevel &&
                other.pos === this.pos;
     }
 }
@@ -147,5 +155,16 @@ export class UnorderedListMarkerWidget extends BaseWidget {
     eq(other: UnorderedListMarkerWidget): boolean {
         return other.marker === this.marker &&
                other.pos === this.pos;
+    }
+}
+
+function getContentClass(listLevel: number): string {
+    switch (listLevel) {
+        case 2:
+            return CSS_CLASSES.CM_LIST_2;
+        case 3:
+            return CSS_CLASSES.CM_LIST_3;
+        default:
+            return CSS_CLASSES.CM_LIST_1;
     }
 }

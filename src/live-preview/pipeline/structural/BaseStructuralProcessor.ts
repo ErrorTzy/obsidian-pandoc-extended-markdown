@@ -43,10 +43,14 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
     /**
      * Create standard line decoration for lists
      */
-    protected createLineDecoration(line: Line, additionalClasses?: string): {from: number, to: number, decoration: Decoration} {
+    protected createLineDecoration(
+        line: Line,
+        additionalClasses?: string,
+        listLevel: number = 1
+    ): {from: number, to: number, decoration: Decoration} {
         const classes = [
             CSS_CLASSES.LIST_LINE,
-            CSS_CLASSES.LIST_LINE_1,
+            this.getListLineClass(listLevel),
             CSS_CLASSES.PANDOC_LIST_LINE,
             additionalClasses
         ].filter(Boolean).join(' ');
@@ -56,6 +60,19 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
             to: line.from,
             decoration: Decoration.line({ class: classes })
         };
+    }
+
+    private getListLineClass(listLevel: number): string {
+        switch (listLevel) {
+            case 2:
+                return CSS_CLASSES.LIST_LINE_2;
+            case 3:
+                return CSS_CLASSES.LIST_LINE_3;
+            case 4:
+                return CSS_CLASSES.LIST_LINE_4;
+            default:
+                return CSS_CLASSES.LIST_LINE_1;
+        }
     }
 
     /**
@@ -140,7 +157,7 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
 
         // Add line decoration
-        decorations.push(this.createLineDecoration(line));
+        decorations.push(this.createLineDecoration(line, undefined, listLevel));
 
         // Check cursor position
         const cursorInMarker = this.isCursorInMarker(markerStart, markerEnd, context);

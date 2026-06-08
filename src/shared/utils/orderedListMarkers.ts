@@ -57,6 +57,12 @@ export interface OrderedListContinuationContext {
     settings: Partial<PandocExtendedMarkdownSettings>;
 }
 
+interface ListAncestor {
+    indentColumns: number;
+    lineIndex: number;
+    ownership: OrderedListOwnership;
+}
+
 const ORDERED_LINE = /^(\s*)(\d+|[A-Za-z]+)([.)])(\s*)(.*)$/;
 const DECIMAL_STYLES = new Set<OrderedListMarkerStyle>([
     'decimal-period',
@@ -193,7 +199,7 @@ export function resolveOrderedListItems(
     settings: Partial<PandocExtendedMarkdownSettings> = {}
 ): ResolvedOrderedListItem[] {
     const items: ResolvedOrderedListItem[] = [];
-    const stack: ResolvedOrderedListItem[] = [];
+    const stack: ListAncestor[] = [];
 
     lines.forEach((line, lineIndex) => {
         if (!line.trim()) {
@@ -202,13 +208,16 @@ export function resolveOrderedListItems(
         }
 
         const parsed = parseOrderedListMarker(line, lines, lineIndex);
-        const indentColumns = parsed?.indentColumns ?? getIndentColumns(line.match(/^(\s*)/)?.[1] ?? '');
+        const standardItem = parseStandardListItem(line);
+        const indentColumns = standardItem?.indentColumns ??
+            parsed?.indentColumns ??
+            getIndentColumns(line.match(/^(\s*)/)?.[1] ?? '');
 
         while (stack.length > 0 && stack[stack.length - 1].indentColumns >= indentColumns) {
             stack.pop();
         }
 
-        if (!parsed) {
+        if (!standardItem) {
             if (indentColumns === 0) {
                 stack.length = 0;
             }
@@ -216,6 +225,15 @@ export function resolveOrderedListItems(
         }
 
         const parent = stack[stack.length - 1];
+        if (!parsed) {
+            stack.push({
+                indentColumns,
+                lineIndex,
+                ownership: resolveUnorderedOwnership(settings)
+            });
+            return;
+        }
+
         const item = createResolvedItem(parsed, lineIndex, parent, settings);
         items.push(item);
         stack.push(item);
@@ -254,7 +272,7 @@ function resolveOrderedMarkerStyleForMove(context: OrderedListStyleContext): Ord
 function createResolvedItem(
     parsed: ParsedOrderedListMarker,
     lineIndex: number,
-    parent: ResolvedOrderedListItem | undefined,
+    parent: ListAncestor | undefined,
     settings: Partial<PandocExtendedMarkdownSettings>
 ): ResolvedOrderedListItem {
     const ownership = resolveOwnership(parsed.style, parent, settings);
@@ -271,7 +289,7 @@ function createResolvedItem(
 
 function resolveOwnership(
     style: OrderedListMarkerStyle,
-    parent: ResolvedOrderedListItem | undefined,
+    parent: ListAncestor | undefined,
     settings: Partial<PandocExtendedMarkdownSettings>
 ): OrderedListOwnership {
     if (style === 'decimal-period') {
@@ -283,6 +301,15 @@ function resolveOwnership(
     }
 
     return 'native';
+}
+
+function resolveUnorderedOwnership(
+    settings: Partial<PandocExtendedMarkdownSettings>
+): OrderedListOwnership {
+    return isSyntaxFeatureEnabled(settings, 'enableUnorderedListMarkerStyles') ||
+        isSyntaxFeatureEnabled(settings, 'enableUnorderedListMarkerCycling')
+        ? 'extended'
+        : 'native';
 }
 
 function getStyleForToken(
