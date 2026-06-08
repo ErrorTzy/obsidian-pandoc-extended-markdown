@@ -124,3 +124,28 @@ export class DuplicateExampleLabelWidget extends BaseWidget {
                other.pos === this.pos;
     }
 }
+
+export class UnorderedListMarkerWidget extends BaseWidget {
+    constructor(
+        private marker: string,
+        view?: EditorView,
+        pos?: number
+    ) {
+        super(view, pos);
+    }
+
+    protected applyStyles(element: HTMLElement): void {
+        element.className = `${CSS_CLASSES.CM_FORMATTING} ${CSS_CLASSES.CM_FORMATTING_LIST} ${CSS_CLASSES.CM_FORMATTING_LIST_UL}`;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        const bullet = this.createElement('span', 'list-bullet', this.marker);
+        element.appendChild(bullet);
+        element.appendChild(document.createTextNode(' '));
+    }
+
+    eq(other: UnorderedListMarkerWidget): boolean {
+        return other.marker === this.marker &&
+               other.pos === this.pos;
+    }
+}

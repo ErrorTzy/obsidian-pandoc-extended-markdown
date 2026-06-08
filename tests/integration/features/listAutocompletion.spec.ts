@@ -700,6 +700,30 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('II) ');
         });
 
+        it('should outdent an empty ordered grandchild to its unordered parent with Enter', () => {
+            const listText = [
+                'a. parent',
+                'b. parent',
+                '    - child',
+                '        i. grandchild',
+                '        ii. grandchild',
+                '        iii. '
+            ].join('\n');
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
+        });
+
         it('should outdent an empty plus item to a top-level dash item', () => {
             const listText = '- item 1\n    + ';
             const doc = `${listText}\nnext`;
@@ -787,6 +811,32 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('+ ');
+        });
+    });
+
+    describe('Shift+Tab handling for empty ordered list items', () => {
+        it('should outdent an empty ordered grandchild to its unordered parent marker', () => {
+            const listText = [
+                'a. parent',
+                'b. parent',
+                '    - child',
+                '        i. grandchild',
+                '        ii. grandchild',
+                '        iii. '
+            ].join('\n');
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
         });
     });
 });

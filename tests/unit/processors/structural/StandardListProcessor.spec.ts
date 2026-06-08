@@ -63,9 +63,9 @@ describe('StandardListProcessor', () => {
 
         const result = processor.process(line, context);
 
-        expect(result.decorations).toHaveLength(1);
-        expect(result.contentRegion).toBeUndefined();
-        expect(result.skipFurtherProcessing).toBeUndefined();
+        expect(result.decorations.length).toBeGreaterThanOrEqual(1);
+        expect(result.contentRegion).toBeDefined();
+        expect(result.skipFurtherProcessing).toBe(true);
 
         return result.decorations[0].decoration.spec.class as string;
     };
@@ -103,11 +103,37 @@ describe('StandardListProcessor', () => {
         expect(getLineClass('        * item')).toContain('pem-unordered-list-marker-star');
     });
 
-    it('does not replace or claim unordered list content', () => {
+    it('claims unordered list content so continuation processing cannot override indentation', () => {
         const lineClass = getLineClass('- item');
 
         expect(lineClass).toContain('pem-unordered-list-marker');
         expect(lineClass).toContain('HyperMD-list-line');
+        expect(context.contentRegions).toHaveLength(0);
+        expect(context.listContext).toMatchObject({
+            isInList: true,
+            contentStartColumn: 2,
+            listLevel: 1,
+            parentStructure: 'standard-list'
+        });
+    });
+
+    it('sets nested list context from the visual indentation level', () => {
+        createView('        - item');
+        const line = view.state.doc.line(1);
+
+        const result = processor.process(line, context);
+
+        expect(result.contentRegion).toMatchObject({
+            from: line.from + '        - '.length,
+            to: line.to,
+            type: 'list-content',
+            parentStructure: 'standard-list'
+        });
+        expect(context.listContext).toMatchObject({
+            contentStartColumn: 10,
+            listLevel: 3,
+            parentStructure: 'standard-list'
+        });
     });
 
     it('skips marker classes when unordered marker rendering is disabled', () => {

@@ -19,6 +19,7 @@ import {
     parseOrderedListMarker,
     resolveOrderedMarkerForTarget
 } from '../../../shared/utils/orderedListMarkers';
+import { findPreviousListItemAtIndent } from '../../../shared/utils/listContext';
 import type { OrderedListMarkerStyle } from '../../../shared/types/orderedListTypes';
 
 interface MovedOrderedLine {
@@ -76,6 +77,12 @@ function getMarkerForTargetIndent(
     }
 
     const targetIndentColumns = getIndentColumns(targetIndent);
+    const previousTargetItem = findPreviousListItemAtIndent(lines, lineIndex - 1, targetIndentColumns);
+
+    if (direction === 'outdent' && previousTargetItem?.kind === 'unordered') {
+        return previousTargetItem.marker;
+    }
+
     const parentLineIndex = findMovedTargetParentLineIndex(movedOrderedLines, targetIndentColumns);
     const previousMovedSibling = findPreviousMovedSibling(
         movedOrderedLines,

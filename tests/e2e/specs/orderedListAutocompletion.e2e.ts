@@ -12,9 +12,34 @@ type OrderedListMarkerStyle =
     | 'upper-roman-period'
     | 'upper-roman-one-paren';
 
+type UnorderedListMarker = '-' | '+' | '*';
+
 interface OrderedStyleCase {
     style: OrderedListMarkerStyle;
     label: string;
+}
+
+interface UnorderedStyleCase {
+    marker: UnorderedListMarker;
+    label: string;
+}
+
+interface HybridRootCase {
+    fileId: string;
+    rootIsOrdered: boolean;
+    rootMarker: (ordinal: number) => string;
+    unorderedChildMarker: UnorderedListMarker;
+    orderedDescendantStyle: OrderedListMarkerStyle;
+}
+
+interface LivePreviewLineState {
+    text: string;
+    className: string;
+    markerText: string;
+    markerCount: number;
+    markerInlineStart: number | null;
+    paddingInlineStart: string;
+    textIndent: string;
 }
 
 const INDENT = '    ';
@@ -42,6 +67,12 @@ const ORDERED_STYLE_CASES: OrderedStyleCase[] = [
     { style: 'lower-roman-one-paren', label: 'lower roman parenthesis' },
     { style: 'upper-alpha-one-paren', label: 'upper alpha parenthesis' },
     { style: 'upper-roman-one-paren', label: 'upper roman parenthesis' }
+];
+
+const UNORDERED_STYLE_CASES: UnorderedStyleCase[] = [
+    { marker: '-', label: 'dash unordered' },
+    { marker: '+', label: 'plus unordered' },
+    { marker: '*', label: 'asterisk unordered' }
 ];
 
 describe('Ordered list autocompletion behavior', () => {
@@ -282,9 +313,420 @@ describe('Ordered list autocompletion behavior', () => {
 
                 expect(await getEditorText()).toBe(`${marker(root, 1)} xxx\n`);
             });
+
+            runHybridNestedListTests({
+                fileId: styleCase.style,
+                rootIsOrdered: true,
+                rootMarker: ordinal => marker(styleCase.style, ordinal),
+                unorderedChildMarker: '-',
+                orderedDescendantStyle: nextStyle(styleCase.style)
+            });
+
+            runLocalCycleOverrideTests(styleCase);
         });
     }
+
+    for (const styleCase of UNORDERED_STYLE_CASES) {
+        describe(`${styleCase.label} root lists`, () => {
+            beforeEach(async () => {
+                await configureOrderedListSettings();
+            });
+
+            runHybridNestedListTests({
+                fileId: unorderedFileId(styleCase.marker),
+                rootIsOrdered: false,
+                rootMarker: () => styleCase.marker,
+                unorderedChildMarker: styleCase.marker,
+                orderedDescendantStyle: DEFAULT_ORDERED_LIST_MARKER_ORDER[0]
+            });
+        });
+    }
+
+    describe('mixed whitespace hybrid lists', () => {
+        beforeEach(async () => {
+            await configureOrderedListSettings();
+        });
+
+        it('returns from an empty ordered grandchild to a tab-indented unordered parent with Enter', async () => {
+            const path = 'ordered-list-autocompletion-mixed-whitespace-enter.md';
+
+            await openEditableDocument(path, [
+                'a. xxx',
+                'b. xxx',
+                `${INDENT}- xxx`,
+                '\t- xxx',
+                `${INDENT}${INDENT}i. xxx`,
+                `${INDENT}${INDENT}ii. xxx`,
+                `${INDENT}${INDENT}iii. `
+            ].join('\n'));
+            await placeCursorAtLineAfterMarker(7);
+
+            await pressKey('Enter');
+
+            expect(await getEditorText()).toBe([
+                'a. xxx',
+                'b. xxx',
+                `${INDENT}- xxx`,
+                '\t- xxx',
+                `${INDENT}${INDENT}i. xxx`,
+                `${INDENT}${INDENT}ii. xxx`,
+                `${INDENT}- `
+            ].join('\n'));
+        });
+
+        it('returns from an empty ordered grandchild to a tab-indented unordered parent with Shift+Tab', async () => {
+            const path = 'ordered-list-autocompletion-mixed-whitespace-shift-tab.md';
+
+            await openEditableDocument(path, [
+                'a. xxx',
+                'b. xxx',
+                `${INDENT}- xxx`,
+                '\t- xxx',
+                `${INDENT}${INDENT}i. xxx`,
+                `${INDENT}${INDENT}ii. xxx`,
+                `${INDENT}${INDENT}iii. `
+            ].join('\n'));
+            await placeCursorAtLineAfterMarker(7);
+
+            await pressShiftTab();
+
+            expect(await getEditorText()).toBe([
+                'a. xxx',
+                'b. xxx',
+                `${INDENT}- xxx`,
+                '\t- xxx',
+                `${INDENT}${INDENT}i. xxx`,
+                `${INDENT}${INDENT}ii. xxx`,
+                `${INDENT}- `
+            ].join('\n'));
+        });
+    });
 });
+
+function runHybridNestedListTests(rootCase: HybridRootCase): void {
+    it('continues an unordered child level nested under the root with Enter', async () => {
+        const path = hybridFilePathFor(rootCase, 'enter-unordered-child');
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`
+        ].join('\n'));
+        await placeCursorAtDocumentEnd();
+
+        await pressKey('Enter');
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} `
+        ].join('\n'));
+
+        const lines = await waitForLivePreviewLineStates(4);
+        expectRenderedUnorderedListLine(lines[3], rootCase.unorderedChildMarker, 2);
+        expectRenderedUnorderedListLine(lines[4], rootCase.unorderedChildMarker, 2);
+    });
+
+    it('returns from an empty unordered child to the root level with Enter', async () => {
+        const path = hybridFilePathFor(rootCase, 'enter-empty-unordered-child');
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(4);
+
+        await pressKey('Enter');
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${rootCase.rootMarker(3)} `
+        ].join('\n'));
+    });
+
+    it('returns from an empty unordered child to the root level with Shift+Tab', async () => {
+        const path = hybridFilePathFor(rootCase, 'shift-tab-empty-unordered-child');
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(4);
+
+        await pressShiftTab();
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${rootCase.rootMarker(3)} `
+        ].join('\n'));
+    });
+
+    it('renders an unordered grandchild nested under an unordered child as a list item', async () => {
+        const path = hybridFilePathFor(rootCase, 'render-unordered-grandchild');
+        const unorderedGrandchildMarker = nextUnorderedMarker(rootCase.unorderedChildMarker);
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${unorderedGrandchildMarker} xxx`
+        ].join('\n'));
+
+        const lines = await waitForLivePreviewLineStates(4);
+        expectRenderedUnorderedListLine(lines[3], rootCase.unorderedChildMarker, 2);
+        expectRenderedUnorderedListLine(lines[4], unorderedGrandchildMarker, 3);
+        expectMarkerToBeIndentedAfter(lines[4], lines[3]);
+    });
+
+    it('continues an ordered grandchild nested under an unordered child with Enter', async () => {
+        const path = hybridFilePathFor(rootCase, 'enter-non-empty-ordered-grandchild');
+        const orderedGrandchild = rootCase.orderedDescendantStyle;
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`
+        ].join('\n'));
+        await placeCursorAtDocumentEnd();
+
+        await pressKey('Enter');
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} `
+        ].join('\n'));
+    });
+
+    it('returns from an empty ordered grandchild to the unordered child level with Enter', async () => {
+        const path = hybridFilePathFor(rootCase, 'enter-empty-ordered-grandchild');
+        const orderedGrandchild = rootCase.orderedDescendantStyle;
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 3)} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(7);
+
+        await pressKey('Enter');
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} `
+        ].join('\n'));
+
+        const lines = await waitForLivePreviewLineStates(7);
+        expectRenderedUnorderedListLine(lines[3], rootCase.unorderedChildMarker, 2);
+        expectRenderedUnorderedListLine(lines[4], rootCase.unorderedChildMarker, 2);
+        expectRenderedUnorderedListLine(lines[7], rootCase.unorderedChildMarker, 2);
+        expectListMarkersToAlign(lines, [3, 4, 7]);
+        if (rootCase.rootIsOrdered) {
+            expectMarkerToBeIndentedAfter(lines[5], lines[3]);
+            expectMarkerToBeIndentedAfter(lines[6], lines[7]);
+        }
+    });
+
+    it('returns from an empty ordered grandchild to its only unordered parent with Enter', async () => {
+        const path = hybridFilePathFor(rootCase, 'enter-empty-ordered-grandchild-single-parent');
+        const orderedGrandchild = rootCase.orderedDescendantStyle;
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 3)} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(6);
+
+        await pressKey('Enter');
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} `
+        ].join('\n'));
+
+        const lines = await waitForLivePreviewLineStates(6);
+        expectRenderedUnorderedListLine(lines[3], rootCase.unorderedChildMarker, 2);
+        expectRenderedUnorderedListLine(lines[6], rootCase.unorderedChildMarker, 2);
+        expectListMarkersToAlign(lines, [3, 6]);
+    });
+
+    it('returns from an empty ordered grandchild to its only unordered parent with Shift+Tab', async () => {
+        const path = hybridFilePathFor(rootCase, 'shift-tab-empty-ordered-grandchild-single-parent');
+        const orderedGrandchild = rootCase.orderedDescendantStyle;
+
+        await openEditableDocument(path, [
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 3)} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(6);
+
+        await pressShiftTab();
+
+        expect(await getEditorText()).toBe([
+            `${rootCase.rootMarker(1)} xxx`,
+            `${rootCase.rootMarker(2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 1)} xxx`,
+            `${INDENT}${INDENT}${marker(orderedGrandchild, 2)} xxx`,
+            `${INDENT}${rootCase.unorderedChildMarker} `
+        ].join('\n'));
+
+        const lines = await waitForLivePreviewLineStates(6);
+        expectRenderedUnorderedListLine(lines[3], rootCase.unorderedChildMarker, 2);
+        expectRenderedUnorderedListLine(lines[6], rootCase.unorderedChildMarker, 2);
+        expectListMarkersToAlign(lines, [3, 6]);
+    });
+}
+
+function runLocalCycleOverrideTests(styleCase: OrderedStyleCase): void {
+    it('uses the same-chunk ordered-to-unordered child marker override on Tab', async () => {
+        const root = styleCase.style;
+        const path = filePathFor(styleCase, 'tab-local-unordered-override');
+
+        await openEditableDocument(path, [
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}- xxx`,
+            `${INDENT}- xxx`,
+            `${marker(root, 3)} xxx`,
+            `${marker(root, 4)} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(6);
+
+        await pressKey('Tab');
+
+        expect(await getEditorText()).toBe([
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}- xxx`,
+            `${INDENT}- xxx`,
+            `${marker(root, 3)} xxx`,
+            `${INDENT}- `
+        ].join('\n'));
+    });
+
+    it('resets the local ordered-to-unordered child marker override after a blank line', async () => {
+        const root = styleCase.style;
+        const child = nextStyle(root);
+        const path = filePathFor(styleCase, 'tab-local-override-chunk-reset');
+
+        await openEditableDocument(path, [
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}- xxx`,
+            `${INDENT}- xxx`,
+            `${marker(root, 3)} xxx`,
+            '',
+            'Another list',
+            '',
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(10);
+
+        await pressKey('Tab');
+
+        expect(await getEditorText()).toBe([
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}- xxx`,
+            `${INDENT}- xxx`,
+            `${marker(root, 3)} xxx`,
+            '',
+            'Another list',
+            '',
+            `${marker(root, 1)} xxx`,
+            `${INDENT}${marker(child, 1)} `
+        ].join('\n'));
+    });
+
+    it('reuses an ordered child marker override while starting a fresh ordinal under the current parent', async () => {
+        const root = styleCase.style;
+        const child = nextStyle(root);
+        const path = filePathFor(styleCase, 'tab-local-ordered-override-fresh-ordinal');
+
+        await openEditableDocument(path, [
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}${marker(child, 1)} xxx`,
+            `${INDENT}${marker(child, 2)} xxx`,
+            `${marker(root, 3)} xxx`,
+            `${marker(root, 4)} `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(6);
+
+        await pressKey('Tab');
+
+        expect(await getEditorText()).toBe([
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}${marker(child, 1)} xxx`,
+            `${INDENT}${marker(child, 2)} xxx`,
+            `${marker(root, 3)} xxx`,
+            `${INDENT}${marker(child, 1)} `
+        ].join('\n'));
+    });
+
+    it('keeps local marker overrides specific to the adjacent parent and child depths', async () => {
+        const root = styleCase.style;
+        const unorderedGrandchild = nextUnorderedMarker('-');
+        const path = filePathFor(styleCase, 'tab-local-override-depth-specificity');
+
+        await openEditableDocument(path, [
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}- xxx`,
+            `${marker(root, 3)} xxx`,
+            `${INDENT}- xxx`,
+            `${INDENT}- `
+        ].join('\n'));
+        await placeCursorAtLineAfterMarker(6);
+
+        await pressKey('Tab');
+
+        expect(await getEditorText()).toBe([
+            `${marker(root, 1)} xxx`,
+            `${marker(root, 2)} xxx`,
+            `${INDENT}- xxx`,
+            `${marker(root, 3)} xxx`,
+            `${INDENT}- xxx`,
+            `${INDENT}${INDENT}${unorderedGrandchild} `
+        ].join('\n'));
+    });
+}
 
 async function configureOrderedListSettings(
     overrides: Partial<Record<string, boolean | OrderedListMarkerStyle[]>> = {}
@@ -304,9 +746,12 @@ async function configureOrderedListSettings(
                 enableFancyLists: true,
                 enableOrderedListMarkerCycling: true,
                 autoRenumberLists: true,
+                enforcePandocListSpacing: false,
                 orderedListMarkerOrder
             }, settingsOverrides);
             await enabledPlugin.saveSettings();
+            // @ts-ignore
+            app.workspace.updateOptions();
         }
     }, overrides, DEFAULT_ORDERED_LIST_MARKER_ORDER);
 }
@@ -377,7 +822,7 @@ async function placeCursorAtLineAfterMarker(lineNumber: number): Promise<void> {
         }
 
         const line = cm.state.doc.line(targetLineNumber);
-        const markerMatch = line.text.match(/^(\s*)(\d+|[A-Za-z]+)([.)])(\s+)/);
+        const markerMatch = line.text.match(/^(\s*)((?:\d+|[A-Za-z]+)[.)]|[-+*])(\s+)/);
         if (!markerMatch) {
             return;
         }
@@ -401,6 +846,139 @@ async function getEditorText(): Promise<string> {
     });
 }
 
+async function getLivePreviewLineStates(): Promise<Record<number, LivePreviewLineState>> {
+    return browser.execute((): Record<number, LivePreviewLineState> => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        // @ts-ignore
+        const activeLeaf = app.workspace.activeLeaf ?? leaves[0];
+        const cm = activeLeaf?.view?.editor?.cm ?? leaves[0]?.view?.editor?.cm;
+        const source = cm?.contentDOM ?? cm?.dom ??
+            document.querySelector('.workspace-leaf.mod-active .markdown-source-view') ??
+            document.querySelector('.markdown-source-view.mod-active') ??
+            document.querySelector('.markdown-source-view');
+        const lineStates: Record<number, LivePreviewLineState> = {};
+
+        const lines = Array.from(source?.querySelectorAll('.cm-line') ?? []);
+
+        for (const [index, element] of lines.entries()) {
+            const line = element as HTMLElement;
+            const dataLineValue = line.getAttribute('data-line');
+            const dataLineNumber = dataLineValue === null ? Number.NaN : Number(dataLineValue);
+            const lineNumber = Number.isFinite(dataLineNumber) ? dataLineNumber + 1 : index + 1;
+
+            const markers = Array.from(line.querySelectorAll(
+                '.cm-formatting-list-ul, .cm-formatting-list-ol, .list-bullet'
+            )) as HTMLElement[];
+            const markerElement = line.querySelector(
+                '.cm-formatting-list-ul .list-bullet, .cm-formatting-list-ol, .cm-formatting-list-ul, .list-bullet'
+            ) as HTMLElement | null;
+            const lineStyle = window.getComputedStyle(line);
+            const markerRect = markerElement?.getBoundingClientRect();
+
+            lineStates[lineNumber] = {
+                text: line.textContent ?? '',
+                className: line.className,
+                markerText: markers.map(marker => marker.textContent?.trim() ?? '').join(''),
+                markerCount: markers.length,
+                markerInlineStart: markerRect ? markerRect.left : null,
+                paddingInlineStart: lineStyle.paddingInlineStart,
+                textIndent: lineStyle.textIndent
+            };
+        }
+
+        return lineStates;
+    });
+}
+
+async function waitForLivePreviewLineStates(
+    expectedLineCount: number
+): Promise<Record<number, LivePreviewLineState>> {
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+        const lines = await getLivePreviewLineStates();
+        if (Object.keys(lines).length >= expectedLineCount) {
+            return lines;
+        }
+        await browser.pause(100);
+    }
+
+    throw new Error(`Expected at least ${expectedLineCount} rendered Live Preview lines: ${
+        JSON.stringify(await getLivePreviewDiagnostic())
+    }`);
+}
+
+async function getLivePreviewDiagnostic(): Promise<Record<string, unknown>> {
+    return browser.execute((): Record<string, unknown> => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        // @ts-ignore
+        const activeLeaf = app.workspace.activeLeaf ?? leaves[0];
+        const cm = activeLeaf?.view?.editor?.cm ?? leaves[0]?.view?.editor?.cm;
+        const source = cm?.contentDOM ?? cm?.dom ??
+            document.querySelector('.workspace-leaf.mod-active .markdown-source-view') ??
+            document.querySelector('.markdown-source-view.mod-active') ??
+            document.querySelector('.markdown-source-view');
+        const lines = Array.from(source?.querySelectorAll('.cm-line') ?? []) as HTMLElement[];
+
+        return {
+            hasCm: Boolean(cm),
+            hasContentDom: Boolean(cm?.contentDOM),
+            sourceClass: source instanceof HTMLElement ? source.className : '',
+            sourceChildCount: source?.childNodes.length ?? -1,
+            lineCount: lines.length,
+            sourceText: source?.textContent?.slice(0, 200) ?? '',
+            sample: lines.slice(0, 8).map(line => ({
+                className: line.className,
+                text: line.textContent
+            }))
+        };
+    });
+}
+
+function expectRenderedUnorderedListLine(
+    line: LivePreviewLineState | undefined,
+    marker: UnorderedListMarker,
+    expectedLevel: number
+): void {
+    expect(line).toBeDefined();
+    expect(line!.text).toContain(`${marker} `);
+    expect(line!.className).toContain('HyperMD-list-line');
+    expect(line!.className).toContain(`HyperMD-list-line-${expectedLevel}`);
+    expect(line!.className).toContain('pem-unordered-list-marker');
+    expect(line!.className).not.toContain('HyperMD-list-line-nobullet');
+    expect(line!.className).not.toContain('pem-pandoc-invalid-native-list');
+    expect(line!.markerText).toContain(marker);
+    expect(line!.markerCount).toBeGreaterThan(0);
+    expect(line!.markerInlineStart).not.toBeNull();
+    expect(parseFloat(line!.paddingInlineStart)).toBeGreaterThanOrEqual(30);
+    expect(parseFloat(line!.textIndent)).toBeLessThanOrEqual(-30);
+}
+
+function expectListMarkersToAlign(
+    lines: Record<number, LivePreviewLineState>,
+    lineNumbers: number[]
+): void {
+    const markerStarts = lineNumbers.map(lineNumber => {
+        const markerStart = lines[lineNumber]?.markerInlineStart;
+        expect(markerStart).not.toBeNull();
+        return markerStart!;
+    });
+    const leftmost = Math.min(...markerStarts);
+    const rightmost = Math.max(...markerStarts);
+
+    expect(rightmost - leftmost).toBeLessThanOrEqual(3);
+}
+
+function expectMarkerToBeIndentedAfter(
+    descendant: LivePreviewLineState | undefined,
+    ancestor: LivePreviewLineState | undefined
+): void {
+    expect(descendant?.markerInlineStart).not.toBeNull();
+    expect(ancestor?.markerInlineStart).not.toBeNull();
+    expect(descendant!.markerInlineStart! - ancestor!.markerInlineStart!).toBeGreaterThanOrEqual(20);
+}
+
 async function pressKey(key: string, pauseMs = 300): Promise<void> {
     await browser.keys(key);
     await browser.pause(pauseMs);
@@ -418,6 +996,32 @@ async function pressShiftTab(pauseMs = 300): Promise<void> {
 
 function filePathFor(styleCase: OrderedStyleCase, scenario: string): string {
     return `ordered-list-autocompletion-${styleCase.style}-${scenario}.md`;
+}
+
+function hybridFilePathFor(rootCase: HybridRootCase, scenario: string): string {
+    return `ordered-list-autocompletion-${rootCase.fileId}-${scenario}.md`;
+}
+
+function unorderedFileId(markerText: UnorderedListMarker): string {
+    switch (markerText) {
+        case '-':
+            return 'unordered-dash';
+        case '+':
+            return 'unordered-plus';
+        case '*':
+            return 'unordered-asterisk';
+    }
+}
+
+function nextUnorderedMarker(markerText: UnorderedListMarker): UnorderedListMarker {
+    switch (markerText) {
+        case '-':
+            return '*';
+        case '+':
+            return '-';
+        case '*':
+            return '+';
+    }
 }
 
 function nextStyle(style: OrderedListMarkerStyle): OrderedListMarkerStyle {

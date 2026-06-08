@@ -4,7 +4,8 @@ export {
     FancyListMarkerWidget,
     HashListMarkerWidget,
     ExampleListMarkerWidget,
-    DuplicateExampleLabelWidget
+    DuplicateExampleLabelWidget,
+    UnorderedListMarkerWidget
 } from './listWidgets';
 
 export { DefinitionBulletWidget } from './definitionWidget';

@@ -9,6 +9,7 @@ import { ListPatterns } from '../patterns';
 import { NUMERIC_CONSTANTS, LIST_MARKERS, LIST_TYPES } from '../../core/constants';
 
 import { getNextLetter, getNextRoman } from './listHelpers';
+import { parseUnorderedListItem } from './listContext';
 import {
     isOrderedMarkerStyleAvailable,
     parseOrderedListMarker,
@@ -18,7 +19,7 @@ import {
 /**
  * Types of list markers that can be detected
  */
-export type ListType = 'decimal' | 'hash' | 'custom-label' | 'letter' | 'roman' | 'example' | 'definition' | 'unknown';
+export type ListType = 'decimal' | 'hash' | 'custom-label' | 'letter' | 'roman' | 'unordered' | 'example' | 'definition' | 'unknown';
 
 /**
  * Parsed components of a list marker
@@ -103,6 +104,16 @@ function parseMarkerParts(
             marker: markerMatch[2],
             punctuation: markerMatch[3],
             spaces: markerMatch[4]
+        };
+    }
+
+    const unorderedMatch = parseUnorderedListItem(line);
+    if (unorderedMatch) {
+        return {
+            type: 'unordered',
+            indent: unorderedMatch.indent,
+            marker: unorderedMatch.marker,
+            spaces: unorderedMatch.spaces || ' '
         };
     }
     
@@ -517,6 +528,13 @@ export function getNextListMarker(
         case 'definition':
         case 'custom-label':
             return handleSpecialCases(components);
+
+        case 'unordered':
+            return {
+                marker: components.marker,
+                indent: components.indent,
+                spaces: components.spaces
+            };
             
         default:
             return null;

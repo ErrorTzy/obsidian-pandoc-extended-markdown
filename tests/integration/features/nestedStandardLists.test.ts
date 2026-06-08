@@ -107,14 +107,15 @@ B. Second fancy list item`;
                    (r.from >= line3.from && r.to <= line3.to);
         });
         
-        // Standard list items should be marked as 'normal' since the processor is disabled
+        // Standard list items are claimed as list content so continuation
+        // processing cannot add conflicting list indentation decorations.
         expect(standardListRegions.length).toBe(2);
-        expect(standardListRegions[0].type).toBe('normal');
-        expect(standardListRegions[1].type).toBe('normal');
+        expect(standardListRegions[0].type).toBe('list-content');
+        expect(standardListRegions[1].type).toBe('list-content');
         
-        // Check that only fancy list items get proper decorations
+        // Check that both fancy and standard list items get proper list regions
         const listContentRegions = context.contentRegions.filter((r: any) => r.type === 'list-content');
-        expect(listContentRegions.length).toBe(2); // Only A. and B. should be list-content
+        expect(listContentRegions.length).toBe(4);
     });
 
     test('should handle standard unordered lists with + marker', () => {

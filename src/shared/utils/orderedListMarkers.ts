@@ -7,6 +7,7 @@ import {
     PandocExtendedMarkdownSettings,
     isSyntaxFeatureEnabled
 } from '../types/settingsTypes';
+import { parseStandardListItem } from './listContext';
 import { intToRoman, letterToNumber, romanToInt } from './listHelpers';
 
 export type OrderedListMarkerDelimiter = '.' | ')';
@@ -475,10 +476,10 @@ function findTargetParentIndex(context: OrderedListStyleContext): number {
             break;
         }
 
-        const parsed = parseOrderedListMarker(context.lines[index], context.lines, index);
-        const indentColumns = parsed?.indentColumns ?? getIndentColumns(context.lines[index].match(/^(\s*)/)?.[1] ?? '');
+        const listItem = parseStandardListItem(context.lines[index]);
+        const indentColumns = listItem?.indentColumns ?? getIndentColumns(context.lines[index].match(/^(\s*)/)?.[1] ?? '');
 
-        if (parsed && indentColumns < context.targetIndentColumns) {
+        if (listItem && indentColumns < context.targetIndentColumns) {
             return index;
         }
     }

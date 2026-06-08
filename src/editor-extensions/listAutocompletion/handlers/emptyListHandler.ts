@@ -14,6 +14,7 @@ import { ListPatterns } from '../../../shared/patterns';
 // Utils
 import { isEmptyListItem } from '../../../shared/utils/listHelpers';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
+import { findPreviousListItemAtIndent } from '../../../shared/utils/listContext';
 import {
     getIndentColumns,
     parseOrderedListMarker,
@@ -96,7 +97,45 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
     if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
         const currentIndent = indentMatch[1];
         const newIndent = calculateIndentation(currentIndent);
+        const targetIndentColumns = getIndentColumns(newIndent);
+        const allLines = state.doc.toString().split('\n');
+        const previousTargetItem = findPreviousListItemAtIndent(
+            allLines,
+            line.number - 2,
+            targetIndentColumns
+        );
         const unorderedMatch = lineText.match(ListPatterns.EMPTY_UNORDERED_LIST);
+        const targetMarkerInfo = previousTargetItem?.kind === 'unordered'
+            ? {
+                marker: previousTargetItem.marker,
+                spaces: previousTargetItem.spaces || ' '
+            }
+            : unorderedMatch && previousTargetItem?.lineText
+            ? getNextListMarker(
+                previousTargetItem.lineText,
+                allLines,
+                previousTargetItem.lineIndex,
+                config.settings
+            )
+            : null;
+
+        if (targetMarkerInfo) {
+            const spaces = targetMarkerInfo.spaces || ' ';
+            const newLine = `${newIndent}${targetMarkerInfo.marker}${spaces}`;
+            const changes = {
+                from: line.from,
+                to: line.to,
+                insert: newLine
+            };
+
+            const transaction = state.update({
+                changes,
+                selection: EditorSelection.cursor(line.from + newLine.length)
+            });
+
+            view.dispatch(transaction);
+            return true;
+        }
 
         if (unorderedMatch) {
             const marker = unorderedMatch[2];
@@ -117,14 +156,13 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
             return true;
         }
 
-        const allLines = state.doc.toString().split('\n');
         const orderedMarker = parseOrderedListMarker(lineText, allLines, line.number - 1);
         if (orderedMarker) {
             const marker = resolveOrderedMarkerForTarget({
                 lines: allLines,
                 currentLineIndex: line.number - 1,
                 currentIndentColumns: orderedMarker.indentColumns,
-                targetIndentColumns: getIndentColumns(newIndent),
+                targetIndentColumns,
                 currentStyle: orderedMarker.style,
                 direction: 'outdent',
                 settings: config.settings

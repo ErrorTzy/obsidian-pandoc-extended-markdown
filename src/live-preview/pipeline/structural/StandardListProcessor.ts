@@ -1,14 +1,20 @@
 import { Line } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 
-import { StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
+import { ContentRegion, StructuralProcessor, StructuralResult, ProcessingContext } from '../types';
 
 import { CSS_CLASSES } from '../../../core/constants';
 
 import { ListPatterns } from '../../../shared/patterns';
 
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import {
+    isPluginOwnedOrderedListItem,
+    resolveOrderedListItem
+} from '../../../shared/utils/orderedListMarkers';
 import { getUnorderedMarkerClass } from '../../../shared/utils/unorderedListMarkers';
+import { getListIndentColumns } from '../../../shared/utils/listContext';
+import { UnorderedListMarkerWidget } from '../../widgets';
 
 /**
  * Adds source-marker classes to standard unordered lists while preserving
@@ -32,25 +38,125 @@ export class StandardListProcessor implements StructuralProcessor {
             return { decorations: [] };
         }
 
-        const marker = line.text.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE)?.[2];
+        const match = line.text.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE);
+        const marker = match?.[2];
         const markerClass = marker ? getUnorderedMarkerClass(marker) : null;
 
         if (!markerClass) {
             return { decorations: [] };
         }
 
+        const indent = match?.[1] ?? '';
+        const listLevel = getListLevel(indent);
+        const listLevelClass = getListLevelClass(listLevel);
+        const decorations = [{
+            from: line.from,
+            to: line.from,
+            decoration: Decoration.line({
+                class: [
+                    CSS_CLASSES.LIST_LINE,
+                    listLevelClass,
+                    CSS_CLASSES.UNORDERED_LIST_MARKER,
+                    markerClass
+                ].join(' ')
+            })
+        }];
+
+        if (match && isNestedUnderPluginOwnedOrderedList(line, context, indent)) {
+            const markerStart = line.from + match[1].length;
+            const markerEnd = markerStart + marker.length + match[3].length;
+            const cursorPos = context.view.state.selection?.main?.head;
+            const cursorInMarker = cursorPos !== undefined &&
+                cursorPos >= markerStart &&
+                cursorPos < markerEnd;
+
+            if (!cursorInMarker) {
+                decorations.push({
+                    from: markerStart,
+                    to: markerEnd,
+                    decoration: Decoration.replace({
+                        widget: new UnorderedListMarkerWidget(marker, context.view, markerStart),
+                        inclusive: false
+                    })
+                });
+            }
+        }
+
+        if (match) {
+            const contentStartColumn = getListIndentColumns(indent) +
+                marker.length +
+                getListIndentColumns(match[3]);
+            const contentStart = line.from + indent.length + marker.length + match[3].length;
+            const contentRegion: ContentRegion = {
+                from: contentStart,
+                to: line.to,
+                type: 'list-content',
+                parentStructure: 'standard-list'
+            };
+
+            context.listContext = {
+                isInList: true,
+                contentStartColumn,
+                listLevel,
+                parentStructure: 'standard-list'
+            };
+
+            return {
+                decorations,
+                contentRegion,
+                skipFurtherProcessing: true
+            };
+        }
+
         return {
-            decorations: [{
-                from: line.from,
-                to: line.from,
-                decoration: Decoration.line({
-                    class: [
-                        CSS_CLASSES.LIST_LINE,
-                        CSS_CLASSES.UNORDERED_LIST_MARKER,
-                        markerClass
-                    ].join(' ')
-                })
-            }]
+            decorations
         };
     }
+}
+
+function getListLevel(indent: string): number {
+    return Math.floor(getListIndentColumns(indent) / 4) + 1;
+}
+
+function getListLevelClass(level: number): string {
+    switch (level) {
+        case 1:
+            return CSS_CLASSES.LIST_LINE_1;
+        case 2:
+            return CSS_CLASSES.LIST_LINE_2;
+        case 3:
+            return CSS_CLASSES.LIST_LINE_3;
+        default:
+            return CSS_CLASSES.LIST_LINE_4;
+    }
+}
+
+function isNestedUnderPluginOwnedOrderedList(
+    line: Line,
+    context: ProcessingContext,
+    indent: string
+): boolean {
+    const indentColumns = getListIndentColumns(indent);
+    if (indentColumns === 0) {
+        return false;
+    }
+
+    const lines = context.document.toString().split('\n');
+
+    for (let index = line.number - 2; index >= 0; index--) {
+        const previousLine = lines[index];
+        if (!previousLine.trim()) {
+            return false;
+        }
+
+        const previousIndent = previousLine.match(ListPatterns.INDENT_ONLY)?.[1] ?? '';
+        if (getListIndentColumns(previousIndent) >= indentColumns) {
+            continue;
+        }
+
+        const item = resolveOrderedListItem(lines, index, context.settings);
+        return Boolean(item && isPluginOwnedOrderedListItem(item));
+    }
+
+    return false;
 }
