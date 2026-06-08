@@ -19,8 +19,14 @@ import {
     parseOrderedListMarker,
     resolveOrderedMarkerForTarget
 } from '../../../shared/utils/orderedListMarkers';
-import { findPreviousListItemAtIndent } from '../../../shared/utils/listContext';
+import {
+    formatStandardMarkerType,
+    resolveLocalChildMarkerForMove,
+    resolvePreviousTargetMarker,
+    resolveStandardListItem
+} from '../../../shared/utils/standardListMarkerResolution';
 import type { OrderedListMarkerStyle } from '../../../shared/types/orderedListTypes';
+import type { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
 
 interface MovedOrderedLine {
     lineIndex: number;
@@ -69,18 +75,48 @@ function getMarkerForTargetIndent(
     settings: PandocExtendedMarkdownSettings,
     movedOrderedLines: MovedOrderedLine[]
 ): string {
-    const unorderedMarker = getMarkerForIndent(marker, targetIndent, settings);
+    const currentLineItem = resolveStandardListItem(lines, lineIndex);
     const orderedMarker = parseOrderedListMarker(`${currentIndent}${marker} `, lines, lineIndex);
+    const targetIndentColumns = getIndentColumns(targetIndent);
+    const previousTargetMarker = resolvePreviousTargetMarker({
+        lines,
+        startLineIndex: lineIndex - 1,
+        targetIndentColumns,
+        settings
+    });
 
     if (!orderedMarker) {
-        return unorderedMarker;
+        if (previousTargetMarker) {
+            return previousTargetMarker.marker;
+        }
+
+        const overrideMarkerType = getLocalOverrideMarkerType(
+            currentLineItem?.markerType ?? { kind: 'unordered', marker },
+            getIndentColumns(currentIndent),
+            targetIndentColumns,
+            lines,
+            lineIndex
+        );
+
+        return overrideMarkerType
+            ? formatStandardMarkerType(overrideMarkerType)
+            : getMarkerForIndent(marker, targetIndent, settings);
     }
 
-    const targetIndentColumns = getIndentColumns(targetIndent);
-    const previousTargetItem = findPreviousListItemAtIndent(lines, lineIndex - 1, targetIndentColumns);
+    if (previousTargetMarker) {
+        return previousTargetMarker.marker;
+    }
 
-    if (direction === 'outdent' && previousTargetItem?.kind === 'unordered') {
-        return previousTargetItem.marker;
+    const overrideMarkerType = getLocalOverrideMarkerType(
+        currentLineItem?.markerType ?? { kind: 'ordered', style: orderedMarker.style },
+        getIndentColumns(currentIndent),
+        targetIndentColumns,
+        lines,
+        lineIndex
+    );
+
+    if (overrideMarkerType?.kind === 'unordered') {
+        return overrideMarkerType.marker;
     }
 
     const parentLineIndex = findMovedTargetParentLineIndex(movedOrderedLines, targetIndentColumns);
@@ -98,7 +134,8 @@ function getMarkerForTargetIndent(
         direction,
         settings
     });
-    const style = previousMovedSibling?.style ?? resolvedMarker.style;
+    const style = previousMovedSibling?.style ??
+        (overrideMarkerType?.kind === 'ordered' ? overrideMarkerType.style : resolvedMarker.style);
     const ordinal = shouldResolveOrdinal
         ? previousMovedSibling
             ? previousMovedSibling.ordinal + 1
@@ -114,6 +151,22 @@ function getMarkerForTargetIndent(
     });
 
     return formatOrderedListMarker(style, ordinal);
+}
+
+function getLocalOverrideMarkerType(
+    currentMarkerType: StandardListMarkerType,
+    currentIndentColumns: number,
+    targetIndentColumns: number,
+    lines: string[],
+    lineIndex: number
+): StandardListMarkerType | null {
+    return resolveLocalChildMarkerForMove({
+        lines,
+        currentLineIndex: lineIndex,
+        currentIndentColumns,
+        targetIndentColumns,
+        currentMarkerType
+    });
 }
 
 function getLineIndent(lineText: string): string {

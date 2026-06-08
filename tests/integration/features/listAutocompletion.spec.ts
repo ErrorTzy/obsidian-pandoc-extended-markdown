@@ -313,6 +313,23 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('- ');
         });
 
+        it('should return nested plus markers to a top-level plus parent with Shift+Tab', () => {
+            const listText = '+ item 1\n+ item 2\n    + ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('+ ');
+        });
+
         it('should preserve the current unordered marker when marker cycling is disabled', () => {
             mockSettings.enableUnorderedListMarkerCycling = false;
             keybindings = createListAutocompletionKeymap(mockSettings);
@@ -645,6 +662,47 @@ describe('List Autocompletion', () => {
                 '    i. parent',
                 '        A. child'
             ].join('\n'));
+        });
+
+        it('should reuse a same-chunk ordered-to-unordered child marker override when indenting', () => {
+            const listText = [
+                'a. parent',
+                'b. parent',
+                '    - child',
+                '    - child',
+                'c. parent',
+                'd. '
+            ].join('\n');
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    - ');
+        });
+
+        it('should return an empty unordered child to the ordered parent marker with Shift+Tab', () => {
+            const listText = 'a. parent\nb. parent\n    - child\n    - ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('c. ');
         });
     });
 

@@ -14,12 +14,12 @@ import { ListPatterns } from '../../../shared/patterns';
 // Utils
 import { isEmptyListItem } from '../../../shared/utils/listHelpers';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
-import { findPreviousListItemAtIndent } from '../../../shared/utils/listContext';
 import {
     getIndentColumns,
     parseOrderedListMarker,
     resolveOrderedMarkerForTarget
 } from '../../../shared/utils/orderedListMarkers';
+import { resolvePreviousTargetMarker } from '../../../shared/utils/standardListMarkerResolution';
 import { calculateIndentation } from '../utils/indentation';
 import { getMarkerForIndent } from '../utils/unorderedMarkers';
 
@@ -99,29 +99,17 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
         const newIndent = calculateIndentation(currentIndent);
         const targetIndentColumns = getIndentColumns(newIndent);
         const allLines = state.doc.toString().split('\n');
-        const previousTargetItem = findPreviousListItemAtIndent(
-            allLines,
-            line.number - 2,
-            targetIndentColumns
-        );
+        const previousTargetMarker = resolvePreviousTargetMarker({
+            lines: allLines,
+            startLineIndex: line.number - 2,
+            targetIndentColumns,
+            settings: config.settings
+        });
         const unorderedMatch = lineText.match(ListPatterns.EMPTY_UNORDERED_LIST);
-        const targetMarkerInfo = previousTargetItem?.kind === 'unordered'
-            ? {
-                marker: previousTargetItem.marker,
-                spaces: previousTargetItem.spaces || ' '
-            }
-            : unorderedMatch && previousTargetItem?.lineText
-            ? getNextListMarker(
-                previousTargetItem.lineText,
-                allLines,
-                previousTargetItem.lineIndex,
-                config.settings
-            )
-            : null;
 
-        if (targetMarkerInfo) {
-            const spaces = targetMarkerInfo.spaces || ' ';
-            const newLine = `${newIndent}${targetMarkerInfo.marker}${spaces}`;
+        if (previousTargetMarker) {
+            const spaces = previousTargetMarker.spaces || ' ';
+            const newLine = `${newIndent}${previousTargetMarker.marker}${spaces}`;
             const changes = {
                 from: line.from,
                 to: line.to,

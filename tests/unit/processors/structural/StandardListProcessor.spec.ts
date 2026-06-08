@@ -136,6 +136,35 @@ describe('StandardListProcessor', () => {
         });
     });
 
+    it('renders unordered grandchildren under fancy ordered ancestors with a marker widget', () => {
+        createView([
+            'a. parent',
+            'b. parent',
+            '    - child',
+            '        * grandchild'
+        ].join('\n'));
+        const line = view.state.doc.line(4);
+
+        const result = processor.process(line, context);
+
+        expect(result.decorations).toHaveLength(2);
+        expect(result.decorations[0].decoration.spec.class).toContain('pem-unordered-list-marker-star');
+    });
+
+    it('leaves unordered grandchildren outside plugin-owned ordered ancestors to native marker rendering', () => {
+        createView([
+            '- parent',
+            '    - child',
+            '        * grandchild'
+        ].join('\n'));
+        const line = view.state.doc.line(3);
+
+        const result = processor.process(line, context);
+
+        expect(result.decorations).toHaveLength(1);
+        expect(result.decorations[0].decoration.spec.class).toContain('pem-unordered-list-marker-star');
+    });
+
     it('skips marker classes when unordered marker rendering is disabled', () => {
         context.settings.enableUnorderedListMarkerStyles = false;
         createView('+ item');

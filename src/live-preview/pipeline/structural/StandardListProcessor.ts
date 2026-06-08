@@ -13,7 +13,7 @@ import {
     resolveOrderedListItem
 } from '../../../shared/utils/orderedListMarkers';
 import { getUnorderedMarkerClass } from '../../../shared/utils/unorderedListMarkers';
-import { getListIndentColumns } from '../../../shared/utils/listContext';
+import { getListIndentColumns, parseStandardListItem } from '../../../shared/utils/listContext';
 import { UnorderedListMarkerWidget } from '../../widgets';
 
 /**
@@ -136,8 +136,8 @@ function isNestedUnderPluginOwnedOrderedList(
     context: ProcessingContext,
     indent: string
 ): boolean {
-    const indentColumns = getListIndentColumns(indent);
-    if (indentColumns === 0) {
+    let childIndentColumns = getListIndentColumns(indent);
+    if (childIndentColumns === 0) {
         return false;
     }
 
@@ -150,12 +150,21 @@ function isNestedUnderPluginOwnedOrderedList(
         }
 
         const previousIndent = previousLine.match(ListPatterns.INDENT_ONLY)?.[1] ?? '';
-        if (getListIndentColumns(previousIndent) >= indentColumns) {
+        const previousIndentColumns = getListIndentColumns(previousIndent);
+        if (previousIndentColumns >= childIndentColumns) {
             continue;
         }
 
         const item = resolveOrderedListItem(lines, index, context.settings);
-        return Boolean(item && isPluginOwnedOrderedListItem(item));
+        if (item && isPluginOwnedOrderedListItem(item)) {
+            return true;
+        }
+
+        if (!parseStandardListItem(previousLine)) {
+            return false;
+        }
+
+        childIndentColumns = previousIndentColumns;
     }
 
     return false;
