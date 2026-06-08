@@ -471,7 +471,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('1. ');
+            expect(changes!.insert).toBe('2. ');
         });
 
         it('should include right-parenthesis ordered marker variants in the configured order', () => {
@@ -551,7 +551,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('a. child');
+            expect(changes!.insert).toBe('b. child');
         });
 
         it('should wrap upper-roman parenthesis markers to decimal-period bridge children', () => {
@@ -571,6 +571,23 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('    1. ');
         });
 
+        it('should move upper-roman period markers to decimal-parenthesis children', () => {
+            const listText = 'I. parent\nII. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    1) ');
+        });
+
         it('should restore upper-roman parenthesis style when outdenting bridge decimal children', () => {
             const listText = 'I) parent\n    1. child';
             const doc = `${listText}\nnext`;
@@ -585,7 +602,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('I) child');
+            expect(changes!.insert).toBe('II) child');
         });
 
         it('should preserve upper-roman parenthesis markers when ordered cycling is disabled', () => {
@@ -666,7 +683,7 @@ describe('List Autocompletion', () => {
     });
 
     describe('Enter key handling for empty unordered list items', () => {
-        it('should remove an empty bridge decimal marker while preserving child indentation', () => {
+        it('should outdent an empty bridge decimal marker to the parent list context', () => {
             const listText = 'I) parent\n    1. child\n    2. ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -680,7 +697,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    ');
+            expect(changes!.insert).toBe('II) ');
         });
 
         it('should outdent an empty plus item to a top-level dash item', () => {

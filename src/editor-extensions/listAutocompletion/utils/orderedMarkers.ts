@@ -3,10 +3,9 @@ import {
     isSyntaxFeatureEnabled
 } from '../../../shared/types/settingsTypes';
 import {
-    formatOrderedListMarker,
     getIndentColumns,
     parseOrderedListMarker,
-    resolveOrderedListMarkerStyle
+    resolveOrderedMarkerForTarget
 } from '../../../shared/utils/orderedListMarkers';
 
 export interface OrderedMarkerIndentContext {
@@ -31,7 +30,7 @@ export function getOrderedMarkerForIndent(
         return marker;
     }
 
-    const style = resolveOrderedListMarkerStyle({
+    const resolvedMarker = resolveOrderedMarkerForTarget({
         lines: context.lines,
         currentLineIndex: context.currentLineIndex,
         currentIndentColumns: getIndentColumns(context.currentIndent),
@@ -41,5 +40,5 @@ export function getOrderedMarkerForIndent(
         settings
     });
 
-    return formatOrderedListMarker(style, 1);
+    return resolvedMarker.marker;
 }

@@ -11,6 +11,7 @@ This folder holds the detailed documentation for Pandoc Extended Markdown. The r
 - [Pandoc export](pandoc-export.md): how to use the bundled Lua filters with Pandoc.
 - [Pandoc variables and Lua filters](pandoc-variables-and-filters.md): export template variables, resource paths, and bundled filter deployment.
 - [Pandoc module architecture](pandoc-architecture.md): current Pandoc export module layers, workflows, extension points, and testing guide.
+- [Ordered list autocompletion logic](ordered-list-autocompletion-logic.md): expected cycling, bridge decimal, Tab, Shift+Tab, and Enter behavior for ordered-list editing.
 
 ## Development
 

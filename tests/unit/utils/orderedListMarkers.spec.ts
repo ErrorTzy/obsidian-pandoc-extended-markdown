@@ -4,11 +4,13 @@ import {
     parseOrderedListMarker,
     resolveOrderedListItem,
     resolveOrderedListItems,
+    resolveOrderedMarkerForTarget,
     resolveOrderedListMarkerStyle
 } from '../../../src/shared/utils/orderedListMarkers';
+import { PandocExtendedMarkdownSettings } from '../../../src/shared/types/settingsTypes';
 
 describe('orderedListMarkers', () => {
-    const settings = {
+    const settings: Partial<PandocExtendedMarkdownSettings> = {
         enableFancyLists: true,
         enableOrderedListMarkerCycling: true,
         orderedListMarkerOrder: [
@@ -17,7 +19,7 @@ describe('orderedListMarkers', () => {
             'lower-roman-period',
             'upper-alpha-period'
         ]
-    } as const;
+    };
 
     it('parses decimal, alpha, and roman markers with delimiters', () => {
         expect(parseOrderedListMarker('  12) item')).toMatchObject({
@@ -181,6 +183,58 @@ describe('orderedListMarkers', () => {
         });
 
         expect(style).toBe('upper-alpha-period');
+    });
+
+    it('continues the previous target-level ordinal when moving to a parent level', () => {
+        const lines = [
+            'a. parent',
+            'b. parent',
+            '    1. child',
+            '    2. '
+        ];
+
+        const marker = resolveOrderedMarkerForTarget({
+            lines,
+            currentLineIndex: 3,
+            currentIndentColumns: 4,
+            targetIndentColumns: 0,
+            currentStyle: 'decimal-period',
+            direction: 'outdent',
+            settings
+        });
+
+        expect(marker).toEqual({
+            style: 'lower-alpha-period',
+            ordinal: 3,
+            marker: 'c.'
+        });
+    });
+
+    it('starts a fresh child ordinal inside the current parent subtree', () => {
+        const lines = [
+            '1. parent',
+            '2. parent',
+            '    a. child',
+            '    b. child',
+            '3. parent',
+            '4. target'
+        ];
+
+        const marker = resolveOrderedMarkerForTarget({
+            lines,
+            currentLineIndex: 5,
+            currentIndentColumns: 0,
+            targetIndentColumns: 4,
+            currentStyle: 'decimal-period',
+            direction: 'indent',
+            settings
+        });
+
+        expect(marker).toEqual({
+            style: 'lower-alpha-period',
+            ordinal: 1,
+            marker: 'a.'
+        });
     });
 
     it('marks standalone decimal-period lists as native', () => {

@@ -26,6 +26,7 @@ import { CustomLabelReferenceSuggest } from '../editor-extensions/suggestions/cu
 import { FencedDivReferenceSuggest } from '../editor-extensions/suggestions/fencedDivReferenceSuggest';
 import { formatToPandocStandard, checkPandocFormatting } from '../editor-extensions/pandocValidator';
 import { createListAutocompletionKeymap } from '../editor-extensions/listAutocompletion';
+import { createListBlockReconciliationExtension } from '../editor-extensions/listAutocompletion/utils/listBlockReconciliation';
 import { pluginStateManager } from './state/pluginStateManager';
 import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../views/panels/ListPanelView';
 import { registerPandocExportCommands } from '../pandoc/gui/obsidian/commands/registerPandocCommands';
@@ -112,6 +113,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
         this.registerEditorExtension(Prec.highest(keymap.of(createListAutocompletionKeymap(
             () => this.settings
         ))));
+        this.registerEditorExtension(Prec.highest(createListBlockReconciliationExtension()));
     }
 
     private registerPostProcessor(): void {

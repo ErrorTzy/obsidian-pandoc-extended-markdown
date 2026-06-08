@@ -17,7 +17,7 @@ import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import {
     getIndentColumns,
     parseOrderedListMarker,
-    resolveOrderedMarkerForMove
+    resolveOrderedMarkerForTarget
 } from '../../../shared/utils/orderedListMarkers';
 import { calculateIndentation } from '../utils/indentation';
 import { getMarkerForIndent } from '../utils/unorderedMarkers';
@@ -120,24 +120,7 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
         const allLines = state.doc.toString().split('\n');
         const orderedMarker = parseOrderedListMarker(lineText, allLines, line.number - 1);
         if (orderedMarker) {
-            if (orderedMarker.style === 'decimal-period') {
-                const newLine = orderedMarker.indent;
-                const changes = {
-                    from: line.from,
-                    to: line.to,
-                    insert: newLine
-                };
-
-                const transaction = state.update({
-                    changes,
-                    selection: EditorSelection.cursor(line.from + newLine.length)
-                });
-
-                view.dispatch(transaction);
-                return true;
-            }
-
-            const marker = resolveOrderedMarkerForMove({
+            const marker = resolveOrderedMarkerForTarget({
                 lines: allLines,
                 currentLineIndex: line.number - 1,
                 currentIndentColumns: orderedMarker.indentColumns,
@@ -145,7 +128,7 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
                 currentStyle: orderedMarker.style,
                 direction: 'outdent',
                 settings: config.settings
-            });
+            }).marker;
             const spaces = orderedMarker.spaces || ' ';
             const newLine = `${newIndent}${marker}${spaces}`;
             const changes = {
