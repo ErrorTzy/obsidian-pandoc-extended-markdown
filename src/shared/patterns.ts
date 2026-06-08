@@ -60,6 +60,7 @@ export class ListPatterns {
     
     // Empty list item patterns
     static readonly EMPTY_HASH_LIST = /^(\s*)(#\.)(\s*)$/;
+    static readonly EMPTY_DECIMAL_ORDERED_LIST = /^(\s*)\d+[.)](\s*)$/;
     static readonly EMPTY_FANCY_LIST = /^(\s*)([A-Za-z]+|[ivxlcdmIVXLCDM]+)([.)])(\s*)$/;
     static readonly EMPTY_UNORDERED_LIST = /^(\s*)([-+*])(\s*)$/;
     static readonly EMPTY_EXAMPLE_LIST = /^(\s*)\(@([a-zA-Z0-9_-]*)\)(\s*)$/;

@@ -2,6 +2,8 @@ import {
     formatOrderedListMarker,
     getAvailableOrderedMarkerStyles,
     parseOrderedListMarker,
+    resolveOrderedListItem,
+    resolveOrderedListItems,
     resolveOrderedListMarkerStyle
 } from '../../../src/shared/utils/orderedListMarkers';
 
@@ -65,6 +67,47 @@ describe('orderedListMarkers', () => {
         });
         expect(parseOrderedListMarker('i. first')).toMatchObject({
             style: 'lower-roman-period',
+            ordinal: 1
+        });
+    });
+
+    it('treats first same-group i markers as roman even when unrelated previous children are alphabetic', () => {
+        const lines = [
+            'a. earlier parent',
+            '    h. unrelated alphabetic child',
+            'b. parent',
+            '    i. first child'
+        ];
+
+        expect(parseOrderedListMarker(lines[3], lines, 3)).toMatchObject({
+            style: 'lower-roman-period',
+            ordinal: 1
+        });
+    });
+
+    it('treats ambiguous i markers after blank lines as roman starts of independent list chunks', () => {
+        const lines = [
+            'a. previous chunk',
+            '',
+            'i. independent roman chunk'
+        ];
+
+        expect(parseOrderedListMarker(lines[2], lines, 2)).toMatchObject({
+            style: 'lower-roman-period',
+            ordinal: 1
+        });
+    });
+
+    it('treats first same-group I parenthesis markers as roman even when unrelated previous children are alphabetic', () => {
+        const lines = [
+            'A. earlier parent',
+            '    H) unrelated alphabetic child',
+            'B. parent',
+            '    I) first child'
+        ];
+
+        expect(parseOrderedListMarker(lines[3], lines, 3)).toMatchObject({
+            style: 'upper-roman-one-paren',
             ordinal: 1
         });
     });
@@ -138,5 +181,103 @@ describe('orderedListMarkers', () => {
         });
 
         expect(style).toBe('upper-alpha-period');
+    });
+
+    it('marks standalone decimal-period lists as native', () => {
+        expect(resolveOrderedListItem(['1. item'], 0, settings)).toMatchObject({
+            style: 'decimal-period',
+            ownership: 'native'
+        });
+    });
+
+    it('marks nested decimal-period items under fancy ordered ancestors as bridge items', () => {
+        const items = resolveOrderedListItems(['I) parent', '    1. child'], {
+            ...settings,
+            orderedListMarkerOrder: [
+                'decimal-period',
+                'upper-roman-one-paren'
+            ]
+        });
+
+        expect(items[0]).toMatchObject({
+            style: 'upper-roman-one-paren',
+            ownership: 'extended'
+        });
+        expect(items[1]).toMatchObject({
+            style: 'decimal-period',
+            ownership: 'bridge',
+            parentLineIndex: 0
+        });
+    });
+
+    it('wraps upper-roman-one-paren children to decimal-period in the configured order', () => {
+        const lines = ['I) parent', 'II) target'];
+
+        const style = resolveOrderedListMarkerStyle({
+            lines,
+            currentLineIndex: 1,
+            currentIndentColumns: 0,
+            targetIndentColumns: 4,
+            currentStyle: 'upper-roman-one-paren',
+            direction: 'indent',
+            settings: {
+                ...settings,
+                orderedListMarkerOrder: [
+                    'decimal-period',
+                    'upper-roman-one-paren'
+                ]
+            }
+        });
+
+        expect(style).toBe('decimal-period');
+    });
+
+    it('does not reuse same-indent siblings from a previous ordered-list group', () => {
+        const lines = [
+            'a. parent',
+            '    A. unrelated child',
+            'b. sibling',
+            'c. target'
+        ];
+
+        const style = resolveOrderedListMarkerStyle({
+            lines,
+            currentLineIndex: 3,
+            currentIndentColumns: 0,
+            targetIndentColumns: 4,
+            currentStyle: 'lower-alpha-period',
+            direction: 'indent',
+            settings
+        });
+
+        expect(style).toBe('lower-roman-period');
+    });
+
+    it('ignores unrelated previous decimal lists when cycling under an extended list', () => {
+        const lines = [
+            '1. native',
+            '    A. unrelated child',
+            '',
+            'I) parent',
+            'II) target'
+        ];
+
+        const style = resolveOrderedListMarkerStyle({
+            lines,
+            currentLineIndex: 4,
+            currentIndentColumns: 0,
+            targetIndentColumns: 4,
+            currentStyle: 'upper-roman-one-paren',
+            direction: 'indent',
+            settings: {
+                ...settings,
+                orderedListMarkerOrder: [
+                    'decimal-period',
+                    'upper-roman-one-paren'
+                ]
+            }
+        });
+
+        expect(style).toBe('decimal-period');
     });
 });

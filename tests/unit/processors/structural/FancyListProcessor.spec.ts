@@ -95,8 +95,17 @@ describe('FancyListProcessor', () => {
         
         it('should reject regular decimal numbers', () => {
             createView('1. Regular list');
+            context = createContext();
             const line = view.state.doc.line(1);
             expect(processor.canProcess(line, context)).toBe(false);
+        });
+
+        it('should process bridge decimal children inside fancy ordered blocks', () => {
+            createView('I) Parent\n    1. Child');
+            context = createContext();
+            const line = view.state.doc.line(2);
+
+            expect(processor.canProcess(line, context)).toBe(true);
         });
         
         it('should reject bullet lists', () => {
@@ -224,6 +233,18 @@ describe('FancyListProcessor', () => {
             
             expect(result.contentRegion).toBeDefined();
             expect(result.contentRegion!.from).toBe(line.from + 4); // After "IV. "
+        });
+
+        it('should decorate bridge decimal children inside fancy ordered blocks', () => {
+            createView('I) Parent\n    1. Child');
+            context = createContext();
+            const line = view.state.doc.line(2);
+            const result = processor.process(line, context);
+
+            expect(result.decorations.length).toBeGreaterThan(0);
+            expect(result.contentRegion).toBeDefined();
+            expect(result.contentRegion!.parentStructure).toBe('fancy-list');
+            expect(result.contentRegion!.from).toBe(line.from + '    1. '.length);
         });
     });
     

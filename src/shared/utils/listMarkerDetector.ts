@@ -10,9 +10,9 @@ import { NUMERIC_CONSTANTS, LIST_MARKERS, LIST_TYPES } from '../../core/constant
 
 import { getNextLetter, getNextRoman } from './listHelpers';
 import {
-    formatOrderedListMarker,
     isOrderedMarkerStyleAvailable,
-    parseOrderedListMarker
+    parseOrderedListMarker,
+    resolveOrderedMarkerForContinuation
 } from './orderedListMarkers';
 
 /**
@@ -340,19 +340,6 @@ function incrementNumericMarker(components: MarkerComponents): ListMarkerInfo | 
     };
 }
 
-function incrementDecimalMarker(components: MarkerComponents): ListMarkerInfo | null {
-    const ordinal = Number.parseInt(components.marker, 10) + 1;
-
-    return {
-        marker: formatOrderedListMarker(
-            components.punctuation === ')' ? 'decimal-one-paren' : 'decimal-period',
-            ordinal
-        ),
-        indent: components.indent,
-        spaces: components.spaces
-    };
-}
-
 /**
  * Increment an alphabetic list marker.
  * 
@@ -486,6 +473,21 @@ export function getNextListMarker(
     if (!components) {
         return null;
     }
+
+    const orderedMarker = resolveOrderedMarkerForContinuation({
+        line: currentLine,
+        lines: allLines,
+        lineIndex: currentLineIndex,
+        settings: settings || {}
+    });
+
+    if (orderedMarker && ['decimal', 'unknown'].includes(components.type)) {
+        return {
+            marker: orderedMarker,
+            indent: components.indent,
+            spaces: components.spaces
+        };
+    }
     
     // Detect the specific list type for ambiguous cases
     const listType = detectListType(components, context);
@@ -497,7 +499,13 @@ export function getNextListMarker(
             return incrementNumericMarker(components);
 
         case 'decimal':
-            return incrementDecimalMarker(components);
+            return orderedMarker
+                ? {
+                    marker: orderedMarker,
+                    indent: components.indent,
+                    spaces: components.spaces
+                }
+                : null;
             
         case 'letter':
             return incrementAlphabeticMarker(components);

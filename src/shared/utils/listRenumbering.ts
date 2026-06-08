@@ -57,7 +57,7 @@ function findBlockBoundaries(allLines: string[], insertedLineNum: number): ListB
 
     for (let index = insertedLineNum - 1; index >= NUMERIC_CONSTANTS.MIN_DOC_POSITION; index--) {
         if (!allLines[index].trim()) {
-            continue;
+            break;
         }
 
         if (!isListLineAtOrBelowIndent(allLines[index], insertedIndentColumns)) {
@@ -74,7 +74,7 @@ function findBlockBoundaries(allLines: string[], insertedLineNum: number): ListB
 
     for (let index = insertedLineNum + 1; index < allLines.length; index++) {
         if (!allLines[index].trim()) {
-            continue;
+            break;
         }
 
         if (!isListLineAtOrBelowIndent(allLines[index], insertedIndentColumns)) {

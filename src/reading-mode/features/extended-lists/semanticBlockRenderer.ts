@@ -13,6 +13,7 @@ import {
 import { ReadingModeRenderer } from './lineRenderer';
 
 import { ReadingModeContext } from '../../pipeline/types';
+import { getIndentColumns } from '../../../shared/utils/orderedListMarkers';
 
 export function tryRenderSemanticListParagraph(
     elem: Element,
@@ -31,7 +32,7 @@ export function tryRenderSemanticListParagraph(
     }
 
     const rendered = groupListLines(parsedLines)
-        .map(group => renderSemanticList(group, context, renderer));
+        .flatMap(group => renderSemanticList(group, context, renderer));
 
     if (elem.parentNode) {
         elem.replaceWith(...rendered);
@@ -63,7 +64,11 @@ function renderSemanticList(
     parsedLines: ParsedLine[],
     context: ReadingModeContext,
     renderer: ReadingModeRenderer
-): HTMLOListElement {
+): HTMLOListElement[] {
+    if (parsedLines.some(line => line.type === 'fancy') && hasNestedIndent(parsedLines)) {
+        return renderNestedFancyLists(parsedLines, context, renderer);
+    }
+
     const list = document.createElement('ol');
     const firstLine = parsedLines[0];
 
@@ -78,7 +83,77 @@ function renderSemanticList(
         list.appendChild(item);
     });
 
-    return list;
+    return [list];
+}
+
+interface RenderedListFrame {
+    indentColumns: number;
+    typeKey: string;
+    list: HTMLOListElement;
+    lastItem?: HTMLLIElement;
+}
+
+function renderNestedFancyLists(
+    parsedLines: ParsedLine[],
+    context: ReadingModeContext,
+    renderer: ReadingModeRenderer
+): HTMLOListElement[] {
+    const roots: HTMLOListElement[] = [];
+    const stack: RenderedListFrame[] = [];
+
+    parsedLines.forEach(parsedLine => {
+        const indentColumns = getParsedLineIndentColumns(parsedLine);
+        const typeKey = getNestedListFrameKey(parsedLine);
+
+        while (stack.length > 0 && stack[stack.length - 1].indentColumns > indentColumns) {
+            stack.pop();
+        }
+
+        let frame = stack[stack.length - 1];
+        if (!frame || frame.indentColumns < indentColumns || frame.typeKey !== typeKey) {
+            const list = document.createElement('ol');
+            configureListElement(list, parsedLine);
+
+            if (frame?.lastItem && frame.indentColumns < indentColumns) {
+                frame.lastItem.appendChild(list);
+            } else {
+                roots.push(list);
+                stack.length = 0;
+            }
+
+            frame = { indentColumns, typeKey, list };
+            stack.push(frame);
+        }
+
+        const item = document.createElement('li');
+        updateCountersForListItem(item, parsedLine, context);
+        renderer.appendContent(item, getListItemContent(parsedLine).trimStart(), context.renderContext);
+        frame.list.appendChild(item);
+        frame.lastItem = item;
+    });
+
+    return roots;
+}
+
+function hasNestedIndent(parsedLines: ParsedLine[]): boolean {
+    const indents = parsedLines.map(getParsedLineIndentColumns);
+    return indents.some(indent => indent !== indents[0]);
+}
+
+function getParsedLineIndentColumns(parsedLine: ParsedLine): number {
+    if (parsedLine.type === 'hash') {
+        return getIndentColumns((parsedLine.metadata as HashListData).indent);
+    }
+
+    if (parsedLine.type === 'fancy') {
+        return getIndentColumns((parsedLine.metadata as FancyListData).indent);
+    }
+
+    if (parsedLine.type === 'example') {
+        return getIndentColumns((parsedLine.metadata as ExampleListData).indent);
+    }
+
+    return 0;
 }
 
 function configureListElement(list: HTMLOListElement, firstLine: ParsedLine): void {
@@ -181,7 +256,7 @@ function groupListLines(parsedLines: ParsedLine[]): ParsedLine[][] {
 
     parsedLines.forEach(parsedLine => {
         const current = groups[groups.length - 1];
-        if (current && getListGroupKey(current[0]) === getListGroupKey(parsedLine)) {
+        if (current && canShareListGroup(current[current.length - 1], parsedLine)) {
             current.push(parsedLine);
             return;
         }
@@ -192,13 +267,30 @@ function groupListLines(parsedLines: ParsedLine[]): ParsedLine[][] {
     return groups;
 }
 
+function canShareListGroup(previous: ParsedLine, current: ParsedLine): boolean {
+    if (previous.type === 'fancy' && current.type === 'fancy') {
+        return getParsedLineIndentColumns(previous) !== getParsedLineIndentColumns(current) ||
+            getNestedListFrameKey(previous) === getNestedListFrameKey(current);
+    }
+
+    return getListGroupKey(previous) === getListGroupKey(current);
+}
+
 function getListGroupKey(parsedLine: ParsedLine): string {
     if (parsedLine.type === 'fancy') {
-        const data = parsedLine.metadata as FancyListData;
-        return `${parsedLine.type}:${data.type}`;
+        return parsedLine.type;
     }
 
     return parsedLine.type;
+}
+
+function getNestedListFrameKey(parsedLine: ParsedLine): string {
+    if (parsedLine.type === 'fancy') {
+        const data = parsedLine.metadata as FancyListData;
+        return `${parsedLine.type}:${data.type}:${data.marker.endsWith(')') ? ')' : '.'}`;
+    }
+
+    return getListGroupKey(parsedLine);
 }
 
 function getListItemContent(parsedLine: ParsedLine): string {
@@ -219,6 +311,8 @@ function getListItemContent(parsedLine: ParsedLine): string {
 
 function getOrderedListTypeAttribute(type: string): string | null {
     switch (type) {
+        case 'decimal':
+            return '1';
         case 'upper-alpha':
             return 'A';
         case 'lower-alpha':

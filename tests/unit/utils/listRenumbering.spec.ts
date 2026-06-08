@@ -65,4 +65,20 @@ describe('renumberListItems', () => {
 
         expect(view.state.doc.toString()).toBe(expectedDoc);
     });
+
+    it('keeps first nested i markers roman when renumbering after unrelated alphabetic children', () => {
+        const initialDoc = [
+            'a. earlier parent',
+            '    h. unrelated alphabetic child',
+            'b. parent',
+            '    i. child',
+            '    ii. '
+        ].join('\n');
+
+        view = createMockView(initialDoc);
+
+        renumberListItems(view, 4);
+
+        expect(view.state.doc.toString()).toBe(initialDoc);
+    });
 });

@@ -1,7 +1,10 @@
 import { Line } from '@codemirror/state';
 import { StructuralResult, ProcessingContext } from '../types';
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
-import { ListPatterns } from '../../../shared/patterns';
+import {
+    isPluginOwnedOrderedListItem,
+    resolveOrderedListItem
+} from '../../../shared/utils/orderedListMarkers';
 import { FancyListMarkerWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
@@ -17,15 +20,23 @@ export class FancyListProcessor extends BaseStructuralProcessor {
             return false;
         }
 
-        const lineText = line.text;
-        return ListPatterns.isFancyList(lineText) !== null;
+        const item = resolveOrderedListItem(
+            getContextLines(line, context),
+            line.number - 1,
+            context.settings
+        );
+
+        return item !== null && isPluginOwnedOrderedListItem(item);
     }
 
     process(line: Line, context: ProcessingContext): StructuralResult {
-        const lineText = line.text;
-        const fancyMatch = ListPatterns.isFancyList(lineText);
+        const item = resolveOrderedListItem(
+            getContextLines(line, context),
+            line.number - 1,
+            context.settings
+        );
 
-        if (!fancyMatch) {
+        if (!item || !isPluginOwnedOrderedListItem(item)) {
             return { decorations: [] };
         }
 
@@ -34,10 +45,15 @@ export class FancyListProcessor extends BaseStructuralProcessor {
             return { decorations: [] };
         }
 
-        const indent = fancyMatch[1];
-        const marker = fancyMatch[3];                // e.g., "A"
-        const delimiter = fancyMatch[4];             // e.g., "."
-        const space = fancyMatch[5];
+        const markerMatch = line.text.match(/^(\s*)(\d+|[A-Za-z]+)([.)])(\s*)/);
+        if (!markerMatch) {
+            return { decorations: [] };
+        }
+
+        const indent = item.indent;
+        const marker = markerMatch[2];               // e.g., "A"
+        const delimiter = markerMatch[3];            // e.g., "."
+        const space = item.spaces;
 
         const markerStart = line.from + indent.length;
         const markerEnd = line.from + indent.length + marker.length + delimiter.length + space.length;
@@ -58,4 +74,14 @@ export class FancyListProcessor extends BaseStructuralProcessor {
             1 // Can be calculated based on indent depth
         );
     }
+}
+
+function getContextLines(line: Line, context: ProcessingContext): string[] {
+    const contextLine = line.number <= context.document.lines
+        ? context.document.line(line.number).text
+        : undefined;
+
+    return contextLine === line.text
+        ? context.document.toString().split('\n')
+        : [line.text];
 }

@@ -179,6 +179,33 @@ describe('reading mode pipeline', () => {
         expect(element.querySelector('.pem-custom-label-reference-processed')).toBeNull();
         expect(element.textContent).toContain('{::P}');
     });
+
+    it('leaves standalone decimal ordered lists native in reading mode', () => {
+        const element = document.createElement('div');
+        element.innerHTML = '<p>1. Native item</p>';
+        const context = createPostProcessorContext('1. Native item');
+
+        processReadingMode(element, context, createConfig());
+
+        expect(element.querySelector('ol')).toBeNull();
+        expect(element.textContent).toContain('1. Native item');
+    });
+
+    it('renders bridge decimal children inside extended ordered blocks in reading mode', () => {
+        const element = document.createElement('div');
+        element.innerHTML = '<p>I) Parent<br>    1. Child</p>';
+        const context = createPostProcessorContext('I) Parent\n    1. Child');
+
+        processReadingMode(element, context, createConfig());
+
+        const rootList = element.querySelector('ol.pem-list-upper-roman');
+        const nestedList = rootList?.querySelector('ol.pem-list-decimal');
+
+        expect(rootList).not.toBeNull();
+        expect(nestedList).not.toBeNull();
+        expect(rootList?.querySelector(':scope > li')?.textContent).toContain('Parent');
+        expect(nestedList?.querySelector('li')?.textContent).toContain('Child');
+    });
 });
 
 function createProcessor(

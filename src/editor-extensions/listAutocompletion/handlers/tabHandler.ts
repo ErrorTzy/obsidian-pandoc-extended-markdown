@@ -9,10 +9,9 @@ import { isExtendedList } from '../utils/markerDetection';
 import { getMarkerForIndent } from '../utils/unorderedMarkers';
 import { resolveSettings, SettingsProvider } from '../types';
 import {
-    formatOrderedListMarker,
     getIndentColumns,
     parseOrderedListMarker,
-    resolveOrderedListMarkerStyle
+    resolveOrderedMarkerForMove
 } from '../../../shared/utils/orderedListMarkers';
 
 function getTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
@@ -59,7 +58,7 @@ function getMarkerForTargetIndent(
         return unorderedMarker;
     }
 
-    const style = resolveOrderedListMarkerStyle({
+    return resolveOrderedMarkerForMove({
         lines,
         currentLineIndex: lineIndex,
         currentIndentColumns: getIndentColumns(currentIndent),
@@ -68,8 +67,6 @@ function getMarkerForTargetIndent(
         direction,
         settings
     });
-
-    return formatOrderedListMarker(style, 1);
 }
 
 function getLineIndent(lineText: string): string {

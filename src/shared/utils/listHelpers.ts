@@ -72,6 +72,9 @@ export function isEmptyListItem(line: string): boolean {
     // Check fancy lists
     if (line.match(ListPatterns.EMPTY_FANCY_LIST)) return true;
 
+    // Check decimal ordered lists
+    if (line.match(ListPatterns.EMPTY_DECIMAL_ORDERED_LIST)) return true;
+
     // Check unordered lists
     if (line.match(ListPatterns.EMPTY_UNORDERED_LIST)) return true;
     

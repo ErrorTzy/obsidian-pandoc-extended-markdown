@@ -554,6 +554,59 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('a. child');
         });
 
+        it('should wrap upper-roman parenthesis markers to decimal-period bridge children', () => {
+            const listText = 'I) parent\nII) ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    1. ');
+        });
+
+        it('should restore upper-roman parenthesis style when outdenting bridge decimal children', () => {
+            const listText = 'I) parent\n    1. child';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const shiftTabHandler = keybindings.find(kb => kb.key === 'Shift-Tab');
+            const result = shiftTabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('I) child');
+        });
+
+        it('should preserve upper-roman parenthesis markers when ordered cycling is disabled', () => {
+            mockSettings.enableOrderedListMarkerCycling = false;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = 'I) parent\nII) ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    I) ');
+        });
+
         it('should move an ordered list item subtree when indenting', () => {
             const doc = [
                 'a. parent',
@@ -594,9 +647,42 @@ describe('List Autocompletion', () => {
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('\n    2. ');
         });
+
+        it('should continue bridge decimal children inside upper-roman parenthesis parents', () => {
+            const doc = 'I) parent\n    1. child';
+            const cursorPos = doc.length - 1;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('\n    2. ');
+        });
     });
 
     describe('Enter key handling for empty unordered list items', () => {
+        it('should remove an empty bridge decimal marker while preserving child indentation', () => {
+            const listText = 'I) parent\n    1. child\n    2. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('    ');
+        });
+
         it('should outdent an empty plus item to a top-level dash item', () => {
             const listText = '- item 1\n    + ';
             const doc = `${listText}\nnext`;

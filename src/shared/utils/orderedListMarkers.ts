@@ -11,6 +11,7 @@ import { intToRoman, letterToNumber, romanToInt } from './listHelpers';
 
 export type OrderedListMarkerDelimiter = '.' | ')';
 export type OrderedListMoveDirection = 'indent' | 'outdent';
+export type OrderedListOwnership = 'native' | 'extended' | 'bridge';
 
 export interface ParsedOrderedListMarker {
     indent: string;
@@ -22,6 +23,14 @@ export interface ParsedOrderedListMarker {
     content: string;
 }
 
+export interface ResolvedOrderedListItem extends ParsedOrderedListMarker {
+    lineIndex: number;
+    markerText: string;
+    styleId: OrderedListMarkerStyle;
+    ownership: OrderedListOwnership;
+    parentLineIndex?: number;
+}
+
 export interface OrderedListStyleContext {
     lines: string[];
     currentLineIndex: number;
@@ -29,6 +38,15 @@ export interface OrderedListStyleContext {
     targetIndentColumns: number;
     currentStyle: OrderedListMarkerStyle;
     direction: OrderedListMoveDirection;
+    settings: Partial<PandocExtendedMarkdownSettings>;
+}
+
+export type OrderedListMoveContext = OrderedListStyleContext;
+
+export interface OrderedListContinuationContext {
+    line: string;
+    lines?: string[];
+    lineIndex?: number;
     settings: Partial<PandocExtendedMarkdownSettings>;
 }
 
@@ -109,6 +127,90 @@ export function isOrderedMarkerStyleAvailable(
 }
 
 export function resolveOrderedListMarkerStyle(context: OrderedListStyleContext): OrderedListMarkerStyle {
+    return resolveOrderedMarkerStyleForMove(context);
+}
+
+export function resolveOrderedMarkerForMove(context: OrderedListMoveContext): string {
+    return formatOrderedListMarker(resolveOrderedMarkerStyleForMove(context), 1);
+}
+
+export function resolveOrderedMarkerForContinuation(
+    context: OrderedListContinuationContext
+): string | null {
+    const parsed = context.lines && context.lineIndex !== undefined
+        ? resolveOrderedListItem(context.lines, context.lineIndex, context.settings)
+        : resolveOrderedListLine(context.line, context.lines, context.lineIndex, context.settings);
+
+    if (!parsed || !isOrderedMarkerStyleAvailable(parsed.style, context.settings)) {
+        return null;
+    }
+
+    return formatOrderedListMarker(parsed.style, parsed.ordinal + 1);
+}
+
+export function resolveOrderedListItem(
+    lines: string[],
+    lineIndex: number,
+    settings: Partial<PandocExtendedMarkdownSettings> = {}
+): ResolvedOrderedListItem | null {
+    return resolveOrderedListItems(lines, settings).find(item => item.lineIndex === lineIndex) ?? null;
+}
+
+export function resolveOrderedListLine(
+    line: string,
+    lines?: string[],
+    lineIndex?: number,
+    settings: Partial<PandocExtendedMarkdownSettings> = {}
+): ResolvedOrderedListItem | null {
+    if (lines && lineIndex !== undefined) {
+        return resolveOrderedListItem(lines, lineIndex, settings);
+    }
+
+    const parsed = parseOrderedListMarker(line);
+    return parsed ? createResolvedItem(parsed, 0, undefined, settings) : null;
+}
+
+export function resolveOrderedListItems(
+    lines: string[],
+    settings: Partial<PandocExtendedMarkdownSettings> = {}
+): ResolvedOrderedListItem[] {
+    const items: ResolvedOrderedListItem[] = [];
+    const stack: ResolvedOrderedListItem[] = [];
+
+    lines.forEach((line, lineIndex) => {
+        if (!line.trim()) {
+            stack.length = 0;
+            return;
+        }
+
+        const parsed = parseOrderedListMarker(line, lines, lineIndex);
+        const indentColumns = parsed?.indentColumns ?? getIndentColumns(line.match(/^(\s*)/)?.[1] ?? '');
+
+        while (stack.length > 0 && stack[stack.length - 1].indentColumns >= indentColumns) {
+            stack.pop();
+        }
+
+        if (!parsed) {
+            if (indentColumns === 0) {
+                stack.length = 0;
+            }
+            return;
+        }
+
+        const parent = stack[stack.length - 1];
+        const item = createResolvedItem(parsed, lineIndex, parent, settings);
+        items.push(item);
+        stack.push(item);
+    });
+
+    return items;
+}
+
+export function isPluginOwnedOrderedListItem(item: ResolvedOrderedListItem): boolean {
+    return item.ownership === 'extended' || item.ownership === 'bridge';
+}
+
+function resolveOrderedMarkerStyleForMove(context: OrderedListStyleContext): OrderedListMarkerStyle {
     if (!isSyntaxFeatureEnabled(context.settings, 'enableOrderedListMarkerCycling')) {
         return context.currentStyle;
     }
@@ -129,6 +231,40 @@ export function resolveOrderedListMarkerStyle(context: OrderedListStyleContext):
     }
 
     return stepStyle(context.currentStyle, context.direction === 'indent' ? 1 : -1, order);
+}
+
+function createResolvedItem(
+    parsed: ParsedOrderedListMarker,
+    lineIndex: number,
+    parent: ResolvedOrderedListItem | undefined,
+    settings: Partial<PandocExtendedMarkdownSettings>
+): ResolvedOrderedListItem {
+    const ownership = resolveOwnership(parsed.style, parent, settings);
+
+    return {
+        ...parsed,
+        lineIndex,
+        markerText: formatOrderedListMarker(parsed.style, parsed.ordinal),
+        styleId: parsed.style,
+        ownership,
+        parentLineIndex: parent?.lineIndex
+    };
+}
+
+function resolveOwnership(
+    style: OrderedListMarkerStyle,
+    parent: ResolvedOrderedListItem | undefined,
+    settings: Partial<PandocExtendedMarkdownSettings>
+): OrderedListOwnership {
+    if (style === 'decimal-period') {
+        return parent && parent.ownership !== 'native' ? 'bridge' : 'native';
+    }
+
+    if (isOrderedMarkerStyleAvailable(style, settings)) {
+        return 'extended';
+    }
+
+    return 'native';
 }
 
 function getStyleForToken(
@@ -207,13 +343,16 @@ function findPreviousOrderedStyleAtIndent(
         return null;
     }
 
+    const targetIndentColumns = getIndentColumns(indent);
+
     for (let index = lineIndex - 1; index >= 0; index--) {
         const parsed = parseOrderedListMarker(lines[index], lines, index);
         if (!parsed) {
-            if (lines[index].trim()) {
-                break;
-            }
-            continue;
+            break;
+        }
+
+        if (parsed.indentColumns < targetIndentColumns) {
+            break;
         }
 
         if (parsed.indent === indent && parsed.delimiter === delimiter) {
@@ -226,29 +365,37 @@ function findPreviousOrderedStyleAtIndent(
 
 function findTargetIndentStyle(context: OrderedListStyleContext): OrderedListMarkerStyle | null {
     const subtreeEnd = findSubtreeEnd(context.lines, context.currentLineIndex, context.currentIndentColumns);
-    const before = scanForStyleAtIndent(context, context.currentLineIndex - 1, -1);
-    return before ?? scanForStyleAtIndent(context, subtreeEnd + 1, 1);
+    const parentIndex = findTargetParentIndex(context);
+    const groupStart = parentIndex >= 0 ? parentIndex + 1 : 0;
+    const groupEnd = parentIndex >= 0
+        ? findSubtreeEnd(
+            context.lines,
+            parentIndex,
+            getIndentColumns(context.lines[parentIndex].match(/^(\s*)/)?.[1] ?? '')
+        )
+        : findTopLevelGroupEnd(context.lines, context.currentLineIndex);
+    const before = scanForStyleAtIndent(context, context.currentLineIndex - 1, -1, groupStart, groupEnd, subtreeEnd);
+    return before ?? scanForStyleAtIndent(context, subtreeEnd + 1, 1, groupStart, groupEnd, subtreeEnd);
 }
 
 function scanForStyleAtIndent(
     context: OrderedListStyleContext,
     startIndex: number,
-    step: 1 | -1
+    step: 1 | -1,
+    groupStart: number,
+    groupEnd: number,
+    subtreeEnd: number
 ): OrderedListMarkerStyle | null {
-    const boundaryIndent = Math.min(context.currentIndentColumns, context.targetIndentColumns);
-
-    for (let index = startIndex; index >= 0 && index < context.lines.length; index += step) {
-        if (!context.lines[index].trim()) {
+    for (let index = startIndex; index >= groupStart && index <= groupEnd; index += step) {
+        if (index >= context.currentLineIndex && index <= subtreeEnd) {
             continue;
         }
 
-        const parsed = parseOrderedListMarker(context.lines[index], context.lines, index);
-        const indentColumns = parsed?.indentColumns ?? getIndentColumns(context.lines[index].match(/^(\s*)/)?.[1] ?? '');
-
-        if (indentColumns < boundaryIndent) {
+        if (!context.lines[index].trim()) {
             break;
         }
 
+        const parsed = parseOrderedListMarker(context.lines[index], context.lines, index);
         if (parsed?.indentColumns === context.targetIndentColumns) {
             return isOrderedMarkerStyleAvailable(parsed.style, context.settings) ? parsed.style : null;
         }
@@ -258,15 +405,45 @@ function scanForStyleAtIndent(
 }
 
 function findNearestParentStyle(context: OrderedListStyleContext): OrderedListMarkerStyle | null {
+    const parentIndex = findTargetParentIndex(context);
+    const parent = parentIndex >= 0
+        ? parseOrderedListMarker(context.lines[parentIndex], context.lines, parentIndex)
+        : null;
+
+    return parent && isOrderedMarkerStyleAvailable(parent.style, context.settings)
+        ? parent.style
+        : null;
+}
+
+function findTargetParentIndex(context: OrderedListStyleContext): number {
+    if (context.targetIndentColumns <= 0) {
+        return -1;
+    }
+
     for (let index = context.currentLineIndex - 1; index >= 0; index--) {
+        if (!context.lines[index].trim()) {
+            break;
+        }
+
         const parsed = parseOrderedListMarker(context.lines[index], context.lines, index);
-        if (parsed && parsed.indentColumns < context.targetIndentColumns &&
-            isOrderedMarkerStyleAvailable(parsed.style, context.settings)) {
-            return parsed.style;
+        const indentColumns = parsed?.indentColumns ?? getIndentColumns(context.lines[index].match(/^(\s*)/)?.[1] ?? '');
+
+        if (parsed && indentColumns < context.targetIndentColumns) {
+            return index;
         }
     }
 
-    return null;
+    return -1;
+}
+
+function findTopLevelGroupEnd(lines: string[], currentLineIndex: number): number {
+    for (let index = currentLineIndex + 1; index < lines.length; index++) {
+        if (!lines[index].trim()) {
+            return index - 1;
+        }
+    }
+
+    return lines.length - 1;
 }
 
 function stepStyle(

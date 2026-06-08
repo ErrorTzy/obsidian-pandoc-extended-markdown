@@ -7,6 +7,10 @@
 
 import { ListPatterns } from '../../../shared/patterns';
 import { ProcessorConfig } from '../../../shared/types/processorConfig';
+import {
+    isPluginOwnedOrderedListItem,
+    resolveOrderedListLine
+} from '../../../shared/utils/orderedListMarkers';
 
 import { parseFancyListMarker } from './fancyListMarker';
 import { parseExampleListMarker } from './exampleListMarker';
@@ -60,7 +64,13 @@ export class ReadingModeParser {
      */
     parseLine(
         line: string,
-        context?: { nextLine?: string, isInParagraph?: boolean, isAtParagraphStart?: boolean },
+        context?: {
+            nextLine?: string,
+            isInParagraph?: boolean,
+            isAtParagraphStart?: boolean,
+            lines?: string[],
+            lineIndex?: number
+        },
         config?: ProcessorConfig
     ): ParsedLine {
         const hashMatch = config?.enableHashLists !== false
@@ -80,7 +90,18 @@ export class ReadingModeParser {
         }
 
         // Check for fancy list markers
-        const fancyMarker = config?.enableFancyLists !== false
+        const orderedItem = config?.enableFancyLists !== false
+            ? resolveOrderedListLine(line, context?.lines, context?.lineIndex, config)
+            : null;
+        const fancyMarker = orderedItem && isPluginOwnedOrderedListItem(orderedItem)
+            ? {
+                indent: orderedItem.indent,
+                marker: orderedItem.markerText,
+                type: getFancyTypeFromStyle(orderedItem.style),
+                delimiter: orderedItem.delimiter,
+                value: orderedItem.markerText.slice(0, -1)
+            }
+            : config?.enableFancyLists !== false
             ? parseFancyListMarker(line)
             : null;
         if (fancyMarker && fancyMarker.type !== 'hash') {
@@ -183,7 +204,11 @@ export class ReadingModeParser {
             const nextLine = this.findNextNonBlankLine(lines, index + 1);
             // Only the first line is at paragraph start, unless there are explicit line breaks
             const isLineAtStart = index === 0 ? isAtParagraphStart : true;
-            return this.parseLine(line, { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart }, config);
+            return this.parseLine(
+                line,
+                { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart, lines, lineIndex: index },
+                config
+            );
         });
     }
 
@@ -228,4 +253,13 @@ export class ReadingModeParser {
         // Additional validation logic can be added here
         return true;
     }
+}
+
+function getFancyTypeFromStyle(style: string): string {
+    if (style.startsWith('decimal')) {
+        return 'decimal';
+    }
+
+    const [caseName, family] = style.split('-');
+    return `${caseName}-${family}`;
 }
