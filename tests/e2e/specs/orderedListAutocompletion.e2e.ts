@@ -424,6 +424,507 @@ describe('Ordered list autocompletion behavior', () => {
             ].join('\n'));
         });
     });
+
+    describe('depth-map owner model regression guards', () => {
+        beforeEach(async () => {
+            await configureOrderedListSettings();
+        });
+
+        describe('Enter before explicit child or continuation blocks', () => {
+            it('inserts a new unordered child before an existing child list', async () => {
+                await openDocumentWithCursor('ordered-list-owner-enter-explicit-unordered-child.md', [
+                    '1. xxx|',
+                    `${INDENT}- xxx`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- `,
+                    `${INDENT}- xxx`
+                ].join('\n'));
+            });
+
+            it('inserts and renumbers an ordered child before existing ordered children when auto-renumbering is enabled', async () => {
+                await openDocumentWithCursor('ordered-list-owner-enter-explicit-ordered-child-renumber-enabled.md', [
+                    '1. parent|',
+                    `${INDENT}a. child`,
+                    `${INDENT}b. child`
+                ].join('\n'));
+
+                await pressKey('Enter', 600);
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}a. `,
+                    `${INDENT}b. child`,
+                    `${INDENT}c. child`
+                ].join('\n'));
+            });
+
+            it('inserts an ordered child without renumbering existing ordered siblings when auto-renumbering is disabled', async () => {
+                await configureOrderedListSettings({ autoRenumberLists: false });
+                await openDocumentWithCursor('ordered-list-owner-enter-explicit-ordered-child-renumber-disabled.md', [
+                    '1. parent|',
+                    `${INDENT}a. child`,
+                    `${INDENT}b. child`
+                ].join('\n'));
+
+                await pressKey('Enter', 600);
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}a. `,
+                    `${INDENT}a. child`,
+                    `${INDENT}b. child`
+                ].join('\n'));
+            });
+
+            it('inserts a blank continuation line before existing continuation text using the exact child indentation', async () => {
+                await openDocumentWithCursor('ordered-list-owner-enter-before-continuation.md', [
+                    '1. xxx|',
+                    '  continuation'
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    '  ',
+                    '  continuation'
+                ].join('\n'));
+            });
+
+            it('splits parent text into continuation text before the existing child block', async () => {
+                await openDocumentWithCursor('ordered-list-owner-enter-middle-parent-before-child.md', [
+                    '1. ab|cd',
+                    `${INDENT}- child`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. ab',
+                    `${INDENT}cd`,
+                    `${INDENT}- child`
+                ].join('\n'));
+            });
+
+            it('splits a direct continuation line without creating a list item', async () => {
+                await openDocumentWithCursor('ordered-list-owner-enter-split-continuation.md', [
+                    '1. parent',
+                    `${INDENT}cont|inuation`,
+                    `${INDENT}- child`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}cont`,
+                    `${INDENT}inuation`,
+                    `${INDENT}- child`
+                ].join('\n'));
+            });
+
+            it('does not split into a child block across a blank line', async () => {
+                await openDocumentWithCursor('ordered-list-owner-enter-blank-line-boundary.md', [
+                    '1. xxx|',
+                    '',
+                    `${INDENT}- child`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    '2. ',
+                    '',
+                    `${INDENT}- child`
+                ].join('\n'));
+            });
+        });
+
+        describe('Tab owner movement and explicit child context', () => {
+            it('moves only the current owner into an explicit child list instead of moving the subtree', async () => {
+                await openDocumentWithCursor('ordered-list-owner-tab-explicit-child-no-subtree.md', [
+                    '1. xxx',
+                    '2. xxx|',
+                    `${INDENT}- xxx`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    `${INDENT}- xxx`
+                ].join('\n'));
+            });
+
+            it('moves direct continuations with the owner while leaving nested child items in place', async () => {
+                await openDocumentWithCursor('ordered-list-owner-tab-continuation-stays-with-owner.md', [
+                    '1. parent',
+                    '2. current|',
+                    `${INDENT}continuation`,
+                    `${INDENT}- child`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}- current`,
+                    `${INDENT}${INDENT}continuation`,
+                    `${INDENT}- child`
+                ].join('\n'));
+            });
+
+            it('moves the owning list item when Tab is pressed from direct continuation text', async () => {
+                await openDocumentWithCursor('ordered-list-owner-tab-from-continuation.md', [
+                    '1. parent',
+                    '2. current',
+                    `${INDENT}continu|ation`,
+                    `${INDENT}- child`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}- current`,
+                    `${INDENT}${INDENT}continuation`,
+                    `${INDENT}- child`
+                ].join('\n'));
+            });
+
+            it('handles Tab from inside owner text, not only immediately after the marker', async () => {
+                await openDocumentWithCursor('ordered-list-owner-tab-from-middle-of-text.md', [
+                    '1. parent',
+                    '2. cur|rent',
+                    `${INDENT}- child`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}- current`,
+                    `${INDENT}- child`
+                ].join('\n'));
+            });
+
+            it('preserves the moved ordered ordinal while changing marker style when auto-renumbering is disabled', async () => {
+                await configureOrderedListSettings({ autoRenumberLists: false });
+                await openDocumentWithCursor('ordered-list-owner-tab-preserve-ordinal-renumber-disabled.md', [
+                    '1. root',
+                    '2. current|',
+                    `${INDENT}a. child`
+                ].join('\n'));
+
+                await pressKey('Tab', 600);
+
+                expect(await getEditorText()).toBe([
+                    '1. root',
+                    `${INDENT}b. current`,
+                    `${INDENT}a. child`
+                ].join('\n'));
+            });
+
+            it('uses exact explicit child indentation instead of normalizing to four spaces', async () => {
+                await openDocumentWithCursor('ordered-list-owner-tab-two-space-explicit-child-indent.md', [
+                    '1. parent',
+                    '2. current|',
+                    '  - child'
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    '  - current',
+                    '  - child'
+                ].join('\n'));
+            });
+        });
+
+        describe('Tab chunk depth-map marker inference', () => {
+            it('uses the nearest previous target-depth marker type in the same chunk', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-previous-depth-wins.md', [
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    '2. xxx',
+                    `${INDENT}a. xxx`,
+                    '3. xxx',
+                    '4. |'
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    '2. xxx',
+                    `${INDENT}a. xxx`,
+                    '3. xxx',
+                    `${INDENT}a. `
+                ].join('\n'));
+            });
+
+            it('uses the closest following target-depth marker type when no previous target-depth marker exists', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-following-depth-fallback.md', [
+                    '1. xxx',
+                    '2. |',
+                    '3. xxx',
+                    `${INDENT}- xxx`,
+                    '4. xxx',
+                    `${INDENT}* xxx`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- `,
+                    '3. xxx',
+                    `${INDENT}- xxx`,
+                    '4. xxx',
+                    `${INDENT}* xxx`
+                ].join('\n'));
+            });
+
+            it('isolates depth-map marker inference across blank-line chunk boundaries', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-blank-line-chunk-boundary.md', [
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    '',
+                    '1. xxx',
+                    '2. |'
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    '',
+                    '1. xxx',
+                    `${INDENT}a. `
+                ].join('\n'));
+            });
+
+            it('keeps depth overrides specific to their parsed depth', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-depth-specificity.md', [
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    `${INDENT}${INDENT}1. xxx`,
+                    `${INDENT}${INDENT}${INDENT}a. xxx`,
+                    '2. xxx',
+                    '3. |'
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    `${INDENT}${INDENT}1. xxx`,
+                    `${INDENT}${INDENT}${INDENT}a. xxx`,
+                    '2. xxx',
+                    `${INDENT}- `
+                ].join('\n'));
+            });
+
+            it('uses depth rather than parent marker type as the override key', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-parent-type-ignored.md', [
+                    '1. ordered',
+                    `${INDENT}- child`,
+                    '- unordered',
+                    `${INDENT}a. child`,
+                    '2. |'
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. ordered',
+                    `${INDENT}- child`,
+                    '- unordered',
+                    `${INDENT}a. child`,
+                    `${INDENT}a. `
+                ].join('\n'));
+            });
+
+            it('resumes the configured ordered cycle from the deepest explicit depth override', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-resume-from-deepest-override.md', [
+                    '1. root',
+                    `${INDENT}- child`,
+                    `${INDENT}${INDENT}1. grandchild`,
+                    `${INDENT}${INDENT}${INDENT}1. mover|`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. root',
+                    `${INDENT}- child`,
+                    `${INDENT}${INDENT}1. grandchild`,
+                    `${INDENT}${INDENT}${INDENT}${INDENT}a. mover`
+                ].join('\n'));
+            });
+
+            it('uses ordered marker style evidence without inheriting unrelated ordinal values', async () => {
+                await openDocumentWithCursor('ordered-list-depth-map-style-not-ordinal-evidence.md', [
+                    '1. first',
+                    `${INDENT}7. child`,
+                    '2. second',
+                    '3. |'
+                ].join('\n'));
+
+                await pressKey('Tab', 600);
+
+                expect(await getEditorText()).toBe([
+                    '1. first',
+                    `${INDENT}7. child`,
+                    '2. second',
+                    `${INDENT}1. `
+                ].join('\n'));
+            });
+        });
+
+        describe('Shift+Tab owner movement and target depth inference', () => {
+            it('uses the chunk depth map for the shallower target depth', async () => {
+                await openDocumentWithCursor('ordered-list-owner-shift-tab-depth-map-target.md', [
+                    '1. ordered',
+                    '- unordered',
+                    `${INDENT}a. child|`
+                ].join('\n'));
+
+                await pressShiftTab();
+
+                expect(await getEditorText()).toBe([
+                    '1. ordered',
+                    '- unordered',
+                    '- child'
+                ].join('\n'));
+            });
+
+            it('moves the owner and direct continuation when Shift+Tab is pressed from continuation text', async () => {
+                await openDocumentWithCursor('ordered-list-owner-shift-tab-from-continuation.md', [
+                    '1. root',
+                    `${INDENT}a. current`,
+                    `${INDENT}${INDENT}continu|ation`,
+                    `${INDENT}${INDENT}- child`
+                ].join('\n'));
+
+                await pressShiftTab();
+
+                expect(await getEditorText()).toBe([
+                    '1. root',
+                    '2. current',
+                    `${INDENT}continuation`,
+                    `${INDENT}${INDENT}- child`
+                ].join('\n'));
+            });
+
+            it('operates on a nested child item itself instead of the outer owner', async () => {
+                await openDocumentWithCursor('ordered-list-owner-shift-tab-nested-child-is-owner.md', [
+                    '1. root',
+                    `${INDENT}a. current`,
+                    `${INDENT}${INDENT}continuation`,
+                    `${INDENT}${INDENT}- child|`
+                ].join('\n'));
+
+                await pressShiftTab();
+
+                expect(await getEditorText()).toBe([
+                    '1. root',
+                    `${INDENT}a. current`,
+                    `${INDENT}${INDENT}continuation`,
+                    `${INDENT}b. child`
+                ].join('\n'));
+            });
+        });
+
+        describe('selection-based owner movement', () => {
+            it('moves every unique owner touched by a selection exactly once', async () => {
+                await openDocumentWithSelection('ordered-list-owner-selection-parent-continuation-and-child.md', [
+                    '1. xxx',
+                    '2. xxx',
+                    `${INDENT}x[xx`,
+                    `${INDENT}- x]xx`,
+                    `${INDENT}- xxx`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    `${INDENT}${INDENT}xxx`,
+                    `${INDENT}${INDENT}+ xxx`,
+                    `${INDENT}- xxx`
+                ].join('\n'));
+            });
+
+            it('moves an owner selected through continuation text while leaving unselected child owners in place', async () => {
+                await openDocumentWithSelection('ordered-list-owner-selection-continuation-only.md', [
+                    '1. xxx',
+                    '2. xxx',
+                    `${INDENT}x[xx]`,
+                    `${INDENT}- xxx`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    `${INDENT}${INDENT}xxx`,
+                    `${INDENT}- xxx`
+                ].join('\n'));
+            });
+
+            it('moves selected parent and child owners together while preserving their relationship', async () => {
+                await openDocumentWithSelection('ordered-list-owner-selection-parent-and-child-relationship.md', [
+                    '1. xxx',
+                    '2. x[xx',
+                    `${INDENT}- y]yy`,
+                    `${INDENT}${INDENT}a. zzz`
+                ].join('\n'));
+
+                await pressKey('Tab', 600);
+
+                expect(await getEditorText()).toBe([
+                    '1. xxx',
+                    `${INDENT}- xxx`,
+                    `${INDENT}${INDENT}a. yyy`,
+                    `${INDENT}${INDENT}a. zzz`
+                ].join('\n'));
+            });
+
+            it('outdents every unique selected owner exactly once with Shift+Tab', async () => {
+                await openDocumentWithSelection('ordered-list-owner-selection-shift-tab-parent-continuation-and-child.md', [
+                    '- root',
+                    `${INDENT}- parent`,
+                    `${INDENT}${INDENT}x[xx`,
+                    `${INDENT}${INDENT}+ x]xx`,
+                    `${INDENT}${INDENT}+ zzz`
+                ].join('\n'));
+
+                await pressShiftTab();
+
+                expect(await getEditorText()).toBe([
+                    '- root',
+                    '- parent',
+                    `${INDENT}xxx`,
+                    `${INDENT}- xxx`,
+                    `${INDENT}${INDENT}+ zzz`
+                ].join('\n'));
+            });
+        });
+    });
 });
 
 function runHybridNestedListTests(rootCase: HybridRootCase): void {
@@ -749,6 +1250,49 @@ function runLocalCycleOverrideTests(styleCase: OrderedStyleCase): void {
             `${INDENT}${INDENT}${unorderedGrandchild} `
         ].join('\n'));
     });
+}
+
+async function openDocumentWithCursor(filePath: string, contentWithCursor: string): Promise<void> {
+    const cursorOffset = contentWithCursor.indexOf('|');
+    if (cursorOffset < 0) {
+        throw new Error(`Missing cursor marker in ${filePath}`);
+    }
+
+    const content = contentWithCursor.replace('|', '');
+    await openEditableDocument(filePath, content);
+    await setEditorSelection(cursorOffset, cursorOffset);
+}
+
+async function openDocumentWithSelection(filePath: string, contentWithSelection: string): Promise<void> {
+    const selectionStart = contentWithSelection.indexOf('[');
+    const selectionEnd = contentWithSelection.indexOf(']');
+    if (selectionStart < 0 || selectionEnd < 0 || selectionEnd <= selectionStart) {
+        throw new Error(`Missing selection markers in ${filePath}`);
+    }
+
+    const content = contentWithSelection
+        .slice(0, selectionStart)
+        + contentWithSelection.slice(selectionStart + 1, selectionEnd)
+        + contentWithSelection.slice(selectionEnd + 1);
+    await openEditableDocument(filePath, content);
+    await setEditorSelection(selectionStart, selectionEnd - 1);
+}
+
+async function setEditorSelection(anchor: number, head: number): Promise<void> {
+    await browser.execute((selectionAnchor, selectionHead) => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        const view = leaves[0]?.view;
+        const cm = view?.editor?.cm;
+        if (!cm) {
+            return;
+        }
+
+        cm.dispatch({
+            selection: { anchor: selectionAnchor, head: selectionHead }
+        });
+        cm.focus();
+    }, anchor, head);
 }
 
 async function configureOrderedListSettings(

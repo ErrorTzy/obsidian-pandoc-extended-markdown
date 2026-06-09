@@ -2,18 +2,19 @@
 
 This document defines the expected behavior for list autocompletion and marker
 cycling. It is intentionally test-oriented: the goal is to make nested ordered
-lists, hybrid ordered/unordered lists, temporary cycle overrides, and return-to-
-parent behavior unambiguous before the implementation is refactored.
+lists, hybrid ordered/unordered lists, chunk-local depth preferences, selection
+movement, and return-to-parent behavior unambiguous before the implementation is
+refactored.
 
-Although the setting is named ordered-list marker cycling, the editor behavior must
-operate on standard Markdown list levels as a whole. Ordered and unordered markers
-can be adjacent levels in the same list chunk, and Tab, Shift+Tab, and Enter must
-resolve the target level's marker type consistently.
+Although the setting is named ordered-list marker cycling, the editor behavior
+must operate on standard Markdown list levels as a whole. Ordered and unordered
+markers can be adjacent depths in the same list chunk, and Tab, Shift+Tab, and
+Enter must resolve the target depth's marker type consistently.
 
 ## Supported Ordered Styles
 
-The ordered-list cycling feature supports these ten marker styles, in the configured
-order:
+The ordered-list cycling feature supports these ten marker styles, in the
+configured order:
 
 1. `decimal-period`: `1.`
 2. `lower-alpha-period`: `a.`
@@ -26,146 +27,135 @@ order:
 9. `upper-alpha-one-paren`: `A)`
 10. `upper-roman-one-paren`: `I)`
 
-The configured order controls which ordered style is selected when creating a new
-ordered child level and no same-indent, parent-level, or list-chunk override context
-exists. The default order is the list above.
+The configured order controls which ordered style is selected when resolving an
+ordered depth that has no explicit marker type in the current list chunk. The
+default order is the list above.
 
 Unordered markers are `-`, `+`, and `*`. They are standard Markdown markers, not
-ordered styles, and are never inserted into the ordered-style cycle. They can still
-participate in local parent-child marker relationships inside one list chunk.
+ordered styles, and are never inserted into the ordered-style cycle. They can
+still participate in chunk-local depth preferences.
 
 ## Terms
 
-- Current item: the list item containing the cursor.
-- Current level: the indentation level of the current item.
-- Target level: the indentation level after Tab, Shift+Tab, or empty-item Enter.
-- Parent item: the nearest preceding list item at a shallower indentation level
-  within the same list chunk.
-- Parent level: the indentation level of the parent item.
-- Target-level context: list items at the target indentation in the same list chunk
-  and parent subtree.
-- List chunk: a contiguous group of list lines and their indented continuation
-  lines. A blank line ends the chunk and clears all style, ordinal, and temporary
-  cycle-override context.
-- Marker type: either an ordered style such as `lower-alpha-period` or an unordered
-  marker such as `-`.
-- Local cycle override: a marker-type relationship inferred from existing adjacent
-  list levels in the current list chunk, such as `lower-alpha-period -> -`.
-- Bridge decimal item: a `decimal-period` ordered-list item nested under a plugin-
-  owned fancy ordered list. This is intentional and should behave as a normal child
-  ordered list while preserving a return path to the fancy parent style.
+- List chunk: a contiguous group of list-item lines and their indented
+  continuation lines. A blank line ends the chunk and clears style, ordinal, and
+  depth-map context.
+- List item owner: the nearest list-item line that contains the cursor, or, when
+  the cursor is on direct continuation text, the list item that owns that
+  continuation.
+- Direct continuation line: a nonblank non-list line indented deeper than its
+  owner and appearing before the owner's first nested child list item. Direct
+  continuation text is part of the owner item.
+- Nested child item: a list-item line below an owner at a deeper parsed depth. A
+  nested child item is its own owner.
+- Current depth: the parsed list depth of the owner. Root list items are depth
+  `1`; a child of a depth `n` item is depth `n + 1`.
+- Target depth: the parsed depth after Tab, Shift+Tab, or empty-item Enter.
+- Explicit child block: the immediately following deeper nonblank block that
+  belongs to the owner, stopping at a blank line. If that block contains direct
+  continuations followed by a nested child list, the nested child list supplies
+  the explicit child marker type.
+- Marker type: either an ordered style such as `lower-alpha-period` or an
+  unordered marker such as `-`.
+- Ordinal: the numeric value represented by an ordered marker. For example,
+  `b.`, `B)`, `ii.`, and `2.` all have ordinal `2`.
+- Depth map: the chunk-local function from parsed list depth to marker type.
+- Bridge decimal item: a `decimal-period` ordered-list item nested under a
+  plugin-owned fancy ordered list. This is intentional and should behave as a
+  normal child ordered list while preserving a return path to the fancy parent
+  style when that style is the target depth's marker type.
 
-## Marker Resolution
+## Core Model
 
-Marker resolution chooses the marker type for the target level. Ordinal resolution
-chooses the number, letter, or Roman numeral for ordered markers.
+List editing is owner-based, not raw-line-based.
 
-When moving or returning an item to a target level, resolve the target marker type
-in this order:
+- With no selection, Tab and Shift+Tab operate on the current owner.
+- When the cursor is on direct continuation text, Tab and Shift+Tab operate on
+  the owner of that continuation, not on the continuation line alone.
+- When the cursor is on a nested child list item, that child item is the owner.
+- The owner moves with its direct continuation lines.
+- Nested child list items do not move with the owner unless they are also touched
+  by the selection.
+- A blank line stops all owner, explicit-child, and depth-map lookup.
 
-1. If the target level already has a previous list item in the same list chunk and
-   parent subtree, use that item's marker type.
-2. If the target level is a parent level, use the parent level's marker type even
-   when the current item has a different type. This applies equally to Enter on an
-   empty nested item and Shift+Tab.
-3. If creating a first child level under a parent item, check for a local cycle
-   override in the same list chunk. If an earlier adjacent child level under the
-   same parent marker type used a marker type, reuse that child marker type.
-4. If no list-chunk override exists and the new child is ordered, use the next
-   configured ordered style after the parent ordered style.
-5. If no list-chunk override exists and the new child is unordered, use the
-   configured unordered marker order for the target depth.
-6. If no parent context exists, step from the current ordered style in the movement
-   direction:
-   - Tab uses the next configured ordered style.
-   - Shift+Tab uses the previous configured ordered style.
-
-If ordered-list marker cycling is disabled, ordered items preserve their current
-ordered style when no target-level marker type forces a conversion. Disabling
-ordered cycling must not prevent a nested item from returning to an unordered parent
-or an unordered item from returning to an ordered parent.
-
-### Local Cycle Overrides
-
-Local cycle overrides are inferred from the current list chunk, not from global
-settings and not from other chunks in the document.
-
-For every adjacent parent-child list relationship in a chunk, remember:
-
-- the parent level's marker type,
-- the child level's marker type,
-- the parent indent and child indent relationship.
-
-When Tab creates the first child under a later sibling in the same chunk, this
-relationship overrides the default configured next style.
+This means unselected Tab no longer indents an entire subtree. To move a subtree,
+select the owners in that subtree and press Tab or Shift+Tab.
 
 Example:
 
 ```markdown
-a. xxx
-b. xxx
+1. xxx
+2. xxx|
     - xxx
-    - xxx
-c. xxx
-d. |
 ```
 
 Pressing Tab should produce:
 
 ```markdown
-a. xxx
-b. xxx
+1. xxx
+    - xxx|
     - xxx
-    - xxx
-c. xxx
-    - |
 ```
 
-The new child marker is `-`, not `i.`, because the current chunk has already
-established `lower-alpha-period -> -` as the child marker relationship. The new
-child starts a fresh child sequence under `c.` even though the marker type is reused.
+The existing child list stays at the same indentation and becomes a sibling after
+the moved item.
 
-The override is chunk-local. A blank line clears it:
+Direct continuation lines move with their owner:
 
 ```markdown
-a. xxx
-b. xxx
-    - xxx
-    - xxx
-c. xxx
-
-Another list
-
-a. xxx
-b. |
+1. parent
+2. current|
+    continuation
+    - child
 ```
 
-Pressing Tab at the final `b.` should produce:
+Pressing Tab should produce:
 
 ```markdown
-a. xxx
-b. xxx
-    - xxx
-    - xxx
-c. xxx
-
-Another list
-
-a. xxx
-    i. |
+1. parent
+    - current|
+        continuation
+    - child
 ```
 
-The second list has no local `lower-alpha-period -> -` relationship, so it falls
-back to the configured ordered cycle and creates `i.`.
+The continuation line belongs to `2. current`, so it moves. The nested `- child`
+item is its own owner, so it stays unless selected.
 
-Local overrides apply to marker type only. Ordered ordinals remain scoped to the
-target parent subtree.
+## Chunk Depth Map
+
+Marker type inference is depth-based. For each list chunk, build a parsed list
+tree and infer a depth map:
+
+- Root list items are depth `1`.
+- A list item whose nearest shallower list parent is depth `n` is depth `n + 1`.
+- Depth is based on parsed list relationships, not on raw `indentColumns / 4`.
+- The depth map stores marker type only. It does not store ordinal values.
+- Parent marker type is not part of the override key; chunk and depth are the
+  relevant scope.
+
+When resolving a marker type for a target depth:
+
+1. If the operation has an explicit child or parent target, that explicit target
+   wins.
+2. Otherwise, use the nearest previous item at the target depth in the same
+   chunk.
+3. If no previous item at that depth exists, use the nearest following item at
+   the target depth in the same chunk.
+4. If no item at that depth exists, use the default configured cycle resumed
+   from the deepest explicit depth override in the chunk.
+5. If the chunk has no usable override, use the configured default mapping for
+   the target depth.
+
+Conflicts are resolved by cursor position. Previous target-depth items have
+priority over later items; among later items, the closest following item wins.
+
+Example:
 
 ```markdown
 1. xxx
+    - xxx
 2. xxx
     a. xxx
-    b. xxx
 3. xxx
 4. |
 ```
@@ -174,227 +164,407 @@ Pressing Tab should produce:
 
 ```markdown
 1. xxx
+    - xxx
 2. xxx
     a. xxx
-    b. xxx
 3. xxx
     a. |
 ```
 
-The child marker type `lower-alpha-period` is reused, but the ordinal starts at
-`a.` under the current parent. It must not continue as `c.` from the earlier parent
-subtree.
+The latest previous depth-2 type is `a.`, so depth 2 resolves to
+`lower-alpha-period`.
+
+Depth specificity matters:
+
+```markdown
+1. xxx
+    - xxx
+        1. xxx
+            a. xxx
+2. xxx
+3. |
+```
+
+Pressing Tab on `3.` should produce `- `, not `a.`, because the `a.` item is a
+depth-4 override and is irrelevant to depth 2.
+
+If there is no previous target-depth item, look below the cursor:
+
+```markdown
+1. xxx
+2. |
+3. xxx
+    - xxx
+4. xxx
+    * xxx
+```
+
+Pressing Tab on `2.` should produce `- ` because the closest following depth-2
+item is `- xxx`.
+
+When resolving a depth deeper than any explicit override, resume the default
+cycle from the deepest explicit override. For example, if a chunk explicitly uses
+depths 1 through 4 and depth 4 is `1.`, then depth 5 follows the configured
+ordered cycle from `decimal-period`, so the default depth-5 ordered style is
+`lower-alpha-period`.
 
 ## Ordinal Resolution
 
-Ordinal resolution applies only after the resolved target marker type is ordered.
+Ordinal resolution applies only after the marker type has been resolved as an
+ordered style.
 
-When creating or moving to a target level:
+Renumbering and marker type inference are separate features. Disabling
+`autoRenumberLists` must not disable marker type inference.
 
-1. If there is a previous ordered-list item at the target level in the same list
-   chunk and parent subtree, continue from that previous item's ordinal.
-2. Otherwise, start at ordinal `1` for the resolved target style.
-3. Enter on a non-empty ordered item at the same level increments from the current
-   item.
-4. Returning to an ordered parent level from an empty child item continues the
-   previous parent-level ordinal rather than starting a new sequence.
+When `autoRenumberLists` is enabled:
 
-Example:
+- A newly inserted ordered item before existing ordered siblings starts at the
+  correct ordinal for its position.
+- Existing ordered siblings after the inserted or moved item are renumbered when
+  the command changes their sequence.
+- A moved ordered item uses the ordinal implied by its target sibling group.
+
+When `autoRenumberLists` is disabled:
+
+- The command must not rewrite any existing ordered sibling ordinals.
+- A moved ordered item preserves its current ordinal value when possible, even if
+  its ordered style changes.
+- Preserving an ordinal means preserving the numeric value and formatting that
+  value in the target ordered style. For example, decimal ordinal `27` becomes
+  `aa.` in lower-alpha style, and upper-alpha `D.` becomes `4.` in decimal style.
+- Inserted or moved items can create duplicate ordered markers, such as
+  `a.`, `a.`, `b.`.
+
+The depth map stores only marker style. Ordinals are resolved separately from
+local sibling context and `autoRenumberLists`.
+
+Example with renumbering enabled:
 
 ```markdown
-a. xxx
-b. xxx
-    1. xxx
-    2. |
+1. parent|
+    a. child
+    b. child
 ```
 
 Pressing Enter should produce:
 
 ```markdown
-a. xxx
-b. xxx
-    1. xxx
-c. |
+1. parent
+    a. |
+    b. child
+    c. child
 ```
 
-The parent marker is `c.`, not `a.`, because the parent level already contains
-`a.` and `b.` in the same list chunk.
-
-By contrast, pressing Enter at the end of a non-empty child item continues the child
-level:
+With `autoRenumberLists` disabled, the same edit should produce:
 
 ```markdown
-a. xxx
-b. xxx
-    1. xxx
-    2. child|
+1. parent
+    a. |
+    a. child
+    b. child
 ```
 
-should produce:
+## Enter Behavior
+
+Enter has four standard paths.
+
+For a list item with an immediately following deeper nonblank block in the same
+chunk:
+
+- Treat Enter as splitting the owner item before its child/continuation block.
+- Use the exact indentation of the following deeper line. Do not normalize it to
+  four spaces.
+- If the cursor is in the middle of the owner line, text after the cursor becomes
+  plain continuation text at that child indentation.
+- If the cursor is at the end of the owner line and the explicit child block
+  contains a nested list item, insert a new child list item before that child
+  list using the child list's explicit marker type.
+- If the cursor is at the end of the owner line and the explicit child block is
+  only continuation text, insert a blank continuation line before it.
+- A blank line between the owner and the deeper block disables this path.
+
+Example with an explicit unordered child:
 
 ```markdown
-a. xxx
-b. xxx
-    1. xxx
-    2. child
-    3. |
+1. xxx|
+    - xxx
 ```
 
-## Tab Behavior
+Pressing Enter should produce:
 
-Tab is handled only when the cursor is immediately after the current list marker and
-its following spaces, or inside an otherwise empty list item. It indents the current
-item and its nested subtree by one level.
+```markdown
+1. xxx
+    - |
+    - xxx
+```
 
-Expected behavior:
+Example with continuation text:
 
-- The moved item uses the resolved target marker type.
-- If the target level already has sibling context under the same parent, the moved
-  item continues that sibling sequence.
-- If the target level has no sibling context but the current list chunk has a local
-  parent-child marker relationship, the moved item uses that marker type and starts
-  a fresh sequence under the current parent.
-- If no target-level or local override context exists, a new ordered child uses the
-  next configured ordered style after the parent ordered style.
-- Nested descendants move with the current item and keep their relative structure,
-  with marker types recalculated for their new target levels.
-- If auto-renumbering is enabled and a non-empty item with descendants is moved,
-  descendants are renumbered immediately within the moved subtree. If auto-
-  renumbering is disabled, marker type changes still apply, but automatic ordinal
-  repair is skipped.
+```markdown
+1. xxx|
+    continuation
+```
+
+Pressing Enter should produce:
+
+```markdown
+1. xxx
+    |
+    continuation
+```
+
+Example splitting parent text:
+
+```markdown
+1. ab|cd
+    - child
+```
+
+Pressing Enter should produce:
+
+```markdown
+1. ab
+    cd
+    - child
+```
+
+For a direct continuation line:
+
+- Enter splits the continuation line at the cursor.
+- The new line keeps the same indentation.
+- Enter does not create a new list item from continuation text.
 
 Example:
 
 ```markdown
-I) xxx
-II) |
+1. parent
+    cont|inuation
+    - child
 ```
 
-Pressing Tab should produce a bridge decimal child:
+Pressing Enter should produce:
 
 ```markdown
-I) xxx
-    1. |
+1. parent
+    cont
+    |inuation
+    - child
 ```
 
-`upper-roman-one-paren` is the last default style, so the next child style wraps to
-`decimal-period`. Because this decimal item is under a fancy ordered parent, it is
-a bridge decimal item.
+For a non-empty list item with no immediately following deeper nonblank block:
 
-## Shift+Tab Behavior
-
-Shift+Tab moves the current item and its nested subtree one level shallower.
-
-Expected behavior:
-
-- The moved item uses the resolved target marker type.
-- Shift+Tab must behave like empty-item Enter when the current item is empty: it
-  returns to the nearest parent list level and uses the parent level's marker type.
-- Returning to an ordered parent level continues the ordered parent sequence.
-- Returning to an unordered parent level preserves that parent level's unordered
-  marker.
-- If no target-level context exists, an ordered target starts at ordinal `1`.
-- Bridge decimal items outdent back to the parent fancy style when that is the
-  target-level context.
-- Shift+Tab from a non-empty child item keeps the child content on the returned
-  parent item; for example, `2. child` can become `c. child`.
-
-Ordered child to ordered parent:
-
-```markdown
-a. xxx
-b. xxx
-    1. xxx
-    2. |
-```
-
-Pressing Shift+Tab should produce:
-
-```markdown
-a. xxx
-b. xxx
-    1. xxx
-c. |
-```
-
-Unordered child to ordered parent:
-
-```markdown
-a. xxx
-b. xxx
-    - xxx
-    - |
-```
-
-Pressing Shift+Tab should produce:
-
-```markdown
-a. xxx
-b. xxx
-    - xxx
-c. |
-```
-
-The returned marker is `c.`, not `-`, because the target parent level is ordered.
-Shift+Tab and Enter on the empty unordered child must produce the same parent-level
-result.
-
-## Enter Behavior
-
-Enter has three standard list paths.
-
-For a non-empty ordered-list item:
-
-- Insert a new item at the same level.
-- Preserve the current ordered style.
-- Increment the current item ordinal by one.
-
-For a non-empty unordered-list item:
-
-- Insert a new item at the same level.
-- Preserve the current unordered marker exactly.
+- Insert a new item at the same depth.
+- Preserve the current unordered marker exactly for unordered items.
+- Preserve the current ordered style for ordered items.
+- Increment the ordered ordinal when `autoRenumberLists` is enabled.
+- Preserve the current ordered ordinal value when `autoRenumberLists` is
+  disabled.
 
 For an empty nested item:
 
-- Return to the nearest parent list level.
-- Use the parent level's marker type.
-- If returning to an ordered parent level, continue the parent-level ordinal when
-  previous parent items exist.
-- If returning to an unordered parent level, preserve the parent unordered marker.
-- Remove the empty child marker from the old child level.
+- Return to the nearest parent depth.
+- Use the parent depth's marker type from the explicit parent target.
+- If the target is ordered, resolve the ordinal according to
+  `autoRenumberLists`.
+- If the target is unordered, preserve the parent depth's unordered marker.
+- Remove the empty child marker from the old child depth.
 
 For an empty top-level item:
 
 - Remove the marker and leave a plain empty line.
 
 Bridge decimal items follow the nested empty-item rule. They should return to the
-parent fancy style and continue the parent sequence when parent context exists.
+parent fancy style and continue or preserve ordinal values according to
+`autoRenumberLists`.
+
+## Tab Behavior
+
+Tab is handled when the cursor or selection touches a list item owner or that
+owner's direct continuation text. It moves touched owners one depth deeper.
+
+With no selection:
+
+- Resolve the current owner from the cursor position.
+- Move that owner and its direct continuation lines one depth deeper.
+- Do not move nested child list items unless they are selected.
+- If the owner has an explicit child list below it, use that child list's marker
+  type for the moved owner.
+- If the owner has direct continuation lines followed by an explicit child list,
+  the child list still supplies the explicit child marker type.
+- If there is no explicit child list, resolve the target marker type from the
+  chunk depth map.
+- If moving into an explicit child block, use that child block's exact
+  indentation.
+- If no explicit target indentation exists, add the configured indentation unit,
+  currently four spaces.
+
+Tab can be pressed anywhere inside the owner line or its direct continuation
+text. These positions are structurally equivalent:
+
+```markdown
+1. xxx|
+1. x|xx
+1. |xxx
+1. xxxxxx|
+```
+
+The cursor should remain at the corresponding content offset after the move.
+
+Example:
+
+```markdown
+1. xxx
+2. xxx|
+    - xxx
+```
+
+Pressing Tab should produce:
+
+```markdown
+1. xxx
+    - xxx|
+    - xxx
+```
+
+The moved line matches the explicit child list type `-`.
+
+Example with explicit ordered children and renumbering enabled:
+
+```markdown
+1. parent
+2. current|
+    a. child
+    b. child
+```
+
+Pressing Tab should produce:
+
+```markdown
+1. parent
+    a. current|
+    b. child
+    c. child
+```
+
+With `autoRenumberLists` disabled, the moved item keeps ordinal `2` formatted in
+the target style:
+
+```markdown
+1. parent
+    b. current|
+    a. child
+    b. child
+```
+
+## Shift+Tab Behavior
+
+Shift+Tab is handled when the cursor or selection touches a list item owner or
+that owner's direct continuation text. It moves touched owners one depth
+shallower.
+
+With no selection:
+
+- Resolve the current owner from the cursor position.
+- Move that owner and its direct continuation lines one depth shallower.
+- Do not move nested child list items unless they are selected.
+- Resolve the target marker type from the explicit parent target when one exists.
+- Otherwise resolve the target marker type from the chunk depth map.
+- If moving out to an explicit parent or sibling depth, use that target depth's
+  exact indentation from the nearest target-depth item.
+- If no explicit target indentation exists, remove one configured indentation
+  unit, currently four spaces.
+- Shift+Tab from an empty nested item should produce the same marker type and
+  ordinal result as Enter from that empty nested item.
+
+Example:
+
+```markdown
+1. ordered
+- unordered
+    a. child|
+```
+
+Pressing Shift+Tab should produce:
+
+```markdown
+1. ordered
+- unordered
+- child|
+```
+
+The target depth is depth 1, and the nearest depth-1 marker type at the edit
+position is `-`.
+
+## Selection Behavior
+
+Selection movement is owner-based, not raw-line-based.
+
+- Collect every unique list item owner touched by the selection.
+- A continuation line selection touches its owner.
+- A nested list-item line selection touches that nested item as a separate owner.
+- Move each touched owner exactly once.
+- Direct continuation lines move only as part of their owner.
+- If both a parent owner and child owner are touched, both shift one depth level
+  and preserve their relative parent/child relationship.
+- Unselected child or sibling owners keep their existing indentation and marker
+  type unless an enabled renumbering pass changes their ordered ordinal.
+
+Example:
+
+```markdown
+1. xxx
+2. xxx
+    x[xx
+    - x]xx
+    - xxx
+```
+
+Pressing Tab should produce:
+
+```markdown
+1. xxx
+    - xxx
+        xxx
+        + xxx
+    - xxx
+```
+
+The selection touches owner `2. xxx` through its continuation line and touches the
+first nested `- xxx` owner directly. Both touched owners move once. The unselected
+second `- xxx` stays put.
+
+For selected owners, resolve each moved owner's marker type by its target depth
+using explicit target context first and the chunk depth map second. Then renumber
+affected ordered sibling groups only when `autoRenumberLists` is enabled.
 
 ## Hybrid Nested Lists
 
-Hybrid lists are standard list chunks where adjacent levels use different marker
-types, such as ordered parent to unordered child, unordered parent to ordered child,
-or unordered child to unordered grandchild with a different source marker.
+Hybrid lists are standard list chunks where adjacent depths use different marker
+types, such as ordered parent to unordered child, unordered parent to ordered
+child, or unordered child to unordered grandchild with a different source marker.
 
 The core rule is:
 
-> Tab creates or moves to a child level; Enter on an empty item and Shift+Tab return
-> to the nearest parent level. The target level's marker type wins.
+> Tab and Shift+Tab move touched owners by one parsed depth; Enter splits or
+> continues the owner according to the immediate following block; the target
+> depth's marker type wins.
 
 Unordered list items are not part of the ordered marker cycle:
 
-- Enter on a non-empty unordered item inserts a new unordered item at the same
-  indentation and preserves the exact unordered marker from that level.
-- Enter on an empty nested unordered item returns to the nearest parent list level.
-- Shift+Tab on an empty nested unordered item returns to the nearest parent list
-  level and must produce the same marker type and ordinal as Enter would.
-- When returning to an unordered parent level, the new item preserves that parent
-  level's unordered marker.
-- When returning to an ordered parent level, the new item resolves the ordered style
-  and ordinal using the normal target-level rules.
-- Ordered grandchildren nested under unordered items still use ordered continuation
-  at their own level. If an ordered grandchild item is empty, Enter returns one
-  level to the unordered parent, not all the way to the ordered root.
+- Enter on a non-empty unordered item with no following deeper block inserts a new
+  unordered item at the same depth and preserves the exact unordered marker from
+  that depth.
+- Enter on an empty nested unordered item returns to the nearest parent depth.
+- Shift+Tab on an empty nested unordered item returns to the nearest parent depth
+  and must produce the same marker type and ordinal as Enter would.
+- When returning to an unordered parent depth, the new item preserves that parent
+  depth's unordered marker.
+- When returning to an ordered parent depth, the new item resolves the ordered
+  style through explicit parent/depth-map rules and resolves ordinal values
+  according to `autoRenumberLists`.
+- Ordered grandchildren nested under unordered items still use ordered
+  continuation at their own depth. If an ordered grandchild item is empty, Enter
+  returns one depth to the unordered parent, not all the way to the ordered root.
 
 Example: unordered child under ordered parent continues as unordered:
 
@@ -437,8 +607,8 @@ b. xxx
     - |
 ```
 
-The returned marker is `-`, not `c.`, because the nearest parent list level is the
-unordered child level.
+The returned marker is `-`, not `c.`, because the nearest parent depth is the
+unordered child depth.
 
 Example: unordered grandchild must render as a list item:
 
@@ -449,80 +619,105 @@ b. xxx
         * xxx
 ```
 
-The `* xxx` line is a nested unordered list item. Live Preview must render the `*`
-as a list marker with the expected unordered marker classes and indentation. It
-must not display `*` as plain text.
+The `* xxx` line is a nested unordered list item. Live Preview must render the
+`*` as a list marker with the expected unordered marker classes and indentation.
+It must not display `*` as plain text.
 
-The same hybrid rules apply when the root level itself is unordered. For root
-markers `-`, `+`, and `*`, ordered child and grandchild levels should still cycle
-through the configured ordered marker order, while empty ordered descendants return
-to the nearest unordered parent marker.
+The same hybrid rules apply when the root depth itself is unordered. For root
+markers `-`, `+`, and `*`, ordered child and grandchild depths should still use
+depth-map inference and the configured ordered marker order where no explicit
+override exists, while empty ordered descendants return to the nearest unordered
+parent marker.
 
 ## E2E Test Guidelines
 
-The E2E suite should cover all ten ordered styles as the root style. Each root style
-should run the same nested editing workflow:
+The E2E suite should cover all ten ordered styles as the root style. Each root
+style should run a standardized nested editing workflow:
 
 1. Start with two root items in the tested style.
-2. Press Enter at the end of the second root item to continue the root level.
-3. Press Tab from the empty third root item to create a new child level.
+2. Press Enter at the end of the second root item with no following deeper block
+   to continue the root depth.
+3. Press Tab from the empty third root item to create a new child depth.
 4. Type child content.
-5. Press Enter at the end of the child item to continue the child level.
-6. Press Enter from the empty second child item to return to the root level.
-7. Verify the returned root item continues the root sequence instead of restarting.
+5. Press Enter at the end of the child item to continue the child depth.
+6. Press Enter from the empty second child item to return to the root depth.
+7. Verify the returned root item continues or preserves the root ordinal according
+   to `autoRenumberLists`.
 8. Repeat the nested workflow with Shift+Tab directly from a non-empty child item.
 
 For every root style, assertions should verify:
 
-- Tab creates the configured next child style, wrapping from
-  `upper-roman-one-paren` to bridge `decimal-period`.
-- A newly created child level starts at ordinal `1`.
-- Enter on a non-empty child item continues the child level.
-- Enter on an empty child item returns to the root level and continues the root
-  sequence.
-- Shift+Tab from a child item returns to the root level and continues the root
-  sequence.
+- Tab creates the configured next child style when no explicit child/depth-map
+  override exists, wrapping from `upper-roman-one-paren` to bridge
+  `decimal-period`.
+- A newly created ordered child depth starts at ordinal `1` when
+  `autoRenumberLists` is enabled.
+- A newly created or moved ordered item preserves its existing ordinal value when
+  `autoRenumberLists` is disabled, while still changing marker style when marker
+  type inference requires it.
+- Enter on a non-empty child item with no following deeper block continues the
+  child depth.
+- Enter on an empty child item returns to the root depth.
+- Shift+Tab from a child item returns to the root depth.
 - Shift+Tab from a non-empty child item preserves the item content on the returned
   root item.
-- Moving a non-empty item with descendants renumbers the moved subtree immediately
-  when auto-renumbering is enabled.
-- Decimal-period child markers under fancy root markers are treated as bridge items
-  and return to the correct fancy parent style.
+- Unselected Tab moves only the owner plus direct continuation lines, not the
+  owner's nested list-item descendants.
+- Selecting multiple owners moves each touched owner exactly once.
+- Ordered ordinals are repaired only when `autoRenumberLists` is enabled.
+- Decimal-period child markers under fancy root markers are treated as bridge
+  items and return to the correct fancy parent style.
 
-Hybrid E2E coverage should be added as explicit cases, not only as a shared helper:
+Hybrid E2E coverage should be added as explicit cases, not only as a shared
+helper:
 
-- Ordered parent with unordered child: Enter on a non-empty unordered child creates
-  another unordered child with the same marker.
+- Ordered parent with unordered child: Enter on a non-empty unordered child
+  creates another unordered child with the same marker when there is no following
+  deeper block.
 - Ordered parent with empty unordered child: Enter returns to the ordered parent
-  style and continues the ordered parent ordinal.
+  style and resolves the parent ordinal according to `autoRenumberLists`.
 - Ordered parent with empty unordered child: Shift+Tab returns to the ordered
-  parent style and continues the ordered parent ordinal. This must match the Enter
-  result exactly.
-- Ordered parent with unordered child and unordered grandchild: `* xxx` nested under
-  `- xxx` renders as an unordered list item in Live Preview, not plain text.
+  parent style and resolves the parent ordinal according to `autoRenumberLists`.
+  This must match the Enter result exactly.
+- Ordered parent with unordered child and unordered grandchild: `* xxx` nested
+  under `- xxx` renders as an unordered list item in Live Preview, not plain text.
 - Ordered parent with unordered child and ordered grandchild: Enter on an empty
-  ordered grandchild returns only to the unordered child level.
-- Ordered parent with unordered child and ordered grandchild: Shift+Tab on an empty
-  ordered grandchild returns only to the unordered child level.
+  ordered grandchild returns only to the unordered child depth.
+- Ordered parent with unordered child and ordered grandchild: Shift+Tab on an
+  empty ordered grandchild returns only to the unordered child depth.
 - Unordered root groups for `-`, `+`, and `*`: each should run the standardized
-  hybrid workflow, with ordered descendants cycling through the configured ordered
-  marker order and empty ordered descendants returning to the nearest unordered
-  parent marker.
+  hybrid workflow, with ordered descendants using depth-map inference and empty
+  ordered descendants returning to the nearest unordered parent marker.
 
-Local cycle override E2E coverage should include:
+Depth-map E2E coverage should include:
 
-- Same chunk override: after `lower-alpha-period -> -` appears earlier in the same
-  chunk, Tab on a later `lower-alpha-period` sibling creates `- ` instead of the
-  default `lower-roman-period`.
-- Same chunk override with ordinal isolation: after an earlier ordered child
-  sequence exists under one parent, Tab under a later sibling reuses the child style
-  but starts at ordinal `1`.
-- Chunk boundary reset: after a blank line and non-list text, Tab on a new
-  `lower-alpha-period` list falls back to the configured ordered cycle and creates
-  `i.`, not `-`.
-- Override depth specificity: an override for parent depth 0 to child depth 1 must
-  not force the marker for child depth 1 to grandchild depth 2 unless that adjacent
-  relationship also exists in the same chunk.
+- Previous target-depth override wins over later target-depth context.
+- If no previous target-depth override exists, closest following target-depth item
+  wins.
+- Different chunks are isolated by blank lines.
+- Different depths are independent; a depth-4 `a.` must not force depth 2 to use
+  `a.`.
+- Parent marker type is not part of the override key; depth wins within the chunk.
+- Fallback for deeper missing depths resumes from the deepest explicit depth
+  override.
+- Ordered style inference ignores ordinal evidence; ordinals are resolved
+  separately.
+
+Enter split E2E coverage should include:
+
+- Enter at the end of a parent line before an unordered child inserts a new child
+  item before the existing child.
+- Enter at the end of a parent line before an ordered child inserts a new child
+  item and renumbers following ordered children only when `autoRenumberLists` is
+  enabled.
+- Enter at the end of a parent line before continuation text inserts a blank
+  continuation line.
+- Enter in the middle of a parent line before a child block moves trailing text to
+  a continuation line.
+- Enter on direct continuation text splits continuation text without creating a
+  list item.
+- A blank line between the parent and deeper block disables split-before-child
+  behavior.
 
 The same assertions should pass for all ten ordered root marker styles where the
 case is about ordered-style cycling. Any divergence for `decimal-period` should be
