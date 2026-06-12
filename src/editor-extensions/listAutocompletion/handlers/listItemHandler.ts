@@ -1,11 +1,16 @@
 import { EditorSelection } from '@codemirror/state';
-import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
+import { LIST_MARKERS } from '../../../core/constants';
+import { ListPatterns } from '../../../shared/patterns';
 import { parseStandardListItem } from '../../../shared/utils/listContext';
 import {
     formatOrderedListMarker,
     isOrderedMarkerStyleAvailable,
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
+import {
+    isCustomLabelListsEnabled,
+    isSyntaxFeatureEnabled
+} from '../../../shared/types/settingsTypes';
 import {
     isEnabledStandardListLine,
     showListAutocompletionError
@@ -79,7 +84,7 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
         );
     }
 
-    const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex, settings);
+    const markerInfo = getNextNonStandardListMarker(lineText, settings);
 
     if (markerInfo) {
         const newConfig = { ...config, markerInfo } as NewListItemConfig;
@@ -87,6 +92,57 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     }
 
     return false;
+}
+
+function getNextNonStandardListMarker(
+    lineText: string,
+    settings: NewListItemConfig['settings']
+): NewListItemConfig['markerInfo'] | null {
+    const hashMatch = isSyntaxFeatureEnabled(settings, 'enableHashAutoNumber')
+        ? ListPatterns.isHashList(lineText)
+        : null;
+    if (hashMatch) {
+        return {
+            marker: LIST_MARKERS.HASH_NUMBERED,
+            indent: hashMatch[1],
+            spaces: hashMatch[3]
+        };
+    }
+
+    const customLabelMatch = isCustomLabelListsEnabled(settings)
+        ? ListPatterns.isCustomLabelList(lineText)
+        : null;
+    if (customLabelMatch) {
+        return {
+            marker: LIST_MARKERS.CUSTOM_LABEL_FULL,
+            indent: customLabelMatch[1],
+            spaces: customLabelMatch[4]
+        };
+    }
+
+    const exampleMatch = isSyntaxFeatureEnabled(settings, 'enableExampleLists')
+        ? ListPatterns.isExampleList(lineText)
+        : null;
+    if (exampleMatch) {
+        return {
+            marker: LIST_MARKERS.EXAMPLE_FULL,
+            indent: exampleMatch[1],
+            spaces: exampleMatch[4]
+        };
+    }
+
+    const definitionMatch = isSyntaxFeatureEnabled(settings, 'enableDefinitionLists')
+        ? ListPatterns.isDefinitionMarker(lineText)
+        : null;
+    if (definitionMatch) {
+        return {
+            marker: definitionMatch[2],
+            indent: definitionMatch[1],
+            spaces: definitionMatch[3]
+        };
+    }
+
+    return null;
 }
 
 function insertNewStandardListItem(

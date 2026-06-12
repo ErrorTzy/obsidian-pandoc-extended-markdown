@@ -12,9 +12,9 @@ import {
     findExplicitChildBlock,
     findTargetParentLineIndex,
     getPreviousSiblingOrdinal,
-    resolveListOwnerAtLine
+    resolveListOwnerAtLine,
+    StandardListMarkerType
 } from '../utils/standardListStructure';
-import type { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
 import {
     EmptyListHandlingConfig,
     ContinuationLineConfig,

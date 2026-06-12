@@ -13,7 +13,6 @@ import {
     formatOrderedListMarker,
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
-import { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
 import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
     findNearestNodeAtDepth,
@@ -21,7 +20,8 @@ import {
     getPreviousSiblingOrdinal,
     removeIndentLevel,
     resolveListOwnerAtLine,
-    resolveMarkerTypeForDepth
+    resolveMarkerTypeForDepth,
+    StandardListMarkerType
 } from '../utils/standardListStructure';
 import {
     isEnabledStandardListLine,

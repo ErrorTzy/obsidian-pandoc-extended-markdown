@@ -3,10 +3,10 @@ import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
 import type { OrderedListMarkerStyle } from '../../../shared/types/orderedListTypes';
 import { getAvailableOrderedMarkerStyles, parseOrderedListMarker } from '../../../shared/utils/orderedListMarkers';
 import { parseStandardListItem, ParsedStandardListItem } from '../../../shared/utils/listContext';
-import {
-    StandardListMarkerType,
-    markerTypesEqual
-} from '../../../shared/utils/standardListMarkerResolution';
+
+export type StandardListMarkerType =
+    | { kind: 'ordered'; style: OrderedListMarkerStyle }
+    | { kind: 'unordered'; marker: string };
 
 export interface StandardListNode extends ParsedStandardListItem {
     lineIndex: number;
@@ -292,6 +292,19 @@ export function getPreviousSiblingOrdinal(
     }
 
     return null;
+}
+
+export function markerTypesEqual(
+    left: StandardListMarkerType,
+    right: StandardListMarkerType
+): boolean {
+    if (left.kind !== right.kind) {
+        return false;
+    }
+
+    return left.kind === 'ordered'
+        ? left.style === (right as { kind: 'ordered'; style: OrderedListMarkerStyle }).style
+        : left.marker === (right as { kind: 'unordered'; marker: string }).marker;
 }
 
 export function findTargetParentLineIndex(

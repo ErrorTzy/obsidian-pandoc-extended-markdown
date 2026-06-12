@@ -11,7 +11,6 @@ import { parseStandardListItem } from './listContext';
 import { intToRoman, letterToNumber, romanToInt } from './listHelpers';
 
 export type OrderedListMarkerDelimiter = '.' | ')';
-export type OrderedListMoveDirection = 'indent' | 'outdent';
 export type OrderedListOwnership = 'native' | 'extended' | 'bridge';
 
 export interface ParsedOrderedListMarker {
@@ -30,31 +29,6 @@ export interface ResolvedOrderedListItem extends ParsedOrderedListMarker {
     styleId: OrderedListMarkerStyle;
     ownership: OrderedListOwnership;
     parentLineIndex?: number;
-}
-
-export interface OrderedListStyleContext {
-    lines: string[];
-    currentLineIndex: number;
-    currentIndentColumns: number;
-    targetIndentColumns: number;
-    currentStyle: OrderedListMarkerStyle;
-    direction: OrderedListMoveDirection;
-    settings: Partial<PandocExtendedMarkdownSettings>;
-}
-
-export type OrderedListMoveContext = OrderedListStyleContext;
-
-export interface ResolvedOrderedMarker {
-    style: OrderedListMarkerStyle;
-    ordinal: number;
-    marker: string;
-}
-
-export interface OrderedListContinuationContext {
-    line: string;
-    lines?: string[];
-    lineIndex?: number;
-    settings: Partial<PandocExtendedMarkdownSettings>;
 }
 
 interface ListAncestor {
@@ -139,39 +113,6 @@ export function isOrderedMarkerStyleAvailable(
     return DECIMAL_STYLES.has(style) || isSyntaxFeatureEnabled(settings, 'enableFancyLists');
 }
 
-export function resolveOrderedListMarkerStyle(context: OrderedListStyleContext): OrderedListMarkerStyle {
-    return resolveOrderedMarkerStyleForMove(context);
-}
-
-export function resolveOrderedMarkerForMove(context: OrderedListMoveContext): string {
-    return resolveOrderedMarkerForTarget(context).marker;
-}
-
-export function resolveOrderedMarkerForTarget(context: OrderedListMoveContext): ResolvedOrderedMarker {
-    const style = resolveOrderedMarkerStyleForMove(context);
-    const ordinal = resolveOrderedMarkerOrdinalForMove(context);
-
-    return {
-        style,
-        ordinal,
-        marker: formatOrderedListMarker(style, ordinal)
-    };
-}
-
-export function resolveOrderedMarkerForContinuation(
-    context: OrderedListContinuationContext
-): string | null {
-    const parsed = context.lines && context.lineIndex !== undefined
-        ? resolveOrderedListItem(context.lines, context.lineIndex, context.settings)
-        : resolveOrderedListLine(context.line, context.lines, context.lineIndex, context.settings);
-
-    if (!parsed || !isOrderedMarkerStyleAvailable(parsed.style, context.settings)) {
-        return null;
-    }
-
-    return formatOrderedListMarker(parsed.style, parsed.ordinal + 1);
-}
-
 export function resolveOrderedListItem(
     lines: string[],
     lineIndex: number,
@@ -244,29 +185,6 @@ export function resolveOrderedListItems(
 
 export function isPluginOwnedOrderedListItem(item: ResolvedOrderedListItem): boolean {
     return item.ownership === 'extended' || item.ownership === 'bridge';
-}
-
-function resolveOrderedMarkerStyleForMove(context: OrderedListStyleContext): OrderedListMarkerStyle {
-    if (!isSyntaxFeatureEnabled(context.settings, 'enableOrderedListMarkerCycling')) {
-        return context.currentStyle;
-    }
-
-    const order = getAvailableOrderedMarkerStyles(context.settings);
-    if (order.length === 0) {
-        return context.currentStyle;
-    }
-
-    const siblingStyle = findTargetIndentStyle(context);
-    if (siblingStyle) {
-        return siblingStyle;
-    }
-
-    const parentStyle = findNearestParentStyle(context);
-    if (parentStyle) {
-        return stepStyle(parentStyle, 1, order);
-    }
-
-    return stepStyle(context.currentStyle, context.direction === 'indent' ? 1 : -1, order);
 }
 
 function createResolvedItem(
@@ -454,150 +372,4 @@ function hasFollowingRomanEvidenceAtIndent(
     }
 
     return false;
-}
-
-function findTargetIndentStyle(context: OrderedListStyleContext): OrderedListMarkerStyle | null {
-    const subtreeEnd = findSubtreeEnd(context.lines, context.currentLineIndex, context.currentIndentColumns);
-    const { groupStart, groupEnd } = getTargetSiblingBounds(context);
-    const before = scanForStyleAtIndent(context, context.currentLineIndex - 1, -1, groupStart, groupEnd, subtreeEnd);
-    return before ?? scanForStyleAtIndent(context, subtreeEnd + 1, 1, groupStart, groupEnd, subtreeEnd);
-}
-
-function resolveOrderedMarkerOrdinalForMove(context: OrderedListMoveContext): number {
-    const previousSibling = findPreviousTargetSibling(context);
-    return previousSibling ? previousSibling.ordinal + 1 : 1;
-}
-
-function findPreviousTargetSibling(context: OrderedListMoveContext): ParsedOrderedListMarker | null {
-    const { groupStart } = getTargetSiblingBounds(context);
-
-    for (let index = context.currentLineIndex - 1; index >= groupStart; index--) {
-        if (!context.lines[index].trim()) {
-            break;
-        }
-
-        const parsed = parseOrderedListMarker(context.lines[index], context.lines, index);
-        if (parsed?.indentColumns === context.targetIndentColumns) {
-            return parsed;
-        }
-    }
-
-    return null;
-}
-
-function getTargetSiblingBounds(context: OrderedListStyleContext): { groupStart: number; groupEnd: number } {
-    const parentIndex = findTargetParentIndex(context);
-    if (parentIndex < 0) {
-        return {
-            groupStart: 0,
-            groupEnd: findTopLevelGroupEnd(context.lines, context.currentLineIndex)
-        };
-    }
-
-    return {
-        groupStart: parentIndex + 1,
-        groupEnd: findSubtreeEnd(
-            context.lines,
-            parentIndex,
-            getIndentColumns(context.lines[parentIndex].match(/^(\s*)/)?.[1] ?? '')
-        )
-    };
-}
-
-function scanForStyleAtIndent(
-    context: OrderedListStyleContext,
-    startIndex: number,
-    step: 1 | -1,
-    groupStart: number,
-    groupEnd: number,
-    subtreeEnd: number
-): OrderedListMarkerStyle | null {
-    for (let index = startIndex; index >= groupStart && index <= groupEnd; index += step) {
-        if (index >= context.currentLineIndex && index <= subtreeEnd) {
-            continue;
-        }
-
-        if (!context.lines[index].trim()) {
-            break;
-        }
-
-        const parsed = parseOrderedListMarker(context.lines[index], context.lines, index);
-        if (parsed?.indentColumns === context.targetIndentColumns) {
-            return isOrderedMarkerStyleAvailable(parsed.style, context.settings) ? parsed.style : null;
-        }
-    }
-
-    return null;
-}
-
-function findNearestParentStyle(context: OrderedListStyleContext): OrderedListMarkerStyle | null {
-    const parentIndex = findTargetParentIndex(context);
-    const parent = parentIndex >= 0
-        ? parseOrderedListMarker(context.lines[parentIndex], context.lines, parentIndex)
-        : null;
-
-    return parent && isOrderedMarkerStyleAvailable(parent.style, context.settings)
-        ? parent.style
-        : null;
-}
-
-function findTargetParentIndex(context: OrderedListStyleContext): number {
-    if (context.targetIndentColumns <= 0) {
-        return -1;
-    }
-
-    for (let index = context.currentLineIndex - 1; index >= 0; index--) {
-        if (!context.lines[index].trim()) {
-            break;
-        }
-
-        const listItem = parseStandardListItem(context.lines[index]);
-        const indentColumns = listItem?.indentColumns ?? getIndentColumns(context.lines[index].match(/^(\s*)/)?.[1] ?? '');
-
-        if (listItem && indentColumns < context.targetIndentColumns) {
-            return index;
-        }
-    }
-
-    return -1;
-}
-
-function findTopLevelGroupEnd(lines: string[], currentLineIndex: number): number {
-    for (let index = currentLineIndex + 1; index < lines.length; index++) {
-        if (!lines[index].trim()) {
-            return index - 1;
-        }
-    }
-
-    return lines.length - 1;
-}
-
-function stepStyle(
-    style: OrderedListMarkerStyle,
-    delta: number,
-    order: OrderedListMarkerStyle[]
-): OrderedListMarkerStyle {
-    const index = order.indexOf(style);
-    const startIndex = index >= 0 ? index : 0;
-    return order[(startIndex + delta + order.length) % order.length];
-}
-
-function findSubtreeEnd(lines: string[], startIndex: number, baseIndentColumns: number): number {
-    let endIndex = startIndex;
-
-    for (let index = startIndex + 1; index < lines.length; index++) {
-        if (!lines[index].trim()) {
-            endIndex = index;
-            continue;
-        }
-
-        const indent = lines[index].match(/^(\s*)/)?.[1] ?? '';
-        if (getIndentColumns(indent) <= baseIndentColumns) {
-            break;
-        }
-
-        endIndex = index;
-    }
-
-    return endIndex;
 }

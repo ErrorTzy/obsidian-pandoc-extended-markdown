@@ -1,5 +1,4 @@
 import { EditorView } from '@codemirror/view';
-import { ListMarkerInfo } from '../../shared/types/listTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
 
 export type SettingsProvider =
@@ -48,7 +47,11 @@ export interface EmptyListHandlingConfig {
 export interface NewListItemConfig {
     view: EditorView;
     currentLine: CurrentLineInfo;
-    markerInfo: ListMarkerInfo;
+    markerInfo: {
+        marker: string;
+        indent: string;
+        spaces?: string;
+    };
     settings: PandocExtendedMarkdownSettings;
 }
 

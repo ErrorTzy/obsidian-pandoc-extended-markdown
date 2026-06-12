@@ -5,9 +5,9 @@ import {
 } from '../../../shared/utils/orderedListMarkers';
 import {
     markerTypesEqual,
+    parseStandardListChunk,
     StandardListMarkerType
-} from '../../../shared/utils/standardListMarkerResolution';
-import { parseStandardListChunk } from './standardListStructure';
+} from './standardListStructure';
 
 export interface OrderedGroupSignature {
     depth: number;

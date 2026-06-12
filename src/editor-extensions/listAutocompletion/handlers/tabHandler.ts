@@ -5,7 +5,6 @@ import {
     formatOrderedListMarker,
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
-import type { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
 import { setPendingListBlockReconciliation } from '../utils/listBlockReconciliation';
 import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
@@ -24,6 +23,7 @@ import {
     resolveListOwnerAtLine,
     resolveMarkerTypeForDepth,
     StandardListChunk,
+    StandardListMarkerType,
     StandardListNode
 } from '../utils/standardListStructure';
 import { parseStandardListItem } from '../../../shared/utils/listContext';

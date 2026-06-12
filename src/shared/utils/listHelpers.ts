@@ -1,24 +1,10 @@
 import { ListPatterns } from '../patterns';
 import { ROMAN_NUMERALS } from '../../core/constants';
 
-// Helper function to get the next letter in sequence
-export function getNextLetter(letter: string): string | null {
-    if (letter === 'Z' || letter === 'z') {
-        return null; // No next letter after Z
-    }
-    return String.fromCharCode(letter.charCodeAt(0) + 1);
-}
-
 // Helper function to convert letter to number (A=1, B=2, etc.)
 export function letterToNumber(letter: string): number {
     const upperLetter = letter.toUpperCase();
     return upperLetter.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-}
-
-// Helper function to convert number to letter (1=A, 2=B, etc.)
-export function numberToLetter(num: number, isUpperCase: boolean): string {
-    const letter = String.fromCharCode('A'.charCodeAt(0) + num - 1);
-    return isUpperCase ? letter : letter.toLowerCase();
 }
 
 // Helper function to convert roman numeral to integer
@@ -55,13 +41,6 @@ export function intToRoman(num: number, isUpperCase: boolean): string {
     }
     
     return result;
-}
-
-// Helper function to get the next roman numeral
-export function getNextRoman(roman: string): string {
-    const value = romanToInt(roman);
-    const isUpperCase = roman[0] === roman[0].toUpperCase();
-    return intToRoman(value + 1, isUpperCase);
 }
 
 // Helper function to check if a line is empty (only contains the list marker)

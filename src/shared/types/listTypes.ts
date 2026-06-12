@@ -76,15 +76,6 @@ export interface DefinitionItem {
     marker: string;
 }
 
-/**
- * List marker information for detection
- */
-export interface ListMarkerInfo {
-    marker: string;
-    indent: string;
-    spaces?: string;
-}
-
 export interface FancyListMarker {
     indent: string;
     marker: string;
