@@ -236,7 +236,6 @@ export function resolveMarkerTypeForDepth(
     chunk: StandardListChunk,
     editLineIndex: number,
     targetDepth: number,
-    currentMarkerType: StandardListMarkerType,
     settings: PandocExtendedMarkdownSettings,
     explicitMarkerType?: StandardListMarkerType | null
 ): StandardListMarkerType {
@@ -252,10 +251,6 @@ export function resolveMarkerTypeForDepth(
     const following = findFollowingNodeAtDepth(chunk, editLineIndex, targetDepth);
     if (following) {
         return following.markerType;
-    }
-
-    if (currentMarkerType.kind === 'unordered') {
-        return currentMarkerType;
     }
 
     return {

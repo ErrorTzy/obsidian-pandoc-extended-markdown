@@ -297,7 +297,7 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toMatch(/#\./);
         });
         
-        it('should handle fancy lists with letters', () => {
+        it('should preserve fancy list ordinals with letters when auto-renumber is disabled', () => {
             const doc = 'A. First item';
             const cursorPos = doc.length;
             const view = createMockView(doc, cursorPos);
@@ -313,12 +313,12 @@ describe('List Autocompletion', () => {
             expect(transaction.changes).toBeDefined();
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toMatch(/B\./);
+            expect(changes!.insert).toMatch(/A\./);
         });
     });
 
     describe('Tab key handling for unordered lists', () => {
-        it('should use the bullet marker for the resulting nested depth when indenting', () => {
+        it('should use the configured ordered depth marker when indenting without target-depth evidence', () => {
             const listText = '- item 1\n- ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -332,10 +332,10 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    + ');
+            expect(changes!.insert).toBe('    a. ');
         });
 
-        it('should switch from plus to star when indenting to the second nested depth', () => {
+        it('should continue the configured ordered depth mapping for deeper missing depths', () => {
             const listText = '- item 1\n    + item 2\n    + ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -349,11 +349,16 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('        * ');
+            expect(changes!.insert).toBe('        i. ');
         });
 
-        it('should use configured unordered marker order when indenting', () => {
-            mockSettings.unorderedListMarkerOrder = ['*', '-', '+'];
+        it('should use configured ordered marker order when indenting from an unordered item', () => {
+            mockSettings.orderedListMarkerOrder = [
+                'decimal-period',
+                'upper-alpha-period',
+                'lower-alpha-period',
+                'lower-roman-period'
+            ];
             keybindings = createListAutocompletionKeymap(mockSettings);
             const listText = '- item 1\n- ';
             const doc = `${listText}\nnext`;
@@ -368,10 +373,10 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    - ');
+            expect(changes!.insert).toBe('    A. ');
         });
 
-        it('should wrap from star back to dash at the third nested depth', () => {
+        it('should use ordered default fallback for missing deeper depths under unordered ancestors', () => {
             const listText = '- item 1\n    + item 2\n        * item 3\n        * ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -385,7 +390,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('            - ');
+            expect(changes!.insert).toBe('            A. ');
         });
 
         it('should use the bullet marker for the resulting shallower depth when outdenting', () => {
@@ -439,7 +444,7 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('+ ');
         });
 
-        it('should preserve the current unordered marker when marker cycling is disabled', () => {
+        it('should still use ordered depth fallback when unordered marker cycling is disabled', () => {
             mockSettings.enableUnorderedListMarkerCycling = false;
             keybindings = createListAutocompletionKeymap(mockSettings);
             const listText = '- item 1\n- ';
@@ -455,18 +460,24 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    - ');
+            expect(changes!.insert).toBe('    a. ');
         });
 
-        it('should read current marker cycling settings from a settings provider', () => {
+        it('should read current ordered marker order from a settings provider', () => {
             let currentSettings = {
                 ...mockSettings,
-                enableUnorderedListMarkerCycling: true
+                orderedListMarkerOrder: [
+                    'decimal-period',
+                    'lower-alpha-period'
+                ]
             };
             keybindings = createListAutocompletionKeymap(() => currentSettings);
             currentSettings = {
                 ...currentSettings,
-                enableUnorderedListMarkerCycling: false
+                orderedListMarkerOrder: [
+                    'decimal-period',
+                    'upper-alpha-period'
+                ]
             };
             const listText = '- item 1\n- ';
             const doc = `${listText}\nnext`;
@@ -481,7 +492,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    - ');
+            expect(changes!.insert).toBe('    A. ');
         });
 
         it('should preserve the current unordered marker when marker cycling is disabled during outdent', () => {
@@ -813,7 +824,45 @@ describe('List Autocompletion', () => {
     });
 
     describe('Enter key handling for ordered lists', () => {
+        it('should preserve the current ordered ordinal when continuing with auto-renumber disabled', () => {
+            mockSettings.autoRenumberLists = false;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const doc = '27. item';
+            const cursorPos = doc.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('27. ');
+        });
+
+        it('should increment the current ordered ordinal when continuing with auto-renumber enabled', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const doc = '27. item';
+            const cursorPos = doc.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('28. ');
+        });
+
         it('should continue decimal child lists inside fancy ordered parents', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
             const doc = 'a. parent\n    1. child';
             const cursorPos = doc.length - 1;
             const view = createMockView(doc, cursorPos);
@@ -830,6 +879,8 @@ describe('List Autocompletion', () => {
         });
 
         it('should continue bridge decimal children inside upper-roman parenthesis parents', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
             const doc = 'I) parent\n    1. child';
             const cursorPos = doc.length - 1;
             const view = createMockView(doc, cursorPos);
@@ -847,6 +898,44 @@ describe('List Autocompletion', () => {
     });
 
     describe('Enter key handling for empty unordered list items', () => {
+        it('should preserve an empty ordered child ordinal when returning to an ordered parent with auto-renumber disabled', () => {
+            mockSettings.autoRenumberLists = false;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = 'A. parent\n    5. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('E. ');
+        });
+
+        it('should continue the parent ordinal when returning from an empty ordered child with auto-renumber enabled', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = 'A. parent\n    5. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const changes = getChangesFromTransaction(view.lastTransaction);
+            expect(changes).toBeDefined();
+            expect(changes!.insert).toBe('B. ');
+        });
+
         it('should outdent an empty bridge decimal marker to the parent list context', () => {
             const listText = 'I) parent\n    1. child\n    2. ';
             const doc = `${listText}\nnext`;

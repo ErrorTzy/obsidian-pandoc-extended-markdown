@@ -2,6 +2,16 @@ import { EditorSelection } from '@codemirror/state';
 import { ListPatterns } from '../../../shared/patterns';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import { renumberListItems } from '../../../shared/utils/listRenumbering';
+import { parseStandardListItem } from '../../../shared/utils/listContext';
+import {
+    formatOrderedListMarker,
+    isOrderedMarkerStyleAvailable,
+    parseOrderedListMarker
+} from '../../../shared/utils/orderedListMarkers';
+import {
+    isEnabledStandardListLine,
+    showListAutocompletionError
+} from '../utils/debugNotice';
 import { NewListItemConfig } from '../types';
 
 /**
@@ -73,6 +83,19 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     const state = config.view.state;
     const allLines = state.doc.toString().split('\n');
     const currentLineIndex = currentLine.line.number - 1; // Convert to 0-based index
+    if (isEnabledStandardListLine(lineText, allLines, currentLineIndex, settings)) {
+        const standardMarkerInfo = getNextStandardListMarker(lineText, allLines, currentLineIndex, settings);
+        if (standardMarkerInfo) {
+            const newConfig = { ...config, markerInfo: standardMarkerInfo } as NewListItemConfig;
+            return insertNewListItem(newConfig);
+        }
+
+        return showListAutocompletionError(
+            'The standard list item could not be continued with the standard resolver.',
+            currentLine.line.number
+        );
+    }
+
     const markerInfo = getNextListMarker(lineText, allLines, currentLineIndex, settings);
 
     if (markerInfo) {
@@ -81,4 +104,43 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     }
 
     return false;
+}
+
+function getNextStandardListMarker(
+    lineText: string,
+    allLines: string[],
+    currentLineIndex: number,
+    settings: NewListItemConfig['settings']
+): NewListItemConfig['markerInfo'] | null {
+    const standardItem = parseStandardListItem(lineText);
+    if (!standardItem) {
+        return null;
+    }
+
+    if (standardItem.kind === 'unordered') {
+        return {
+            marker: standardItem.marker,
+            indent: standardItem.indent,
+            spaces: standardItem.spaces || ' '
+        };
+    }
+
+    const ordered = parseOrderedListMarker(lineText, allLines, currentLineIndex);
+    if (!ordered) {
+        return null;
+    }
+
+    if (!isOrderedMarkerStyleAvailable(ordered.style, settings)) {
+        return null;
+    }
+
+    const ordinal = settings.autoRenumberLists
+        ? ordered.ordinal + 1
+        : ordered.ordinal;
+
+    return {
+        marker: formatOrderedListMarker(ordered.style, ordinal),
+        indent: ordered.indent,
+        spaces: ordered.spaces || ' '
+    };
 }

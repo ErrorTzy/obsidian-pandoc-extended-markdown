@@ -6,9 +6,12 @@ import {
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
 import type { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
-import { getMarkerForIndent } from '../utils/unorderedMarkers';
 import { setPendingListBlockReconciliation } from '../utils/listBlockReconciliation';
 import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
+import {
+    hasEnabledStandardListOwnerCandidate,
+    showListAutocompletionError
+} from '../utils/debugNotice';
 import { resolveSettings, SettingsProvider } from '../types';
 import {
     addIndentLevel,
@@ -76,12 +79,20 @@ function moveTouchedOwners(
         : collectSelectedOwners(lines, selection.from, selection.to, view, settings);
 
     if (ownerContexts.length === 0) {
-        return false;
+        return shouldReportMissingOwner(lines, view, selection.from, selection.to, settings)
+            ? showListAutocompletionError(
+                'The touched standard list item could not be resolved to an owner.',
+                state.doc.lineAt(selection.from).number
+            )
+            : false;
     }
 
     const moves = buildOwnerMoves(lines, ownerContexts, direction, settings);
     if (moves.length === 0) {
-        return false;
+        return showListAutocompletionError(
+            'No valid standard list owner move could be built.',
+            state.doc.lineAt(selection.from).number
+        );
     }
 
     const movedOrderedOwners: MovedOrderedOwner[] = [];
@@ -110,6 +121,25 @@ function moveTouchedOwners(
     }));
 
     return true;
+}
+
+function shouldReportMissingOwner(
+    lines: string[],
+    view: EditorView,
+    selectionFrom: number,
+    selectionTo: number,
+    settings: PandocExtendedMarkdownSettings
+): boolean {
+    const fromLine = view.state.doc.lineAt(selectionFrom);
+    const toLine = view.state.doc.lineAt(Math.max(selectionFrom, selectionTo - 1));
+
+    for (let lineNumber = fromLine.number; lineNumber <= toLine.number; lineNumber++) {
+        if (hasEnabledStandardListOwnerCandidate(lines, lineNumber - 1, settings)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function collectSingleOwner(
@@ -172,8 +202,6 @@ function buildOwnerMoves(
             chunk,
             owner,
             targetDepth,
-            targetIndent,
-            direction,
             settings,
             explicitChild?.markerType ?? explicitParent?.markerType ?? null
         );
@@ -201,8 +229,6 @@ function resolveTargetMarkerType(
     chunk: StandardListChunk,
     owner: StandardListNode,
     targetDepth: number,
-    targetIndent: string,
-    direction: MoveDirection,
     settings: PandocExtendedMarkdownSettings,
     explicitMarkerType: StandardListMarkerType | null
 ): StandardListMarkerType {
@@ -214,28 +240,13 @@ function resolveTargetMarkerType(
         return owner.markerType;
     }
 
-    const resolved = resolveMarkerTypeForDepth(
+    return resolveMarkerTypeForDepth(
         chunk,
         owner.lineIndex,
         targetDepth,
-        owner.markerType,
         settings,
         explicitMarkerType
     );
-
-    if (
-        direction === 'indent' &&
-        !explicitMarkerType &&
-        resolved.kind === 'unordered' &&
-        owner.markerType.kind === 'unordered'
-    ) {
-        return {
-            kind: 'unordered',
-            marker: getMarkerForIndent(owner.markerType.marker, targetIndent, settings)
-        };
-    }
-
-    return resolved;
 }
 
 function applyOwnerMove(

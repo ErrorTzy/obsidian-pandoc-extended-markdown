@@ -276,10 +276,11 @@ listAutocompletion/
 └── utils/
     ├── lineInfo.ts        # Line information utilities
     ├── markerDetection.ts # List marker detection
-    ├── indentation.ts     # Indentation utilities
     ├── orderedMarkers.ts  # Ordered marker context cycling
-    ├── unorderedMarkers.ts # Unordered marker depth cycling
-    └── continuationUtils.ts # Continuation helpers
+    ├── standardListStructure.ts # Standard list owner/depth parsing
+    ├── orderedSiblingRenumbering.ts # Ordered sibling renumbering
+    ├── listBlockReconciliation.ts # Post-transaction list repair
+    └── debugNotice.ts     # Debug notices for failed standard resolution
 ```
 
 | Component | Purpose | Max Lines |

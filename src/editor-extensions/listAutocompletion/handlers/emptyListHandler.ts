@@ -3,25 +3,30 @@ import { EditorSelection } from '@codemirror/state';
 
 // Types
 import { EmptyListHandlingConfig } from '../types';
-import { ListMarkerInfo } from '../../../shared/types/listTypes';
-
-// Constants
-import { INDENTATION } from '../../../core/constants';
 
 // Patterns
 import { ListPatterns } from '../../../shared/patterns';
 
 // Utils
 import { isEmptyListItem } from '../../../shared/utils/listHelpers';
-import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
 import {
-    getIndentColumns,
-    parseOrderedListMarker,
-    resolveOrderedMarkerForTarget
+    formatOrderedListMarker,
+    parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
-import { resolvePreviousTargetMarker } from '../../../shared/utils/standardListMarkerResolution';
-import { calculateIndentation } from '../utils/indentation';
-import { getMarkerForIndent } from '../utils/unorderedMarkers';
+import { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
+import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
+import {
+    findNearestNodeAtDepth,
+    findTargetParentLineIndex,
+    getPreviousSiblingOrdinal,
+    removeIndentLevel,
+    resolveListOwnerAtLine,
+    resolveMarkerTypeForDepth
+} from '../utils/standardListStructure';
+import {
+    isEnabledStandardListLine,
+    showListAutocompletionError
+} from '../utils/debugNotice';
 
 /**
  * Handles special cases for empty example and custom label lists.
@@ -92,135 +97,117 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
         return false;
     }
 
-    // Handle nested list dedent or remove marker
-    const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-    if (indentMatch && indentMatch[1].length >= INDENTATION.TAB_SIZE) {
-        const currentIndent = indentMatch[1];
-        const newIndent = calculateIndentation(currentIndent);
-        const targetIndentColumns = getIndentColumns(newIndent);
-        const allLines = state.doc.toString().split('\n');
-        const previousTargetMarker = resolvePreviousTargetMarker({
-            lines: allLines,
-            startLineIndex: line.number - 2,
-            targetIndentColumns,
-            settings: config.settings
-        });
-        const unorderedMatch = lineText.match(ListPatterns.EMPTY_UNORDERED_LIST);
-
-        if (previousTargetMarker) {
-            const spaces = previousTargetMarker.spaces || ' ';
-            const newLine = `${newIndent}${previousTargetMarker.marker}${spaces}`;
-            const changes = {
-                from: line.from,
-                to: line.to,
-                insert: newLine
-            };
-
-            const transaction = state.update({
-                changes,
-                selection: EditorSelection.cursor(line.from + newLine.length)
-            });
-
-            view.dispatch(transaction);
+    const lineIndex = line.number - 1;
+    const allLines = state.doc.toString().split('\n');
+    if (isEnabledStandardListLine(lineText, allLines, lineIndex, config.settings)) {
+        if (handleStandardEmptyListItem(config)) {
             return true;
         }
 
-        if (unorderedMatch) {
-            const marker = unorderedMatch[2];
-            const spaces = unorderedMatch[3] || ' ';
-            const newLine = `${newIndent}${getMarkerForIndent(marker, newIndent, config.settings)}${spaces}`;
-            const changes = {
-                from: line.from,
-                to: line.to,
-                insert: newLine
-            };
-
-            const transaction = state.update({
-                changes,
-                selection: EditorSelection.cursor(line.from + newLine.length)
-            });
-
-            view.dispatch(transaction);
-            return true;
-        }
-
-        const orderedMarker = parseOrderedListMarker(lineText, allLines, line.number - 1);
-        if (orderedMarker) {
-            const marker = resolveOrderedMarkerForTarget({
-                lines: allLines,
-                currentLineIndex: line.number - 1,
-                currentIndentColumns: orderedMarker.indentColumns,
-                targetIndentColumns,
-                currentStyle: orderedMarker.style,
-                direction: 'outdent',
-                settings: config.settings
-            }).marker;
-            const spaces = orderedMarker.spaces || ' ';
-            const newLine = `${newIndent}${marker}${spaces}`;
-            const changes = {
-                from: line.from,
-                to: line.to,
-                insert: newLine
-            };
-
-            const transaction = state.update({
-                changes,
-                selection: EditorSelection.cursor(line.from + newLine.length)
-            });
-
-            view.dispatch(transaction);
-            return true;
-        }
-
-        // Try to find the appropriate marker for this indent level
-        let previousMarker: ListMarkerInfo | null = null;
-        for (let i = line.number - 1; i >= 1; i--) {
-            const prevLine = state.doc.line(i);
-            const prevText = prevLine.text;
-
-            const prevIndentMatch = prevText.match(ListPatterns.INDENT_ONLY);
-            if (prevIndentMatch && prevIndentMatch[1] === newIndent) {
-                const allLines = state.doc.toString().split('\n');
-                const markerInfo = getNextListMarker(prevText, allLines, i - 1, config.settings);
-                if (markerInfo) {
-                    previousMarker = markerInfo;
-                    break;
-                }
-            }
-        }
-
-        if (previousMarker && newIndent.length > 0) {
-            // Replace with dedented marker
-            const spaces = previousMarker.spaces || ' ';
-            const newLine = `${newIndent}${previousMarker.marker}${spaces}`;
-            const changes = {
-                from: line.from,
-                to: line.to,
-                insert: newLine
-            };
-
-            const transaction = state.update({
-                changes,
-                selection: EditorSelection.cursor(line.from + newLine.length)
-            });
-
-            view.dispatch(transaction);
-            return true;
-        }
+        return showListAutocompletionError(
+            'The empty standard list item could not be returned to its parent depth.',
+            line.number
+        );
     }
 
-    // Remove the marker entirely
-    const changes = {
-        from: line.from,
-        to: line.to,
-        insert: ''
-    };
+    return showListAutocompletionError(
+        'Empty non-standard list items are not handled by the standard list resolver.',
+        line.number
+    );
+}
 
-    const transaction = state.update({
-        changes,
-        selection: EditorSelection.cursor(line.from)
-    });
+function handleStandardEmptyListItem(config: EmptyListHandlingConfig): boolean {
+    const { view, currentLine, settings } = config;
+    const state = view.state;
+    const lineIndex = currentLine.line.number - 1;
+    const lines = state.doc.toString().split('\n');
+    const ownerContext = resolveListOwnerAtLine(lines, lineIndex, settings);
+    if (!ownerContext || ownerContext.owner.lineIndex !== lineIndex) {
+        return false;
+    }
 
-    view.dispatch(transaction);
+    const { chunk, owner } = ownerContext;
+    if (owner.depth <= 1) {
+        view.dispatch(state.update({
+            changes: {
+                from: currentLine.line.from,
+                to: currentLine.line.to,
+                insert: owner.indent
+            },
+            selection: EditorSelection.cursor(currentLine.line.from + owner.indent.length)
+        }));
+        return true;
+    }
+
+    const targetDepth = owner.depth - 1;
+    const explicitParent = chunk.nodes.find(node => node.lineIndex === owner.parentLineIndex) ?? null;
+    const targetIndent = explicitParent?.indent ??
+        findNearestNodeAtDepth(chunk, owner.lineIndex, targetDepth)?.indent ??
+        removeIndentLevel(owner.indent);
+    const targetMarkerType = resolveMarkerTypeForDepth(
+        chunk,
+        owner.lineIndex,
+        targetDepth,
+        settings,
+        explicitParent?.markerType ?? null
+    );
+    const targetParentLineIndex = explicitParent?.parentLineIndex ??
+        findTargetParentLineIndex(chunk, owner.lineIndex, targetDepth);
+    const marker = targetMarkerType.kind === 'unordered'
+        ? targetMarkerType.marker
+        : formatEmptyReturnOrderedMarker(
+            lines,
+            owner.lineIndex,
+            chunk,
+            targetDepth,
+            targetParentLineIndex,
+            targetMarkerType,
+            settings
+        );
+    const newLine = `${targetIndent}${marker}${owner.spaces || ' '}`;
+    const nextLines = [...lines];
+    nextLines[lineIndex] = newLine;
+
+    if (settings.autoRenumberLists && targetMarkerType.kind === 'ordered') {
+        renumberOrderedGroup(nextLines, lineIndex, {
+            depth: targetDepth,
+            parentLineIndex: targetParentLineIndex,
+            markerType: targetMarkerType
+        }, settings);
+    }
+
+    view.dispatch(state.update({
+        changes: {
+            from: 0,
+            to: state.doc.length,
+            insert: nextLines.join('\n')
+        },
+        selection: EditorSelection.cursor(currentLine.line.from + newLine.length)
+    }));
+
     return true;
+}
+
+function formatEmptyReturnOrderedMarker(
+    lines: string[],
+    ownerLineIndex: number,
+    chunk: NonNullable<ReturnType<typeof resolveListOwnerAtLine>>['chunk'],
+    targetDepth: number,
+    targetParentLineIndex: number | null,
+    markerType: Extract<StandardListMarkerType, { kind: 'ordered' }>,
+    settings: EmptyListHandlingConfig['settings']
+): string {
+    const currentOrdered = parseOrderedListMarker(lines[ownerLineIndex], lines, ownerLineIndex);
+    const previousOrdinal = getPreviousSiblingOrdinal(
+        chunk,
+        ownerLineIndex,
+        targetDepth,
+        markerType,
+        targetParentLineIndex
+    );
+    const ordinal = settings.autoRenumberLists || !currentOrdered
+        ? (previousOrdinal ?? 0) + 1
+        : currentOrdered.ordinal;
+
+    return formatOrderedListMarker(markerType.style, ordinal);
 }
