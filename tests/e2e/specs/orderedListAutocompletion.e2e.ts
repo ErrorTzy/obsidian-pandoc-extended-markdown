@@ -313,6 +313,45 @@ describe('Ordered list autocompletion behavior', () => {
                 expect(await getEditorText()).toBe(`${marker(root, 1)} xxx\n`);
             });
 
+            if (nextStyle(styleCase.style) === 'decimal-period') {
+                it('returns a bridge decimal child to the fancy root style while preserving ordinal values when auto-renumbering is disabled', async () => {
+                    const root = styleCase.style;
+                    const child = nextStyle(root);
+
+                    await configureOrderedListSettings({ autoRenumberLists: false });
+
+                    await openEditableDocument(filePathFor(styleCase, 'enter-bridge-decimal-renumber-disabled'), [
+                        `${marker(root, 1)} root`,
+                        `${marker(root, 2)} root`,
+                        `${INDENT}${marker(child, 1)} child`,
+                        `${INDENT}${marker(child, 2)} `
+                    ].join('\n'));
+                    await placeCursorAtLineAfterMarker(4);
+
+                    await pressKey('Enter', 600);
+
+                    const expected = [
+                        `${marker(root, 1)} root`,
+                        `${marker(root, 2)} root`,
+                        `${INDENT}${marker(child, 1)} child`,
+                        `${marker(root, 2)} `
+                    ].join('\n');
+                    expect(await getEditorText()).toBe(expected);
+
+                    await openEditableDocument(filePathFor(styleCase, 'shift-tab-bridge-decimal-renumber-disabled'), [
+                        `${marker(root, 1)} root`,
+                        `${marker(root, 2)} root`,
+                        `${INDENT}${marker(child, 1)} child`,
+                        `${INDENT}${marker(child, 2)} `
+                    ].join('\n'));
+                    await placeCursorAtLineAfterMarker(4);
+
+                    await pressShiftTab(600);
+
+                    expect(await getEditorText()).toBe(expected);
+                });
+            }
+
             runHybridNestedListTests({
                 fileId: styleCase.style,
                 rootIsOrdered: true,
@@ -391,7 +430,7 @@ describe('Ordered list autocompletion behavior', () => {
                 '\t- xxx',
                 `${INDENT}${INDENT}i. xxx`,
                 `${INDENT}${INDENT}ii. xxx`,
-                `${INDENT}- `
+                '\t- '
             ].join('\n'));
         });
 
@@ -615,6 +654,11 @@ describe('Ordered list autocompletion behavior', () => {
                 expect(await getEditorText()).toBe([
                     '1. parent',
                     `${INDENT}- current`,
+                    `${INDENT}- child`
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    `${INDENT}- cur|rent`,
                     `${INDENT}- child`
                 ].join('\n'));
             });
@@ -889,7 +933,7 @@ describe('Ordered list autocompletion behavior', () => {
                     '1. xxx',
                     `${INDENT}- xxx`,
                     `${INDENT}${INDENT}xxx`,
-                    `${INDENT}${INDENT}* xxx`,
+                    `${INDENT}${INDENT}+ xxx`,
                     `${INDENT}- xxx`
                 ].join('\n'));
             });
@@ -1250,9 +1294,9 @@ function runLocalCycleOverrideTests(styleCase: OrderedStyleCase): void {
         ].join('\n'));
     });
 
-    it('keeps local marker overrides specific to the adjacent parent and child depths', async () => {
+    it('falls back to the ordered cycle when no explicit grandchild depth override exists', async () => {
         const root = styleCase.style;
-        const unorderedGrandchild = nextUnorderedMarker('-');
+        const grandchild = nextStyle(nextStyle(root));
         const path = filePathFor(styleCase, 'tab-local-override-depth-specificity');
 
         await openEditableDocument(path, [
@@ -1273,7 +1317,7 @@ function runLocalCycleOverrideTests(styleCase: OrderedStyleCase): void {
             `${INDENT}- xxx`,
             `${marker(root, 3)} xxx`,
             `${INDENT}- xxx`,
-            `${INDENT}${INDENT}${unorderedGrandchild} `
+            `${INDENT}${INDENT}${marker(grandchild, 1)} `
         ].join('\n'));
     });
 }
@@ -1614,9 +1658,10 @@ function expectListMarkersToAlign(
     lineNumbers: number[]
 ): void {
     const markerStarts = lineNumbers.map(lineNumber => {
+        expect(lines[lineNumber]).toBeDefined();
         const markerStart = lines[lineNumber]?.markerInlineStart;
-        expect(markerStart).not.toBeNull();
-        return markerStart!;
+        expect(typeof markerStart).toBe('number');
+        return markerStart as number;
     });
     const leftmost = Math.min(...markerStarts);
     const rightmost = Math.max(...markerStarts);
@@ -1629,9 +1674,10 @@ function expectListContentToAlign(
     lineNumbers: number[]
 ): void {
     const contentStarts = lineNumbers.map(lineNumber => {
+        expect(lines[lineNumber]).toBeDefined();
         const contentStart = lines[lineNumber]?.contentInlineStart;
-        expect(contentStart).not.toBeNull();
-        return contentStart!;
+        expect(typeof contentStart).toBe('number');
+        return contentStart as number;
     });
     const leftmost = Math.min(...contentStarts);
     const rightmost = Math.max(...contentStarts);
@@ -1643,8 +1689,10 @@ function expectMarkerToBeIndentedAfter(
     descendant: LivePreviewLineState | undefined,
     ancestor: LivePreviewLineState | undefined
 ): void {
-    expect(descendant?.markerInlineStart).not.toBeNull();
-    expect(ancestor?.markerInlineStart).not.toBeNull();
+    expect(descendant).toBeDefined();
+    expect(ancestor).toBeDefined();
+    expect(typeof descendant?.markerInlineStart).toBe('number');
+    expect(typeof ancestor?.markerInlineStart).toBe('number');
     expect(descendant!.markerInlineStart! - ancestor!.markerInlineStart!).toBeGreaterThanOrEqual(20);
 }
 

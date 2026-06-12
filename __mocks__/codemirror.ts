@@ -15,6 +15,7 @@ export interface EditorSelectionShape {
     head: number;
     from: number;
     to: number;
+    empty: boolean;
   };
   ranges: EditorSelectionRange[];
 }
@@ -202,9 +203,21 @@ export class EditorState {
 
 export const EditorSelection = {
   cursor: (pos: number): EditorSelectionShape => ({
-    main: { head: pos, from: pos, to: pos },
+    main: { head: pos, from: pos, to: pos, empty: true },
     ranges: [{ from: pos, to: pos }]
-  })
+  }),
+  range: (anchor: number, head: number): EditorSelectionShape => {
+    const from = Math.min(anchor, head);
+    const to = Math.max(anchor, head);
+
+    return {
+      main: { head, from, to, empty: from === to },
+      ranges: [{ from, to }]
+    };
+  },
+  create: (ranges: EditorSelectionShape[]): EditorSelectionShape => {
+    return ranges[0] ?? EditorSelection.cursor(0);
+  }
 };
 
 export class EditorView {

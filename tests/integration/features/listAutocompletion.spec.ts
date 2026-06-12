@@ -77,6 +77,16 @@ describe('List Autocompletion', () => {
         
         return mockView;
     }
+
+    function createMockViewWithSelection(doc: string, selectionFrom: number, selectionTo: number): EditorView {
+        const view = createMockView(doc, selectionFrom) as any;
+        view.state = EditorState.create({
+            doc,
+            selection: EditorSelection.range(selectionFrom, selectionTo)
+        });
+
+        return view;
+    }
     
     function getChangesFromTransaction(transaction: any): { from: number, to: number, insert: string } | null {
         if (!transaction || !transaction.changes) return null;
@@ -834,6 +844,32 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('c. ');
+        });
+
+        it('should preserve selected parent and unordered child relationship when indenting both owners', () => {
+            const doc = [
+                '1. xxx',
+                '2. xxx',
+                '    xxx',
+                '    - xxx',
+                '    - xxx'
+            ].join('\n');
+            const selectionFrom = doc.indexOf('xxx', doc.indexOf('    xxx'));
+            const selectionTo = doc.indexOf('xxx', doc.indexOf('    - xxx')) + 'xxx'.length;
+            const view = createMockViewWithSelection(doc, selectionFrom, selectionTo);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+            expect(view.state.doc.toString()).toBe([
+                '1. xxx',
+                '    - xxx',
+                '        xxx',
+                '        + xxx',
+                '    - xxx'
+            ].join('\n'));
         });
     });
 

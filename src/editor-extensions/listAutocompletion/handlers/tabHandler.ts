@@ -1,6 +1,7 @@
 import { EditorSelection } from '@codemirror/state';
 import { EditorView, KeyBinding } from '@codemirror/view';
 import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
+import { normalizeUnorderedListMarkerOrder } from '../../../shared/types/unorderedListTypes';
 import {
     formatOrderedListMarker,
     parseOrderedListMarker
@@ -193,19 +194,17 @@ function buildOwnerMoves(
         const explicitParent = direction === 'outdent'
             ? chunk.nodes.find(node => node.lineIndex === owner.parentLineIndex) ?? null
             : null;
+        const movedParent = findMovedParentMove(plannedMoves, owner, targetDepth);
         const targetIndent = direction === 'indent'
             ? explicitChild?.indent ?? addIndentLevel(owner.indent)
             : explicitParent?.indent ??
                 findNearestNodeAtDepth(chunk, owner.lineIndex, targetDepth)?.indent ??
                 removeIndentLevel(owner.indent);
-        const targetMarkerType = resolveTargetMarkerType(
-            chunk,
-            owner,
-            targetDepth,
-            settings,
-            explicitChild?.markerType ?? explicitParent?.markerType ?? null
-        );
-        const targetParentLineIndex = findMovedTargetParentLineIndex(plannedMoves, owner, targetDepth) ??
+        const explicitMarkerType = explicitChild?.markerType ??
+            explicitParent?.markerType ??
+            resolveMovedParentChildMarkerType(movedParent, owner, settings);
+        const targetMarkerType = resolveTargetMarkerType(chunk, owner, targetDepth, settings, explicitMarkerType);
+        const targetParentLineIndex = movedParent?.owner.lineIndex ??
             findTargetParentLineIndex(chunk, owner.lineIndex, targetDepth);
 
         plannedMoves.push({
@@ -332,19 +331,46 @@ function findPreviousMovedOrderedSibling(
     return null;
 }
 
-function findMovedTargetParentLineIndex(
+function findMovedParentMove(
     plannedMoves: OwnerMove[],
     owner: StandardListNode,
     targetDepth: number
-): number | null {
+): OwnerMove | null {
     for (let index = plannedMoves.length - 1; index >= 0; index--) {
         const move = plannedMoves[index];
         if (move.owner.lineIndex === owner.parentLineIndex && move.targetDepth === targetDepth - 1) {
-            return move.owner.lineIndex;
+            return move;
         }
     }
 
     return null;
+}
+
+function resolveMovedParentChildMarkerType(
+    movedParent: OwnerMove | null,
+    owner: StandardListNode,
+    settings: PandocExtendedMarkdownSettings
+): StandardListMarkerType | null {
+    if (
+        !movedParent ||
+        owner.markerType.kind !== 'unordered' ||
+        movedParent.targetMarkerType.kind !== 'unordered'
+    ) {
+        return null;
+    }
+
+    if (!settings.enableUnorderedListMarkerCycling) {
+        return owner.markerType;
+    }
+
+    const order = normalizeUnorderedListMarkerOrder(settings.unorderedListMarkerOrder);
+    const parentIndex = order.indexOf(movedParent.targetMarkerType.marker as '-' | '+' | '*');
+    const normalizedParentIndex = parentIndex >= 0 ? parentIndex : 0;
+
+    return {
+        kind: 'unordered',
+        marker: order[(normalizedParentIndex + 1) % order.length]
+    };
 }
 
 function resolveMovedCursor(
