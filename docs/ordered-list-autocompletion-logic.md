@@ -1,17 +1,22 @@
-# Ordered List Autocompletion Logic
+# Structural List Autocompletion Logic
 
 This document defines the expected behavior for list autocompletion and marker
 cycling. It is intentionally test-oriented: the goal is to make nested ordered
-lists, hybrid ordered/unordered lists, chunk-local depth preferences, selection
-movement, and return-to-parent behavior unambiguous before the implementation is
+lists, hybrid marker kinds, chunk-local depth preferences, selection movement,
+and return-to-parent behavior unambiguous before the implementation is
 refactored.
 
 Although the setting is named ordered-list marker cycling, the editor behavior
-must operate on standard Markdown list levels as a whole. Ordered and unordered
-markers can be adjacent depths in the same list chunk, and Tab, Shift+Tab, and
-Enter must resolve the target depth's marker type consistently.
+must operate on structural item-list levels as a whole. Ordered, unordered, hash,
+example, and custom-label markers can be adjacent depths in the same list chunk,
+and Tab, Shift+Tab, and Enter must resolve the target depth's marker type
+consistently.
 
-## Supported Ordered Styles
+Definition-list markers `:` and `~` are intentionally excluded. They describe
+definitions for a preceding term rather than peer list items, so owner movement,
+depth inference, and empty-item return behavior would be ambiguous.
+
+## Supported Marker Types
 
 The ordered-list cycling feature supports these ten marker styles, in the
 configured order:
@@ -35,6 +40,28 @@ Unordered markers are `-`, `+`, and `*`. They are standard Markdown markers, not
 ordered styles, and are never inserted into the ordered-style cycle. They can
 still participate in chunk-local depth preferences.
 
+Hash markers are `#.`. Hash markers participate in structural depth inference as
+their own marker type and behave like unordered markers for autocompletion: they
+repeat as `#.` at the same depth, return to parent depth from empty nested items,
+and never participate in ordered renumbering. They are not part of the unordered
+marker cycle.
+
+Example-list markers are `(@)` and `(@label)`. Structural marker inference stores
+only the fact that a depth uses an example-list marker; it does not store or copy
+the source label. Newly inserted example-list markers use `(@)` and place the
+cursor between `@` and `)` when the inserted item is otherwise empty.
+
+Custom-label markers are `{::}` and `{::label}` or `{::expression}` forms.
+Structural marker inference stores only the custom-label marker type; it does not
+store or copy the source label, placeholder, or expression. Newly inserted
+custom-label markers use `{::}` and place the cursor between `::` and `}` when
+the inserted item is otherwise empty.
+
+Hash, example-list, and custom-label markers are enabled only when their
+corresponding syntax feature is enabled. When a feature is disabled, its marker
+text is treated as plain text by structural list autocompletion and must not
+create owners or depth-map overrides.
+
 ## Terms
 
 - List chunk: a contiguous group of list-item lines and their indented
@@ -55,8 +82,12 @@ still participate in chunk-local depth preferences.
   belongs to the owner, stopping at a blank line. If that block contains direct
   continuations followed by a nested child list, the nested child list supplies
   the explicit child marker type.
-- Marker type: either an ordered style such as `lower-alpha-period` or an
-  unordered marker such as `-`.
+- Marker type: one of an ordered style such as `lower-alpha-period`, an
+  unordered marker such as `-`, hash, example-list, or custom-label.
+- Editable placeholder marker: an unlabeled example marker `(@)` or empty
+  custom-label marker `{::}` with the cursor inside the marker's editable region.
+  For example, `(@|)` and `{::|}` are editable placeholders; `(@) |` and
+  `{::} |` are ordinary list items at cursor position after the marker.
 - Ordinal: the numeric value represented by an ordered marker. For example,
   `b.`, `B)`, `ii.`, and `2.` all have ordinal `2`.
 - Depth map: the chunk-local function from parsed list depth to marker type.
@@ -235,8 +266,9 @@ When `autoRenumberLists` is disabled:
 - Inserted or moved items can create duplicate ordered markers, such as
   `a.`, `a.`, `b.`.
 
-The depth map stores only marker style. Ordinals are resolved separately from
-local sibling context and `autoRenumberLists`.
+The depth map stores only marker type. For example and custom-label markers, it
+stores only the marker kind, not the source label or expression. Ordinals are
+resolved separately from local sibling context and `autoRenumberLists`.
 
 Example with renumbering enabled:
 
@@ -266,7 +298,7 @@ With `autoRenumberLists` disabled, the same edit should produce:
 
 ## Enter Behavior
 
-Enter has four standard paths.
+Enter has four structural paths.
 
 For a list item with an immediately following deeper nonblank block in the same
 chunk:
@@ -355,10 +387,20 @@ For a non-empty list item with no immediately following deeper nonblank block:
 
 - Insert a new item at the same depth.
 - Preserve the current unordered marker exactly for unordered items.
+- Preserve hash marker type by inserting `#.`.
+- Preserve example-list marker type by inserting `(@)` and placing the cursor
+  between `@` and `)`.
+- Preserve custom-label marker type by inserting `{::}` and placing the cursor
+  between `::` and `}`.
 - Preserve the current ordered style for ordered items.
 - Increment the ordered ordinal when `autoRenumberLists` is enabled.
 - Preserve the current ordered ordinal value when `autoRenumberLists` is
   disabled.
+- A labeled example item such as `(@example)` with no content is still a real
+  list item; pressing Enter after the marker continues the example-list depth.
+- A custom-label item such as `{::Label}` or `{::P(#first)}` with no content is
+  still a real list item; pressing Enter after the marker continues the
+  custom-label depth.
 
 For an empty nested item:
 
@@ -367,11 +409,21 @@ For an empty nested item:
 - If the target is ordered, resolve the ordinal according to
   `autoRenumberLists`.
 - If the target is unordered, preserve the parent depth's unordered marker.
+- If the target is hash, insert `#.`.
+- If the target is example-list, insert `(@)` and place the cursor between `@`
+  and `)`.
+- If the target is custom-label, insert `{::}` and place the cursor between `::`
+  and `}`.
 - Remove the empty child marker from the old child depth.
 
 For an empty top-level item:
 
 - Remove the marker and leave a plain empty line.
+
+For example-list and custom-label items, the empty-item path applies only to
+editable placeholder markers with the cursor inside the editable region. `(@|)`
+and `{::|}` can remove or return the item. `(@) |`, `(@label) |`, `{::} |`, and
+`{::Label} |` continue their current depth instead.
 
 Bridge decimal items follow the nested empty-item rule. They should return to the
 parent fancy style and continue or preserve ordinal values according to
@@ -393,10 +445,15 @@ With no selection:
   the child list still supplies the explicit child marker type.
 - If there is no explicit child list, resolve the target marker type from the
   chunk depth map.
+- If the target depth resolves to hash, example-list, or custom-label, that
+  marker type wins over ordered-style fallback.
 - If moving into an explicit child block, use that child block's exact
   indentation.
 - If no explicit target indentation exists, add the configured indentation unit,
   currently four spaces.
+- When a non-empty item is moved into an example-list or custom-label target
+  depth, preserve the content-relative cursor position. Cursor placement inside
+  `(@)` or `{::}` is reserved for newly inserted empty markers.
 
 Tab can be pressed anywhere inside the owner line or its direct continuation
 text. These positions are structurally equivalent:
@@ -537,11 +594,12 @@ For selected owners, resolve each moved owner's marker type by its target depth
 using explicit target context first and the chunk depth map second. Then renumber
 affected ordered sibling groups only when `autoRenumberLists` is enabled.
 
-## Hybrid Nested Lists
+## Hybrid Structural Lists
 
-Hybrid lists are standard list chunks where adjacent depths use different marker
-types, such as ordered parent to unordered child, unordered parent to ordered
-child, or unordered child to unordered grandchild with a different source marker.
+Hybrid structural lists are list chunks where adjacent depths use different
+marker types, such as ordered parent to unordered child, unordered parent to
+example-list child, hash parent to ordered child, or custom-label child to
+unordered grandchild.
 
 The core rule is:
 
@@ -549,22 +607,60 @@ The core rule is:
 > continues the owner according to the immediate following block; the target
 > depth's marker type wins.
 
-Unordered list items are not part of the ordered marker cycle:
+Unordered, hash, example-list, and custom-label list items are not part of the
+ordered marker cycle:
 
 - Enter on a non-empty unordered item with no following deeper block inserts a new
   unordered item at the same depth and preserves the exact unordered marker from
   that depth.
+- Enter on a non-empty hash item with no following deeper block inserts another
+  `#.` item at the same depth.
+- Enter on a non-empty example-list item with no following deeper block inserts
+  `(@)` at the same depth and places the cursor inside the marker.
+- Enter on a non-empty custom-label item with no following deeper block inserts
+  `{::}` at the same depth and places the cursor inside the marker.
 - Enter on an empty nested unordered item returns to the nearest parent depth.
+- Enter on an empty nested hash item returns to the nearest parent depth.
+- Enter on an editable nested example-list or custom-label placeholder returns to
+  the nearest parent depth.
 - Shift+Tab on an empty nested unordered item returns to the nearest parent depth
   and must produce the same marker type and ordinal as Enter would.
+- Shift+Tab on an empty nested hash, example-list, or custom-label item follows
+  the same return-to-parent rule.
 - When returning to an unordered parent depth, the new item preserves that parent
   depth's unordered marker.
+- When returning to a hash parent depth, the new item uses `#.`.
+- When returning to an example-list parent depth, the new item uses `(@)` and
+  places the cursor inside the marker.
+- When returning to a custom-label parent depth, the new item uses `{::}` and
+  places the cursor inside the marker.
 - When returning to an ordered parent depth, the new item resolves the ordered
   style through explicit parent/depth-map rules and resolves ordinal values
   according to `autoRenumberLists`.
+- Hash, example-list, and custom-label markers do not participate in unordered
+  marker cycling. Only `-`, `+`, and `*` cycle as unordered markers.
 - Ordered grandchildren nested under unordered items still use ordered
   continuation at their own depth. If an ordered grandchild item is empty, Enter
   returns one depth to the unordered parent, not all the way to the ordered root.
+  The same rule applies under hash, example-list, and custom-label parents.
+
+If there is no explicit child block and no existing target-depth override,
+Tab uses the existing ordered default fallback even when the current item is
+hash, example-list, or custom-label:
+
+```markdown
+#. parent
+#. child|
+```
+
+Pressing Tab should produce:
+
+```markdown
+#. parent
+    a. child|
+```
+
+The hash parent does not force hash descendants by default.
 
 Example: unordered child under ordered parent continues as unordered:
 
@@ -688,6 +784,24 @@ helper:
 - Unordered root groups for `-`, `+`, and `*`: each should run the standardized
   hybrid workflow, with ordered descendants using depth-map inference and empty
   ordered descendants returning to the nearest unordered parent marker.
+- Hash roots and hash child depths: same-depth Enter repeats `#.`, Tab/Shift+Tab
+  honor explicit hash target-depth overrides, empty nested hash items return to
+  the parent marker type, and missing child-depth evidence falls back to the
+  ordered default.
+- Example-list roots and example-list child depths: same-depth Enter inserts
+  `(@)` with the cursor inside the marker, Tab/Shift+Tab honor explicit
+  example-list target-depth overrides without copying labels, editable empty
+  nested placeholders return to the parent marker type, and disabled
+  `enableExampleLists` treats `(@...)` as plain text.
+- Custom-label roots and custom-label child depths: same-depth Enter inserts
+  `{::}` with the cursor inside the marker, Tab/Shift+Tab honor explicit
+  custom-label target-depth overrides without copying labels or expressions,
+  editable empty nested placeholders return to the parent marker type, and
+  disabled custom-label support treats `{::...}` as plain text.
+- Mixed target-depth conflicts involving ordered, unordered, hash, example-list,
+  and custom-label markers should use the existing precedence unchanged:
+  explicit child/parent target, nearest previous target-depth item, nearest
+  following target-depth item, then ordered default fallback.
 
 Depth-map E2E coverage should include:
 

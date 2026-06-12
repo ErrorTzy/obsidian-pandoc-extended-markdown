@@ -4,7 +4,7 @@ import {
     isOrderedMarkerStyleAvailable,
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
-import { parseStandardListItem } from '../../../shared/utils/listContext';
+import { parseStructuralListItem } from './standardListStructure';
 
 const NOTICE_TIMEOUT_MS = 8000;
 
@@ -24,12 +24,12 @@ export function isEnabledStandardListLine(
     lineIndex: number,
     settings: PandocExtendedMarkdownSettings
 ): boolean {
-    const item = parseStandardListItem(lineText);
+    const item = parseStructuralListItem(lineText, settings);
     if (!item) {
         return false;
     }
 
-    if (item.kind === 'unordered') {
+    if (item.kind !== 'ordered') {
         return true;
     }
 

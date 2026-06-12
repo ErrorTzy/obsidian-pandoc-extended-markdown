@@ -41,7 +41,7 @@ export function handleContinuationLine(config: ContinuationLineConfig): boolean 
         hasEnabledStandardListOwnerCandidate(allLines, lineIndex, settings)
     ) {
         return showListAutocompletionError(
-            'The continuation line could not be associated with a standard list owner.',
+            'The continuation line could not be associated with a structural list owner.',
             currentLine.line.number
         );
     }

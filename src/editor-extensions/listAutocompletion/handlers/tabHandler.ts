@@ -18,16 +18,17 @@ import {
     findExplicitChildBlock,
     findNearestNodeAtDepth,
     findTargetParentLineIndex,
+    formatNonOrderedMarker,
     getDirectContinuationLineIndices,
     getPreviousSiblingOrdinal,
     removeIndentLevel,
     resolveListOwnerAtLine,
     resolveMarkerTypeForDepth,
+    parseStructuralListItem,
     StandardListChunk,
     StandardListMarkerType,
     StandardListNode
 } from '../utils/standardListStructure';
-import { parseStandardListItem } from '../../../shared/utils/listContext';
 
 type MoveDirection = 'indent' | 'outdent';
 
@@ -82,7 +83,7 @@ function moveTouchedOwners(
     if (ownerContexts.length === 0) {
         return shouldReportMissingOwner(lines, view, selection.from, selection.to, settings)
             ? showListAutocompletionError(
-                'The touched standard list item could not be resolved to an owner.',
+                'The touched structural list item could not be resolved to an owner.',
                 state.doc.lineAt(selection.from).number
             )
             : false;
@@ -91,7 +92,7 @@ function moveTouchedOwners(
     const moves = buildOwnerMoves(lines, ownerContexts, direction, settings);
     if (moves.length === 0) {
         return showListAutocompletionError(
-            'No valid standard list owner move could be built.',
+            'No valid structural list owner move could be built.',
             state.doc.lineAt(selection.from).number
         );
     }
@@ -105,7 +106,7 @@ function moveTouchedOwners(
     applyExpectedRenumbering(nextLines, moves, settings);
 
     const cursor = selection.empty
-        ? resolveMovedCursor(view, lines, nextLines, moves, selection.from)
+        ? resolveMovedCursor(view, lines, nextLines, moves, selection.from, settings)
         : selection.from;
 
     setPendingListBlockReconciliation(nextLines, {
@@ -216,7 +217,7 @@ function buildOwnerMoves(
             targetParentLineIndex,
             lineIndices: [
                 owner.lineIndex,
-                ...getDirectContinuationLineIndices(lines, owner)
+                ...getDirectContinuationLineIndices(lines, owner, settings)
             ]
         });
     }
@@ -276,8 +277,8 @@ function formatMovedMarker(
     settings: PandocExtendedMarkdownSettings,
     movedOrderedOwners: MovedOrderedOwner[]
 ): string {
-    if (move.targetMarkerType.kind === 'unordered') {
-        return move.targetMarkerType.marker;
+    if (move.targetMarkerType.kind !== 'ordered') {
+        return formatNonOrderedMarker(move.targetMarkerType);
     }
 
     const currentOrdered = parseOrderedListMarker(
@@ -378,7 +379,8 @@ function resolveMovedCursor(
     originalLines: string[],
     nextLines: string[],
     moves: OwnerMove[],
-    cursorPosition: number
+    cursorPosition: number,
+    settings: PandocExtendedMarkdownSettings
 ): number {
     const cursorLine = view.state.doc.lineAt(cursorPosition);
     const cursorLineIndex = cursorLine.number - 1;
@@ -389,16 +391,21 @@ function resolveMovedCursor(
 
     const oldOffset = cursorPosition - cursorLine.from;
     const newOffset = cursorLineIndex === move.owner.lineIndex
-        ? getMovedOwnerCursorOffset(originalLines[cursorLineIndex], nextLines[cursorLineIndex], oldOffset)
+        ? getMovedOwnerCursorOffset(originalLines[cursorLineIndex], nextLines[cursorLineIndex], oldOffset, settings)
         : Math.max(0, oldOffset + move.targetIndent.length - move.owner.indent.length);
 
     return getLineStartOffset(nextLines, cursorLineIndex) +
         Math.min(newOffset, nextLines[cursorLineIndex].length);
 }
 
-function getMovedOwnerCursorOffset(oldLine: string, newLine: string, oldOffset: number): number {
-    const oldMarkerEnd = getMarkerEnd(oldLine);
-    const newMarkerEnd = getMarkerEnd(newLine);
+function getMovedOwnerCursorOffset(
+    oldLine: string,
+    newLine: string,
+    oldOffset: number,
+    settings: PandocExtendedMarkdownSettings
+): number {
+    const oldMarkerEnd = getMarkerEnd(oldLine, settings);
+    const newMarkerEnd = getMarkerEnd(newLine, settings);
 
     if (oldMarkerEnd === null || newMarkerEnd === null) {
         return oldOffset;
@@ -409,8 +416,8 @@ function getMovedOwnerCursorOffset(oldLine: string, newLine: string, oldOffset: 
         : Math.max(newMarkerEnd, oldOffset + newMarkerEnd - oldMarkerEnd);
 }
 
-function getMarkerEnd(line: string): number | null {
-    const item = parseStandardListItem(line);
+function getMarkerEnd(line: string, settings: PandocExtendedMarkdownSettings): number | null {
+    const item = parseStructuralListItem(line, settings);
     return item ? item.indent.length + item.marker.length + item.spaces.length : null;
 }
 

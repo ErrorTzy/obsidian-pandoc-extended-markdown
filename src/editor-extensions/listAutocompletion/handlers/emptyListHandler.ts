@@ -4,9 +4,6 @@ import { EditorSelection } from '@codemirror/state';
 // Types
 import { EmptyListHandlingConfig } from '../types';
 
-// Patterns
-import { ListPatterns } from '../../../shared/patterns';
-
 // Utils
 import { isEmptyListItem } from '../../../shared/utils/listHelpers';
 import {
@@ -17,6 +14,8 @@ import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
     findNearestNodeAtDepth,
     findTargetParentLineIndex,
+    formatNonOrderedMarker,
+    getInsertedMarkerCursorOffset,
     getPreviousSiblingOrdinal,
     removeIndentLevel,
     resolveListOwnerAtLine,
@@ -35,48 +34,16 @@ import {
  * @returns True if the empty list case was handled
  */
 export function handleEmptyListSpecialCases(config: EmptyListHandlingConfig): boolean {
-    const { view, currentLine, beforeCursor, afterCursor } = config;
-    const { line, lineText } = currentLine;
-    const state = view.state;
+    const { beforeCursor, afterCursor } = config;
 
     // Handle empty example list between @ and )
     if (beforeCursor.endsWith('(@') && afterCursor.startsWith(')')) {
-        const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-        const indent = indentMatch ? indentMatch[1] : '';
-
-        const changes = {
-            from: line.from,
-            to: line.to,
-            insert: indent
-        };
-
-        const transaction = state.update({
-            changes,
-            selection: EditorSelection.cursor(line.from + indent.length)
-        });
-
-        view.dispatch(transaction);
-        return true;
+        return handleStandardEmptyListItem(config);
     }
 
     // Handle empty custom label list between {:: and }
     if (beforeCursor.endsWith('{::') && afterCursor.startsWith('}')) {
-        const indentMatch = lineText.match(ListPatterns.INDENT_ONLY);
-        const indent = indentMatch ? indentMatch[1] : '';
-
-        const changes = {
-            from: line.from,
-            to: line.to,
-            insert: indent
-        };
-
-        const transaction = state.update({
-            changes,
-            selection: EditorSelection.cursor(line.from + indent.length)
-        });
-
-        view.dispatch(transaction);
-        return true;
+        return handleStandardEmptyListItem(config);
     }
 
     return false;
@@ -105,13 +72,13 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
         }
 
         return showListAutocompletionError(
-            'The empty standard list item could not be returned to its parent depth.',
+            'The empty structural list item could not be returned to its parent depth.',
             line.number
         );
     }
 
     return showListAutocompletionError(
-        'Empty non-standard list items are not handled by the standard list resolver.',
+        'Empty non-structural list items are not handled by the structural list resolver.',
         line.number
     );
 }
@@ -153,8 +120,8 @@ function handleStandardEmptyListItem(config: EmptyListHandlingConfig): boolean {
     );
     const targetParentLineIndex = explicitParent?.parentLineIndex ??
         findTargetParentLineIndex(chunk, owner.lineIndex, targetDepth);
-    const marker = targetMarkerType.kind === 'unordered'
-        ? targetMarkerType.marker
+    const marker = targetMarkerType.kind !== 'ordered'
+        ? formatNonOrderedMarker(targetMarkerType)
         : formatEmptyReturnOrderedMarker(
             lines,
             owner.lineIndex,
@@ -182,7 +149,9 @@ function handleStandardEmptyListItem(config: EmptyListHandlingConfig): boolean {
             to: state.doc.length,
             insert: nextLines.join('\n')
         },
-        selection: EditorSelection.cursor(currentLine.line.from + newLine.length)
+        selection: EditorSelection.cursor(
+            currentLine.line.from + getInsertedMarkerCursorOffset(newLine, targetMarkerType)
+        )
     }));
 
     return true;

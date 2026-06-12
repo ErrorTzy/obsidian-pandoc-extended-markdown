@@ -1,14 +1,32 @@
 import { INDENTATION } from '../../../core/constants';
 import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
+import { LIST_MARKERS } from '../../../core/constants/listConstants';
+import { ListPatterns } from '../../../shared/patterns';
+import {
+    isCustomLabelListsEnabled,
+    isSyntaxFeatureEnabled
+} from '../../../shared/types/settingsTypes';
 import type { OrderedListMarkerStyle } from '../../../shared/types/orderedListTypes';
 import { getAvailableOrderedMarkerStyles, parseOrderedListMarker } from '../../../shared/utils/orderedListMarkers';
 import { parseStandardListItem, ParsedStandardListItem } from '../../../shared/utils/listContext';
 
 export type StandardListMarkerType =
     | { kind: 'ordered'; style: OrderedListMarkerStyle }
-    | { kind: 'unordered'; marker: string };
+    | { kind: 'unordered'; marker: string }
+    | { kind: 'hash' }
+    | { kind: 'example' }
+    | { kind: 'custom-label' };
 
-export interface StandardListNode extends ParsedStandardListItem {
+type StructuralListMarkerKind = ParsedStandardListItem['kind'] |
+    'hash' |
+    'example' |
+    'custom-label';
+
+export interface ParsedStructuralListItem extends Omit<ParsedStandardListItem, 'kind'> {
+    kind: StructuralListMarkerKind;
+}
+
+export interface StandardListNode extends ParsedStructuralListItem {
     lineIndex: number;
     lineText: string;
     depth: number;
@@ -54,6 +72,108 @@ export function getLineIndentColumns(line: string): number {
     return getIndentColumns(getLineIndent(line));
 }
 
+export function parseStructuralListItem(
+    line: string,
+    settings: PandocExtendedMarkdownSettings
+): ParsedStructuralListItem | null {
+    const standardItem = parseStandardListItem(line);
+    if (standardItem) {
+        return standardItem;
+    }
+
+    const hashMatch = isSyntaxFeatureEnabled(settings, 'enableHashAutoNumber')
+        ? ListPatterns.isHashList(line) ?? line.match(ListPatterns.EMPTY_HASH_LIST)
+        : null;
+    if (hashMatch) {
+        return parseExtendedListMatch(line, hashMatch, 'hash');
+    }
+
+    const exampleMatch = isSyntaxFeatureEnabled(settings, 'enableExampleLists')
+        ? ListPatterns.isExampleList(line)
+        : null;
+    if (exampleMatch) {
+        return parseExtendedListMatch(line, exampleMatch, 'example');
+    }
+    const emptyExampleMatch = isSyntaxFeatureEnabled(settings, 'enableExampleLists')
+        ? line.match(ListPatterns.EMPTY_EXAMPLE_LIST)
+        : null;
+    if (emptyExampleMatch) {
+        return {
+            kind: 'example',
+            indent: emptyExampleMatch[1],
+            indentColumns: getIndentColumns(emptyExampleMatch[1]),
+            marker: `(@${emptyExampleMatch[2]})`,
+            spaces: emptyExampleMatch[3],
+            content: ''
+        };
+    }
+
+    const customLabelMatch = isCustomLabelListsEnabled(settings)
+        ? ListPatterns.isCustomLabelList(line)
+        : null;
+    if (customLabelMatch) {
+        return parseExtendedListMatch(line, customLabelMatch, 'custom-label');
+    }
+    const emptyCustomLabelWithContentMatch = isCustomLabelListsEnabled(settings)
+        ? line.match(/^(\s*)(\{::\})(\s+)(.*)$/)
+        : null;
+    if (emptyCustomLabelWithContentMatch) {
+        return {
+            kind: 'custom-label',
+            indent: emptyCustomLabelWithContentMatch[1],
+            indentColumns: getIndentColumns(emptyCustomLabelWithContentMatch[1]),
+            marker: emptyCustomLabelWithContentMatch[2],
+            spaces: emptyCustomLabelWithContentMatch[3],
+            content: emptyCustomLabelWithContentMatch[4]
+        };
+    }
+    const emptyCustomLabelMatch = isCustomLabelListsEnabled(settings)
+        ? line.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST)
+        : null;
+    if (emptyCustomLabelMatch) {
+        return {
+            kind: 'custom-label',
+            indent: emptyCustomLabelMatch[1],
+            indentColumns: getIndentColumns(emptyCustomLabelMatch[1]),
+            marker: emptyCustomLabelMatch[2],
+            spaces: emptyCustomLabelMatch[4],
+            content: ''
+        };
+    }
+
+    return null;
+}
+
+export function formatNonOrderedMarker(markerType: Exclude<StandardListMarkerType, { kind: 'ordered' }>): string {
+    switch (markerType.kind) {
+        case 'unordered':
+            return markerType.marker;
+        case 'hash':
+            return LIST_MARKERS.HASH_NUMBERED;
+        case 'example':
+            return LIST_MARKERS.EXAMPLE_FULL;
+        case 'custom-label':
+            return LIST_MARKERS.CUSTOM_LABEL_FULL;
+    }
+}
+
+export function getInsertedMarkerCursorOffset(
+    insertedLine: string,
+    markerType: StandardListMarkerType
+): number {
+    if (markerType.kind === 'example') {
+        const markerEnd = insertedLine.indexOf(LIST_MARKERS.EXAMPLE_END);
+        return markerEnd >= 0 ? markerEnd : insertedLine.length;
+    }
+
+    if (markerType.kind === 'custom-label') {
+        const markerEnd = insertedLine.indexOf('}');
+        return markerEnd >= 0 ? markerEnd : insertedLine.length;
+    }
+
+    return insertedLine.length;
+}
+
 export function addIndentLevel(indent: string): string {
     return `${indent}${INDENTATION.FOUR_SPACES}`;
 }
@@ -83,7 +203,7 @@ export function parseStandardListChunk(
     const stack: ListStackEntry[] = [];
 
     for (let index = startIndex; index <= endIndex; index++) {
-        const item = parseStandardListItem(lines[index]);
+        const item = parseStructuralListItem(lines[index], settings);
         if (!item) {
             continue;
         }
@@ -164,7 +284,8 @@ export function resolveListOwnerAtLine(
 
 export function getDirectContinuationLineIndices(
     lines: string[],
-    owner: StandardListNode
+    owner: StandardListNode,
+    settings: PandocExtendedMarkdownSettings
 ): number[] {
     const lineIndices: number[] = [];
 
@@ -173,7 +294,7 @@ export function getDirectContinuationLineIndices(
             break;
         }
 
-        const item = parseStandardListItem(lines[index]);
+        const item = parseStructuralListItem(lines[index], settings);
         if (item) {
             break;
         }
@@ -213,7 +334,7 @@ export function findExplicitChildBlock(
             break;
         }
 
-        const item = parseStandardListItem(lines[index]);
+        const item = parseStructuralListItem(lines[index], settings);
         if (!item) {
             continue;
         }
@@ -304,7 +425,9 @@ export function markerTypesEqual(
 
     return left.kind === 'ordered'
         ? left.style === (right as { kind: 'ordered'; style: OrderedListMarkerStyle }).style
-        : left.marker === (right as { kind: 'unordered'; marker: string }).marker;
+        : left.kind === 'unordered'
+            ? left.marker === (right as { kind: 'unordered'; marker: string }).marker
+            : left.kind === right.kind;
 }
 
 export function findTargetParentLineIndex(
@@ -333,11 +456,23 @@ export function findTargetParentLineIndex(
 function resolveMarkerType(
     lines: string[],
     lineIndex: number,
-    item: ParsedStandardListItem,
+    item: ParsedStructuralListItem,
     settings: PandocExtendedMarkdownSettings
 ): StandardListMarkerType | null {
     if (item.kind === 'unordered') {
         return { kind: 'unordered', marker: item.marker };
+    }
+
+    if (item.kind === 'hash') {
+        return { kind: 'hash' };
+    }
+
+    if (item.kind === 'example') {
+        return { kind: 'example' };
+    }
+
+    if (item.kind === 'custom-label') {
+        return { kind: 'custom-label' };
     }
 
     const ordered = parseOrderedListMarker(lines[lineIndex], lines, lineIndex);
@@ -421,4 +556,23 @@ function findChunkEnd(lines: string[], lineIndex: number): number {
     }
 
     return lines.length - 1;
+}
+
+function parseExtendedListMatch(
+    line: string,
+    match: RegExpMatchArray,
+    kind: Exclude<StructuralListMarkerKind, ParsedStandardListItem['kind']>
+): ParsedStructuralListItem {
+    const indent = match[1];
+    const marker = match[2];
+    const spaces = match[match.length - 1] ?? '';
+
+    return {
+        kind,
+        indent,
+        indentColumns: getIndentColumns(indent),
+        marker,
+        spaces,
+        content: line.slice(match[0].length)
+    };
 }

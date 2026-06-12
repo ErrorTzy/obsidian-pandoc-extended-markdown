@@ -11,6 +11,8 @@ import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
     findExplicitChildBlock,
     findTargetParentLineIndex,
+    formatNonOrderedMarker,
+    getInsertedMarkerCursorOffset,
     getPreviousSiblingOrdinal,
     resolveListOwnerAtLine,
     StandardListMarkerType
@@ -148,7 +150,10 @@ function handleEnterBeforeExplicitChildBlock(
             markerType: explicitChild.markerType
         }, settings);
     }
-    const cursorPosition = line.from + beforeCursor.length + 1 + insertedLine.length;
+    const cursorPosition = line.from + beforeCursor.length + 1 +
+        (explicitChild.markerType && afterCursor.length === 0
+            ? getInsertedMarkerCursorOffset(insertedLine, explicitChild.markerType)
+            : insertedLine.length);
 
     setPendingListBlockReconciliation(expectedLines, {
         startIndex: 0,
@@ -171,8 +176,8 @@ function formatMarkerForInsertedChild(
     ownerContext: NonNullable<ReturnType<typeof resolveListOwnerAtLine>>,
     settings: ReturnType<typeof resolveSettings>
 ): string {
-    if (markerType.kind === 'unordered') {
-        return markerType.marker;
+    if (markerType.kind !== 'ordered') {
+        return formatNonOrderedMarker(markerType);
     }
 
     const targetDepth = ownerContext.owner.depth + 1;

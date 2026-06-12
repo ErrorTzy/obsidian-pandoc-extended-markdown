@@ -1,7 +1,6 @@
 import { EditorSelection } from '@codemirror/state';
 import { LIST_MARKERS } from '../../../core/constants';
 import { ListPatterns } from '../../../shared/patterns';
-import { parseStandardListItem } from '../../../shared/utils/listContext';
 import {
     formatOrderedListMarker,
     isOrderedMarkerStyleAvailable,
@@ -16,7 +15,12 @@ import {
     showListAutocompletionError
 } from '../utils/debugNotice';
 import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
-import { resolveListOwnerAtLine } from '../utils/standardListStructure';
+import {
+    formatNonOrderedMarker,
+    getInsertedMarkerCursorOffset,
+    parseStructuralListItem,
+    resolveListOwnerAtLine
+} from '../utils/standardListStructure';
 import { NewListItemConfig } from '../types';
 
 /**
@@ -79,7 +83,7 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
         }
 
         return showListAutocompletionError(
-            'The standard list item could not be continued with the standard resolver.',
+            'The structural list item could not be continued with the structural resolver.',
             currentLine.line.number
         );
     }
@@ -166,6 +170,22 @@ function insertNewStandardListItem(
     const insertPos = selection.from === line.to ? selection.from : line.to;
     const spaces = markerInfo.spaces || ' ';
     const insertedLine = `${markerInfo.indent}${markerInfo.marker}${spaces}`;
+
+    if (ownerContext.owner.markerType.kind !== 'ordered') {
+        const insertText = `\n${insertedLine}`;
+        view.dispatch(state.update({
+            changes: {
+                from: insertPos,
+                to: insertPos,
+                insert: insertText
+            },
+            selection: EditorSelection.cursor(
+                insertPos + 1 + getInsertedMarkerCursorOffset(insertedLine, ownerContext.owner.markerType)
+            )
+        }));
+        return true;
+    }
+
     const nextDoc = `${state.doc.sliceString(0, insertPos)}\n${insertedLine}${state.doc.sliceString(insertPos)}`;
     const nextLines = nextDoc.split('\n');
     const insertedLineIndex = currentLineIndex + 1;
@@ -185,7 +205,8 @@ function insertNewStandardListItem(
             insert: nextLines.join('\n')
         },
         selection: EditorSelection.cursor(
-            getLineStartOffset(nextLines, insertedLineIndex) + insertedLine.length
+            getLineStartOffset(nextLines, insertedLineIndex) +
+                getInsertedMarkerCursorOffset(insertedLine, ownerContext.owner.markerType)
         )
     }));
 
@@ -198,7 +219,7 @@ function getNextStandardListMarker(
     currentLineIndex: number,
     settings: NewListItemConfig['settings']
 ): NewListItemConfig['markerInfo'] | null {
-    const standardItem = parseStandardListItem(lineText);
+    const standardItem = parseStructuralListItem(lineText, settings);
     if (!standardItem) {
         return null;
     }
@@ -206,6 +227,14 @@ function getNextStandardListMarker(
     if (standardItem.kind === 'unordered') {
         return {
             marker: standardItem.marker,
+            indent: standardItem.indent,
+            spaces: standardItem.spaces || ' '
+        };
+    }
+
+    if (standardItem.kind === 'hash' || standardItem.kind === 'example' || standardItem.kind === 'custom-label') {
+        return {
+            marker: formatNonOrderedMarker({ kind: standardItem.kind }),
             indent: standardItem.indent,
             spaces: standardItem.spaces || ' '
         };

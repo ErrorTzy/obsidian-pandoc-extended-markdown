@@ -879,6 +879,136 @@ describe('Ordered list autocompletion behavior', () => {
             });
         });
 
+        describe('structural Pandoc marker kinds', () => {
+            it('uses an explicit hash child as the target marker type when indenting', async () => {
+                await openDocumentWithCursor('structural-list-tab-explicit-hash-child.md', [
+                    '1. parent',
+                    '2. child|',
+                    `${INDENT}#. existing hash`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}#. child`,
+                    `${INDENT}#. existing hash`
+                ].join('\n'));
+            });
+
+            it('uses an explicit example child without copying its label when indenting', async () => {
+                await openDocumentWithCursor('structural-list-tab-explicit-example-child.md', [
+                    '1. parent',
+                    '2. child|',
+                    `${INDENT}(@named) existing example`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}(@) child`,
+                    `${INDENT}(@named) existing example`
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    `${INDENT}(@) child|`,
+                    `${INDENT}(@named) existing example`
+                ].join('\n'));
+            });
+
+            it('uses an explicit custom-label child without copying its label when indenting', async () => {
+                await openDocumentWithCursor('structural-list-tab-explicit-custom-label-child.md', [
+                    '1. parent',
+                    '2. child|',
+                    `${INDENT}{::P(#first)} existing label`
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}{::} child`,
+                    `${INDENT}{::P(#first)} existing label`
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    `${INDENT}{::} child|`,
+                    `${INDENT}{::P(#first)} existing label`
+                ].join('\n'));
+            });
+
+            it('returns an editable nested example placeholder to the ordered parent depth', async () => {
+                await openDocumentWithCursor('structural-list-enter-empty-example-child.md', [
+                    '1. parent',
+                    `${INDENT}(@|)`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    '2. '
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    '2. |'
+                ].join('\n'));
+            });
+
+            it('returns an editable nested custom-label placeholder to the ordered parent depth', async () => {
+                await openDocumentWithCursor('structural-list-enter-empty-custom-label-child.md', [
+                    '1. parent',
+                    `${INDENT}{::|}`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    '2. '
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    '2. |'
+                ].join('\n'));
+            });
+
+            it('continues an example placeholder when the cursor is after the marker', async () => {
+                await openDocumentWithCursor('structural-list-enter-example-after-marker.md', [
+                    '1. parent',
+                    `${INDENT}(@) |`
+                ].join('\n'));
+
+                await pressKey('Enter');
+
+                expect(await getEditorText()).toBe([
+                    '1. parent',
+                    `${INDENT}(@) `,
+                    `${INDENT}(@) `
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    `${INDENT}(@) `,
+                    `${INDENT}(@|) `
+                ].join('\n'));
+            });
+
+            it('uses ordered fallback for a missing child depth under hash items', async () => {
+                await openDocumentWithCursor('structural-list-tab-hash-missing-child-depth.md', [
+                    '#. parent',
+                    '#. child|'
+                ].join('\n'));
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    '#. parent',
+                    `${INDENT}a. child`
+                ].join('\n'));
+            });
+        });
+
         describe('Shift+Tab owner movement and target depth inference', () => {
             it('uses the chunk depth map for the shallower target depth', async () => {
                 await openDocumentWithCursor('ordered-list-owner-shift-tab-depth-map-target.md', [

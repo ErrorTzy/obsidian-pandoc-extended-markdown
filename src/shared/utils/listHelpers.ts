@@ -62,8 +62,7 @@ export function isEmptyListItem(line: string): boolean {
     // The only time (@) should be deleted is when cursor is between @ and )
     // which is handled by the special case in handleListEnter
     
-    // Check custom label lists
-    if (line.match(ListPatterns.EMPTY_CUSTOM_LABEL_LIST_NO_LABEL)) return true;
+    // Custom label placeholders are handled only when the cursor is inside {::}.
     
     // Check definition lists
     if (line.match(ListPatterns.EMPTY_DEFINITION_LIST)) return true;
