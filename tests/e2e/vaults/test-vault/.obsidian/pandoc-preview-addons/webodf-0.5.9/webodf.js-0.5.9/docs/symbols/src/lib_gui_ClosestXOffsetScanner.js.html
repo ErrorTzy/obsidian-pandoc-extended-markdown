@@ -1,0 +1,111 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2010-2014 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global core, gui*/</span><span class="WHIT">
+<span class='line'> 26</span> 
+<span class='line'> 27</span> </span><span class="COMM">/**
+<span class='line'> 28</span>  * Finds the closest step to the specified offset, but comparing the left and right edges of the
+<span class='line'> 29</span>  * surrounding rectangles to the desired offset. Iteration will continue until the steps
+<span class='line'> 30</span>  * start getting further away from the current closest step.
+<span class='line'> 31</span>  *
+<span class='line'> 32</span>  * @constructor
+<span class='line'> 33</span>  * @implements {gui.VisualStepScanner}
+<span class='line'> 34</span>  * @param {!number} offset Target horizontal offset
+<span class='line'> 35</span>  */</span><span class="WHIT">
+<span class='line'> 36</span> </span><span class="NAME">gui.ClosestXOffsetScanner</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">offset</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 37</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 38</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">self</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">this</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 39</span> </span><span class="WHIT">        </span><span class="NAME">closestDiff</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 40</span> </span><span class="WHIT">        </span><span class="NAME">LEFT_TO_RIGHT</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gui.StepInfo.VisualDirection.LEFT_TO_RIGHT</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 41</span> 
+<span class='line'> 42</span> </span><span class="WHIT">    </span><span class="NAME">this.token</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">undefined</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 43</span> 
+<span class='line'> 44</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 45</span>      * Returns true if the supplied edgeOffset is further away from the desired offset
+<span class='line'> 46</span>      * than one previously seen.
+<span class='line'> 47</span>      *
+<span class='line'> 48</span>      * @param {?number} edgeOffset
+<span class='line'> 49</span>      * @return {!boolean}
+<span class='line'> 50</span>      */</span><span class="WHIT">
+<span class='line'> 51</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">isFurtherFromOffset</span><span class="PUNC">(</span><span class="NAME">edgeOffset</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 52</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">edgeOffset</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">closestDiff</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="NAME">undefined</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 53</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">Math.abs</span><span class="PUNC">(</span><span class="NAME">edgeOffset</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">offset</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NAME">closestDiff</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 54</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 55</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 56</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 57</span> 
+<span class='line'> 58</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 59</span>      * Update the closestDiff if the supplied edge is closer to the offset
+<span class='line'> 60</span>      * @param {?number} edge
+<span class='line'> 61</span>      * @return {undefined}
+<span class='line'> 62</span>      */</span><span class="WHIT">
+<span class='line'> 63</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">updateDiffIfSmaller</span><span class="PUNC">(</span><span class="NAME">edge</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 64</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">edge</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">isFurtherFromOffset</span><span class="PUNC">(</span><span class="NAME">edge</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 65</span> </span><span class="WHIT">            </span><span class="NAME">closestDiff</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">Math.abs</span><span class="PUNC">(</span><span class="NAME">edge</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">offset</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 66</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 67</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 68</span> 
+<span class='line'> 69</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 70</span>      * @param {!gui.StepInfo} stepInfo
+<span class='line'> 71</span>      * @param {?ClientRect} previousRect
+<span class='line'> 72</span>      * @param {?ClientRect} nextRect
+<span class='line'> 73</span>      * @return {!boolean}
+<span class='line'> 74</span>      */</span><span class="WHIT">
+<span class='line'> 75</span> </span><span class="WHIT">    </span><span class="NAME">this.process</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="PUNC">(</span><span class="NAME">stepInfo</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">previousRect</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">nextRect</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 76</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">edge1</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 77</span> </span><span class="WHIT">            </span><span class="NAME">edge2</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 78</span> 
+<span class='line'> 79</span> </span><span class="WHIT">        </span><span class="COMM">// The cursor is always between the two rects.</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">stepInfo.visualDirection</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">LEFT_TO_RIGHT</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 81</span> </span><span class="WHIT">            </span><span class="COMM">// In an LTR visual direction, the caret is to the right of the previous rect</span><span class="WHIT">
+<span class='line'> 82</span> </span><span class="WHIT">            </span><span class="NAME">edge1</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">previousRect</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">previousRect.right</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 83</span> </span><span class="WHIT">            </span><span class="COMM">// and the left of the next rect</span><span class="WHIT">
+<span class='line'> 84</span> </span><span class="WHIT">            </span><span class="NAME">edge2</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">nextRect</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">nextRect.left</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 85</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 86</span> </span><span class="WHIT">            </span><span class="COMM">// In an RTL visual direction, the caret is to the LEFT of the previous rect</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">            </span><span class="NAME">edge1</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">previousRect</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">previousRect.left</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 88</span> </span><span class="WHIT">            </span><span class="COMM">// and the RIGHT of the next rect</span><span class="WHIT">
+<span class='line'> 89</span> </span><span class="WHIT">            </span><span class="NAME">edge2</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">nextRect</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">nextRect.right</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 90</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 91</span> 
+<span class='line'> 92</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">isFurtherFromOffset</span><span class="PUNC">(</span><span class="NAME">edge1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="NAME">isFurtherFromOffset</span><span class="PUNC">(</span><span class="NAME">edge2</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 93</span> </span><span class="WHIT">            </span><span class="COMM">// The current step is further away than the previous one, so terminate iteration</span><span class="WHIT">
+<span class='line'> 94</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 95</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 96</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">previousRect</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="NAME">nextRect</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 97</span> </span><span class="WHIT">            </span><span class="COMM">// At least one rectangle is visible, and is therefore a closer step than the last seen one</span><span class="WHIT">
+<span class='line'> 98</span> </span><span class="WHIT">            </span><span class="NAME">updateDiffIfSmaller</span><span class="PUNC">(</span><span class="NAME">edge1</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 99</span> </span><span class="WHIT">            </span><span class="NAME">updateDiffIfSmaller</span><span class="PUNC">(</span><span class="NAME">edge2</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>100</span> </span><span class="WHIT">            </span><span class="NAME">self.token</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">stepInfo.token</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>101</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>102</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>103</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>104</span> </span><span class="PUNC">}</span><span class="PUNC">;</span></pre></body></html>

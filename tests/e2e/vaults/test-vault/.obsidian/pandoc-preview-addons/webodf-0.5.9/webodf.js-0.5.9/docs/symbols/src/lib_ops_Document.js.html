@@ -1,0 +1,119 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2012-2013 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global ops */</span><span class="WHIT">
+<span class='line'> 26</span> </span><span class="COMM">/*jslint emptyblock: true, unparam: true */</span><span class="WHIT">
+<span class='line'> 27</span> 
+<span class='line'> 28</span> </span><span class="COMM">/**
+<span class='line'> 29</span>  * A document that keeps all data related to the mapped document.
+<span class='line'> 30</span>  * @interface
+<span class='line'> 31</span>  */</span><span class="WHIT">
+<span class='line'> 32</span> </span><span class="NAME">ops.Document</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">Document</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 33</span> </span><span class="COMM">/**
+<span class='line'> 34</span>  * @return {!Array.&lt;string>}
+<span class='line'> 35</span>  */</span><span class="WHIT">
+<span class='line'> 36</span> </span><span class="NAME">ops.Document.prototype.getMemberIds</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 37</span> </span><span class="COMM">/**
+<span class='line'> 38</span>  * @param {!string} memberid
+<span class='line'> 39</span>  * @return {!boolean}
+<span class='line'> 40</span>  */</span><span class="WHIT">
+<span class='line'> 41</span> </span><span class="NAME">ops.Document.prototype.removeCursor</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">memberid</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 42</span> </span><span class="COMM">/**
+<span class='line'> 43</span>  * @return {!Element}
+<span class='line'> 44</span>  */</span><span class="WHIT">
+<span class='line'> 45</span> </span><span class="NAME">ops.Document.prototype.getDocumentElement</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 46</span> </span><span class="COMM">/**
+<span class='line'> 47</span>  * Return the element where the document content begins.
+<span class='line'> 48</span>  * Document content means the body of the document. In the case of ODF this is
+<span class='line'> 49</span>  * office:text, office:spreadsheet, office:presentation. For most XML documents
+<span class='line'> 50</span>  * getRootNode() will return the same node as getDocumentElement().
+<span class='line'> 51</span>  * @return {!Element}
+<span class='line'> 52</span>  */</span><span class="WHIT">
+<span class='line'> 53</span> </span><span class="NAME">ops.Document.prototype.getRootNode</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 54</span> </span><span class="COMM">/**
+<span class='line'> 55</span>  * @return {!Document}
+<span class='line'> 56</span>  */</span><span class="WHIT">
+<span class='line'> 57</span> </span><span class="NAME">ops.Document.prototype.getDOMDocument</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="COMM">/**
+<span class='line'> 59</span>  * @return {!Element}
+<span class='line'> 60</span>  */</span><span class="WHIT">
+<span class='line'> 61</span> </span><span class="NAME">ops.Document.prototype.cloneDocumentElement</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 62</span> </span><span class="COMM">/**
+<span class='line'> 63</span>  * @param {!Element} element
+<span class='line'> 64</span>  * @return {undefined}
+<span class='line'> 65</span>  */</span><span class="WHIT">
+<span class='line'> 66</span> </span><span class="NAME">ops.Document.prototype.setDocumentElement</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">element</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 67</span> </span><span class="COMM">/**
+<span class='line'> 68</span>  * @param {!string} eventid
+<span class='line'> 69</span>  * @param {!Function} cb
+<span class='line'> 70</span>  * @return {undefined}
+<span class='line'> 71</span>  */</span><span class="WHIT">
+<span class='line'> 72</span> </span><span class="NAME">ops.Document.prototype.subscribe</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 73</span> </span><span class="COMM">/**
+<span class='line'> 74</span>  * @param {!string} eventid
+<span class='line'> 75</span>  * @param {!Function} cb
+<span class='line'> 76</span>  * @return {undefined}
+<span class='line'> 77</span>  */</span><span class="WHIT">
+<span class='line'> 78</span> </span><span class="NAME">ops.Document.prototype.unsubscribe</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 79</span> </span><span class="COMM">// vim:expandtab</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="COMM">/**
+<span class='line'> 81</span>  * @return {!ops.Canvas}
+<span class='line'> 82</span>  */</span><span class="WHIT">
+<span class='line'> 83</span> </span><span class="NAME">ops.Document.prototype.getCanvas</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 84</span> </span><span class="COMM">/**
+<span class='line'> 85</span>  * @param {string|!Node} inputMemberId
+<span class='line'> 86</span>  * @return {!core.PositionFilter}
+<span class='line'> 87</span>  */</span><span class="WHIT">
+<span class='line'> 88</span> </span><span class="NAME">ops.Document.prototype.createRootFilter</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">inputMemberId</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 89</span> </span><span class="COMM">/**
+<span class='line'> 90</span>  * @param {!Node} rootNode
+<span class='line'> 91</span>  * @return {!core.PositionIterator}
+<span class='line'> 92</span>  */</span><span class="WHIT">
+<span class='line'> 93</span> </span><span class="NAME">ops.Document.prototype.createPositionIterator</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">rootNode</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 94</span> </span><span class="COMM">/**
+<span class='line'> 95</span>  * @param {!string} memberid
+<span class='line'> 96</span>  * @return {!boolean}
+<span class='line'> 97</span>  */</span><span class="WHIT">
+<span class='line'> 98</span> </span><span class="NAME">ops.Document.prototype.hasCursor</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">memberid</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 99</span> 
+<span class='line'>100</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>101</span> </span><span class="NAME">ops.Document.signalCursorAdded</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT">   </span><span class="STRN">"cursor/added"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>102</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>103</span> </span><span class="NAME">ops.Document.signalCursorRemoved</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"cursor/removed"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>104</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>105</span> </span><span class="NAME">ops.Document.signalCursorMoved</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT">   </span><span class="STRN">"cursor/moved"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>106</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>107</span> </span><span class="NAME">ops.Document.signalMemberAdded</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT">   </span><span class="STRN">"member/added"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>108</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>109</span> </span><span class="NAME">ops.Document.signalMemberUpdated</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"member/updated"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>111</span> </span><span class="NAME">ops.Document.signalMemberRemoved</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"member/removed"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>112</span> </span></pre></body></html>

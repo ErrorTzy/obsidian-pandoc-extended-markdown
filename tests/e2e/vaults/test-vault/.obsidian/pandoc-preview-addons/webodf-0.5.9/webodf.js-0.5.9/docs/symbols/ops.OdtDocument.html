@@ -1,0 +1,3601 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="generator" content="JsDoc Toolkit" />
+		
+		<title>JsDoc Reference - ops.OdtDocument</title>
+
+		<style type="text/css">
+			/* default.css */
+body
+{
+	font: 12px "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+	width: 800px;
+}
+
+.header
+{
+	clear: both;
+	background-color: #ccc;
+	padding: 8px;
+}
+
+h1
+{
+	font-size: 150%;
+	font-weight: bold;
+	padding: 0;
+	margin: 1em 0 0 .3em;
+}
+
+hr
+{
+	border: none 0;
+	border-top: 1px solid #7F8FB1;
+	height: 1px;
+}
+
+pre.code
+{
+	display: block;
+	padding: 8px;
+	border: 1px dashed #ccc;
+}
+
+#index
+{
+	margin-top: 24px;
+	float: left;
+	width: 160px;
+	position: absolute;
+	left: 8px;
+	background-color: #F3F3F3;
+	padding: 8px;
+}
+
+#content
+{
+	margin-left: 190px;
+	width: 600px;
+}
+
+.classList
+{
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 1em;
+	overflow: auto;
+}
+
+.classList li
+{
+	padding: 0;
+	margin: 0 0 8px 0;
+}
+
+.summaryTable { width: 100%; }
+
+h1.classTitle
+{
+	font-size:170%;
+	line-height:130%;
+}
+
+h2 { font-size: 110%; }
+caption, div.sectionTitle
+{
+	background-color: #7F8FB1;
+	color: #fff;
+	font-size:130%;
+	text-align: left;
+	padding: 2px 6px 2px 6px;
+	border: 1px #7F8FB1 solid;
+}
+
+div.sectionTitle { margin-bottom: 8px; }
+.summaryTable thead { display: none; }
+
+.summaryTable td
+{
+	vertical-align: top;
+	padding: 4px;
+	border-bottom: 1px #7F8FB1 solid;
+	border-right: 1px #7F8FB1 solid;
+}
+
+/*col#summaryAttributes {}*/
+.summaryTable td.attributes
+{
+	border-left: 1px #7F8FB1 solid;
+	width: 140px;
+	text-align: right;
+}
+
+td.attributes, .fixedFont
+{
+	line-height: 15px;
+	color: #002EBE;
+	font-family: "Courier New",Courier,monospace;
+	font-size: 13px;
+}
+
+.summaryTable td.nameDescription
+{
+	text-align: left;
+	font-size: 13px;
+	line-height: 15px;
+}
+
+.summaryTable td.nameDescription, .description
+{
+	line-height: 15px;
+	padding: 4px;
+	padding-left: 4px;
+}
+
+.summaryTable { margin-bottom: 8px; }
+
+ul.inheritsList
+{
+	list-style: square;
+	margin-left: 20px;
+	padding-left: 0;
+}
+
+.detailList {
+	margin-left: 20px; 
+	line-height: 15px;
+}
+.detailList dt { margin-left: 20px; }
+
+.detailList .heading
+{
+	font-weight: bold;
+	padding-bottom: 6px;
+	margin-left: 0;
+}
+
+.light, td.attributes, .light a:link, .light a:visited
+{
+	color: #777;
+	font-style: italic;
+}
+
+.fineprint
+{
+	text-align: right;
+	font-size: 10px;
+}
+		</style>
+	</head>
+
+	<body>
+<!-- ============================== header ================================= -->	
+		<!-- begin static/header.html -->
+		<div id="header">
+</div>
+		<!-- end static/header.html -->
+
+<!-- ============================== classes index ============================ -->
+		<div id="index">
+			<!-- begin publish.classesIndex -->
+			<div align="center"><a href="../index.html">Class Index</a>
+| <a href="../files.html">File Index</a></div>
+<hr />
+<h2>Classes</h2>
+<ul class="classList">
+	
+	<li><i><a href="../symbols/_global_.html">_global_</a></i></li>
+	
+	<li><a href="../symbols/BrowserRuntime.html">BrowserRuntime</a></li>
+	
+	<li><a href="../symbols/core.html">core</a></li>
+	
+	<li><a href="../symbols/core.Base64.html">core.Base64</a></li>
+	
+	<li><a href="../symbols/core.CSSUnits.html">core.CSSUnits</a></li>
+	
+	<li><a href="../symbols/core.Cursor.html">core.Cursor</a></li>
+	
+	<li><a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a></li>
+	
+	<li><a href="../symbols/core.EventNotifier.html">core.EventNotifier</a></li>
+	
+	<li><a href="../symbols/core.EventSubscriptions.html">core.EventSubscriptions</a></li>
+	
+	<li><a href="../symbols/core.LazyProperty.html">core.LazyProperty</a></li>
+	
+	<li><a href="../symbols/core.LoopWatchDog.html">core.LoopWatchDog</a></li>
+	
+	<li><a href="../symbols/core.NodeFilterChain.html">core.NodeFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionFilterChain.html">core.PositionFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator.html">core.PositionIterator</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-EmptyTextNodeFilter.html">core.PositionIterator-EmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-FilteredEmptyTextNodeFilter.html">core.PositionIterator-FilteredEmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.ScheduledTask.html">core.ScheduledTask</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.html">core.StepIterator</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.StepSnapshot.html">core.StepIterator.StepSnapshot</a></li>
+	
+	<li><a href="../symbols/core.Utils.html">core.Utils</a></li>
+	
+	<li><a href="../symbols/core.Zip.html">core.Zip</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AllChildElementIterator.html">createXPathSingleton-AllChildElementIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AttributeIterator.html">createXPathSingleton-AttributeIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-ConditionIterator.html">createXPathSingleton-ConditionIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-XPathNodeIterator.html">createXPathSingleton-XPathNodeIterator</a></li>
+	
+	<li><a href="../symbols/gui.html">gui</a></li>
+	
+	<li><a href="../symbols/gui.AnnotatableCanvas.html">gui.AnnotatableCanvas</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationController.html">gui.AnnotationController</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationViewManager.html">gui.AnnotationViewManager</a></li>
+	
+	<li><a href="../symbols/gui.Avatar.html">gui.Avatar</a></li>
+	
+	<li><a href="../symbols/gui.BlacklistNamespaceNodeFilter.html">gui.BlacklistNamespaceNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.Caret.html">gui.Caret</a></li>
+	
+	<li><a href="../symbols/gui.CaretManager.html">gui.CaretManager</a></li>
+	
+	<li><a href="../symbols/gui.Clipboard.html">gui.Clipboard</a></li>
+	
+	<li><a href="../symbols/gui.ClosestXOffsetScanner.html">gui.ClosestXOffsetScanner</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.html">gui.DirectFormattingController</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.SelectionInfo.html">gui.DirectFormattingController.SelectionInfo</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoHandle.html">gui.EditInfoHandle</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoMarker.html">gui.EditInfoMarker</a></li>
+	
+	<li><a href="../symbols/gui.EventManager.html">gui.EventManager</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-CompoundEvent.html">gui.EventManager-CompoundEvent</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-ElementScrollState.html">gui.EventManager-ElementScrollState</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-EventDelegate.html">gui.EventManager-EventDelegate</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-WindowScrollState.html">gui.EventManager-WindowScrollState</a></li>
+	
+	<li><a href="../symbols/gui.GuiStepUtils.html">gui.GuiStepUtils</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkClickHandler.html">gui.HyperlinkClickHandler</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkController.html">gui.HyperlinkController</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkTooltipView.html">gui.HyperlinkTooltipView</a></li>
+	
+	<li><a href="../symbols/gui.ImageController.html">gui.ImageController</a></li>
+	
+	<li><a href="../symbols/gui.ImageSelector.html">gui.ImageSelector</a></li>
+	
+	<li><a href="../symbols/gui.InputMethodEditor.html">gui.InputMethodEditor</a></li>
+	
+	<li><a href="../symbols/gui.IOSSafariSupport.html">gui.IOSSafariSupport</a></li>
+	
+	<li><a href="../symbols/gui.KeyboardHandler.html">gui.KeyboardHandler</a></li>
+	
+	<li><a href="../symbols/gui.LineBoundaryScanner.html">gui.LineBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.MetadataController.html">gui.MetadataController</a></li>
+	
+	<li><a href="../symbols/gui.MimeDataExporter.html">gui.MimeDataExporter</a></li>
+	
+	<li><a href="../symbols/gui.OdfFieldView.html">gui.OdfFieldView</a></li>
+	
+	<li><a href="../symbols/gui.OdfTextBodyNodeFilter.html">gui.OdfTextBodyNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.ParagraphBoundaryScanner.html">gui.ParagraphBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.PasteController.html">gui.PasteController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionController.html">gui.SelectionController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionViewManager.html">gui.SelectionViewManager</a></li>
+	
+	<li><a href="../symbols/gui.SessionConstraints.html">gui.SessionConstraints</a></li>
+	
+	<li><a href="../symbols/gui.SessionContext.html">gui.SessionContext</a></li>
+	
+	<li><a href="../symbols/gui.SessionController.html">gui.SessionController</a></li>
+	
+	<li><a href="../symbols/gui.SessionControllerOptions.html">gui.SessionControllerOptions</a></li>
+	
+	<li><a href="../symbols/gui.SessionView.html">gui.SessionView</a></li>
+	
+	<li><a href="../symbols/gui.SessionViewOptions.html">gui.SessionViewOptions</a></li>
+	
+	<li><a href="../symbols/gui.ShadowCursor.html">gui.ShadowCursor</a></li>
+	
+	<li><a href="../symbols/gui.SingleScrollViewport.html">gui.SingleScrollViewport</a></li>
+	
+	<li><a href="../symbols/gui.StepInfo.html">gui.StepInfo</a></li>
+	
+	<li><a href="../symbols/gui.StyleSummary.html">gui.StyleSummary</a></li>
+	
+	<li><a href="../symbols/gui.SvgSelectionView.html">gui.SvgSelectionView</a></li>
+	
+	<li><a href="../symbols/gui.TextController.html">gui.TextController</a></li>
+	
+	<li><a href="../symbols/gui.TrivialUndoManager.html">gui.TrivialUndoManager</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules.html">gui.UndoStateRules</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules-ReverseIterator.html">gui.UndoStateRules-ReverseIterator</a></li>
+	
+	<li><a href="../symbols/gui.ZoomHelper.html">gui.ZoomHelper</a></li>
+	
+	<li><a href="../symbols/NodeJSRuntime.html">NodeJSRuntime</a></li>
+	
+	<li><a href="../symbols/odf.html">odf</a></li>
+	
+	<li><a href="../symbols/odf.AnnotationElement.html">odf.AnnotationElement</a></li>
+	
+	<li><a href="../symbols/odf.CollapsingRules.html">odf.CollapsingRules</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicProperties.html">odf.ComputedGraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicStyle.html">odf.ComputedGraphicStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphProperties.html">odf.ComputedParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphStyle.html">odf.ComputedParagraphStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextProperties.html">odf.ComputedTextProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextStyle.html">odf.ComputedTextStyle</a></li>
+	
+	<li><a href="../symbols/odf.FontLoader.html">odf.FontLoader</a></li>
+	
+	<li><a href="../symbols/odf.Formatting.html">odf.Formatting</a></li>
+	
+	<li><a href="../symbols/odf.GraphicProperties.html">odf.GraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.LazyStyleProperties.html">odf.LazyStyleProperties</a></li>
+	
+	<li><a href="../symbols/odf.ListStyleToCss.html">odf.ListStyleToCss</a></li>
+	
+	<li><a href="../symbols/odf.MasterPage.html">odf.MasterPage</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator.html">odf.ObjectNameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator-NameGenerator.html">odf.ObjectNameGenerator-NameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a></li>
+	
+	<li><a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a></li>
+	
+	<li><a href="../symbols/odf.ODFDocumentElement.html">odf.ODFDocumentElement</a></li>
+	
+	<li><a href="../symbols/odf.ODFElement.html">odf.ODFElement</a></li>
+	
+	<li><a href="../symbols/odf.OdfNodeFilter.html">odf.OdfNodeFilter</a></li>
+	
+	<li><a href="../symbols/odf.OdfPart.html">odf.OdfPart</a></li>
+	
+	<li><a href="../symbols/odf.OdfSchemaImpl.html">odf.OdfSchemaImpl</a></li>
+	
+	<li><a href="../symbols/odf.OdfUtilsImpl.html">odf.OdfUtilsImpl</a></li>
+	
+	<li><a href="../symbols/odf.PageLayout.html">odf.PageLayout</a></li>
+	
+	<li><a href="../symbols/odf.PageLayoutProperties.html">odf.PageLayoutProperties</a></li>
+	
+	<li><a href="../symbols/odf.ParagraphProperties.html">odf.ParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.StepUtils.html">odf.StepUtils</a></li>
+	
+	<li><a href="../symbols/odf.Style2CSS.html">odf.Style2CSS</a></li>
+	
+	<li><a href="../symbols/odf.StyleCache.html">odf.StyleCache</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo.html">odf.StyleInfo</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo%23UsedStyleList.html">odf.StyleInfo#UsedStyleList</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo-StyleDefinition.html">odf.StyleInfo-StyleDefinition</a></li>
+	
+	<li><a href="../symbols/odf.StyleParseUtils.html">odf.StyleParseUtils</a></li>
+	
+	<li><a href="../symbols/odf.StylePile.html">odf.StylePile</a></li>
+	
+	<li><a href="../symbols/odf.StylePileEntry.html">odf.StylePileEntry</a></li>
+	
+	<li><a href="../symbols/odf.StyleTree.html">odf.StyleTree</a></li>
+	
+	<li><a href="../symbols/odf.StyleTreeNode.html">odf.StyleTreeNode</a></li>
+	
+	<li><a href="../symbols/odf.TextProperties.html">odf.TextProperties</a></li>
+	
+	<li><a href="../symbols/odf.TextSerializer.html">odf.TextSerializer</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator.html">odf.TextStyleApplicator</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleLookup.html">odf.TextStyleApplicator-StyleLookup</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleManager.html">odf.TextStyleApplicator-StyleManager</a></li>
+	
+	<li><a href="../symbols/odf.WordBoundaryFilter.html">odf.WordBoundaryFilter</a></li>
+	
+	<li><a href="../symbols/ops.html">ops</a></li>
+	
+	<li><a href="../symbols/ops.EditInfo.html">ops.EditInfo</a></li>
+	
+	<li><a href="../symbols/ops.Member.html">ops.Member</a></li>
+	
+	<li><a href="../symbols/ops.MemberProperties.html">ops.MemberProperties</a></li>
+	
+	<li><a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a></li>
+	
+	<li><a href="../symbols/ops.OdtDocument.html">ops.OdtDocument</a></li>
+	
+	<li><a href="../symbols/ops.OdtStepsTranslator.html">ops.OdtStepsTranslator</a></li>
+	
+	<li><a href="../symbols/ops.OpAddAnnotation.html">ops.OpAddAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpAddCursor.html">ops.OpAddCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpAddMember.html">ops.OpAddMember</a></li>
+	
+	<li><a href="../symbols/ops.OpAddStyle.html">ops.OpAddStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyDirectStyling.html">ops.OpApplyDirectStyling</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyHyperlink.html">ops.OpApplyHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OperationFactory.html">ops.OperationFactory</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformer.html">ops.OperationTransformer</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformMatrix.html">ops.OperationTransformMatrix</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertImage.html">ops.OpInsertImage</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertTable.html">ops.OpInsertTable</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertText.html">ops.OpInsertText</a></li>
+	
+	<li><a href="../symbols/ops.OpMergeParagraph.html">ops.OpMergeParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpMoveCursor.html">ops.OpMoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveAnnotation.html">ops.OpRemoveAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveBlob.html">ops.OpRemoveBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveCursor.html">ops.OpRemoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveHyperlink.html">ops.OpRemoveHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveMember.html">ops.OpRemoveMember</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveStyle.html">ops.OpRemoveStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveText.html">ops.OpRemoveText</a></li>
+	
+	<li><a href="../symbols/ops.OpSetBlob.html">ops.OpSetBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpSetParagraphStyle.html">ops.OpSetParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpSplitParagraph.html">ops.OpSplitParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMember.html">ops.OpUpdateMember</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMetadata.html">ops.OpUpdateMetadata</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateParagraphStyle.html">ops.OpUpdateParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.Session.html">ops.Session</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache.html">ops.StepsCache</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-NodeBookmark.html">ops.StepsCache-NodeBookmark</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-RootBookmark.html">ops.StepsCache-RootBookmark</a></li>
+	
+	<li><a href="../symbols/ops.TextPositionFilter.html">ops.TextPositionFilter</a></li>
+	
+	<li><a href="../symbols/ops.TrivialOperationRouter.html">ops.TrivialOperationRouter</a></li>
+	
+	<li><a href="../symbols/RhinoRuntime.html">RhinoRuntime</a></li>
+	
+	<li><a href="../symbols/RootFilter.html">RootFilter</a></li>
+	
+	<li><a href="../symbols/Runtime.html">Runtime</a></li>
+	
+	<li><a href="../symbols/webodf.html">webodf</a></li>
+	
+	<li><a href="../symbols/xmldom.html">xmldom</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer.html">xmldom.LSSerializer</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer-Namespaces.html">xmldom.LSSerializer-Namespaces</a></li>
+	
+	<li><a href="../symbols/xmldom.XPathIterator.html">xmldom.XPathIterator</a></li>
+	
+</ul>
+<hr />
+			<!-- end publish.classesIndex -->
+		</div>
+		
+		<div id="content">
+<!-- ============================== class title ============================ -->
+			<h1 class="classTitle">
+				
+				Class ops.OdtDocument
+			</h1>
+
+<!-- ============================== class summary ========================== -->			
+			<p class="description">
+				
+				
+			
+				
+				
+				
+					<br /><i>Defined in: </i> <a href="../symbols/src/lib_ops_OdtDocument.js.html">OdtDocument.js</a>.
+				
+			</p>
+
+<!-- ============================== constructor summary ==================== -->			
+			
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class ops.OdtDocument.">
+				<caption>Class Summary</caption>
+				<thead>
+					<tr>
+						<th scope="col">Constructor Attributes</th>
+						<th scope="col">Constructor Name and Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="attributes">&nbsp;</td>
+						<td class="nameDescription" >
+							<div class="fixedFont">
+								<b><a href="../symbols/ops.OdtDocument.html#constructor">ops.OdtDocument</a></b>(odfCanvas)
+							</div>
+							<div class="description">A document that keeps all data related to the mapped document.</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+
+<!-- ============================== properties summary ===================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the fields documented in the class ops.OdtDocument.">
+					<caption>Field Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Field Attributes</th>
+							<th scope="col">Field Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								<b><a href="../symbols/ops.OdtDocument.html#getRootNode">getRootNode</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								<b><a href="../symbols/ops.OdtDocument.html#getTextNodeAtStep">getTextNodeAtStep</a></b>
+								</div>
+								<div class="description">This function will return the Text node as well as the offset in that text node
+of the cursor.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalAnnotationAdded">signalAnnotationAdded</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalCommonStyleCreated">signalCommonStyleCreated</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalCommonStyleDeleted">signalCommonStyleDeleted</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalMetadataUpdated">signalMetadataUpdated</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalOperationEnd">signalOperationEnd</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalOperationStart">signalOperationStart</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalParagraphChanged">signalParagraphChanged</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalParagraphStyleModified">signalParagraphStyleModified</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalProcessingBatchEnd">signalProcessingBatchEnd</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalProcessingBatchStart">signalProcessingBatchStart</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalStepsInserted">signalStepsInserted</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalStepsRemoved">signalStepsRemoved</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalTableAdded">signalTableAdded</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.OdtDocument.<b><a href="../symbols/ops.OdtDocument.html#.signalUndoStackChanged">signalUndoStackChanged</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								<b><a href="../symbols/ops.OdtDocument.html#upgradeWhitespacesAtPosition">upgradeWhitespacesAtPosition</a></b>
+								</div>
+								<div class="description">Upgrades any significant whitespace at the requested step, and one step right of the given
+position to space elements.</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+
+<!-- ============================== methods summary ======================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class ops.OdtDocument.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#addCursor">addCursor</a></b>(cursor)
+								</div>
+								<div class="description">Adds the specified cursor to the ODT document.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#addMember">addMember</a></b>(member)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#close">close</a></b>(callback,)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#convertCursorStepToDomPoint">convertCursorStepToDomPoint</a></b>(step)
+								</div>
+								<div class="description">Converts the requested step number from root into the equivalent DOM node & offset
+pair.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#convertCursorToDomRange">convertCursorToDomRange</a></b>(position, length)
+								</div>
+								<div class="description">Convert a cursor range to a DOM range</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#convertDomPointToCursorStep">convertDomPointToCursorStep</a></b>(node, offset, roundDirection)
+								</div>
+								<div class="description">Converts a DOM node and offset pair to a cursor step.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#convertDomToCursorRange">convertDomToCursorRange</a></b>(selection)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-createPositionIterator">createPositionIterator</a></b>(rootNode)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#createRootFilter">createRootFilter</a></b>(inputMemberId)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-createStepIterator">createStepIterator</a></b>(container, offset, filters, subTree)
+								</div>
+								<div class="description">Create a new StepIterator instance set to the defined position</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#destroy">destroy</a></b>(callback,)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-downgradeWhitespaces">downgradeWhitespaces</a></b>(stepIterator)
+								</div>
+								<div class="description">Downgrades white space elements to normal spaces at the step iterators current step, and one step
+to the right.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#downgradeWhitespacesAtPosition">downgradeWhitespacesAtPosition</a></b>(step)
+								</div>
+								<div class="description">Downgrades white space elements to normal spaces at the specified step, and one step
+to the right.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#emit">emit</a></b>(eventid, args)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#fixCursorPositions">fixCursorPositions</a></b>()
+								</div>
+								<div class="description">Iterates through all cursors and checks if they are in
+walkable positions; if not, move the cursor 1 filtered step backward
+which guarantees walkable state for all cursors,
+while keeping them inside the same root.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getCanvas">getCanvas</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getCursor">getCursor</a></b>(memberid)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getCursorPosition">getCursorPosition</a></b>(memberid)
+								</div>
+								<div class="description">This function returns the position in ODF world of the cursor of the member.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getCursorSelection">getCursorSelection</a></b>(memberid)
+								</div>
+								<div class="description">This function returns the position and selection length in ODF world of
+the cursor of the member.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getDocumentElement">getDocumentElement</a></b>()
+								</div>
+								<div class="description">Return the office:document element of this document.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-getDOMDocument">getDOMDocument</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getFormatting">getFormatting</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-getIteratorAtPosition">getIteratorAtPosition</a></b>(position)
+								</div>
+								<div class="description">Returns a PositionIterator instance at the
+specified starting position</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getMember">getMember</a></b>(memberId)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getMemberIds">getMemberIds</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getOdfCanvas">getOdfCanvas</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#getPositionFilter">getPositionFilter</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-getRoot">getRoot</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-getRootNode">getRootNode</a></b>()
+								</div>
+								<div class="description">Return the office:text element of this document.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-getTextNodeAtStep">getTextNodeAtStep</a></b>(steps, memberid)
+								</div>
+								<div class="description">This function will iterate through positions allowed by the position
+iterator and count only the text positions.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-handleOperationExecuted">handleOperationExecuted</a></b>(op)
+								</div>
+								<div class="description">Called after an operation is executed, this
+function will check if the operation is an
+'edit', and in that case will update the
+document's metadata, such as dc:creator,
+meta:editing-cycles, and dc:creator.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#hasCursor">hasCursor</a></b>(memberid)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-init">init</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-isRoot">isRoot</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-maxOffset">maxOffset</a></b>(node)
+								</div>
+								<div class="description">Returns the maximum available offset for the specified node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#moveCursor">moveCursor</a></b>(memberid, position, length, selectionType)
+								</div>
+								<div class="description">Moves the cursor/selection of a given memberid to the
+given position+length combination and adopts the given
+selectionType.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-paragraphOrRoot">paragraphOrRoot</a></b>(container, offset, root)
+								</div>
+								<div class="description">Returns the closest parent paragraph or root to the supplied container and offset</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#removeCursor">removeCursor</a></b>(memberid)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#removeMember">removeMember</a></b>(memberId)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-roundUp">roundUp</a></b>(step)
+								</div>
+								<div class="description">Rounds to the first step within the paragraph</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#setDocumentElement">setDocumentElement</a></b>(documentElement)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#subscribe">subscribe</a></b>(eventid, cb)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#unsubscribe">unsubscribe</a></b>(eventid, cb)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-upgradeWhitespacesAtPosition">upgradeWhitespacesAtPosition</a></b>(step)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OdtDocument.html#-upgradeWhitespaceToElement">upgradeWhitespaceToElement</a></b>(textNode, offset)
+								</div>
+								<div class="description">Upgrades literal whitespaces (' ') to <text:s> </text:s>,
+when given a textNode containing the whitespace and an offset
+indicating the location of the whitespace in it.</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+<!-- ============================== events summary ======================== -->
+			
+
+<!-- ============================== constructor details ==================== -->		
+			
+			<div class="details"><a name="constructor"> </a>
+				<div class="sectionTitle">
+					Class Detail
+				</div>
+				
+				<div class="fixedFont">
+						<b>ops.OdtDocument</b>(odfCanvas)
+				</div>
+				
+				<div class="description">
+					A document that keeps all data related to the mapped document.
+					
+				</div>
+				
+				
+				
+				
+					
+						<dl class="detailList">
+						<dt class="heading">Parameters:</dt>
+						
+							<dt>
+								<span class="light fixedFont">{!<a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a>}</span>  <b>odfCanvas</b>
+								
+							</dt>
+								<dd></dd>
+						
+						</dl>
+					
+					
+					
+					
+					
+					
+					
+
+			</div>
+			
+
+<!-- ============================== field details ========================== -->		
+			
+				<div class="sectionTitle">
+					Field Detail
+				</div>
+				
+					<a name="getRootNode"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Element}</span>
+					<b>getRootNode</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="getTextNodeAtStep"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{?{textNode: !Text|offset: !number}}</span>
+					<b>getTextNodeAtStep</b>
+					
+					</div>
+					<div class="description">
+						This function will return the Text node as well as the offset in that text node
+of the cursor.
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalAnnotationAdded"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalAnnotationAdded</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalCommonStyleCreated"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalCommonStyleCreated</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalCommonStyleDeleted"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalCommonStyleDeleted</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalMetadataUpdated"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalMetadataUpdated</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalOperationEnd"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalOperationEnd</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalOperationStart"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalOperationStart</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalParagraphChanged"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalParagraphChanged</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalParagraphStyleModified"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalParagraphStyleModified</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalProcessingBatchEnd"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalProcessingBatchEnd</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalProcessingBatchStart"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalProcessingBatchStart</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalStepsInserted"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalStepsInserted</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalStepsRemoved"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalStepsRemoved</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalTableAdded"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalTableAdded</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name=".signalUndoStackChanged"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.OdtDocument.</span><b>signalUndoStackChanged</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="upgradeWhitespacesAtPosition"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>upgradeWhitespacesAtPosition</b>
+					
+					</div>
+					<div class="description">
+						Upgrades any significant whitespace at the requested step, and one step right of the given
+position to space elements.
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					
+				
+			
+
+<!-- ============================== method details ========================= -->		
+			
+				<div class="sectionTitle">
+					Method Detail
+				</div>
+				
+					<a name="addCursor"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>addCursor</b>(cursor)
+					
+					</div>
+					<div class="description">
+						Adds the specified cursor to the ODT document. The cursor will be collapsed
+to the first available cursor position in the document.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a>}</span> <b>cursor</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="addMember"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>addMember</b>(member)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.Member.html">ops.Member</a>}</span> <b>member</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="close"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>close</b>(callback,)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Object=)}</span> <b>callback,</b>
+									
+								</dt>
+								<dd>passing an error object in case of error</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="convertCursorStepToDomPoint"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!{node: !Node|offset: !number}}</span>
+					<b>convertCursorStepToDomPoint</b>(step)
+					
+					</div>
+					<div class="description">
+						Converts the requested step number from root into the equivalent DOM node & offset
+pair. If the step is outside the bounds of the document, a RangeError will be thrown.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>step</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!{node: !Node|offset: !number}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="convertCursorToDomRange"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Range}</span>
+					<b>convertCursorToDomRange</b>(position, length)
+					
+					</div>
+					<div class="description">
+						Convert a cursor range to a DOM range
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>position</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>length</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Range}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="convertDomPointToCursorStep"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!number}</span>
+					<b>convertDomPointToCursorStep</b>(node, offset, roundDirection)
+					
+					</div>
+					<div class="description">
+						Converts a DOM node and offset pair to a cursor step. If a rounding direction is not supplied then
+the default is to round down to the previous step.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{<a href="../symbols/core.html#.StepDirection">core.StepDirection</a>=}</span> <b>roundDirection</b>
+									
+								</dt>
+								<dd>Whether to round down to the previous step or round up
+to the next step. The default value if unspecified is core.StepDirection.PREVIOUS</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="convertDomToCursorRange"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!{position: !number|length: number}}</span>
+					<b>convertDomToCursorRange</b>(selection)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!{anchorNode: !Node|anchorOffset: !number|focusNode: !Node|focusOffset: !number}}</span> <b>selection</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!{position: !number|length: number}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createPositionIterator"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/core.PositionIterator.html">core.PositionIterator</a>}</span>
+					<b>createPositionIterator</b>(rootNode)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>rootNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/core.PositionIterator.html">core.PositionIterator</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="createRootFilter"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!<a href="../symbols/RootFilter.html">RootFilter</a>}</span>
+					<b>createRootFilter</b>(inputMemberId)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string|!Node}</span> <b>inputMemberId</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/RootFilter.html">RootFilter</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createStepIterator"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/core.StepIterator.html">core.StepIterator</a>}</span>
+					<b>createStepIterator</b>(container, offset, filters, subTree)
+					
+					</div>
+					<div class="description">
+						Create a new StepIterator instance set to the defined position
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>container</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Array.<!core.PositionFilter>}</span> <b>filters</b>
+									
+								</dt>
+								<dd>Filter to apply to the iterator positions. If multiple
+ iterators are provided, they will be combined in order using a PositionFilterChain.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>subTree</b>
+									
+								</dt>
+								<dd>Subtree to search for step within. Generally a paragraph or document root. Choosing
+ a smaller subtree allows iteration to end quickly if there are no walkable steps remaining in a particular
+ direction. This can vastly improve performance.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/core.StepIterator.html">core.StepIterator</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="destroy"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>destroy</b>(callback,)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Error=)}</span> <b>callback,</b>
+									
+								</dt>
+								<dd>passing an error object in case of error</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-downgradeWhitespaces"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>downgradeWhitespaces</b>(stepIterator)
+					
+					</div>
+					<div class="description">
+						Downgrades white space elements to normal spaces at the step iterators current step, and one step
+to the right.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/core.StepIterator.html">core.StepIterator</a>}</span> <b>stepIterator</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="downgradeWhitespacesAtPosition"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>downgradeWhitespacesAtPosition</b>(step)
+					
+					</div>
+					<div class="description">
+						Downgrades white space elements to normal spaces at the specified step, and one step
+to the right.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>step</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="emit"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>emit</b>(eventid, args)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>eventid</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{*}</span> <b>args</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="fixCursorPositions"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>fixCursorPositions</b>()
+					
+					</div>
+					<div class="description">
+						Iterates through all cursors and checks if they are in
+walkable positions; if not, move the cursor 1 filtered step backward
+which guarantees walkable state for all cursors,
+while keeping them inside the same root. An event will be raised for this cursor if it is moved
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="getCanvas"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!<a href="../symbols/ops.html#.Canvas">ops.Canvas</a>}</span>
+					<b>getCanvas</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/ops.html#.Canvas">ops.Canvas</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getCursor"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{<a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a>}</span>
+					<b>getCursor</b>(memberid)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{<a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getCursorPosition"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!number}</span>
+					<b>getCursorPosition</b>(memberid)
+					
+					</div>
+					<div class="description">
+						This function returns the position in ODF world of the cursor of the member.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getCursorSelection"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{{position: !number|length: !number}}</span>
+					<b>getCursorSelection</b>(memberid)
+					
+					</div>
+					<div class="description">
+						This function returns the position and selection length in ODF world of
+the cursor of the member.
+position is always the number of steps from root node to the anchor node
+length is the number of steps from anchor node to focus node
+!IMPORTANT! length is a vector, and may be negative if the cursor selection
+is reversed (i.e., user clicked and dragged the cursor backwards)
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{{position: !number|length: !number}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getDocumentElement"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Element}</span>
+					<b>getDocumentElement</b>()
+					
+					</div>
+					<div class="description">
+						Return the office:document element of this document.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getDOMDocument"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Document}</span>
+					<b>getDOMDocument</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Document}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getFormatting"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!<a href="../symbols/odf.Formatting.html">odf.Formatting</a>}</span>
+					<b>getFormatting</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/odf.Formatting.html">odf.Formatting</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getIteratorAtPosition"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/core.PositionIterator.html">core.PositionIterator</a>}</span>
+					<b>getIteratorAtPosition</b>(position)
+					
+					</div>
+					<div class="description">
+						Returns a PositionIterator instance at the
+specified starting position
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>position</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/core.PositionIterator.html">core.PositionIterator</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getMember"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{?<a href="../symbols/ops.Member.html">ops.Member</a>}</span>
+					<b>getMember</b>(memberId)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberId</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?<a href="../symbols/ops.Member.html">ops.Member</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getMemberIds"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Array.<string>}</span>
+					<b>getMemberIds</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<string>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getOdfCanvas"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!<a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a>}</span>
+					<b>getOdfCanvas</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getPositionFilter"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!<a href="../symbols/core.html#.PositionFilter">core.PositionFilter</a>}</span>
+					<b>getPositionFilter</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/core.html#.PositionFilter">core.PositionFilter</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getRoot"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>getRoot</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getRootNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Element}</span>
+					<b>getRootNode</b>()
+					
+					</div>
+					<div class="description">
+						Return the office:text element of this document.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getTextNodeAtStep"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{textNode: !Text|offset: !number}}</span>
+					<b>getTextNodeAtStep</b>(steps, memberid)
+					
+					</div>
+					<div class="description">
+						This function will iterate through positions allowed by the position
+iterator and count only the text positions. When the amount defined by
+offset has been counted, the Text node that that position is returned
+as well as the offset in that text node.
+Optionally takes a memberid of a cursor, to specifically return the
+text node positioned just behind that cursor.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>steps</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string=}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{textNode: !Text|offset: !number}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleOperationExecuted"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					
+					<b>handleOperationExecuted</b>(op)
+					
+					</div>
+					<div class="description">
+						Called after an operation is executed, this
+function will check if the operation is an
+'edit', and in that case will update the
+document's metadata, such as dc:creator,
+meta:editing-cycles, and dc:creator.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.html#.Operation">ops.Operation</a>}</span> <b>op</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="hasCursor"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>hasCursor</b>(memberid)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-init"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>init</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isRoot"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isRoot</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-maxOffset"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>maxOffset</b>(node)
+					
+					</div>
+					<div class="description">
+						Returns the maximum available offset for the specified node.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="moveCursor"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>moveCursor</b>(memberid, position, length, selectionType)
+					
+					</div>
+					<div class="description">
+						Moves the cursor/selection of a given memberid to the
+given position+length combination and adopts the given
+selectionType.
+It is the caller's responsibility to decide if and when
+to subsequently fire signalCursorMoved.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>position</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>length</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string=}</span> <b>selectionType</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-paragraphOrRoot"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>paragraphOrRoot</b>(container, offset, root)
+					
+					</div>
+					<div class="description">
+						Returns the closest parent paragraph or root to the supplied container and offset
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>container</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>root</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="removeCursor"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>removeCursor</b>(memberid)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberid</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="removeMember"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>removeMember</b>(memberId)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>memberId</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-roundUp"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>roundUp</b>(step)
+					
+					</div>
+					<div class="description">
+						Rounds to the first step within the paragraph
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/core.html#.StepDirection">core.StepDirection</a>}</span> <b>step</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="setDocumentElement"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>setDocumentElement</b>(documentElement)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>documentElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="subscribe"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>subscribe</b>(eventid, cb)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>eventid</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Function}</span> <b>cb</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="unsubscribe"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>unsubscribe</b>(eventid, cb)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>eventid</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Function}</span> <b>cb</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-upgradeWhitespacesAtPosition"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>upgradeWhitespacesAtPosition</b>(step)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>step</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-upgradeWhitespaceToElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Element}</span>
+					<b>upgradeWhitespaceToElement</b>(textNode, offset)
+					
+					</div>
+					<div class="description">
+						Upgrades literal whitespaces (' ') to <text:s> </text:s>,
+when given a textNode containing the whitespace and an offset
+indicating the location of the whitespace in it.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Text}</span> <b>textNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					
+				
+			
+			
+<!-- ============================== event details ========================= -->		
+			
+			
+			<hr />
+		</div>
+
+		
+<!-- ============================== footer ================================= -->
+		<div class="fineprint" style="clear:both">
+			
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Sep 03 2015 21:31:56 GMT+0200 (CEST)
+		</div>
+	</body>
+</html>

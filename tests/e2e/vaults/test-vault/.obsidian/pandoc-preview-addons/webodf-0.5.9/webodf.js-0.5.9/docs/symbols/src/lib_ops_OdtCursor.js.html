@@ -1,0 +1,201 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2012 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global core, ops, gui, runtime*/</span><span class="WHIT">
+<span class='line'> 26</span> 
+<span class='line'> 27</span> </span><span class="COMM">/**
+<span class='line'> 28</span>  * @class
+<span class='line'> 29</span>  * A cursor is a dom node that visually represents a cursor in a DOM tree.
+<span class='line'> 30</span>  * It should stay synchronized with the selection in the document. When
+<span class='line'> 31</span>  * there is only one collapsed selection range, a cursor should be shown at
+<span class='line'> 32</span>  * that point.
+<span class='line'> 33</span>  *
+<span class='line'> 34</span>  * Putting the cursor in the DOM tree modifies the DOM, so care should be taken
+<span class='line'> 35</span>  * to keep the selection consistent. If e.g. a selection is drawn over the
+<span class='line'> 36</span>  * cursor, and the cursor is updated to the selection, the cursor is removed
+<span class='line'> 37</span>  * from the DOM because the selection is not collapsed. This means that the
+<span class='line'> 38</span>  * offsets of the selection may have to be changed.
+<span class='line'> 39</span>  *
+<span class='line'> 40</span>  * When the selection is collapsed, the cursor is placed after the point of the
+<span class='line'> 41</span>  * selection and the selection will stay valid. However, if the cursor was
+<span class='line'> 42</span>  * placed in the DOM tree and was counted in the offset, the offset in the
+<span class='line'> 43</span>  * selection should be decreased by one.
+<span class='line'> 44</span>  *
+<span class='line'> 45</span>  * Even when the selection allows for a cursor, it might be desireable to hide
+<span class='line'> 46</span>  * the cursor by not letting it be part of the DOM.
+<span class='line'> 47</span>  *
+<span class='line'> 48</span>  * @constructor
+<span class='line'> 49</span>  * @param {!string} memberId The memberid this cursor is assigned to
+<span class='line'> 50</span>  * @param {!ops.Document} document The document in which the cursor is placed
+<span class='line'> 51</span>  */</span><span class="WHIT">
+<span class='line'> 52</span> </span><span class="NAME">ops.OdtCursor</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">OdtCursor</span><span class="PUNC">(</span><span class="NAME">memberId</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">document</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 53</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 54</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">self</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">this</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 55</span> </span><span class="WHIT">        </span><span class="NAME">validSelectionTypes</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="PUNC">}</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 56</span> </span><span class="WHIT">        </span><span class="NAME">selectionType</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 57</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{!core.Cursor}*/</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="WHIT">        </span><span class="NAME">cursor</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 59</span> </span><span class="WHIT">        </span><span class="NAME">events</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">core.EventNotifier</span><span class="PUNC">(</span><span class="PUNC">[</span><span class="NAME">ops.OdtCursor.signalCursorUpdated</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 60</span> 
+<span class='line'> 61</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 62</span>      * Remove the cursor from the document
+<span class='line'> 63</span>      * @return {undefined}
+<span class='line'> 64</span>      */</span><span class="WHIT">
+<span class='line'> 65</span> </span><span class="WHIT">    </span><span class="NAME">this.removeFromDocument</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 66</span> </span><span class="WHIT">        </span><span class="COMM">// TODO: find out if nodeAfterCursor, textNodeIncrease need to be dealt with in any way</span><span class="WHIT">
+<span class='line'> 67</span> </span><span class="WHIT">        </span><span class="NAME">cursor.remove</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 68</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 69</span> 
+<span class='line'> 70</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 71</span>      * Subscribe to cursor update events.
+<span class='line'> 72</span>      *
+<span class='line'> 73</span>      * The update event called whenever the cursor is moved around manually.
+<span class='line'> 74</span>      * @param {!string} eventid
+<span class='line'> 75</span>      * @param {!Function} cb
+<span class='line'> 76</span>      */</span><span class="WHIT">
+<span class='line'> 77</span> </span><span class="WHIT">    </span><span class="NAME">this.subscribe</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 78</span> </span><span class="WHIT">        </span><span class="NAME">events.subscribe</span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 79</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 80</span> 
+<span class='line'> 81</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 82</span>      * Unsubscribe from cursor events
+<span class='line'> 83</span>      * @param {!string} eventid
+<span class='line'> 84</span>      * @param {!Function} cb
+<span class='line'> 85</span>      */</span><span class="WHIT">
+<span class='line'> 86</span> </span><span class="WHIT">    </span><span class="NAME">this.unsubscribe</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">        </span><span class="NAME">events.unsubscribe</span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 88</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 89</span> 
+<span class='line'> 90</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 91</span>      * Obtain the memberid the cursor is assigned to.
+<span class='line'> 92</span>      * @return {string}
+<span class='line'> 93</span>      */</span><span class="WHIT">
+<span class='line'> 94</span> </span><span class="WHIT">    </span><span class="NAME">this.getMemberId</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 95</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">memberId</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 96</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 97</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 98</span>      * Obtain the node representing the cursor.
+<span class='line'> 99</span>      * @return {!Element}
+<span class='line'>100</span>      */</span><span class="WHIT">
+<span class='line'>101</span> </span><span class="WHIT">    </span><span class="NAME">this.getNode</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>102</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">cursor.getNode</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>103</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>104</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>105</span>      * Obtain the node representing the selection start point.
+<span class='line'>106</span>      * If a 0-length range is selected (e.g., by clicking without
+<span class='line'>107</span>      * dragging),, this will return the exact same node as getNode
+<span class='line'>108</span>      * @return {!Element}
+<span class='line'>109</span>      */</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="WHIT">    </span><span class="NAME">this.getAnchorNode</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>111</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">cursor.getAnchorNode</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>112</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>113</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>114</span>      * Obtain the currently selected range to which the cursor corresponds.
+<span class='line'>115</span>      * @return {!Range}
+<span class='line'>116</span>      */</span><span class="WHIT">
+<span class='line'>117</span> </span><span class="WHIT">    </span><span class="NAME">this.getSelectedRange</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>118</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">cursor.getSelectedRange</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>119</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>120</span> </span><span class="WHIT">    </span><span class="COMM">/** Set the given range as the selected range for this cursor
+<span class='line'>121</span>      * @param {!Range} range,
+<span class='line'>122</span>      * @param {boolean} isForwardSelection
+<span class='line'>123</span>      * @return {undefined}
+<span class='line'>124</span>      */</span><span class="WHIT">
+<span class='line'>125</span> </span><span class="WHIT">    </span><span class="NAME">this.setSelectedRange</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">range</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">isForwardSelection</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>126</span> </span><span class="WHIT">        </span><span class="NAME">cursor.setSelectedRange</span><span class="PUNC">(</span><span class="NAME">range</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">isForwardSelection</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>127</span> </span><span class="WHIT">        </span><span class="NAME">events.emit</span><span class="PUNC">(</span><span class="NAME">ops.OdtCursor.signalCursorUpdated</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">self</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>128</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>129</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>130</span>      * Returns if the selection of this cursor has the
+<span class='line'>131</span>      * same direction as the direction of the range
+<span class='line'>132</span>      * @return {boolean}
+<span class='line'>133</span>      */</span><span class="WHIT">
+<span class='line'>134</span> </span><span class="WHIT">    </span><span class="NAME">this.hasForwardSelection</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>135</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">cursor.hasForwardSelection</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>136</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>137</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>138</span>      * Obtain the document to which the cursor corresponds.
+<span class='line'>139</span>      * @return {!ops.Document}
+<span class='line'>140</span>      */</span><span class="WHIT">
+<span class='line'>141</span> </span><span class="WHIT">    </span><span class="NAME">this.getDocument</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>142</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">document</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>143</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>144</span> 
+<span class='line'>145</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>146</span>      * Gets the current selection type.
+<span class='line'>147</span>      * @return {!string}
+<span class='line'>148</span>      */</span><span class="WHIT">
+<span class='line'>149</span> </span><span class="WHIT">    </span><span class="NAME">this.getSelectionType</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>150</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">selectionType</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>151</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>152</span> 
+<span class='line'>153</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>154</span>      * Sets the current selection type to the given value.
+<span class='line'>155</span>      * @param {!string} value
+<span class='line'>156</span>      * @return {undefined}
+<span class='line'>157</span>      */</span><span class="WHIT">
+<span class='line'>158</span> </span><span class="WHIT">    </span><span class="NAME">this.setSelectionType</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">value</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>159</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">validSelectionTypes.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">value</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>160</span> </span><span class="WHIT">            </span><span class="NAME">selectionType</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">value</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>161</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>162</span> </span><span class="WHIT">            </span><span class="NAME">runtime.log</span><span class="PUNC">(</span><span class="STRN">"Invalid selection type: "</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">value</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>163</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>164</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>165</span> 
+<span class='line'>166</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>167</span>      * Reset selection type to default.
+<span class='line'>168</span>      * @return {undefined}
+<span class='line'>169</span>      */</span><span class="WHIT">
+<span class='line'>170</span> </span><span class="WHIT">    </span><span class="NAME">this.resetSelectionType</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>171</span> </span><span class="WHIT">        </span><span class="NAME">self.setSelectionType</span><span class="PUNC">(</span><span class="NAME">ops.OdtCursor.RangeSelection</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>172</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>173</span> 
+<span class='line'>174</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">init</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>175</span> </span><span class="WHIT">        </span><span class="NAME">cursor</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">core.Cursor</span><span class="PUNC">(</span><span class="NAME">document.getDOMDocument</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">memberId</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>176</span> 
+<span class='line'>177</span> </span><span class="WHIT">        </span><span class="NAME">validSelectionTypes</span><span class="PUNC">[</span><span class="NAME">ops.OdtCursor.RangeSelection</span><span class="PUNC">]</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>178</span> </span><span class="WHIT">        </span><span class="NAME">validSelectionTypes</span><span class="PUNC">[</span><span class="NAME">ops.OdtCursor.RegionSelection</span><span class="PUNC">]</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>179</span> </span><span class="WHIT">        </span><span class="NAME">self.resetSelectionType</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>180</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>181</span> 
+<span class='line'>182</span> </span><span class="WHIT">    </span><span class="NAME">init</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>183</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>184</span> 
+<span class='line'>185</span> </span><span class="COMM">/**@const
+<span class='line'>186</span>    @type {!string} */</span><span class="WHIT">
+<span class='line'>187</span> </span><span class="NAME">ops.OdtCursor.RangeSelection</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">'Range'</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>188</span> </span><span class="COMM">/**@const
+<span class='line'>189</span>    @type {!string} */</span><span class="WHIT">
+<span class='line'>190</span> </span><span class="NAME">ops.OdtCursor.RegionSelection</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">'Region'</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>191</span> </span><span class="COMM">/**@const
+<span class='line'>192</span>  @type {!string} */</span><span class="WHIT">
+<span class='line'>193</span> </span><span class="NAME">ops.OdtCursor.signalCursorUpdated</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"cursorUpdated"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>194</span> </span></pre></body></html>

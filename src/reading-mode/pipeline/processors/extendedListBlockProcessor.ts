@@ -154,6 +154,12 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
         );
 
         if (sourceText !== text) {
+            const section = elem.closest('.markdown-preview-section');
+            if (section instanceof HTMLElement) {
+                section.replaceChildren(...rendered);
+                return true;
+            }
+
             const blockContainer = elem.closest('.el-p');
             if (blockContainer) {
                 blockContainer.replaceChildren(...rendered);

@@ -1,5 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 
+import { ensureActiveFileReadingMode } from '../helpers/readingMode';
+
 interface NonNativeSyntaxState {
     enableCustomLabelLists: boolean | null;
     enableFencedDivExtras: boolean | null;
@@ -306,21 +308,7 @@ async function ensureLivePreviewMode(): Promise<void> {
 }
 
 async function ensureReadingMode(): Promise<void> {
-    await browser.execute(async () => {
-        // @ts-ignore
-        const leaf = app.workspace.getLeaf();
-        const state = leaf.getViewState();
-        state.state = {
-            ...(state.state ?? {}),
-            mode: 'preview'
-        };
-        await leaf.setViewState(state);
-    });
-    await browser.waitUntil(async () =>
-        browser.execute(() => Boolean(document.querySelector('.markdown-preview-view'))), {
-        timeout: 5000,
-        timeoutMsg: 'Expected reading mode preview'
-    });
+    await ensureActiveFileReadingMode();
     await browser.pause(500);
 }
 

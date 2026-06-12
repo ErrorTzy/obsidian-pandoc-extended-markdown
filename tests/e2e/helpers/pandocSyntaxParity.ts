@@ -1,6 +1,8 @@
 import { browser } from '@wdio/globals';
 import { execFileSync } from 'child_process';
 
+import { ensureActiveFileReadingMode } from './readingMode';
+
 export type ActualSyntaxKind =
     | 'fenced-div'
     | 'fenced-div-cross-reference'
@@ -296,24 +298,7 @@ export async function openFileInActiveLeaf(path: string): Promise<void> {
 }
 
 export async function ensureReadingMode(): Promise<void> {
-    await browser.execute(async () => {
-        // @ts-ignore
-        const leaf = app.workspace.getLeaf();
-        // @ts-ignore
-        const state = leaf.getViewState();
-        state.state = {
-            ...(state.state ?? {}),
-            mode: 'preview'
-        };
-        // @ts-ignore
-        await leaf.setViewState(state);
-    });
-    await browser.waitUntil(async () => {
-        const hasPreview = await browser.execute(() =>
-            Boolean(document.querySelector('.markdown-preview-view'))
-        );
-        return hasPreview;
-    }, { timeout: 5000 });
+    await ensureActiveFileReadingMode();
     await browser.pause(500);
 }
 

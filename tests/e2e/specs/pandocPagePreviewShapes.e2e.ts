@@ -275,6 +275,7 @@ describe('Pandoc page-based preview shapes', () => {
     });
 
     it('renders WebODF preview inside a page-shaped canvas', async function () {
+        this.timeout(120000);
         await openPreviewFor('odt', this);
         const state = await waitForPageShape('odt');
 

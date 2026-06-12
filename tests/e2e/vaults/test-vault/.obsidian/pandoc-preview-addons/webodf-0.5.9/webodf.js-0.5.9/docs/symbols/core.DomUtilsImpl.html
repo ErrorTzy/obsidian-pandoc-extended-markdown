@@ -1,0 +1,2485 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="generator" content="JsDoc Toolkit" />
+		
+		<title>JsDoc Reference - core.DomUtilsImpl</title>
+
+		<style type="text/css">
+			/* default.css */
+body
+{
+	font: 12px "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+	width: 800px;
+}
+
+.header
+{
+	clear: both;
+	background-color: #ccc;
+	padding: 8px;
+}
+
+h1
+{
+	font-size: 150%;
+	font-weight: bold;
+	padding: 0;
+	margin: 1em 0 0 .3em;
+}
+
+hr
+{
+	border: none 0;
+	border-top: 1px solid #7F8FB1;
+	height: 1px;
+}
+
+pre.code
+{
+	display: block;
+	padding: 8px;
+	border: 1px dashed #ccc;
+}
+
+#index
+{
+	margin-top: 24px;
+	float: left;
+	width: 160px;
+	position: absolute;
+	left: 8px;
+	background-color: #F3F3F3;
+	padding: 8px;
+}
+
+#content
+{
+	margin-left: 190px;
+	width: 600px;
+}
+
+.classList
+{
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 1em;
+	overflow: auto;
+}
+
+.classList li
+{
+	padding: 0;
+	margin: 0 0 8px 0;
+}
+
+.summaryTable { width: 100%; }
+
+h1.classTitle
+{
+	font-size:170%;
+	line-height:130%;
+}
+
+h2 { font-size: 110%; }
+caption, div.sectionTitle
+{
+	background-color: #7F8FB1;
+	color: #fff;
+	font-size:130%;
+	text-align: left;
+	padding: 2px 6px 2px 6px;
+	border: 1px #7F8FB1 solid;
+}
+
+div.sectionTitle { margin-bottom: 8px; }
+.summaryTable thead { display: none; }
+
+.summaryTable td
+{
+	vertical-align: top;
+	padding: 4px;
+	border-bottom: 1px #7F8FB1 solid;
+	border-right: 1px #7F8FB1 solid;
+}
+
+/*col#summaryAttributes {}*/
+.summaryTable td.attributes
+{
+	border-left: 1px #7F8FB1 solid;
+	width: 140px;
+	text-align: right;
+}
+
+td.attributes, .fixedFont
+{
+	line-height: 15px;
+	color: #002EBE;
+	font-family: "Courier New",Courier,monospace;
+	font-size: 13px;
+}
+
+.summaryTable td.nameDescription
+{
+	text-align: left;
+	font-size: 13px;
+	line-height: 15px;
+}
+
+.summaryTable td.nameDescription, .description
+{
+	line-height: 15px;
+	padding: 4px;
+	padding-left: 4px;
+}
+
+.summaryTable { margin-bottom: 8px; }
+
+ul.inheritsList
+{
+	list-style: square;
+	margin-left: 20px;
+	padding-left: 0;
+}
+
+.detailList {
+	margin-left: 20px; 
+	line-height: 15px;
+}
+.detailList dt { margin-left: 20px; }
+
+.detailList .heading
+{
+	font-weight: bold;
+	padding-bottom: 6px;
+	margin-left: 0;
+}
+
+.light, td.attributes, .light a:link, .light a:visited
+{
+	color: #777;
+	font-style: italic;
+}
+
+.fineprint
+{
+	text-align: right;
+	font-size: 10px;
+}
+		</style>
+	</head>
+
+	<body>
+<!-- ============================== header ================================= -->	
+		<!-- begin static/header.html -->
+		<div id="header">
+</div>
+		<!-- end static/header.html -->
+
+<!-- ============================== classes index ============================ -->
+		<div id="index">
+			<!-- begin publish.classesIndex -->
+			<div align="center"><a href="../index.html">Class Index</a>
+| <a href="../files.html">File Index</a></div>
+<hr />
+<h2>Classes</h2>
+<ul class="classList">
+	
+	<li><i><a href="../symbols/_global_.html">_global_</a></i></li>
+	
+	<li><a href="../symbols/BrowserRuntime.html">BrowserRuntime</a></li>
+	
+	<li><a href="../symbols/core.html">core</a></li>
+	
+	<li><a href="../symbols/core.Base64.html">core.Base64</a></li>
+	
+	<li><a href="../symbols/core.CSSUnits.html">core.CSSUnits</a></li>
+	
+	<li><a href="../symbols/core.Cursor.html">core.Cursor</a></li>
+	
+	<li><a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a></li>
+	
+	<li><a href="../symbols/core.EventNotifier.html">core.EventNotifier</a></li>
+	
+	<li><a href="../symbols/core.EventSubscriptions.html">core.EventSubscriptions</a></li>
+	
+	<li><a href="../symbols/core.LazyProperty.html">core.LazyProperty</a></li>
+	
+	<li><a href="../symbols/core.LoopWatchDog.html">core.LoopWatchDog</a></li>
+	
+	<li><a href="../symbols/core.NodeFilterChain.html">core.NodeFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionFilterChain.html">core.PositionFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator.html">core.PositionIterator</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-EmptyTextNodeFilter.html">core.PositionIterator-EmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-FilteredEmptyTextNodeFilter.html">core.PositionIterator-FilteredEmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.ScheduledTask.html">core.ScheduledTask</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.html">core.StepIterator</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.StepSnapshot.html">core.StepIterator.StepSnapshot</a></li>
+	
+	<li><a href="../symbols/core.Utils.html">core.Utils</a></li>
+	
+	<li><a href="../symbols/core.Zip.html">core.Zip</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AllChildElementIterator.html">createXPathSingleton-AllChildElementIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AttributeIterator.html">createXPathSingleton-AttributeIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-ConditionIterator.html">createXPathSingleton-ConditionIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-XPathNodeIterator.html">createXPathSingleton-XPathNodeIterator</a></li>
+	
+	<li><a href="../symbols/gui.html">gui</a></li>
+	
+	<li><a href="../symbols/gui.AnnotatableCanvas.html">gui.AnnotatableCanvas</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationController.html">gui.AnnotationController</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationViewManager.html">gui.AnnotationViewManager</a></li>
+	
+	<li><a href="../symbols/gui.Avatar.html">gui.Avatar</a></li>
+	
+	<li><a href="../symbols/gui.BlacklistNamespaceNodeFilter.html">gui.BlacklistNamespaceNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.Caret.html">gui.Caret</a></li>
+	
+	<li><a href="../symbols/gui.CaretManager.html">gui.CaretManager</a></li>
+	
+	<li><a href="../symbols/gui.Clipboard.html">gui.Clipboard</a></li>
+	
+	<li><a href="../symbols/gui.ClosestXOffsetScanner.html">gui.ClosestXOffsetScanner</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.html">gui.DirectFormattingController</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.SelectionInfo.html">gui.DirectFormattingController.SelectionInfo</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoHandle.html">gui.EditInfoHandle</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoMarker.html">gui.EditInfoMarker</a></li>
+	
+	<li><a href="../symbols/gui.EventManager.html">gui.EventManager</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-CompoundEvent.html">gui.EventManager-CompoundEvent</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-ElementScrollState.html">gui.EventManager-ElementScrollState</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-EventDelegate.html">gui.EventManager-EventDelegate</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-WindowScrollState.html">gui.EventManager-WindowScrollState</a></li>
+	
+	<li><a href="../symbols/gui.GuiStepUtils.html">gui.GuiStepUtils</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkClickHandler.html">gui.HyperlinkClickHandler</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkController.html">gui.HyperlinkController</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkTooltipView.html">gui.HyperlinkTooltipView</a></li>
+	
+	<li><a href="../symbols/gui.ImageController.html">gui.ImageController</a></li>
+	
+	<li><a href="../symbols/gui.ImageSelector.html">gui.ImageSelector</a></li>
+	
+	<li><a href="../symbols/gui.InputMethodEditor.html">gui.InputMethodEditor</a></li>
+	
+	<li><a href="../symbols/gui.IOSSafariSupport.html">gui.IOSSafariSupport</a></li>
+	
+	<li><a href="../symbols/gui.KeyboardHandler.html">gui.KeyboardHandler</a></li>
+	
+	<li><a href="../symbols/gui.LineBoundaryScanner.html">gui.LineBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.MetadataController.html">gui.MetadataController</a></li>
+	
+	<li><a href="../symbols/gui.MimeDataExporter.html">gui.MimeDataExporter</a></li>
+	
+	<li><a href="../symbols/gui.OdfFieldView.html">gui.OdfFieldView</a></li>
+	
+	<li><a href="../symbols/gui.OdfTextBodyNodeFilter.html">gui.OdfTextBodyNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.ParagraphBoundaryScanner.html">gui.ParagraphBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.PasteController.html">gui.PasteController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionController.html">gui.SelectionController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionViewManager.html">gui.SelectionViewManager</a></li>
+	
+	<li><a href="../symbols/gui.SessionConstraints.html">gui.SessionConstraints</a></li>
+	
+	<li><a href="../symbols/gui.SessionContext.html">gui.SessionContext</a></li>
+	
+	<li><a href="../symbols/gui.SessionController.html">gui.SessionController</a></li>
+	
+	<li><a href="../symbols/gui.SessionControllerOptions.html">gui.SessionControllerOptions</a></li>
+	
+	<li><a href="../symbols/gui.SessionView.html">gui.SessionView</a></li>
+	
+	<li><a href="../symbols/gui.SessionViewOptions.html">gui.SessionViewOptions</a></li>
+	
+	<li><a href="../symbols/gui.ShadowCursor.html">gui.ShadowCursor</a></li>
+	
+	<li><a href="../symbols/gui.SingleScrollViewport.html">gui.SingleScrollViewport</a></li>
+	
+	<li><a href="../symbols/gui.StepInfo.html">gui.StepInfo</a></li>
+	
+	<li><a href="../symbols/gui.StyleSummary.html">gui.StyleSummary</a></li>
+	
+	<li><a href="../symbols/gui.SvgSelectionView.html">gui.SvgSelectionView</a></li>
+	
+	<li><a href="../symbols/gui.TextController.html">gui.TextController</a></li>
+	
+	<li><a href="../symbols/gui.TrivialUndoManager.html">gui.TrivialUndoManager</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules.html">gui.UndoStateRules</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules-ReverseIterator.html">gui.UndoStateRules-ReverseIterator</a></li>
+	
+	<li><a href="../symbols/gui.ZoomHelper.html">gui.ZoomHelper</a></li>
+	
+	<li><a href="../symbols/NodeJSRuntime.html">NodeJSRuntime</a></li>
+	
+	<li><a href="../symbols/odf.html">odf</a></li>
+	
+	<li><a href="../symbols/odf.AnnotationElement.html">odf.AnnotationElement</a></li>
+	
+	<li><a href="../symbols/odf.CollapsingRules.html">odf.CollapsingRules</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicProperties.html">odf.ComputedGraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicStyle.html">odf.ComputedGraphicStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphProperties.html">odf.ComputedParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphStyle.html">odf.ComputedParagraphStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextProperties.html">odf.ComputedTextProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextStyle.html">odf.ComputedTextStyle</a></li>
+	
+	<li><a href="../symbols/odf.FontLoader.html">odf.FontLoader</a></li>
+	
+	<li><a href="../symbols/odf.Formatting.html">odf.Formatting</a></li>
+	
+	<li><a href="../symbols/odf.GraphicProperties.html">odf.GraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.LazyStyleProperties.html">odf.LazyStyleProperties</a></li>
+	
+	<li><a href="../symbols/odf.ListStyleToCss.html">odf.ListStyleToCss</a></li>
+	
+	<li><a href="../symbols/odf.MasterPage.html">odf.MasterPage</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator.html">odf.ObjectNameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator-NameGenerator.html">odf.ObjectNameGenerator-NameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a></li>
+	
+	<li><a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a></li>
+	
+	<li><a href="../symbols/odf.ODFDocumentElement.html">odf.ODFDocumentElement</a></li>
+	
+	<li><a href="../symbols/odf.ODFElement.html">odf.ODFElement</a></li>
+	
+	<li><a href="../symbols/odf.OdfNodeFilter.html">odf.OdfNodeFilter</a></li>
+	
+	<li><a href="../symbols/odf.OdfPart.html">odf.OdfPart</a></li>
+	
+	<li><a href="../symbols/odf.OdfSchemaImpl.html">odf.OdfSchemaImpl</a></li>
+	
+	<li><a href="../symbols/odf.OdfUtilsImpl.html">odf.OdfUtilsImpl</a></li>
+	
+	<li><a href="../symbols/odf.PageLayout.html">odf.PageLayout</a></li>
+	
+	<li><a href="../symbols/odf.PageLayoutProperties.html">odf.PageLayoutProperties</a></li>
+	
+	<li><a href="../symbols/odf.ParagraphProperties.html">odf.ParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.StepUtils.html">odf.StepUtils</a></li>
+	
+	<li><a href="../symbols/odf.Style2CSS.html">odf.Style2CSS</a></li>
+	
+	<li><a href="../symbols/odf.StyleCache.html">odf.StyleCache</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo.html">odf.StyleInfo</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo%23UsedStyleList.html">odf.StyleInfo#UsedStyleList</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo-StyleDefinition.html">odf.StyleInfo-StyleDefinition</a></li>
+	
+	<li><a href="../symbols/odf.StyleParseUtils.html">odf.StyleParseUtils</a></li>
+	
+	<li><a href="../symbols/odf.StylePile.html">odf.StylePile</a></li>
+	
+	<li><a href="../symbols/odf.StylePileEntry.html">odf.StylePileEntry</a></li>
+	
+	<li><a href="../symbols/odf.StyleTree.html">odf.StyleTree</a></li>
+	
+	<li><a href="../symbols/odf.StyleTreeNode.html">odf.StyleTreeNode</a></li>
+	
+	<li><a href="../symbols/odf.TextProperties.html">odf.TextProperties</a></li>
+	
+	<li><a href="../symbols/odf.TextSerializer.html">odf.TextSerializer</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator.html">odf.TextStyleApplicator</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleLookup.html">odf.TextStyleApplicator-StyleLookup</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleManager.html">odf.TextStyleApplicator-StyleManager</a></li>
+	
+	<li><a href="../symbols/odf.WordBoundaryFilter.html">odf.WordBoundaryFilter</a></li>
+	
+	<li><a href="../symbols/ops.html">ops</a></li>
+	
+	<li><a href="../symbols/ops.EditInfo.html">ops.EditInfo</a></li>
+	
+	<li><a href="../symbols/ops.Member.html">ops.Member</a></li>
+	
+	<li><a href="../symbols/ops.MemberProperties.html">ops.MemberProperties</a></li>
+	
+	<li><a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a></li>
+	
+	<li><a href="../symbols/ops.OdtDocument.html">ops.OdtDocument</a></li>
+	
+	<li><a href="../symbols/ops.OdtStepsTranslator.html">ops.OdtStepsTranslator</a></li>
+	
+	<li><a href="../symbols/ops.OpAddAnnotation.html">ops.OpAddAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpAddCursor.html">ops.OpAddCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpAddMember.html">ops.OpAddMember</a></li>
+	
+	<li><a href="../symbols/ops.OpAddStyle.html">ops.OpAddStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyDirectStyling.html">ops.OpApplyDirectStyling</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyHyperlink.html">ops.OpApplyHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OperationFactory.html">ops.OperationFactory</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformer.html">ops.OperationTransformer</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformMatrix.html">ops.OperationTransformMatrix</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertImage.html">ops.OpInsertImage</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertTable.html">ops.OpInsertTable</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertText.html">ops.OpInsertText</a></li>
+	
+	<li><a href="../symbols/ops.OpMergeParagraph.html">ops.OpMergeParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpMoveCursor.html">ops.OpMoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveAnnotation.html">ops.OpRemoveAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveBlob.html">ops.OpRemoveBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveCursor.html">ops.OpRemoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveHyperlink.html">ops.OpRemoveHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveMember.html">ops.OpRemoveMember</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveStyle.html">ops.OpRemoveStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveText.html">ops.OpRemoveText</a></li>
+	
+	<li><a href="../symbols/ops.OpSetBlob.html">ops.OpSetBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpSetParagraphStyle.html">ops.OpSetParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpSplitParagraph.html">ops.OpSplitParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMember.html">ops.OpUpdateMember</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMetadata.html">ops.OpUpdateMetadata</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateParagraphStyle.html">ops.OpUpdateParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.Session.html">ops.Session</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache.html">ops.StepsCache</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-NodeBookmark.html">ops.StepsCache-NodeBookmark</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-RootBookmark.html">ops.StepsCache-RootBookmark</a></li>
+	
+	<li><a href="../symbols/ops.TextPositionFilter.html">ops.TextPositionFilter</a></li>
+	
+	<li><a href="../symbols/ops.TrivialOperationRouter.html">ops.TrivialOperationRouter</a></li>
+	
+	<li><a href="../symbols/RhinoRuntime.html">RhinoRuntime</a></li>
+	
+	<li><a href="../symbols/RootFilter.html">RootFilter</a></li>
+	
+	<li><a href="../symbols/Runtime.html">Runtime</a></li>
+	
+	<li><a href="../symbols/webodf.html">webodf</a></li>
+	
+	<li><a href="../symbols/xmldom.html">xmldom</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer.html">xmldom.LSSerializer</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer-Namespaces.html">xmldom.LSSerializer-Namespaces</a></li>
+	
+	<li><a href="../symbols/xmldom.XPathIterator.html">xmldom.XPathIterator</a></li>
+	
+</ul>
+<hr />
+			<!-- end publish.classesIndex -->
+		</div>
+		
+		<div id="content">
+<!-- ============================== class title ============================ -->
+			<h1 class="classTitle">
+				
+				Class core.DomUtilsImpl
+			</h1>
+
+<!-- ============================== class summary ========================== -->			
+			<p class="description">
+				
+				
+			
+				
+				
+				
+					<br /><i>Defined in: </i> <a href="../symbols/src/lib_core_DomUtils.js.html">DomUtils.js</a>.
+				
+			</p>
+
+<!-- ============================== constructor summary ==================== -->			
+			
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class core.DomUtilsImpl.">
+				<caption>Class Summary</caption>
+				<thead>
+					<tr>
+						<th scope="col">Constructor Attributes</th>
+						<th scope="col">Constructor Name and Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="attributes">&nbsp;</td>
+						<td class="nameDescription" >
+							<div class="fixedFont">
+								<b><a href="../symbols/core.DomUtilsImpl.html#constructor">core.DomUtilsImpl</a></b>()
+							</div>
+							<div class="description">A collection of Dom utilities</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+
+<!-- ============================== properties summary ===================== -->
+			
+
+<!-- ============================== methods summary ======================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class core.DomUtilsImpl.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-adaptRangeDifferenceToZoomLevel">adaptRangeDifferenceToZoomLevel</a></b>(inputNumber, zoomLevel)
+								</div>
+								<div class="description">Scale the supplied number by the specified zoom transformation if the
+bowser does not transform range client rectangles correctly.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-cloneEvent">cloneEvent</a></b>(event)
+								</div>
+								<div class="description">Clones an event object.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-comparePoints">comparePoints</a></b>(c1, o1, c2, o2)
+								</div>
+								<div class="description">Return a number > 0 when point 1 precedes point 2.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-containsNode">containsNode</a></b>(parent, descendant)
+								</div>
+								<div class="description">Whether a node contains another node
+Wrapper around Node.contains
+http://www.w3.org/TR/domcore/#dom-node-contains</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-containsNodeForBrokenWebKit">containsNodeForBrokenWebKit</a></b>(parent, descendant)
+								</div>
+								<div class="description">Whether a node contains another node</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-containsRange">containsRange</a></b>(container, insideRange)
+								</div>
+								<div class="description">Returns true if the container range completely contains the insideRange.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-findStablePoint">findStablePoint</a></b>(container, offset)
+								</div>
+								<div class="description">Find the inner-most child point that is equivalent
+to the provided container and offset.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getBoundingClientRect">getBoundingClientRect</a></b>(node)
+								</div>
+								<div class="description">Get the bounding client rect for the specified node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getElementsByTagName">getElementsByTagName</a></b>(node, tagName)
+								</div>
+								<div class="description">Get an array of nodes below the specified node with the specific name tag name.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getElementsByTagNameNS">getElementsByTagNameNS</a></b>(node, namespace, tagName)
+								</div>
+								<div class="description">Get an array of nodes below the specified node with the specific namespace and tag name.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getKeyValRepresentationOfNode">getKeyValRepresentationOfNode</a></b>(node, prefixResolver)
+								</div>
+								<div class="description">Looks at an element's direct children, and generates an object which is a
+flat key-value map from the child's ns:localName to it's text content.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getNodesInRange">getNodesInRange</a></b>(range, nodeFilter, whatToShow)
+								</div>
+								<div class="description">Fetches all nodes within a supplied range that pass the required filter</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getPositionInContainingNode">getPositionInContainingNode</a></b>(node, container)
+								</div>
+								<div class="description">Gets the unfiltered DOM 'offset' of a node within a container that may not be it's direct parent.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-getSharedRange">getSharedRange</a></b>(doc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-init">init</a></b>(self)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-mapKeyValObjOntoNode">mapKeyValObjOntoNode</a></b>(node, properties, nsResolver)
+								</div>
+								<div class="description">Takes a flat object which is a key-value
+map of strings, and populates/modifies
+the node with child elements which have
+the key name as the node name (namespace
+prefix required in the key name)
+and the value as the text content.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-mapObjOntoNode">mapObjOntoNode</a></b>(node, properties, nsResolver)
+								</div>
+								<div class="description">Maps attributes and elements in the properties object over top of the node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-maximumOffset">maximumOffset</a></b>(node)
+								</div>
+								<div class="description">Returns the maximum available offset for the node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-mergeIntoParent">mergeIntoParent</a></b>(targetNode)
+								</div>
+								<div class="description">Merge all child nodes into the targetNode's parent and remove the targetNode entirely</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-mergeTextNodes">mergeTextNodes</a></b>(node, nextNode)
+								</div>
+								<div class="description">Merges the content of node with nextNode.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-moveToNonRejectedNode">moveToNonRejectedNode</a></b>(walker, root, nodeFilter)
+								</div>
+								<div class="description">Checks all nodes between the tree walker's current node and the defined
+root.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-normalizeTextNodes">normalizeTextNodes</a></b>(node)
+								</div>
+								<div class="description">Attempts to normalize the node with any surrounding text nodes.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-rangeContainsNode">rangeContainsNode</a></b>(limits, node)
+								</div>
+								<div class="description">Checks if the provided limits fully encompass the passed in node</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-rangeIntersection">rangeIntersection</a></b>(range1, range2)
+								</div>
+								<div class="description">Returns the intersection of two ranges.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-rangesIntersect">rangesIntersect</a></b>(range1, range2)
+								</div>
+								<div class="description">Returns true if there is any intersection between range1 and range2</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#removeAllChildNodes">removeAllChildNodes</a></b>(node)
+								</div>
+								<div class="description">Removes all child nodes from the given node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-removeKeyElementsFromNode">removeKeyElementsFromNode</a></b>(node, propertyNames, nsResolver)
+								</div>
+								<div class="description">Takes an array of strings, which is a listing of
+properties to be removed (namespace required),
+and deletes the corresponding top-level child elements
+that represent those properties, from the
+supplied node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-removeUnwantedNodes">removeUnwantedNodes</a></b>(targetNode, nodeFilter)
+								</div>
+								<div class="description">Removes all unwanted nodes from targetNode includes itself.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#-splitBoundaries">splitBoundaries</a></b>(range)
+								</div>
+								<div class="description">If either the start or end boundaries of a range start within a text
+node, this function will split these text nodes and reset the range
+boundaries to select the new nodes.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/core.DomUtilsImpl.html#translateRect">translateRect</a></b>(child, parent, zoomLevel)
+								</div>
+								<div class="description">Translate a given child client rectangle to be relative to the parent's rectangle.</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+<!-- ============================== events summary ======================== -->
+			
+
+<!-- ============================== constructor details ==================== -->		
+			
+			<div class="details"><a name="constructor"> </a>
+				<div class="sectionTitle">
+					Class Detail
+				</div>
+				
+				<div class="fixedFont">
+						<b>core.DomUtilsImpl</b>()
+				</div>
+				
+				<div class="description">
+					A collection of Dom utilities
+					
+				</div>
+				
+				
+				
+				
+					
+					
+					
+					
+					
+					
+					
+
+			</div>
+			
+
+<!-- ============================== field details ========================== -->		
+			
+
+<!-- ============================== method details ========================= -->		
+			
+				<div class="sectionTitle">
+					Method Detail
+				</div>
+				
+					<a name="-adaptRangeDifferenceToZoomLevel"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>adaptRangeDifferenceToZoomLevel</b>(inputNumber, zoomLevel)
+					
+					</div>
+					<div class="description">
+						Scale the supplied number by the specified zoom transformation if the
+bowser does not transform range client rectangles correctly.
+In firefox, the span rectangle will be affected by the zoom, but the
+range is not. In most all other browsers, the range number is
+affected zoom.
+
+See http://dev.w3.org/csswg/cssom-view/#extensions-to-the-range-interface
+Section 10, getClientRects,
+"The transforms that apply to the ancestors are applied."
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>inputNumber</b>
+									
+								</dt>
+								<dd>An input number to be scaled. This is
+                             expected to be the difference between
+                             a property on two range-sourced client
+                             rectangles (e.g., rect1.top - rect2.top)</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>zoomLevel</b>
+									
+								</dt>
+								<dd>Current canvas zoom level</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-cloneEvent"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Event}</span>
+					<b>cloneEvent</b>(event)
+					
+					</div>
+					<div class="description">
+						Clones an event object.
+IE10 destructs event objects once the event handler is done:
+"The event object is only available during an event; that is, you can use it in event handlers but not in other code"
+(from http://msdn.microsoft.com/en-us/library/ie/aa703876(v=vs.85).aspx)
+This method can be used to create a copy of the event object, to work around that.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Event}</span> <b>event</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Event}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-comparePoints"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>comparePoints</b>(c1, o1, c2, o2)
+					
+					</div>
+					<div class="description">
+						Return a number > 0 when point 1 precedes point 2. Return 0 if the points
+are equal. Return < 0 when point 2 precedes point 1.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>c1</b>
+									
+								</dt>
+								<dd>container of point 1</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>o1</b>
+									
+								</dt>
+								<dd>offset in unfiltered DOM world of point 1</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>c2</b>
+									
+								</dt>
+								<dd>container of point 2</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>o2</b>
+									
+								</dt>
+								<dd>offset in unfiltered DOM world of point 2</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-containsNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>containsNode</b>(parent, descendant)
+					
+					</div>
+					<div class="description">
+						Whether a node contains another node
+Wrapper around Node.contains
+http://www.w3.org/TR/domcore/#dom-node-contains
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>parent</b>
+									
+								</dt>
+								<dd>The node that should contain the other node</dd>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>descendant</b>
+									
+								</dt>
+								<dd>The node to test presence of</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-containsNodeForBrokenWebKit"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>containsNodeForBrokenWebKit</b>(parent, descendant)
+					
+					</div>
+					<div class="description">
+						Whether a node contains another node
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>parent</b>
+									
+								</dt>
+								<dd>The node that should contain the other node</dd>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>descendant</b>
+									
+								</dt>
+								<dd>The node to test presence of</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-containsRange"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{boolean}</span>
+					<b>containsRange</b>(container, insideRange)
+					
+					</div>
+					<div class="description">
+						Returns true if the container range completely contains the insideRange.
+Aligned boundaries are counted as inclusion
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>container</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>insideRange</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-findStablePoint"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{{container: Node|offset: !number}}</span>
+					<b>findStablePoint</b>(container, offset)
+					
+					</div>
+					<div class="description">
+						Find the inner-most child point that is equivalent
+to the provided container and offset.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>container</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{{container: Node|offset: !number}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getBoundingClientRect"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?ClientRect}</span>
+					<b>getBoundingClientRect</b>(node)
+					
+					</div>
+					<div class="description">
+						Get the bounding client rect for the specified node.
+This function attempts to cope with various browser quirks, ideally
+returning a rectangle that can be used in conjunction with rectangles
+retrieved from ranges.
+
+Range & element client rectangles can only be mixed if both are
+transformed in the same way.
+See https://bugzilla.mozilla.org/show_bug.cgi?id=863618
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?ClientRect}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getElementsByTagName"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!Element>}</span>
+					<b>getElementsByTagName</b>(node, tagName)
+					
+					</div>
+					<div class="description">
+						Get an array of nodes below the specified node with the specific name tag name.
+
+Use this function instead of node.getElementsByTagName when modifications are going to be made
+to the document content during iteration. For read-only uses, node.getElementsByTagName will perform
+faster and use less memory. See https://github.com/kogmbh/WebODF/issues/736 for further discussion.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element|!Document}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>tagName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Element>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getElementsByTagNameNS"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!Element>}</span>
+					<b>getElementsByTagNameNS</b>(node, namespace, tagName)
+					
+					</div>
+					<div class="description">
+						Get an array of nodes below the specified node with the specific namespace and tag name.
+
+Use this function instead of node.getElementsByTagNameNS when modifications are going to be made
+to the document content during iteration. For read-only uses, node.getElementsByTagNameNS will perform
+faster and use less memory. See https://github.com/kogmbh/WebODF/issues/736 for further discussion.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element|!Document}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>namespace</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>tagName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Element>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getKeyValRepresentationOfNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Object.<!string|!string>}</span>
+					<b>getKeyValRepresentationOfNode</b>(node, prefixResolver)
+					
+					</div>
+					<div class="description">
+						Looks at an element's direct children, and generates an object which is a
+flat key-value map from the child's ns:localName to it's text content.
+Only those children that have a resolvable prefixed name will be taken into
+account for generating this map.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{function(!string):?string}</span> <b>prefixResolver</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Object.<!string|!string>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getNodesInRange"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!Node>}</span>
+					<b>getNodesInRange</b>(range, nodeFilter, whatToShow)
+					
+					</div>
+					<div class="description">
+						Fetches all nodes within a supplied range that pass the required filter
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Node) : number}</span> <b>nodeFilter</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>whatToShow</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Node>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getPositionInContainingNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>getPositionInContainingNode</b>(node, container)
+					
+					</div>
+					<div class="description">
+						Gets the unfiltered DOM 'offset' of a node within a container that may not be it's direct parent.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>container</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getSharedRange"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Range}</span>
+					<b>getSharedRange</b>(doc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Document}</span> <b>doc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Range}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-init"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					
+					<b>init</b>(self)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a>}</span> <b>self</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-mapKeyValObjOntoNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					
+					<b>mapKeyValObjOntoNode</b>(node, properties, nsResolver)
+					
+					</div>
+					<div class="description">
+						Takes a flat object which is a key-value
+map of strings, and populates/modifies
+the node with child elements which have
+the key name as the node name (namespace
+prefix required in the key name)
+and the value as the text content. 
+Example: mapKeyValObjOntoNode(node, {"dc:creator": "Bob"}, nsResolver);
+If a namespace prefix is unresolved with the
+nsResolver, that key will be ignored and not written to the node.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Object.<!string|!string>}</span> <b>properties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!string):?string}</span> <b>nsResolver</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-mapObjOntoNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					
+					<b>mapObjOntoNode</b>(node, properties, nsResolver)
+					
+					</div>
+					<div class="description">
+						Maps attributes and elements in the properties object over top of the node.
+Supports recursion and deep mapping.
+
+Supported value types are:
+- string (mapped to an attribute string on node)
+- number (mapped to an attribute string on node)
+- object (deep mapped to a new child node on node)
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Object.<string|*>}</span> <b>properties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!string):?string}</span> <b>nsResolver</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-maximumOffset"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>maximumOffset</b>(node)
+					
+					</div>
+					<div class="description">
+						Returns the maximum available offset for the node. If this is a text
+node, this will be node.length, or for an element node, childNodes.length
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-mergeIntoParent"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>mergeIntoParent</b>(targetNode)
+					
+					</div>
+					<div class="description">
+						Merge all child nodes into the targetNode's parent and remove the targetNode entirely
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>targetNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> parent of targetNode</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-mergeTextNodes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Node}</span>
+					<b>mergeTextNodes</b>(node, nextNode)
+					
+					</div>
+					<div class="description">
+						Merges the content of node with nextNode.
+If node is an empty text node, it will be removed in any case.
+If nextNode is an empty text node, it will be only removed if node is a text node.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>nextNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Node}</span> merged text node or null if there is no text node as result</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-moveToNonRejectedNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>moveToNonRejectedNode</b>(walker, root, nodeFilter)
+					
+					</div>
+					<div class="description">
+						Checks all nodes between the tree walker's current node and the defined
+root. If any nodes are rejected, the tree walker is moved to the
+highest rejected node below the root. Note, the root is excluded from
+this check.
+
+This logic is similar to PositionIterator.moveToAcceptedNode
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!TreeWalker}</span> <b>walker</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>root</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Node) : number}</span> <b>nodeFilter</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> Returns the current node the walker is on</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-normalizeTextNodes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>normalizeTextNodes</b>(node)
+					
+					</div>
+					<div class="description">
+						Attempts to normalize the node with any surrounding text nodes. No
+actions are performed if the node is undefined, has no siblings, or
+is not a text node
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-rangeContainsNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{boolean}</span>
+					<b>rangeContainsNode</b>(limits, node)
+					
+					</div>
+					<div class="description">
+						Checks if the provided limits fully encompass the passed in node
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range|{startContainer: Node|startOffset: !number|endContainer: Node|endOffset: !number}}</span> <b>limits</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{boolean}</span> Returns true if the node is fully contained within
+                   the range</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-rangeIntersection"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Range|undefined}</span>
+					<b>rangeIntersection</b>(range1, range2)
+					
+					</div>
+					<div class="description">
+						Returns the intersection of two ranges. If there is no intersection, this
+will return undefined.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range1</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range2</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Range|undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-rangesIntersect"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{boolean}</span>
+					<b>rangesIntersect</b>(range1, range2)
+					
+					</div>
+					<div class="description">
+						Returns true if there is any intersection between range1 and range2
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range1</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range2</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="removeAllChildNodes"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>removeAllChildNodes</b>(node)
+					
+					</div>
+					<div class="description">
+						Removes all child nodes from the given node.
+To be used instead of e.g. `node.innerHTML = "";`
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeKeyElementsFromNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					
+					<b>removeKeyElementsFromNode</b>(node, propertyNames, nsResolver)
+					
+					</div>
+					<div class="description">
+						Takes an array of strings, which is a listing of
+properties to be removed (namespace required),
+and deletes the corresponding top-level child elements
+that represent those properties, from the
+supplied node.
+Example: removeKeyElementsFromNode(node, ["dc:creator"], nsResolver);
+If a namespace is not resolved with the nsResolver,
+that key element will be not removed.
+If a key element does not exist, it will be ignored.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Array.<!string>}</span> <b>propertyNames</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!string):?string}</span> <b>nsResolver</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeUnwantedNodes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Node}</span>
+					<b>removeUnwantedNodes</b>(targetNode, nodeFilter)
+					
+					</div>
+					<div class="description">
+						Removes all unwanted nodes from targetNode includes itself.
+The nodeFilter defines which nodes should be removed (NodeFilter.FILTER_REJECT),
+should be skipped including the subtree (NodeFilter.FILTER_SKIP) or should be kept
+and their subtree checked further (NodeFilter.FILTER_ACCEPT).
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>targetNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Node) : !number}</span> <b>nodeFilter</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Node}</span> parent of targetNode</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-splitBoundaries"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!Node>}</span>
+					<b>splitBoundaries</b>(range)
+					
+					</div>
+					<div class="description">
+						If either the start or end boundaries of a range start within a text
+node, this function will split these text nodes and reset the range
+boundaries to select the new nodes. The end result is that there are
+no partially contained text nodes within the resulting range.
+E.g., the text node with selection:
+ "A|BCD|E"
+would be split into 3 text nodes, with the range modified to maintain
+only the completely selected text node:
+ "A" "|BCD|" "E"
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Node>}</span> Return a list of nodes modified as a result
+                          of this split operation. These are often
+                          processed through
+                          DomUtils.normalizeTextNodes after all
+                          processing has been complete.</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="translateRect"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!ClientRect|{top: !number|left: !number|bottom: !number|right: !number|width: !number|height: !number}}</span>
+					<b>translateRect</b>(child, parent, zoomLevel)
+					
+					</div>
+					<div class="description">
+						Translate a given child client rectangle to be relative to the parent's rectangle.
+Adapt to the provided zoom level as per adaptRangeDifferenceToZoomLevel.
+
+IMPORTANT: due to browser quirks, any element bounding client rect used with this function
+MUST be retrieved using DomUtils.getBoundingClientRect.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ClientRect|!Object.<!string|!number>}</span> <b>child</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ClientRect|!Object.<!string|!number>}</span> <b>parent</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>zoomLevel</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!ClientRect|{top: !number|left: !number|bottom: !number|right: !number|width: !number|height: !number}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					
+				
+			
+			
+<!-- ============================== event details ========================= -->		
+			
+			
+			<hr />
+		</div>
+
+		
+<!-- ============================== footer ================================= -->
+		<div class="fineprint" style="clear:both">
+			
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Sep 03 2015 21:31:51 GMT+0200 (CEST)
+		</div>
+	</body>
+</html>

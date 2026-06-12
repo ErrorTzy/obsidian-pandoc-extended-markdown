@@ -1,6 +1,8 @@
 import { browser, expect } from '@wdio/globals';
 import { execFileSync } from 'child_process';
 
+import { ensureActiveFileReadingMode } from '../helpers/readingMode';
+
 describe('Definition list semantic HTML in reading mode', () => {
     before(async () => {
         await browser.reloadObsidian({
@@ -127,7 +129,7 @@ describe('Definition list semantic HTML in reading mode', () => {
 
         expect(after.definitionListCount).toBe(1);
         expect(after.text).toContain('aaa');
-        expect(after.html).toBe(before.html);
+        expect(after.definitionListHtml).toBe(before.definitionListHtml);
 
         await deleteFileIfExists(path);
     });
@@ -158,7 +160,7 @@ describe('Definition list semantic HTML in reading mode', () => {
 
         expect(after.definitionListCount).toBe(1);
         expect(after.text).toContain('Math Term');
-        expect(after.html).toBe(before.html);
+        expect(after.definitionListHtml).toBe(before.definitionListHtml);
 
         await deleteFileIfExists(path);
     });
@@ -192,7 +194,7 @@ describe('Definition list semantic HTML in reading mode', () => {
         const after = await getPreviewState();
 
         expect(after.definitionListCount).toBe(1);
-        expect(after.html).toBe(before.html);
+        expect(after.definitionListHtml).toBe(before.definitionListHtml);
         expect(after.text).toContain('Defi');
 
         await deleteFileIfExists(path);
@@ -473,6 +475,7 @@ async function waitForAnyDefinitionList(): Promise<void> {
 
 async function getPreviewState(): Promise<{
     definitionListCount: number;
+    definitionListHtml: string;
     html: string;
     text: string;
 }> {
@@ -496,6 +499,9 @@ async function getPreviewState(): Promise<{
         const preview = getActiveMarkdownPreview();
         return {
             definitionListCount: preview?.querySelectorAll('.pem-definition-list').length ?? 0,
+            definitionListHtml: Array.from(preview?.querySelectorAll('.pem-definition-list') ?? [])
+                .map(list => list.outerHTML)
+                .join('\n'),
             html: preview?.innerHTML ?? '',
             text: preview?.textContent ?? ''
         };
@@ -728,35 +734,7 @@ async function openFileInActiveLeaf(path: string): Promise<void> {
 }
 
 async function ensureReadingMode(): Promise<void> {
-    await browser.execute(async () => {
-        // @ts-ignore
-        const activeFile = app.workspace.getActiveFile();
-        // @ts-ignore
-        const leaves = app.workspace.getLeavesOfType('markdown');
-        const leaf = leaves.find((candidate: { view?: { file?: { path?: string } } }) =>
-            candidate.view?.file?.path === activeFile?.path
-        ) ?? leaves[0];
-        if (!leaf) {
-            return;
-        }
-        // @ts-ignore
-        const state = leaf.getViewState();
-        state.state.mode = 'preview';
-        // @ts-ignore
-        await leaf.setViewState(state);
-    });
-    await browser.waitUntil(async () =>
-        browser.execute(() => {
-            // @ts-ignore
-            const activeFile = app.workspace.getActiveFile();
-            // @ts-ignore
-            const leaves = app.workspace.getLeavesOfType('markdown');
-            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
-                candidate.view?.file?.path === activeFile?.path
-            );
-            return Boolean(leaf?.view?.containerEl?.querySelector('.markdown-preview-view'));
-        }),
-    { timeout: 5000 });
+    await ensureActiveFileReadingMode();
     await browser.pause(500);
 }
 

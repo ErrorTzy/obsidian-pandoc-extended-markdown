@@ -375,7 +375,15 @@ function isRomanToken(
         return false;
     }
 
-    return token.length > 1 ? ROMAN_NUMERAL.test(token) : /^[Ii]$/.test(token);
+    if (token.length > 1) {
+        return ROMAN_NUMERAL.test(token);
+    }
+
+    if (/^[Ii]$/.test(token)) {
+        return true;
+    }
+
+    return hasFollowingRomanEvidenceAtIndent(indent, delimiter, lines, lineIndex);
 }
 
 function findPreviousOrderedStyleAtIndent(
@@ -406,6 +414,46 @@ function findPreviousOrderedStyleAtIndent(
     }
 
     return null;
+}
+
+function hasFollowingRomanEvidenceAtIndent(
+    indent: string,
+    delimiter: OrderedListMarkerDelimiter,
+    lines?: string[],
+    lineIndex?: number
+): boolean {
+    if (!lines || lineIndex === undefined) {
+        return false;
+    }
+
+    const targetIndentColumns = getIndentColumns(indent);
+
+    for (let index = lineIndex + 1; index < lines.length; index++) {
+        if (!lines[index].trim()) {
+            break;
+        }
+
+        const match = lines[index].match(ORDERED_LINE);
+        const lineIndent = match?.[1] ?? lines[index].match(/^(\s*)/)?.[1] ?? '';
+        const indentColumns = getIndentColumns(lineIndent);
+
+        if (indentColumns < targetIndentColumns) {
+            break;
+        }
+
+        if (!match || indentColumns !== targetIndentColumns || match[3] !== delimiter) {
+            continue;
+        }
+
+        const token = match[2];
+        if (!ROMAN_CHARS.test(token)) {
+            return false;
+        }
+
+        return token.length > 1 && ROMAN_NUMERAL.test(token);
+    }
+
+    return false;
 }
 
 function findTargetIndentStyle(context: OrderedListStyleContext): OrderedListMarkerStyle | null {

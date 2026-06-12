@@ -1,9 +1,20 @@
 import { EditorView, KeyBinding } from '@codemirror/view';
+import { EditorSelection } from '@codemirror/state';
 import { getCurrentLineInfo } from '../utils/lineInfo';
 import { detectListMarker } from '../utils/markerDetection';
 import { handleEmptyListSpecialCases, handleEmptyListItem } from './emptyListHandler';
 import { handleNonEmptyListItem } from './listItemHandler';
 import { handleContinuationLine } from './continuationHandler';
+import { formatOrderedListMarker } from '../../../shared/utils/orderedListMarkers';
+import { setPendingListBlockReconciliation } from '../utils/listBlockReconciliation';
+import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
+import {
+    findExplicitChildBlock,
+    findTargetParentLineIndex,
+    getPreviousSiblingOrdinal,
+    resolveListOwnerAtLine
+} from '../utils/standardListStructure';
+import type { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
 import {
     EmptyListHandlingConfig,
     ContinuationLineConfig,
@@ -42,6 +53,10 @@ export function createEnterHandler(settingsProvider: SettingsProvider): KeyBindi
 
             if (!detection.shouldHandleEnter) {
                 return false; // Let default Enter handling take over
+            }
+
+            if (handleEnterBeforeExplicitChildBlock(view, currentLine.line.number - 1, settings)) {
+                return true;
             }
 
             // Handle special cases for empty lists with cursor in specific positions
@@ -84,4 +99,98 @@ export function createEnterHandler(settingsProvider: SettingsProvider): KeyBindi
             return handleNonEmptyListItem(nonEmptyConfig);
         }
     };
+}
+
+function handleEnterBeforeExplicitChildBlock(
+    view: EditorView,
+    lineIndex: number,
+    settings: ReturnType<typeof resolveSettings>
+): boolean {
+    const state = view.state;
+    const line = state.doc.line(lineIndex + 1);
+    const lines = state.doc.toString().split('\n');
+    const ownerContext = resolveListOwnerAtLine(lines, lineIndex, settings);
+    if (!ownerContext || ownerContext.owner.lineIndex !== lineIndex) {
+        return false;
+    }
+
+    const explicitChild = findExplicitChildBlock(lines, ownerContext.owner, settings);
+    if (!explicitChild) {
+        return false;
+    }
+
+    const item = ownerContext.owner;
+    const markerPrefixLength = item.indent.length + item.marker.length + item.spaces.length;
+    const cursorOffset = state.selection.main.from - line.from;
+    const beforeCursor = line.text.slice(0, cursorOffset);
+    const afterCursor = line.text.slice(cursorOffset);
+
+    if (cursorOffset < markerPrefixLength) {
+        return false;
+    }
+
+    const insertedLine = afterCursor.length > 0
+        ? `${explicitChild.indent}${afterCursor}`
+        : explicitChild.markerType
+            ? `${explicitChild.indent}${formatMarkerForInsertedChild(
+                explicitChild.markerType,
+                ownerContext,
+                settings
+            )}${item.spaces || ' '}`
+            : explicitChild.indent;
+    const replacement = `${beforeCursor}\n${insertedLine}`;
+    const expectedLines = [...lines];
+    expectedLines.splice(lineIndex, 1, ...replacement.split('\n'));
+    if (settings.autoRenumberLists && explicitChild.markerType?.kind === 'ordered' && afterCursor.length === 0) {
+        renumberOrderedGroup(expectedLines, lineIndex + 1, {
+            depth: ownerContext.owner.depth + 1,
+            parentLineIndex: ownerContext.owner.lineIndex,
+            markerType: explicitChild.markerType
+        }, settings);
+    }
+    const cursorPosition = line.from + beforeCursor.length + 1 + insertedLine.length;
+
+    setPendingListBlockReconciliation(expectedLines, {
+        startIndex: 0,
+        endIndex: expectedLines.length - 1
+    });
+    view.dispatch(state.update({
+        changes: {
+            from: line.from,
+            to: line.to,
+            insert: replacement
+        },
+        selection: EditorSelection.cursor(cursorPosition)
+    }));
+
+    return true;
+}
+
+function formatMarkerForInsertedChild(
+    markerType: StandardListMarkerType,
+    ownerContext: NonNullable<ReturnType<typeof resolveListOwnerAtLine>>,
+    settings: ReturnType<typeof resolveSettings>
+): string {
+    if (markerType.kind === 'unordered') {
+        return markerType.marker;
+    }
+
+    const targetDepth = ownerContext.owner.depth + 1;
+    const targetParentLineIndex = findTargetParentLineIndex(
+        ownerContext.chunk,
+        ownerContext.owner.lineIndex + 1,
+        targetDepth
+    ) ?? ownerContext.owner.lineIndex;
+    const previousOrdinal = getPreviousSiblingOrdinal(
+        ownerContext.chunk,
+        ownerContext.owner.lineIndex + 1,
+        targetDepth,
+        markerType,
+        targetParentLineIndex
+    );
+    const ordinal = settings.autoRenumberLists
+        ? (previousOrdinal ?? 0) + 1
+        : 1;
+
+    return formatOrderedListMarker(markerType.style, ordinal);
 }

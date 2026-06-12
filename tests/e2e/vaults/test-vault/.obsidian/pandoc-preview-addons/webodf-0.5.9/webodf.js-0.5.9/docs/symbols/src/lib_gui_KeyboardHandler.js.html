@@ -1,0 +1,222 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2012-2013 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global gui, runtime */</span><span class="WHIT">
+<span class='line'> 26</span> </span><span class="COMM">/*jslint bitwise: true*/</span><span class="WHIT">
+<span class='line'> 27</span> 
+<span class='line'> 28</span> </span><span class="COMM">/**
+<span class='line'> 29</span>  * @constructor
+<span class='line'> 30</span>  * @return {?}
+<span class='line'> 31</span>  */</span><span class="WHIT">
+<span class='line'> 32</span> </span><span class="NAME">gui.KeyboardHandler</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">KeyboardHandler</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 33</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 34</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">modifier</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.Modifier</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 35</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{?function(!KeyboardEvent):boolean}*/</span><span class="WHIT">
+<span class='line'> 36</span> </span><span class="WHIT">        </span><span class="NAME">defaultBinding</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 37</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{!Object.&lt;string,function():boolean>}*/</span><span class="WHIT">
+<span class='line'> 38</span> </span><span class="WHIT">        </span><span class="NAME">bindings</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 39</span> 
+<span class='line'> 40</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 41</span>      * @param {!KeyboardEvent} e
+<span class='line'> 42</span>      * @return {!number}
+<span class='line'> 43</span>      */</span><span class="WHIT">
+<span class='line'> 44</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">getModifiers</span><span class="PUNC">(</span><span class="NAME">e</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 45</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.None</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 46</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">e.metaKey</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Meta</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 47</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">e.ctrlKey</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Ctrl</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 48</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">e.altKey</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Alt</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 49</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">e.shiftKey</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Shift</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 50</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 51</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 52</span> 
+<span class='line'> 53</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 54</span>      * @param {!number}     keyCode
+<span class='line'> 55</span>      * @param {!number}     modifiers
+<span class='line'> 56</span>      * @return {!string}
+<span class='line'> 57</span>      */</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">getKeyCombo</span><span class="PUNC">(</span><span class="NAME">keyCode</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 59</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">modifiers</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 60</span> </span><span class="WHIT">            </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.None</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 61</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 62</span> </span><span class="WHIT">        </span><span class="COMM">// When a modifier key is pressed on it's own, different browsers + platforms</span><span class="WHIT">
+<span class='line'> 63</span> </span><span class="WHIT">        </span><span class="COMM">// may report the state of the corresponding modifier flag as trailing the event.</span><span class="WHIT">
+<span class='line'> 64</span> </span><span class="WHIT">        </span><span class="COMM">// For example, pressing the ctrl key in FF on Linux will report (ctrlKey:false)</span><span class="WHIT">
+<span class='line'> 65</span> </span><span class="WHIT">        </span><span class="COMM">// in the keydown event, while Chrome on Linux will report (ctrlKey:true) in the</span><span class="WHIT">
+<span class='line'> 66</span> </span><span class="WHIT">        </span><span class="COMM">// keydown event.</span><span class="WHIT">
+<span class='line'> 67</span> </span><span class="WHIT">        </span><span class="COMM">//</span><span class="WHIT">
+<span class='line'> 68</span> </span><span class="WHIT">        </span><span class="COMM">// Easiest way to cope with this is to manually normalize these events.</span><span class="WHIT">
+<span class='line'> 69</span> </span><span class="WHIT">        </span><span class="KEYW">switch</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">keyCode</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 70</span> </span><span class="WHIT">            </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.KeyCode.LeftMeta</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'> 71</span> </span><span class="WHIT">            </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.KeyCode.RightMeta</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'> 72</span> </span><span class="WHIT">            </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.KeyCode.MetaInMozilla</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'> 73</span> </span><span class="WHIT">                </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Meta</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 74</span> </span><span class="WHIT">                </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 75</span> </span><span class="WHIT">            </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.KeyCode.Ctrl</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'> 76</span> </span><span class="WHIT">                </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Ctrl</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 77</span> </span><span class="WHIT">                </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 78</span> </span><span class="WHIT">            </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.KeyCode.Alt</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'> 79</span> </span><span class="WHIT">                </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Alt</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="WHIT">                </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 81</span> </span><span class="WHIT">            </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="NAME">gui.KeyboardHandler.KeyCode.Shift</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'> 82</span> </span><span class="WHIT">                </span><span class="NAME">modifiers</span><span class="WHIT"> </span><span class="PUNC">|</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">modifier.Shift</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 83</span> </span><span class="WHIT">                </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 84</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 85</span> 
+<span class='line'> 86</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">keyCode</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">':'</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 88</span> 
+<span class='line'> 89</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 90</span>      * @param {?Function}   callback
+<span class='line'> 91</span>      */</span><span class="WHIT">
+<span class='line'> 92</span> </span><span class="WHIT">    </span><span class="NAME">this.setDefault</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">callback</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 93</span> </span><span class="WHIT">        </span><span class="NAME">defaultBinding</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">callback</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 94</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 95</span> 
+<span class='line'> 96</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 97</span>      * Bind to the specified keycode + modifiers. To bind directly to one of the modifiers, simply
+<span class='line'> 98</span>      * pass in the modifier as the keyCode (e.g., Keycode.Ctrl), and set the modifiers to Modifier.None.
+<span class='line'> 99</span>      * This class will take care of binding to the appropriate modifiers to ensure the keybinding works as
+<span class='line'>100</span>      * expected.
+<span class='line'>101</span>      *
+<span class='line'>102</span>      * @param {!number}     keyCode
+<span class='line'>103</span>      * @param {!number}     modifiers
+<span class='line'>104</span>      * @param {!Function}   callback
+<span class='line'>105</span>      * @param {boolean=}   overwrite    Set to true to force a binding to be overwritten
+<span class='line'>106</span>      */</span><span class="WHIT">
+<span class='line'>107</span> </span><span class="WHIT">    </span><span class="NAME">this.bind</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">keyCode</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">callback</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">overwrite</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>108</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">keyCombo</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getKeyCombo</span><span class="PUNC">(</span><span class="NAME">keyCode</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>109</span> </span><span class="WHIT">        </span><span class="NAME">runtime.assert</span><span class="PUNC">(</span><span class="NAME">overwrite</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="NAME">bindings.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">keyCombo</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="WHIT">            </span><span class="STRN">"tried to overwrite the callback handler of key combo: "</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">keyCombo</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>111</span> </span><span class="WHIT">        </span><span class="NAME">bindings</span><span class="PUNC">[</span><span class="NAME">keyCombo</span><span class="PUNC">]</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">callback</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>112</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>113</span> 
+<span class='line'>114</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>115</span>      * @param {!number}     keyCode
+<span class='line'>116</span>      * @param {!number}    modifiers
+<span class='line'>117</span>      */</span><span class="WHIT">
+<span class='line'>118</span> </span><span class="WHIT">    </span><span class="NAME">this.unbind</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">keyCode</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>119</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">keyCombo</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getKeyCombo</span><span class="PUNC">(</span><span class="NAME">keyCode</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">modifiers</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>120</span> </span><span class="WHIT">        </span><span class="KEYW">delete</span><span class="WHIT"> </span><span class="NAME">bindings</span><span class="PUNC">[</span><span class="NAME">keyCombo</span><span class="PUNC">]</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>121</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>122</span> 
+<span class='line'>123</span> </span><span class="WHIT">    </span><span class="COMM">/*
+<span class='line'>124</span>      * removes all the bindings includes the default binding
+<span class='line'>125</span>      */</span><span class="WHIT">
+<span class='line'>126</span> </span><span class="WHIT">    </span><span class="NAME">this.reset</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>127</span> </span><span class="WHIT">        </span><span class="NAME">defaultBinding</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>128</span> </span><span class="WHIT">        </span><span class="NAME">bindings</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>129</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>130</span> 
+<span class='line'>131</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>132</span>      * @param {!KeyboardEvent} e
+<span class='line'>133</span>      */</span><span class="WHIT">
+<span class='line'>134</span> </span><span class="WHIT">    </span><span class="NAME">this.handleEvent</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">e</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>135</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">keyCombo</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getKeyCombo</span><span class="PUNC">(</span><span class="NAME">e.keyCode</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">getModifiers</span><span class="PUNC">(</span><span class="NAME">e</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>136</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{function():boolean|undefined}*/</span><span class="WHIT">
+<span class='line'>137</span> </span><span class="WHIT">            </span><span class="NAME">callback</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">bindings</span><span class="PUNC">[</span><span class="NAME">keyCombo</span><span class="PUNC">]</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>138</span> </span><span class="WHIT">            </span><span class="NAME">handled</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>139</span> 
+<span class='line'>140</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">callback</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>141</span> </span><span class="WHIT">            </span><span class="NAME">handled</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">callback</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>142</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">defaultBinding</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>143</span> </span><span class="WHIT">            </span><span class="NAME">handled</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">defaultBinding</span><span class="PUNC">(</span><span class="NAME">e</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>144</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>145</span> 
+<span class='line'>146</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">handled</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>147</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">e.preventDefault</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>148</span> </span><span class="WHIT">                </span><span class="NAME">e.preventDefault</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>149</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>150</span> </span><span class="WHIT">                </span><span class="NAME">e.returnValue</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>151</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>152</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>153</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>154</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>155</span> 
+<span class='line'>156</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>157</span> </span><span class="NAME">gui.KeyboardHandler.Modifier</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>158</span> </span><span class="WHIT">    </span><span class="NAME">None</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>159</span> </span><span class="WHIT">    </span><span class="NAME">Meta</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>160</span> </span><span class="WHIT">    </span><span class="NAME">Ctrl</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">2</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>161</span> </span><span class="WHIT">    </span><span class="NAME">Alt</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">4</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>162</span> </span><span class="WHIT">    </span><span class="NAME">CtrlAlt</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">6</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>163</span> </span><span class="WHIT">    </span><span class="NAME">Shift</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">8</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>164</span> </span><span class="WHIT">    </span><span class="NAME">MetaShift</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">9</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>165</span> </span><span class="WHIT">    </span><span class="NAME">CtrlShift</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">10</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>166</span> </span><span class="WHIT">    </span><span class="NAME">AltShift</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">12</span><span class="WHIT">
+<span class='line'>167</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>168</span> 
+<span class='line'>169</span> </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'>170</span> </span><span class="NAME">gui.KeyboardHandler.KeyCode</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>171</span> </span><span class="WHIT">    </span><span class="NAME">Backspace</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">8</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>172</span> </span><span class="WHIT">    </span><span class="NAME">Tab</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">9</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>173</span> </span><span class="WHIT">    </span><span class="NAME">Clear</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">12</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>174</span> </span><span class="WHIT">    </span><span class="NAME">Enter</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">13</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>175</span> </span><span class="WHIT">    </span><span class="NAME">Shift</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">16</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>176</span> </span><span class="WHIT">    </span><span class="NAME">Ctrl</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">17</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>177</span> </span><span class="WHIT">    </span><span class="NAME">Alt</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">18</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>178</span> </span><span class="WHIT">    </span><span class="NAME">End</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">35</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>179</span> </span><span class="WHIT">    </span><span class="NAME">Home</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">36</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>180</span> </span><span class="WHIT">    </span><span class="NAME">Left</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">37</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>181</span> </span><span class="WHIT">    </span><span class="NAME">Up</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">38</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>182</span> </span><span class="WHIT">    </span><span class="NAME">Right</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">39</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>183</span> </span><span class="WHIT">    </span><span class="NAME">Down</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">40</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>184</span> </span><span class="WHIT">    </span><span class="NAME">Delete</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">46</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>185</span> </span><span class="WHIT">    </span><span class="NAME">A</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">65</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>186</span> </span><span class="WHIT">    </span><span class="NAME">B</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">66</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>187</span> </span><span class="WHIT">    </span><span class="NAME">C</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">67</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>188</span> </span><span class="WHIT">    </span><span class="NAME">D</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">68</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>189</span> </span><span class="WHIT">    </span><span class="NAME">E</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">69</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>190</span> </span><span class="WHIT">    </span><span class="NAME">F</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">70</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>191</span> </span><span class="WHIT">    </span><span class="NAME">G</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">71</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>192</span> </span><span class="WHIT">    </span><span class="NAME">H</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">72</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>193</span> </span><span class="WHIT">    </span><span class="NAME">I</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">73</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>194</span> </span><span class="WHIT">    </span><span class="NAME">J</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">74</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>195</span> </span><span class="WHIT">    </span><span class="NAME">K</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">75</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>196</span> </span><span class="WHIT">    </span><span class="NAME">L</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">76</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>197</span> </span><span class="WHIT">    </span><span class="NAME">M</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">77</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>198</span> </span><span class="WHIT">    </span><span class="NAME">N</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">78</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>199</span> </span><span class="WHIT">    </span><span class="NAME">O</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">79</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>200</span> </span><span class="WHIT">    </span><span class="NAME">P</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">80</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>201</span> </span><span class="WHIT">    </span><span class="NAME">Q</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">81</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>202</span> </span><span class="WHIT">    </span><span class="NAME">R</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">82</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>203</span> </span><span class="WHIT">    </span><span class="NAME">S</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">83</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>204</span> </span><span class="WHIT">    </span><span class="NAME">T</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">84</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>205</span> </span><span class="WHIT">    </span><span class="NAME">U</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">85</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>206</span> </span><span class="WHIT">    </span><span class="NAME">V</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">86</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>207</span> </span><span class="WHIT">    </span><span class="NAME">W</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">87</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>208</span> </span><span class="WHIT">    </span><span class="NAME">X</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">88</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>209</span> </span><span class="WHIT">    </span><span class="NAME">Y</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">89</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>210</span> </span><span class="WHIT">    </span><span class="NAME">Z</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">90</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>211</span> </span><span class="WHIT">    </span><span class="NAME">LeftMeta</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">91</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>212</span> </span><span class="WHIT">    </span><span class="NAME">RightMeta</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">93</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>213</span> </span><span class="WHIT">    </span><span class="NAME">MetaInMozilla</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">224</span><span class="WHIT">
+<span class='line'>214</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>215</span> </span></pre></body></html>

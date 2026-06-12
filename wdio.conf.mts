@@ -1,17 +1,12 @@
 import * as path from "path"
-import { obsidianBetaAvailable } from "wdio-obsidian-service";
 
 const cacheDir = path.resolve(".obsidian-cache");
 
-// Test with latest Obsidian version
+// Pin Obsidian for deterministic E2E rendering; floating latest has changed
+// reading-mode virtualization behavior in ways unrelated to this plugin.
 const versions: [string, string][] = [
-    ["latest", "latest"],  // Use the latest stable version
+    ["1.10.6", "1.10.6"],
 ];
-
-// Optionally test with beta if available
-if (await obsidianBetaAvailable(cacheDir)) {
-    versions.push(["latest-beta", "latest"]);
-}
 
 export const config: WebdriverIO.Config = {
     runner: 'local',
@@ -22,8 +17,8 @@ export const config: WebdriverIO.Config = {
         './tests/e2e/specs/**/*.e2e.ts'
     ],
     
-    // How many instances of Obsidian should be launched in parallel
-    maxInstances: 4,
+    // Specs share one test vault and Obsidian UI state; run serially to avoid cross-spec interference.
+    maxInstances: 1,
     
     // Configure Obsidian capabilities for each version
     capabilities: versions.map(([appVersion, installerVersion]) => ({

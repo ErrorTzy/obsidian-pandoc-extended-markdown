@@ -1,0 +1,1928 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="generator" content="JsDoc Toolkit" />
+		
+		<title>JsDoc Reference - ops.StepsCache</title>
+
+		<style type="text/css">
+			/* default.css */
+body
+{
+	font: 12px "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+	width: 800px;
+}
+
+.header
+{
+	clear: both;
+	background-color: #ccc;
+	padding: 8px;
+}
+
+h1
+{
+	font-size: 150%;
+	font-weight: bold;
+	padding: 0;
+	margin: 1em 0 0 .3em;
+}
+
+hr
+{
+	border: none 0;
+	border-top: 1px solid #7F8FB1;
+	height: 1px;
+}
+
+pre.code
+{
+	display: block;
+	padding: 8px;
+	border: 1px dashed #ccc;
+}
+
+#index
+{
+	margin-top: 24px;
+	float: left;
+	width: 160px;
+	position: absolute;
+	left: 8px;
+	background-color: #F3F3F3;
+	padding: 8px;
+}
+
+#content
+{
+	margin-left: 190px;
+	width: 600px;
+}
+
+.classList
+{
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 1em;
+	overflow: auto;
+}
+
+.classList li
+{
+	padding: 0;
+	margin: 0 0 8px 0;
+}
+
+.summaryTable { width: 100%; }
+
+h1.classTitle
+{
+	font-size:170%;
+	line-height:130%;
+}
+
+h2 { font-size: 110%; }
+caption, div.sectionTitle
+{
+	background-color: #7F8FB1;
+	color: #fff;
+	font-size:130%;
+	text-align: left;
+	padding: 2px 6px 2px 6px;
+	border: 1px #7F8FB1 solid;
+}
+
+div.sectionTitle { margin-bottom: 8px; }
+.summaryTable thead { display: none; }
+
+.summaryTable td
+{
+	vertical-align: top;
+	padding: 4px;
+	border-bottom: 1px #7F8FB1 solid;
+	border-right: 1px #7F8FB1 solid;
+}
+
+/*col#summaryAttributes {}*/
+.summaryTable td.attributes
+{
+	border-left: 1px #7F8FB1 solid;
+	width: 140px;
+	text-align: right;
+}
+
+td.attributes, .fixedFont
+{
+	line-height: 15px;
+	color: #002EBE;
+	font-family: "Courier New",Courier,monospace;
+	font-size: 13px;
+}
+
+.summaryTable td.nameDescription
+{
+	text-align: left;
+	font-size: 13px;
+	line-height: 15px;
+}
+
+.summaryTable td.nameDescription, .description
+{
+	line-height: 15px;
+	padding: 4px;
+	padding-left: 4px;
+}
+
+.summaryTable { margin-bottom: 8px; }
+
+ul.inheritsList
+{
+	list-style: square;
+	margin-left: 20px;
+	padding-left: 0;
+}
+
+.detailList {
+	margin-left: 20px; 
+	line-height: 15px;
+}
+.detailList dt { margin-left: 20px; }
+
+.detailList .heading
+{
+	font-weight: bold;
+	padding-bottom: 6px;
+	margin-left: 0;
+}
+
+.light, td.attributes, .light a:link, .light a:visited
+{
+	color: #777;
+	font-style: italic;
+}
+
+.fineprint
+{
+	text-align: right;
+	font-size: 10px;
+}
+		</style>
+	</head>
+
+	<body>
+<!-- ============================== header ================================= -->	
+		<!-- begin static/header.html -->
+		<div id="header">
+</div>
+		<!-- end static/header.html -->
+
+<!-- ============================== classes index ============================ -->
+		<div id="index">
+			<!-- begin publish.classesIndex -->
+			<div align="center"><a href="../index.html">Class Index</a>
+| <a href="../files.html">File Index</a></div>
+<hr />
+<h2>Classes</h2>
+<ul class="classList">
+	
+	<li><i><a href="../symbols/_global_.html">_global_</a></i></li>
+	
+	<li><a href="../symbols/BrowserRuntime.html">BrowserRuntime</a></li>
+	
+	<li><a href="../symbols/core.html">core</a></li>
+	
+	<li><a href="../symbols/core.Base64.html">core.Base64</a></li>
+	
+	<li><a href="../symbols/core.CSSUnits.html">core.CSSUnits</a></li>
+	
+	<li><a href="../symbols/core.Cursor.html">core.Cursor</a></li>
+	
+	<li><a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a></li>
+	
+	<li><a href="../symbols/core.EventNotifier.html">core.EventNotifier</a></li>
+	
+	<li><a href="../symbols/core.EventSubscriptions.html">core.EventSubscriptions</a></li>
+	
+	<li><a href="../symbols/core.LazyProperty.html">core.LazyProperty</a></li>
+	
+	<li><a href="../symbols/core.LoopWatchDog.html">core.LoopWatchDog</a></li>
+	
+	<li><a href="../symbols/core.NodeFilterChain.html">core.NodeFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionFilterChain.html">core.PositionFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator.html">core.PositionIterator</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-EmptyTextNodeFilter.html">core.PositionIterator-EmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-FilteredEmptyTextNodeFilter.html">core.PositionIterator-FilteredEmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.ScheduledTask.html">core.ScheduledTask</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.html">core.StepIterator</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.StepSnapshot.html">core.StepIterator.StepSnapshot</a></li>
+	
+	<li><a href="../symbols/core.Utils.html">core.Utils</a></li>
+	
+	<li><a href="../symbols/core.Zip.html">core.Zip</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AllChildElementIterator.html">createXPathSingleton-AllChildElementIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AttributeIterator.html">createXPathSingleton-AttributeIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-ConditionIterator.html">createXPathSingleton-ConditionIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-XPathNodeIterator.html">createXPathSingleton-XPathNodeIterator</a></li>
+	
+	<li><a href="../symbols/gui.html">gui</a></li>
+	
+	<li><a href="../symbols/gui.AnnotatableCanvas.html">gui.AnnotatableCanvas</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationController.html">gui.AnnotationController</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationViewManager.html">gui.AnnotationViewManager</a></li>
+	
+	<li><a href="../symbols/gui.Avatar.html">gui.Avatar</a></li>
+	
+	<li><a href="../symbols/gui.BlacklistNamespaceNodeFilter.html">gui.BlacklistNamespaceNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.Caret.html">gui.Caret</a></li>
+	
+	<li><a href="../symbols/gui.CaretManager.html">gui.CaretManager</a></li>
+	
+	<li><a href="../symbols/gui.Clipboard.html">gui.Clipboard</a></li>
+	
+	<li><a href="../symbols/gui.ClosestXOffsetScanner.html">gui.ClosestXOffsetScanner</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.html">gui.DirectFormattingController</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.SelectionInfo.html">gui.DirectFormattingController.SelectionInfo</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoHandle.html">gui.EditInfoHandle</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoMarker.html">gui.EditInfoMarker</a></li>
+	
+	<li><a href="../symbols/gui.EventManager.html">gui.EventManager</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-CompoundEvent.html">gui.EventManager-CompoundEvent</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-ElementScrollState.html">gui.EventManager-ElementScrollState</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-EventDelegate.html">gui.EventManager-EventDelegate</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-WindowScrollState.html">gui.EventManager-WindowScrollState</a></li>
+	
+	<li><a href="../symbols/gui.GuiStepUtils.html">gui.GuiStepUtils</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkClickHandler.html">gui.HyperlinkClickHandler</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkController.html">gui.HyperlinkController</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkTooltipView.html">gui.HyperlinkTooltipView</a></li>
+	
+	<li><a href="../symbols/gui.ImageController.html">gui.ImageController</a></li>
+	
+	<li><a href="../symbols/gui.ImageSelector.html">gui.ImageSelector</a></li>
+	
+	<li><a href="../symbols/gui.InputMethodEditor.html">gui.InputMethodEditor</a></li>
+	
+	<li><a href="../symbols/gui.IOSSafariSupport.html">gui.IOSSafariSupport</a></li>
+	
+	<li><a href="../symbols/gui.KeyboardHandler.html">gui.KeyboardHandler</a></li>
+	
+	<li><a href="../symbols/gui.LineBoundaryScanner.html">gui.LineBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.MetadataController.html">gui.MetadataController</a></li>
+	
+	<li><a href="../symbols/gui.MimeDataExporter.html">gui.MimeDataExporter</a></li>
+	
+	<li><a href="../symbols/gui.OdfFieldView.html">gui.OdfFieldView</a></li>
+	
+	<li><a href="../symbols/gui.OdfTextBodyNodeFilter.html">gui.OdfTextBodyNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.ParagraphBoundaryScanner.html">gui.ParagraphBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.PasteController.html">gui.PasteController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionController.html">gui.SelectionController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionViewManager.html">gui.SelectionViewManager</a></li>
+	
+	<li><a href="../symbols/gui.SessionConstraints.html">gui.SessionConstraints</a></li>
+	
+	<li><a href="../symbols/gui.SessionContext.html">gui.SessionContext</a></li>
+	
+	<li><a href="../symbols/gui.SessionController.html">gui.SessionController</a></li>
+	
+	<li><a href="../symbols/gui.SessionControllerOptions.html">gui.SessionControllerOptions</a></li>
+	
+	<li><a href="../symbols/gui.SessionView.html">gui.SessionView</a></li>
+	
+	<li><a href="../symbols/gui.SessionViewOptions.html">gui.SessionViewOptions</a></li>
+	
+	<li><a href="../symbols/gui.ShadowCursor.html">gui.ShadowCursor</a></li>
+	
+	<li><a href="../symbols/gui.SingleScrollViewport.html">gui.SingleScrollViewport</a></li>
+	
+	<li><a href="../symbols/gui.StepInfo.html">gui.StepInfo</a></li>
+	
+	<li><a href="../symbols/gui.StyleSummary.html">gui.StyleSummary</a></li>
+	
+	<li><a href="../symbols/gui.SvgSelectionView.html">gui.SvgSelectionView</a></li>
+	
+	<li><a href="../symbols/gui.TextController.html">gui.TextController</a></li>
+	
+	<li><a href="../symbols/gui.TrivialUndoManager.html">gui.TrivialUndoManager</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules.html">gui.UndoStateRules</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules-ReverseIterator.html">gui.UndoStateRules-ReverseIterator</a></li>
+	
+	<li><a href="../symbols/gui.ZoomHelper.html">gui.ZoomHelper</a></li>
+	
+	<li><a href="../symbols/NodeJSRuntime.html">NodeJSRuntime</a></li>
+	
+	<li><a href="../symbols/odf.html">odf</a></li>
+	
+	<li><a href="../symbols/odf.AnnotationElement.html">odf.AnnotationElement</a></li>
+	
+	<li><a href="../symbols/odf.CollapsingRules.html">odf.CollapsingRules</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicProperties.html">odf.ComputedGraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicStyle.html">odf.ComputedGraphicStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphProperties.html">odf.ComputedParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphStyle.html">odf.ComputedParagraphStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextProperties.html">odf.ComputedTextProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextStyle.html">odf.ComputedTextStyle</a></li>
+	
+	<li><a href="../symbols/odf.FontLoader.html">odf.FontLoader</a></li>
+	
+	<li><a href="../symbols/odf.Formatting.html">odf.Formatting</a></li>
+	
+	<li><a href="../symbols/odf.GraphicProperties.html">odf.GraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.LazyStyleProperties.html">odf.LazyStyleProperties</a></li>
+	
+	<li><a href="../symbols/odf.ListStyleToCss.html">odf.ListStyleToCss</a></li>
+	
+	<li><a href="../symbols/odf.MasterPage.html">odf.MasterPage</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator.html">odf.ObjectNameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator-NameGenerator.html">odf.ObjectNameGenerator-NameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a></li>
+	
+	<li><a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a></li>
+	
+	<li><a href="../symbols/odf.ODFDocumentElement.html">odf.ODFDocumentElement</a></li>
+	
+	<li><a href="../symbols/odf.ODFElement.html">odf.ODFElement</a></li>
+	
+	<li><a href="../symbols/odf.OdfNodeFilter.html">odf.OdfNodeFilter</a></li>
+	
+	<li><a href="../symbols/odf.OdfPart.html">odf.OdfPart</a></li>
+	
+	<li><a href="../symbols/odf.OdfSchemaImpl.html">odf.OdfSchemaImpl</a></li>
+	
+	<li><a href="../symbols/odf.OdfUtilsImpl.html">odf.OdfUtilsImpl</a></li>
+	
+	<li><a href="../symbols/odf.PageLayout.html">odf.PageLayout</a></li>
+	
+	<li><a href="../symbols/odf.PageLayoutProperties.html">odf.PageLayoutProperties</a></li>
+	
+	<li><a href="../symbols/odf.ParagraphProperties.html">odf.ParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.StepUtils.html">odf.StepUtils</a></li>
+	
+	<li><a href="../symbols/odf.Style2CSS.html">odf.Style2CSS</a></li>
+	
+	<li><a href="../symbols/odf.StyleCache.html">odf.StyleCache</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo.html">odf.StyleInfo</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo%23UsedStyleList.html">odf.StyleInfo#UsedStyleList</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo-StyleDefinition.html">odf.StyleInfo-StyleDefinition</a></li>
+	
+	<li><a href="../symbols/odf.StyleParseUtils.html">odf.StyleParseUtils</a></li>
+	
+	<li><a href="../symbols/odf.StylePile.html">odf.StylePile</a></li>
+	
+	<li><a href="../symbols/odf.StylePileEntry.html">odf.StylePileEntry</a></li>
+	
+	<li><a href="../symbols/odf.StyleTree.html">odf.StyleTree</a></li>
+	
+	<li><a href="../symbols/odf.StyleTreeNode.html">odf.StyleTreeNode</a></li>
+	
+	<li><a href="../symbols/odf.TextProperties.html">odf.TextProperties</a></li>
+	
+	<li><a href="../symbols/odf.TextSerializer.html">odf.TextSerializer</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator.html">odf.TextStyleApplicator</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleLookup.html">odf.TextStyleApplicator-StyleLookup</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleManager.html">odf.TextStyleApplicator-StyleManager</a></li>
+	
+	<li><a href="../symbols/odf.WordBoundaryFilter.html">odf.WordBoundaryFilter</a></li>
+	
+	<li><a href="../symbols/ops.html">ops</a></li>
+	
+	<li><a href="../symbols/ops.EditInfo.html">ops.EditInfo</a></li>
+	
+	<li><a href="../symbols/ops.Member.html">ops.Member</a></li>
+	
+	<li><a href="../symbols/ops.MemberProperties.html">ops.MemberProperties</a></li>
+	
+	<li><a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a></li>
+	
+	<li><a href="../symbols/ops.OdtDocument.html">ops.OdtDocument</a></li>
+	
+	<li><a href="../symbols/ops.OdtStepsTranslator.html">ops.OdtStepsTranslator</a></li>
+	
+	<li><a href="../symbols/ops.OpAddAnnotation.html">ops.OpAddAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpAddCursor.html">ops.OpAddCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpAddMember.html">ops.OpAddMember</a></li>
+	
+	<li><a href="../symbols/ops.OpAddStyle.html">ops.OpAddStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyDirectStyling.html">ops.OpApplyDirectStyling</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyHyperlink.html">ops.OpApplyHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OperationFactory.html">ops.OperationFactory</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformer.html">ops.OperationTransformer</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformMatrix.html">ops.OperationTransformMatrix</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertImage.html">ops.OpInsertImage</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertTable.html">ops.OpInsertTable</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertText.html">ops.OpInsertText</a></li>
+	
+	<li><a href="../symbols/ops.OpMergeParagraph.html">ops.OpMergeParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpMoveCursor.html">ops.OpMoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveAnnotation.html">ops.OpRemoveAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveBlob.html">ops.OpRemoveBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveCursor.html">ops.OpRemoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveHyperlink.html">ops.OpRemoveHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveMember.html">ops.OpRemoveMember</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveStyle.html">ops.OpRemoveStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveText.html">ops.OpRemoveText</a></li>
+	
+	<li><a href="../symbols/ops.OpSetBlob.html">ops.OpSetBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpSetParagraphStyle.html">ops.OpSetParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpSplitParagraph.html">ops.OpSplitParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMember.html">ops.OpUpdateMember</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMetadata.html">ops.OpUpdateMetadata</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateParagraphStyle.html">ops.OpUpdateParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.Session.html">ops.Session</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache.html">ops.StepsCache</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-NodeBookmark.html">ops.StepsCache-NodeBookmark</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-RootBookmark.html">ops.StepsCache-RootBookmark</a></li>
+	
+	<li><a href="../symbols/ops.TextPositionFilter.html">ops.TextPositionFilter</a></li>
+	
+	<li><a href="../symbols/ops.TrivialOperationRouter.html">ops.TrivialOperationRouter</a></li>
+	
+	<li><a href="../symbols/RhinoRuntime.html">RhinoRuntime</a></li>
+	
+	<li><a href="../symbols/RootFilter.html">RootFilter</a></li>
+	
+	<li><a href="../symbols/Runtime.html">Runtime</a></li>
+	
+	<li><a href="../symbols/webodf.html">webodf</a></li>
+	
+	<li><a href="../symbols/xmldom.html">xmldom</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer.html">xmldom.LSSerializer</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer-Namespaces.html">xmldom.LSSerializer-Namespaces</a></li>
+	
+	<li><a href="../symbols/xmldom.XPathIterator.html">xmldom.XPathIterator</a></li>
+	
+</ul>
+<hr />
+			<!-- end publish.classesIndex -->
+		</div>
+		
+		<div id="content">
+<!-- ============================== class title ============================ -->
+			<h1 class="classTitle">
+				
+				Class ops.StepsCache
+			</h1>
+
+<!-- ============================== class summary ========================== -->			
+			<p class="description">
+				
+				
+			
+				
+				
+				
+					<br /><i>Defined in: </i> <a href="../symbols/src/lib_ops_StepsCache.js.html">StepsCache.js</a>.
+				
+			</p>
+
+<!-- ============================== constructor summary ==================== -->			
+			
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class ops.StepsCache.">
+				<caption>Class Summary</caption>
+				<thead>
+					<tr>
+						<th scope="col">Constructor Attributes</th>
+						<th scope="col">Constructor Name and Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="attributes">&nbsp;</td>
+						<td class="nameDescription" >
+							<div class="fixedFont">
+								<b><a href="../symbols/ops.StepsCache.html#constructor">ops.StepsCache</a></b>(rootElement, bucketSize, restoreBookmarkPosition)
+							</div>
+							<div class="description">Implementation of a step to DOM point lookup cache.</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+
+<!-- ============================== properties summary ===================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the fields documented in the class ops.StepsCache.">
+					<caption>Field Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Field Attributes</th>
+							<th scope="col">Field Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								ops.StepsCache.<b><a href="../symbols/ops.StepsCache.html#.ENABLE_CACHE_VERIFICATION">ENABLE_CACHE_VERIFICATION</a></b>
+								</div>
+								<div class="description">Enable or disable cache verification operation after every modification.</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+
+<!-- ============================== methods summary ======================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class ops.StepsCache.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">ops.StepsCache.<b><a href="../symbols/ops.StepsCache.html#.Bookmark">Bookmark</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-clearNodeId">clearNodeId</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#damageCacheAfterStep">damageCacheAfterStep</a></b>(inflectionStep)
+								</div>
+								<div class="description">Mark all steps beyond inflectionStep as no longer accurate.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-findBookmarkedAncestor">findBookmarkedAncestor</a></b>(node)
+								</div>
+								<div class="description">Finds the nearest ancestor node that has an associated bookmark</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-getBucket">getBucket</a></b>(steps)
+								</div>
+								<div class="description">Returns the closest quantized step at or before the requested step</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-getClosestBookmark">getClosestBookmark</a></b>(steps)
+								</div>
+								<div class="description">Returns the closest undamaged bookmark before or at the specified step</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-getDestinationBucket">getDestinationBucket</a></b>(steps)
+								</div>
+								<div class="description">Returns the closest quantized step at or just after the requested step</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-getNodeBookmark">getNodeBookmark</a></b>(node)
+								</div>
+								<div class="description">Fetches (or creates) a bookmark for the specified node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-getNodeId">getNodeId</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-getUndamagedBookmark">getUndamagedBookmark</a></b>(bookmark)
+								</div>
+								<div class="description">Returns the closest undamaged bookmark before (or equal to) the supplied bookmark</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-insertBookmark">insertBookmark</a></b>(previousBookmark, newBookmark)
+								</div>
+								<div class="description">Insert a bookmark into the cache chain just after the previous bookmark</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-inspectBookmarks">inspectBookmarks</a></b>(bookmark1, bookmark2)
+								</div>
+								<div class="description">Return a summary string of the supplied bookmark node id(s)</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-isAlreadyInOrder">isAlreadyInOrder</a></b>(previousBookmark, newBookmark)
+								</div>
+								<div class="description">Returns true if the newBookmark is already directly on or after the previous bookmark</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-isUndamagedBookmark">isUndamagedBookmark</a></b>(bookmark)
+								</div>
+								<div class="description">Returns true if the specified bookmark is undamaged</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-isValidBookmarkForNode">isValidBookmarkForNode</a></b>(node, bookmark)
+								</div>
+								<div class="description">The element might have been cloned from another part of the document and have a stale or duplicate
+nodeId</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-removeBookmark">removeBookmark</a></b>(currentBookmark)
+								</div>
+								<div class="description">Remove a bookmark from the cache chain</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-repairCacheUpToStep">repairCacheUpToStep</a></b>(currentIteratorStep)
+								</div>
+								<div class="description">Signal that all bookmarks up to the specified step have been iterated over and are up-to-date.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-setNodeId">setNodeId</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#setToClosestDomPoint">setToClosestDomPoint</a></b>(node, offset, iterator)
+								</div>
+								<div class="description">Set the iterator to the closest known position before or at the requested node & offset, returning the number
+of steps from position 0.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#setToClosestStep">setToClosestStep</a></b>(steps, iterator)
+								</div>
+								<div class="description">Set the iterator to the closest known position before or at the requested step, returning the number of steps
+from position 0.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#updateBookmark">updateBookmark</a></b>(steps, node)
+								</div>
+								<div class="description">Cache the current step, using the supplied node as the anchor</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.StepsCache.html#-verifyCache">verifyCache</a></b>()
+								</div>
+								<div class="description">Run a series of verification checks against the complete cache to ensure it is operating
+correctly.</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+<!-- ============================== events summary ======================== -->
+			
+
+<!-- ============================== constructor details ==================== -->		
+			
+			<div class="details"><a name="constructor"> </a>
+				<div class="sectionTitle">
+					Class Detail
+				</div>
+				
+				<div class="fixedFont">
+						<b>ops.StepsCache</b>(rootElement, bucketSize, restoreBookmarkPosition)
+				</div>
+				
+				<div class="description">
+					Implementation of a step to DOM point lookup cache.
+
+A cache point ("bookmark") is created each time updateBookmark is called, saving the number of steps from the root
+node to the bookmarked node. This cached point is linked to the node via a unique identifier.
+
+The cache works by tracking "damage" to it's bookmarks (via steps inserted & removal). As re-iteration over the
+damaged sections occur, the bookmarks are updated, and the damage repaired.
+
+A visual example of the cache during various states is as follows:
+legend: -=good bookmark, x=damaged bookmark, !=indeterminate bookmark, ?=requested step,
+					
+				</div>
+				
+				
+				
+				
+					
+						<dl class="detailList">
+						<dt class="heading">Parameters:</dt>
+						
+							<dt>
+								<span class="light fixedFont">{!Element}</span>  <b>rootElement</b>
+								
+							</dt>
+								<dd></dd>
+						
+							<dt>
+								<span class="light fixedFont">{!number}</span>  <b>bucketSize</b>
+								
+							</dt>
+								<dd>Minimum number of steps between cache points</dd>
+						
+							<dt>
+								<span class="light fixedFont">{!function(!number|!core.PositionIterator):undefined}</span>  <b>restoreBookmarkPosition</b>
+								
+							</dt>
+								<dd>Fine-tune the iterator position after
+     it is set to a specific bookmark location.</dd>
+						
+						</dl>
+					
+					
+					
+					
+					
+					
+					
+
+			</div>
+			
+
+<!-- ============================== field details ========================== -->		
+			
+				<div class="sectionTitle">
+					Field Detail
+				</div>
+				
+					<a name=".ENABLE_CACHE_VERIFICATION"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.StepsCache.</span><b>ENABLE_CACHE_VERIFICATION</b>
+					
+					</div>
+					<div class="description">
+						Enable or disable cache verification operation after every modification. VERY SLOW.
+This is primarily used in testing or during interactive diagnostics
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					
+				
+			
+
+<!-- ============================== method details ========================= -->		
+			
+				<div class="sectionTitle">
+					Method Detail
+				</div>
+				
+					<a name=".Bookmark"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">ops.StepsCache.</span><b>Bookmark</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-clearNodeId"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>clearNodeId</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="damageCacheAfterStep"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>damageCacheAfterStep</b>(inflectionStep)
+					
+					</div>
+					<div class="description">
+						Mark all steps beyond inflectionStep as no longer accurate. Note, if a negative value
+is passed in it is treated as a -1, and the whole cache will be cleared.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>inflectionStep</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-findBookmarkedAncestor"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span>
+					<b>findBookmarkedAncestor</b>(node)
+					
+					</div>
+					<div class="description">
+						Finds the nearest ancestor node that has an associated bookmark
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getBucket"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>getBucket</b>(steps)
+					
+					</div>
+					<div class="description">
+						Returns the closest quantized step at or before the requested step
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>steps</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getClosestBookmark"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span>
+					<b>getClosestBookmark</b>(steps)
+					
+					</div>
+					<div class="description">
+						Returns the closest undamaged bookmark before or at the specified step
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>steps</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getDestinationBucket"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>getDestinationBucket</b>(steps)
+					
+					</div>
+					<div class="description">
+						Returns the closest quantized step at or just after the requested step
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>steps</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getNodeBookmark"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span>
+					<b>getNodeBookmark</b>(node)
+					
+					</div>
+					<div class="description">
+						Fetches (or creates) a bookmark for the specified node.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getNodeId"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>getNodeId</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getUndamagedBookmark"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span>
+					<b>getUndamagedBookmark</b>(bookmark)
+					
+					</div>
+					<div class="description">
+						Returns the closest undamaged bookmark before (or equal to) the supplied bookmark
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>bookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-insertBookmark"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>insertBookmark</b>(previousBookmark, newBookmark)
+					
+					</div>
+					<div class="description">
+						Insert a bookmark into the cache chain just after the previous bookmark
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>previousBookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>newBookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-inspectBookmarks"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>inspectBookmarks</b>(bookmark1, bookmark2)
+					
+					</div>
+					<div class="description">
+						Return a summary string of the supplied bookmark node id(s)
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>bookmark1</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>=}</span> <b>bookmark2</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isAlreadyInOrder"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isAlreadyInOrder</b>(previousBookmark, newBookmark)
+					
+					</div>
+					<div class="description">
+						Returns true if the newBookmark is already directly on or after the previous bookmark
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>previousBookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>newBookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isUndamagedBookmark"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isUndamagedBookmark</b>(bookmark)
+					
+					</div>
+					<div class="description">
+						Returns true if the specified bookmark is undamaged
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>bookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isValidBookmarkForNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isValidBookmarkForNode</b>(node, bookmark)
+					
+					</div>
+					<div class="description">
+						The element might have been cloned from another part of the document and have a stale or duplicate
+nodeId
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>bookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> True if the bookmark is actually for the supplied node</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeBookmark"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>removeBookmark</b>(currentBookmark)
+					
+					</div>
+					<div class="description">
+						Remove a bookmark from the cache chain
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> <b>currentBookmark</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-repairCacheUpToStep"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span>
+					<b>repairCacheUpToStep</b>(currentIteratorStep)
+					
+					</div>
+					<div class="description">
+						Signal that all bookmarks up to the specified step have been iterated over and are up-to-date. This allows
+removed nodes and invalid bookmarks to be removed from the cache. This function will return the closest
+undamaged bookmark just at or prior to the supplied step.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>currentIteratorStep</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/ops.StepsCache.html#.Bookmark">ops.StepsCache.Bookmark</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-setNodeId"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>setNodeId</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="setToClosestDomPoint"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!number}</span>
+					<b>setToClosestDomPoint</b>(node, offset, iterator)
+					
+					</div>
+					<div class="description">
+						Set the iterator to the closest known position before or at the requested node & offset, returning the number
+of steps from position 0.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/core.PositionIterator.html">core.PositionIterator</a>}</span> <b>iterator</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> Corresponding step for the current iterator position</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="setToClosestStep"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!number}</span>
+					<b>setToClosestStep</b>(steps, iterator)
+					
+					</div>
+					<div class="description">
+						Set the iterator to the closest known position before or at the requested step, returning the number of steps
+from position 0.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>steps</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!<a href="../symbols/core.PositionIterator.html">core.PositionIterator</a>}</span> <b>iterator</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> Corresponding step for the current iterator position</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="updateBookmark"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>updateBookmark</b>(steps, node)
+					
+					</div>
+					<div class="description">
+						Cache the current step, using the supplied node as the anchor
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>steps</b>
+									
+								</dt>
+								<dd>Current steps offset from position 0</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-verifyCache"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>verifyCache</b>()
+					
+					</div>
+					<div class="description">
+						Run a series of verification checks against the complete cache to ensure it is operating
+correctly. Note, this is VERY expensive, and should only be done when attempting to diagnose
+caching problems
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					
+				
+			
+			
+<!-- ============================== event details ========================= -->		
+			
+			
+			<hr />
+		</div>
+
+		
+<!-- ============================== footer ================================= -->
+		<div class="fineprint" style="clear:both">
+			
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Sep 03 2015 21:31:56 GMT+0200 (CEST)
+		</div>
+	</body>
+</html>

@@ -1,0 +1,3530 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="generator" content="JsDoc Toolkit" />
+		
+		<title>JsDoc Reference - odf.OdfUtilsImpl</title>
+
+		<style type="text/css">
+			/* default.css */
+body
+{
+	font: 12px "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+	width: 800px;
+}
+
+.header
+{
+	clear: both;
+	background-color: #ccc;
+	padding: 8px;
+}
+
+h1
+{
+	font-size: 150%;
+	font-weight: bold;
+	padding: 0;
+	margin: 1em 0 0 .3em;
+}
+
+hr
+{
+	border: none 0;
+	border-top: 1px solid #7F8FB1;
+	height: 1px;
+}
+
+pre.code
+{
+	display: block;
+	padding: 8px;
+	border: 1px dashed #ccc;
+}
+
+#index
+{
+	margin-top: 24px;
+	float: left;
+	width: 160px;
+	position: absolute;
+	left: 8px;
+	background-color: #F3F3F3;
+	padding: 8px;
+}
+
+#content
+{
+	margin-left: 190px;
+	width: 600px;
+}
+
+.classList
+{
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 1em;
+	overflow: auto;
+}
+
+.classList li
+{
+	padding: 0;
+	margin: 0 0 8px 0;
+}
+
+.summaryTable { width: 100%; }
+
+h1.classTitle
+{
+	font-size:170%;
+	line-height:130%;
+}
+
+h2 { font-size: 110%; }
+caption, div.sectionTitle
+{
+	background-color: #7F8FB1;
+	color: #fff;
+	font-size:130%;
+	text-align: left;
+	padding: 2px 6px 2px 6px;
+	border: 1px #7F8FB1 solid;
+}
+
+div.sectionTitle { margin-bottom: 8px; }
+.summaryTable thead { display: none; }
+
+.summaryTable td
+{
+	vertical-align: top;
+	padding: 4px;
+	border-bottom: 1px #7F8FB1 solid;
+	border-right: 1px #7F8FB1 solid;
+}
+
+/*col#summaryAttributes {}*/
+.summaryTable td.attributes
+{
+	border-left: 1px #7F8FB1 solid;
+	width: 140px;
+	text-align: right;
+}
+
+td.attributes, .fixedFont
+{
+	line-height: 15px;
+	color: #002EBE;
+	font-family: "Courier New",Courier,monospace;
+	font-size: 13px;
+}
+
+.summaryTable td.nameDescription
+{
+	text-align: left;
+	font-size: 13px;
+	line-height: 15px;
+}
+
+.summaryTable td.nameDescription, .description
+{
+	line-height: 15px;
+	padding: 4px;
+	padding-left: 4px;
+}
+
+.summaryTable { margin-bottom: 8px; }
+
+ul.inheritsList
+{
+	list-style: square;
+	margin-left: 20px;
+	padding-left: 0;
+}
+
+.detailList {
+	margin-left: 20px; 
+	line-height: 15px;
+}
+.detailList dt { margin-left: 20px; }
+
+.detailList .heading
+{
+	font-weight: bold;
+	padding-bottom: 6px;
+	margin-left: 0;
+}
+
+.light, td.attributes, .light a:link, .light a:visited
+{
+	color: #777;
+	font-style: italic;
+}
+
+.fineprint
+{
+	text-align: right;
+	font-size: 10px;
+}
+		</style>
+	</head>
+
+	<body>
+<!-- ============================== header ================================= -->	
+		<!-- begin static/header.html -->
+		<div id="header">
+</div>
+		<!-- end static/header.html -->
+
+<!-- ============================== classes index ============================ -->
+		<div id="index">
+			<!-- begin publish.classesIndex -->
+			<div align="center"><a href="../index.html">Class Index</a>
+| <a href="../files.html">File Index</a></div>
+<hr />
+<h2>Classes</h2>
+<ul class="classList">
+	
+	<li><i><a href="../symbols/_global_.html">_global_</a></i></li>
+	
+	<li><a href="../symbols/BrowserRuntime.html">BrowserRuntime</a></li>
+	
+	<li><a href="../symbols/core.html">core</a></li>
+	
+	<li><a href="../symbols/core.Base64.html">core.Base64</a></li>
+	
+	<li><a href="../symbols/core.CSSUnits.html">core.CSSUnits</a></li>
+	
+	<li><a href="../symbols/core.Cursor.html">core.Cursor</a></li>
+	
+	<li><a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a></li>
+	
+	<li><a href="../symbols/core.EventNotifier.html">core.EventNotifier</a></li>
+	
+	<li><a href="../symbols/core.EventSubscriptions.html">core.EventSubscriptions</a></li>
+	
+	<li><a href="../symbols/core.LazyProperty.html">core.LazyProperty</a></li>
+	
+	<li><a href="../symbols/core.LoopWatchDog.html">core.LoopWatchDog</a></li>
+	
+	<li><a href="../symbols/core.NodeFilterChain.html">core.NodeFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionFilterChain.html">core.PositionFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator.html">core.PositionIterator</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-EmptyTextNodeFilter.html">core.PositionIterator-EmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-FilteredEmptyTextNodeFilter.html">core.PositionIterator-FilteredEmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.ScheduledTask.html">core.ScheduledTask</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.html">core.StepIterator</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.StepSnapshot.html">core.StepIterator.StepSnapshot</a></li>
+	
+	<li><a href="../symbols/core.Utils.html">core.Utils</a></li>
+	
+	<li><a href="../symbols/core.Zip.html">core.Zip</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AllChildElementIterator.html">createXPathSingleton-AllChildElementIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AttributeIterator.html">createXPathSingleton-AttributeIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-ConditionIterator.html">createXPathSingleton-ConditionIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-XPathNodeIterator.html">createXPathSingleton-XPathNodeIterator</a></li>
+	
+	<li><a href="../symbols/gui.html">gui</a></li>
+	
+	<li><a href="../symbols/gui.AnnotatableCanvas.html">gui.AnnotatableCanvas</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationController.html">gui.AnnotationController</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationViewManager.html">gui.AnnotationViewManager</a></li>
+	
+	<li><a href="../symbols/gui.Avatar.html">gui.Avatar</a></li>
+	
+	<li><a href="../symbols/gui.BlacklistNamespaceNodeFilter.html">gui.BlacklistNamespaceNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.Caret.html">gui.Caret</a></li>
+	
+	<li><a href="../symbols/gui.CaretManager.html">gui.CaretManager</a></li>
+	
+	<li><a href="../symbols/gui.Clipboard.html">gui.Clipboard</a></li>
+	
+	<li><a href="../symbols/gui.ClosestXOffsetScanner.html">gui.ClosestXOffsetScanner</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.html">gui.DirectFormattingController</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.SelectionInfo.html">gui.DirectFormattingController.SelectionInfo</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoHandle.html">gui.EditInfoHandle</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoMarker.html">gui.EditInfoMarker</a></li>
+	
+	<li><a href="../symbols/gui.EventManager.html">gui.EventManager</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-CompoundEvent.html">gui.EventManager-CompoundEvent</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-ElementScrollState.html">gui.EventManager-ElementScrollState</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-EventDelegate.html">gui.EventManager-EventDelegate</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-WindowScrollState.html">gui.EventManager-WindowScrollState</a></li>
+	
+	<li><a href="../symbols/gui.GuiStepUtils.html">gui.GuiStepUtils</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkClickHandler.html">gui.HyperlinkClickHandler</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkController.html">gui.HyperlinkController</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkTooltipView.html">gui.HyperlinkTooltipView</a></li>
+	
+	<li><a href="../symbols/gui.ImageController.html">gui.ImageController</a></li>
+	
+	<li><a href="../symbols/gui.ImageSelector.html">gui.ImageSelector</a></li>
+	
+	<li><a href="../symbols/gui.InputMethodEditor.html">gui.InputMethodEditor</a></li>
+	
+	<li><a href="../symbols/gui.IOSSafariSupport.html">gui.IOSSafariSupport</a></li>
+	
+	<li><a href="../symbols/gui.KeyboardHandler.html">gui.KeyboardHandler</a></li>
+	
+	<li><a href="../symbols/gui.LineBoundaryScanner.html">gui.LineBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.MetadataController.html">gui.MetadataController</a></li>
+	
+	<li><a href="../symbols/gui.MimeDataExporter.html">gui.MimeDataExporter</a></li>
+	
+	<li><a href="../symbols/gui.OdfFieldView.html">gui.OdfFieldView</a></li>
+	
+	<li><a href="../symbols/gui.OdfTextBodyNodeFilter.html">gui.OdfTextBodyNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.ParagraphBoundaryScanner.html">gui.ParagraphBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.PasteController.html">gui.PasteController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionController.html">gui.SelectionController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionViewManager.html">gui.SelectionViewManager</a></li>
+	
+	<li><a href="../symbols/gui.SessionConstraints.html">gui.SessionConstraints</a></li>
+	
+	<li><a href="../symbols/gui.SessionContext.html">gui.SessionContext</a></li>
+	
+	<li><a href="../symbols/gui.SessionController.html">gui.SessionController</a></li>
+	
+	<li><a href="../symbols/gui.SessionControllerOptions.html">gui.SessionControllerOptions</a></li>
+	
+	<li><a href="../symbols/gui.SessionView.html">gui.SessionView</a></li>
+	
+	<li><a href="../symbols/gui.SessionViewOptions.html">gui.SessionViewOptions</a></li>
+	
+	<li><a href="../symbols/gui.ShadowCursor.html">gui.ShadowCursor</a></li>
+	
+	<li><a href="../symbols/gui.SingleScrollViewport.html">gui.SingleScrollViewport</a></li>
+	
+	<li><a href="../symbols/gui.StepInfo.html">gui.StepInfo</a></li>
+	
+	<li><a href="../symbols/gui.StyleSummary.html">gui.StyleSummary</a></li>
+	
+	<li><a href="../symbols/gui.SvgSelectionView.html">gui.SvgSelectionView</a></li>
+	
+	<li><a href="../symbols/gui.TextController.html">gui.TextController</a></li>
+	
+	<li><a href="../symbols/gui.TrivialUndoManager.html">gui.TrivialUndoManager</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules.html">gui.UndoStateRules</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules-ReverseIterator.html">gui.UndoStateRules-ReverseIterator</a></li>
+	
+	<li><a href="../symbols/gui.ZoomHelper.html">gui.ZoomHelper</a></li>
+	
+	<li><a href="../symbols/NodeJSRuntime.html">NodeJSRuntime</a></li>
+	
+	<li><a href="../symbols/odf.html">odf</a></li>
+	
+	<li><a href="../symbols/odf.AnnotationElement.html">odf.AnnotationElement</a></li>
+	
+	<li><a href="../symbols/odf.CollapsingRules.html">odf.CollapsingRules</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicProperties.html">odf.ComputedGraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicStyle.html">odf.ComputedGraphicStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphProperties.html">odf.ComputedParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphStyle.html">odf.ComputedParagraphStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextProperties.html">odf.ComputedTextProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextStyle.html">odf.ComputedTextStyle</a></li>
+	
+	<li><a href="../symbols/odf.FontLoader.html">odf.FontLoader</a></li>
+	
+	<li><a href="../symbols/odf.Formatting.html">odf.Formatting</a></li>
+	
+	<li><a href="../symbols/odf.GraphicProperties.html">odf.GraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.LazyStyleProperties.html">odf.LazyStyleProperties</a></li>
+	
+	<li><a href="../symbols/odf.ListStyleToCss.html">odf.ListStyleToCss</a></li>
+	
+	<li><a href="../symbols/odf.MasterPage.html">odf.MasterPage</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator.html">odf.ObjectNameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator-NameGenerator.html">odf.ObjectNameGenerator-NameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a></li>
+	
+	<li><a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a></li>
+	
+	<li><a href="../symbols/odf.ODFDocumentElement.html">odf.ODFDocumentElement</a></li>
+	
+	<li><a href="../symbols/odf.ODFElement.html">odf.ODFElement</a></li>
+	
+	<li><a href="../symbols/odf.OdfNodeFilter.html">odf.OdfNodeFilter</a></li>
+	
+	<li><a href="../symbols/odf.OdfPart.html">odf.OdfPart</a></li>
+	
+	<li><a href="../symbols/odf.OdfSchemaImpl.html">odf.OdfSchemaImpl</a></li>
+	
+	<li><a href="../symbols/odf.OdfUtilsImpl.html">odf.OdfUtilsImpl</a></li>
+	
+	<li><a href="../symbols/odf.PageLayout.html">odf.PageLayout</a></li>
+	
+	<li><a href="../symbols/odf.PageLayoutProperties.html">odf.PageLayoutProperties</a></li>
+	
+	<li><a href="../symbols/odf.ParagraphProperties.html">odf.ParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.StepUtils.html">odf.StepUtils</a></li>
+	
+	<li><a href="../symbols/odf.Style2CSS.html">odf.Style2CSS</a></li>
+	
+	<li><a href="../symbols/odf.StyleCache.html">odf.StyleCache</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo.html">odf.StyleInfo</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo%23UsedStyleList.html">odf.StyleInfo#UsedStyleList</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo-StyleDefinition.html">odf.StyleInfo-StyleDefinition</a></li>
+	
+	<li><a href="../symbols/odf.StyleParseUtils.html">odf.StyleParseUtils</a></li>
+	
+	<li><a href="../symbols/odf.StylePile.html">odf.StylePile</a></li>
+	
+	<li><a href="../symbols/odf.StylePileEntry.html">odf.StylePileEntry</a></li>
+	
+	<li><a href="../symbols/odf.StyleTree.html">odf.StyleTree</a></li>
+	
+	<li><a href="../symbols/odf.StyleTreeNode.html">odf.StyleTreeNode</a></li>
+	
+	<li><a href="../symbols/odf.TextProperties.html">odf.TextProperties</a></li>
+	
+	<li><a href="../symbols/odf.TextSerializer.html">odf.TextSerializer</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator.html">odf.TextStyleApplicator</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleLookup.html">odf.TextStyleApplicator-StyleLookup</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleManager.html">odf.TextStyleApplicator-StyleManager</a></li>
+	
+	<li><a href="../symbols/odf.WordBoundaryFilter.html">odf.WordBoundaryFilter</a></li>
+	
+	<li><a href="../symbols/ops.html">ops</a></li>
+	
+	<li><a href="../symbols/ops.EditInfo.html">ops.EditInfo</a></li>
+	
+	<li><a href="../symbols/ops.Member.html">ops.Member</a></li>
+	
+	<li><a href="../symbols/ops.MemberProperties.html">ops.MemberProperties</a></li>
+	
+	<li><a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a></li>
+	
+	<li><a href="../symbols/ops.OdtDocument.html">ops.OdtDocument</a></li>
+	
+	<li><a href="../symbols/ops.OdtStepsTranslator.html">ops.OdtStepsTranslator</a></li>
+	
+	<li><a href="../symbols/ops.OpAddAnnotation.html">ops.OpAddAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpAddCursor.html">ops.OpAddCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpAddMember.html">ops.OpAddMember</a></li>
+	
+	<li><a href="../symbols/ops.OpAddStyle.html">ops.OpAddStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyDirectStyling.html">ops.OpApplyDirectStyling</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyHyperlink.html">ops.OpApplyHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OperationFactory.html">ops.OperationFactory</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformer.html">ops.OperationTransformer</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformMatrix.html">ops.OperationTransformMatrix</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertImage.html">ops.OpInsertImage</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertTable.html">ops.OpInsertTable</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertText.html">ops.OpInsertText</a></li>
+	
+	<li><a href="../symbols/ops.OpMergeParagraph.html">ops.OpMergeParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpMoveCursor.html">ops.OpMoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveAnnotation.html">ops.OpRemoveAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveBlob.html">ops.OpRemoveBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveCursor.html">ops.OpRemoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveHyperlink.html">ops.OpRemoveHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveMember.html">ops.OpRemoveMember</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveStyle.html">ops.OpRemoveStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveText.html">ops.OpRemoveText</a></li>
+	
+	<li><a href="../symbols/ops.OpSetBlob.html">ops.OpSetBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpSetParagraphStyle.html">ops.OpSetParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpSplitParagraph.html">ops.OpSplitParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMember.html">ops.OpUpdateMember</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMetadata.html">ops.OpUpdateMetadata</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateParagraphStyle.html">ops.OpUpdateParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.Session.html">ops.Session</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache.html">ops.StepsCache</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-NodeBookmark.html">ops.StepsCache-NodeBookmark</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-RootBookmark.html">ops.StepsCache-RootBookmark</a></li>
+	
+	<li><a href="../symbols/ops.TextPositionFilter.html">ops.TextPositionFilter</a></li>
+	
+	<li><a href="../symbols/ops.TrivialOperationRouter.html">ops.TrivialOperationRouter</a></li>
+	
+	<li><a href="../symbols/RhinoRuntime.html">RhinoRuntime</a></li>
+	
+	<li><a href="../symbols/RootFilter.html">RootFilter</a></li>
+	
+	<li><a href="../symbols/Runtime.html">Runtime</a></li>
+	
+	<li><a href="../symbols/webodf.html">webodf</a></li>
+	
+	<li><a href="../symbols/xmldom.html">xmldom</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer.html">xmldom.LSSerializer</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer-Namespaces.html">xmldom.LSSerializer-Namespaces</a></li>
+	
+	<li><a href="../symbols/xmldom.XPathIterator.html">xmldom.XPathIterator</a></li>
+	
+</ul>
+<hr />
+			<!-- end publish.classesIndex -->
+		</div>
+		
+		<div id="content">
+<!-- ============================== class title ============================ -->
+			<h1 class="classTitle">
+				
+				Class odf.OdfUtilsImpl
+			</h1>
+
+<!-- ============================== class summary ========================== -->			
+			<p class="description">
+				
+				
+			
+				
+				
+				
+					<br /><i>Defined in: </i> <a href="../symbols/src/lib_odf_OdfUtils.js.html">OdfUtils.js</a>.
+				
+			</p>
+
+<!-- ============================== constructor summary ==================== -->			
+			
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class odf.OdfUtilsImpl.">
+				<caption>Class Summary</caption>
+				<thead>
+					<tr>
+						<th scope="col">Constructor Attributes</th>
+						<th scope="col">Constructor Name and Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="attributes">&nbsp;</td>
+						<td class="nameDescription" >
+							<div class="fixedFont">
+								<b><a href="../symbols/odf.OdfUtilsImpl.html#constructor">odf.OdfUtilsImpl</a></b>()
+							</div>
+							<div class="description"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+
+<!-- ============================== properties summary ===================== -->
+			
+
+<!-- ============================== methods summary ======================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class odf.OdfUtilsImpl.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-firstChild">firstChild</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#getAnnotationCreator">getAnnotationCreator</a></b>(annotationElement)
+								</div>
+								<div class="description">Gets the creator of an annotation.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#getHyperlinkElements">getHyperlinkElements</a></b>(range)
+								</div>
+								<div class="description">Get all hyperlink elements that intersect the supplied range in document order
+
+For example, given the following fragment, with the range starting at b, and ending at c:
+     <text:a xlink:href="google">ab</text:a><text:a xlink:href="apple">cd</text:a>
+this function would return the following array:
+     [text:a{xlink:href="google"}, text:a{xlink:href="apple"}]</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#getHyperlinkTarget">getHyperlinkTarget</a></b>(element)
+								</div>
+								<div class="description">Gets the href attribute of text:a element</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#getImageElements">getImageElements</a></b>(range)
+								</div>
+								<div class="description">Get all image elements that fully contained within the supplied range in
+document order.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#getNormalizedFontFamilyName">getNormalizedFontFamilyName</a></b>(fontFamilyName)
+								</div>
+								<div class="description">Normalize the font-family name as defined in
+http://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
+(see there text behind: "There are two types of font family names: <family-name>")</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-getParagraphElement">getParagraphElement</a></b>(node, offset)
+								</div>
+								<div class="description">Find the paragraph containing the specified node.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#getParagraphElements">getParagraphElements</a></b>(range)
+								</div>
+								<div class="description">Get all paragraph elements that intersect the supplied range in document
+order.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-getParentAnnotation">getParentAnnotation</a></b>(node, container)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-getRightNode">getRightNode</a></b>(container, offset)
+								</div>
+								<div class="description">Returns the node right after the given point.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-getTextElements">getTextElements</a></b>(range, includePartial, includeInsignificantWhitespace)
+								</div>
+								<div class="description">Get all character elements and text nodes fully contained within the
+supplied range in document order.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-getTextNodes">getTextNodes</a></b>(range, includePartial)
+								</div>
+								<div class="description">Returns a array of text nodes considered to be part of the supplied range.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-hasNoODFContent">hasNoODFContent</a></b>(node)
+								</div>
+								<div class="description">Returns true if the supplied node contains no text-in-ODF, or ODF elements</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isAnchoredAsCharacterElement">isAnchoredAsCharacterElement</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is an 'as char' type of element,
+i.e.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isAnnotation">isAnnotation</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is an office:annotation element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isAnnotationWrapper">isAnnotationWrapper</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is an annotation wrapper element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isCharacterElement">isCharacterElement</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a character element,
+namely "s", "tab", or "line-break".</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isCharacterFrame">isCharacterFrame</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a draw:frame element and has its text:anchor-type attribute set to 'as-char'.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#isDowngradableSpaceElement">isDowngradableSpaceElement</a></b>(node)
+								</div>
+								<div class="description">Returns true if the supplied node is a downgradeable space element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isFieldElement">isFieldElement</a></b>(n)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isGroupingElement">isGroupingElement</a></b>(n)
+								</div>
+								<div class="description">Determine if the node is a grouping element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isHyperlink">isHyperlink</a></b>(node)
+								</div>
+								<div class="description">Determine if the node is a text:a element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isImage">isImage</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a draw:image element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isInlineRoot">isInlineRoot</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is an inline 'root' type,
+i.e.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#isLineBreak">isLineBreak</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a text:line-break element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#isListItem">isListItem</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a text:list-item element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isODFNode">isODFNode</a></b>(node)
+								</div>
+								<div class="description">Returns true if the given node is an odf node</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isODFWhitespace">isODFWhitespace</a></b>(text)
+								</div>
+								<div class="description">Determine if the text consists entirely of whitespace characters.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isParagraph">isParagraph</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a text:p or a text:h element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isSignificantTextContent">isSignificantTextContent</a></b>(textNode)
+								</div>
+								<div class="description">Returns true if the text node is within a paragraph and contains either non-whitespace characters, or
+significant whitespace characters (as defined by the ODF standards).</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isSignificantWhitespace">isSignificantWhitespace</a></b>(textNode, offset)
+								</div>
+								<div class="description">Takes a textNode and an offset, and returns true if the character
+at that offset is a significant whitespace.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isSpaceElement">isSpaceElement</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a <text:s/> character element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isTextContentContainingNode">isTextContentContainingNode</a></b>(node)
+								</div>
+								<div class="description">Adapted from instructions on how to generate plain text from an ODT document.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#isTextSpan">isTextSpan</a></b>(e)
+								</div>
+								<div class="description">Determine if the node is a text:span element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-isTrailingWhitespace">isTrailingWhitespace</a></b>(textnode, offset)
+								</div>
+								<div class="description">check if the node is part of the trailing whitespace</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#isWithinAnnotation">isWithinAnnotation</a></b>(node, container)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-lastChild">lastChild</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-lookLeftForCharacter">lookLeftForCharacter</a></b>(node)
+								</div>
+								<div class="description">Walk to the left along the DOM and return the type of the first
+thing encountered.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-lookRightForCharacter">lookRightForCharacter</a></b>(node)
+								</div>
+								<div class="description">Look to the right along the DOM and return true if the first thing
+encountered is either a non-whitespace character or a character
+element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-nextNode">nextNode</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-parseFoFontSize">parseFoFontSize</a></b>(fontSize)
+								</div>
+								<div class="description">Returns the value and unit of the font size, in conformance with fo:font-size
+constraints</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-parseFoLineHeight">parseFoLineHeight</a></b>(lineHeight)
+								</div>
+								<div class="description">Returns the value and unit of the line height, in conformance with fo:line-height
+constraints</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-parseLength">parseLength</a></b>(length)
+								</div>
+								<div class="description">Returns the length split as value and unit, from an ODF attribute</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-parseNonNegativeLength">parseNonNegativeLength</a></b>(length)
+								</div>
+								<div class="description">Returns the value and unit of the length, if it is non-negative ( >= 0)</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-parsePercentage">parsePercentage</a></b>(length)
+								</div>
+								<div class="description">Returns the value and unit(%) of the length, if it is specified in %age</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-parsePositiveLength">parsePositiveLength</a></b>(length)
+								</div>
+								<div class="description">Returns the value and unit of the length, if it is positive ( > 0)</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-prependParentContainers">prependParentContainers</a></b>(startContainer, elements, filter)
+								</div>
+								<div class="description">Crawl parent nodes starting at the startContainer until a matching node is found,
+or the first inline root is met.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-previousNode">previousNode</a></b>(node)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-removePartiallyContainedNodes">removePartiallyContainedNodes</a></b>(range, nodes)
+								</div>
+								<div class="description">Remove any nodes that aren't fully contained within the supplied range.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-scanLeftForAnyCharacter">scanLeftForAnyCharacter</a></b>(node)
+								</div>
+								<div class="description">Walk to the left along the DOM and return true if either a
+non-whitespace character or a character element is encountered.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-scanLeftForNonSpace">scanLeftForNonSpace</a></b>(node)
+								</div>
+								<div class="description">Walk to the left along the DOM and return true if the first thing
+encountered is either a non-whitespace text character or a non-space
+character element (i.e.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfUtilsImpl.html#-scanRightForAnyCharacter">scanRightForAnyCharacter</a></b>(node)
+								</div>
+								<div class="description">Walk to the right along the DOM and return true if either a
+non-whitespace character or a character element is encountered.</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+<!-- ============================== events summary ======================== -->
+			
+
+<!-- ============================== constructor details ==================== -->		
+			
+			<div class="details"><a name="constructor"> </a>
+				<div class="sectionTitle">
+					Class Detail
+				</div>
+				
+				<div class="fixedFont">
+						<b>odf.OdfUtilsImpl</b>()
+				</div>
+				
+				<div class="description">
+					
+					
+				</div>
+				
+				
+				
+				
+					
+					
+					
+					
+					
+					
+					
+
+			</div>
+			
+
+<!-- ============================== field details ========================== -->		
+			
+
+<!-- ============================== method details ========================= -->		
+			
+				<div class="sectionTitle">
+					Method Detail
+				</div>
+				
+					<a name="-firstChild"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>firstChild</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getAnnotationCreator"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!string}</span>
+					<b>getAnnotationCreator</b>(annotationElement)
+					
+					</div>
+					<div class="description">
+						Gets the creator of an annotation.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>annotationElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getHyperlinkElements"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Array.<Node>}</span>
+					<b>getHyperlinkElements</b>(range)
+					
+					</div>
+					<div class="description">
+						Get all hyperlink elements that intersect the supplied range in document order
+
+For example, given the following fragment, with the range starting at b, and ending at c:
+     <text:a xlink:href="google">ab</text:a><text:a xlink:href="apple">cd</text:a>
+this function would return the following array:
+     [text:a{xlink:href="google"}, text:a{xlink:href="apple"}]
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<Node>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getHyperlinkTarget"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!string}</span>
+					<b>getHyperlinkTarget</b>(element)
+					
+					</div>
+					<div class="description">
+						Gets the href attribute of text:a element
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>element</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getImageElements"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Array.<Node>}</span>
+					<b>getImageElements</b>(range)
+					
+					</div>
+					<div class="description">
+						Get all image elements that fully contained within the supplied range in
+document order.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<Node>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getNormalizedFontFamilyName"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!string}</span>
+					<b>getNormalizedFontFamilyName</b>(fontFamilyName)
+					
+					</div>
+					<div class="description">
+						Normalize the font-family name as defined in
+http://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
+(see there text behind: "There are two types of font family names: <family-name>")
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>fontFamilyName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getParagraphElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Element}</span>
+					<b>getParagraphElement</b>(node, offset)
+					
+					</div>
+					<div class="description">
+						Find the paragraph containing the specified node. If an offset is provided and
+the node has a child at the specified offset, this will be included in the search
+as well if the supplied node is not a paragraph itself.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number=}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getParagraphElements"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Array.<!Element>}</span>
+					<b>getParagraphElements</b>(range)
+					
+					</div>
+					<div class="description">
+						Get all paragraph elements that intersect the supplied range in document
+order.
+
+For example, given the following fragment, with the range starting at b,
+and ending at c:
+     <text:p id="A">ab</text:p><text:p id="B"><text:s/>cd</text:p>
+this function would return the following array:
+     [text:p{id="A"}, text:p{id="B"}]
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Element>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getParentAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Element}</span>
+					<b>getParentAnnotation</b>(node, container)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>Node to start searching with</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>container</b>
+									
+								</dt>
+								<dd>Root container to stop searching at.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getRightNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>getRightNode</b>(container, offset)
+					
+					</div>
+					<div class="description">
+						Returns the node right after the given point.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>container</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getTextElements"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!Element|!Text>}</span>
+					<b>getTextElements</b>(range, includePartial, includeInsignificantWhitespace)
+					
+					</div>
+					<div class="description">
+						Get all character elements and text nodes fully contained within the
+supplied range in document order.
+
+For example, given the following fragment, with the range starting at b,
+and ending at c:
+     <text:p>ab<text:s/>cd</text:p>
+this function would return the following array:
+     ["b", text:s, "c"]
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>includePartial</b>
+									
+								</dt>
+								<dd>Include partially intersecting text &
+                        character nodes in the result.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>includeInsignificantWhitespace</b>
+									
+								</dt>
+								<dd>Include whitespace only
+                        nodes that are not considered significant text
+                        content. This includes whitespace only elements
+                        used in pretty-formatted xml as LibreOffice
+                        produces in flat ODT files.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Element|!Text>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getTextNodes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!Node>}</span>
+					<b>getTextNodes</b>(range, includePartial)
+					
+					</div>
+					<div class="description">
+						Returns a array of text nodes considered to be part of the supplied range.
+This will exclude elements that are not part of the ODT main text body,
+as well as insignificant whitespace text nodes.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd>Range to search for nodes within</dd>
+							
+								<dt>
+									<span class="light fixedFont">{boolean}</span> <b>includePartial</b>
+									
+								</dt>
+								<dd>Include partially intersecting text nodes
+                                in the result.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!Node>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-hasNoODFContent"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>hasNoODFContent</b>(node)
+					
+					</div>
+					<div class="description">
+						Returns true if the supplied node contains no text-in-ODF, or ODF elements
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isAnchoredAsCharacterElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isAnchoredAsCharacterElement</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is an 'as char' type of element,
+i.e. any element which behaves like a character with
+respect to it's surrounding positions, such as the
+space/tab/line-break elements, draw:frames with
+anchor type being 'as-char', or inline root elements
+such as annotations.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isAnnotation</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is an office:annotation element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isAnnotationWrapper"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isAnnotationWrapper</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is an annotation wrapper element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isCharacterElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isCharacterElement</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a character element,
+namely "s", "tab", or "line-break".
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isCharacterFrame"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isCharacterFrame</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a draw:frame element and has its text:anchor-type attribute set to 'as-char'.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="isDowngradableSpaceElement"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>isDowngradableSpaceElement</b>(node)
+					
+					</div>
+					<div class="description">
+						Returns true if the supplied node is a downgradeable space element.
+As per http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#element-text_s
+a downgradeable whitespace element is a space element that is immediately preceded by something other than a space
+and has at least one non-space character after it
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isFieldElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isFieldElement</b>(n)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>n</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isGroupingElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isGroupingElement</b>(n)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a grouping element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>n</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isHyperlink"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isHyperlink</b>(node)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a text:a element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isImage"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isImage</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a draw:image element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isInlineRoot"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isInlineRoot</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is an inline 'root' type,
+i.e. an office:annotation or a wrapper for an annotaiton.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="isLineBreak"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>isLineBreak</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a text:line-break element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="isListItem"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>isListItem</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a text:list-item element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isODFNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isODFNode</b>(node)
+					
+					</div>
+					<div class="description">
+						Returns true if the given node is an odf node
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isODFWhitespace"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isODFWhitespace</b>(text)
+					
+					</div>
+					<div class="description">
+						Determine if the text consists entirely of whitespace characters.
+At least one whitespace is required.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>text</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isParagraph</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a text:p or a text:h element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isSignificantTextContent"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isSignificantTextContent</b>(textNode)
+					
+					</div>
+					<div class="description">
+						Returns true if the text node is within a paragraph and contains either non-whitespace characters, or
+significant whitespace characters (as defined by the ODF standards).
+WARNING this method is likely to be quite slow, so should be used as little as possible
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Text}</span> <b>textNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isSignificantWhitespace"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isSignificantWhitespace</b>(textNode, offset)
+					
+					</div>
+					<div class="description">
+						Takes a textNode and an offset, and returns true if the character
+at that offset is a significant whitespace.
+
+Significant whitespace is defined as:
+- Not part of the leading whitespace block in a paragraph
+- Not part of the trailing whitespace block in a paragraph
+- The first whitespace character after a text node or character
+
+All other whitespace elements are considered insignificant
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Text}</span> <b>textNode</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isSpaceElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isSpaceElement</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a <text:s/> character element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isTextContentContainingNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{boolean}</span>
+					<b>isTextContentContainingNode</b>(node)
+					
+					</div>
+					<div class="description">
+						Adapted from instructions on how to generate plain text from an ODT document.
+See algorithm at http://docs.oasis-open.org/office/v1.2/os/OpenDocument-v1.2-os-part1.html#__RefHeading__1415196_253892949
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="isTextSpan"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>isTextSpan</b>(e)
+					
+					</div>
+					<div class="description">
+						Determine if the node is a text:span element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>e</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-isTrailingWhitespace"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>isTrailingWhitespace</b>(textnode, offset)
+					
+					</div>
+					<div class="description">
+						check if the node is part of the trailing whitespace
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Text}</span> <b>textnode</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>offset</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="isWithinAnnotation"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>isWithinAnnotation</b>(node, container)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>Node to start searching with</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>container</b>
+									
+								</dt>
+								<dd>Root container to stop searching at.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-lastChild"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>lastChild</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-lookLeftForCharacter"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!number}</span>
+					<b>lookLeftForCharacter</b>(node)
+					
+					</div>
+					<div class="description">
+						Walk to the left along the DOM and return the type of the first
+thing encountered.
+0 none of the below
+1 non-whitespace character or a character element
+2 whitespace character that is preceded by a non-whitespace character
+  or a character element
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>the first node to scan</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-lookRightForCharacter"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>lookRightForCharacter</b>(node)
+					
+					</div>
+					<div class="description">
+						Look to the right along the DOM and return true if the first thing
+encountered is either a non-whitespace character or a character
+element.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>the first node to scan</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-nextNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Node}</span>
+					<b>nextNode</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-parseFoFontSize"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{value:!number|unit:!string}}</span>
+					<b>parseFoFontSize</b>(fontSize)
+					
+					</div>
+					<div class="description">
+						Returns the value and unit of the font size, in conformance with fo:font-size
+constraints
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?string|undefined}</span> <b>fontSize</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{value:!number|unit:!string}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-parseFoLineHeight"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{value:!number|unit:!string}}</span>
+					<b>parseFoLineHeight</b>(lineHeight)
+					
+					</div>
+					<div class="description">
+						Returns the value and unit of the line height, in conformance with fo:line-height
+constraints
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?string|undefined}</span> <b>lineHeight</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{value:!number|unit:!string}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-parseLength"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{value:!number|unit:!string}}</span>
+					<b>parseLength</b>(length)
+					
+					</div>
+					<div class="description">
+						Returns the length split as value and unit, from an ODF attribute
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?string|undefined}</span> <b>length</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{value:!number|unit:!string}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-parseNonNegativeLength"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{value:!number|unit:!string}}</span>
+					<b>parseNonNegativeLength</b>(length)
+					
+					</div>
+					<div class="description">
+						Returns the value and unit of the length, if it is non-negative ( >= 0)
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?string|undefined}</span> <b>length</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{value:!number|unit:!string}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-parsePercentage"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{value:!number|unit:!string}}</span>
+					<b>parsePercentage</b>(length)
+					
+					</div>
+					<div class="description">
+						Returns the value and unit(%) of the length, if it is specified in %age
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?string|undefined}</span> <b>length</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{value:!number|unit:!string}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-parsePositiveLength"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{value:!number|unit:!string}}</span>
+					<b>parsePositiveLength</b>(length)
+					
+					</div>
+					<div class="description">
+						Returns the value and unit of the length, if it is positive ( > 0)
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?string|undefined}</span> <b>length</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{value:!number|unit:!string}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-prependParentContainers"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					
+					<b>prependParentContainers</b>(startContainer, elements, filter)
+					
+					</div>
+					<div class="description">
+						Crawl parent nodes starting at the startContainer until a matching node is found,
+or the first inline root is met. If a node is accepted by the supplied filter, and is
+not already the first element in the elements array, this node is prepended to the start
+of the elements array.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>startContainer</b>
+									
+								</dt>
+								<dd>Container to start search from (inclusive)</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Array.<!Node>}</span> <b>elements</b>
+									
+								</dt>
+								<dd>Existing elements already discovered</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Node):!boolean}</span> <b>filter</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-previousNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Node}</span>
+					<b>previousNode</b>(node)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Node}</span> <b>node</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removePartiallyContainedNodes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>removePartiallyContainedNodes</b>(range, nodes)
+					
+					</div>
+					<div class="description">
+						Remove any nodes that aren't fully contained within the supplied range. This function assumes
+the nodes appear in document order.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Range}</span> <b>range</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Array.<!Node>}</span> <b>nodes</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-scanLeftForAnyCharacter"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>scanLeftForAnyCharacter</b>(node)
+					
+					</div>
+					<div class="description">
+						Walk to the left along the DOM and return true if either a
+non-whitespace character or a character element is encountered.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>the first node to scan</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-scanLeftForNonSpace"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>scanLeftForNonSpace</b>(node)
+					
+					</div>
+					<div class="description">
+						Walk to the left along the DOM and return true if the first thing
+encountered is either a non-whitespace text character or a non-space
+character element (i.e., any character element other than <text:s/>).
+Walking goes through grouping elements.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>the first node to scan</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-scanRightForAnyCharacter"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>scanRightForAnyCharacter</b>(node)
+					
+					</div>
+					<div class="description">
+						Walk to the right along the DOM and return true if either a
+non-whitespace character or a character element is encountered.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Node}</span> <b>node</b>
+									
+								</dt>
+								<dd>the first node to scan</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					
+				
+			
+			
+<!-- ============================== event details ========================= -->		
+			
+			
+			<hr />
+		</div>
+
+		
+<!-- ============================== footer ================================= -->
+		<div class="fineprint" style="clear:both">
+			
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Sep 03 2015 21:31:55 GMT+0200 (CEST)
+		</div>
+	</body>
+</html>

@@ -1,5 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 
+import { ensureActiveFileReadingMode } from '../helpers/readingMode';
+
 interface ReadingModeFencedDivState {
     enableReadableFencedDivSyntax: boolean | null;
     blockCount: number;
@@ -636,27 +638,7 @@ async function openFileInActiveLeaf(path: string): Promise<void> {
 }
 
 async function ensureReadingMode(): Promise<void> {
-    await browser.execute(async () => {
-        // @ts-ignore
-        const leaf = app.workspace.getLeaf();
-        // @ts-ignore
-        const state = leaf.getViewState();
-        state.state = {
-            ...(state.state ?? {}),
-            mode: 'preview'
-        };
-        // @ts-ignore
-        await leaf.setViewState(state);
-    });
-    await browser.waitUntil(async () => {
-        const hasPreview = await browser.execute(() =>
-            Boolean(document.querySelector('.markdown-preview-view'))
-        );
-        return hasPreview;
-    }, {
-        timeout: 5000,
-        timeoutMsg: 'Expected reading mode preview to be visible'
-    });
+    await ensureActiveFileReadingMode();
     await browser.pause(500);
 }
 

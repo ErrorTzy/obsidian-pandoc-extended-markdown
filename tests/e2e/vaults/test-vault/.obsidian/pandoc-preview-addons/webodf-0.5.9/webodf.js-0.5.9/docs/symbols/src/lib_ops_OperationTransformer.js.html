@@ -1,0 +1,154 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2013 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global runtime, ops */</span><span class="WHIT">
+<span class='line'> 26</span> 
+<span class='line'> 27</span> </span><span class="COMM">/*
+<span class='line'> 28</span>  * create specific operation instances.
+<span class='line'> 29</span>  */</span><span class="WHIT">
+<span class='line'> 30</span> 
+<span class='line'> 31</span> 
+<span class='line'> 32</span> </span><span class="COMM">/**
+<span class='line'> 33</span>  * @constructor
+<span class='line'> 34</span>  */</span><span class="WHIT">
+<span class='line'> 35</span> </span><span class="NAME">ops.OperationTransformer</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">OperationTransformer</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 36</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 37</span> 
+<span class='line'> 38</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">operationTransformMatrix</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">ops.OperationTransformMatrix</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 39</span> 
+<span class='line'> 40</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 41</span>      * @param {!{optype:string}} opSpecA op with lower priority in case of tie breaking
+<span class='line'> 42</span>      * @param {!{optype:string}} opSpecB op with higher priority in case of tie breaking
+<span class='line'> 43</span>      * @return {?{opSpecsA:!Array.&lt;!{optype:string}>,
+<span class='line'> 44</span>      *            opSpecsB:!Array.&lt;!{optype:string}>}}
+<span class='line'> 45</span>      */</span><span class="WHIT">
+<span class='line'> 46</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">transformOpVsOp</span><span class="PUNC">(</span><span class="NAME">opSpecA</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 47</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">operationTransformMatrix.transformOpspecVsOpspec</span><span class="PUNC">(</span><span class="NAME">opSpecA</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 48</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 49</span> 
+<span class='line'> 50</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 51</span>      * @param {!Array.&lt;!{optype:string}>} opSpecsA   sequence of ops with lower priority in case of tie breaking
+<span class='line'> 52</span>      * @param {?{optype:string}} opSpecB   op with higher priority in case of tie breaking
+<span class='line'> 53</span>      * @return {?{opSpecsA:!Array.&lt;!{optype:string}>,
+<span class='line'> 54</span>      *            opSpecsB:!Array.&lt;!Object>}}
+<span class='line'> 55</span>      */</span><span class="WHIT">
+<span class='line'> 56</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">transformOpListVsOp</span><span class="PUNC">(</span><span class="NAME">opSpecsA</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 57</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">transformResult</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">transformListResult</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="WHIT">            </span><span class="NAME">transformedOpspecsA</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">[</span><span class="PUNC">]</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 59</span> </span><span class="WHIT">            </span><span class="NAME">transformedOpspecsB</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">[</span><span class="PUNC">]</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 60</span> 
+<span class='line'> 61</span> </span><span class="WHIT">        </span><span class="KEYW">while</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">opSpecsA.length</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">0</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 62</span> </span><span class="WHIT">            </span><span class="NAME">transformResult</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformOpVsOp</span><span class="PUNC">(</span><span class="NAME">opSpecsA.shift</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 63</span> </span><span class="WHIT">            </span><span class="COMM">// unresolvable operation conflicts?</span><span class="WHIT">
+<span class='line'> 64</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">transformResult</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 65</span> </span><span class="WHIT">                </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 66</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 67</span> 
+<span class='line'> 68</span> </span><span class="WHIT">            </span><span class="COMM">// take transformed ops of the list A</span><span class="WHIT">
+<span class='line'> 69</span> </span><span class="WHIT">            </span><span class="NAME">transformedOpspecsA</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformedOpspecsA.concat</span><span class="PUNC">(</span><span class="NAME">transformResult.opSpecsA</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 70</span> 
+<span class='line'> 71</span> </span><span class="WHIT">            </span><span class="COMM">// handle transformed ops of the single op B</span><span class="WHIT">
+<span class='line'> 72</span> </span><span class="WHIT">            </span><span class="COMM">// opB became a noop?</span><span class="WHIT">
+<span class='line'> 73</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">transformResult.opSpecsB.length</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 74</span> </span><span class="WHIT">                </span><span class="COMM">// so rest of opsAs stay unchanged, nothing else to do</span><span class="WHIT">
+<span class='line'> 75</span> </span><span class="WHIT">                </span><span class="NAME">transformedOpspecsA</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformedOpspecsA.concat</span><span class="PUNC">(</span><span class="NAME">opSpecsA</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 76</span> </span><span class="WHIT">                </span><span class="NAME">opSpecB</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 77</span> </span><span class="WHIT">                </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 78</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 79</span> </span><span class="WHIT">            </span><span class="COMM">// in case of opspecB transformed into multiple ops,</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="WHIT">            </span><span class="COMM">// transform the remaining opsAs against any additional opsBs</span><span class="WHIT">
+<span class='line'> 81</span> </span><span class="WHIT">            </span><span class="COMM">// so we can continue as if there is only one opB</span><span class="WHIT">
+<span class='line'> 82</span> </span><span class="WHIT">            </span><span class="KEYW">while</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">transformResult.opSpecsB.length</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 83</span> </span><span class="WHIT">                </span><span class="NAME">transformListResult</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformOpListVsOp</span><span class="PUNC">(</span><span class="NAME">opSpecsA</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">transformResult.opSpecsB.shift</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 84</span> </span><span class="WHIT">                </span><span class="COMM">// unresolvable operation conflicts?</span><span class="WHIT">
+<span class='line'> 85</span> </span><span class="WHIT">                </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">transformListResult</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 86</span> </span><span class="WHIT">                    </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 88</span> </span><span class="WHIT">                </span><span class="COMM">// take transformed ops of the single b</span><span class="WHIT">
+<span class='line'> 89</span> </span><span class="WHIT">                </span><span class="NAME">transformedOpspecsB</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformedOpspecsB.concat</span><span class="PUNC">(</span><span class="NAME">transformListResult.opSpecsB</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 90</span> </span><span class="WHIT">                </span><span class="NAME">opSpecsA</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformListResult.opSpecsA</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 91</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 92</span> </span><span class="WHIT">            </span><span class="COMM">// continue with last of transformed opsB</span><span class="WHIT">
+<span class='line'> 93</span> </span><span class="WHIT">            </span><span class="NAME">opSpecB</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformResult.opSpecsB.pop</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 94</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 95</span> 
+<span class='line'> 96</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 97</span> </span><span class="WHIT">            </span><span class="NAME">transformedOpspecsB.push</span><span class="PUNC">(</span><span class="NAME">opSpecB</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 98</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 99</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>100</span> </span><span class="WHIT">            </span><span class="NAME">opSpecsA</span><span class="PUNC">:</span><span class="WHIT">  </span><span class="NAME">transformedOpspecsA</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>101</span> </span><span class="WHIT">            </span><span class="NAME">opSpecsB</span><span class="PUNC">:</span><span class="WHIT">  </span><span class="NAME">transformedOpspecsB</span><span class="WHIT">
+<span class='line'>102</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>103</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>104</span> 
+<span class='line'>105</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>106</span>      * @return {!ops.OperationTransformMatrix}
+<span class='line'>107</span>      */</span><span class="WHIT">
+<span class='line'>108</span> </span><span class="WHIT">    </span><span class="NAME">this.getOperationTransformMatrix</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>109</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">operationTransformMatrix</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>111</span> 
+<span class='line'>112</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>113</span>      * Currently the priority of ops for tie breaking is defined by how they
+<span class='line'>114</span>      * are passed to this method. Which usually reflects the origin of the ops,
+<span class='line'>115</span>      * being created locally or coming from the master session.
+<span class='line'>116</span>      * E. g. the pullbox backend gives this way higher priority to the ops from
+<span class='line'>117</span>      * the master session.
+<span class='line'>118</span>      * That is just a randomly chosen rule, because there are no cases known
+<span class='line'>119</span>      * yet where priority needs to be derived from something non-random.
+<span class='line'>120</span>      * @param {!Array.&lt;!Object>} opSpecsA   sequence of opspecs with lower priority in case of tie breaking
+<span class='line'>121</span>      * @param {!Array.&lt;!{optype:string}>} opSpecsB   opspecs with higher priority in case of tie breaking
+<span class='line'>122</span>      * @return {?{opSpecsA:!Array.&lt;!Object>,
+<span class='line'>123</span>      *            opSpecsB:!Array.&lt;!Object>}}
+<span class='line'>124</span>      */</span><span class="WHIT">
+<span class='line'>125</span> </span><span class="WHIT">    </span><span class="NAME">this.transform</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">opSpecsA</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">opSpecsB</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>126</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">transformResult</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>127</span> </span><span class="WHIT">            </span><span class="NAME">transformedOpspecsB</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">[</span><span class="PUNC">]</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>128</span> 
+<span class='line'>129</span> </span><span class="WHIT">        </span><span class="COMM">// transform all opSpecsB vs. all unsent client ops</span><span class="WHIT">
+<span class='line'>130</span> </span><span class="WHIT">        </span><span class="KEYW">while</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">opSpecsB.length</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>131</span> </span><span class="WHIT">            </span><span class="NAME">transformResult</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformOpListVsOp</span><span class="PUNC">(</span><span class="NAME">opSpecsA</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">opSpecsB.shift</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>132</span> </span><span class="WHIT">            </span><span class="COMM">// unresolvable operation conflicts?</span><span class="WHIT">
+<span class='line'>133</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">transformResult</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>134</span> </span><span class="WHIT">                </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>135</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>136</span> 
+<span class='line'>137</span> </span><span class="WHIT">            </span><span class="NAME">opSpecsA</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformResult.opSpecsA</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>138</span> </span><span class="WHIT">            </span><span class="NAME">transformedOpspecsB</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformedOpspecsB.concat</span><span class="PUNC">(</span><span class="NAME">transformResult.opSpecsB</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>139</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>140</span> 
+<span class='line'>141</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>142</span> </span><span class="WHIT">            </span><span class="NAME">opSpecsA</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="COMM">/**@type{!Array.&lt;!Object>}*/</span><span class="PUNC">(</span><span class="NAME">opSpecsA</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>143</span> </span><span class="WHIT">            </span><span class="NAME">opSpecsB</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="COMM">/**@type{!Array.&lt;!Object>}*/</span><span class="PUNC">(</span><span class="NAME">transformedOpspecsB</span><span class="PUNC">)</span><span class="WHIT">
+<span class='line'>144</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>145</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>146</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>147</span> </span></pre></body></html>

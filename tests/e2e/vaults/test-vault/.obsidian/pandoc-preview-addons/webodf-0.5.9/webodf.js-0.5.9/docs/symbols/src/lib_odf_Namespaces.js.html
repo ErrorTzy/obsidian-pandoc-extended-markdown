@@ -1,0 +1,176 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2012-2013 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global odf*/</span><span class="WHIT">
+<span class='line'> 26</span> 
+<span class='line'> 27</span> </span><span class="COMM">/**
+<span class='line'> 28</span>  * Singleton object which provides namespace ids and
+<span class='line'> 29</span>  * some utility methods related to prefixes and namespaces
+<span class='line'> 30</span>  * @const
+<span class='line'> 31</span>  */</span><span class="WHIT">
+<span class='line'> 32</span> </span><span class="NAME">odf.Namespaces</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 33</span> </span><span class="WHIT">    </span><span class="NAME">namespaceMap</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 34</span> </span><span class="WHIT">        </span><span class="NAME">config</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:config:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 35</span> </span><span class="WHIT">        </span><span class="NAME">db</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:database:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 36</span> </span><span class="WHIT">        </span><span class="NAME">dc</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://purl.org/dc/elements/1.1/"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 37</span> </span><span class="WHIT">        </span><span class="NAME">dr3d</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 38</span> </span><span class="WHIT">        </span><span class="NAME">draw</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 39</span> </span><span class="WHIT">        </span><span class="NAME">chart</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:chart:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 40</span> </span><span class="WHIT">        </span><span class="NAME">fo</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 41</span> </span><span class="WHIT">        </span><span class="NAME">form</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:form:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 42</span> </span><span class="WHIT">        </span><span class="NAME">math</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://www.w3.org/1998/Math/MathML"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 43</span> </span><span class="WHIT">        </span><span class="NAME">meta</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:meta:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 44</span> </span><span class="WHIT">        </span><span class="NAME">number</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 45</span> </span><span class="WHIT">        </span><span class="NAME">office</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:office:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 46</span> </span><span class="WHIT">        </span><span class="NAME">presentation</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:presentation:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 47</span> </span><span class="WHIT">        </span><span class="NAME">style</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:style:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 48</span> </span><span class="WHIT">        </span><span class="NAME">svg</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 49</span> </span><span class="WHIT">        </span><span class="NAME">table</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:table:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 50</span> </span><span class="WHIT">        </span><span class="NAME">text</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:text:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 51</span> </span><span class="WHIT">        </span><span class="NAME">xforms</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://www.w3.org/2002/xforms"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 52</span> </span><span class="WHIT">        </span><span class="NAME">xlink</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">'http://www.w3.org/1999/xlink'</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 53</span> </span><span class="WHIT">        </span><span class="NAME">xml</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://www.w3.org/XML/1998/namespace"</span><span class="WHIT">
+<span class='line'> 54</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 55</span> </span><span class="WHIT">    </span><span class="COMM">/**@type{!Object.&lt;string,string>}*/</span><span class="WHIT">
+<span class='line'> 56</span> </span><span class="WHIT">    </span><span class="NAME">prefixMap</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="PUNC">}</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 57</span> </span><span class="WHIT">    </span><span class="NAME">configns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:config:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="WHIT">    </span><span class="NAME">dbns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:database:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 59</span> </span><span class="WHIT">    </span><span class="NAME">dcns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://purl.org/dc/elements/1.1/"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 60</span> </span><span class="WHIT">    </span><span class="NAME">dr3dns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 61</span> </span><span class="WHIT">    </span><span class="NAME">drawns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 62</span> </span><span class="WHIT">    </span><span class="NAME">chartns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:chart:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 63</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 64</span>      * @const
+<span class='line'> 65</span>      * @type{string}
+<span class='line'> 66</span>      */</span><span class="WHIT">
+<span class='line'> 67</span> </span><span class="WHIT">    </span><span class="NAME">fons</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 68</span> </span><span class="WHIT">    </span><span class="NAME">formns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:form:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 69</span> </span><span class="WHIT">    </span><span class="NAME">mathns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://www.w3.org/1998/Math/MathML"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 70</span> </span><span class="WHIT">    </span><span class="NAME">metans</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:meta:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 71</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 72</span>      * @const
+<span class='line'> 73</span>      * @type{string}
+<span class='line'> 74</span>      */</span><span class="WHIT">
+<span class='line'> 75</span> </span><span class="WHIT">    </span><span class="NAME">numberns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 76</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 77</span>      * @const
+<span class='line'> 78</span>      * @type{string}
+<span class='line'> 79</span>      */</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="WHIT">    </span><span class="NAME">officens</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:office:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 81</span> </span><span class="WHIT">    </span><span class="NAME">presentationns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:presentation:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 82</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 83</span>      * @const
+<span class='line'> 84</span>      * @type{string}
+<span class='line'> 85</span>      */</span><span class="WHIT">
+<span class='line'> 86</span> </span><span class="WHIT">    </span><span class="NAME">stylens</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:style:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 88</span>      * @const
+<span class='line'> 89</span>      * @type{string}
+<span class='line'> 90</span>      */</span><span class="WHIT">
+<span class='line'> 91</span> </span><span class="WHIT">    </span><span class="NAME">svgns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 92</span> </span><span class="WHIT">    </span><span class="NAME">tablens</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:table:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 93</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 94</span>      * @const
+<span class='line'> 95</span>      * @type{string}
+<span class='line'> 96</span>      */</span><span class="WHIT">
+<span class='line'> 97</span> </span><span class="WHIT">    </span><span class="NAME">textns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"urn:oasis:names:tc:opendocument:xmlns:text:1.0"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 98</span> </span><span class="WHIT">    </span><span class="NAME">xformsns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://www.w3.org/2002/xforms"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 99</span> </span><span class="WHIT">    </span><span class="NAME">xlinkns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">'http://www.w3.org/1999/xlink'</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>100</span> </span><span class="WHIT">    </span><span class="NAME">xmlns</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="STRN">"http://www.w3.org/XML/1998/namespace"</span><span class="WHIT">
+<span class='line'>101</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>102</span> 
+<span class='line'>103</span> </span><span class="PUNC">(</span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>104</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>105</span> </span><span class="WHIT">    </span><span class="COMM">// map namespacemap to prefix map on startup</span><span class="WHIT">
+<span class='line'>106</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">map</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">odf.Namespaces.namespaceMap</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>107</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{!Object.&lt;string,string>}*/</span><span class="WHIT">
+<span class='line'>108</span> </span><span class="WHIT">        </span><span class="NAME">pmap</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">odf.Namespaces.prefixMap</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>109</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{string}*/</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="WHIT">        </span><span class="NAME">prefix</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>111</span> 
+<span class='line'>112</span> </span><span class="WHIT">    </span><span class="KEYW">for</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="WHIT"> </span><span class="KEYW">in</span><span class="WHIT"> </span><span class="NAME">map</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>113</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">map.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>114</span> </span><span class="WHIT">            </span><span class="NAME">pmap</span><span class="PUNC">[</span><span class="NAME">map</span><span class="PUNC">[</span><span class="NAME">prefix</span><span class="PUNC">]</span><span class="PUNC">]</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">prefix</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>115</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>116</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>117</span> </span><span class="PUNC">}</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>118</span> 
+<span class='line'>119</span> </span><span class="COMM">/**
+<span class='line'>120</span>  * Calls the passed callback for all pairs of prefix and namespace
+<span class='line'>121</span>  * which are in the namespaceMap property
+<span class='line'>122</span>  * @param {function(string,string):undefined} cb
+<span class='line'>123</span>  * @return {undefined}
+<span class='line'>124</span>  */</span><span class="WHIT">
+<span class='line'>125</span> </span><span class="NAME">odf.Namespaces.forEachPrefix</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">forEachPrefix</span><span class="PUNC">(</span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>126</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>127</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="COMM">/**@type{!Object.&lt;string,string>}*/</span><span class="WHIT">
+<span class='line'>128</span> </span><span class="WHIT">        </span><span class="NAME">ns</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">odf.Namespaces.namespaceMap</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>129</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{string}*/</span><span class="WHIT">
+<span class='line'>130</span> </span><span class="WHIT">        </span><span class="NAME">prefix</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>131</span> 
+<span class='line'>132</span> </span><span class="WHIT">    </span><span class="KEYW">for</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="WHIT"> </span><span class="KEYW">in</span><span class="WHIT"> </span><span class="NAME">ns</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>133</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">ns.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>134</span> </span><span class="WHIT">            </span><span class="NAME">cb</span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">ns</span><span class="PUNC">[</span><span class="NAME">prefix</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>135</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>136</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>137</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>138</span> 
+<span class='line'>139</span> </span><span class="COMM">/**
+<span class='line'>140</span>  * Returns the namespace belonging to the prefix or null.
+<span class='line'>141</span>  * @param {string} prefix
+<span class='line'>142</span>  * @return {?string}
+<span class='line'>143</span>  */</span><span class="WHIT">
+<span class='line'>144</span> </span><span class="NAME">odf.Namespaces.lookupNamespaceURI</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">lookupNamespaceURI</span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>145</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>146</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="COMM">/**@type{?string}*/</span><span class="WHIT">
+<span class='line'>147</span> </span><span class="WHIT">        </span><span class="NAME">r</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>148</span> </span><span class="WHIT">    </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">odf.Namespaces.namespaceMap.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">prefix</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>149</span> </span><span class="WHIT">        </span><span class="NAME">r</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="COMM">/**@type{string}*/</span><span class="PUNC">(</span><span class="NAME">odf.Namespaces.namespaceMap</span><span class="PUNC">[</span><span class="NAME">prefix</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>150</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>151</span> </span><span class="WHIT">    </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">r</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>152</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>153</span> 
+<span class='line'>154</span> </span><span class="COMM">/**
+<span class='line'>155</span>  * Returns the prefix belonging to the NamespaceURI or null.
+<span class='line'>156</span>  * @param {string} namespaceURI
+<span class='line'>157</span>  * @return {?string}
+<span class='line'>158</span>  */</span><span class="WHIT">
+<span class='line'>159</span> </span><span class="NAME">odf.Namespaces.lookupPrefix</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">lookupPrefix</span><span class="PUNC">(</span><span class="NAME">namespaceURI</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>160</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>161</span> </span><span class="WHIT">    </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="COMM">/**@type{!Object.&lt;string,string>}*/</span><span class="WHIT">
+<span class='line'>162</span> </span><span class="WHIT">        </span><span class="NAME">map</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">odf.Namespaces.prefixMap</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>163</span> </span><span class="WHIT">    </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">map.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">namespaceURI</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">?</span><span class="WHIT"> </span><span class="NAME">map</span><span class="PUNC">[</span><span class="NAME">namespaceURI</span><span class="PUNC">]</span><span class="WHIT"> </span><span class="PUNC">:</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>164</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>165</span> 
+<span class='line'>166</span> </span><span class="COMM">// TODO: document where and why this is needed</span><span class="WHIT">
+<span class='line'>167</span> </span><span class="NAME">odf.Namespaces.lookupNamespaceURI.lookupNamespaceURI</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">odf.Namespaces.lookupNamespaceURI</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>168</span> 
+<span class='line'>169</span> </span></pre></body></html>

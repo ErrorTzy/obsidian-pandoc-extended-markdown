@@ -1,0 +1,3368 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="generator" content="JsDoc Toolkit" />
+		
+		<title>JsDoc Reference - odf.OdfContainer</title>
+
+		<style type="text/css">
+			/* default.css */
+body
+{
+	font: 12px "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+	width: 800px;
+}
+
+.header
+{
+	clear: both;
+	background-color: #ccc;
+	padding: 8px;
+}
+
+h1
+{
+	font-size: 150%;
+	font-weight: bold;
+	padding: 0;
+	margin: 1em 0 0 .3em;
+}
+
+hr
+{
+	border: none 0;
+	border-top: 1px solid #7F8FB1;
+	height: 1px;
+}
+
+pre.code
+{
+	display: block;
+	padding: 8px;
+	border: 1px dashed #ccc;
+}
+
+#index
+{
+	margin-top: 24px;
+	float: left;
+	width: 160px;
+	position: absolute;
+	left: 8px;
+	background-color: #F3F3F3;
+	padding: 8px;
+}
+
+#content
+{
+	margin-left: 190px;
+	width: 600px;
+}
+
+.classList
+{
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 1em;
+	overflow: auto;
+}
+
+.classList li
+{
+	padding: 0;
+	margin: 0 0 8px 0;
+}
+
+.summaryTable { width: 100%; }
+
+h1.classTitle
+{
+	font-size:170%;
+	line-height:130%;
+}
+
+h2 { font-size: 110%; }
+caption, div.sectionTitle
+{
+	background-color: #7F8FB1;
+	color: #fff;
+	font-size:130%;
+	text-align: left;
+	padding: 2px 6px 2px 6px;
+	border: 1px #7F8FB1 solid;
+}
+
+div.sectionTitle { margin-bottom: 8px; }
+.summaryTable thead { display: none; }
+
+.summaryTable td
+{
+	vertical-align: top;
+	padding: 4px;
+	border-bottom: 1px #7F8FB1 solid;
+	border-right: 1px #7F8FB1 solid;
+}
+
+/*col#summaryAttributes {}*/
+.summaryTable td.attributes
+{
+	border-left: 1px #7F8FB1 solid;
+	width: 140px;
+	text-align: right;
+}
+
+td.attributes, .fixedFont
+{
+	line-height: 15px;
+	color: #002EBE;
+	font-family: "Courier New",Courier,monospace;
+	font-size: 13px;
+}
+
+.summaryTable td.nameDescription
+{
+	text-align: left;
+	font-size: 13px;
+	line-height: 15px;
+}
+
+.summaryTable td.nameDescription, .description
+{
+	line-height: 15px;
+	padding: 4px;
+	padding-left: 4px;
+}
+
+.summaryTable { margin-bottom: 8px; }
+
+ul.inheritsList
+{
+	list-style: square;
+	margin-left: 20px;
+	padding-left: 0;
+}
+
+.detailList {
+	margin-left: 20px; 
+	line-height: 15px;
+}
+.detailList dt { margin-left: 20px; }
+
+.detailList .heading
+{
+	font-weight: bold;
+	padding-bottom: 6px;
+	margin-left: 0;
+}
+
+.light, td.attributes, .light a:link, .light a:visited
+{
+	color: #777;
+	font-style: italic;
+}
+
+.fineprint
+{
+	text-align: right;
+	font-size: 10px;
+}
+		</style>
+	</head>
+
+	<body>
+<!-- ============================== header ================================= -->	
+		<!-- begin static/header.html -->
+		<div id="header">
+</div>
+		<!-- end static/header.html -->
+
+<!-- ============================== classes index ============================ -->
+		<div id="index">
+			<!-- begin publish.classesIndex -->
+			<div align="center"><a href="../index.html">Class Index</a>
+| <a href="../files.html">File Index</a></div>
+<hr />
+<h2>Classes</h2>
+<ul class="classList">
+	
+	<li><i><a href="../symbols/_global_.html">_global_</a></i></li>
+	
+	<li><a href="../symbols/BrowserRuntime.html">BrowserRuntime</a></li>
+	
+	<li><a href="../symbols/core.html">core</a></li>
+	
+	<li><a href="../symbols/core.Base64.html">core.Base64</a></li>
+	
+	<li><a href="../symbols/core.CSSUnits.html">core.CSSUnits</a></li>
+	
+	<li><a href="../symbols/core.Cursor.html">core.Cursor</a></li>
+	
+	<li><a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a></li>
+	
+	<li><a href="../symbols/core.EventNotifier.html">core.EventNotifier</a></li>
+	
+	<li><a href="../symbols/core.EventSubscriptions.html">core.EventSubscriptions</a></li>
+	
+	<li><a href="../symbols/core.LazyProperty.html">core.LazyProperty</a></li>
+	
+	<li><a href="../symbols/core.LoopWatchDog.html">core.LoopWatchDog</a></li>
+	
+	<li><a href="../symbols/core.NodeFilterChain.html">core.NodeFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionFilterChain.html">core.PositionFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator.html">core.PositionIterator</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-EmptyTextNodeFilter.html">core.PositionIterator-EmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-FilteredEmptyTextNodeFilter.html">core.PositionIterator-FilteredEmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.ScheduledTask.html">core.ScheduledTask</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.html">core.StepIterator</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.StepSnapshot.html">core.StepIterator.StepSnapshot</a></li>
+	
+	<li><a href="../symbols/core.Utils.html">core.Utils</a></li>
+	
+	<li><a href="../symbols/core.Zip.html">core.Zip</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AllChildElementIterator.html">createXPathSingleton-AllChildElementIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AttributeIterator.html">createXPathSingleton-AttributeIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-ConditionIterator.html">createXPathSingleton-ConditionIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-XPathNodeIterator.html">createXPathSingleton-XPathNodeIterator</a></li>
+	
+	<li><a href="../symbols/gui.html">gui</a></li>
+	
+	<li><a href="../symbols/gui.AnnotatableCanvas.html">gui.AnnotatableCanvas</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationController.html">gui.AnnotationController</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationViewManager.html">gui.AnnotationViewManager</a></li>
+	
+	<li><a href="../symbols/gui.Avatar.html">gui.Avatar</a></li>
+	
+	<li><a href="../symbols/gui.BlacklistNamespaceNodeFilter.html">gui.BlacklistNamespaceNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.Caret.html">gui.Caret</a></li>
+	
+	<li><a href="../symbols/gui.CaretManager.html">gui.CaretManager</a></li>
+	
+	<li><a href="../symbols/gui.Clipboard.html">gui.Clipboard</a></li>
+	
+	<li><a href="../symbols/gui.ClosestXOffsetScanner.html">gui.ClosestXOffsetScanner</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.html">gui.DirectFormattingController</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.SelectionInfo.html">gui.DirectFormattingController.SelectionInfo</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoHandle.html">gui.EditInfoHandle</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoMarker.html">gui.EditInfoMarker</a></li>
+	
+	<li><a href="../symbols/gui.EventManager.html">gui.EventManager</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-CompoundEvent.html">gui.EventManager-CompoundEvent</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-ElementScrollState.html">gui.EventManager-ElementScrollState</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-EventDelegate.html">gui.EventManager-EventDelegate</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-WindowScrollState.html">gui.EventManager-WindowScrollState</a></li>
+	
+	<li><a href="../symbols/gui.GuiStepUtils.html">gui.GuiStepUtils</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkClickHandler.html">gui.HyperlinkClickHandler</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkController.html">gui.HyperlinkController</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkTooltipView.html">gui.HyperlinkTooltipView</a></li>
+	
+	<li><a href="../symbols/gui.ImageController.html">gui.ImageController</a></li>
+	
+	<li><a href="../symbols/gui.ImageSelector.html">gui.ImageSelector</a></li>
+	
+	<li><a href="../symbols/gui.InputMethodEditor.html">gui.InputMethodEditor</a></li>
+	
+	<li><a href="../symbols/gui.IOSSafariSupport.html">gui.IOSSafariSupport</a></li>
+	
+	<li><a href="../symbols/gui.KeyboardHandler.html">gui.KeyboardHandler</a></li>
+	
+	<li><a href="../symbols/gui.LineBoundaryScanner.html">gui.LineBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.MetadataController.html">gui.MetadataController</a></li>
+	
+	<li><a href="../symbols/gui.MimeDataExporter.html">gui.MimeDataExporter</a></li>
+	
+	<li><a href="../symbols/gui.OdfFieldView.html">gui.OdfFieldView</a></li>
+	
+	<li><a href="../symbols/gui.OdfTextBodyNodeFilter.html">gui.OdfTextBodyNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.ParagraphBoundaryScanner.html">gui.ParagraphBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.PasteController.html">gui.PasteController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionController.html">gui.SelectionController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionViewManager.html">gui.SelectionViewManager</a></li>
+	
+	<li><a href="../symbols/gui.SessionConstraints.html">gui.SessionConstraints</a></li>
+	
+	<li><a href="../symbols/gui.SessionContext.html">gui.SessionContext</a></li>
+	
+	<li><a href="../symbols/gui.SessionController.html">gui.SessionController</a></li>
+	
+	<li><a href="../symbols/gui.SessionControllerOptions.html">gui.SessionControllerOptions</a></li>
+	
+	<li><a href="../symbols/gui.SessionView.html">gui.SessionView</a></li>
+	
+	<li><a href="../symbols/gui.SessionViewOptions.html">gui.SessionViewOptions</a></li>
+	
+	<li><a href="../symbols/gui.ShadowCursor.html">gui.ShadowCursor</a></li>
+	
+	<li><a href="../symbols/gui.SingleScrollViewport.html">gui.SingleScrollViewport</a></li>
+	
+	<li><a href="../symbols/gui.StepInfo.html">gui.StepInfo</a></li>
+	
+	<li><a href="../symbols/gui.StyleSummary.html">gui.StyleSummary</a></li>
+	
+	<li><a href="../symbols/gui.SvgSelectionView.html">gui.SvgSelectionView</a></li>
+	
+	<li><a href="../symbols/gui.TextController.html">gui.TextController</a></li>
+	
+	<li><a href="../symbols/gui.TrivialUndoManager.html">gui.TrivialUndoManager</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules.html">gui.UndoStateRules</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules-ReverseIterator.html">gui.UndoStateRules-ReverseIterator</a></li>
+	
+	<li><a href="../symbols/gui.ZoomHelper.html">gui.ZoomHelper</a></li>
+	
+	<li><a href="../symbols/NodeJSRuntime.html">NodeJSRuntime</a></li>
+	
+	<li><a href="../symbols/odf.html">odf</a></li>
+	
+	<li><a href="../symbols/odf.AnnotationElement.html">odf.AnnotationElement</a></li>
+	
+	<li><a href="../symbols/odf.CollapsingRules.html">odf.CollapsingRules</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicProperties.html">odf.ComputedGraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicStyle.html">odf.ComputedGraphicStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphProperties.html">odf.ComputedParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphStyle.html">odf.ComputedParagraphStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextProperties.html">odf.ComputedTextProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextStyle.html">odf.ComputedTextStyle</a></li>
+	
+	<li><a href="../symbols/odf.FontLoader.html">odf.FontLoader</a></li>
+	
+	<li><a href="../symbols/odf.Formatting.html">odf.Formatting</a></li>
+	
+	<li><a href="../symbols/odf.GraphicProperties.html">odf.GraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.LazyStyleProperties.html">odf.LazyStyleProperties</a></li>
+	
+	<li><a href="../symbols/odf.ListStyleToCss.html">odf.ListStyleToCss</a></li>
+	
+	<li><a href="../symbols/odf.MasterPage.html">odf.MasterPage</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator.html">odf.ObjectNameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator-NameGenerator.html">odf.ObjectNameGenerator-NameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a></li>
+	
+	<li><a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a></li>
+	
+	<li><a href="../symbols/odf.ODFDocumentElement.html">odf.ODFDocumentElement</a></li>
+	
+	<li><a href="../symbols/odf.ODFElement.html">odf.ODFElement</a></li>
+	
+	<li><a href="../symbols/odf.OdfNodeFilter.html">odf.OdfNodeFilter</a></li>
+	
+	<li><a href="../symbols/odf.OdfPart.html">odf.OdfPart</a></li>
+	
+	<li><a href="../symbols/odf.OdfSchemaImpl.html">odf.OdfSchemaImpl</a></li>
+	
+	<li><a href="../symbols/odf.OdfUtilsImpl.html">odf.OdfUtilsImpl</a></li>
+	
+	<li><a href="../symbols/odf.PageLayout.html">odf.PageLayout</a></li>
+	
+	<li><a href="../symbols/odf.PageLayoutProperties.html">odf.PageLayoutProperties</a></li>
+	
+	<li><a href="../symbols/odf.ParagraphProperties.html">odf.ParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.StepUtils.html">odf.StepUtils</a></li>
+	
+	<li><a href="../symbols/odf.Style2CSS.html">odf.Style2CSS</a></li>
+	
+	<li><a href="../symbols/odf.StyleCache.html">odf.StyleCache</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo.html">odf.StyleInfo</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo%23UsedStyleList.html">odf.StyleInfo#UsedStyleList</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo-StyleDefinition.html">odf.StyleInfo-StyleDefinition</a></li>
+	
+	<li><a href="../symbols/odf.StyleParseUtils.html">odf.StyleParseUtils</a></li>
+	
+	<li><a href="../symbols/odf.StylePile.html">odf.StylePile</a></li>
+	
+	<li><a href="../symbols/odf.StylePileEntry.html">odf.StylePileEntry</a></li>
+	
+	<li><a href="../symbols/odf.StyleTree.html">odf.StyleTree</a></li>
+	
+	<li><a href="../symbols/odf.StyleTreeNode.html">odf.StyleTreeNode</a></li>
+	
+	<li><a href="../symbols/odf.TextProperties.html">odf.TextProperties</a></li>
+	
+	<li><a href="../symbols/odf.TextSerializer.html">odf.TextSerializer</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator.html">odf.TextStyleApplicator</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleLookup.html">odf.TextStyleApplicator-StyleLookup</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleManager.html">odf.TextStyleApplicator-StyleManager</a></li>
+	
+	<li><a href="../symbols/odf.WordBoundaryFilter.html">odf.WordBoundaryFilter</a></li>
+	
+	<li><a href="../symbols/ops.html">ops</a></li>
+	
+	<li><a href="../symbols/ops.EditInfo.html">ops.EditInfo</a></li>
+	
+	<li><a href="../symbols/ops.Member.html">ops.Member</a></li>
+	
+	<li><a href="../symbols/ops.MemberProperties.html">ops.MemberProperties</a></li>
+	
+	<li><a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a></li>
+	
+	<li><a href="../symbols/ops.OdtDocument.html">ops.OdtDocument</a></li>
+	
+	<li><a href="../symbols/ops.OdtStepsTranslator.html">ops.OdtStepsTranslator</a></li>
+	
+	<li><a href="../symbols/ops.OpAddAnnotation.html">ops.OpAddAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpAddCursor.html">ops.OpAddCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpAddMember.html">ops.OpAddMember</a></li>
+	
+	<li><a href="../symbols/ops.OpAddStyle.html">ops.OpAddStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyDirectStyling.html">ops.OpApplyDirectStyling</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyHyperlink.html">ops.OpApplyHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OperationFactory.html">ops.OperationFactory</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformer.html">ops.OperationTransformer</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformMatrix.html">ops.OperationTransformMatrix</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertImage.html">ops.OpInsertImage</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertTable.html">ops.OpInsertTable</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertText.html">ops.OpInsertText</a></li>
+	
+	<li><a href="../symbols/ops.OpMergeParagraph.html">ops.OpMergeParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpMoveCursor.html">ops.OpMoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveAnnotation.html">ops.OpRemoveAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveBlob.html">ops.OpRemoveBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveCursor.html">ops.OpRemoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveHyperlink.html">ops.OpRemoveHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveMember.html">ops.OpRemoveMember</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveStyle.html">ops.OpRemoveStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveText.html">ops.OpRemoveText</a></li>
+	
+	<li><a href="../symbols/ops.OpSetBlob.html">ops.OpSetBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpSetParagraphStyle.html">ops.OpSetParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpSplitParagraph.html">ops.OpSplitParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMember.html">ops.OpUpdateMember</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMetadata.html">ops.OpUpdateMetadata</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateParagraphStyle.html">ops.OpUpdateParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.Session.html">ops.Session</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache.html">ops.StepsCache</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-NodeBookmark.html">ops.StepsCache-NodeBookmark</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-RootBookmark.html">ops.StepsCache-RootBookmark</a></li>
+	
+	<li><a href="../symbols/ops.TextPositionFilter.html">ops.TextPositionFilter</a></li>
+	
+	<li><a href="../symbols/ops.TrivialOperationRouter.html">ops.TrivialOperationRouter</a></li>
+	
+	<li><a href="../symbols/RhinoRuntime.html">RhinoRuntime</a></li>
+	
+	<li><a href="../symbols/RootFilter.html">RootFilter</a></li>
+	
+	<li><a href="../symbols/Runtime.html">Runtime</a></li>
+	
+	<li><a href="../symbols/webodf.html">webodf</a></li>
+	
+	<li><a href="../symbols/xmldom.html">xmldom</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer.html">xmldom.LSSerializer</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer-Namespaces.html">xmldom.LSSerializer-Namespaces</a></li>
+	
+	<li><a href="../symbols/xmldom.XPathIterator.html">xmldom.XPathIterator</a></li>
+	
+</ul>
+<hr />
+			<!-- end publish.classesIndex -->
+		</div>
+		
+		<div id="content">
+<!-- ============================== class title ============================ -->
+			<h1 class="classTitle">
+				
+				Class odf.OdfContainer
+			</h1>
+
+<!-- ============================== class summary ========================== -->			
+			<p class="description">
+				
+				
+			
+				
+				
+				
+					<br /><i>Defined in: </i> <a href="../symbols/src/lib_odf_OdfContainer.js.html">OdfContainer.js</a>.
+				
+			</p>
+
+<!-- ============================== constructor summary ==================== -->			
+			
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class odf.OdfContainer.">
+				<caption>Class Summary</caption>
+				<thead>
+					<tr>
+						<th scope="col">Constructor Attributes</th>
+						<th scope="col">Constructor Name and Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="attributes">&nbsp;</td>
+						<td class="nameDescription" >
+							<div class="fixedFont">
+								<b><a href="../symbols/odf.OdfContainer.html#constructor">odf.OdfContainer</a></b>(urlOrType, onstatereadychange)
+							</div>
+							<div class="description">The OdfContainer class manages the various parts that constitues an ODF
+document.</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+
+<!-- ============================== properties summary ===================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the fields documented in the class odf.OdfContainer.">
+					<caption>Field Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Field Attributes</th>
+							<th scope="col">Field Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">
+								odf.OdfContainer.<b><a href="../symbols/odf.OdfContainer.html#.DocumentType">DocumentType</a></b>
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+
+<!-- ============================== methods summary ======================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class odf.OdfContainer.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-cloneFontFaceDeclsUsedInStyles">cloneFontFaceDeclsUsedInStyles</a></b>(fontFaceDeclsRootElement, stylesRootElementList)
+								</div>
+								<div class="description">Creates a clone of the font face declaration tree containing only
+those declarations which are referenced in the passed styles.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-cloneStylesInScope">cloneStylesInScope</a></b>(stylesRootElement, scope)
+								</div>
+								<div class="description">Creates a clone of the styles tree containing only styles tagged
+with the given scope, or with no specified scope.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-createByteArray">createByteArray</a></b>(successCallback, errorCallback)
+								</div>
+								<div class="description">Create a bytearray from the zipfile.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-createDocumentElement">createDocumentElement</a></b>(name)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-createElement">createElement</a></b>(type)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-createEmptyDocument">createEmptyDocument</a></b>(type, isTemplate)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-createManifestEntry">createManifestEntry</a></b>(fullPath, mediaType)
+								</div>
+								<div class="description">Creates a manifest:file-entry node</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-fillZip">fillZip</a></b>()
+								</div>
+								<div class="description">Fill the zip with current data.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont">odf.OdfContainer.<b><a href="../symbols/odf.OdfContainer.html#.getContainer">getContainer</a></b>(url)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#getContentElement">getContentElement</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#getDocumentType">getDocumentType</a></b>()
+								</div>
+								<div class="description">Gets the document type as 'text', 'presentation', or 'spreadsheet'.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-getEnsuredMetaElement">getEnsuredMetaElement</a></b>()
+								</div>
+								<div class="description">Returns the meta element.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-getMetadata">getMetadata</a></b>(metadataNs, metadataLocalName)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#getPart">getPart</a></b>(partname)
+								</div>
+								<div class="description">Open file and parse it.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#getPartData">getPartData</a></b>(url, callback)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#getUrl">getUrl</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-handleContentXml">handleContentXml</a></b>(xmldoc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-handleFlatXml">handleFlatXml</a></b>(xmldoc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-handleManifestXml">handleManifestXml</a></b>(xmldoc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-handleMetaXml">handleMetaXml</a></b>(xmldoc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-handleSettingsXml">handleSettingsXml</a></b>(xmldoc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-handleStylesXml">handleStylesXml</a></b>(xmldoc)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-importRootNode">importRootNode</a></b>(xmldoc)
+								</div>
+								<div class="description">Import the document elementnode into the DOM of OdfContainer.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#incrementEditingCycles">incrementEditingCycles</a></b>()
+								</div>
+								<div class="description">Increment the number of times the document has been edited.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#isTemplate">isTemplate</a></b>()
+								</div>
+								<div class="description">Returns whether the document is a template.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-linkAnnotationStartAndEndElements">linkAnnotationStartAndEndElements</a></b>(rootElement)
+								</div>
+								<div class="description">Iterates through the subtree of rootElement and adds annotation-end
+elements as direct properties of the corresponding annotation elements.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-loadComponents">loadComponents</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-loadFromXML">loadFromXML</a></b>(url, callback)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-loadNextComponent">loadNextComponent</a></b>(remainingComponents)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-mapByFontFaceName">mapByFontFaceName</a></b>(fontFaceDecls)
+								</div>
+								<div class="description">Returns a map with the fontface declaration elements, with font-face name as key.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-mergeFontFaceDecls">mergeFontFaceDecls</a></b>(targetFontFaceDeclsRootElement, sourceFontFaceDeclsRootElement)
+								</div>
+								<div class="description">Merges all style:font-face elements from the source into the target.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#removeBlob">removeBlob</a></b>(filename)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-removeDangerousAttributes">removeDangerousAttributes</a></b>(element)
+								</div>
+								<div class="description">Remove all attributes that have no namespace and that have
+localname like 'on.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-removeDangerousElements">removeDangerousElements</a></b>(xmldoc)
+								</div>
+								<div class="description">Remove any HTML <script/> tags from the DOM.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-removeElements">removeElements</a></b>(xmldoc, localName, allowedNamespaces)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-removeProcessingInstructions">removeProcessingInstructions</a></b>(element)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#save">save</a></b>(callback)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-saveAs">saveAs</a></b>(newurl, callback)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-serializeContentXml">serializeContentXml</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-serializeManifestXml">serializeManifestXml</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-serializeMetaXml">serializeMetaXml</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-serializeSettingsXml">serializeSettingsXml</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-serializeStylesXml">serializeStylesXml</a></b>()
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-setAutomaticStylesScope">setAutomaticStylesScope</a></b>(stylesRootElement, scope)
+								</div>
+								<div class="description">Tags all styles with an attribute noting their scope.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#setBlob">setBlob</a></b>(filename, mimetype, content)
+								</div>
+								<div class="description">Add a new blob or overwrite any existing blob which has the same filename.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#setIsTemplate">setIsTemplate</a></b>(isTemplate)
+								</div>
+								<div class="description">Sets whether the document is a template or not.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-setMetadata">setMetadata</a></b>(setProperties, removedPropertyNames)
+								</div>
+								<div class="description">Sets the metadata fields from the given properties map.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-setRootElement">setRootElement</a></b>(root)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-setState">setState</a></b>(state)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-unusedKey">unusedKey</a></b>(key, map1, map2)
+								</div>
+								<div class="description">Returns key with a number postfix or none, as key unused both in map1 and map2.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/odf.OdfContainer.html#-updateMetadataForSaving">updateMetadataForSaving</a></b>()
+								</div>
+								<div class="description">Write pre-saving metadata to the DOM</div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+<!-- ============================== events summary ======================== -->
+			
+
+<!-- ============================== constructor details ==================== -->		
+			
+			<div class="details"><a name="constructor"> </a>
+				<div class="sectionTitle">
+					Class Detail
+				</div>
+				
+				<div class="fixedFont">
+						<b>odf.OdfContainer</b>(urlOrType, onstatereadychange)
+				</div>
+				
+				<div class="description">
+					The OdfContainer class manages the various parts that constitues an ODF
+document.
+The constructor takes a url or a type. If urlOrType is a type, an empty
+document of that type is created. Otherwise, urlOrType is interpreted as
+a url and loaded from that url.
+					
+				</div>
+				
+				
+				
+				
+					
+						<dl class="detailList">
+						<dt class="heading">Parameters:</dt>
+						
+							<dt>
+								<span class="light fixedFont">{!string|!odf.OdfContainer.DocumentType}</span>  <b>urlOrType</b>
+								
+							</dt>
+								<dd></dd>
+						
+							<dt>
+								<span class="light fixedFont">{?function(!odf.OdfContainer)=}</span>  <b>onstatereadychange</b>
+								
+							</dt>
+								<dd></dd>
+						
+						</dl>
+					
+					
+					
+					
+					
+						<dl class="detailList">
+						<dt class="heading">Returns:</dt>
+						
+								<dd><span class="light fixedFont">{?}</span> </dd>
+						
+						</dl>
+					
+					
+					
+
+			</div>
+			
+
+<!-- ============================== field details ========================== -->		
+			
+				<div class="sectionTitle">
+					Field Detail
+				</div>
+				
+					<a name=".DocumentType"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					
+					<span class="light">odf.OdfContainer.</span><b>DocumentType</b>
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+
+						
+						
+						
+						
+
+					
+				
+			
+
+<!-- ============================== method details ========================= -->		
+			
+				<div class="sectionTitle">
+					Method Detail
+				</div>
+				
+					<a name="-cloneFontFaceDeclsUsedInStyles"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Element}</span>
+					<b>cloneFontFaceDeclsUsedInStyles</b>(fontFaceDeclsRootElement, stylesRootElementList)
+					
+					</div>
+					<div class="description">
+						Creates a clone of the font face declaration tree containing only
+those declarations which are referenced in the passed styles.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Element}</span> <b>fontFaceDeclsRootElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Array.<!Element>}</span> <b>stylesRootElementList</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-cloneStylesInScope"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?Element}</span>
+					<b>cloneStylesInScope</b>(stylesRootElement, scope)
+					
+					</div>
+					<div class="description">
+						Creates a clone of the styles tree containing only styles tagged
+with the given scope, or with no specified scope.
+Helper function for the primitive complete backwriting of
+the automatic styles.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Element}</span> <b>stylesRootElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>scope</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createByteArray"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>createByteArray</b>(successCallback, errorCallback)
+					
+					</div>
+					<div class="description">
+						Create a bytearray from the zipfile.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!function(!Uint8Array):undefined}</span> <b>successCallback</b>
+									
+								</dt>
+								<dd>receiving zip as bytearray</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function(?string):undefined}</span> <b>errorCallback</b>
+									
+								</dt>
+								<dd>receiving possible err</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createDocumentElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>createDocumentElement</b>(name)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>name</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Element}</span>
+					<b>createElement</b>(type)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!{Type:function(new:Object)|namespaceURI:string|localName:string}}</span> <b>type</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createEmptyDocument"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!<a href="../symbols/core.Zip.html">core.Zip</a>}</span>
+					<b>createEmptyDocument</b>(type, isTemplate)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>type</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean=}</span> <b>isTemplate</b>
+									
+								</dt>
+								<dd>Default value is false.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/core.Zip.html">core.Zip</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-createManifestEntry"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Node}</span>
+					<b>createManifestEntry</b>(fullPath, mediaType)
+					
+					</div>
+					<div class="description">
+						Creates a manifest:file-entry node
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>fullPath</b>
+									
+								</dt>
+								<dd>Full-path attribute value for the file-entry</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>mediaType</b>
+									
+								</dt>
+								<dd>Media-type attribute value for the file-entry</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Node}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-fillZip"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>fillZip</b>()
+					
+					</div>
+					<div class="description">
+						Fill the zip with current data.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name=".getContainer"> </a>
+					<div class="fixedFont">&lt;static&gt; 
+					
+					<span class="light">{!<a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a>}</span>
+					<span class="light">odf.OdfContainer.</span><b>getContainer</b>(url)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>url</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getContentElement"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!Element}</span>
+					<b>getContentElement</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getDocumentType"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!string}</span>
+					<b>getDocumentType</b>()
+					
+					</div>
+					<div class="description">
+						Gets the document type as 'text', 'presentation', or 'spreadsheet'.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getEnsuredMetaElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Element}</span>
+					<b>getEnsuredMetaElement</b>()
+					
+					</div>
+					<div class="description">
+						Returns the meta element. If it did not exist before, it will be created.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getMetadata"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?string}</span>
+					<b>getMetadata</b>(metadataNs, metadataLocalName)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>metadataNs</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>metadataLocalName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getPart"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!<a href="../symbols/odf.OdfPart.html">odf.OdfPart</a>}</span>
+					<b>getPart</b>(partname)
+					
+					</div>
+					<div class="description">
+						Open file and parse it. Return the XML Node. Return the root node of
+the file or null if this is not possible.
+For 'content.xml', 'styles.xml', 'meta.xml', and 'settings.xml', the
+elements 'document-content', 'document-styles', 'document-meta', or
+'document-settings' will be returned respectively.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string}</span> <b>partname</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!<a href="../symbols/odf.OdfPart.html">odf.OdfPart</a>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getPartData"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>getPartData</b>(url, callback)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string}</span> <b>url</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{function(?string|?Uint8Array)}</span> <b>callback</b>
+									
+								</dt>
+								<dd>receiving err and data</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="getUrl"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!string}</span>
+					<b>getUrl</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleContentXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>handleContentXml</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleFlatXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>handleFlatXml</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document|undefined}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleManifestXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>handleManifestXml</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleMetaXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>handleMetaXml</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleSettingsXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>handleSettingsXml</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-handleStylesXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>handleStylesXml</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-importRootNode"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Element|undefined}</span>
+					<b>importRootNode</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						Import the document elementnode into the DOM of OdfContainer.
+Any processing instructions are removed, since importing them
+gives an exception.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{Document|undefined}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Element|undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="incrementEditingCycles"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!number}</span>
+					<b>incrementEditingCycles</b>()
+					
+					</div>
+					<div class="description">
+						Increment the number of times the document has been edited.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!number}</span> new number of editing cycles</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="isTemplate"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{!boolean}</span>
+					<b>isTemplate</b>()
+					
+					</div>
+					<div class="description">
+						Returns whether the document is a template.
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-linkAnnotationStartAndEndElements"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>linkAnnotationStartAndEndElements</b>(rootElement)
+					
+					</div>
+					<div class="description">
+						Iterates through the subtree of rootElement and adds annotation-end
+elements as direct properties of the corresponding annotation elements.
+Expects properly used annotation elements, does not try
+to do heuristic fixes or drop broken elements.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>rootElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-loadComponents"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>loadComponents</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-loadFromXML"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>loadFromXML</b>(url, callback)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>url</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!function((string)):undefined}</span> <b>callback</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-loadNextComponent"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>loadNextComponent</b>(remainingComponents)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Array.<!{path:string|handler:function(?Document)}>}</span> <b>remainingComponents</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-mapByFontFaceName"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Object.<!string|!Element>}</span>
+					<b>mapByFontFaceName</b>(fontFaceDecls)
+					
+					</div>
+					<div class="description">
+						Returns a map with the fontface declaration elements, with font-face name as key.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>fontFaceDecls</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Object.<!string|!Element>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-mergeFontFaceDecls"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Object.<!string|!string>}</span>
+					<b>mergeFontFaceDecls</b>(targetFontFaceDeclsRootElement, sourceFontFaceDeclsRootElement)
+					
+					</div>
+					<div class="description">
+						Merges all style:font-face elements from the source into the target.
+Skips elements equal to one already in the target.
+Elements with the same style:name but different properties get a new
+value for style:name. Any name changes are logged and returned as a map
+with the old names as keys.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>targetFontFaceDeclsRootElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>sourceFontFaceDeclsRootElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Object.<!string|!string>}</span> mapping of old font-face name to new</dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="removeBlob"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>removeBlob</b>(filename)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>filename</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeDangerousAttributes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>removeDangerousAttributes</b>(element)
+					
+					</div>
+					<div class="description">
+						Remove all attributes that have no namespace and that have
+localname like 'on....', the event handler attributes.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>element</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeDangerousElements"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>removeDangerousElements</b>(xmldoc)
+					
+					</div>
+					<div class="description">
+						Remove any HTML <script/> tags from the DOM.
+The tags need to be removed, because otherwise they would be executed
+when the dom is inserted into the document.
+To be safe, all elements with localName "script" are removed, unless
+they are in a known, allowed namespace.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeElements"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>removeElements</b>(xmldoc, localName, allowedNamespaces)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Document}</span> <b>xmldoc</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>localName</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Object.<!string|!boolean>}</span> <b>allowedNamespaces</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-removeProcessingInstructions"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>removeProcessingInstructions</b>(element)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>element</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="save"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>save</b>(callback)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{function(?string):undefined}</span> <b>callback</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-saveAs"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>saveAs</b>(newurl, callback)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>newurl</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{function(?string):undefined}</span> <b>callback</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-serializeContentXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>serializeContentXml</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-serializeManifestXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{string}</span>
+					<b>serializeManifestXml</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-serializeMetaXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>serializeMetaXml</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-serializeSettingsXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>serializeSettingsXml</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-serializeStylesXml"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>serializeStylesXml</b>()
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-setAutomaticStylesScope"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>setAutomaticStylesScope</b>(stylesRootElement, scope)
+					
+					</div>
+					<div class="description">
+						Tags all styles with an attribute noting their scope.
+Helper function for the primitive complete backwriting of
+the automatic styles.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Element}</span> <b>stylesRootElement</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>scope</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="setBlob"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>setBlob</b>(filename, mimetype, content)
+					
+					</div>
+					<div class="description">
+						Add a new blob or overwrite any existing blob which has the same filename.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>filename</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>mimetype</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>content</b>
+									
+								</dt>
+								<dd>base64 encoded string</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="setIsTemplate"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>setIsTemplate</b>(isTemplate)
+					
+					</div>
+					<div class="description">
+						Sets whether the document is a template or not.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>isTemplate</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-setMetadata"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>setMetadata</b>(setProperties, removedPropertyNames)
+					
+					</div>
+					<div class="description">
+						Sets the metadata fields from the given properties map.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Object.<!string|!string>}</span> <b>setProperties</b>
+									
+								</dt>
+								<dd>A flat object that is a string->string map of field name -> value.</dd>
+							
+								<dt>
+									<span class="light fixedFont">{?Array.<!string>}</span> <b>removedPropertyNames</b>
+									
+								</dt>
+								<dd>An array of metadata field names (prefixed).</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-setRootElement"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>setRootElement</b>(root)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Element}</span> <b>root</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-setState"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>setState</b>(state)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!number}</span> <b>state</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-unusedKey"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!string}</span>
+					<b>unusedKey</b>(key, map1, map2)
+					
+					</div>
+					<div class="description">
+						Returns key with a number postfix or none, as key unused both in map1 and map2.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>key</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Object}</span> <b>map1</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Object}</span> <b>map2</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!string}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-updateMetadataForSaving"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>updateMetadataForSaving</b>()
+					
+					</div>
+					<div class="description">
+						Write pre-saving metadata to the DOM
+						
+						
+					</div>
+					
+					
+					
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					
+				
+			
+			
+<!-- ============================== event details ========================= -->		
+			
+			
+			<hr />
+		</div>
+
+		
+<!-- ============================== footer ================================= -->
+		<div class="fineprint" style="clear:both">
+			
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Sep 03 2015 21:31:55 GMT+0200 (CEST)
+		</div>
+	</body>
+</html>

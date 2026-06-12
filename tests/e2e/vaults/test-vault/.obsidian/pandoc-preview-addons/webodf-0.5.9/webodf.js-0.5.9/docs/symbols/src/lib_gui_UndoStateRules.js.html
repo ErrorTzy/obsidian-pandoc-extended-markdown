@@ -1,0 +1,312 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2013 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global gui, runtime*/</span><span class="WHIT">
+<span class='line'> 26</span> 
+<span class='line'> 27</span> </span><span class="COMM">/**
+<span class='line'> 28</span>  * This class attempts to implement undo/redo behaviour identical
+<span class='line'> 29</span>  * to how LibreOffice behaves.
+<span class='line'> 30</span>  *
+<span class='line'> 31</span>  * State iteration rules are:
+<span class='line'> 32</span>  * - Multiple text inserts in the same direction are treated as one state
+<span class='line'> 33</span>  * - Multiple text removes in the same direction are treated as one state
+<span class='line'> 34</span>  * - An Undo state always consumes all trailing cursor move operations
+<span class='line'> 35</span>  * - An edit operation cannot follow non-edit operations. A state can
+<span class='line'> 36</span>  *      start with non-edit operations if it contains no further edit ops.
+<span class='line'> 37</span>  * @constructor
+<span class='line'> 38</span>  */</span><span class="WHIT">
+<span class='line'> 39</span> </span><span class="NAME">gui.UndoStateRules</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">UndoStateRules</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 40</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 41</span> 
+<span class='line'> 42</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 43</span>      * Return the first element from the end of the array that matches the supplied predicate.
+<span class='line'> 44</span>      * Each subsequent call to previous will return the next element from the end of the array
+<span class='line'> 45</span>      * that matches the predicate.
+<span class='line'> 46</span>      * @constructor
+<span class='line'> 47</span>      * @param {!Array.&lt;!ops.Operation>} array
+<span class='line'> 48</span>      * @param {!function(!ops.Operation):!boolean} predicate
+<span class='line'> 49</span>      */</span><span class="WHIT">
+<span class='line'> 50</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">ReverseIterator</span><span class="PUNC">(</span><span class="NAME">array</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">predicate</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 51</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">index</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">array.length</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 52</span> 
+<span class='line'> 53</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'> 54</span>          * Return the previous element in the array that matches the predicate
+<span class='line'> 55</span>          * @return {?ops.Operation} Returns null when no more elements in the array match the predicate
+<span class='line'> 56</span>          */</span><span class="WHIT">
+<span class='line'> 57</span> </span><span class="WHIT">        </span><span class="NAME">this.previous</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="WHIT">            </span><span class="KEYW">for</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">index</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">index</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="NAME">index</span><span class="WHIT"> </span><span class="PUNC">>=</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="NAME">index</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 59</span> </span><span class="WHIT">                </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">predicate</span><span class="PUNC">(</span><span class="NAME">array</span><span class="PUNC">[</span><span class="NAME">index</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 60</span> </span><span class="WHIT">                    </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">array</span><span class="PUNC">[</span><span class="NAME">index</span><span class="PUNC">]</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 61</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 62</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 63</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 64</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 65</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 66</span> 
+<span class='line'> 67</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 68</span>      * @param {!ops.Operation} op
+<span class='line'> 69</span>      * @return {string}
+<span class='line'> 70</span>      */</span><span class="WHIT">
+<span class='line'> 71</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="NAME">op</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 72</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">op.spec</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">.</span><span class="NAME">optype</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 73</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 74</span> 
+<span class='line'> 75</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 76</span>      * @param {!ops.Operation} op
+<span class='line'> 77</span>      * @return {number|undefined}
+<span class='line'> 78</span>      */</span><span class="WHIT">
+<span class='line'> 79</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">getOpPosition</span><span class="PUNC">(</span><span class="NAME">op</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">key</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"position"</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 81</span> </span><span class="WHIT">            </span><span class="NAME">spec</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">op.spec</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 82</span> </span><span class="WHIT">            </span><span class="NAME">value</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 83</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">spec.hasOwnProperty</span><span class="PUNC">(</span><span class="NAME">key</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 84</span> </span><span class="WHIT">            </span><span class="NAME">value</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="COMM">/**@type{number}*/</span><span class="PUNC">(</span><span class="NAME">spec</span><span class="PUNC">[</span><span class="NAME">key</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 85</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 86</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">value</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 88</span> 
+<span class='line'> 89</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 90</span>      * Returns true if the supplied operation
+<span class='line'> 91</span>      * is considered an editing operation.
+<span class='line'> 92</span>      * @param {!ops.Operation} op
+<span class='line'> 93</span>      * @return {!boolean} Returns true if the supplied op is an edit operation
+<span class='line'> 94</span>      */</span><span class="WHIT">
+<span class='line'> 95</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">isEditOperation</span><span class="PUNC">(</span><span class="NAME">op</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 96</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">op.isEdit</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 97</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 98</span> </span><span class="WHIT">    </span><span class="NAME">this.isEditOperation</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">isEditOperation</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 99</span> 
+<span class='line'>100</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>101</span>      * Returns true if the supplied optype is allowed to
+<span class='line'>102</span>      * aggregate multiple operations in a single undo or redo state
+<span class='line'>103</span>      * @param {!ops.Operation} op
+<span class='line'>104</span>      * @return {!boolean}
+<span class='line'>105</span>      */</span><span class="WHIT">
+<span class='line'>106</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">canAggregateOperation</span><span class="PUNC">(</span><span class="NAME">op</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>107</span> </span><span class="WHIT">        </span><span class="KEYW">switch</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="NAME">op</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>108</span> </span><span class="WHIT">        </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="STRN">"RemoveText"</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'>109</span> </span><span class="WHIT">        </span><span class="KEYW">case</span><span class="WHIT"> </span><span class="STRN">"InsertText"</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>111</span> </span><span class="WHIT">        </span><span class="KEYW">default</span><span class="PUNC">:</span><span class="WHIT">
+<span class='line'>112</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>113</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>114</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>115</span> 
+<span class='line'>116</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>117</span>      * Returns true if the newly supplied operation is continuing
+<span class='line'>118</span>      * in the same direction of travel as the recent edit operations
+<span class='line'>119</span>      * @param {!ops.Operation} thisOp
+<span class='line'>120</span>      * @param {!ops.Operation} lastEditOp
+<span class='line'>121</span>      * @param {!ops.Operation} secondLastEditOp
+<span class='line'>122</span>      * @return {!boolean}
+<span class='line'>123</span>      */</span><span class="WHIT">
+<span class='line'>124</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">isSameDirectionOfTravel</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">lastEditOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">secondLastEditOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>125</span> </span><span class="WHIT">        </span><span class="COMM">// Note, the operations in the recent queue are most</span><span class="WHIT">
+<span class='line'>126</span> </span><span class="WHIT">        </span><span class="COMM">// recent to least recent. As such, the direction order</span><span class="WHIT">
+<span class='line'>127</span> </span><span class="WHIT">        </span><span class="COMM">// should be thisPos => existing2 => existing1</span><span class="WHIT">
+<span class='line'>128</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">thisPosition</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getOpPosition</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>129</span> </span><span class="WHIT">            </span><span class="NAME">lastPosition</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getOpPosition</span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>130</span> </span><span class="WHIT">            </span><span class="NAME">secondLastPosition</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getOpPosition</span><span class="PUNC">(</span><span class="NAME">secondLastEditOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>131</span> </span><span class="WHIT">            </span><span class="NAME">diffLastToSecondLast</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">lastPosition</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">secondLastPosition</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>132</span> </span><span class="WHIT">            </span><span class="NAME">diffThisToLast</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">thisPosition</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">lastPosition</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>133</span> </span><span class="WHIT">        </span><span class="COMM">// Next, the tricky part... determining the direction of travel</span><span class="WHIT">
+<span class='line'>134</span> </span><span class="WHIT">        </span><span class="COMM">// Each aggregate operation can have two directions of travel:</span><span class="WHIT">
+<span class='line'>135</span> </span><span class="WHIT">        </span><span class="COMM">// RemoveText:</span><span class="WHIT">
+<span class='line'>136</span> </span><span class="WHIT">        </span><span class="COMM">// - delete via backspace - direction will be -1 as cursor moves back</span><span class="WHIT">
+<span class='line'>137</span> </span><span class="WHIT">        </span><span class="COMM">// - delete via delete key - direction will be 0 as cursor doesn't move</span><span class="WHIT">
+<span class='line'>138</span> </span><span class="WHIT">        </span><span class="COMM">// InsertText:</span><span class="WHIT">
+<span class='line'>139</span> </span><span class="WHIT">        </span><span class="COMM">// - prepend text - direction will be 0 as cursor doesn't move</span><span class="WHIT">
+<span class='line'>140</span> </span><span class="WHIT">        </span><span class="COMM">// - append text - direction will be 1 as cursor moves forward</span><span class="WHIT">
+<span class='line'>141</span> 
+<span class='line'>142</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">diffThisToLast</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">diffLastToSecondLast</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>143</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>144</span> 
+<span class='line'>145</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>146</span>      * Returns true if the two operations are considered adjacent.
+<span class='line'>147</span>      * @param {!ops.Operation} thisOp
+<span class='line'>148</span>      * @param {!ops.Operation} lastEditOp
+<span class='line'>149</span>      * @return {!boolean}
+<span class='line'>150</span>      */</span><span class="WHIT">
+<span class='line'>151</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">isAdjacentOperation</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>152</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">positionDifference</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getOpPosition</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">getOpPosition</span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>153</span> </span><span class="WHIT">        </span><span class="COMM">// RemoveText:</span><span class="WHIT">
+<span class='line'>154</span> </span><span class="WHIT">        </span><span class="COMM">// - delete via backspace - direction will be -1 as cursor moves back</span><span class="WHIT">
+<span class='line'>155</span> </span><span class="WHIT">        </span><span class="COMM">// - delete via delete key - direction will be 0 as cursor doesn't move</span><span class="WHIT">
+<span class='line'>156</span> </span><span class="WHIT">        </span><span class="COMM">// InsertText:</span><span class="WHIT">
+<span class='line'>157</span> </span><span class="WHIT">        </span><span class="COMM">// - prepend text - direction will be 0 as cursor doesn't move</span><span class="WHIT">
+<span class='line'>158</span> </span><span class="WHIT">        </span><span class="COMM">// - append text - direction will be 1 as cursor moves forward</span><span class="WHIT">
+<span class='line'>159</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">positionDifference</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="NAME">Math.abs</span><span class="PUNC">(</span><span class="NAME">positionDifference</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>160</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>161</span> 
+<span class='line'>162</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>163</span>      *
+<span class='line'>164</span>      * @param {!ops.Operation} thisOp
+<span class='line'>165</span>      * @param {!ops.Operation} lastEditOp
+<span class='line'>166</span>      * @param {?ops.Operation} secondLastEditOp
+<span class='line'>167</span>      * @return {!boolean}
+<span class='line'>168</span>      */</span><span class="WHIT">
+<span class='line'>169</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">continuesOperations</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">lastEditOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">secondLastEditOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>170</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">secondLastEditOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>171</span> </span><span class="WHIT">            </span><span class="COMM">// No previous edit operations, so can't calculate a direction of travel.</span><span class="WHIT">
+<span class='line'>172</span> </span><span class="WHIT">            </span><span class="COMM">// Just check new op is adjacent to existing op</span><span class="WHIT">
+<span class='line'>173</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">isAdjacentOperation</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>174</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>175</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">isSameDirectionOfTravel</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">lastEditOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">secondLastEditOp</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>176</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>177</span> 
+<span class='line'>178</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>179</span>      * Returns true if thisOp can be grouped together with the most recent edit operations.
+<span class='line'>180</span>      *
+<span class='line'>181</span>      * For an operation to be considered continuous it must:
+<span class='line'>182</span>      * - Be of a type that supports aggregation (e.g., insert text or remove text)
+<span class='line'>183</span>      * - Be of the same type as the most recent edit operation
+<span class='line'>184</span>      * - Be considered adjacent (and in the same direction as) the most recent edit operation
+<span class='line'>185</span>      *
+<span class='line'>186</span>      * @param {!ops.Operation} thisOp
+<span class='line'>187</span>      * @param {!Array.&lt;!ops.Operation>} recentOperations
+<span class='line'>188</span>      * @return {!boolean}
+<span class='line'>189</span>      */</span><span class="WHIT">
+<span class='line'>190</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">continuesMostRecentEditOperation</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">recentOperations</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>191</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">thisOpType</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>192</span> </span><span class="WHIT">            </span><span class="NAME">editOpsFinder</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">ReverseIterator</span><span class="PUNC">(</span><span class="NAME">recentOperations</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">isEditOperation</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>193</span> </span><span class="WHIT">            </span><span class="NAME">lastEditOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">editOpsFinder.previous</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>194</span> 
+<span class='line'>195</span> </span><span class="WHIT">        </span><span class="NAME">runtime.assert</span><span class="PUNC">(</span><span class="NAME">Boolean</span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="STRN">"No edit operations found in state"</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>196</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">thisOpType</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="COMM">/**@type{!ops.Operation}*/</span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>197</span> </span><span class="WHIT">            </span><span class="COMM">// Operation type is identical, so check if these operations are continuous</span><span class="WHIT">
+<span class='line'>198</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">continuesOperations</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!ops.Operation}*/</span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">editOpsFinder.previous</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>199</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>200</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>201</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>202</span> 
+<span class='line'>203</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>204</span>      * Returns true if thisOp can be grouped together with the most recent edit operations group.
+<span class='line'>205</span>      *
+<span class='line'>206</span>      * For an operation to be considered continuous it must:
+<span class='line'>207</span>      * - Be of a type that supports aggregation (e.g., insert text or remove text)
+<span class='line'>208</span>      * - Be continuous with the most recent edit operation of the same type in the most recent operations group
+<span class='line'>209</span>      *   (see isContinuousWithExistingOperation for the definition of "continuous")
+<span class='line'>210</span>      *
+<span class='line'>211</span>      * @param {!ops.Operation} thisOp
+<span class='line'>212</span>      * @param {!Array.&lt;!ops.Operation>} recentOperations
+<span class='line'>213</span>      * @return {!boolean}
+<span class='line'>214</span>      */</span><span class="WHIT">
+<span class='line'>215</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">continuesMostRecentEditGroup</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">recentOperations</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>216</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">thisOpType</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>217</span> </span><span class="WHIT">            </span><span class="NAME">editOpsFinder</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">ReverseIterator</span><span class="PUNC">(</span><span class="NAME">recentOperations</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">isEditOperation</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>218</span> </span><span class="WHIT">            </span><span class="NAME">candidateOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">editOpsFinder.previous</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>219</span> </span><span class="WHIT">            </span><span class="NAME">lastEditOp</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>220</span> </span><span class="WHIT">            </span><span class="NAME">secondLastEditOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>221</span> </span><span class="WHIT">            </span><span class="NAME">inspectedGroupsCount</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>222</span> </span><span class="WHIT">            </span><span class="NAME">groupId</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>223</span> 
+<span class='line'>224</span> </span><span class="WHIT">        </span><span class="NAME">runtime.assert</span><span class="PUNC">(</span><span class="NAME">Boolean</span><span class="PUNC">(</span><span class="NAME">candidateOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="STRN">"No edit operations found in state"</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>225</span> </span><span class="WHIT">        </span><span class="NAME">groupId</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">candidateOp.group</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>226</span> </span><span class="WHIT">        </span><span class="NAME">runtime.assert</span><span class="PUNC">(</span><span class="NAME">groupId</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="NAME">undefined</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="STRN">"Operation has no group"</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>227</span> </span><span class="WHIT">        </span><span class="NAME">inspectedGroupsCount</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">;</span><span class="WHIT"> </span><span class="COMM">// Need to keep track of how many edit groups have been inspected</span><span class="WHIT">
+<span class='line'>228</span> 
+<span class='line'>229</span> </span><span class="WHIT">        </span><span class="COMM">// Check if the current operation continues any operation in the latest group</span><span class="WHIT">
+<span class='line'>230</span> </span><span class="WHIT">        </span><span class="KEYW">while</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">candidateOp</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">candidateOp.group</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">groupId</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>231</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">thisOpType</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="NAME">candidateOp</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>232</span> </span><span class="WHIT">                </span><span class="COMM">// A matching edit operation was found in the most recent edit group</span><span class="WHIT">
+<span class='line'>233</span> </span><span class="WHIT">                </span><span class="NAME">lastEditOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">candidateOp</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>234</span> </span><span class="WHIT">                </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>235</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>236</span> </span><span class="WHIT">            </span><span class="NAME">candidateOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">editOpsFinder.previous</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>237</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>238</span> 
+<span class='line'>239</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>240</span> </span><span class="WHIT">            </span><span class="COMM">// Now try and find a second operation of the same type in either of the most recent two edit groups</span><span class="WHIT">
+<span class='line'>241</span> </span><span class="WHIT">            </span><span class="NAME">candidateOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">editOpsFinder.previous</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>242</span> </span><span class="WHIT">            </span><span class="KEYW">while</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">candidateOp</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>243</span> </span><span class="WHIT">                </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">candidateOp.group</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="NAME">groupId</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>244</span> </span><span class="WHIT">                    </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">inspectedGroupsCount</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NUMB">2</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>245</span> </span><span class="WHIT">                        </span><span class="COMM">// No second compatible op was found within two edit groups, so abandon searching for more</span><span class="WHIT">
+<span class='line'>246</span> </span><span class="WHIT">                        </span><span class="COMM">// and check continuity against lastEditOp only</span><span class="WHIT">
+<span class='line'>247</span> </span><span class="WHIT">                        </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>248</span> </span><span class="WHIT">                    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>249</span> </span><span class="WHIT">                    </span><span class="NAME">groupId</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">candidateOp.group</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>250</span> </span><span class="WHIT">                    </span><span class="NAME">inspectedGroupsCount</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>251</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>252</span> </span><span class="WHIT">                </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">thisOpType</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">getOpType</span><span class="PUNC">(</span><span class="NAME">candidateOp</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>253</span> </span><span class="WHIT">                    </span><span class="COMM">// Found an operation of the same type within the last two edit groups on the stack</span><span class="WHIT">
+<span class='line'>254</span> </span><span class="WHIT">                    </span><span class="NAME">secondLastEditOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">candidateOp</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>255</span> </span><span class="WHIT">                    </span><span class="KEYW">break</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>256</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>257</span> </span><span class="WHIT">                </span><span class="NAME">candidateOp</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">editOpsFinder.previous</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>258</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>259</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">continuesOperations</span><span class="PUNC">(</span><span class="NAME">thisOp</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!ops.Operation}*/</span><span class="PUNC">(</span><span class="NAME">lastEditOp</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">secondLastEditOp</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>260</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>261</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>262</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>263</span> 
+<span class='line'>264</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'>265</span>      * Returns true if the provided operation is part of the existing
+<span class='line'>266</span>      * set of operations according to the undo rules
+<span class='line'>267</span>      * @param {!ops.Operation} operation
+<span class='line'>268</span>      * @param {!Array.&lt;!ops.Operation>} recentOperations
+<span class='line'>269</span>      * @return {!boolean}
+<span class='line'>270</span>      */</span><span class="WHIT">
+<span class='line'>271</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">isPartOfOperationSet</span><span class="PUNC">(</span><span class="NAME">operation</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">recentOperations</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>272</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">areOperationsGrouped</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">operation.group</span><span class="WHIT"> </span><span class="PUNC">!==</span><span class="WHIT"> </span><span class="NAME">undefined</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">// Expect groups to be consistently used (if in use at all)</span><span class="WHIT">
+<span class='line'>273</span> </span><span class="WHIT">            </span><span class="NAME">lastOperation</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>274</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">isEditOperation</span><span class="PUNC">(</span><span class="NAME">operation</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>275</span> </span><span class="WHIT">            </span><span class="COMM">// Non-edit operations always get appended to the existing undo state</span><span class="WHIT">
+<span class='line'>276</span> </span><span class="WHIT">            </span><span class="COMM">// this covers things such as move cursor ops</span><span class="WHIT">
+<span class='line'>277</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>278</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>279</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">recentOperations.length</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>280</span> </span><span class="WHIT">            </span><span class="COMM">// This is the first operation of a pristine state</span><span class="WHIT">
+<span class='line'>281</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>282</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>283</span> </span><span class="WHIT">        </span><span class="NAME">lastOperation</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">recentOperations</span><span class="PUNC">[</span><span class="NAME">recentOperations.length</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">]</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>284</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">areOperationsGrouped</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">operation.group</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">lastOperation.group</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>285</span> </span><span class="WHIT">            </span><span class="COMM">// Operation groups match, so these were queued as a group</span><span class="WHIT">
+<span class='line'>286</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>287</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>288</span> </span><span class="WHIT">        </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">canAggregateOperation</span><span class="PUNC">(</span><span class="NAME">operation</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">recentOperations.some</span><span class="PUNC">(</span><span class="NAME">isEditOperation</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>289</span> </span><span class="WHIT">            </span><span class="COMM">// The are existing edit operations. Check if the current op can be combined with existing operations</span><span class="WHIT">
+<span class='line'>290</span> </span><span class="WHIT">            </span><span class="COMM">// E.g., multiple insert text or remove text ops</span><span class="WHIT">
+<span class='line'>291</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">areOperationsGrouped</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>292</span> </span><span class="WHIT">                </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">continuesMostRecentEditGroup</span><span class="PUNC">(</span><span class="NAME">operation</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">recentOperations</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>293</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>294</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">continuesMostRecentEditOperation</span><span class="PUNC">(</span><span class="NAME">operation</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">recentOperations</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>295</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>296</span> </span><span class="WHIT">        </span><span class="COMM">// The following are all true at this point:</span><span class="WHIT">
+<span class='line'>297</span> </span><span class="WHIT">        </span><span class="COMM">// - new operation is an edit operation (check 1)</span><span class="WHIT">
+<span class='line'>298</span> </span><span class="WHIT">        </span><span class="COMM">// - existing undo state has at least one existing operation (check 2)</span><span class="WHIT">
+<span class='line'>299</span> </span><span class="WHIT">        </span><span class="COMM">// - new operation is not part of most recent operation group (check 3)</span><span class="WHIT">
+<span class='line'>300</span> </span><span class="WHIT">        </span><span class="COMM">// - new operation is not continuous with the existing edit operations (check 4 + 5)</span><span class="WHIT">
+<span class='line'>301</span> </span><span class="WHIT">        </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>302</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>303</span> </span><span class="WHIT">    </span><span class="NAME">this.isPartOfOperationSet</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">isPartOfOperationSet</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>304</span> </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>305</span> </span></pre></body></html>

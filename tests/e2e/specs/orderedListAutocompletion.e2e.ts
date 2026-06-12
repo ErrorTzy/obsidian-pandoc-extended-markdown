@@ -228,11 +228,10 @@ describe('Ordered list autocompletion behavior', () => {
                 ].join('\n'));
             });
 
-            it('renumbers descendants in a moved subtree when auto-renumber lists is enabled', async () => {
+            it('renumbers affected ordered sibling groups without moving unselected child owners when auto-renumber lists is enabled', async () => {
                 const root = styleCase.style;
                 const child = nextStyle(root);
-                const grandchild = nextStyle(child);
-                const path = filePathFor(styleCase, 'tab-moved-subtree-renumber-enabled');
+                const path = filePathFor(styleCase, 'tab-owner-only-renumber-enabled');
 
                 await openEditableDocument(path, [
                     `${marker(root, 1)} parent`,
@@ -248,17 +247,16 @@ describe('Ordered list autocompletion behavior', () => {
                 expect(await getEditorText()).toBe([
                     `${marker(root, 1)} parent`,
                     `${INDENT}${marker(child, 1)} mover`,
-                    `${INDENT}${INDENT}${marker(grandchild, 1)} child`,
-                    `${INDENT}${INDENT}${marker(grandchild, 2)} child`,
-                    `${marker(root, 3)} later`
+                    `${INDENT}${marker(child, 2)} child`,
+                    `${INDENT}${marker(child, 3)} child`,
+                    `${marker(root, 2)} later`
                 ].join('\n'));
             });
 
-            it('keeps descendant ordinals in a moved subtree when auto-renumber lists is disabled', async () => {
+            it('preserves existing ordinals without moving unselected child owners when auto-renumber lists is disabled', async () => {
                 const root = styleCase.style;
                 const child = nextStyle(root);
-                const grandchild = nextStyle(child);
-                const path = filePathFor(styleCase, 'tab-moved-subtree-renumber-disabled');
+                const path = filePathFor(styleCase, 'tab-owner-only-renumber-disabled');
 
                 await configureOrderedListSettings({ autoRenumberLists: false });
                 await openEditableDocument(path, [
@@ -274,9 +272,9 @@ describe('Ordered list autocompletion behavior', () => {
 
                 expect(await getEditorText()).toBe([
                     `${marker(root, 1)} parent`,
-                    `${INDENT}${marker(child, 1)} mover`,
-                    `${INDENT}${INDENT}${marker(grandchild, 5)} child`,
-                    `${INDENT}${INDENT}${marker(grandchild, 7)} child`,
+                    `${INDENT}${marker(child, 2)} mover`,
+                    `${INDENT}${marker(child, 5)} child`,
+                    `${INDENT}${marker(child, 7)} child`,
                     `${marker(root, 3)} later`
                 ].join('\n'));
             });
@@ -420,7 +418,7 @@ describe('Ordered list autocompletion behavior', () => {
                 '\t- xxx',
                 `${INDENT}${INDENT}i. xxx`,
                 `${INDENT}${INDENT}ii. xxx`,
-                `${INDENT}- `
+                '\t- '
             ].join('\n'));
         });
     });
@@ -597,6 +595,12 @@ describe('Ordered list autocompletion behavior', () => {
                     `${INDENT}${INDENT}continuation`,
                     `${INDENT}- child`
                 ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. parent',
+                    `${INDENT}- current`,
+                    `${INDENT}${INDENT}continu|ation`,
+                    `${INDENT}- child`
+                ].join('\n'));
             });
 
             it('handles Tab from inside owner text, not only immediately after the marker', async () => {
@@ -629,6 +633,22 @@ describe('Ordered list autocompletion behavior', () => {
                     '1. root',
                     `${INDENT}b. current`,
                     `${INDENT}a. child`
+                ].join('\n'));
+            });
+
+            it('renumbers the moved ordered item and following ordered child when auto-renumbering is enabled', async () => {
+                await openDocumentWithCursor('ordered-list-owner-tab-renumber-explicit-ordered-child.md', [
+                    '1. root',
+                    '2. current|',
+                    `${INDENT}a. child`
+                ].join('\n'));
+
+                await pressKey('Tab', 600);
+
+                expect(await getEditorText()).toBe([
+                    '1. root',
+                    `${INDENT}a. current`,
+                    `${INDENT}b. child`
                 ].join('\n'));
             });
 
@@ -687,9 +707,9 @@ describe('Ordered list autocompletion behavior', () => {
                 expect(await getEditorText()).toBe([
                     '1. xxx',
                     `${INDENT}- `,
-                    '3. xxx',
+                    '2. xxx',
                     `${INDENT}- xxx`,
-                    '4. xxx',
+                    '3. xxx',
                     `${INDENT}* xxx`
                 ].join('\n'));
             });
@@ -752,7 +772,7 @@ describe('Ordered list autocompletion behavior', () => {
                     `${INDENT}- child`,
                     '- unordered',
                     `${INDENT}a. child`,
-                    `${INDENT}a. `
+                    `${INDENT}b. `
                 ].join('\n'));
             });
 
@@ -826,6 +846,12 @@ describe('Ordered list autocompletion behavior', () => {
                     `${INDENT}continuation`,
                     `${INDENT}${INDENT}- child`
                 ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    '1. root',
+                    '2. current',
+                    `${INDENT}continu|ation`,
+                    `${INDENT}${INDENT}- child`
+                ].join('\n'));
             });
 
             it('operates on a nested child item itself instead of the outer owner', async () => {
@@ -849,7 +875,7 @@ describe('Ordered list autocompletion behavior', () => {
 
         describe('selection-based owner movement', () => {
             it('moves every unique owner touched by a selection exactly once', async () => {
-                await openDocumentWithSelection('ordered-list-owner-selection-parent-continuation-and-child.md', [
+                await openDocumentWithMultilineSelection('ordered-list-owner-selection-parent-continuation-and-child.md', [
                     '1. xxx',
                     '2. xxx',
                     `${INDENT}x[xx`,
@@ -863,7 +889,7 @@ describe('Ordered list autocompletion behavior', () => {
                     '1. xxx',
                     `${INDENT}- xxx`,
                     `${INDENT}${INDENT}xxx`,
-                    `${INDENT}${INDENT}+ xxx`,
+                    `${INDENT}${INDENT}* xxx`,
                     `${INDENT}- xxx`
                 ].join('\n'));
             });
@@ -887,7 +913,7 @@ describe('Ordered list autocompletion behavior', () => {
             });
 
             it('moves selected parent and child owners together while preserving their relationship', async () => {
-                await openDocumentWithSelection('ordered-list-owner-selection-parent-and-child-relationship.md', [
+                await openDocumentWithMultilineSelection('ordered-list-owner-selection-parent-and-child-relationship.md', [
                     '1. xxx',
                     '2. x[xx',
                     `${INDENT}- y]yy`,
@@ -900,12 +926,12 @@ describe('Ordered list autocompletion behavior', () => {
                     '1. xxx',
                     `${INDENT}- xxx`,
                     `${INDENT}${INDENT}a. yyy`,
-                    `${INDENT}${INDENT}a. zzz`
+                    `${INDENT}${INDENT}b. zzz`
                 ].join('\n'));
             });
 
             it('outdents every unique selected owner exactly once with Shift+Tab', async () => {
-                await openDocumentWithSelection('ordered-list-owner-selection-shift-tab-parent-continuation-and-child.md', [
+                await openDocumentWithMultilineSelection('ordered-list-owner-selection-shift-tab-parent-continuation-and-child.md', [
                     '- root',
                     `${INDENT}- parent`,
                     `${INDENT}${INDENT}x[xx`,
@@ -1278,6 +1304,21 @@ async function openDocumentWithSelection(filePath: string, contentWithSelection:
     await setEditorSelection(selectionStart, selectionEnd - 1);
 }
 
+async function openDocumentWithMultilineSelection(filePath: string, contentWithSelection: string): Promise<void> {
+    const selectionStart = contentWithSelection.indexOf('[');
+    const selectionEnd = contentWithSelection.indexOf(']');
+    if (selectionStart < 0 || selectionEnd < 0 || selectionEnd <= selectionStart) {
+        throw new Error(`Missing selection markers in ${filePath}`);
+    }
+
+    const selectedText = contentWithSelection.slice(selectionStart + 1, selectionEnd);
+    if (!selectedText.includes('\n')) {
+        throw new Error(`Expected a multi-line selection in ${filePath}`);
+    }
+
+    await openDocumentWithSelection(filePath, contentWithSelection);
+}
+
 async function setEditorSelection(anchor: number, head: number): Promise<void> {
     await browser.execute((selectionAnchor, selectionHead) => {
         // @ts-ignore
@@ -1293,6 +1334,29 @@ async function setEditorSelection(anchor: number, head: number): Promise<void> {
         });
         cm.focus();
     }, anchor, head);
+}
+
+async function getEditorTextWithSelectionMarkers(): Promise<string> {
+    return browser.execute(() => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        const view = leaves[0]?.view;
+        const cm = view?.editor?.cm;
+        if (!cm) {
+            return '';
+        }
+
+        const text = cm.state.doc.toString();
+        const selection = cm.state.selection.main;
+        const from = Math.min(selection.anchor, selection.head);
+        const to = Math.max(selection.anchor, selection.head);
+
+        if (from === to) {
+            return `${text.slice(0, from)}|${text.slice(from)}`;
+        }
+
+        return `${text.slice(0, from)}[${text.slice(from, to)}]${text.slice(to)}`;
+    });
 }
 
 async function configureOrderedListSettings(

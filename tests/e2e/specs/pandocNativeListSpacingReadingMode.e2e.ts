@@ -1,5 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 
+import { ensureActiveFileReadingMode } from '../helpers/readingMode';
+
 interface NativeListReadingState {
     rawText: string;
     invalidListItemTexts: string[];
@@ -179,43 +181,7 @@ async function openFileInActiveLeaf(path: string): Promise<void> {
 }
 
 async function ensureReadingMode(): Promise<void> {
-    await browser.execute(async () => {
-        // @ts-ignore
-        const activeFile = app.workspace.getActiveFile();
-        // @ts-ignore
-        const leaves = app.workspace.getLeavesOfType('markdown');
-        const leaf = leaves.find((candidate: { view?: { file?: { path?: string } } }) =>
-            candidate.view?.file?.path === activeFile?.path
-        ) ?? leaves[0];
-        if (!leaf) {
-            return;
-        }
-        // @ts-ignore
-        await leaf.setViewState({
-            type: 'markdown',
-            state: {
-                file: activeFile.path,
-                mode: 'preview',
-                source: false
-            }
-        });
-        leaf.view?.previewMode?.rerender?.(true);
-    });
-    await browser.waitUntil(async () =>
-        browser.execute(() => {
-            // @ts-ignore
-            const activeFile = app.workspace.getActiveFile();
-            // @ts-ignore
-            const leaves = app.workspace.getLeavesOfType('markdown');
-            const leaf = leaves.find((candidate: { view?: { file?: { path?: string }, containerEl?: HTMLElement } }) =>
-                candidate.view?.file?.path === activeFile?.path
-            );
-            return Boolean(leaf?.view?.containerEl?.querySelector('.markdown-preview-view'));
-        }),
-    {
-        timeout: 5000,
-        timeoutMsg: 'Expected reading mode preview'
-    });
+    await ensureActiveFileReadingMode();
     await browser.waitUntil(async () =>
         browser.execute(() => {
             const preview = document.querySelector('.markdown-preview-view');

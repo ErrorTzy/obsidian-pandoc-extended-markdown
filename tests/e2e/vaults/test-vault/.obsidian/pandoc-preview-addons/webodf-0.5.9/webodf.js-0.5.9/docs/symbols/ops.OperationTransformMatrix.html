@@ -1,0 +1,4249 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="generator" content="JsDoc Toolkit" />
+		
+		<title>JsDoc Reference - ops.OperationTransformMatrix</title>
+
+		<style type="text/css">
+			/* default.css */
+body
+{
+	font: 12px "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+	width: 800px;
+}
+
+.header
+{
+	clear: both;
+	background-color: #ccc;
+	padding: 8px;
+}
+
+h1
+{
+	font-size: 150%;
+	font-weight: bold;
+	padding: 0;
+	margin: 1em 0 0 .3em;
+}
+
+hr
+{
+	border: none 0;
+	border-top: 1px solid #7F8FB1;
+	height: 1px;
+}
+
+pre.code
+{
+	display: block;
+	padding: 8px;
+	border: 1px dashed #ccc;
+}
+
+#index
+{
+	margin-top: 24px;
+	float: left;
+	width: 160px;
+	position: absolute;
+	left: 8px;
+	background-color: #F3F3F3;
+	padding: 8px;
+}
+
+#content
+{
+	margin-left: 190px;
+	width: 600px;
+}
+
+.classList
+{
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0 0 8px;
+	font-family: arial, sans-serif;
+	font-size: 1em;
+	overflow: auto;
+}
+
+.classList li
+{
+	padding: 0;
+	margin: 0 0 8px 0;
+}
+
+.summaryTable { width: 100%; }
+
+h1.classTitle
+{
+	font-size:170%;
+	line-height:130%;
+}
+
+h2 { font-size: 110%; }
+caption, div.sectionTitle
+{
+	background-color: #7F8FB1;
+	color: #fff;
+	font-size:130%;
+	text-align: left;
+	padding: 2px 6px 2px 6px;
+	border: 1px #7F8FB1 solid;
+}
+
+div.sectionTitle { margin-bottom: 8px; }
+.summaryTable thead { display: none; }
+
+.summaryTable td
+{
+	vertical-align: top;
+	padding: 4px;
+	border-bottom: 1px #7F8FB1 solid;
+	border-right: 1px #7F8FB1 solid;
+}
+
+/*col#summaryAttributes {}*/
+.summaryTable td.attributes
+{
+	border-left: 1px #7F8FB1 solid;
+	width: 140px;
+	text-align: right;
+}
+
+td.attributes, .fixedFont
+{
+	line-height: 15px;
+	color: #002EBE;
+	font-family: "Courier New",Courier,monospace;
+	font-size: 13px;
+}
+
+.summaryTable td.nameDescription
+{
+	text-align: left;
+	font-size: 13px;
+	line-height: 15px;
+}
+
+.summaryTable td.nameDescription, .description
+{
+	line-height: 15px;
+	padding: 4px;
+	padding-left: 4px;
+}
+
+.summaryTable { margin-bottom: 8px; }
+
+ul.inheritsList
+{
+	list-style: square;
+	margin-left: 20px;
+	padding-left: 0;
+}
+
+.detailList {
+	margin-left: 20px; 
+	line-height: 15px;
+}
+.detailList dt { margin-left: 20px; }
+
+.detailList .heading
+{
+	font-weight: bold;
+	padding-bottom: 6px;
+	margin-left: 0;
+}
+
+.light, td.attributes, .light a:link, .light a:visited
+{
+	color: #777;
+	font-style: italic;
+}
+
+.fineprint
+{
+	text-align: right;
+	font-size: 10px;
+}
+		</style>
+	</head>
+
+	<body>
+<!-- ============================== header ================================= -->	
+		<!-- begin static/header.html -->
+		<div id="header">
+</div>
+		<!-- end static/header.html -->
+
+<!-- ============================== classes index ============================ -->
+		<div id="index">
+			<!-- begin publish.classesIndex -->
+			<div align="center"><a href="../index.html">Class Index</a>
+| <a href="../files.html">File Index</a></div>
+<hr />
+<h2>Classes</h2>
+<ul class="classList">
+	
+	<li><i><a href="../symbols/_global_.html">_global_</a></i></li>
+	
+	<li><a href="../symbols/BrowserRuntime.html">BrowserRuntime</a></li>
+	
+	<li><a href="../symbols/core.html">core</a></li>
+	
+	<li><a href="../symbols/core.Base64.html">core.Base64</a></li>
+	
+	<li><a href="../symbols/core.CSSUnits.html">core.CSSUnits</a></li>
+	
+	<li><a href="../symbols/core.Cursor.html">core.Cursor</a></li>
+	
+	<li><a href="../symbols/core.DomUtilsImpl.html">core.DomUtilsImpl</a></li>
+	
+	<li><a href="../symbols/core.EventNotifier.html">core.EventNotifier</a></li>
+	
+	<li><a href="../symbols/core.EventSubscriptions.html">core.EventSubscriptions</a></li>
+	
+	<li><a href="../symbols/core.LazyProperty.html">core.LazyProperty</a></li>
+	
+	<li><a href="../symbols/core.LoopWatchDog.html">core.LoopWatchDog</a></li>
+	
+	<li><a href="../symbols/core.NodeFilterChain.html">core.NodeFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionFilterChain.html">core.PositionFilterChain</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator.html">core.PositionIterator</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-EmptyTextNodeFilter.html">core.PositionIterator-EmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.PositionIterator-FilteredEmptyTextNodeFilter.html">core.PositionIterator-FilteredEmptyTextNodeFilter</a></li>
+	
+	<li><a href="../symbols/core.ScheduledTask.html">core.ScheduledTask</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.html">core.StepIterator</a></li>
+	
+	<li><a href="../symbols/core.StepIterator.StepSnapshot.html">core.StepIterator.StepSnapshot</a></li>
+	
+	<li><a href="../symbols/core.Utils.html">core.Utils</a></li>
+	
+	<li><a href="../symbols/core.Zip.html">core.Zip</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AllChildElementIterator.html">createXPathSingleton-AllChildElementIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-AttributeIterator.html">createXPathSingleton-AttributeIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-ConditionIterator.html">createXPathSingleton-ConditionIterator</a></li>
+	
+	<li><a href="../symbols/createXPathSingleton-XPathNodeIterator.html">createXPathSingleton-XPathNodeIterator</a></li>
+	
+	<li><a href="../symbols/gui.html">gui</a></li>
+	
+	<li><a href="../symbols/gui.AnnotatableCanvas.html">gui.AnnotatableCanvas</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationController.html">gui.AnnotationController</a></li>
+	
+	<li><a href="../symbols/gui.AnnotationViewManager.html">gui.AnnotationViewManager</a></li>
+	
+	<li><a href="../symbols/gui.Avatar.html">gui.Avatar</a></li>
+	
+	<li><a href="../symbols/gui.BlacklistNamespaceNodeFilter.html">gui.BlacklistNamespaceNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.Caret.html">gui.Caret</a></li>
+	
+	<li><a href="../symbols/gui.CaretManager.html">gui.CaretManager</a></li>
+	
+	<li><a href="../symbols/gui.Clipboard.html">gui.Clipboard</a></li>
+	
+	<li><a href="../symbols/gui.ClosestXOffsetScanner.html">gui.ClosestXOffsetScanner</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.html">gui.DirectFormattingController</a></li>
+	
+	<li><a href="../symbols/gui.DirectFormattingController.SelectionInfo.html">gui.DirectFormattingController.SelectionInfo</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoHandle.html">gui.EditInfoHandle</a></li>
+	
+	<li><a href="../symbols/gui.EditInfoMarker.html">gui.EditInfoMarker</a></li>
+	
+	<li><a href="../symbols/gui.EventManager.html">gui.EventManager</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-CompoundEvent.html">gui.EventManager-CompoundEvent</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-ElementScrollState.html">gui.EventManager-ElementScrollState</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-EventDelegate.html">gui.EventManager-EventDelegate</a></li>
+	
+	<li><a href="../symbols/gui.EventManager-WindowScrollState.html">gui.EventManager-WindowScrollState</a></li>
+	
+	<li><a href="../symbols/gui.GuiStepUtils.html">gui.GuiStepUtils</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkClickHandler.html">gui.HyperlinkClickHandler</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkController.html">gui.HyperlinkController</a></li>
+	
+	<li><a href="../symbols/gui.HyperlinkTooltipView.html">gui.HyperlinkTooltipView</a></li>
+	
+	<li><a href="../symbols/gui.ImageController.html">gui.ImageController</a></li>
+	
+	<li><a href="../symbols/gui.ImageSelector.html">gui.ImageSelector</a></li>
+	
+	<li><a href="../symbols/gui.InputMethodEditor.html">gui.InputMethodEditor</a></li>
+	
+	<li><a href="../symbols/gui.IOSSafariSupport.html">gui.IOSSafariSupport</a></li>
+	
+	<li><a href="../symbols/gui.KeyboardHandler.html">gui.KeyboardHandler</a></li>
+	
+	<li><a href="../symbols/gui.LineBoundaryScanner.html">gui.LineBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.MetadataController.html">gui.MetadataController</a></li>
+	
+	<li><a href="../symbols/gui.MimeDataExporter.html">gui.MimeDataExporter</a></li>
+	
+	<li><a href="../symbols/gui.OdfFieldView.html">gui.OdfFieldView</a></li>
+	
+	<li><a href="../symbols/gui.OdfTextBodyNodeFilter.html">gui.OdfTextBodyNodeFilter</a></li>
+	
+	<li><a href="../symbols/gui.ParagraphBoundaryScanner.html">gui.ParagraphBoundaryScanner</a></li>
+	
+	<li><a href="../symbols/gui.PasteController.html">gui.PasteController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionController.html">gui.SelectionController</a></li>
+	
+	<li><a href="../symbols/gui.SelectionViewManager.html">gui.SelectionViewManager</a></li>
+	
+	<li><a href="../symbols/gui.SessionConstraints.html">gui.SessionConstraints</a></li>
+	
+	<li><a href="../symbols/gui.SessionContext.html">gui.SessionContext</a></li>
+	
+	<li><a href="../symbols/gui.SessionController.html">gui.SessionController</a></li>
+	
+	<li><a href="../symbols/gui.SessionControllerOptions.html">gui.SessionControllerOptions</a></li>
+	
+	<li><a href="../symbols/gui.SessionView.html">gui.SessionView</a></li>
+	
+	<li><a href="../symbols/gui.SessionViewOptions.html">gui.SessionViewOptions</a></li>
+	
+	<li><a href="../symbols/gui.ShadowCursor.html">gui.ShadowCursor</a></li>
+	
+	<li><a href="../symbols/gui.SingleScrollViewport.html">gui.SingleScrollViewport</a></li>
+	
+	<li><a href="../symbols/gui.StepInfo.html">gui.StepInfo</a></li>
+	
+	<li><a href="../symbols/gui.StyleSummary.html">gui.StyleSummary</a></li>
+	
+	<li><a href="../symbols/gui.SvgSelectionView.html">gui.SvgSelectionView</a></li>
+	
+	<li><a href="../symbols/gui.TextController.html">gui.TextController</a></li>
+	
+	<li><a href="../symbols/gui.TrivialUndoManager.html">gui.TrivialUndoManager</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules.html">gui.UndoStateRules</a></li>
+	
+	<li><a href="../symbols/gui.UndoStateRules-ReverseIterator.html">gui.UndoStateRules-ReverseIterator</a></li>
+	
+	<li><a href="../symbols/gui.ZoomHelper.html">gui.ZoomHelper</a></li>
+	
+	<li><a href="../symbols/NodeJSRuntime.html">NodeJSRuntime</a></li>
+	
+	<li><a href="../symbols/odf.html">odf</a></li>
+	
+	<li><a href="../symbols/odf.AnnotationElement.html">odf.AnnotationElement</a></li>
+	
+	<li><a href="../symbols/odf.CollapsingRules.html">odf.CollapsingRules</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicProperties.html">odf.ComputedGraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedGraphicStyle.html">odf.ComputedGraphicStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphProperties.html">odf.ComputedParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedParagraphStyle.html">odf.ComputedParagraphStyle</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextProperties.html">odf.ComputedTextProperties</a></li>
+	
+	<li><a href="../symbols/odf.ComputedTextStyle.html">odf.ComputedTextStyle</a></li>
+	
+	<li><a href="../symbols/odf.FontLoader.html">odf.FontLoader</a></li>
+	
+	<li><a href="../symbols/odf.Formatting.html">odf.Formatting</a></li>
+	
+	<li><a href="../symbols/odf.GraphicProperties.html">odf.GraphicProperties</a></li>
+	
+	<li><a href="../symbols/odf.LazyStyleProperties.html">odf.LazyStyleProperties</a></li>
+	
+	<li><a href="../symbols/odf.ListStyleToCss.html">odf.ListStyleToCss</a></li>
+	
+	<li><a href="../symbols/odf.MasterPage.html">odf.MasterPage</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator.html">odf.ObjectNameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.ObjectNameGenerator-NameGenerator.html">odf.ObjectNameGenerator-NameGenerator</a></li>
+	
+	<li><a href="../symbols/odf.OdfCanvas.html">odf.OdfCanvas</a></li>
+	
+	<li><a href="../symbols/odf.OdfContainer.html">odf.OdfContainer</a></li>
+	
+	<li><a href="../symbols/odf.ODFDocumentElement.html">odf.ODFDocumentElement</a></li>
+	
+	<li><a href="../symbols/odf.ODFElement.html">odf.ODFElement</a></li>
+	
+	<li><a href="../symbols/odf.OdfNodeFilter.html">odf.OdfNodeFilter</a></li>
+	
+	<li><a href="../symbols/odf.OdfPart.html">odf.OdfPart</a></li>
+	
+	<li><a href="../symbols/odf.OdfSchemaImpl.html">odf.OdfSchemaImpl</a></li>
+	
+	<li><a href="../symbols/odf.OdfUtilsImpl.html">odf.OdfUtilsImpl</a></li>
+	
+	<li><a href="../symbols/odf.PageLayout.html">odf.PageLayout</a></li>
+	
+	<li><a href="../symbols/odf.PageLayoutProperties.html">odf.PageLayoutProperties</a></li>
+	
+	<li><a href="../symbols/odf.ParagraphProperties.html">odf.ParagraphProperties</a></li>
+	
+	<li><a href="../symbols/odf.StepUtils.html">odf.StepUtils</a></li>
+	
+	<li><a href="../symbols/odf.Style2CSS.html">odf.Style2CSS</a></li>
+	
+	<li><a href="../symbols/odf.StyleCache.html">odf.StyleCache</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo.html">odf.StyleInfo</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo%23UsedStyleList.html">odf.StyleInfo#UsedStyleList</a></li>
+	
+	<li><a href="../symbols/odf.StyleInfo-StyleDefinition.html">odf.StyleInfo-StyleDefinition</a></li>
+	
+	<li><a href="../symbols/odf.StyleParseUtils.html">odf.StyleParseUtils</a></li>
+	
+	<li><a href="../symbols/odf.StylePile.html">odf.StylePile</a></li>
+	
+	<li><a href="../symbols/odf.StylePileEntry.html">odf.StylePileEntry</a></li>
+	
+	<li><a href="../symbols/odf.StyleTree.html">odf.StyleTree</a></li>
+	
+	<li><a href="../symbols/odf.StyleTreeNode.html">odf.StyleTreeNode</a></li>
+	
+	<li><a href="../symbols/odf.TextProperties.html">odf.TextProperties</a></li>
+	
+	<li><a href="../symbols/odf.TextSerializer.html">odf.TextSerializer</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator.html">odf.TextStyleApplicator</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleLookup.html">odf.TextStyleApplicator-StyleLookup</a></li>
+	
+	<li><a href="../symbols/odf.TextStyleApplicator-StyleManager.html">odf.TextStyleApplicator-StyleManager</a></li>
+	
+	<li><a href="../symbols/odf.WordBoundaryFilter.html">odf.WordBoundaryFilter</a></li>
+	
+	<li><a href="../symbols/ops.html">ops</a></li>
+	
+	<li><a href="../symbols/ops.EditInfo.html">ops.EditInfo</a></li>
+	
+	<li><a href="../symbols/ops.Member.html">ops.Member</a></li>
+	
+	<li><a href="../symbols/ops.MemberProperties.html">ops.MemberProperties</a></li>
+	
+	<li><a href="../symbols/ops.OdtCursor.html">ops.OdtCursor</a></li>
+	
+	<li><a href="../symbols/ops.OdtDocument.html">ops.OdtDocument</a></li>
+	
+	<li><a href="../symbols/ops.OdtStepsTranslator.html">ops.OdtStepsTranslator</a></li>
+	
+	<li><a href="../symbols/ops.OpAddAnnotation.html">ops.OpAddAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpAddCursor.html">ops.OpAddCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpAddMember.html">ops.OpAddMember</a></li>
+	
+	<li><a href="../symbols/ops.OpAddStyle.html">ops.OpAddStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyDirectStyling.html">ops.OpApplyDirectStyling</a></li>
+	
+	<li><a href="../symbols/ops.OpApplyHyperlink.html">ops.OpApplyHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OperationFactory.html">ops.OperationFactory</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformer.html">ops.OperationTransformer</a></li>
+	
+	<li><a href="../symbols/ops.OperationTransformMatrix.html">ops.OperationTransformMatrix</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertImage.html">ops.OpInsertImage</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertTable.html">ops.OpInsertTable</a></li>
+	
+	<li><a href="../symbols/ops.OpInsertText.html">ops.OpInsertText</a></li>
+	
+	<li><a href="../symbols/ops.OpMergeParagraph.html">ops.OpMergeParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpMoveCursor.html">ops.OpMoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveAnnotation.html">ops.OpRemoveAnnotation</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveBlob.html">ops.OpRemoveBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveCursor.html">ops.OpRemoveCursor</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveHyperlink.html">ops.OpRemoveHyperlink</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveMember.html">ops.OpRemoveMember</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveStyle.html">ops.OpRemoveStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpRemoveText.html">ops.OpRemoveText</a></li>
+	
+	<li><a href="../symbols/ops.OpSetBlob.html">ops.OpSetBlob</a></li>
+	
+	<li><a href="../symbols/ops.OpSetParagraphStyle.html">ops.OpSetParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.OpSplitParagraph.html">ops.OpSplitParagraph</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMember.html">ops.OpUpdateMember</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateMetadata.html">ops.OpUpdateMetadata</a></li>
+	
+	<li><a href="../symbols/ops.OpUpdateParagraphStyle.html">ops.OpUpdateParagraphStyle</a></li>
+	
+	<li><a href="../symbols/ops.Session.html">ops.Session</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache.html">ops.StepsCache</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-NodeBookmark.html">ops.StepsCache-NodeBookmark</a></li>
+	
+	<li><a href="../symbols/ops.StepsCache-RootBookmark.html">ops.StepsCache-RootBookmark</a></li>
+	
+	<li><a href="../symbols/ops.TextPositionFilter.html">ops.TextPositionFilter</a></li>
+	
+	<li><a href="../symbols/ops.TrivialOperationRouter.html">ops.TrivialOperationRouter</a></li>
+	
+	<li><a href="../symbols/RhinoRuntime.html">RhinoRuntime</a></li>
+	
+	<li><a href="../symbols/RootFilter.html">RootFilter</a></li>
+	
+	<li><a href="../symbols/Runtime.html">Runtime</a></li>
+	
+	<li><a href="../symbols/webodf.html">webodf</a></li>
+	
+	<li><a href="../symbols/xmldom.html">xmldom</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer.html">xmldom.LSSerializer</a></li>
+	
+	<li><a href="../symbols/xmldom.LSSerializer-Namespaces.html">xmldom.LSSerializer-Namespaces</a></li>
+	
+	<li><a href="../symbols/xmldom.XPathIterator.html">xmldom.XPathIterator</a></li>
+	
+</ul>
+<hr />
+			<!-- end publish.classesIndex -->
+		</div>
+		
+		<div id="content">
+<!-- ============================== class title ============================ -->
+			<h1 class="classTitle">
+				
+				Class ops.OperationTransformMatrix
+			</h1>
+
+<!-- ============================== class summary ========================== -->			
+			<p class="description">
+				
+				
+			
+				
+				
+				
+					<br /><i>Defined in: </i> <a href="../symbols/src/lib_ops_OperationTransformMatrix.js.html">OperationTransformMatrix.js</a>.
+				
+			</p>
+
+<!-- ============================== constructor summary ==================== -->			
+			
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class ops.OperationTransformMatrix.">
+				<caption>Class Summary</caption>
+				<thead>
+					<tr>
+						<th scope="col">Constructor Attributes</th>
+						<th scope="col">Constructor Name and Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="attributes">&nbsp;</td>
+						<td class="nameDescription" >
+							<div class="fixedFont">
+								<b><a href="../symbols/ops.OperationTransformMatrix.html#constructor">ops.OperationTransformMatrix</a></b>()
+							</div>
+							<div class="description"></div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			
+
+<!-- ============================== properties summary ===================== -->
+			
+
+<!-- ============================== methods summary ======================== -->
+			
+				
+				
+				<table class="summaryTable" cellspacing="0" summary="A summary of the methods documented in the class ops.OperationTransformMatrix.">
+					<caption>Method Summary</caption>
+					<thead>
+						<tr>
+							<th scope="col">Method Attributes</th>
+							<th scope="col">Method Name and Description</th>
+						</tr>
+					</thead>
+					<tbody>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-cloneOpspec">cloneOpspec</a></b>(opspec)
+								</div>
+								<div class="description">Creates a deep copy of the opspec</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-dropOverruledAndUnneededAttributes">dropOverruledAndUnneededAttributes</a></b>(minorSetProperties, minorRemovedProperties, majorSetProperties, majorRemovedProperties)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-dropOverruledAndUnneededProperties">dropOverruledAndUnneededProperties</a></b>(minorSet, minorRem, majorSet, majorRem, propertiesName)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-dropStyleReferencingAttributes">dropStyleReferencingAttributes</a></b>(setProperties, deletedStyleName)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#extendTransformations">extendTransformations</a></b>(moreTransformations)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-getStyleReferencingAttributes">getStyleReferencingAttributes</a></b>(setProperties, styleName)
+								</div>
+								<div class="description">Returns a list with all attributes in setProperties that refer to styleName</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-hasProperties">hasProperties</a></b>(properties)
+								</div>
+								<div class="description">Estimates if there are any properties set in the given properties object.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-hasRemovedProperties">hasRemovedProperties</a></b>(properties)
+								</div>
+								<div class="description">Estimates if there are any properties set in the given properties object.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-invertMoveCursorSpecRange">invertMoveCursorSpecRange</a></b>(moveCursorSpec)
+								</div>
+								<div class="description">Inverts the range spanned up by the spec's parameter position and length,
+so that position is at the other end of the range and length relative to that.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-invertMoveCursorSpecRangeOnNegativeLength">invertMoveCursorSpecRangeOnNegativeLength</a></b>(moveCursorSpec)
+								</div>
+								<div class="description">Inverts the range spanned up by position and length if the length is negative.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-passUnchanged">passUnchanged</a></b>(opSpecA, opSpecB)
+								</div>
+								<div class="description">Does an OT on the two passed opspecs, where they are not modified at all,
+and so simply returns them in the result arrays.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationAddAnnotation">transformAddAnnotationAddAnnotation</a></b>(addAnnotationSpecA, addAnnotationSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationApplyDirectStyling">transformAddAnnotationApplyDirectStyling</a></b>(addAnnotationSpec, applyDirectStylingSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationInsertText">transformAddAnnotationInsertText</a></b>(addAnnotationSpec, insertTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationMergeParagraph">transformAddAnnotationMergeParagraph</a></b>(addAnnotationSpec, mergeParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationMoveCursor">transformAddAnnotationMoveCursor</a></b>(addAnnotationSpec, moveCursorSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationRemoveAnnotation">transformAddAnnotationRemoveAnnotation</a></b>(addAnnotationSpec, removeAnnotationSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationRemoveText">transformAddAnnotationRemoveText</a></b>(addAnnotationSpec, removeTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationSetParagraphStyle">transformAddAnnotationSetParagraphStyle</a></b>(addAnnotationSpec, setParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddAnnotationSplitParagraph">transformAddAnnotationSplitParagraph</a></b>(addAnnotationSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformAddStyleRemoveStyle">transformAddStyleRemoveStyle</a></b>(addStyleSpec, removeStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformApplyDirectStylingApplyDirectStyling">transformApplyDirectStylingApplyDirectStyling</a></b>(applyDirectStylingSpecA, applyDirectStylingSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformApplyDirectStylingInsertText">transformApplyDirectStylingInsertText</a></b>(applyDirectStylingSpec, insertTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformApplyDirectStylingMergeParagraph">transformApplyDirectStylingMergeParagraph</a></b>(applyDirectStylingSpec, mergeParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformApplyDirectStylingRemoveAnnotation">transformApplyDirectStylingRemoveAnnotation</a></b>(applyDirectStylingSpec, removeAnnotationSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformApplyDirectStylingRemoveText">transformApplyDirectStylingRemoveText</a></b>(applyDirectStylingSpec, removeTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformApplyDirectStylingSplitParagraph">transformApplyDirectStylingSplitParagraph</a></b>(applyDirectStylingSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextInsertText">transformInsertTextInsertText</a></b>(insertTextSpecA, insertTextSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextMergeParagraph">transformInsertTextMergeParagraph</a></b>(insertTextSpec, mergeParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextMoveCursor">transformInsertTextMoveCursor</a></b>(insertTextSpec, moveCursorSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextRemoveAnnotation">transformInsertTextRemoveAnnotation</a></b>(insertTextSpec, removeAnnotationSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextRemoveText">transformInsertTextRemoveText</a></b>(insertTextSpec, removeTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextSetParagraphStyle">transformInsertTextSetParagraphStyle</a></b>(insertTextSpec, setParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformInsertTextSplitParagraph">transformInsertTextSplitParagraph</a></b>(insertTextSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMergeParagraphMergeParagraph">transformMergeParagraphMergeParagraph</a></b>(mergeParagraphSpecA, mergeParagraphSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMergeParagraphMoveCursor">transformMergeParagraphMoveCursor</a></b>(mergeParagraphSpec, moveCursorSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMergeParagraphRemoveAnnotation">transformMergeParagraphRemoveAnnotation</a></b>(mergeParagraphSpec, removeAnnotationSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMergeParagraphRemoveText">transformMergeParagraphRemoveText</a></b>(mergeParagraphSpec, removeTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMergeParagraphSetParagraphStyle">transformMergeParagraphSetParagraphStyle</a></b>(mergeParagraphSpec, setParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMergeParagraphSplitParagraph">transformMergeParagraphSplitParagraph</a></b>(mergeParagraphSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMoveCursorRemoveAnnotation">transformMoveCursorRemoveAnnotation</a></b>(moveCursorSpec, removeAnnotationSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMoveCursorRemoveCursor">transformMoveCursorRemoveCursor</a></b>(moveCursorSpec, removeCursorSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMoveCursorRemoveText">transformMoveCursorRemoveText</a></b>(moveCursorSpec, removeTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformMoveCursorSplitParagraph">transformMoveCursorSplitParagraph</a></b>(moveCursorSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#transformOpspecVsOpspec">transformOpspecVsOpspec</a></b>(opSpecA, opSpecB)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveAnnotationRemoveAnnotation">transformRemoveAnnotationRemoveAnnotation</a></b>(removeAnnotationSpecA, removeAnnotationSpecB)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveAnnotationRemoveText">transformRemoveAnnotationRemoveText</a></b>(removeAnnotationSpec, removeTextSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveAnnotationSetParagraphStyle">transformRemoveAnnotationSetParagraphStyle</a></b>(removeAnnotationSpec, setParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveAnnotationSplitParagraph">transformRemoveAnnotationSplitParagraph</a></b>(removeAnnotationSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveCursorRemoveCursor">transformRemoveCursorRemoveCursor</a></b>(removeCursorSpecA, removeCursorSpecB)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveStyleRemoveStyle">transformRemoveStyleRemoveStyle</a></b>(removeStyleSpecA, removeStyleSpecB)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveStyleSetParagraphStyle">transformRemoveStyleSetParagraphStyle</a></b>(removeStyleSpec, setParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveStyleUpdateParagraphStyle">transformRemoveStyleUpdateParagraphStyle</a></b>(removeStyleSpec, updateParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveTextRemoveText">transformRemoveTextRemoveText</a></b>(removeTextSpecA, removeTextSpecB)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveTextSetParagraphStyle">transformRemoveTextSetParagraphStyle</a></b>(removeTextSpec, setParagraphStyleSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformRemoveTextSplitParagraph">transformRemoveTextSplitParagraph</a></b>(removeTextSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformSetParagraphStyleSetParagraphStyle">transformSetParagraphStyleSetParagraphStyle</a></b>(setParagraphStyleSpecA, setParagraphStyleSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformSetParagraphStyleSplitParagraph">transformSetParagraphStyleSplitParagraph</a></b>(setParagraphStyleSpec, splitParagraphSpec)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformSplitParagraphSplitParagraph">transformSplitParagraphSplitParagraph</a></b>(splitParagraphSpecA, splitParagraphSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformUpdateMetadataUpdateMetadata">transformUpdateMetadataUpdateMetadata</a></b>(updateMetadataSpecA, updateMetadataSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&lt;inner&gt; &nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/ops.OperationTransformMatrix.html#-transformUpdateParagraphStyleUpdateParagraphStyle">transformUpdateParagraphStyleUpdateParagraphStyle</a></b>(updateParagraphStyleSpecA, updateParagraphStyleSpecB, hasAPriority)
+								</div>
+								<div class="description"></div>
+							</td>
+						</tr>
+					
+					</tbody>
+				</table>
+				
+				
+				
+			
+<!-- ============================== events summary ======================== -->
+			
+
+<!-- ============================== constructor details ==================== -->		
+			
+			<div class="details"><a name="constructor"> </a>
+				<div class="sectionTitle">
+					Class Detail
+				</div>
+				
+				<div class="fixedFont">
+						<b>ops.OperationTransformMatrix</b>()
+				</div>
+				
+				<div class="description">
+					
+					
+				</div>
+				
+				
+				
+				
+					
+					
+					
+					
+					
+					
+					
+
+			</div>
+			
+
+<!-- ============================== field details ========================== -->		
+			
+
+<!-- ============================== method details ========================= -->		
+			
+				<div class="sectionTitle">
+					Method Detail
+				</div>
+				
+					<a name="-cloneOpspec"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Object}</span>
+					<b>cloneOpspec</b>(opspec)
+					
+					</div>
+					<div class="description">
+						Creates a deep copy of the opspec
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Object}</span> <b>opspec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Object}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-dropOverruledAndUnneededAttributes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!{majorChanged:boolean|minorChanged:boolean}}</span>
+					<b>dropOverruledAndUnneededAttributes</b>(minorSetProperties, minorRemovedProperties, majorSetProperties, majorRemovedProperties)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?Object.<string|*>}</span> <b>minorSetProperties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?{attributes:string}}</span> <b>minorRemovedProperties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?Object.<string|*>}</span> <b>majorSetProperties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?{attributes:string}}</span> <b>majorRemovedProperties</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!{majorChanged:boolean|minorChanged:boolean}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-dropOverruledAndUnneededProperties"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{majorChanged:boolean|minorChanged:boolean}}</span>
+					<b>dropOverruledAndUnneededProperties</b>(minorSet, minorRem, majorSet, majorRem, propertiesName)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?odf.Formatting.StyleData}</span> <b>minorSet</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?Object.<string|{attributes:string}>}</span> <b>minorRem</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?odf.Formatting.StyleData}</span> <b>majorSet</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{?Object.<string|{attributes:string}>}</span> <b>majorRem</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>propertiesName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{majorChanged:boolean|minorChanged:boolean}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-dropStyleReferencingAttributes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>dropStyleReferencingAttributes</b>(setProperties, deletedStyleName)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?odf.Formatting.StyleData}</span> <b>setProperties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>deletedStyleName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="extendTransformations"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{undefined}</span>
+					<b>extendTransformations</b>(moreTransformations)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Object.<!string|!Object.<!string|!Function>>}</span> <b>moreTransformations</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-getStyleReferencingAttributes"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!Array.<!string>}</span>
+					<b>getStyleReferencingAttributes</b>(setProperties, styleName)
+					
+					</div>
+					<div class="description">
+						Returns a list with all attributes in setProperties that refer to styleName
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{?odf.Formatting.StyleData}</span> <b>setProperties</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!string}</span> <b>styleName</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!Array.<!string>}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-hasProperties"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>hasProperties</b>(properties)
+					
+					</div>
+					<div class="description">
+						Estimates if there are any properties set in the given properties object.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!odf.Formatting.StyleData}</span> <b>properties</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-hasRemovedProperties"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>hasRemovedProperties</b>(properties)
+					
+					</div>
+					<div class="description">
+						Estimates if there are any properties set in the given properties object.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!{attributes:string}}</span> <b>properties</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-invertMoveCursorSpecRange"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{undefined}</span>
+					<b>invertMoveCursorSpecRange</b>(moveCursorSpec)
+					
+					</div>
+					<div class="description">
+						Inverts the range spanned up by the spec's parameter position and length,
+so that position is at the other end of the range and length relative to that.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{undefined}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-invertMoveCursorSpecRangeOnNegativeLength"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{!boolean}</span>
+					<b>invertMoveCursorSpecRangeOnNegativeLength</b>(moveCursorSpec)
+					
+					</div>
+					<div class="description">
+						Inverts the range spanned up by position and length if the length is negative.
+Returns true if an inversion was done, false otherwise.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{!boolean}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-passUnchanged"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>passUnchanged</b>(opSpecA, opSpecB)
+					
+					</div>
+					<div class="description">
+						Does an OT on the two passed opspecs, where they are not modified at all,
+and so simply returns them in the result arrays.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!Object}</span> <b>opSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!Object}</span> <b>opSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationAddAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationAddAnnotation</b>(addAnnotationSpecA, addAnnotationSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationApplyDirectStyling"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationApplyDirectStyling</b>(addAnnotationSpec, applyDirectStylingSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationInsertText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationInsertText</b>(addAnnotationSpec, insertTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationMergeParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationMergeParagraph</b>(addAnnotationSpec, mergeParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationMoveCursor"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationMoveCursor</b>(addAnnotationSpec, moveCursorSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationRemoveAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationRemoveAnnotation</b>(addAnnotationSpec, removeAnnotationSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationRemoveText</b>(addAnnotationSpec, removeTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationSetParagraphStyle</b>(addAnnotationSpec, setParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddAnnotationSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddAnnotationSplitParagraph</b>(addAnnotationSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddAnnotation.Spec}</span> <b>addAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformAddStyleRemoveStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformAddStyleRemoveStyle</b>(addStyleSpec, removeStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpAddStyle.Spec}</span> <b>addStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveStyle.Spec}</span> <b>removeStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformApplyDirectStylingApplyDirectStyling"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformApplyDirectStylingApplyDirectStyling</b>(applyDirectStylingSpecA, applyDirectStylingSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformApplyDirectStylingInsertText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformApplyDirectStylingInsertText</b>(applyDirectStylingSpec, insertTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformApplyDirectStylingMergeParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformApplyDirectStylingMergeParagraph</b>(applyDirectStylingSpec, mergeParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformApplyDirectStylingRemoveAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformApplyDirectStylingRemoveAnnotation</b>(applyDirectStylingSpec, removeAnnotationSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformApplyDirectStylingRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformApplyDirectStylingRemoveText</b>(applyDirectStylingSpec, removeTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformApplyDirectStylingSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformApplyDirectStylingSplitParagraph</b>(applyDirectStylingSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpApplyDirectStyling.Spec}</span> <b>applyDirectStylingSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextInsertText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextInsertText</b>(insertTextSpecA, insertTextSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextMergeParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextMergeParagraph</b>(insertTextSpec, mergeParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextMoveCursor"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextMoveCursor</b>(insertTextSpec, moveCursorSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextRemoveAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextRemoveAnnotation</b>(insertTextSpec, removeAnnotationSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextRemoveText</b>(insertTextSpec, removeTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextSetParagraphStyle</b>(insertTextSpec, setParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformInsertTextSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformInsertTextSplitParagraph</b>(insertTextSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpInsertText.Spec}</span> <b>insertTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMergeParagraphMergeParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMergeParagraphMergeParagraph</b>(mergeParagraphSpecA, mergeParagraphSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMergeParagraphMoveCursor"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMergeParagraphMoveCursor</b>(mergeParagraphSpec, moveCursorSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMergeParagraphRemoveAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMergeParagraphRemoveAnnotation</b>(mergeParagraphSpec, removeAnnotationSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMergeParagraphRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMergeParagraphRemoveText</b>(mergeParagraphSpec, removeTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMergeParagraphSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMergeParagraphSetParagraphStyle</b>(mergeParagraphSpec, setParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMergeParagraphSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMergeParagraphSplitParagraph</b>(mergeParagraphSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMergeParagraph.Spec}</span> <b>mergeParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMoveCursorRemoveAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMoveCursorRemoveAnnotation</b>(moveCursorSpec, removeAnnotationSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMoveCursorRemoveCursor"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMoveCursorRemoveCursor</b>(moveCursorSpec, removeCursorSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveCursor.Spec}</span> <b>removeCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMoveCursorRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMoveCursorRemoveText</b>(moveCursorSpec, removeTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformMoveCursorSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformMoveCursorSplitParagraph</b>(moveCursorSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpMoveCursor.Spec}</span> <b>moveCursorSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="transformOpspecVsOpspec"> </a>
+					<div class="fixedFont">
+					
+					<span class="light">{?{opSpecsA:!Array.<!{optype:string}>|opSpecsB:!Array.<!{optype:string}>}}</span>
+					<b>transformOpspecVsOpspec</b>(opSpecA, opSpecB)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!{optype:string}}</span> <b>opSpecA</b>
+									
+								</dt>
+								<dd>op with lower priority in case of tie breaking</dd>
+							
+								<dt>
+									<span class="light fixedFont">{!{optype:string}}</span> <b>opSpecB</b>
+									
+								</dt>
+								<dd>op with higher priority in case of tie breaking</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!{optype:string}>|opSpecsB:!Array.<!{optype:string}>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveAnnotationRemoveAnnotation"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveAnnotationRemoveAnnotation</b>(removeAnnotationSpecA, removeAnnotationSpecB)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveAnnotationRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveAnnotationRemoveText</b>(removeAnnotationSpec, removeTextSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveAnnotationSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveAnnotationSetParagraphStyle</b>(removeAnnotationSpec, setParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveAnnotationSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveAnnotationSplitParagraph</b>(removeAnnotationSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveAnnotation.Spec}</span> <b>removeAnnotationSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveCursorRemoveCursor"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveCursorRemoveCursor</b>(removeCursorSpecA, removeCursorSpecB)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveCursor.Spec}</span> <b>removeCursorSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveCursor.Spec}</span> <b>removeCursorSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveStyleRemoveStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveStyleRemoveStyle</b>(removeStyleSpecA, removeStyleSpecB)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveStyle.Spec}</span> <b>removeStyleSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveStyle.Spec}</span> <b>removeStyleSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveStyleSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveStyleSetParagraphStyle</b>(removeStyleSpec, setParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveStyle.Spec}</span> <b>removeStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveStyleUpdateParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveStyleUpdateParagraphStyle</b>(removeStyleSpec, updateParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveStyle.Spec}</span> <b>removeStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpUpdateParagraphStyle.Spec}</span> <b>updateParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveTextRemoveText"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveTextRemoveText</b>(removeTextSpecA, removeTextSpecB)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveTextSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveTextSetParagraphStyle</b>(removeTextSpec, setParagraphStyleSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformRemoveTextSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformRemoveTextSplitParagraph</b>(removeTextSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpRemoveText.Spec}</span> <b>removeTextSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformSetParagraphStyleSetParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformSetParagraphStyleSetParagraphStyle</b>(setParagraphStyleSpecA, setParagraphStyleSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformSetParagraphStyleSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformSetParagraphStyleSplitParagraph</b>(setParagraphStyleSpec, splitParagraphSpec)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSetParagraphStyle.Spec}</span> <b>setParagraphStyleSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpec</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformSplitParagraphSplitParagraph"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformSplitParagraphSplitParagraph</b>(splitParagraphSpecA, splitParagraphSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpSplitParagraph.Spec}</span> <b>splitParagraphSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformUpdateMetadataUpdateMetadata"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformUpdateMetadataUpdateMetadata</b>(updateMetadataSpecA, updateMetadataSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpUpdateMetadata.Spec}</span> <b>updateMetadataSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpUpdateMetadata.Spec}</span> <b>updateMetadataSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					<hr />
+				
+					<a name="-transformUpdateParagraphStyleUpdateParagraphStyle"> </a>
+					<div class="fixedFont">&lt;inner&gt; 
+					
+					<span class="light">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span>
+					<b>transformUpdateParagraphStyleUpdateParagraphStyle</b>(updateParagraphStyleSpecA, updateParagraphStyleSpecB, hasAPriority)
+					
+					</div>
+					<div class="description">
+						
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpUpdateParagraphStyle.Spec}</span> <b>updateParagraphStyleSpecA</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!ops.OpUpdateParagraphStyle.Spec}</span> <b>updateParagraphStyleSpecB</b>
+									
+								</dt>
+								<dd></dd>
+							
+								<dt>
+									<span class="light fixedFont">{!boolean}</span> <b>hasAPriority</b>
+									
+								</dt>
+								<dd></dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+							<dl class="detailList">
+							<dt class="heading">Returns:</dt>
+							
+								<dd><span class="light fixedFont">{?{opSpecsA:!Array.<!Object>|opSpecsB:!Array.<!Object>}}</span> </dd>
+							
+							</dl>
+						
+						
+						
+
+					
+				
+			
+			
+<!-- ============================== event details ========================= -->		
+			
+			
+			<hr />
+		</div>
+
+		
+<!-- ============================== footer ================================= -->
+		<div class="fineprint" style="clear:both">
+			
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Sep 03 2015 21:31:56 GMT+0200 (CEST)
+		</div>
+	</body>
+</html>

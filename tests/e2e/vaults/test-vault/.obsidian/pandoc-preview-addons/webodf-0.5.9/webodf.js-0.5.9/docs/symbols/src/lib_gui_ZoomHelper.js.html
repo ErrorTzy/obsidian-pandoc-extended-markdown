@@ -1,0 +1,533 @@
+<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"> <style>
+	.KEYW {color: #933;}
+	.COMM {color: #bbb; font-style: italic;}
+	.NUMB {color: #393;}
+	.STRN {color: #393;}
+	.REGX {color: #339;}
+	.line {border-right: 1px dotted #666; color: #666; font-style: normal;}
+	</style></head><body><pre><span class='line'>  1</span> <span class="COMM">/**
+<span class='line'>  2</span>  * Copyright (C) 2014 KO GmbH &lt;copyright@kogmbh.com>
+<span class='line'>  3</span>  *
+<span class='line'>  4</span>  * @licstart
+<span class='line'>  5</span>  * This file is part of WebODF.
+<span class='line'>  6</span>  *
+<span class='line'>  7</span>  * WebODF is free software: you can redistribute it and/or modify it
+<span class='line'>  8</span>  * under the terms of the GNU Affero General Public License (GNU AGPL)
+<span class='line'>  9</span>  * as published by the Free Software Foundation, either version 3 of
+<span class='line'> 10</span>  * the License, or (at your option) any later version.
+<span class='line'> 11</span>  *
+<span class='line'> 12</span>  * WebODF is distributed in the hope that it will be useful, but
+<span class='line'> 13</span>  * WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class='line'> 14</span>  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<span class='line'> 15</span>  * GNU Affero General Public License for more details.
+<span class='line'> 16</span>  *
+<span class='line'> 17</span>  * You should have received a copy of the GNU Affero General Public License
+<span class='line'> 18</span>  * along with WebODF.  If not, see &lt;http://www.gnu.org/licenses/>.
+<span class='line'> 19</span>  * @licend
+<span class='line'> 20</span>  *
+<span class='line'> 21</span>  * @source: http://www.webodf.org/
+<span class='line'> 22</span>  * @source: https://github.com/kogmbh/WebODF/
+<span class='line'> 23</span>  */</span><span class="WHIT">
+<span class='line'> 24</span> 
+<span class='line'> 25</span> </span><span class="COMM">/*global runtime, core, gui*/</span><span class="WHIT">
+<span class='line'> 26</span> 
+<span class='line'> 27</span> </span><span class="PUNC">(</span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 28</span> </span><span class="WHIT">    </span><span class="STRN">"use strict"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 29</span> 
+<span class='line'> 30</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 31</span>      * @constructor
+<span class='line'> 32</span>      * @param {!number} x
+<span class='line'> 33</span>      * @param {!number} y
+<span class='line'> 34</span>      */</span><span class="WHIT">
+<span class='line'> 35</span> </span><span class="WHIT">    </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">Point</span><span class="PUNC">(</span><span class="NAME">x</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">y</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 36</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">self</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">this</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 37</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'> 38</span>          * @param {!Point} point
+<span class='line'> 39</span>          * @return {!number}
+<span class='line'> 40</span>          */</span><span class="WHIT">
+<span class='line'> 41</span> </span><span class="WHIT">        </span><span class="NAME">this.getDistance</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">point</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 42</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">xOffset</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">self.x</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">point.x</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 43</span> </span><span class="WHIT">                </span><span class="NAME">yOffset</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">self.y</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">point.y</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 44</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">Math.sqrt</span><span class="PUNC">(</span><span class="NAME">xOffset</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="NAME">xOffset</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">yOffset</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="NAME">yOffset</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 45</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 46</span> 
+<span class='line'> 47</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'> 48</span>          * @param {!Point} point
+<span class='line'> 49</span>          * @return {!Point}
+<span class='line'> 50</span>          */</span><span class="WHIT">
+<span class='line'> 51</span> </span><span class="WHIT">        </span><span class="NAME">this.getCenter</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">point</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 52</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">Point</span><span class="PUNC">(</span><span class="PUNC">(</span><span class="NAME">self.x</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">point.x</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">/</span><span class="WHIT"> </span><span class="NUMB">2</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">self.y</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">point.y</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">/</span><span class="WHIT"> </span><span class="NUMB">2</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 53</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 54</span> 
+<span class='line'> 55</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{!number}*/</span><span class="WHIT">
+<span class='line'> 56</span> </span><span class="WHIT">        </span><span class="NAME">this.x</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 57</span> </span><span class="WHIT">        </span><span class="COMM">/**@type{!number}*/</span><span class="WHIT">
+<span class='line'> 58</span> </span><span class="WHIT">        </span><span class="NAME">this.y</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 59</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">init</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 60</span> </span><span class="WHIT">            </span><span class="NAME">self.x</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">x</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 61</span> </span><span class="WHIT">            </span><span class="NAME">self.y</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">y</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 62</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 63</span> </span><span class="WHIT">        </span><span class="NAME">init</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'> 64</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'> 65</span> 
+<span class='line'> 66</span> </span><span class="WHIT">    </span><span class="COMM">/**
+<span class='line'> 67</span>      * ZoomHelper handles touch gestures and provides pinch-to-zoom support
+<span class='line'> 68</span>      * on the sizer element. It also provides some methods to set, get, and
+<span class='line'> 69</span>      * subscribe to the current zoom level.
+<span class='line'> 70</span>      * @constructor
+<span class='line'> 71</span>      * @implements {core.Destroyable}
+<span class='line'> 72</span>      */</span><span class="WHIT">
+<span class='line'> 73</span> </span><span class="WHIT">    </span><span class="NAME">gui.ZoomHelper</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 74</span> </span><span class="WHIT">        </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="COMM">/**@type{!HTMLElement}*/</span><span class="WHIT">
+<span class='line'> 75</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 76</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!Point}*/</span><span class="WHIT">
+<span class='line'> 77</span> </span><span class="WHIT">            </span><span class="NAME">panPoint</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 78</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!Point}*/</span><span class="WHIT">
+<span class='line'> 79</span> </span><span class="WHIT">            </span><span class="NAME">previousPanPoint</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 80</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!number}*/</span><span class="WHIT">
+<span class='line'> 81</span> </span><span class="WHIT">            </span><span class="NAME">firstPinchDistance</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 82</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!number}*/</span><span class="WHIT">
+<span class='line'> 83</span> </span><span class="WHIT">            </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 84</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!number}*/</span><span class="WHIT">
+<span class='line'> 85</span> </span><span class="WHIT">            </span><span class="NAME">previousZoom</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 86</span> </span><span class="WHIT">            </span><span class="NAME">maxZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">4.0</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 87</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!HTMLElement}*/</span><span class="WHIT">
+<span class='line'> 88</span> </span><span class="WHIT">            </span><span class="NAME">offsetParent</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 89</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!HTMLElement}*/</span><span class="WHIT">
+<span class='line'> 90</span> </span><span class="WHIT">            </span><span class="NAME">parentElement</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 91</span> </span><span class="WHIT">            </span><span class="NAME">events</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">core.EventNotifier</span><span class="PUNC">(</span><span class="PUNC">[</span><span class="NAME">gui.ZoomHelper.signalZoomChanged</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 92</span> </span><span class="WHIT">            </span><span class="COMM">/**@const*/</span><span class="WHIT">
+<span class='line'> 93</span> </span><span class="WHIT">            </span><span class="NAME">gestures</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'> 94</span> </span><span class="WHIT">                </span><span class="NAME">NONE</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 95</span> </span><span class="WHIT">                </span><span class="NAME">SCROLL</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 96</span> </span><span class="WHIT">                </span><span class="NAME">PINCH</span><span class="PUNC">:</span><span class="WHIT"> </span><span class="NUMB">2</span><span class="WHIT">
+<span class='line'> 97</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'> 98</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{!number}*/</span><span class="WHIT">
+<span class='line'> 99</span> </span><span class="WHIT">            </span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gestures.NONE</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>100</span> </span><span class="WHIT">            </span><span class="COMM">/**
+<span class='line'>101</span>              * On webkit, which has the ability to style scrollbars
+<span class='line'>102</span>              * with CSS, `window` has the property 'ontouchstart'.
+<span class='line'>103</span>              * This can be used as a hint of touch event support,
+<span class='line'>104</span>              * and we can take advantage of that to decide to show
+<span class='line'>105</span>              * custom scrollbars (because webkit hides them).
+<span class='line'>106</span>              * @type{!boolean}
+<span class='line'>107</span>              */</span><span class="WHIT">
+<span class='line'>108</span> </span><span class="WHIT">            </span><span class="NAME">requiresCustomScrollBars</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">runtime.getWindow</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">.</span><span class="NAME">hasOwnProperty</span><span class="PUNC">(</span><span class="STRN">'ontouchstart'</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>109</span> </span><span class="WHIT">            </span><span class="COMM">/**@type{?string}*/</span><span class="WHIT">
+<span class='line'>110</span> </span><span class="WHIT">            </span><span class="NAME">parentOverflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">""</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>111</span> 
+<span class='line'>112</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>113</span>          * Apply a 3D or 2D CSS transform with the given
+<span class='line'>114</span>          * x and y offset, and scale.
+<span class='line'>115</span>          * @param {!number} x
+<span class='line'>116</span>          * @param {!number} y
+<span class='line'>117</span>          * @param {!number} scale
+<span class='line'>118</span>          * @param {!boolean} is3D
+<span class='line'>119</span>          * @return {undefined}
+<span class='line'>120</span>          */</span><span class="WHIT">
+<span class='line'>121</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">applyCSSTransform</span><span class="PUNC">(</span><span class="NAME">x</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">y</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">scale</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">is3D</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>122</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">transformCommand</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>123</span> 
+<span class='line'>124</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">is3D</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>125</span> </span><span class="WHIT">                </span><span class="NAME">transformCommand</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">'translate3d('</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">x</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">'px, '</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">y</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">'px, 0) scale3d('</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">scale</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">', '</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">scale</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">', 1)'</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>126</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>127</span> </span><span class="WHIT">                </span><span class="NAME">transformCommand</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">'translate('</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">x</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">'px, '</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">y</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">'px) scale('</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">scale</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="STRN">')'</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>128</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>129</span> 
+<span class='line'>130</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement.style.WebkitTransform</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformCommand</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>131</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement.style.MozTransform</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformCommand</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>132</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement.style.msTransform</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformCommand</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>133</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement.style.OTransform</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformCommand</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>134</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement.style.transform</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">transformCommand</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>135</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>136</span> 
+<span class='line'>137</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>138</span>          * Apply the current computed transform
+<span class='line'>139</span>          * (including pan and zoom)
+<span class='line'>140</span>          * @param {!boolean} is3D
+<span class='line'>141</span>          * @return {undefined}
+<span class='line'>142</span>          */</span><span class="WHIT">
+<span class='line'>143</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">applyTransform</span><span class="PUNC">(</span><span class="NAME">is3D</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>144</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">is3D</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>145</span> </span><span class="WHIT">                </span><span class="NAME">applyCSSTransform</span><span class="PUNC">(</span><span class="PUNC">-</span><span class="NAME">panPoint.x</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="NAME">panPoint.y</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>146</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>147</span> </span><span class="WHIT">                </span><span class="COMM">// It tends to feel smoother (with less flicker)</span><span class="WHIT">
+<span class='line'>148</span> </span><span class="WHIT">                </span><span class="COMM">// if we apply a fast transform first and then a</span><span class="WHIT">
+<span class='line'>149</span> </span><span class="WHIT">                </span><span class="COMM">// detailed transform.</span><span class="WHIT">
+<span class='line'>150</span> </span><span class="WHIT">                </span><span class="COMM">// A detailed (2d) transform is only done 'at rest',</span><span class="WHIT">
+<span class='line'>151</span> </span><span class="WHIT">                </span><span class="COMM">// therefore ignore the panning value, because</span><span class="WHIT">
+<span class='line'>152</span> </span><span class="WHIT">                </span><span class="COMM">// the positioning is handled by scrollbars in that case.</span><span class="WHIT">
+<span class='line'>153</span> </span><span class="WHIT">                </span><span class="NAME">applyCSSTransform</span><span class="PUNC">(</span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>154</span> </span><span class="WHIT">                </span><span class="NAME">applyCSSTransform</span><span class="PUNC">(</span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>155</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>156</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>157</span> 
+<span class='line'>158</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>159</span>          * Applies the current computed zoom & pan
+<span class='line'>160</span>          * as a quick-and-dirty rendering, to be used
+<span class='line'>161</span>          * during a gesture or when a flicker needs
+<span class='line'>162</span>          * to be masked.
+<span class='line'>163</span>          * @return {undefined}
+<span class='line'>164</span>          */</span><span class="WHIT">
+<span class='line'>165</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">applyFastTransform</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>166</span> </span><span class="WHIT">            </span><span class="NAME">applyTransform</span><span class="PUNC">(</span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>167</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>168</span> 
+<span class='line'>169</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>170</span>          * Applies the current zoom as a detailed
+<span class='line'>171</span>          * rendering. This is a slow call to be done
+<span class='line'>172</span>          * post-gesture.
+<span class='line'>173</span>          * @return {undefined}
+<span class='line'>174</span>          */</span><span class="WHIT">
+<span class='line'>175</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">applyDetailedTransform</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>176</span> </span><span class="WHIT">            </span><span class="NAME">applyTransform</span><span class="PUNC">(</span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>177</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>178</span> 
+<span class='line'>179</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>180</span>          * Enable or disable virtual scrollbars on the container.
+<span class='line'>181</span>          * @param {!boolean} enable
+<span class='line'>182</span>          * @return {undefined}
+<span class='line'>183</span>          */</span><span class="WHIT">
+<span class='line'>184</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">enableScrollBars</span><span class="PUNC">(</span><span class="NAME">enable</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>185</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">offsetParent</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="PUNC">!</span><span class="NAME">requiresCustomScrollBars</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>186</span> </span><span class="WHIT">                </span><span class="KEYW">return</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>187</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>188</span> 
+<span class='line'>189</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">initialOverflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">offsetParent.style.overflow</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>190</span> </span><span class="WHIT">                </span><span class="NAME">enabled</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">offsetParent.classList.contains</span><span class="PUNC">(</span><span class="STRN">'webodf-customScrollbars'</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>191</span> 
+<span class='line'>192</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">(</span><span class="NAME">enable</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">enabled</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">!</span><span class="NAME">enable</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="PUNC">!</span><span class="NAME">enabled</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>193</span> </span><span class="WHIT">                </span><span class="KEYW">return</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>194</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>195</span> 
+<span class='line'>196</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">enable</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>197</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.classList.add</span><span class="PUNC">(</span><span class="STRN">'webodf-customScrollbars'</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>198</span> </span><span class="WHIT">                </span><span class="COMM">// The custom scrollbar does not appear in webkit unless a full redraw</span><span class="WHIT">
+<span class='line'>199</span> </span><span class="WHIT">                </span><span class="COMM">// of the scrollable area is forced. Therefore attempt to toggle the</span><span class="WHIT">
+<span class='line'>200</span> </span><span class="WHIT">                </span><span class="COMM">// overflow stle of the scrolling container across successive animation</span><span class="WHIT">
+<span class='line'>201</span> </span><span class="WHIT">                </span><span class="COMM">// frames.</span><span class="WHIT">
+<span class='line'>202</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.style.overflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">'hidden'</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>203</span> </span><span class="WHIT">                </span><span class="NAME">runtime.requestAnimationFrame</span><span class="PUNC">(</span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>204</span> </span><span class="WHIT">                    </span><span class="NAME">offsetParent.style.overflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">initialOverflow</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>205</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>206</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>207</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.classList.remove</span><span class="PUNC">(</span><span class="STRN">'webodf-customScrollbars'</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>208</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>209</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>210</span> 
+<span class='line'>211</span> 
+<span class='line'>212</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>213</span>          * Sets the scrolling of the container to (0,0)
+<span class='line'>214</span>          * so that transforms and event points can be
+<span class='line'>215</span>          * conveniently computed.
+<span class='line'>216</span>          * Applies a quick transform to make it look like
+<span class='line'>217</span>          * this never happened.
+<span class='line'>218</span>          * @return {undefined}
+<span class='line'>219</span>          */</span><span class="WHIT">
+<span class='line'>220</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">removeScroll</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>221</span> </span><span class="WHIT">            </span><span class="NAME">applyCSSTransform</span><span class="PUNC">(</span><span class="PUNC">-</span><span class="NAME">panPoint.x</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="NAME">panPoint.y</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>222</span> </span><span class="WHIT">            </span><span class="NAME">offsetParent.scrollLeft</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>223</span> </span><span class="WHIT">            </span><span class="NAME">offsetParent.scrollTop</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>224</span> </span><span class="WHIT">            </span><span class="NAME">parentOverflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">parentElement.style.overflow</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>225</span> </span><span class="WHIT">            </span><span class="NAME">parentElement.style.overflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"visible"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>226</span> </span><span class="WHIT">            </span><span class="NAME">enableScrollBars</span><span class="PUNC">(</span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>227</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>228</span> 
+<span class='line'>229</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>230</span>          * Restores the scrollTop and scrollLeft of
+<span class='line'>231</span>          * the container to the x and y pan values.
+<span class='line'>232</span>          * Applies a quick transform to make it look like
+<span class='line'>233</span>          * this never happened.
+<span class='line'>234</span>          * @return {undefined}
+<span class='line'>235</span>          */</span><span class="WHIT">
+<span class='line'>236</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">restoreScroll</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>237</span> </span><span class="WHIT">            </span><span class="NAME">applyCSSTransform</span><span class="PUNC">(</span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>238</span> </span><span class="WHIT">            </span><span class="NAME">offsetParent.scrollLeft</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">panPoint.x</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>239</span> </span><span class="WHIT">            </span><span class="NAME">offsetParent.scrollTop</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">panPoint.y</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>240</span> </span><span class="WHIT">            </span><span class="NAME">parentElement.style.overflow</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">parentOverflow</span><span class="WHIT"> </span><span class="PUNC">||</span><span class="WHIT"> </span><span class="STRN">""</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>241</span> </span><span class="WHIT">            </span><span class="NAME">enableScrollBars</span><span class="PUNC">(</span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>242</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>243</span> 
+<span class='line'>244</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>245</span>          * Returns a Point instance for a given touch.
+<span class='line'>246</span>          * @param {!Touch} touch
+<span class='line'>247</span>          * @return {!Point}
+<span class='line'>248</span>          */</span><span class="WHIT">
+<span class='line'>249</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">getPoint</span><span class="PUNC">(</span><span class="NAME">touch</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>250</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">Point</span><span class="PUNC">(</span><span class="NAME">touch.pageX</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetLeft</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">touch.pageY</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetTop</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>251</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>252</span> 
+<span class='line'>253</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>254</span>          * Returns the closest point to the given point
+<span class='line'>255</span>          * within the boundaries of the zoomable element,
+<span class='line'>256</span>          * such that it never causes panning outside
+<span class='line'>257</span>          * the viewport.
+<span class='line'>258</span>          * @param {!Point} point
+<span class='line'>259</span>          * @return {!Point}
+<span class='line'>260</span>          */</span><span class="WHIT">
+<span class='line'>261</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">sanitizePointForPan</span><span class="PUNC">(</span><span class="NAME">point</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>262</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">Point</span><span class="PUNC">(</span><span class="WHIT">
+<span class='line'>263</span> </span><span class="WHIT">                </span><span class="NAME">Math.min</span><span class="PUNC">(</span><span class="NAME">Math.max</span><span class="PUNC">(</span><span class="NAME">point.x</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetLeft</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">zoomableElement.offsetLeft</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetWidth</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">offsetParent.clientWidth</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>264</span> </span><span class="WHIT">                </span><span class="NAME">Math.min</span><span class="PUNC">(</span><span class="NAME">Math.max</span><span class="PUNC">(</span><span class="NAME">point.y</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetTop</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">zoomableElement.offsetTop</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetHeight</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">offsetParent.clientHeight</span><span class="PUNC">)</span><span class="WHIT">
+<span class='line'>265</span> </span><span class="WHIT">            </span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>266</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>267</span> 
+<span class='line'>268</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>269</span>          * Takes a point in page coordinates and pans towards it
+<span class='line'>270</span>          * @param {!Point} point
+<span class='line'>271</span>          * @return {undefined}
+<span class='line'>272</span>          */</span><span class="WHIT">
+<span class='line'>273</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">processPan</span><span class="PUNC">(</span><span class="NAME">point</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>274</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">previousPanPoint</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>275</span> </span><span class="WHIT">                </span><span class="NAME">panPoint.x</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point.x</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">previousPanPoint.x</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>276</span> </span><span class="WHIT">                </span><span class="NAME">panPoint.y</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point.y</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NAME">previousPanPoint.y</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>277</span> </span><span class="WHIT">                </span><span class="NAME">panPoint</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">sanitizePointForPan</span><span class="PUNC">(</span><span class="NAME">panPoint</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>278</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>279</span> </span><span class="WHIT">            </span><span class="NAME">previousPanPoint</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>280</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>281</span> 
+<span class='line'>282</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>283</span>          * Takes a point and a relative zoom factor,
+<span class='line'>284</span>          * with which the panPoint is accordingly updated
+<span class='line'>285</span>          * to reflect the new zoom center, and the current
+<span class='line'>286</span>          * zoom level is multiplied by the relative factor.
+<span class='line'>287</span>          * Useful for when the zoom is dynamically being changed
+<span class='line'>288</span>          * during a gesture.
+<span class='line'>289</span>          * This does not zoom beyond a minimum reasonable zoom
+<span class='line'>290</span>          * level. Since we assume that gestures are for a
+<span class='line'>291</span>          * mobile device, it makes some sense to not allow
+<span class='line'>292</span>          * shrinking of a document to a width less than the container's
+<span class='line'>293</span>          * width. Also easier for computation of pan coordinates.
+<span class='line'>294</span>          * @param {!Point} zoomPoint
+<span class='line'>295</span>          * @param {!number} incrementalZoom
+<span class='line'>296</span>          * @return {undefined}
+<span class='line'>297</span>          */</span><span class="WHIT">
+<span class='line'>298</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">processZoom</span><span class="PUNC">(</span><span class="NAME">zoomPoint</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">incrementalZoom</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>299</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">originalZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>300</span> </span><span class="WHIT">                </span><span class="NAME">actuallyIncrementedZoom</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>301</span> </span><span class="WHIT">                </span><span class="NAME">minZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">Math.min</span><span class="PUNC">(</span><span class="NAME">maxZoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetParent.clientWidth</span><span class="WHIT"> </span><span class="PUNC">/</span><span class="WHIT"> </span><span class="NAME">zoomableElement.offsetWidth</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>302</span> 
+<span class='line'>303</span> </span><span class="WHIT">            </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">previousZoom</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="NAME">incrementalZoom</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>304</span> </span><span class="WHIT">            </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">Math.min</span><span class="PUNC">(</span><span class="NAME">Math.max</span><span class="PUNC">(</span><span class="NAME">zoom</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">minZoom</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">maxZoom</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>305</span> </span><span class="WHIT">            </span><span class="NAME">actuallyIncrementedZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">/</span><span class="WHIT"> </span><span class="NAME">originalZoom</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>306</span> 
+<span class='line'>307</span> </span><span class="WHIT">            </span><span class="NAME">panPoint.x</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">actuallyIncrementedZoom</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">zoomPoint.x</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">panPoint.x</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>308</span> </span><span class="WHIT">            </span><span class="NAME">panPoint.y</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="PUNC">=</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">actuallyIncrementedZoom</span><span class="WHIT"> </span><span class="PUNC">-</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">*</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">zoomPoint.y</span><span class="WHIT"> </span><span class="PUNC">+</span><span class="WHIT"> </span><span class="NAME">panPoint.y</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>309</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>310</span> 
+<span class='line'>311</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>312</span>          * @param {!Point} point1
+<span class='line'>313</span>          * @param {!Point} point2
+<span class='line'>314</span>          * @return {undefined}
+<span class='line'>315</span>          */</span><span class="WHIT">
+<span class='line'>316</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">processPinch</span><span class="PUNC">(</span><span class="NAME">point1</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">point2</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>317</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">zoomPoint</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point1.getCenter</span><span class="PUNC">(</span><span class="NAME">point2</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>318</span> </span><span class="WHIT">                </span><span class="NAME">pinchDistance</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point1.getDistance</span><span class="PUNC">(</span><span class="NAME">point2</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>319</span> </span><span class="WHIT">                </span><span class="NAME">incrementalZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">pinchDistance</span><span class="WHIT"> </span><span class="PUNC">/</span><span class="WHIT"> </span><span class="NAME">firstPinchDistance</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>320</span> 
+<span class='line'>321</span> </span><span class="WHIT">            </span><span class="NAME">processPan</span><span class="PUNC">(</span><span class="NAME">zoomPoint</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>322</span> </span><span class="WHIT">            </span><span class="NAME">processZoom</span><span class="PUNC">(</span><span class="NAME">zoomPoint</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">incrementalZoom</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>323</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>324</span> 
+<span class='line'>325</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>326</span>          * @param {!TouchEvent} event
+<span class='line'>327</span>          * @return {undefined}
+<span class='line'>328</span>          */</span><span class="WHIT">
+<span class='line'>329</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">prepareGesture</span><span class="PUNC">(</span><span class="NAME">event</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>330</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">fingers</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">event.touches.length</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>331</span> </span><span class="WHIT">                </span><span class="NAME">point1</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">fingers</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">0</span><span class="WHIT"> </span><span class="PUNC">?</span><span class="WHIT"> </span><span class="NAME">getPoint</span><span class="PUNC">(</span><span class="NAME">event.touches</span><span class="PUNC">[</span><span class="NUMB">0</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">:</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>332</span> </span><span class="WHIT">                </span><span class="NAME">point2</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">fingers</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">1</span><span class="WHIT"> </span><span class="PUNC">?</span><span class="WHIT"> </span><span class="NAME">getPoint</span><span class="PUNC">(</span><span class="NAME">event.touches</span><span class="PUNC">[</span><span class="NUMB">1</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">:</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>333</span> 
+<span class='line'>334</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">point1</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">point2</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>335</span> </span><span class="WHIT">                </span><span class="COMM">// Compute the first pinch distance for later comparison against</span><span class="WHIT">
+<span class='line'>336</span> </span><span class="WHIT">                </span><span class="COMM">// fresh pinch distances during gesture processing, the ratio</span><span class="WHIT">
+<span class='line'>337</span> </span><span class="WHIT">                </span><span class="COMM">// of which represents the relative-to-current zoom level.</span><span class="WHIT">
+<span class='line'>338</span> </span><span class="WHIT">                </span><span class="NAME">firstPinchDistance</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point1.getDistance</span><span class="PUNC">(</span><span class="NAME">point2</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>339</span> </span><span class="WHIT">                </span><span class="NAME">previousZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>340</span> </span><span class="WHIT">                </span><span class="NAME">previousPanPoint</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point1.getCenter</span><span class="PUNC">(</span><span class="NAME">point2</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>341</span> </span><span class="WHIT">                </span><span class="COMM">// Assuming this is the start of a pinch gesture,</span><span class="WHIT">
+<span class='line'>342</span> </span><span class="WHIT">                </span><span class="COMM">// therefore scroll to (0,0) for easy computing.</span><span class="WHIT">
+<span class='line'>343</span> </span><span class="WHIT">                </span><span class="NAME">removeScroll</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>344</span> </span><span class="WHIT">                </span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gestures.PINCH</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>345</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">point1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>346</span> </span><span class="WHIT">                </span><span class="NAME">previousPanPoint</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point1</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>347</span> </span><span class="WHIT">                </span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gestures.SCROLL</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>348</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>349</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>350</span> 
+<span class='line'>351</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>352</span>          * @param {!TouchEvent} event
+<span class='line'>353</span>          * @return {undefined}
+<span class='line'>354</span>          */</span><span class="WHIT">
+<span class='line'>355</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">processGesture</span><span class="PUNC">(</span><span class="NAME">event</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>356</span> </span><span class="WHIT">            </span><span class="KEYW">var</span><span class="WHIT"> </span><span class="NAME">fingers</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">event.touches.length</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>357</span> </span><span class="WHIT">                </span><span class="NAME">point1</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">fingers</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">0</span><span class="WHIT"> </span><span class="PUNC">?</span><span class="WHIT"> </span><span class="NAME">getPoint</span><span class="PUNC">(</span><span class="NAME">event.touches</span><span class="PUNC">[</span><span class="NUMB">0</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">:</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">,</span><span class="WHIT">
+<span class='line'>358</span> </span><span class="WHIT">                </span><span class="NAME">point2</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">fingers</span><span class="WHIT"> </span><span class="PUNC">></span><span class="WHIT"> </span><span class="NUMB">1</span><span class="WHIT"> </span><span class="PUNC">?</span><span class="WHIT"> </span><span class="NAME">getPoint</span><span class="PUNC">(</span><span class="NAME">event.touches</span><span class="PUNC">[</span><span class="NUMB">1</span><span class="PUNC">]</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">:</span><span class="WHIT"> </span><span class="KEYW">null</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>359</span> 
+<span class='line'>360</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">point1</span><span class="WHIT"> </span><span class="PUNC">&&</span><span class="WHIT"> </span><span class="NAME">point2</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>361</span> </span><span class="WHIT">                </span><span class="COMM">// Prevent default behavior of panning when a pinch is detected</span><span class="WHIT">
+<span class='line'>362</span> </span><span class="WHIT">                </span><span class="NAME">event.preventDefault</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>363</span> </span><span class="WHIT">                </span><span class="COMM">// If the current gesture is a SCROLL (or pan),</span><span class="WHIT">
+<span class='line'>364</span> </span><span class="WHIT">                </span><span class="COMM">// switch that to PINCH and scroll to (0,0)</span><span class="WHIT">
+<span class='line'>365</span> </span><span class="WHIT">                </span><span class="COMM">// for easy computing of transforms</span><span class="WHIT">
+<span class='line'>366</span> </span><span class="WHIT">                </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">gestures.SCROLL</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>367</span> </span><span class="WHIT">                    </span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gestures.PINCH</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>368</span> </span><span class="WHIT">                    </span><span class="NAME">removeScroll</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>369</span> </span><span class="WHIT">                    </span><span class="NAME">firstPinchDistance</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">point1.getDistance</span><span class="PUNC">(</span><span class="NAME">point2</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>370</span> </span><span class="WHIT">                    </span><span class="COMM">// Do no more pinch processing for this</span><span class="WHIT">
+<span class='line'>371</span> </span><span class="WHIT">                    </span><span class="COMM">// event now that we scrolled, because</span><span class="WHIT">
+<span class='line'>372</span> </span><span class="WHIT">                    </span><span class="COMM">// we still have the old coordinates.</span><span class="WHIT">
+<span class='line'>373</span> </span><span class="WHIT">                    </span><span class="COMM">// It is fine to waste a couple of events</span><span class="WHIT">
+<span class='line'>374</span> </span><span class="WHIT">                    </span><span class="COMM">// in a gesture.</span><span class="WHIT">
+<span class='line'>375</span> </span><span class="WHIT">                    </span><span class="KEYW">return</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>376</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>377</span> </span><span class="WHIT">                </span><span class="NAME">processPinch</span><span class="PUNC">(</span><span class="NAME">point1</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">point2</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>378</span> </span><span class="WHIT">                </span><span class="NAME">applyFastTransform</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>379</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT"> </span><span class="KEYW">else</span><span class="WHIT"> </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">point1</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>380</span> </span><span class="WHIT">                </span><span class="COMM">// If there is a switch from pinch to</span><span class="WHIT">
+<span class='line'>381</span> </span><span class="WHIT">                </span><span class="COMM">// scroll mode, restore the scroll position</span><span class="WHIT">
+<span class='line'>382</span> </span><span class="WHIT">                </span><span class="COMM">// to the current pan coordinates.</span><span class="WHIT">
+<span class='line'>383</span> </span><span class="WHIT">                </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">gestures.PINCH</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>384</span> </span><span class="WHIT">                    </span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gestures.SCROLL</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>385</span> </span><span class="WHIT">                    </span><span class="NAME">restoreScroll</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>386</span> </span><span class="WHIT">                    </span><span class="COMM">// Do no more pan processing for this event because</span><span class="WHIT">
+<span class='line'>387</span> </span><span class="WHIT">                    </span><span class="COMM">// the scrolling changed the coordinates.</span><span class="WHIT">
+<span class='line'>388</span> </span><span class="WHIT">                    </span><span class="KEYW">return</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>389</span> </span><span class="WHIT">                </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>390</span> </span><span class="WHIT">                </span><span class="COMM">// Even when we are doing native scrolling/panning,</span><span class="WHIT">
+<span class='line'>391</span> </span><span class="WHIT">                </span><span class="COMM">// keep track and process the pan (but do not apply</span><span class="WHIT">
+<span class='line'>392</span> </span><span class="WHIT">                </span><span class="COMM">// a transform), so that when there is a switch to</span><span class="WHIT">
+<span class='line'>393</span> </span><span class="WHIT">                </span><span class="COMM">// pinch mode, the new pan coordinates are taken into</span><span class="WHIT">
+<span class='line'>394</span> </span><span class="WHIT">                </span><span class="COMM">// account.</span><span class="WHIT">
+<span class='line'>395</span> </span><span class="WHIT">                </span><span class="NAME">processPan</span><span class="PUNC">(</span><span class="NAME">point1</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>396</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>397</span> 
+<span class='line'>398</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>399</span> 
+<span class='line'>400</span> 
+<span class='line'>401</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>402</span>          * Restores scroll to the current pan position
+<span class='line'>403</span>          * after the gesture is over.
+<span class='line'>404</span>          * @return {undefined}
+<span class='line'>405</span>          */</span><span class="WHIT">
+<span class='line'>406</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">sanitizeGesture</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>407</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">===</span><span class="WHIT"> </span><span class="NAME">gestures.PINCH</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>408</span> </span><span class="WHIT">                </span><span class="COMM">// Here, signalZoomChanged is emitted before restoring the</span><span class="WHIT">
+<span class='line'>409</span> </span><span class="WHIT">                </span><span class="COMM">// scroll, because otherwise scrolling and then changing the</span><span class="WHIT">
+<span class='line'>410</span> </span><span class="WHIT">                </span><span class="COMM">// scroll area's dimensions will cause the view to end up</span><span class="WHIT">
+<span class='line'>411</span> </span><span class="WHIT">                </span><span class="COMM">// in unexpected places. Scrolling later will ensure that</span><span class="WHIT">
+<span class='line'>412</span> </span><span class="WHIT">                </span><span class="COMM">// the scrolled view is set by us and not the browser.</span><span class="WHIT">
+<span class='line'>413</span> </span><span class="WHIT">                </span><span class="NAME">events.emit</span><span class="PUNC">(</span><span class="NAME">gui.ZoomHelper.signalZoomChanged</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>414</span> </span><span class="WHIT">                </span><span class="NAME">restoreScroll</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>415</span> </span><span class="WHIT">                </span><span class="NAME">applyDetailedTransform</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>416</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>417</span> </span><span class="WHIT">            </span><span class="NAME">currentGesture</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">gestures.NONE</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>418</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>419</span> 
+<span class='line'>420</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>421</span>          * @param {!string} eventid
+<span class='line'>422</span>          * @param {!Function} cb
+<span class='line'>423</span>          * @return {undefined}
+<span class='line'>424</span>          */</span><span class="WHIT">
+<span class='line'>425</span> </span><span class="WHIT">        </span><span class="NAME">this.subscribe</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>426</span> </span><span class="WHIT">            </span><span class="NAME">events.subscribe</span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>427</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>428</span> 
+<span class='line'>429</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>430</span>          * @param {!string} eventid
+<span class='line'>431</span>          * @param {!Function} cb
+<span class='line'>432</span>          * @return {undefined}
+<span class='line'>433</span>          */</span><span class="WHIT">
+<span class='line'>434</span> </span><span class="WHIT">        </span><span class="NAME">this.unsubscribe</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>435</span> </span><span class="WHIT">            </span><span class="NAME">events.unsubscribe</span><span class="PUNC">(</span><span class="NAME">eventid</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">cb</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>436</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>437</span> 
+<span class='line'>438</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>439</span>          * @return {!number}
+<span class='line'>440</span>          */</span><span class="WHIT">
+<span class='line'>441</span> </span><span class="WHIT">        </span><span class="NAME">this.getZoomLevel</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>442</span> </span><span class="WHIT">            </span><span class="KEYW">return</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>443</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>444</span> 
+<span class='line'>445</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>446</span>          * @param {!number} zoomLevel
+<span class='line'>447</span>          * @return {undefined}
+<span class='line'>448</span>          */</span><span class="WHIT">
+<span class='line'>449</span> </span><span class="WHIT">        </span><span class="NAME">this.setZoomLevel</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">zoomLevel</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>450</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">zoomableElement</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>451</span> </span><span class="WHIT">                </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">zoomLevel</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>452</span> </span><span class="WHIT">                </span><span class="NAME">applyDetailedTransform</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>453</span> </span><span class="WHIT">                </span><span class="NAME">events.emit</span><span class="PUNC">(</span><span class="NAME">gui.ZoomHelper.signalZoomChanged</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NAME">zoom</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>454</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>455</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>456</span> 
+<span class='line'>457</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>458</span>          * Adds touchstart, touchmove, and touchend
+<span class='line'>459</span>          * event listeners to the element's scrollable
+<span class='line'>460</span>          * container.
+<span class='line'>461</span>          * @return {undefined}
+<span class='line'>462</span>          */</span><span class="WHIT">
+<span class='line'>463</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">registerGestureListeners</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>464</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">offsetParent</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>465</span> </span><span class="WHIT">                </span><span class="COMM">// There is no reliable way of detecting if the browser</span><span class="WHIT">
+<span class='line'>466</span> </span><span class="WHIT">                </span><span class="COMM">// supports these touch events. Therefore the only thing</span><span class="WHIT">
+<span class='line'>467</span> </span><span class="WHIT">                </span><span class="COMM">// we can do is simply attach listeners to these events</span><span class="WHIT">
+<span class='line'>468</span> </span><span class="WHIT">                </span><span class="COMM">// as this seems harmless if the events are not supported</span><span class="WHIT">
+<span class='line'>469</span> </span><span class="WHIT">                </span><span class="COMM">// anyway.</span><span class="WHIT">
+<span class='line'>470</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.addEventListener</span><span class="PUNC">(</span><span class="STRN">'touchstart'</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!EventListener}*/</span><span class="PUNC">(</span><span class="NAME">prepareGesture</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>471</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.addEventListener</span><span class="PUNC">(</span><span class="STRN">'touchmove'</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!EventListener}*/</span><span class="PUNC">(</span><span class="NAME">processGesture</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>472</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.addEventListener</span><span class="PUNC">(</span><span class="STRN">'touchend'</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!EventListener}*/</span><span class="PUNC">(</span><span class="NAME">sanitizeGesture</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>473</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>474</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>475</span> 
+<span class='line'>476</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>477</span>          * @return {undefined}
+<span class='line'>478</span>          */</span><span class="WHIT">
+<span class='line'>479</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">unregisterGestureListeners</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>480</span> </span><span class="WHIT">            </span><span class="KEYW">if</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">offsetParent</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>481</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.removeEventListener</span><span class="PUNC">(</span><span class="STRN">'touchstart'</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!EventListener}*/</span><span class="PUNC">(</span><span class="NAME">prepareGesture</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>482</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.removeEventListener</span><span class="PUNC">(</span><span class="STRN">'touchmove'</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!EventListener}*/</span><span class="PUNC">(</span><span class="NAME">processGesture</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>483</span> </span><span class="WHIT">                </span><span class="NAME">offsetParent.removeEventListener</span><span class="PUNC">(</span><span class="STRN">'touchend'</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="COMM">/**@type{!EventListener}*/</span><span class="PUNC">(</span><span class="NAME">sanitizeGesture</span><span class="PUNC">)</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>484</span> </span><span class="WHIT">            </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>485</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>486</span> 
+<span class='line'>487</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>488</span>          * @param {!function(!Error=)} callback, passing an error object in case of error
+<span class='line'>489</span>          * @return {undefined}
+<span class='line'>490</span>          */</span><span class="WHIT">
+<span class='line'>491</span> </span><span class="WHIT">        </span><span class="NAME">this.destroy</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">callback</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>492</span> </span><span class="WHIT">            </span><span class="NAME">unregisterGestureListeners</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>493</span> </span><span class="WHIT">            </span><span class="NAME">enableScrollBars</span><span class="PUNC">(</span><span class="KEYW">false</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>494</span> </span><span class="WHIT">            </span><span class="NAME">callback</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>495</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>496</span> 
+<span class='line'>497</span> </span><span class="WHIT">        </span><span class="COMM">/**
+<span class='line'>498</span>          * FIXME: I don't like that we can switch the zoomable
+<span class='line'>499</span>          * element at runtime, but I don't see any other way to
+<span class='line'>500</span>          * keep the zoom helper working after an undo.
+<span class='line'>501</span>          * @param {!HTMLElement} element
+<span class='line'>502</span>          * @return {undefined}
+<span class='line'>503</span>          */</span><span class="WHIT">
+<span class='line'>504</span> </span><span class="WHIT">        </span><span class="NAME">this.setZoomableElement</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="PUNC">(</span><span class="NAME">element</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>505</span> </span><span class="WHIT">            </span><span class="NAME">unregisterGestureListeners</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>506</span> </span><span class="WHIT">            </span><span class="NAME">zoomableElement</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NAME">element</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>507</span> </span><span class="WHIT">            </span><span class="NAME">offsetParent</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="COMM">/**@type{!HTMLElement}*/</span><span class="PUNC">(</span><span class="NAME">zoomableElement.offsetParent</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>508</span> </span><span class="WHIT">            </span><span class="NAME">parentElement</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="COMM">/**@type{!HTMLElement}*/</span><span class="PUNC">(</span><span class="NAME">zoomableElement.parentNode</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>509</span> </span><span class="WHIT">            </span><span class="COMM">// Write out the current transform to the new element.</span><span class="WHIT">
+<span class='line'>510</span> </span><span class="WHIT">            </span><span class="NAME">applyDetailedTransform</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>511</span> </span><span class="WHIT">            </span><span class="NAME">registerGestureListeners</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>512</span> </span><span class="WHIT">            </span><span class="NAME">enableScrollBars</span><span class="PUNC">(</span><span class="KEYW">true</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>513</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>514</span> 
+<span class='line'>515</span> </span><span class="WHIT">        </span><span class="KEYW">function</span><span class="WHIT"> </span><span class="NAME">init</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="WHIT"> </span><span class="PUNC">{</span><span class="WHIT">
+<span class='line'>516</span> </span><span class="WHIT">            </span><span class="NAME">zoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>517</span> </span><span class="WHIT">            </span><span class="NAME">previousZoom</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="NUMB">1</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>518</span> </span><span class="WHIT">            </span><span class="NAME">panPoint</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="KEYW">new</span><span class="WHIT"> </span><span class="NAME">Point</span><span class="PUNC">(</span><span class="NUMB">0</span><span class="PUNC">,</span><span class="WHIT"> </span><span class="NUMB">0</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>519</span> </span><span class="WHIT">        </span><span class="PUNC">}</span><span class="WHIT">
+<span class='line'>520</span> </span><span class="WHIT">        </span><span class="NAME">init</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>521</span> </span><span class="WHIT">    </span><span class="PUNC">}</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>522</span> </span><span class="WHIT">    </span><span class="COMM">/**@const
+<span class='line'>523</span>      * @type {!string} */</span><span class="WHIT">
+<span class='line'>524</span> </span><span class="WHIT">    </span><span class="NAME">gui.ZoomHelper.signalZoomChanged</span><span class="WHIT"> </span><span class="PUNC">=</span><span class="WHIT"> </span><span class="STRN">"zoomChanged"</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>525</span> </span><span class="PUNC">}</span><span class="PUNC">(</span><span class="PUNC">)</span><span class="PUNC">)</span><span class="PUNC">;</span><span class="WHIT">
+<span class='line'>526</span> </span></pre></body></html>

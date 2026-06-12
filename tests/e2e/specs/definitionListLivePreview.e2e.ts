@@ -1,5 +1,7 @@
 import { browser, expect } from '@wdio/globals';
 
+import { ensureActiveFileReadingMode } from '../helpers/readingMode';
+
 type DefinitionListRenderMode = 'live' | 'reading';
 
 const definitionListCssSnippetName = 'pem-definition-list-css-hooks';
@@ -416,22 +418,7 @@ async function ensureLivePreviewMode(): Promise<void> {
 }
 
 async function ensureReadingMode(): Promise<void> {
-    await browser.execute(async () => {
-        // @ts-ignore
-        const leaf = app.workspace.getLeaf();
-        if (!leaf) {
-            return;
-        }
-
-        const state = leaf.getViewState();
-        state.state = {
-            ...(state.state ?? {}),
-            mode: 'preview'
-        };
-        await leaf.setViewState(state);
-        // @ts-ignore
-        app.workspace.updateOptions();
-    });
+    await ensureActiveFileReadingMode();
     await browser.pause(500);
 }
 

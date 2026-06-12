@@ -9,6 +9,7 @@ import {
 } from '../../../shared/utils/orderedListMarkers';
 import { ContinuationLineConfig } from '../types';
 import { findLastListItem } from '../utils/continuationUtils';
+import { getLineIndent, resolveListOwnerAtLine } from '../utils/standardListStructure';
 
 /**
  * Handles Enter key in continuation lines (indented lines within a list).
@@ -20,6 +21,22 @@ export function handleContinuationLine(config: ContinuationLineConfig): boolean 
     const { view, currentLine, settings } = config;
     const state = view.state;
     const { lineText } = currentLine;
+    const allLines = state.doc.toString().split('\n');
+    const lineIndex = currentLine.line.number - 1;
+    const ownerContext = resolveListOwnerAtLine(allLines, lineIndex, settings);
+    if (ownerContext && ownerContext.owner.lineIndex !== lineIndex) {
+        const insertPos = currentLine.selection.from;
+        const indent = getLineIndent(lineText);
+        view.dispatch(state.update({
+            changes: {
+                from: insertPos,
+                to: insertPos,
+                insert: `\n${indent}`
+            },
+            selection: EditorSelection.cursor(insertPos + 1 + indent.length)
+        }));
+        return true;
+    }
 
     // Check if we're in a continuation line (indented line within a list)
     const indentMatch = lineText.match(/^(\s+)/);
@@ -39,7 +56,6 @@ export function handleContinuationLine(config: ContinuationLineConfig): boolean 
     }
 
     // We found the last list item before the continuation - create the next list item
-    const allLines = state.doc.toString().split('\n');
     const markerInfo = getNextListMarker(lastListItem.text, allLines, lastListItem.line.number - 1, settings);
 
     if (!markerInfo) {

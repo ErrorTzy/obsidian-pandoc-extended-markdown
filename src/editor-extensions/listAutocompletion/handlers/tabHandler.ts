@@ -1,541 +1,415 @@
-import { EditorView } from '@codemirror/view';
 import { EditorSelection } from '@codemirror/state';
-import type { KeyBinding } from '@codemirror/view';
+import { EditorView, KeyBinding } from '@codemirror/view';
 import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
-import { INDENTATION } from '../../../core/constants';
-import { ListPatterns } from '../../../shared/patterns';
-import { removeIndentLevel } from '../utils/indentation';
-import {
-    buildExpectedMovedDocumentLines,
-    LineRange,
-    setPendingListBlockReconciliation
-} from '../utils/listBlockReconciliation';
-import { isExtendedList } from '../utils/markerDetection';
-import { getMarkerForIndent } from '../utils/unorderedMarkers';
-import { resolveSettings, SettingsProvider } from '../types';
 import {
     formatOrderedListMarker,
-    getIndentColumns,
-    parseOrderedListMarker,
-    resolveOrderedMarkerForTarget
+    parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
-import {
-    formatStandardMarkerType,
-    resolveLocalChildMarkerForMove,
-    resolvePreviousTargetMarker,
-    resolveStandardListItem
-} from '../../../shared/utils/standardListMarkerResolution';
-import type { OrderedListMarkerStyle } from '../../../shared/types/orderedListTypes';
 import type { StandardListMarkerType } from '../../../shared/utils/standardListMarkerResolution';
+import { getMarkerForIndent } from '../utils/unorderedMarkers';
+import { setPendingListBlockReconciliation } from '../utils/listBlockReconciliation';
+import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
+import { resolveSettings, SettingsProvider } from '../types';
+import {
+    addIndentLevel,
+    findExplicitChildBlock,
+    findNearestNodeAtDepth,
+    findTargetParentLineIndex,
+    getDirectContinuationLineIndices,
+    getPreviousSiblingOrdinal,
+    removeIndentLevel,
+    resolveListOwnerAtLine,
+    resolveMarkerTypeForDepth,
+    StandardListChunk,
+    StandardListNode
+} from '../utils/standardListStructure';
+import { parseStandardListItem } from '../../../shared/utils/listContext';
 
-interface MovedOrderedLine {
+type MoveDirection = 'indent' | 'outdent';
+
+interface OwnerMove {
+    owner: StandardListNode;
+    chunk: StandardListChunk;
+    targetDepth: number;
+    targetIndent: string;
+    targetMarkerType: StandardListMarkerType;
+    targetParentLineIndex: number | null;
+    lineIndices: number[];
+}
+
+interface MovedOrderedOwner {
     lineIndex: number;
-    parentLineIndex: number;
-    targetIndentColumns: number;
-    style: OrderedListMarkerStyle;
+    targetDepth: number;
+    targetParentLineIndex: number | null;
+    markerType: StandardListMarkerType;
     ordinal: number;
 }
 
-function getTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
-    if (ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE.test(lineText)) {
-        return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE);
-    }
-
-    if (ListPatterns.ORDERED_LIST_MARKER_WITH_SPACE.test(lineText)) {
-        return lineText.match(ListPatterns.ORDERED_LIST_MARKER_WITH_SPACE);
-    }
-
-    return isExtendedList(lineText, settings)
-        ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE)
-        : null;
+export function createTabHandler(settingsProvider: SettingsProvider): KeyBinding {
+    return {
+        key: 'Tab',
+        run: (view: EditorView): boolean => {
+            return moveTouchedOwners(view, 'indent', resolveSettings(settingsProvider));
+        }
+    };
 }
 
-function getShiftTabListMatch(lineText: string, settings: PandocExtendedMarkdownSettings): RegExpMatchArray | null {
-    if (ListPatterns.UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE.test(lineText)) {
-        return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE);
-    }
-
-    if (ListPatterns.ORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE.test(lineText)) {
-        return lineText.match(ListPatterns.ORDERED_LIST_MARKER_WITH_INDENT_AND_SPACE);
-    }
-
-    return isExtendedList(lineText, settings)
-        ? lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_INDENT_AND_SPACE)
-        : null;
+export function createShiftTabHandler(settingsProvider: SettingsProvider): KeyBinding {
+    return {
+        key: 'Shift-Tab',
+        run: (view: EditorView): boolean => {
+            return moveTouchedOwners(view, 'outdent', resolveSettings(settingsProvider));
+        }
+    };
 }
 
-function getMarkerForTargetIndent(
-    marker: string,
-    currentIndent: string,
-    targetIndent: string,
+function moveTouchedOwners(
+    view: EditorView,
+    direction: MoveDirection,
+    settings: PandocExtendedMarkdownSettings
+): boolean {
+    const state = view.state;
+    const lines = state.doc.toString().split('\n');
+    const selection = state.selection.main;
+    const ownerContexts = selection.empty
+        ? collectSingleOwner(lines, state.doc.lineAt(selection.from).number - 1, settings)
+        : collectSelectedOwners(lines, selection.from, selection.to, view, settings);
+
+    if (ownerContexts.length === 0) {
+        return false;
+    }
+
+    const moves = buildOwnerMoves(lines, ownerContexts, direction, settings);
+    if (moves.length === 0) {
+        return false;
+    }
+
+    const movedOrderedOwners: MovedOrderedOwner[] = [];
+    const nextLines = [...lines];
+    for (const move of moves) {
+        applyOwnerMove(lines, nextLines, move, settings, movedOrderedOwners);
+    }
+
+    applyExpectedRenumbering(nextLines, moves, settings);
+
+    const cursor = selection.empty
+        ? resolveMovedCursor(view, lines, nextLines, moves, selection.from)
+        : selection.from;
+
+    setPendingListBlockReconciliation(nextLines, {
+        startIndex: 0,
+        endIndex: nextLines.length - 1
+    });
+    view.dispatch(state.update({
+        changes: {
+            from: 0,
+            to: state.doc.length,
+            insert: nextLines.join('\n')
+        },
+        selection: EditorSelection.cursor(cursor)
+    }));
+
+    return true;
+}
+
+function collectSingleOwner(
     lines: string[],
     lineIndex: number,
-    shouldResolveOrdinal: boolean,
-    direction: 'indent' | 'outdent',
-    settings: PandocExtendedMarkdownSettings,
-    movedOrderedLines: MovedOrderedLine[]
-): string {
-    const currentLineItem = resolveStandardListItem(lines, lineIndex);
-    const orderedMarker = parseOrderedListMarker(`${currentIndent}${marker} `, lines, lineIndex);
-    const targetIndentColumns = getIndentColumns(targetIndent);
-    const previousTargetMarker = resolvePreviousTargetMarker({
-        lines,
-        startLineIndex: lineIndex - 1,
-        targetIndentColumns,
-        settings
-    });
-
-    if (!orderedMarker) {
-        if (previousTargetMarker) {
-            return previousTargetMarker.marker;
-        }
-
-        const overrideMarkerType = getLocalOverrideMarkerType(
-            currentLineItem?.markerType ?? { kind: 'unordered', marker },
-            getIndentColumns(currentIndent),
-            targetIndentColumns,
-            lines,
-            lineIndex
-        );
-
-        return overrideMarkerType
-            ? formatStandardMarkerType(overrideMarkerType)
-            : getMarkerForIndent(marker, targetIndent, settings);
-    }
-
-    if (previousTargetMarker && isUnorderedMarker(previousTargetMarker.marker)) {
-        return previousTargetMarker.marker;
-    }
-
-    const overrideMarkerType = getLocalOverrideMarkerType(
-        currentLineItem?.markerType ?? { kind: 'ordered', style: orderedMarker.style },
-        getIndentColumns(currentIndent),
-        targetIndentColumns,
-        lines,
-        lineIndex
-    );
-
-    if (overrideMarkerType?.kind === 'unordered') {
-        return overrideMarkerType.marker;
-    }
-
-    const parentLineIndex = findMovedTargetParentLineIndex(movedOrderedLines, targetIndentColumns);
-    const previousMovedSibling = findPreviousMovedSibling(
-        movedOrderedLines,
-        targetIndentColumns,
-        parentLineIndex
-    );
-    const resolvedMarker = resolveOrderedMarkerForTarget({
-        lines,
-        currentLineIndex: lineIndex,
-        currentIndentColumns: getIndentColumns(currentIndent),
-        targetIndentColumns,
-        currentStyle: orderedMarker.style,
-        direction,
-        settings
-    });
-    const style = previousMovedSibling?.style ??
-        (overrideMarkerType?.kind === 'ordered' ? overrideMarkerType.style : resolvedMarker.style);
-    const ordinal = shouldResolveOrdinal
-        ? previousMovedSibling
-            ? previousMovedSibling.ordinal + 1
-            : resolvedMarker.ordinal
-        : orderedMarker.ordinal;
-
-    movedOrderedLines.push({
-        lineIndex,
-        parentLineIndex,
-        targetIndentColumns,
-        style,
-        ordinal
-    });
-
-    return formatOrderedListMarker(style, ordinal);
+    settings: PandocExtendedMarkdownSettings
+): Array<ReturnType<typeof resolveListOwnerAtLine> & {}> {
+    const owner = resolveListOwnerAtLine(lines, lineIndex, settings);
+    return owner ? [owner] : [];
 }
 
-function isUnorderedMarker(marker: string): boolean {
-    return marker === '-' || marker === '+' || marker === '*';
-}
-
-function getLocalOverrideMarkerType(
-    currentMarkerType: StandardListMarkerType,
-    currentIndentColumns: number,
-    targetIndentColumns: number,
+function collectSelectedOwners(
     lines: string[],
-    lineIndex: number
-): StandardListMarkerType | null {
-    return resolveLocalChildMarkerForMove({
-        lines,
-        currentLineIndex: lineIndex,
-        currentIndentColumns,
-        targetIndentColumns,
-        currentMarkerType
-    });
+    selectionFrom: number,
+    selectionTo: number,
+    view: EditorView,
+    settings: PandocExtendedMarkdownSettings
+): Array<ReturnType<typeof resolveListOwnerAtLine> & {}> {
+    const fromLine = view.state.doc.lineAt(selectionFrom);
+    const toLine = view.state.doc.lineAt(Math.max(selectionFrom, selectionTo - 1));
+    const owners = new Map<number, NonNullable<ReturnType<typeof resolveListOwnerAtLine>>>();
+
+    for (let lineNumber = fromLine.number; lineNumber <= toLine.number; lineNumber++) {
+        const context = resolveListOwnerAtLine(lines, lineNumber - 1, settings);
+        if (context) {
+            owners.set(context.owner.lineIndex, context);
+        }
+    }
+
+    return [...owners.values()].sort((left, right) => left.owner.lineIndex - right.owner.lineIndex);
 }
 
-function getLineIndent(lineText: string): string {
-    return lineText.match(ListPatterns.INDENT_ONLY)?.[1] ?? '';
-}
+function buildOwnerMoves(
+    lines: string[],
+    ownerContexts: Array<NonNullable<ReturnType<typeof resolveListOwnerAtLine>>>,
+    direction: MoveDirection,
+    settings: PandocExtendedMarkdownSettings
+): OwnerMove[] {
+    const plannedMoves: OwnerMove[] = [];
 
-function findSubtreeEndLineIndex(lines: string[], lineIndex: number, indent: string): number {
-    const baseColumns = getIndentColumns(indent);
-    let endIndex = lineIndex;
-
-    for (let index = lineIndex + 1; index < lines.length; index++) {
-        if (!lines[index].trim()) {
-            endIndex = index;
+    for (const ownerContext of ownerContexts) {
+        const { owner, chunk } = ownerContext;
+        const targetDepth = direction === 'indent' ? owner.depth + 1 : owner.depth - 1;
+        if (targetDepth < 1) {
             continue;
         }
 
-        if (getIndentColumns(getLineIndent(lines[index])) <= baseColumns) {
-            break;
-        }
+        const explicitChild = direction === 'indent'
+            ? findExplicitChildBlock(lines, owner, settings)
+            : null;
+        const explicitParent = direction === 'outdent'
+            ? chunk.nodes.find(node => node.lineIndex === owner.parentLineIndex) ?? null
+            : null;
+        const targetIndent = direction === 'indent'
+            ? explicitChild?.indent ?? addIndentLevel(owner.indent)
+            : explicitParent?.indent ??
+                findNearestNodeAtDepth(chunk, owner.lineIndex, targetDepth)?.indent ??
+                removeIndentLevel(owner.indent);
+        const targetMarkerType = resolveTargetMarkerType(
+            chunk,
+            owner,
+            targetDepth,
+            targetIndent,
+            direction,
+            settings,
+            explicitChild?.markerType ?? explicitParent?.markerType ?? null
+        );
+        const targetParentLineIndex = findMovedTargetParentLineIndex(plannedMoves, owner, targetDepth) ??
+            findTargetParentLineIndex(chunk, owner.lineIndex, targetDepth);
 
-        endIndex = index;
+        plannedMoves.push({
+            owner,
+            chunk,
+            targetDepth,
+            targetIndent,
+            targetMarkerType,
+            targetParentLineIndex,
+            lineIndices: [
+                owner.lineIndex,
+                ...getDirectContinuationLineIndices(lines, owner)
+            ]
+        });
     }
 
-    return endIndex;
+    return plannedMoves;
 }
 
-function findContiguousListBlock(lines: string[], lineIndex: number): LineRange {
-    let startIndex = lineIndex;
-    let endIndex = lineIndex;
-
-    for (let index = lineIndex - 1; index >= 0; index--) {
-        if (!lines[index].trim()) {
-            break;
-        }
-
-        startIndex = index;
-    }
-
-    for (let index = lineIndex + 1; index < lines.length; index++) {
-        if (!lines[index].trim()) {
-            break;
-        }
-
-        endIndex = index;
-    }
-
-    return { startIndex, endIndex };
-}
-
-function changeLineIndent(lineText: string, direction: 'indent' | 'outdent'): string {
-    const indent = getLineIndent(lineText);
-    return direction === 'indent'
-        ? `${INDENTATION.FOUR_SPACES}${lineText}`
-        : `${removeIndentLevel(indent)}${lineText.substring(indent.length)}`;
-}
-
-function updateMovedLineMarker(
-    lineText: string,
-    lineIndex: number,
-    targetLineText: string,
-    shouldResolveOrdinal: boolean,
-    direction: 'indent' | 'outdent',
-    lines: string[],
+function resolveTargetMarkerType(
+    chunk: StandardListChunk,
+    owner: StandardListNode,
+    targetDepth: number,
+    targetIndent: string,
+    direction: MoveDirection,
     settings: PandocExtendedMarkdownSettings,
-    movedOrderedLines: MovedOrderedLine[]
-): string {
-    const listMatch = getTabListMatch(lineText, settings);
-    if (!listMatch) {
-        return targetLineText;
+    explicitMarkerType: StandardListMarkerType | null
+): StandardListMarkerType {
+    if (
+        owner.markerType.kind === 'ordered' &&
+        !settings.enableOrderedListMarkerCycling &&
+        !explicitMarkerType
+    ) {
+        return owner.markerType;
     }
 
-    const marker = listMatch[2];
-    const space = listMatch[3];
-    const markerEnd = listMatch[1].length + marker.length + space.length;
-    const targetIndent = getLineIndent(targetLineText);
-    const targetMarker = getMarkerForTargetIndent(
-        marker,
-        listMatch[1],
-        targetIndent,
-        lines,
-        lineIndex,
-        shouldResolveOrdinal,
-        direction,
+    const resolved = resolveMarkerTypeForDepth(
+        chunk,
+        owner.lineIndex,
+        targetDepth,
+        owner.markerType,
         settings,
-        movedOrderedLines
+        explicitMarkerType
     );
 
-    return `${targetIndent}${targetMarker}${space}${lineText.substring(markerEnd)}`;
-}
-
-function buildMovedSubtreeLines(
-    lines: string[],
-    startIndex: number,
-    endIndex: number,
-    direction: 'indent' | 'outdent',
-    settings: PandocExtendedMarkdownSettings
-): string[] {
-    const workingLines = [...lines];
-    const movedOrderedLines: MovedOrderedLine[] = [];
-
-    for (let index = startIndex; index <= endIndex; index++) {
-        const targetLineText = changeLineIndent(lines[index], direction);
-        const shouldResolveOrdinal = index === startIndex || settings.autoRenumberLists;
-        workingLines[index] = updateMovedLineMarker(
-            lines[index],
-            index,
-            targetLineText,
-            shouldResolveOrdinal,
-            direction,
-            workingLines,
-            settings,
-            movedOrderedLines
-        );
+    if (
+        direction === 'indent' &&
+        !explicitMarkerType &&
+        resolved.kind === 'unordered' &&
+        owner.markerType.kind === 'unordered'
+    ) {
+        return {
+            kind: 'unordered',
+            marker: getMarkerForIndent(owner.markerType.marker, targetIndent, settings)
+        };
     }
 
-    return workingLines.slice(startIndex, endIndex + 1);
+    return resolved;
 }
 
-function findMovedTargetParentLineIndex(
-    movedOrderedLines: MovedOrderedLine[],
-    targetIndentColumns: number
-): number {
-    for (let index = movedOrderedLines.length - 1; index >= 0; index--) {
-        if (movedOrderedLines[index].targetIndentColumns < targetIndentColumns) {
-            return movedOrderedLines[index].lineIndex;
+function applyOwnerMove(
+    originalLines: string[],
+    nextLines: string[],
+    move: OwnerMove,
+    settings: PandocExtendedMarkdownSettings,
+    movedOrderedOwners: MovedOrderedOwner[]
+): void {
+    const owner = move.owner;
+    const marker = formatMovedMarker(originalLines, move, settings, movedOrderedOwners);
+    const ownerLine = originalLines[owner.lineIndex];
+    const markerEnd = owner.indent.length + owner.marker.length + owner.spaces.length;
+    nextLines[owner.lineIndex] = `${move.targetIndent}${marker}${owner.spaces || ' '}${ownerLine.slice(markerEnd)}`;
+
+    for (const lineIndex of move.lineIndices) {
+        if (lineIndex === owner.lineIndex) {
+            continue;
         }
-    }
 
-    return -1;
+        nextLines[lineIndex] = `${move.targetIndent}${originalLines[lineIndex].slice(owner.indent.length)}`;
+    }
 }
 
-function findPreviousMovedSibling(
-    movedOrderedLines: MovedOrderedLine[],
-    targetIndentColumns: number,
-    parentLineIndex: number
-): MovedOrderedLine | null {
-    for (let index = movedOrderedLines.length - 1; index >= 0; index--) {
-        const movedLine = movedOrderedLines[index];
+function formatMovedMarker(
+    originalLines: string[],
+    move: OwnerMove,
+    settings: PandocExtendedMarkdownSettings,
+    movedOrderedOwners: MovedOrderedOwner[]
+): string {
+    if (move.targetMarkerType.kind === 'unordered') {
+        return move.targetMarkerType.marker;
+    }
+
+    const currentOrdered = parseOrderedListMarker(
+        originalLines[move.owner.lineIndex],
+        originalLines,
+        move.owner.lineIndex
+    );
+    const previousMovedSibling = findPreviousMovedOrderedSibling(movedOrderedOwners, move);
+    const previousExistingOrdinal = getPreviousSiblingOrdinal(
+        move.chunk,
+        move.owner.lineIndex,
+        move.targetDepth,
+        move.targetMarkerType,
+        move.targetParentLineIndex
+    );
+    const ordinal = settings.autoRenumberLists
+        ? previousMovedSibling?.ordinal ?? ((previousExistingOrdinal ?? 0) + 1)
+        : currentOrdered?.ordinal ?? ((previousExistingOrdinal ?? 0) + 1);
+    const normalizedOrdinal = previousMovedSibling && settings.autoRenumberLists
+        ? previousMovedSibling.ordinal + 1
+        : ordinal;
+
+    movedOrderedOwners.push({
+        lineIndex: move.owner.lineIndex,
+        targetDepth: move.targetDepth,
+        targetParentLineIndex: move.targetParentLineIndex,
+        markerType: move.targetMarkerType,
+        ordinal: normalizedOrdinal
+    });
+
+    return formatOrderedListMarker(move.targetMarkerType.style, normalizedOrdinal);
+}
+
+function findPreviousMovedOrderedSibling(
+    movedOrderedOwners: MovedOrderedOwner[],
+    move: OwnerMove
+): MovedOrderedOwner | null {
+    for (let index = movedOrderedOwners.length - 1; index >= 0; index--) {
+        const moved = movedOrderedOwners[index];
         if (
-            movedLine.targetIndentColumns === targetIndentColumns &&
-            movedLine.parentLineIndex === parentLineIndex
+            moved.targetDepth === move.targetDepth &&
+            moved.targetParentLineIndex === move.targetParentLineIndex &&
+            moved.markerType.kind === 'ordered' &&
+            move.targetMarkerType.kind === 'ordered' &&
+            moved.markerType.style === move.targetMarkerType.style
         ) {
-            return movedLine;
+            return moved;
         }
     }
 
     return null;
 }
 
-function getCursorOffsetAfterMarker(
-    oldOffset: number,
-    oldMarkerEnd: number,
-    newMarkerEnd: number
+function findMovedTargetParentLineIndex(
+    plannedMoves: OwnerMove[],
+    owner: StandardListNode,
+    targetDepth: number
+): number | null {
+    for (let index = plannedMoves.length - 1; index >= 0; index--) {
+        const move = plannedMoves[index];
+        if (move.owner.lineIndex === owner.parentLineIndex && move.targetDepth === targetDepth - 1) {
+            return move.owner.lineIndex;
+        }
+    }
+
+    return null;
+}
+
+function resolveMovedCursor(
+    view: EditorView,
+    originalLines: string[],
+    nextLines: string[],
+    moves: OwnerMove[],
+    cursorPosition: number
 ): number {
+    const cursorLine = view.state.doc.lineAt(cursorPosition);
+    const cursorLineIndex = cursorLine.number - 1;
+    const move = moves.find(candidate => candidate.lineIndices.includes(cursorLineIndex));
+    if (!move) {
+        return cursorPosition;
+    }
+
+    const oldOffset = cursorPosition - cursorLine.from;
+    const newOffset = cursorLineIndex === move.owner.lineIndex
+        ? getMovedOwnerCursorOffset(originalLines[cursorLineIndex], nextLines[cursorLineIndex], oldOffset)
+        : Math.max(0, oldOffset + move.targetIndent.length - move.owner.indent.length);
+
+    return getLineStartOffset(nextLines, cursorLineIndex) +
+        Math.min(newOffset, nextLines[cursorLineIndex].length);
+}
+
+function getMovedOwnerCursorOffset(oldLine: string, newLine: string, oldOffset: number): number {
+    const oldMarkerEnd = getMarkerEnd(oldLine);
+    const newMarkerEnd = getMarkerEnd(newLine);
+
+    if (oldMarkerEnd === null || newMarkerEnd === null) {
+        return oldOffset;
+    }
+
     return oldOffset <= oldMarkerEnd
         ? newMarkerEnd
         : Math.max(newMarkerEnd, oldOffset + newMarkerEnd - oldMarkerEnd);
 }
 
-function getMarkerEnd(lineText: string): number | null {
-    return lineText.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE)?.[0].length ??
-        lineText.match(ListPatterns.ORDERED_LIST_MARKER_WITH_SPACE)?.[0].length ??
-        lineText.match(ListPatterns.ANY_LIST_MARKER_WITH_SPACE)?.[0].length ??
-        null;
+function getMarkerEnd(line: string): number | null {
+    const item = parseStandardListItem(line);
+    return item ? item.indent.length + item.marker.length + item.spaces.length : null;
 }
 
-function isCursorAtTabHandledPosition(
-    lineText: string,
-    lineFrom: number,
-    selectionFrom: number,
-    selectionTo: number,
-    markerEnd: number,
-    indentLength: number
-): boolean {
-    if (selectionTo !== selectionFrom) {
-        return false;
+function getLineStartOffset(lines: string[], lineIndex: number): number {
+    let offset = 0;
+    for (let index = 0; index < lineIndex; index++) {
+        offset += lines[index].length + 1;
     }
 
-    if (selectionFrom === lineFrom + markerEnd) {
-        return true;
+    return offset;
+}
+
+function applyExpectedRenumbering(
+    lines: string[],
+    moves: OwnerMove[],
+    settings: PandocExtendedMarkdownSettings
+): void {
+    if (!settings.autoRenumberLists) {
+        return;
     }
 
-    const hasContent = lineText.substring(markerEnd).trim().length > 0;
-    return !hasContent &&
-        selectionFrom >= lineFrom + indentLength &&
-        selectionFrom <= lineFrom + lineText.length;
-}
-
-function isCursorAtShiftTabHandledPosition(
-    lineText: string,
-    lineFrom: number,
-    selectionFrom: number,
-    selectionTo: number,
-    markerEnd: number,
-    indentLength: number
-): boolean {
-    const hasContent = lineText.substring(markerEnd).trim().length > 0;
-    return hasContent || isCursorAtTabHandledPosition(
-        lineText,
-        lineFrom,
-        selectionFrom,
-        selectionTo,
-        markerEnd,
-        indentLength
-    );
-}
-
-/**
- * Creates the Tab key handler for nested lists.
- *
- * @returns KeyBinding for Tab key
- */
-export function createTabHandler(settingsProvider: SettingsProvider): KeyBinding {
-    return {
-        key: 'Tab',
-        run: (view: EditorView): boolean => {
-            const settings = resolveSettings(settingsProvider);
-            const state = view.state;
-            const selection = state.selection.main;
-
-            // Get the current line
-            const line = state.doc.lineAt(selection.from);
-            const lineText = line.text;
-
-            // Check if we're at the start of a list item (after the marker)
-            const listMatch = getTabListMatch(lineText, settings);
-            if (listMatch) {
-                const currentIndent = listMatch[1];
-                const marker = listMatch[2];
-                const space = listMatch[3];
-                const markerEnd = currentIndent.length + marker.length + space.length;
-                const handledPosition = isCursorAtTabHandledPosition(
-                    lineText,
-                    line.from,
-                    selection.from,
-                    selection.to,
-                    markerEnd,
-                    currentIndent.length
-                );
-
-                // Only handle Tab if cursor is at the beginning of the content (right after marker)
-                if (handledPosition) {
-                    const lines = state.doc.toString().split('\n');
-                    const currentLineIndex = line.number - 1;
-                    const subtreeEndIndex = findSubtreeEndLineIndex(lines, currentLineIndex, currentIndent);
-                    const listBlockRange = findContiguousListBlock(lines, currentLineIndex);
-                    const replacementLines = buildMovedSubtreeLines(
-                        lines,
-                        currentLineIndex,
-                        subtreeEndIndex,
-                        'indent',
-                        settings
-                    );
-                    const expectedLines = buildExpectedMovedDocumentLines(
-                        lines,
-                        currentLineIndex,
-                        subtreeEndIndex,
-                        replacementLines
-                    );
-                    const newLine = replacementLines[0];
-                    const endLine = state.doc.line(subtreeEndIndex + 1);
-
-                    const changes = {
-                        from: line.from,
-                        to: endLine.to,
-                        insert: replacementLines.join('\n')
-                    };
-
-                    const newMarkerEnd = getMarkerEnd(newLine) ??
-                        markerEnd + INDENTATION.TAB_SIZE;
-                    setPendingListBlockReconciliation(expectedLines, listBlockRange);
-                    const transaction = state.update({
-                        changes,
-                        selection: EditorSelection.cursor(line.from + newMarkerEnd)
-                    });
-
-                    view.dispatch(transaction);
-                    return true;
-                }
-            }
-
-            return false; // Let default Tab handling take over
+    for (const move of moves) {
+        if (move.targetMarkerType.kind === 'ordered') {
+            renumberOrderedGroup(lines, move.owner.lineIndex, {
+                depth: move.targetDepth,
+                parentLineIndex: move.targetParentLineIndex,
+                markerType: move.targetMarkerType
+            }, settings);
         }
-    };
-}
 
-/**
- * Creates the Shift+Tab key handler for dedenting.
- *
- * @returns KeyBinding for Shift+Tab key
- */
-export function createShiftTabHandler(settingsProvider: SettingsProvider): KeyBinding {
-    return {
-        key: 'Shift-Tab',
-        run: (view: EditorView): boolean => {
-            const settings = resolveSettings(settingsProvider);
-            const state = view.state;
-            const selection = state.selection.main;
-
-            // Get the current line
-            const line = state.doc.lineAt(selection.from);
-            const lineText = line.text;
-
-            // Check if we're in a list item with indentation
-            const listMatch = getShiftTabListMatch(lineText, settings);
-            if (listMatch && listMatch[1].length > 0) {
-                const currentIndent = listMatch[1];
-                const marker = listMatch[2];
-                const space = listMatch[3];
-                const markerEnd = currentIndent.length + marker.length + space.length;
-
-                if (!isCursorAtShiftTabHandledPosition(
-                    lineText,
-                    line.from,
-                    selection.from,
-                    selection.to,
-                    markerEnd,
-                    currentIndent.length
-                )) {
-                    return false;
-                }
-
-                const lines = state.doc.toString().split('\n');
-                const currentLineIndex = line.number - 1;
-                const subtreeEndIndex = findSubtreeEndLineIndex(lines, currentLineIndex, currentIndent);
-                const listBlockRange = findContiguousListBlock(lines, currentLineIndex);
-                const replacementLines = buildMovedSubtreeLines(
-                    lines,
-                    currentLineIndex,
-                    subtreeEndIndex,
-                    'outdent',
-                    settings
-                );
-                const expectedLines = buildExpectedMovedDocumentLines(
-                    lines,
-                    currentLineIndex,
-                    subtreeEndIndex,
-                    replacementLines
-                );
-                const newLine = replacementLines[0];
-                const endLine = state.doc.line(subtreeEndIndex + 1);
-
-                const changes = {
-                    from: line.from,
-                    to: endLine.to,
-                    insert: replacementLines.join('\n')
-                };
-
-                // Calculate new cursor position
-                const oldCursorOffset = selection.from - line.from;
-                const newMarkerEnd = getMarkerEnd(newLine) ??
-                    Math.max(space.length, markerEnd - INDENTATION.TAB_SIZE);
-                const newCursorOffset = getCursorOffsetAfterMarker(oldCursorOffset, markerEnd, newMarkerEnd);
-
-                setPendingListBlockReconciliation(expectedLines, listBlockRange);
-                const transaction = state.update({
-                    changes,
-                    selection: EditorSelection.cursor(line.from + newCursorOffset)
-                });
-
-                view.dispatch(transaction);
-                return true;
-            }
-
-            return false; // Let default Shift+Tab handling take over
+        if (move.owner.markerType.kind === 'ordered') {
+            renumberOrderedGroup(lines, move.owner.lineIndex, {
+                depth: move.owner.depth,
+                parentLineIndex: move.owner.parentLineIndex,
+                markerType: move.owner.markerType
+            }, settings);
         }
-    };
+    }
 }

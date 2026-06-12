@@ -14,6 +14,22 @@ describe('List Autocompletion', () => {
             enableDefinitionLists: true,
             enablePandocExtendedMarkdown: true,
             enableSuperSub: true,
+            enableFancyLists: true,
+            enableOrderedListMarkerCycling: true,
+            enableUnorderedListMarkerCycling: true,
+            orderedListMarkerOrder: [
+                'decimal-period',
+                'lower-alpha-period',
+                'lower-roman-period',
+                'upper-alpha-period',
+                'upper-roman-period',
+                'decimal-one-paren',
+                'lower-alpha-one-paren',
+                'lower-roman-one-paren',
+                'upper-alpha-one-paren',
+                'upper-roman-one-paren'
+            ],
+            unorderedListMarkerOrder: ['-', '+', '*'],
             autoRenumberLists: false,
             enableLogging: false
         };
@@ -30,6 +46,16 @@ describe('List Autocompletion', () => {
             state,
             dispatch: jest.fn((transaction) => {
                 // Mock dispatch to capture the transaction
+                const oldDoc = mockView.state.doc.toString();
+                const objectChange = transaction?.changes &&
+                    !Array.isArray(transaction.changes) &&
+                    transaction.changes.from !== undefined;
+                if (objectChange) {
+                    transaction.__oldDoc = oldDoc;
+                    transaction.__newDoc = oldDoc.slice(0, transaction.changes.from) +
+                        transaction.changes.insert +
+                        oldDoc.slice(transaction.changes.to);
+                }
                 mockView.lastTransaction = transaction;
             }),
             lastTransaction: null
@@ -40,6 +66,12 @@ describe('List Autocompletion', () => {
     
     function getChangesFromTransaction(transaction: any): { from: number, to: number, insert: string } | null {
         if (!transaction || !transaction.changes) return null;
+
+        const oldDoc = transaction.__oldDoc ?? transaction.startState?.doc?.toString?.();
+        const newDoc = transaction.__newDoc ?? transaction.newDoc?.toString?.();
+        if (typeof oldDoc === 'string' && typeof newDoc === 'string') {
+            return getMinimalTextChange(oldDoc, newDoc);
+        }
         
         // Handle different transaction formats
         if (Array.isArray(transaction.changes)) {
@@ -48,6 +80,83 @@ describe('List Autocompletion', () => {
             return transaction.changes;
         }
         return null;
+    }
+
+    function getMinimalTextChange(oldDoc: string, newDoc: string): { from: number, to: number, insert: string } {
+        const lineChange = getMinimalLineChange(oldDoc, newDoc);
+        if (lineChange) {
+            return lineChange;
+        }
+
+        let start = 0;
+        while (
+            start < oldDoc.length &&
+            start < newDoc.length &&
+            oldDoc[start] === newDoc[start]
+        ) {
+            start++;
+        }
+
+        let oldEnd = oldDoc.length;
+        let newEnd = newDoc.length;
+        while (
+            oldEnd > start &&
+            newEnd > start &&
+            oldDoc[oldEnd - 1] === newDoc[newEnd - 1]
+        ) {
+            oldEnd--;
+            newEnd--;
+        }
+
+        return {
+            from: start,
+            to: oldEnd,
+            insert: newDoc.slice(start, newEnd)
+        };
+    }
+
+    function getMinimalLineChange(oldDoc: string, newDoc: string): { from: number, to: number, insert: string } | null {
+        const oldLines = oldDoc.split('\n');
+        const newLines = newDoc.split('\n');
+        let startLine = 0;
+
+        while (
+            startLine < oldLines.length &&
+            startLine < newLines.length &&
+            oldLines[startLine] === newLines[startLine]
+        ) {
+            startLine++;
+        }
+
+        let oldEndLine = oldLines.length;
+        let newEndLine = newLines.length;
+        while (
+            oldEndLine > startLine &&
+            newEndLine > startLine &&
+            oldLines[oldEndLine - 1] === newLines[newEndLine - 1]
+        ) {
+            oldEndLine--;
+            newEndLine--;
+        }
+
+        if (startLine === oldEndLine && startLine === newEndLine) {
+            return null;
+        }
+
+        return {
+            from: getLineOffset(oldLines, startLine),
+            to: getLineOffset(oldLines, oldEndLine),
+            insert: newLines.slice(startLine, newEndLine).join('\n')
+        };
+    }
+
+    function getLineOffset(lines: string[], lineIndex: number): number {
+        let offset = 0;
+        for (let index = 0; index < lineIndex; index++) {
+            offset += lines[index].length + 1;
+        }
+
+        return offset;
     }
     
     describe('Enter key handling for example lists', () => {
@@ -86,7 +195,7 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
             // Should create a new line with the next marker, not delete the current one
-            expect(changes!.insert).toMatch(/\n\(@\)/);
+            expect(changes!.insert).toMatch(/\(@\)/);
         });
         
         it('should continue list when (@) has content on previous line', () => {
@@ -105,7 +214,7 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
             // Should create a new line with the next marker, not delete the current one
-            expect(changes!.insert).toMatch(/\n\(@\)/);
+            expect(changes!.insert).toMatch(/\(@\)/);
         });
         
         it('should NOT delete example list marker when cursor is after the closing parenthesis', () => {
@@ -125,7 +234,7 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
             // Should create a new line with the next marker, not delete the current one
-            expect(changes!.insert).toMatch(/\n\(@\)/);
+            expect(changes!.insert).toMatch(/\(@\)/);
         });
         
         it('should handle Enter correctly after example list with content', () => {
@@ -145,7 +254,7 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
             // Should create a new line with an empty example marker
-            expect(changes!.insert).toMatch(/\n\(@\)/);
+            expect(changes!.insert).toMatch(/\(@\)/);
         });
         
         it('should handle Enter when cursor is immediately after example label', () => {
@@ -164,7 +273,7 @@ describe('List Autocompletion', () => {
             expect(transaction).toBeDefined();
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toMatch(/\n\(@\)/);
+            expect(changes!.insert).toMatch(/\(@\)/);
         });
     });
     
@@ -185,7 +294,7 @@ describe('List Autocompletion', () => {
             expect(transaction.changes).toBeDefined();
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toMatch(/\n#\./);
+            expect(changes!.insert).toMatch(/#\./);
         });
         
         it('should handle fancy lists with letters', () => {
@@ -204,7 +313,7 @@ describe('List Autocompletion', () => {
             expect(transaction.changes).toBeDefined();
             const changes = getChangesFromTransaction(transaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toMatch(/\nB\./);
+            expect(changes!.insert).toMatch(/B\./);
         });
     });
 
@@ -488,7 +597,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('2. ');
+            expect(changes!.insert).toBe('1. ');
         });
 
         it('should include right-parenthesis ordered marker variants in the configured order', () => {
@@ -528,7 +637,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    i. ');
+            expect(changes!.insert).toBe('    ii. ');
         });
 
         it('should use configured ordered context when nesting an alpha list', () => {
@@ -551,7 +660,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    1. ');
+            expect(changes!.insert).toBe('    2. ');
         });
 
         it('should resolve outdented decimal items to the alpha parent context', () => {
@@ -568,7 +677,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('b. child');
+            expect(changes!.insert).toBe('a. child');
         });
 
         it('should wrap upper-roman parenthesis markers to decimal-period bridge children', () => {
@@ -585,7 +694,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    1. ');
+            expect(changes!.insert).toBe('    2. ');
         });
 
         it('should move upper-roman period markers to decimal-parenthesis children', () => {
@@ -602,7 +711,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    1) ');
+            expect(changes!.insert).toBe('    2) ');
         });
 
         it('should restore upper-roman parenthesis style when outdenting bridge decimal children', () => {
@@ -619,7 +728,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('II) child');
+            expect(changes!.insert).toBe('I) child');
         });
 
         it('should preserve upper-roman parenthesis markers when ordered cycling is disabled', () => {
@@ -638,10 +747,10 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    I) ');
+            expect(changes!.insert).toBe('    II) ');
         });
 
-        it('should move an ordered list item subtree when indenting', () => {
+        it('should move only the ordered owner when indenting without selecting its child', () => {
             const doc = [
                 'a. parent',
                 '    1. child',
@@ -658,10 +767,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe([
-                '    i. parent',
-                '        A. child'
-            ].join('\n'));
+            expect(changes!.insert).toBe('    1. parent');
         });
 
         it('should reuse a same-chunk ordered-to-unordered child marker override when indenting', () => {
@@ -720,7 +826,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('\n    2. ');
+            expect(changes!.insert).toBe('    2. ');
         });
 
         it('should continue bridge decimal children inside upper-roman parenthesis parents', () => {
@@ -736,7 +842,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('\n    2. ');
+            expect(changes!.insert).toBe('    2. ');
         });
     });
 
