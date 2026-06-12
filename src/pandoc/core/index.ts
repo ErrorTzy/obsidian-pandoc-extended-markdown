@@ -40,6 +40,7 @@ export type {
     OdtPreviewAddonSettings,
     PandocCommandOptions,
     PandocConvertRequest,
+    PandocExecutableResolver,
     PandocExportProfile,
     PandocExportRequest,
     PandocExportResult,

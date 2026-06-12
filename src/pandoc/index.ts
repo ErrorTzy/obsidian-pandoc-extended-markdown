@@ -64,6 +64,7 @@ export type {
     PandocExportRequest,
     PandocExportResult,
     PandocExportSettings,
+    PandocExecutableResolver,
     PandocPreviewSettings,
     PandocProcessRunner,
     PandocRunRequest,

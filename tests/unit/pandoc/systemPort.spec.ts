@@ -2,8 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
     CommonPandocSystemPort,
-    getPandocPlatformEnvDefaults
+    getPandocPlatformEnvDefaults,
+    resolvePandocExecutable
 } from '../../../src/pandoc/os/common';
+import {
+    resolveWindowsPandocExecutable
+} from '../../../src/pandoc/os/win';
 import type {
     PandocRunRequest,
     PandocRunResult
@@ -91,9 +95,33 @@ describe('CommonPandocSystemPort', () => {
     it('selects platform environment defaults outside core', () => {
         expect(getPandocPlatformEnvDefaults({ os: 'mac' }).PATH)
             .toContain('/opt/homebrew/bin');
-        expect(getPandocPlatformEnvDefaults({ os: 'windows' }).PATH)
-            .toContain('AppData\\Local\\Pandoc');
+        expect(getPandocPlatformEnvDefaults({ os: 'windows' }).PATH).toBeUndefined();
+        expect(getPandocPlatformEnvDefaults({ os: 'windows' }).TEXINPUTS)
+            .toBe('${pluginDir}/textemplate/;');
         expect(getPandocPlatformEnvDefaults({ os: 'linux' })).toEqual({});
         expect(getPandocPlatformEnvDefaults({ os: 'unknown' })).toEqual({});
+    });
+
+    it('uses where.exe discovery on Windows when no path is configured', async () => {
+        await expect(resolveWindowsPandocExecutable({
+            runWherePandoc: async () => 'C:\\Tools\\Pandoc\\pandoc.exe'
+        })).resolves.toBe('C:\\Tools\\Pandoc\\pandoc.exe');
+        await expect(resolvePandocExecutable('', {
+            platform: 'win32',
+            windowsWhereRunner: async () => 'C:\\Tools\\Pandoc\\pandoc.exe'
+        })).resolves.toBe('C:\\Tools\\Pandoc\\pandoc.exe');
+    });
+
+    it('falls back to pandoc when where.exe cannot find pandoc', async () => {
+        await expect(resolvePandocExecutable('', {
+            platform: 'win32',
+            windowsWhereRunner: async () => undefined
+        })).resolves.toBe('pandoc');
+    });
+
+    it('keeps explicit pandoc paths unchanged during Windows executable resolution', async () => {
+        await expect(resolvePandocExecutable('"D:\\Tools\\pandoc.exe"', {
+            platform: 'win32'
+        })).resolves.toBe('D:\\Tools\\pandoc.exe');
     });
 });

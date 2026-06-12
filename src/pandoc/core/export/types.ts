@@ -25,9 +25,14 @@ export type PandocProcessRunner = (
     request: PandocRunRequest
 ) => Promise<PandocRunResult>;
 
+export type PandocExecutableResolver = (
+    pandocPath?: string
+) => string | Promise<string>;
+
 export interface PandocServiceConfig {
     pandocPath?: string;
     env?: Record<string, string>;
+    executableResolver?: PandocExecutableResolver;
     timeoutMs?: number;
     runner?: PandocProcessRunner;
 }

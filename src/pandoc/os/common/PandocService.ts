@@ -1,12 +1,12 @@
 import {
     buildPandocConvertArgs,
     getPandocVersionLine,
-    normalizePandocExecutable,
     parsePandocVersion
 } from '../../core';
 import { importDesktopModule } from './nodeModule';
 import {
     PandocCommandOptions,
+    PandocExecutableResolver,
     PandocConvertRequest,
     PandocProcessRunner,
     PandocRunRequest,
@@ -14,6 +14,9 @@ import {
     PandocServiceConfig,
     PandocVersionInfo
 } from '../../core';
+import {
+    resolvePandocExecutable
+} from './pandocExecutable';
 
 type ChildProcessModule = typeof import('child_process');
 type ProcessLike = {
@@ -22,16 +25,18 @@ type ProcessLike = {
 
 export class PandocService {
     private readonly config: PandocServiceConfig;
+    private readonly executableResolver: PandocExecutableResolver;
     private readonly runner: PandocProcessRunner;
 
     constructor(config: PandocServiceConfig = {}) {
         this.config = config;
+        this.executableResolver = config.executableResolver ?? resolvePandocExecutable;
         this.runner = config.runner ?? runPandocProcess;
     }
 
     async run(args: string[], options: PandocCommandOptions = {}): Promise<PandocRunResult> {
         return this.runner({
-            executable: this.getExecutable(options.pandocPath),
+            executable: await this.getExecutable(options.pandocPath),
             args,
             cwd: options.cwd,
             env: this.getEnv(options.env),
@@ -45,7 +50,7 @@ export class PandocService {
         options: PandocCommandOptions = {}
     ): Promise<PandocRunResult> {
         return this.runner({
-            executable: this.getExecutable(options.pandocPath),
+            executable: await this.getExecutable(options.pandocPath),
             args,
             cwd: options.cwd,
             env: this.getEnv(options.env),
@@ -76,8 +81,8 @@ export class PandocService {
         return this.run(args, request);
     }
 
-    private getExecutable(pandocPath?: string): string {
-        return normalizePandocExecutable(pandocPath ?? this.config.pandocPath);
+    private getExecutable(pandocPath?: string): Promise<string> {
+        return Promise.resolve(this.executableResolver(pandocPath ?? this.config.pandocPath));
     }
 
     private getEnv(env?: Record<string, string>): Record<string, string> | undefined {

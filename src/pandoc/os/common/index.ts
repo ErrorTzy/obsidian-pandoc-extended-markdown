@@ -13,6 +13,12 @@ export {
     getPandocPlatformEnvDefaults
 } from './environment';
 export {
+    resolvePandocExecutable
+} from './pandocExecutable';
+export type {
+    PandocExecutableResolverOptions
+} from './pandocExecutable';
+export {
     NodePandocExportFileSystem
 } from './fileSystem';
 export type {

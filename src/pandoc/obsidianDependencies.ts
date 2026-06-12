@@ -48,8 +48,9 @@ export function createObsidianPandocOsDependencies(
 ): ObsidianPandocOsDependencies {
     const desktop = config.desktop ?? new ElectronPandocDesktopAdapter();
     const fileSystem = config.fileSystem ?? new NodePandocExportFileSystem();
+    const service = config.service ?? new PandocService();
     const system = config.system ?? new CommonPandocSystemPort({
-        service: config.service ?? new PandocService(),
+        service,
         fileSystem,
         shellRunner: config.shellRunner ?? runShellCommand
     });
@@ -63,7 +64,7 @@ export function createObsidianPandocOsDependencies(
         revealOutput: path => userPort.revealOutput(path)
     };
     const gui: ObsidianPandocGuiDependencies = {
-        catalogProcess: config.service ?? new PandocService(),
+        catalogProcess: service,
         catalogShellRunner: config.shellRunner ?? runShellCommand,
         exportSystem: system,
         exportUser: user,

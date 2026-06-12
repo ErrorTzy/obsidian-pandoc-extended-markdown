@@ -62,6 +62,24 @@ describe('PandocService', () => {
         });
     });
 
+    it('resolves the executable before running pandoc', async () => {
+        const requests: PandocRunRequest[] = [];
+        const service = new PandocService({
+            executableResolver: async pandocPath =>
+                !pandocPath || pandocPath === 'pandoc' ?
+                    'C:\\Program Files\\Pandoc\\pandoc.exe' :
+                    pandocPath,
+            runner: async request => {
+                requests.push(request);
+                return createResult(request, '');
+            }
+        });
+
+        await service.run(['--version']);
+
+        expect(requests[0].executable).toBe('C:\\Program Files\\Pandoc\\pandoc.exe');
+    });
+
     it('converts string input through stdin when input is provided', async () => {
         const requests: PandocRunRequest[] = [];
         const service = new PandocService({
