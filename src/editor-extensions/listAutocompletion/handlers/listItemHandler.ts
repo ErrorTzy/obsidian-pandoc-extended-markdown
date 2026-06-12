@@ -1,7 +1,5 @@
 import { EditorSelection } from '@codemirror/state';
-import { ListPatterns } from '../../../shared/patterns';
 import { getNextListMarker } from '../../../shared/utils/listMarkerDetector';
-import { renumberListItems } from '../../../shared/utils/listRenumbering';
 import { parseStandardListItem } from '../../../shared/utils/listContext';
 import {
     formatOrderedListMarker,
@@ -12,6 +10,8 @@ import {
     isEnabledStandardListLine,
     showListAutocompletionError
 } from '../utils/debugNotice';
+import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
+import { resolveListOwnerAtLine } from '../utils/standardListStructure';
 import { NewListItemConfig } from '../types';
 
 /**
@@ -21,7 +21,7 @@ import { NewListItemConfig } from '../types';
  * @returns True if a new list item was inserted
  */
 export function insertNewListItem(config: NewListItemConfig): boolean {
-    const { view, currentLine, markerInfo, settings } = config;
+    const { view, currentLine, markerInfo } = config;
     const { line, selection } = currentLine;
     const state = view.state;
 
@@ -51,21 +51,6 @@ export function insertNewListItem(config: NewListItemConfig): boolean {
 
     view.dispatch(transaction);
 
-    // Handle auto-renumbering if enabled
-    if (settings.autoRenumberLists &&
-        markerInfo.marker !== '(@)' &&
-        markerInfo.marker !== '{::}' &&
-        markerInfo.marker !== '#.' &&
-        !markerInfo.marker.match(ListPatterns.DEFINITION_MARKER_ONLY)) {
-
-        const newLineNum = line.number; // This is 1-based, but we need 0-based for our function
-
-        // Use setTimeout to ensure the insertion is complete before renumbering
-        window.setTimeout(() => {
-            renumberListItems(view, newLineNum);
-        }, 0);
-    }
-
     return true;
 }
 
@@ -84,10 +69,8 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     const allLines = state.doc.toString().split('\n');
     const currentLineIndex = currentLine.line.number - 1; // Convert to 0-based index
     if (isEnabledStandardListLine(lineText, allLines, currentLineIndex, settings)) {
-        const standardMarkerInfo = getNextStandardListMarker(lineText, allLines, currentLineIndex, settings);
-        if (standardMarkerInfo) {
-            const newConfig = { ...config, markerInfo: standardMarkerInfo } as NewListItemConfig;
-            return insertNewListItem(newConfig);
+        if (insertNewStandardListItem(config, allLines, currentLineIndex)) {
+            return true;
         }
 
         return showListAutocompletionError(
@@ -104,6 +87,53 @@ export function handleNonEmptyListItem(config: Omit<NewListItemConfig, 'markerIn
     }
 
     return false;
+}
+
+function insertNewStandardListItem(
+    config: Omit<NewListItemConfig, 'markerInfo'>,
+    allLines: string[],
+    currentLineIndex: number
+): boolean {
+    const { view, currentLine, settings } = config;
+    const markerInfo = getNextStandardListMarker(currentLine.lineText, allLines, currentLineIndex, settings);
+    if (!markerInfo) {
+        return false;
+    }
+
+    const ownerContext = resolveListOwnerAtLine(allLines, currentLineIndex, settings);
+    if (!ownerContext || ownerContext.owner.lineIndex !== currentLineIndex) {
+        return false;
+    }
+
+    const state = view.state;
+    const { line, selection } = currentLine;
+    const insertPos = selection.from === line.to ? selection.from : line.to;
+    const spaces = markerInfo.spaces || ' ';
+    const insertedLine = `${markerInfo.indent}${markerInfo.marker}${spaces}`;
+    const nextDoc = `${state.doc.sliceString(0, insertPos)}\n${insertedLine}${state.doc.sliceString(insertPos)}`;
+    const nextLines = nextDoc.split('\n');
+    const insertedLineIndex = currentLineIndex + 1;
+
+    if (settings.autoRenumberLists && ownerContext.owner.markerType.kind === 'ordered') {
+        renumberOrderedGroup(nextLines, insertedLineIndex, {
+            depth: ownerContext.owner.depth,
+            parentLineIndex: ownerContext.owner.parentLineIndex,
+            markerType: ownerContext.owner.markerType
+        }, settings);
+    }
+
+    view.dispatch(state.update({
+        changes: {
+            from: 0,
+            to: state.doc.length,
+            insert: nextLines.join('\n')
+        },
+        selection: EditorSelection.cursor(
+            getLineStartOffset(nextLines, insertedLineIndex) + insertedLine.length
+        )
+    }));
+
+    return true;
 }
 
 function getNextStandardListMarker(
@@ -143,4 +173,13 @@ function getNextStandardListMarker(
         indent: ordered.indent,
         spaces: ordered.spaces || ' '
     };
+}
+
+function getLineStartOffset(lines: string[], lineIndex: number): number {
+    let offset = 0;
+    for (let index = 0; index < lineIndex; index++) {
+        offset += lines[index].length + 1;
+    }
+
+    return offset;
 }

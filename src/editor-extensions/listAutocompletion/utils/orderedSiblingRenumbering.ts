@@ -32,6 +32,8 @@ export function renumberOrderedGroup(
         markerTypesEqual(node.markerType, signature.markerType)
     );
 
+    const firstOrdinal = getFirstSiblingOrdinal(lines, siblings);
+
     siblings.forEach((node, index) => {
         const parsed = parseOrderedListMarker(lines[node.lineIndex], lines, node.lineIndex);
         if (!parsed || signature.markerType.kind !== 'ordered') {
@@ -40,7 +42,19 @@ export function renumberOrderedGroup(
 
         lines[node.lineIndex] = `${parsed.indent}${formatOrderedListMarker(
             signature.markerType.style,
-            index + 1
+            firstOrdinal + index
         )}${parsed.spaces}${parsed.content}`;
     });
+}
+
+function getFirstSiblingOrdinal(
+    lines: string[],
+    siblings: ReturnType<typeof parseStandardListChunk>['nodes']
+): number {
+    const first = siblings[0];
+    if (!first) {
+        return 1;
+    }
+
+    return parseOrderedListMarker(lines[first.lineIndex], lines, first.lineIndex)?.ordinal ?? 1;
 }

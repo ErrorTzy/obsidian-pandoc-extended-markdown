@@ -35,6 +35,11 @@ describe('List Autocompletion', () => {
         };
         keybindings = createListAutocompletionKeymap(mockSettings);
     });
+
+    afterEach(() => {
+        jest.useRealTimers();
+        jest.restoreAllMocks();
+    });
     
     function createMockView(doc: string, cursorPos: number): EditorView {
         const state = EditorState.create({
@@ -57,6 +62,15 @@ describe('List Autocompletion', () => {
                         oldDoc.slice(transaction.changes.to);
                 }
                 mockView.lastTransaction = transaction;
+                const newDoc = transaction?.newDoc?.toString?.() ?? transaction.__newDoc;
+                if (typeof newDoc === 'string') {
+                    mockView.state = EditorState.create({
+                        doc: newDoc,
+                        selection: transaction.newSelection ?? mockView.state.selection
+                    });
+                } else {
+                    mockView.state = transaction.state ?? mockView.state;
+                }
             }),
             lastTransaction: null
         } as any;
@@ -824,6 +838,49 @@ describe('List Autocompletion', () => {
     });
 
     describe('Enter key handling for ordered lists', () => {
+        it('should not renumber standard ordered continuations through the legacy block fallback', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            jest.useFakeTimers();
+            const timeoutSpy = jest.spyOn(window, 'setTimeout');
+            const doc = '27. item';
+            const cursorPos = doc.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('27. item\n28. ');
+            expect(timeoutSpy).not.toHaveBeenCalled();
+
+            jest.runOnlyPendingTimers();
+            expect(view.state.doc.toString()).toBe('27. item\n28. ');
+
+            timeoutSpy.mockRestore();
+            jest.useRealTimers();
+        });
+
+        it('should renumber only following standard ordered siblings after inserted continuations', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            jest.useFakeTimers();
+            const doc = '9. current\n10. next';
+            const cursorPos = '9. current'.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('9. current\n10. \n11. next');
+
+            jest.runOnlyPendingTimers();
+            expect(view.state.doc.toString()).toBe('9. current\n10. \n11. next');
+
+            jest.useRealTimers();
+        });
+
         it('should preserve the current ordered ordinal when continuing with auto-renumber disabled', () => {
             mockSettings.autoRenumberLists = false;
             keybindings = createListAutocompletionKeymap(mockSettings);
