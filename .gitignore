@@ -38,3 +38,4 @@ package-lock.json
 
 
 .obsidian-cache/
+tests/e2e/vaults/test-vault/.obsidian/pandoc-preview-addons/webodf-0.5.9/webodf.js-0.5.9/
