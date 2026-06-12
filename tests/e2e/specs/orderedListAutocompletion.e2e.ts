@@ -108,12 +108,22 @@ describe('Ordered list autocompletion behavior', () => {
                     `${marker(root, 2)} xxx`,
                     `${marker(root, 3)} `
                 ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    `${marker(root, 1)} xxx`,
+                    `${marker(root, 2)} xxx`,
+                    `${marker(root, 3)} |`
+                ].join('\n'));
 
                 await pressKey('Tab');
                 expect(await getEditorText()).toBe([
                     `${marker(root, 1)} xxx`,
                     `${marker(root, 2)} xxx`,
                     `${INDENT}${marker(child, 1)} `
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    `${marker(root, 1)} xxx`,
+                    `${marker(root, 2)} xxx`,
+                    `${INDENT}${marker(child, 1)} |`
                 ].join('\n'));
 
                 await pressText('child');
@@ -124,6 +134,12 @@ describe('Ordered list autocompletion behavior', () => {
                     `${INDENT}${marker(child, 1)} child`,
                     `${INDENT}${marker(child, 2)} `
                 ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    `${marker(root, 1)} xxx`,
+                    `${marker(root, 2)} xxx`,
+                    `${INDENT}${marker(child, 1)} child`,
+                    `${INDENT}${marker(child, 2)} |`
+                ].join('\n'));
 
                 await pressKey('Enter');
                 expect(await getEditorText()).toBe([
@@ -131,6 +147,12 @@ describe('Ordered list autocompletion behavior', () => {
                     `${marker(root, 2)} xxx`,
                     `${INDENT}${marker(child, 1)} child`,
                     `${marker(root, 3)} `
+                ].join('\n'));
+                expect(await getEditorTextWithSelectionMarkers()).toBe([
+                    `${marker(root, 1)} xxx`,
+                    `${marker(root, 2)} xxx`,
+                    `${INDENT}${marker(child, 1)} child`,
+                    `${marker(root, 3)} |`
                 ].join('\n'));
             });
 
@@ -1644,6 +1666,7 @@ function expectRenderedUnorderedListLine(
     expect(line!.className).toContain('HyperMD-list-line');
     expect(line!.className).toContain(`HyperMD-list-line-${expectedLevel}`);
     expect(line!.className).toContain('pem-unordered-list-marker');
+    expect(line!.className).toContain(unorderedMarkerClass(marker));
     expect(line!.className).not.toContain('HyperMD-list-line-nobullet');
     expect(line!.className).not.toContain('pem-pandoc-invalid-native-list');
     expect(line!.markerText).toContain(marker);
@@ -1651,6 +1674,17 @@ function expectRenderedUnorderedListLine(
     expect(line!.markerInlineStart).not.toBeNull();
     expect(parseFloat(line!.paddingInlineStart)).toBeGreaterThanOrEqual(30);
     expect(parseFloat(line!.textIndent)).toBeLessThanOrEqual(-30);
+}
+
+function unorderedMarkerClass(marker: UnorderedListMarker): string {
+    switch (marker) {
+        case '-':
+            return 'pem-unordered-list-marker-dash';
+        case '+':
+            return 'pem-unordered-list-marker-plus';
+        case '*':
+            return 'pem-unordered-list-marker-star';
+    }
 }
 
 function expectListMarkersToAlign(
