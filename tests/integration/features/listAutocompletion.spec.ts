@@ -342,7 +342,7 @@ describe('List Autocompletion', () => {
     });
 
     describe('Tab key handling for unordered lists', () => {
-        it('should use the configured ordered depth marker when indenting without target-depth evidence', () => {
+        it('should cycle within unordered markers when indenting without target-depth evidence', () => {
             const listText = '- item 1\n- ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -356,10 +356,10 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    a. ');
+            expect(changes!.insert).toBe('    + ');
         });
 
-        it('should continue the configured ordered depth mapping for deeper missing depths', () => {
+        it('should continue the unordered marker cycle for deeper missing depths', () => {
             const listText = '- item 1\n    + item 2\n    + ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -373,16 +373,11 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('        i. ');
+            expect(changes!.insert).toBe('        * ');
         });
 
-        it('should use configured ordered marker order when indenting from an unordered item', () => {
-            mockSettings.orderedListMarkerOrder = [
-                'decimal-period',
-                'upper-alpha-period',
-                'lower-alpha-period',
-                'lower-roman-period'
-            ];
+        it('should use configured unordered marker order when indenting from an unordered item', () => {
+            mockSettings.unorderedListMarkerOrder = ['-', '*', '+'];
             keybindings = createListAutocompletionKeymap(mockSettings);
             const listText = '- item 1\n- ';
             const doc = `${listText}\nnext`;
@@ -397,10 +392,10 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    A. ');
+            expect(changes!.insert).toBe('    * ');
         });
 
-        it('should use ordered default fallback for missing deeper depths under unordered ancestors', () => {
+        it('should wrap the unordered marker cycle for missing deeper depths under unordered ancestors', () => {
             const listText = '- item 1\n    + item 2\n        * item 3\n        * ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
@@ -414,7 +409,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('            A. ');
+            expect(changes!.insert).toBe('            - ');
         });
 
         it('should use the bullet marker for the resulting shallower depth when outdenting', () => {
@@ -468,7 +463,7 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('+ ');
         });
 
-        it('should still use ordered depth fallback when unordered marker cycling is disabled', () => {
+        it('should preserve unordered markers when unordered marker cycling is disabled', () => {
             mockSettings.enableUnorderedListMarkerCycling = false;
             keybindings = createListAutocompletionKeymap(mockSettings);
             const listText = '- item 1\n- ';
@@ -484,24 +479,18 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    a. ');
+            expect(changes!.insert).toBe('    - ');
         });
 
-        it('should read current ordered marker order from a settings provider', () => {
+        it('should read current unordered marker order from a settings provider', () => {
             let currentSettings = {
                 ...mockSettings,
-                orderedListMarkerOrder: [
-                    'decimal-period',
-                    'lower-alpha-period'
-                ]
+                unorderedListMarkerOrder: ['-', '+', '*'] as Array<'-' | '+' | '*'>
             };
             keybindings = createListAutocompletionKeymap(() => currentSettings);
             currentSettings = {
                 ...currentSettings,
-                orderedListMarkerOrder: [
-                    'decimal-period',
-                    'upper-alpha-period'
-                ]
+                unorderedListMarkerOrder: ['-', '*', '+'] as Array<'-' | '+' | '*'>
             };
             const listText = '- item 1\n- ';
             const doc = `${listText}\nnext`;
@@ -516,7 +505,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    A. ');
+            expect(changes!.insert).toBe('    * ');
         });
 
         it('should preserve the current unordered marker when marker cycling is disabled during outdent', () => {

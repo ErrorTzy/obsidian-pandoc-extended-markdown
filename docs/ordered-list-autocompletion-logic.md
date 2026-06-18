@@ -239,6 +239,32 @@ depths 1 through 4 and depth 4 is `1.`, then depth 5 follows the configured
 ordered cycle from `decimal-period`, so the default depth-5 ordered style is
 `lower-alpha-period`.
 
+Marker-kind fallback is family-preserving. Ordered fallback and unordered
+fallback are separate policies; neither can silently choose the other family
+only because a target depth is currently empty.
+
+- An explicit child or parent target can switch marker kind.
+- A nearest previous or following item at the target depth can switch marker
+  kind; that item is a chunk-local implicit override for the target depth.
+- If no explicit target or target-depth override exists, an ordered owner falls
+  back through the configured ordered style cycle.
+- If no explicit target or target-depth override exists, an unordered owner
+  falls back through the configured unordered marker cycle. With the default
+  unordered order, pressing Tab on `-`, `+`, and `*` produces child markers
+  `+`, `*`, and `-` respectively.
+- If unordered marker cycling is disabled, an unordered owner with no explicit
+  target or target-depth override preserves its current unordered marker instead
+  of falling into the ordered cycle.
+- Hash, example-list, and custom-label owners with no explicit target or
+  target-depth override preserve their own marker kind. Hash inserts `#.`,
+  example-list inserts `(@)`, and custom-label inserts `{::}`.
+
+This keeps list-family changes intentional. For example, an ordered item can
+move into an unordered child level when an existing unordered child level is
+present, and an unordered item can move into an ordered child level when an
+existing ordered child level is present. Without such a target-depth override,
+unordered Tab cycling must remain within `-`, `+`, and `*`.
+
 ## Ordinal Resolution
 
 Ordinal resolution applies only after the marker type has been resolved as an
@@ -644,9 +670,10 @@ ordered marker cycle:
   returns one depth to the unordered parent, not all the way to the ordered root.
   The same rule applies under hash, example-list, and custom-label parents.
 
-If there is no explicit child block and no existing target-depth override,
-Tab uses the existing ordered default fallback even when the current item is
-hash, example-list, or custom-label:
+If there is no explicit child block and no existing target-depth override, Tab
+preserves the marker family of the current owner. Hash, example-list, and
+custom-label owners repeat their marker kind instead of falling into the ordered
+cycle:
 
 ```markdown
 #. parent
@@ -657,10 +684,12 @@ Pressing Tab should produce:
 
 ```markdown
 #. parent
-    a. child|
+    #. child|
 ```
 
-The hash parent does not force hash descendants by default.
+An existing target-depth override can still switch a hash child to another
+marker kind; the owner marker only controls fallback when no target-depth marker
+kind exists.
 
 Example: unordered child under ordered parent continues as unordered:
 
@@ -720,10 +749,11 @@ The `* xxx` line is a nested unordered list item. Live Preview must render the
 It must not display `*` as plain text.
 
 The same hybrid rules apply when the root depth itself is unordered. For root
-markers `-`, `+`, and `*`, ordered child and grandchild depths should still use
-depth-map inference and the configured ordered marker order where no explicit
-override exists, while empty ordered descendants return to the nearest unordered
-parent marker.
+markers `-`, `+`, and `*`, Tab without an explicit child block or existing
+target-depth override stays in the configured unordered marker cycle. Ordered
+child and grandchild depths still use ordered continuation after an ordered
+target-depth override exists, while empty ordered descendants return to the
+nearest unordered parent marker.
 
 ## E2E Test Guidelines
 

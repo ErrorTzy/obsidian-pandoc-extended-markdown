@@ -1,7 +1,6 @@
 import { EditorSelection } from '@codemirror/state';
 import { EditorView, KeyBinding } from '@codemirror/view';
 import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
-import { normalizeUnorderedListMarkerOrder } from '../../../shared/types/unorderedListTypes';
 import {
     formatOrderedListMarker,
     parseOrderedListMarker
@@ -22,6 +21,7 @@ import {
     getDirectContinuationLineIndices,
     getPreviousSiblingOrdinal,
     removeIndentLevel,
+    resolveFallbackUnorderedMarker,
     resolveListOwnerAtLine,
     resolveMarkerTypeForDepth,
     parseStructuralListItem,
@@ -245,7 +245,10 @@ function resolveTargetMarkerType(
         owner.lineIndex,
         targetDepth,
         settings,
-        explicitMarkerType
+        {
+            explicitMarkerType,
+            fallbackMarkerType: owner.markerType
+        }
     );
 }
 
@@ -364,13 +367,9 @@ function resolveMovedParentChildMarkerType(
         return owner.markerType;
     }
 
-    const order = normalizeUnorderedListMarkerOrder(settings.unorderedListMarkerOrder);
-    const parentIndex = order.indexOf(movedParent.targetMarkerType.marker as '-' | '+' | '*');
-    const normalizedParentIndex = parentIndex >= 0 ? parentIndex : 0;
-
     return {
         kind: 'unordered',
-        marker: order[(normalizedParentIndex + 1) % order.length]
+        marker: resolveFallbackUnorderedMarker(movedParent.targetMarkerType.marker, settings)
     };
 }
 

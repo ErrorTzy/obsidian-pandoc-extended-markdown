@@ -2,6 +2,7 @@ import { INDENTATION } from '../../../core/constants';
 import type { PandocExtendedMarkdownSettings } from '../../../core/settings';
 import { LIST_MARKERS } from '../../../core/constants/listConstants';
 import { ListPatterns } from '../../../shared/patterns';
+import { normalizeUnorderedListMarkerOrder } from '../../../shared/types/unorderedListTypes';
 import {
     isCustomLabelListsEnabled,
     isSyntaxFeatureEnabled
@@ -50,6 +51,11 @@ export interface ExplicitChildBlock {
     indent: string;
     indentColumns: number;
     markerType: StandardListMarkerType | null;
+}
+
+export interface MarkerTypeResolutionOptions {
+    explicitMarkerType?: StandardListMarkerType | null;
+    fallbackMarkerType?: StandardListMarkerType | null;
 }
 
 interface ListStackEntry {
@@ -358,8 +364,9 @@ export function resolveMarkerTypeForDepth(
     editLineIndex: number,
     targetDepth: number,
     settings: PandocExtendedMarkdownSettings,
-    explicitMarkerType?: StandardListMarkerType | null
+    options: MarkerTypeResolutionOptions = {}
 ): StandardListMarkerType {
+    const explicitMarkerType = options.explicitMarkerType ?? null;
     if (explicitMarkerType) {
         return explicitMarkerType;
     }
@@ -374,10 +381,7 @@ export function resolveMarkerTypeForDepth(
         return following.markerType;
     }
 
-    return {
-        kind: 'ordered',
-        style: resolveDefaultOrderedStyle(chunk, targetDepth, settings)
-    };
+    return resolveFallbackMarkerType(chunk, targetDepth, settings, options.fallbackMarkerType ?? null);
 }
 
 export function findNearestNodeAtDepth(
@@ -536,6 +540,52 @@ function resolveDefaultOrderedStyle(
     }
 
     return fallbackOrder[(targetDepth - 1) % fallbackOrder.length];
+}
+
+function resolveFallbackMarkerType(
+    chunk: StandardListChunk,
+    targetDepth: number,
+    settings: PandocExtendedMarkdownSettings,
+    fallbackMarkerType: StandardListMarkerType | null
+): StandardListMarkerType {
+    if (fallbackMarkerType?.kind === 'unordered') {
+        return {
+            kind: 'unordered',
+            marker: resolveFallbackUnorderedMarker(fallbackMarkerType.marker, settings)
+        };
+    }
+
+    if (fallbackMarkerType?.kind === 'hash') {
+        return { kind: 'hash' };
+    }
+
+    if (fallbackMarkerType?.kind === 'example') {
+        return { kind: 'example' };
+    }
+
+    if (fallbackMarkerType?.kind === 'custom-label') {
+        return { kind: 'custom-label' };
+    }
+
+    return {
+        kind: 'ordered',
+        style: resolveDefaultOrderedStyle(chunk, targetDepth, settings)
+    };
+}
+
+export function resolveFallbackUnorderedMarker(
+    marker: string,
+    settings: PandocExtendedMarkdownSettings
+): string {
+    if (!settings.enableUnorderedListMarkerCycling) {
+        return marker;
+    }
+
+    const order = normalizeUnorderedListMarkerOrder(settings.unorderedListMarkerOrder);
+    const markerIndex = order.indexOf(marker as '-' | '+' | '*');
+    const normalizedMarkerIndex = markerIndex >= 0 ? markerIndex : 0;
+
+    return order[(normalizedMarkerIndex + 1) % order.length];
 }
 
 function findChunkStart(lines: string[], lineIndex: number): number {

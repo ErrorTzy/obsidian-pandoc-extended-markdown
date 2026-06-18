@@ -399,6 +399,26 @@ describe('Ordered list autocompletion behavior', () => {
                 unorderedChildMarker: styleCase.marker,
                 orderedDescendantStyle: DEFAULT_ORDERED_LIST_MARKER_ORDER[0]
             });
+
+            it('cycles within unordered markers when Tab creates the first child level', async () => {
+                const childMarker = nextConfiguredUnorderedMarker(styleCase.marker);
+
+                await openEditableDocument(
+                    `ordered-list-autocompletion-${unorderedFileId(styleCase.marker)}-tab-first-child.md`,
+                    [
+                        `${styleCase.marker} xxx`,
+                        `${styleCase.marker} `
+                    ].join('\n')
+                );
+                await placeCursorAtLineAfterMarker(2);
+
+                await pressKey('Tab');
+
+                expect(await getEditorText()).toBe([
+                    `${styleCase.marker} xxx`,
+                    `${INDENT}${childMarker} `
+                ].join('\n'));
+            });
         });
     }
 
@@ -994,7 +1014,7 @@ describe('Ordered list autocompletion behavior', () => {
                 ].join('\n'));
             });
 
-            it('uses ordered fallback for a missing child depth under hash items', async () => {
+            it('preserves hash markers for a missing child depth under hash items', async () => {
                 await openDocumentWithCursor('structural-list-tab-hash-missing-child-depth.md', [
                     '#. parent',
                     '#. child|'
@@ -1004,7 +1024,7 @@ describe('Ordered list autocompletion behavior', () => {
 
                 expect(await getEditorText()).toBe([
                     '#. parent',
-                    `${INDENT}a. child`
+                    `${INDENT}#. child`
                 ].join('\n'));
             });
         });
@@ -1446,9 +1466,8 @@ function runLocalCycleOverrideTests(styleCase: OrderedStyleCase): void {
         ].join('\n'));
     });
 
-    it('falls back to the ordered cycle when no explicit grandchild depth override exists', async () => {
+    it('falls back to the unordered cycle when an unordered child has no explicit grandchild depth override', async () => {
         const root = styleCase.style;
-        const grandchild = nextStyle(nextStyle(root));
         const path = filePathFor(styleCase, 'tab-local-override-depth-specificity');
 
         await openEditableDocument(path, [
@@ -1469,7 +1488,7 @@ function runLocalCycleOverrideTests(styleCase: OrderedStyleCase): void {
             `${INDENT}- xxx`,
             `${marker(root, 3)} xxx`,
             `${INDENT}- xxx`,
-            `${INDENT}${INDENT}${marker(grandchild, 1)} `
+            `${INDENT}${INDENT}+ `
         ].join('\n'));
     });
 }
@@ -1556,7 +1575,7 @@ async function getEditorTextWithSelectionMarkers(): Promise<string> {
 }
 
 async function configureOrderedListSettings(
-    overrides: Partial<Record<string, boolean | OrderedListMarkerStyle[]>> = {}
+    overrides: Partial<Record<string, boolean | OrderedListMarkerStyle[] | UnorderedListMarker[]>> = {}
 ): Promise<void> {
     await browser.execute(async (settingsOverrides, orderedListMarkerOrder) => {
         // @ts-ignore
@@ -1572,6 +1591,7 @@ async function configureOrderedListSettings(
             Object.assign(enabledPlugin.settings, {
                 enableFancyLists: true,
                 enableOrderedListMarkerCycling: true,
+                enableUnorderedListMarkerCycling: true,
                 autoRenumberLists: true,
                 enforcePandocListSpacing: false,
                 orderedListMarkerOrder
@@ -1902,6 +1922,17 @@ function nextUnorderedMarker(markerText: UnorderedListMarker): UnorderedListMark
             return '-';
         case '*':
             return '+';
+    }
+}
+
+function nextConfiguredUnorderedMarker(markerText: UnorderedListMarker): UnorderedListMarker {
+    switch (markerText) {
+        case '-':
+            return '+';
+        case '+':
+            return '*';
+        case '*':
+            return '-';
     }
 }
 

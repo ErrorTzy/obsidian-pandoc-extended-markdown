@@ -116,7 +116,10 @@ function handleStandardEmptyListItem(config: EmptyListHandlingConfig): boolean {
         owner.lineIndex,
         targetDepth,
         settings,
-        explicitParent?.markerType ?? null
+        {
+            explicitMarkerType: explicitParent?.markerType ?? null,
+            fallbackMarkerType: owner.markerType
+        }
     );
     const targetParentLineIndex = explicitParent?.parentLineIndex ??
         findTargetParentLineIndex(chunk, owner.lineIndex, targetDepth);
