@@ -26,6 +26,10 @@ import {
     isEnabledStandardListLine,
     showListAutocompletionError
 } from '../utils/debugNotice';
+import {
+    buildChangedLineChanges,
+    getLineStartOffset
+} from '../utils/documentChanges';
 
 /**
  * Handles special cases for empty example and custom label lists.
@@ -146,16 +150,18 @@ function handleStandardEmptyListItem(config: EmptyListHandlingConfig): boolean {
         }, settings);
     }
 
-    view.dispatch(state.update({
-        changes: {
-            from: 0,
-            to: state.doc.length,
-            insert: nextLines.join('\n')
-        },
+    const lineChanges = buildChangedLineChanges(state.doc, lines, nextLines);
+    if (!lineChanges) {
+        return false;
+    }
+
+    view.dispatch({
+        changes: lineChanges.changes,
         selection: EditorSelection.cursor(
-            currentLine.line.from + getInsertedMarkerCursorOffset(newLine, targetMarkerType)
+            getLineStartOffset(nextLines, lineIndex) +
+                getInsertedMarkerCursorOffset(newLine, targetMarkerType)
         )
-    }));
+    });
 
     return true;
 }

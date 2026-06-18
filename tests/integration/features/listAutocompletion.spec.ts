@@ -52,14 +52,10 @@ describe('List Autocompletion', () => {
             dispatch: jest.fn((transaction) => {
                 // Mock dispatch to capture the transaction
                 const oldDoc = mockView.state.doc.toString();
-                const objectChange = transaction?.changes &&
-                    !Array.isArray(transaction.changes) &&
-                    transaction.changes.from !== undefined;
-                if (objectChange) {
+                const nextDoc = applyChangeSpecs(oldDoc, transaction?.changes);
+                if (nextDoc !== null) {
                     transaction.__oldDoc = oldDoc;
-                    transaction.__newDoc = oldDoc.slice(0, transaction.changes.from) +
-                        transaction.changes.insert +
-                        oldDoc.slice(transaction.changes.to);
+                    transaction.__newDoc = nextDoc;
                 }
                 mockView.lastTransaction = transaction;
                 const newDoc = transaction?.newDoc?.toString?.() ?? transaction.__newDoc;
@@ -76,6 +72,35 @@ describe('List Autocompletion', () => {
         } as any;
         
         return mockView;
+    }
+
+    function applyChangeSpecs(oldDoc: string, changes: any): string | null {
+        if (!changes) {
+            return null;
+        }
+
+        if (Array.isArray(changes)) {
+            return flattenChangeSpecs(changes)
+                .sort((left, right) => right.from - left.from)
+                .reduce((doc, change) => applySingleChangeSpec(doc, change), oldDoc);
+        }
+
+        if (changes.from !== undefined) {
+            return applySingleChangeSpec(oldDoc, changes);
+        }
+
+        return null;
+    }
+
+    function flattenChangeSpecs(changes: any[]): any[] {
+        return changes.flatMap(change => Array.isArray(change) ? flattenChangeSpecs(change) : [change]);
+    }
+
+    function applySingleChangeSpec(oldDoc: string, change: any): string {
+        const to = change.to ?? change.from;
+        const insert = change.insert?.toString?.() ?? change.insert ?? '';
+
+        return oldDoc.slice(0, change.from) + insert + oldDoc.slice(to);
     }
 
     function createMockViewWithSelection(doc: string, selectionFrom: number, selectionTo: number): EditorView {
@@ -480,6 +505,26 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('    - ');
+        });
+
+        it('should dispatch only the changed list item instead of replacing the full document', () => {
+            const leadingText = Array.from({ length: 20 }, (_, index) => `Paragraph ${index + 1}`).join('\n');
+            const listText = '- item 1\n- ';
+            const doc = `${leadingText}\n\n${listText}\nnext`;
+            const cursorPos = leadingText.length + 2 + listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+
+            const rawChanges = view.lastTransaction.changes;
+            expect(rawChanges).toHaveLength(1);
+            expect(rawChanges[0].from).toBeGreaterThan(0);
+            expect(rawChanges[0].to).toBeLessThan(doc.length);
+            expect(rawChanges[0].insert).toBe('    + ');
         });
 
         it('should read current unordered marker order from a settings provider', () => {
@@ -942,6 +987,29 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('28. ');
         });
 
+        it('should dispatch bounded changes when continuing an ordered list item', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const firstLine = '9. current';
+            const doc = `${firstLine}\n10. next`;
+            const cursorPos = firstLine.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+            expect(view.state.doc.toString()).toBe('9. current\n10. \n11. next');
+
+            const rawChanges = view.lastTransaction.changes;
+            expect(rawChanges).toHaveLength(2);
+            expect(rawChanges.every((change: { from: number }) => change.from > 0)).toBe(true);
+            expect(rawChanges.some((change: { from: number; to: number }) =>
+                change.from === 0 && change.to === doc.length
+            )).toBe(false);
+        });
+
         it('should continue decimal child lists inside fancy ordered parents', () => {
             mockSettings.autoRenumberLists = true;
             keybindings = createListAutocompletionKeymap(mockSettings);
@@ -1016,6 +1084,28 @@ describe('List Autocompletion', () => {
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
             expect(changes!.insert).toBe('B. ');
+        });
+
+        it('should dispatch bounded changes when returning an empty ordered child with Enter', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '1. xxx\n2. xxx\n    a. xxx\n    b. ';
+            const doc = `${listText}\nnext`;
+            const cursorPos = listText.length;
+            const view = createMockView(doc, cursorPos);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.dispatch).toHaveBeenCalled();
+            expect(view.state.doc.toString()).toBe('1. xxx\n2. xxx\n    a. xxx\n3. \nnext');
+
+            const rawChanges = view.lastTransaction.changes;
+            expect(rawChanges).toHaveLength(1);
+            expect(rawChanges[0].from).toBeGreaterThan(0);
+            expect(rawChanges[0].to).toBeLessThan(doc.length);
+            expect(rawChanges[0].insert).toBe('3. ');
         });
 
         it('should outdent an empty bridge decimal marker to the parent list context', () => {

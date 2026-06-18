@@ -16,6 +16,10 @@ import {
 } from '../utils/debugNotice';
 import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
+    buildInsertedLineChanges,
+    getLineStartOffset
+} from '../utils/documentChanges';
+import {
     formatNonOrderedMarker,
     getInsertedMarkerCursorOffset,
     parseStructuralListItem,
@@ -198,17 +202,24 @@ function insertNewStandardListItem(
         }, settings);
     }
 
-    view.dispatch(state.update({
-        changes: {
-            from: 0,
-            to: state.doc.length,
-            insert: nextLines.join('\n')
-        },
+    const lineChanges = buildInsertedLineChanges(
+        state.doc,
+        allLines,
+        nextLines,
+        insertedLineIndex,
+        insertPos
+    );
+    if (!lineChanges) {
+        return false;
+    }
+
+    view.dispatch({
+        changes: lineChanges.changes,
         selection: EditorSelection.cursor(
             getLineStartOffset(nextLines, insertedLineIndex) +
                 getInsertedMarkerCursorOffset(insertedLine, ownerContext.owner.markerType)
         )
-    }));
+    });
 
     return true;
 }
@@ -258,13 +269,4 @@ function getNextStandardListMarker(
         indent: ordered.indent,
         spaces: ordered.spaces || ' '
     };
-}
-
-function getLineStartOffset(lines: string[], lineIndex: number): number {
-    let offset = 0;
-    for (let index = 0; index < lineIndex; index++) {
-        offset += lines[index].length + 1;
-    }
-
-    return offset;
 }

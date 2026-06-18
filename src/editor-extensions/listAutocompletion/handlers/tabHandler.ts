@@ -5,8 +5,15 @@ import {
     formatOrderedListMarker,
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
-import { setPendingListBlockReconciliation } from '../utils/listBlockReconciliation';
+import {
+    LineRange,
+    setPendingListBlockReconciliation
+} from '../utils/listBlockReconciliation';
 import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
+import {
+    buildChangedLineChanges,
+    getLineStartOffset
+} from '../utils/documentChanges';
 import {
     hasEnabledStandardListOwnerCandidate,
     showListAutocompletionError
@@ -108,19 +115,16 @@ function moveTouchedOwners(
     const cursor = selection.empty
         ? resolveMovedCursor(view, lines, nextLines, moves, selection.from, settings)
         : selection.from;
+    const lineChanges = buildChangedLineChanges(state.doc, lines, nextLines);
+    if (!lineChanges) {
+        return true;
+    }
 
-    setPendingListBlockReconciliation(nextLines, {
-        startIndex: 0,
-        endIndex: nextLines.length - 1
-    });
-    view.dispatch(state.update({
-        changes: {
-            from: 0,
-            to: state.doc.length,
-            insert: nextLines.join('\n')
-        },
+    setPendingListBlockReconciliation(nextLines, getMovedChunkRange(moves, lineChanges.range));
+    view.dispatch({
+        changes: lineChanges.changes,
         selection: EditorSelection.cursor(cursor)
-    }));
+    });
 
     return true;
 }
@@ -420,13 +424,14 @@ function getMarkerEnd(line: string, settings: PandocExtendedMarkdownSettings): n
     return item ? item.indent.length + item.marker.length + item.spaces.length : null;
 }
 
-function getLineStartOffset(lines: string[], lineIndex: number): number {
-    let offset = 0;
-    for (let index = 0; index < lineIndex; index++) {
-        offset += lines[index].length + 1;
-    }
-
-    return offset;
+function getMovedChunkRange(
+    moves: OwnerMove[],
+    fallbackRange: LineRange
+): LineRange {
+    return moves.reduce((range, move) => ({
+        startIndex: Math.min(range.startIndex, move.chunk.startIndex),
+        endIndex: Math.max(range.endIndex, move.chunk.endIndex)
+    }), fallbackRange);
 }
 
 function applyExpectedRenumbering(
