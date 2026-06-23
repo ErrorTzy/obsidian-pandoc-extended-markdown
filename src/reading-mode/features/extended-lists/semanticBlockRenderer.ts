@@ -11,6 +11,7 @@ import {
     ReadingModeParser
 } from './lineParser';
 import { ReadingModeRenderer } from './lineRenderer';
+import { appendExtendedListItemContent } from './taskListItem';
 
 import { ReadingModeContext } from '../../pipeline/types';
 import { getIndentColumns } from '../../../shared/utils/orderedListMarkers';
@@ -23,7 +24,8 @@ export function tryRenderSemanticListParagraph(
     text: string
 ): boolean {
     const lines = text.split('\n').filter(line => line.trim().length > 0);
-    const parsedLines = parser.parseLines(lines, true, true, context.config);
+    const dataLines = resolveSourceDataLines(lines, context);
+    const parsedLines = parser.parseLines(lines, true, true, context.config, dataLines);
 
     applyStrictFancyValidation(parsedLines, lines, context);
 
@@ -76,10 +78,13 @@ function renderSemanticList(
 
     parsedLines.forEach(parsedLine => {
         const item = document.createElement('li');
-        const content = getListItemContent(parsedLine);
-
         updateCountersForListItem(item, parsedLine, context);
-        renderer.appendContent(item, content.trimStart(), context.renderContext);
+        appendExtendedListItemContent(
+            item,
+            getRenderedTaskItem(parsedLine),
+            renderer,
+            context.renderContext
+        );
         list.appendChild(item);
     });
 
@@ -127,7 +132,12 @@ function renderNestedFancyLists(
 
         const item = document.createElement('li');
         updateCountersForListItem(item, parsedLine, context);
-        renderer.appendContent(item, getListItemContent(parsedLine).trimStart(), context.renderContext);
+        appendExtendedListItemContent(
+            item,
+            getRenderedTaskItem(parsedLine),
+            renderer,
+            context.renderContext
+        );
         frame.list.appendChild(item);
         frame.lastItem = item;
     });
@@ -307,6 +317,57 @@ function getListItemContent(parsedLine: ParsedLine): string {
     }
 
     return parsedLine.content;
+}
+
+function getRenderedTaskItem(parsedLine: ParsedLine): {
+    taskState: HashListData['taskState'];
+    taskCharacter?: HashListData['taskCharacter'];
+    dataLine?: number;
+    content: string;
+} {
+    const data = parsedLine.metadata as HashListData | FancyListData | ExampleListData;
+    return {
+        taskState: data.taskState,
+        taskCharacter: data.taskCharacter,
+        dataLine: parsedLine.dataLine,
+        content: getListItemContent(parsedLine)
+    };
+}
+
+function resolveSourceDataLines(
+    lines: string[],
+    context: ReadingModeContext
+): Array<number | undefined> {
+    const sectionInfo = context.sectionInfo;
+    if (!sectionInfo?.text) {
+        return lines.map(() => undefined);
+    }
+
+    const sourceLines = sectionInfo.text.split('\n');
+    const startLine = Math.max(0, sectionInfo.lineStart);
+    const endLine = Math.min(sourceLines.length - 1, sectionInfo.lineEnd);
+    const dataLines: Array<number | undefined> = [];
+    let sourceIndex = startLine;
+
+    for (const line of lines) {
+        const normalizedLine = line.trim();
+        while (
+            sourceIndex <= endLine &&
+            sourceLines[sourceIndex].trim() !== normalizedLine
+        ) {
+            sourceIndex++;
+        }
+
+        if (sourceIndex > endLine) {
+            dataLines.push(undefined);
+            continue;
+        }
+
+        dataLines.push(sourceIndex - startLine);
+        sourceIndex++;
+    }
+
+    return dataLines;
 }
 
 function getOrderedListTypeAttribute(type: string): string | null {

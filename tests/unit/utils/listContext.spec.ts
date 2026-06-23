@@ -1,5 +1,7 @@
 import {
-    parseStandardListItem
+    parseStandardListItem,
+    parseTaskCheckboxPrefix,
+    stripTaskCheckboxFromContent
 } from '../../../src/shared/utils/listContext';
 
 describe('listContext', () => {
@@ -19,5 +21,20 @@ describe('listContext', () => {
             spaces: ' ',
             content: ''
         });
+    });
+
+    it('exposes task prefix geometry without treating task state as content', () => {
+        expect(parseTaskCheckboxPrefix('  ', '[X]   content')).toEqual({
+            spaces: '  [x]   ',
+            content: 'content',
+            taskState: 'checked',
+            leadingSpaces: '  ',
+            trailingSpaces: '   ',
+            checkboxOffset: 2,
+            contentOffset: 8,
+            sourceCharacter: 'X'
+        });
+        expect(stripTaskCheckboxFromContent('[ ] content')).toBe('content');
+        expect(stripTaskCheckboxFromContent('[x]content')).toBe('[x]content');
     });
 });

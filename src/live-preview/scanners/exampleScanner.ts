@@ -4,6 +4,7 @@ import { PandocExtendedMarkdownSettings } from '../../core/settings';
 import { isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 import { ListPatterns } from '../../shared/patterns';
+import { stripTaskCheckboxFromContent } from '../../shared/utils/listContext';
 
 import { ListBlockValidator } from '../validators/listBlockValidator';
 
@@ -50,7 +51,7 @@ export function scanExampleLabels(
         const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
         if (match) {
             const label = match[2];
-            const content = match[3].trim();
+            const content = stripTaskCheckboxFromContent(match[3]).trim();
             if (!result.exampleLabels.has(label)) {
                 result.exampleLabels.set(label, counter);
                 // Store the content after the marker

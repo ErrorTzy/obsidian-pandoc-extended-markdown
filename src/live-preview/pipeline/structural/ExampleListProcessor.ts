@@ -3,6 +3,7 @@ import { Line } from '@codemirror/state';
 import { StructuralResult, ProcessingContext } from '../types';
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
+import { parseTaskCheckboxPrefix } from '../../../shared/utils/listContext';
 import { ExampleListMarkerWidget, DuplicateExampleLabelWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
@@ -39,12 +40,27 @@ export class ExampleListProcessor extends BaseStructuralProcessor {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
 
         // Add line decoration using base class method
-        decorations.push(this.createLineDecoration(line));
+        decorations.push(this.createLineDecoration(
+            line,
+            undefined,
+            1,
+            markerInfo.task ? {
+                checkboxStart: markerInfo.task.checkboxStart,
+                sourceCharacter: markerInfo.task.sourceCharacter
+            } : undefined
+        ));
 
         // Add marker widget if cursor is not within it
         const cursorInMarker = this.isCursorInMarker(markerInfo.markerStart, markerInfo.markerEnd, context);
         if (!cursorInMarker) {
             this.addMarkerWidget(decorations, markerInfo, line, lineText, context);
+        }
+        const taskDecoration = markerInfo.task ? {
+            checkboxStart: markerInfo.task.checkboxStart,
+            sourceCharacter: markerInfo.task.sourceCharacter
+        } : undefined;
+        if (taskDecoration && !this.isCursorInTaskCheckbox(taskDecoration, context)) {
+            decorations.push(this.createTaskCheckboxReplacement(taskDecoration, context));
         }
 
         // Add content decoration using base class method
@@ -79,13 +95,32 @@ export class ExampleListProcessor extends BaseStructuralProcessor {
         const indent = match[1] || '';
         const fullMarker = match[2]; // Full (@label) part
         const label = match[3] || '';  // Just the label
-        const space = match[4] || '';
+        const markerSpaces = match[4] || '';
+        const markerContent = line.text.slice(match[0].length);
+        const taskPrefix = parseTaskCheckboxPrefix(markerSpaces, markerContent);
+        const renderedSpaces = taskPrefix?.leadingSpaces ?? markerSpaces;
         
         const markerStart = line.from + indent.length;
-        const markerEnd = line.from + indent.length + fullMarker.length + space.length;
-        const contentStart = markerEnd;
+        const markerEnd = markerStart + fullMarker.length + renderedSpaces.length;
+        const checkboxStart = markerStart + fullMarker.length + (taskPrefix?.checkboxOffset ?? 0);
+        const contentStart = taskPrefix
+            ? checkboxStart + 3 + taskPrefix.trailingSpaces.length
+            : markerEnd;
+        const task = taskPrefix ? {
+            checkboxStart,
+            sourceCharacter: taskPrefix.sourceCharacter
+        } : undefined;
         
-        return { indent, fullMarker, label, space, markerStart, markerEnd, contentStart };
+        return {
+            indent,
+            fullMarker,
+            label,
+            space: renderedSpaces,
+            markerStart,
+            markerEnd,
+            contentStart,
+            task
+        };
     }
     
     

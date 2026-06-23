@@ -67,9 +67,10 @@ syntax uses `[ ]`.
 
 Task checkbox modifiers apply to unordered markers, ordered markers, hash
 markers, and example-list markers. They do not apply to definition-list markers
-`:` or `~`, and they do not apply to custom-label markers `{::...}`. Rendering
-for task checkboxes remains Obsidian-native in Live Preview; this document only
-defines source-editing behavior.
+`:` or `~`, and they do not apply to custom-label markers `{::...}`. Live
+Preview and Reading Mode render supported task modifiers with Obsidian-native
+checkbox interaction while preserving Pandoc list structure. This document
+defines only source-editing behavior.
 
 Hash, example-list, and custom-label markers are enabled only when their
 corresponding syntax feature is enabled. When a feature is disabled, its marker

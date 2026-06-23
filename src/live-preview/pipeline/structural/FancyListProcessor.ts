@@ -5,7 +5,7 @@ import {
     isPluginOwnedOrderedListItem,
     resolveOrderedListItem
 } from '../../../shared/utils/orderedListMarkers';
-import { getListIndentColumns } from '../../../shared/utils/listContext';
+import { getListIndentColumns, parseTaskCheckboxPrefix } from '../../../shared/utils/listContext';
 import { FancyListMarkerWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
@@ -54,11 +54,18 @@ export class FancyListProcessor extends BaseStructuralProcessor {
         const indent = item.indent;
         const marker = markerMatch[2];               // e.g., "A"
         const delimiter = markerMatch[3];            // e.g., "."
-        const space = item.spaces;
+        const markerSpaces = markerMatch[4];
+        const markerContent = line.text.slice(markerMatch[0].length);
+        const taskPrefix = parseTaskCheckboxPrefix(markerSpaces, markerContent);
+        const renderedSpaces = taskPrefix?.leadingSpaces ?? markerSpaces;
 
         const markerStart = line.from + indent.length;
-        const markerEnd = line.from + indent.length + marker.length + delimiter.length + space.length;
-        const contentStart = markerEnd;
+        const markerEnd = markerStart + marker.length + delimiter.length + renderedSpaces.length;
+        const checkboxStart = markerStart + marker.length + delimiter.length +
+            (taskPrefix?.checkboxOffset ?? 0);
+        const contentStart = taskPrefix
+            ? checkboxStart + 3 + taskPrefix.trailingSpaces.length
+            : markerEnd;
         const listLevel = getListLevel(indent);
 
         // Create the widget for the marker
@@ -73,7 +80,11 @@ export class FancyListProcessor extends BaseStructuralProcessor {
             contentStart,
             widget,
             'fancy-list',
-            listLevel
+            listLevel,
+            taskPrefix ? {
+                checkboxStart,
+                sourceCharacter: taskPrefix.sourceCharacter
+            } : undefined
         );
     }
 }

@@ -23,6 +23,7 @@ import { ListPatterns } from '../../shared/patterns';
 
 // Utils
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
+import { parseTaskCheckboxPrefix } from '../../shared/utils/listContext';
 import { handleError } from '../../shared/utils/errorHandler';
 import {
     detectCodeRegions,
@@ -54,9 +55,10 @@ function processExampleLine(
         const fullMarker = exampleMatch[2] || '';
         const label = exampleMatch[3] || '';
         const space = exampleMatch[4] || '';
-        const content = line.substring(
+        const rawContent = line.substring(
             indent.length + fullMarker.length + space.length
         );
+        const content = parseTaskCheckboxPrefix(space, rawContent)?.content ?? rawContent;
         
         // Only check for duplicates if there's an actual label (not empty)
         // Unlabeled example lists (@) should not be flagged as duplicates

@@ -23,3 +23,4 @@ export {
 } from './customLabelWidget';
 
 export { ListContinuationIndentWidget } from './ListContinuationIndentWidget';
+export { TaskCheckboxWidget } from './TaskCheckboxWidget';

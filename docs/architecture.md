@@ -123,6 +123,12 @@ All structural processors extend `BaseStructuralProcessor` which provides:
 | **StandardListProcessor** | 25 | Adds source-marker classes to standard unordered lists when distinct marker rendering is enabled while preserving native rendering | `^\s*[-*+]\s+` | StructuralProcessor |
 | **ListContinuationProcessor** | 100 | Indented continuations | Indented non-empty lines | StructuralProcessor |
 
+Fancy, hash, and example structural processors recognize Pandoc task modifiers
+after their base marker. They render the checkbox with Obsidian's native task
+classes, attach task state to the editor line, and keep the task prefix outside
+inline content regions. Native unordered and decimal task lists remain owned by
+Obsidian.
+
 Live Preview also registers `fencedDivDragExtension`, a small CodeMirror view
 plugin that listens for left-button drags that begin on a fenced-div rail and
 moves the matching source block as whole lines. It is intentionally separate
@@ -153,6 +159,7 @@ All widgets extend `BaseWidget` which provides:
 | **FancyListMarkerWidget** | BaseWidget | `A.`, `i.`, `(a)` markers |
 | **HashListMarkerWidget** | BaseWidget | Auto-numbered markers |
 | **ExampleListMarkerWidget** | BaseWidget | `(@label)` → `(n)` with tooltip |
+| **TaskCheckboxWidget** | BaseWidget | Interactive `[ ]`, `[x]`, and `[X]` task modifiers |
 | **DuplicateExampleLabelWidget** | BaseWidget | Error styling for duplicates |
 | **CustomLabelMarkerWidget** | BaseWidget | `{::LABEL}` processed markers |
 | **CustomLabelPartialWidget** | BaseWidget | Partial label rendering |
@@ -193,6 +200,10 @@ Reading mode uses a small processor pipeline around rendered preview DOM. The pu
 | **ExtendedListBlockProcessor** | 120 | Preserves existing rendered behavior for hash, fancy, example, and source-backed definition list paragraphs |
 | **InlineTextEngineProcessor** | 300 | Runs registered inline processors through the shared text-node replacement engine |
 | **CustomLabelListProcessor** | 400 | Runs the existing two-pass custom label list processor after other replacements |
+
+Extended ordered-list rendering emits Pandoc-compatible task item content and
+Obsidian task classes. Checkbox inputs carry section-relative source line
+metadata so Reading Mode clicks use Obsidian's existing source-toggle handler.
 
 #### Inline Text Processors (`/reading-mode/pipeline/inline/`)
 

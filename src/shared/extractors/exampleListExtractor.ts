@@ -1,5 +1,6 @@
 import { ListPatterns } from '../patterns';
 import { withErrorBoundary } from '../utils/errorHandler';
+import { stripTaskCheckboxFromContent } from '../utils/listContext';
 
 export interface ExampleListItem {
     renderedNumber: number;
@@ -20,7 +21,7 @@ export function extractExampleLists(content: string): ExampleListItem[] {
             const match = line.match(ListPatterns.EXAMPLE_LIST_WITH_CONTENT);
             if (match) {
                 const rawLabel = `@${match[2]}`;
-                const listContent = match[3].trim();
+                const listContent = stripTaskCheckboxFromContent(match[3]).trim();
                 
                 items.push({
                     renderedNumber: exampleCounter,
@@ -37,7 +38,9 @@ export function extractExampleLists(content: string): ExampleListItem[] {
                 if (unlabeledMatch) {
                     // Extract content after the (@) marker
                     const contentStart = line.indexOf('(@)') + 3;
-                    const listContent = line.substring(contentStart).trim();
+                    const listContent = stripTaskCheckboxFromContent(
+                        line.substring(contentStart).trim()
+                    ).trim();
                     
                     items.push({
                         renderedNumber: exampleCounter,

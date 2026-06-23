@@ -11,6 +11,10 @@ import {
     isPluginOwnedOrderedListItem,
     resolveOrderedListLine
 } from '../../../shared/utils/orderedListMarkers';
+import {
+    parseTaskCheckboxPrefix,
+    TaskState
+} from '../../../shared/utils/listContext';
 
 import { parseFancyListMarker } from './fancyListMarker';
 import { parseExampleListMarker } from './exampleListMarker';
@@ -20,23 +24,29 @@ export interface ParsedLine {
     type: 'hash' | 'fancy' | 'example' | 'definition-term' | 'definition-item' | 'plain' | 'reference';
     content: string;
     metadata?: HashListData | FancyListData | ExampleListData | DefinitionData | ReferenceData;
+    dataLine?: number;
 }
 
-export interface HashListData {
+interface TaskListData {
+    taskState: TaskState;
+    taskCharacter?: ' ' | 'x' | 'X';
+}
+
+export interface HashListData extends TaskListData {
     indent: string;
     marker: string;
     spacing: string;
     content: string;
 }
 
-export interface FancyListData {
+export interface FancyListData extends TaskListData {
     type: string;
     marker: string;
     indent: string;
     content: string;
 }
 
-export interface ExampleListData {
+export interface ExampleListData extends TaskListData {
     indent: string;
     originalMarker: string;
     label?: string;
@@ -69,7 +79,8 @@ export class ReadingModeParser {
             isInParagraph?: boolean,
             isAtParagraphStart?: boolean,
             lines?: string[],
-            lineIndex?: number
+            lineIndex?: number,
+            dataLine?: number
         },
         config?: ProcessorConfig
     ): ParsedLine {
@@ -77,14 +88,19 @@ export class ReadingModeParser {
             ? ListPatterns.isHashList(line)
             : null;
         if (hashMatch) {
+            const parsedContent = parseListContent(
+                line,
+                hashMatch[1].length + hashMatch[2].length
+            );
             return {
                 type: 'hash',
                 content: line,
+                dataLine: context?.dataLine,
                 metadata: {
                     indent: hashMatch[1],
                     marker: hashMatch[2],
                     spacing: hashMatch[3],
-                    content: line.substring(hashMatch[1].length + hashMatch[2].length + hashMatch[3].length)
+                    ...parsedContent
                 } as HashListData
             };
         }
@@ -105,14 +121,19 @@ export class ReadingModeParser {
             ? parseFancyListMarker(line)
             : null;
         if (fancyMarker && fancyMarker.type !== 'hash') {
+            const parsedContent = parseListContent(
+                line,
+                fancyMarker.indent.length + fancyMarker.marker.length
+            );
             return {
                 type: 'fancy',
                 content: line,
+                dataLine: context?.dataLine,
                 metadata: {
                     type: fancyMarker.type,
                     marker: fancyMarker.marker,
                     indent: fancyMarker.indent,
-                    content: line.substring(fancyMarker.indent.length + fancyMarker.marker.length + 1)
+                    ...parsedContent
                 } as FancyListData
             };
         }
@@ -125,15 +146,19 @@ export class ReadingModeParser {
             context?.isAtParagraphStart !== false) {
             const exampleMarker = parseExampleListMarker(line);
             if (exampleMarker) {
-                const contentStart = exampleMarker.indent.length + exampleMarker.originalMarker.length + 1;
+                const parsedContent = parseListContent(
+                    line,
+                    exampleMarker.indent.length + exampleMarker.originalMarker.length
+                );
                 return {
                     type: 'example',
                     content: line,
+                    dataLine: context?.dataLine,
                     metadata: {
                         indent: exampleMarker.indent,
                         originalMarker: exampleMarker.originalMarker,
                         label: exampleMarker.label,
-                        content: line.substring(contentStart)
+                        ...parsedContent
                     } as ExampleListData
                 };
             }
@@ -198,7 +223,8 @@ export class ReadingModeParser {
         lines: string[],
         isInParagraph: boolean = false,
         isAtParagraphStart: boolean = true,
-        config?: ProcessorConfig
+        config?: ProcessorConfig,
+        dataLines?: Array<number | undefined>
     ): ParsedLine[] {
         return lines.map((line, index) => {
             const nextLine = this.findNextNonBlankLine(lines, index + 1);
@@ -206,7 +232,14 @@ export class ReadingModeParser {
             const isLineAtStart = index === 0 ? isAtParagraphStart : true;
             return this.parseLine(
                 line,
-                { nextLine, isInParagraph, isAtParagraphStart: isLineAtStart, lines, lineIndex: index },
+                {
+                    nextLine,
+                    isInParagraph,
+                    isAtParagraphStart: isLineAtStart,
+                    lines,
+                    lineIndex: index,
+                    dataLine: dataLines?.[index]
+                },
                 config
             );
         });
@@ -253,6 +286,23 @@ export class ReadingModeParser {
         // Additional validation logic can be added here
         return true;
     }
+}
+
+function parseListContent(
+    line: string,
+    markerEnd: number
+): Pick<TaskListData, 'taskState' | 'taskCharacter'> & { content: string } {
+    const remainder = line.slice(markerEnd);
+    const spacingMatch = remainder.match(/^(\s*)(.*)$/);
+    const markerSpaces = spacingMatch?.[1] ?? '';
+    const content = spacingMatch?.[2] ?? remainder;
+    const taskPrefix = parseTaskCheckboxPrefix(markerSpaces, content);
+
+    return {
+        content: taskPrefix?.content ?? content,
+        taskState: taskPrefix?.taskState ?? null,
+        taskCharacter: taskPrefix?.sourceCharacter
+    };
 }
 
 function getFancyTypeFromStyle(style: string): string {

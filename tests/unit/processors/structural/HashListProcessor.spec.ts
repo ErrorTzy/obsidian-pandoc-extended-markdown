@@ -121,6 +121,38 @@ describe('HashListProcessor', () => {
             expect(result.contentRegion!.from).toBeGreaterThan(line.from);
             expect(result.contentRegion!.to).toBe(line.to);
         });
+
+        it('should render task syntax as a native checkbox outside the content region', () => {
+            updateView('#. [x] Test content');
+            const line = view.state.doc.line(1);
+            const result = processor.process(line, context);
+            const checkboxDecoration = result.decorations.find(decoration =>
+                decoration.from === line.from + 3 &&
+                decoration.to === line.from + 6
+            );
+            const lineDecoration = result.decorations.find(decoration =>
+                decoration.decoration.spec?.class?.includes('HyperMD-task-line')
+            );
+
+            expect(checkboxDecoration?.decoration.spec?.widget).toBeDefined();
+            expect(lineDecoration?.decoration.spec?.attributes).toEqual({
+                'data-task': 'x'
+            });
+            expect(result.contentRegion?.from).toBe(line.from + 7);
+        });
+
+        it('should expose task syntax when the cursor reaches the checkbox end boundary', () => {
+            updateView('#. [x] Test content');
+            view.dispatch({
+                selection: EditorSelection.cursor(6)
+            });
+            const result = processor.process(view.state.doc.line(1), context);
+            const checkboxDecoration = result.decorations.find(decoration =>
+                decoration.from === 3 && decoration.to === 6
+            );
+
+            expect(checkboxDecoration).toBeUndefined();
+        });
         
         it('should skip invalid lines when Pandoc list spacing enforcement is enabled', () => {
             context.settings.enforcePandocListSpacing = true;

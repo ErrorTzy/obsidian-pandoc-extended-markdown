@@ -2,8 +2,13 @@ import { Decoration, WidgetType } from '@codemirror/view';
 import { Line } from '@codemirror/state';
 import { StructuralProcessor, StructuralResult, ProcessingContext, ContentRegion } from '../types';
 import { CSS_CLASSES } from '../../../core/constants';
+import { TaskCheckboxWidget } from '../../widgets';
 
 type ParentStructure = NonNullable<ContentRegion['parentStructure']>;
+export type TaskDecorationInfo = {
+    checkboxStart: number;
+    sourceCharacter: ' ' | 'x' | 'X';
+};
 
 /**
  * Base class for structural processors, providing common functionality
@@ -46,19 +51,24 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
     protected createLineDecoration(
         line: Line,
         additionalClasses?: string,
-        listLevel: number = 1
+        listLevel: number = 1,
+        task?: TaskDecorationInfo
     ): {from: number, to: number, decoration: Decoration} {
         const classes = [
             CSS_CLASSES.LIST_LINE,
             this.getListLineClass(listLevel),
             CSS_CLASSES.PANDOC_LIST_LINE,
+            task ? CSS_CLASSES.TASK_LINE : undefined,
             additionalClasses
         ].filter(Boolean).join(' ');
 
         return {
             from: line.from,
             to: line.from,
-            decoration: Decoration.line({ class: classes })
+            decoration: Decoration.line({
+                class: classes,
+                attributes: task ? { 'data-task': task.sourceCharacter } : undefined
+            })
         };
     }
 
@@ -103,6 +113,34 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
                 inclusive: false
             })
         };
+    }
+
+    protected createTaskCheckboxReplacement(
+        task: TaskDecorationInfo,
+        context: ProcessingContext
+    ): {from: number, to: number, decoration: Decoration} {
+        return {
+            from: task.checkboxStart,
+            to: task.checkboxStart + 3,
+            decoration: Decoration.replace({
+                widget: new TaskCheckboxWidget(
+                    task.sourceCharacter,
+                    context.view,
+                    task.checkboxStart
+                ),
+                inclusive: false
+            })
+        };
+    }
+
+    protected isCursorInTaskCheckbox(
+        task: TaskDecorationInfo,
+        context: ProcessingContext
+    ): boolean {
+        const cursorPos = context.view.state.selection?.main?.head;
+        return cursorPos !== undefined &&
+            cursorPos >= task.checkboxStart &&
+            cursorPos <= task.checkboxStart + 3;
     }
 
     /**
@@ -152,12 +190,13 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
         contentStart: number,
         widget: WidgetType,
         parentStructure: ParentStructure,
-        listLevel: number = 1
+        listLevel: number = 1,
+        task?: TaskDecorationInfo
     ): StructuralResult {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
 
         // Add line decoration
-        decorations.push(this.createLineDecoration(line, undefined, listLevel));
+        decorations.push(this.createLineDecoration(line, undefined, listLevel, task));
 
         // Check cursor position
         const cursorInMarker = this.isCursorInMarker(markerStart, markerEnd, context);
@@ -165,6 +204,9 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
         // Only replace marker if cursor is not within it
         if (!cursorInMarker) {
             decorations.push(this.createMarkerReplacement(markerStart, markerEnd, widget));
+        }
+        if (task && !this.isCursorInTaskCheckbox(task, context)) {
+            decorations.push(this.createTaskCheckboxReplacement(task, context));
         }
 
         // Wrap content area

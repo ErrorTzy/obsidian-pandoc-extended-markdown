@@ -206,6 +206,34 @@ describe('reading mode pipeline', () => {
         expect(rootList?.querySelector(':scope > li')?.textContent).toContain('Parent');
         expect(nestedList?.querySelector('li')?.textContent).toContain('Child');
     });
+
+    it('renders extended task list items with Pandoc content and Obsidian toggle metadata', () => {
+        const markdown = [
+            'A.  [X] checked',
+            'B.  plain',
+            'C.  [ ] unchecked'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = '<p>A.  [X] checked<br>B.  plain<br>C.  [ ] unchecked</p>';
+        const context = createPostProcessorContext(markdown);
+
+        processReadingMode(element, context, createConfig());
+
+        const items = Array.from(element.querySelectorAll('ol[type="A"] > li'));
+        const checkboxes = Array.from(
+            element.querySelectorAll<HTMLInputElement>('.task-list-item-checkbox')
+        );
+
+        expect(items).toHaveLength(3);
+        expect(checkboxes).toHaveLength(2);
+        expect(checkboxes.map(checkbox => checkbox.checked)).toEqual([true, false]);
+        expect(checkboxes.map(checkbox => checkbox.dataset.line)).toEqual(['0', '2']);
+        expect(items[0].querySelector('label')?.textContent).toBe('checked');
+        expect(items[1].textContent).toBe('plain');
+        expect(items[2].querySelector('label')?.textContent).toBe('unchecked');
+        expect(element.textContent).not.toContain('[X]');
+        expect(element.textContent).not.toContain('[ ]');
+    });
 });
 
 function createProcessor(

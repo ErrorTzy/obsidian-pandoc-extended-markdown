@@ -2,6 +2,16 @@ import { INDENTATION } from '../../core/constants';
 
 export type StandardListMarkerKind = 'ordered' | 'unordered';
 export type TaskState = 'unchecked' | 'checked' | null;
+export type ParsedTaskCheckboxPrefix = {
+    spaces: string;
+    content: string;
+    taskState: Exclude<TaskState, null>;
+    leadingSpaces: string;
+    trailingSpaces: string;
+    checkboxOffset: number;
+    contentOffset: number;
+    sourceCharacter: ' ' | 'x' | 'X';
+};
 
 export interface ParsedStandardListItem {
     kind: StandardListMarkerKind;
@@ -52,16 +62,28 @@ export function parseStandardListItem(line: string): ParsedStandardListItem | nu
 export function parseTaskCheckboxPrefix(
     markerSpaces: string,
     content: string
-): { spaces: string; content: string; taskState: Exclude<TaskState, null> } | null {
+): ParsedTaskCheckboxPrefix | null {
     const match = `${markerSpaces}${content}`.match(TASK_CHECKBOX_PREFIX);
     if (!match) {
         return null;
     }
 
-    const taskState = match[2].toLowerCase() === 'x' ? 'checked' : 'unchecked';
+    const leadingSpaces = match[1];
+    const sourceCharacter = match[2] as ParsedTaskCheckboxPrefix['sourceCharacter'];
+    const trailingSpaces = match[3] ?? '';
+    const taskState = sourceCharacter.toLowerCase() === 'x' ? 'checked' : 'unchecked';
     return {
-        spaces: `${match[1]}[${taskState === 'checked' ? 'x' : ' '}]${match[3] ?? ''}`,
+        spaces: `${leadingSpaces}[${taskState === 'checked' ? 'x' : ' '}]${trailingSpaces}`,
         content: match[4] ?? '',
-        taskState
+        taskState,
+        leadingSpaces,
+        trailingSpaces,
+        checkboxOffset: leadingSpaces.length,
+        contentOffset: leadingSpaces.length + 3 + trailingSpaces.length,
+        sourceCharacter
     };
+}
+
+export function stripTaskCheckboxFromContent(content: string): string {
+    return parseTaskCheckboxPrefix(' ', content)?.content ?? content;
 }

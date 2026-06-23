@@ -134,6 +134,40 @@ describe('ExampleListProcessor', () => {
             expect(result.contentRegion!.from).toBe(line.from + 9); // After "(@label) "
             expect(result.contentRegion!.to).toBe(line.to);
         });
+
+        it('should render task syntax as a native checkbox outside the content region', () => {
+            createView('(@a) [ ] Test content');
+            context = createContext();
+            const line = view.state.doc.line(1);
+            const result = processor.process(line, context);
+            const checkboxDecoration = result.decorations.find(decoration =>
+                decoration.from === line.from + 5 &&
+                decoration.to === line.from + 8
+            );
+            const lineDecoration = result.decorations.find(decoration =>
+                decoration.decoration.spec?.class?.includes('HyperMD-task-line')
+            );
+
+            expect(checkboxDecoration?.decoration.spec?.widget).toBeDefined();
+            expect(lineDecoration?.decoration.spec?.attributes).toEqual({
+                'data-task': ' '
+            });
+            expect(result.contentRegion?.from).toBe(line.from + 9);
+        });
+
+        it('should expose task syntax when the cursor reaches the checkbox end boundary', () => {
+            createView('(@a) [ ] Test content');
+            view.dispatch({
+                selection: EditorSelection.cursor(8)
+            });
+            context = createContext();
+            const result = processor.process(view.state.doc.line(1), context);
+            const checkboxDecoration = result.decorations.find(decoration =>
+                decoration.from === 5 && decoration.to === 8
+            );
+
+            expect(checkboxDecoration).toBeUndefined();
+        });
         
         it('should include label metadata in content region', () => {
             createView('(@mylabel) Content');

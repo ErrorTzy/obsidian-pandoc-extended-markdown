@@ -2,6 +2,7 @@ import { Line } from '@codemirror/state';
 import { StructuralResult, ProcessingContext } from '../types';
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
 import { ListPatterns } from '../../../shared/patterns';
+import { parseTaskCheckboxPrefix } from '../../../shared/utils/listContext';
 import { HashListMarkerWidget } from '../../widgets';
 import { BaseStructuralProcessor } from './BaseStructuralProcessor';
 
@@ -36,11 +37,17 @@ export class HashListProcessor extends BaseStructuralProcessor {
 
         const indent = hashMatch[1];
         const marker = hashMatch[2];
-        const space = hashMatch[3];
+        const markerSpaces = hashMatch[3];
+        const markerContent = lineText.slice(hashMatch[0].length);
+        const taskPrefix = parseTaskCheckboxPrefix(markerSpaces, markerContent);
+        const renderedSpaces = taskPrefix?.leadingSpaces ?? markerSpaces;
 
         const markerStart = line.from + indent.length;
-        const markerEnd = line.from + indent.length + marker.length + space.length;
-        const contentStart = markerEnd;
+        const markerEnd = markerStart + marker.length + renderedSpaces.length;
+        const checkboxStart = markerStart + marker.length + (taskPrefix?.checkboxOffset ?? 0);
+        const contentStart = taskPrefix
+            ? checkboxStart + 3 + taskPrefix.trailingSpaces.length
+            : markerEnd;
 
         // Create the widget for the marker
         const widget = new HashListMarkerWidget(context.hashCounter.value, context.view, markerStart);
@@ -57,7 +64,11 @@ export class HashListProcessor extends BaseStructuralProcessor {
             contentStart,
             widget,
             'hash-list',
-            1
+            1,
+            taskPrefix ? {
+                checkboxStart,
+                sourceCharacter: taskPrefix.sourceCharacter
+            } : undefined
         );
     }
 }
