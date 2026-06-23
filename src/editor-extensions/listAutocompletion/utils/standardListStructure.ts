@@ -9,14 +9,19 @@ import {
 } from '../../../shared/types/settingsTypes';
 import type { OrderedListMarkerStyle } from '../../../shared/types/orderedListTypes';
 import { getAvailableOrderedMarkerStyles, parseOrderedListMarker } from '../../../shared/utils/orderedListMarkers';
-import { parseStandardListItem, ParsedStandardListItem } from '../../../shared/utils/listContext';
+import {
+    parseStandardListItem,
+    parseTaskCheckboxPrefix,
+    ParsedStandardListItem,
+    TaskState
+} from '../../../shared/utils/listContext';
 
 export type StandardListMarkerType =
-    | { kind: 'ordered'; style: OrderedListMarkerStyle }
-    | { kind: 'unordered'; marker: string }
-    | { kind: 'hash' }
-    | { kind: 'example' }
-    | { kind: 'custom-label' };
+    | { kind: 'ordered'; style: OrderedListMarkerStyle; taskState: TaskState }
+    | { kind: 'unordered'; marker: string; taskState: TaskState }
+    | { kind: 'hash'; taskState: TaskState }
+    | { kind: 'example'; taskState: TaskState }
+    | { kind: 'custom-label'; taskState: null };
 
 type StructuralListMarkerKind = ParsedStandardListItem['kind'] |
     'hash' |
@@ -110,7 +115,8 @@ export function parseStructuralListItem(
             indentColumns: getIndentColumns(emptyExampleMatch[1]),
             marker: `(@${emptyExampleMatch[2]})`,
             spaces: emptyExampleMatch[3],
-            content: ''
+            content: '',
+            taskState: null
         };
     }
 
@@ -130,7 +136,8 @@ export function parseStructuralListItem(
             indentColumns: getIndentColumns(emptyCustomLabelWithContentMatch[1]),
             marker: emptyCustomLabelWithContentMatch[2],
             spaces: emptyCustomLabelWithContentMatch[3],
-            content: emptyCustomLabelWithContentMatch[4]
+            content: emptyCustomLabelWithContentMatch[4],
+            taskState: null
         };
     }
     const emptyCustomLabelMatch = isCustomLabelListsEnabled(settings)
@@ -143,7 +150,8 @@ export function parseStructuralListItem(
             indentColumns: getIndentColumns(emptyCustomLabelMatch[1]),
             marker: emptyCustomLabelMatch[2],
             spaces: emptyCustomLabelMatch[4],
-            content: ''
+            content: '',
+            taskState: null
         };
     }
 
@@ -163,10 +171,41 @@ export function formatNonOrderedMarker(markerType: Exclude<StandardListMarkerTyp
     }
 }
 
+export function formatMarkerPrefix(
+    marker: string,
+    markerType: StandardListMarkerType,
+    taskState: TaskState = markerType.taskState
+): string {
+    if (taskState === null) {
+        return `${marker} `;
+    }
+
+    return `${marker} [${taskState === 'checked' ? 'x' : ' '}] `;
+}
+
+export function getInsertedTaskState(markerType: StandardListMarkerType): TaskState {
+    return markerType.taskState === null ? null : 'unchecked';
+}
+
+export function getMovedTaskState(
+    sourceMarkerType: StandardListMarkerType,
+    targetMarkerType: StandardListMarkerType
+): TaskState {
+    if (targetMarkerType.taskState === null) {
+        return null;
+    }
+
+    return sourceMarkerType.taskState ?? 'unchecked';
+}
+
 export function getInsertedMarkerCursorOffset(
     insertedLine: string,
     markerType: StandardListMarkerType
 ): number {
+    if (markerType.taskState !== null) {
+        return insertedLine.length;
+    }
+
     if (markerType.kind === 'example') {
         const markerEnd = insertedLine.indexOf(LIST_MARKERS.EXAMPLE_END);
         return markerEnd >= 0 ? markerEnd : insertedLine.length;
@@ -409,7 +448,7 @@ export function getPreviousSiblingOrdinal(
         if (
             node.depth === targetDepth &&
             node.parentLineIndex === targetParentLineIndex &&
-            markerTypesEqual(node.markerType, markerType)
+            baseMarkerTypesEqual(node.markerType, markerType)
         ) {
             const parsed = parseOrderedListMarker(node.lineText);
             return parsed?.ordinal ?? null;
@@ -420,6 +459,21 @@ export function getPreviousSiblingOrdinal(
 }
 
 export function markerTypesEqual(
+    left: StandardListMarkerType,
+    right: StandardListMarkerType
+): boolean {
+    if (left.kind !== right.kind) {
+        return false;
+    }
+
+    if (left.taskState !== right.taskState) {
+        return false;
+    }
+
+    return baseMarkerTypesEqual(left, right);
+}
+
+export function baseMarkerTypesEqual(
     left: StandardListMarkerType,
     right: StandardListMarkerType
 ): boolean {
@@ -464,19 +518,19 @@ function resolveMarkerType(
     settings: PandocExtendedMarkdownSettings
 ): StandardListMarkerType | null {
     if (item.kind === 'unordered') {
-        return { kind: 'unordered', marker: item.marker };
+        return { kind: 'unordered', marker: item.marker, taskState: item.taskState };
     }
 
     if (item.kind === 'hash') {
-        return { kind: 'hash' };
+        return { kind: 'hash', taskState: item.taskState };
     }
 
     if (item.kind === 'example') {
-        return { kind: 'example' };
+        return { kind: 'example', taskState: item.taskState };
     }
 
     if (item.kind === 'custom-label') {
-        return { kind: 'custom-label' };
+        return { kind: 'custom-label', taskState: null };
     }
 
     const ordered = parseOrderedListMarker(lines[lineIndex], lines, lineIndex);
@@ -485,10 +539,10 @@ function resolveMarkerType(
     }
 
     if (!settings.enableOrderedListMarkerCycling) {
-        return { kind: 'ordered', style: ordered.style };
+        return { kind: 'ordered', style: ordered.style, taskState: item.taskState };
     }
 
-    return { kind: 'ordered', style: ordered.style };
+    return { kind: 'ordered', style: ordered.style, taskState: item.taskState };
 }
 
 function findPreviousNodeAtDepth(
@@ -548,28 +602,38 @@ function resolveFallbackMarkerType(
     settings: PandocExtendedMarkdownSettings,
     fallbackMarkerType: StandardListMarkerType | null
 ): StandardListMarkerType {
+    if (fallbackMarkerType?.kind === 'ordered') {
+        return {
+            kind: 'ordered',
+            style: resolveDefaultOrderedStyle(chunk, targetDepth, settings),
+            taskState: fallbackMarkerType.taskState
+        };
+    }
+
     if (fallbackMarkerType?.kind === 'unordered') {
         return {
             kind: 'unordered',
-            marker: resolveFallbackUnorderedMarker(fallbackMarkerType.marker, settings)
+            marker: resolveFallbackUnorderedMarker(fallbackMarkerType.marker, settings),
+            taskState: fallbackMarkerType.taskState
         };
     }
 
     if (fallbackMarkerType?.kind === 'hash') {
-        return { kind: 'hash' };
+        return { kind: 'hash', taskState: fallbackMarkerType.taskState };
     }
 
     if (fallbackMarkerType?.kind === 'example') {
-        return { kind: 'example' };
+        return { kind: 'example', taskState: fallbackMarkerType.taskState };
     }
 
     if (fallbackMarkerType?.kind === 'custom-label') {
-        return { kind: 'custom-label' };
+        return { kind: 'custom-label', taskState: null };
     }
 
     return {
         kind: 'ordered',
-        style: resolveDefaultOrderedStyle(chunk, targetDepth, settings)
+        style: resolveDefaultOrderedStyle(chunk, targetDepth, settings),
+        taskState: null
     };
 }
 
@@ -616,13 +680,18 @@ function parseExtendedListMatch(
     const indent = match[1];
     const marker = match[2];
     const spaces = match[match.length - 1] ?? '';
+    const content = line.slice(match[0].length);
+    const taskPrefix = kind === 'hash' || kind === 'example'
+        ? parseTaskCheckboxPrefix(spaces, content)
+        : null;
 
     return {
         kind,
         indent,
         indentColumns: getIndentColumns(indent),
         marker,
-        spaces,
-        content: line.slice(match[0].length)
+        spaces: taskPrefix?.spaces ?? spaces,
+        content: taskPrefix?.content ?? content,
+        taskState: taskPrefix?.taskState ?? null
     };
 }

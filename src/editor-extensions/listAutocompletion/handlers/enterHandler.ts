@@ -11,7 +11,9 @@ import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
     findExplicitChildBlock,
     findTargetParentLineIndex,
+    formatMarkerPrefix,
     formatNonOrderedMarker,
+    getInsertedTaskState,
     getInsertedMarkerCursorOffset,
     getPreviousSiblingOrdinal,
     resolveListOwnerAtLine,
@@ -138,7 +140,7 @@ function handleEnterBeforeExplicitChildBlock(
                 explicitChild.markerType,
                 ownerContext,
                 settings
-            )}${item.spaces || ' '}`
+            )}`
             : explicitChild.indent;
     const replacement = `${beforeCursor}\n${insertedLine}`;
     const expectedLines = [...lines];
@@ -177,7 +179,11 @@ function formatMarkerForInsertedChild(
     settings: ReturnType<typeof resolveSettings>
 ): string {
     if (markerType.kind !== 'ordered') {
-        return formatNonOrderedMarker(markerType);
+        return formatMarkerPrefix(
+            formatNonOrderedMarker(markerType),
+            markerType,
+            getInsertedTaskState(markerType)
+        );
     }
 
     const targetDepth = ownerContext.owner.depth + 1;
@@ -197,5 +203,9 @@ function formatMarkerForInsertedChild(
         ? (previousOrdinal ?? 0) + 1
         : 1;
 
-    return formatOrderedListMarker(markerType.style, ordinal);
+    return formatMarkerPrefix(
+        formatOrderedListMarker(markerType.style, ordinal),
+        markerType,
+        getInsertedTaskState(markerType)
+    );
 }

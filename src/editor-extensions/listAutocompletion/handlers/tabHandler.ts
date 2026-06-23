@@ -24,8 +24,10 @@ import {
     findExplicitChildBlock,
     findNearestNodeAtDepth,
     findTargetParentLineIndex,
+    formatMarkerPrefix,
     formatNonOrderedMarker,
     getDirectContinuationLineIndices,
+    getMovedTaskState,
     getPreviousSiblingOrdinal,
     removeIndentLevel,
     resolveFallbackUnorderedMarker,
@@ -267,7 +269,7 @@ function applyOwnerMove(
     const marker = formatMovedMarker(originalLines, move, settings, movedOrderedOwners);
     const ownerLine = originalLines[owner.lineIndex];
     const markerEnd = owner.indent.length + owner.marker.length + owner.spaces.length;
-    nextLines[owner.lineIndex] = `${move.targetIndent}${marker}${owner.spaces || ' '}${ownerLine.slice(markerEnd)}`;
+    nextLines[owner.lineIndex] = `${move.targetIndent}${marker}${ownerLine.slice(markerEnd)}`;
 
     for (const lineIndex of move.lineIndices) {
         if (lineIndex === owner.lineIndex) {
@@ -285,7 +287,11 @@ function formatMovedMarker(
     movedOrderedOwners: MovedOrderedOwner[]
 ): string {
     if (move.targetMarkerType.kind !== 'ordered') {
-        return formatNonOrderedMarker(move.targetMarkerType);
+        return formatMarkerPrefix(
+            formatNonOrderedMarker(move.targetMarkerType),
+            move.targetMarkerType,
+            getMovedTaskState(move.owner.markerType, move.targetMarkerType)
+        );
     }
 
     const currentOrdered = parseOrderedListMarker(
@@ -316,7 +322,11 @@ function formatMovedMarker(
         ordinal: normalizedOrdinal
     });
 
-    return formatOrderedListMarker(move.targetMarkerType.style, normalizedOrdinal);
+    return formatMarkerPrefix(
+        formatOrderedListMarker(move.targetMarkerType.style, normalizedOrdinal),
+        move.targetMarkerType,
+        getMovedTaskState(move.owner.markerType, move.targetMarkerType)
+    );
 }
 
 function findPreviousMovedOrderedSibling(
@@ -373,7 +383,8 @@ function resolveMovedParentChildMarkerType(
 
     return {
         kind: 'unordered',
-        marker: resolveFallbackUnorderedMarker(movedParent.targetMarkerType.marker, settings)
+        marker: resolveFallbackUnorderedMarker(movedParent.targetMarkerType.marker, settings),
+        taskState: owner.markerType.taskState
     };
 }
 

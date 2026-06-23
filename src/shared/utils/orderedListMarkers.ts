@@ -66,6 +66,7 @@ export function parseOrderedListMarker(
         return null;
     }
 
+    const standardItem = parseStandardListItem(line);
     const style = getStyleForToken(token, delimiter as OrderedListMarkerDelimiter, indent, lines, lineIndex);
     const ordinal = getOrdinalForToken(token, style);
 
@@ -79,8 +80,8 @@ export function parseOrderedListMarker(
         style,
         ordinal,
         delimiter: delimiter as OrderedListMarkerDelimiter,
-        spaces,
-        content
+        spaces: standardItem?.spaces ?? spaces,
+        content: standardItem?.content ?? content
     };
 }
 

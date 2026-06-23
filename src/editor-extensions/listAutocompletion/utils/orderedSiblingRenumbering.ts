@@ -4,7 +4,8 @@ import {
     parseOrderedListMarker
 } from '../../../shared/utils/orderedListMarkers';
 import {
-    markerTypesEqual,
+    baseMarkerTypesEqual,
+    formatMarkerPrefix,
     parseStandardListChunk,
     StandardListMarkerType
 } from './standardListStructure';
@@ -29,7 +30,7 @@ export function renumberOrderedGroup(
     const siblings = chunk.nodes.filter(node =>
         node.depth === signature.depth &&
         node.parentLineIndex === signature.parentLineIndex &&
-        markerTypesEqual(node.markerType, signature.markerType)
+        baseMarkerTypesEqual(node.markerType, signature.markerType)
     );
 
     const firstOrdinal = getFirstSiblingOrdinal(lines, siblings);
@@ -40,10 +41,11 @@ export function renumberOrderedGroup(
             return;
         }
 
-        lines[node.lineIndex] = `${parsed.indent}${formatOrderedListMarker(
-            signature.markerType.style,
-            firstOrdinal + index
-        )}${parsed.spaces}${parsed.content}`;
+        const marker = formatOrderedListMarker(signature.markerType.style, firstOrdinal + index);
+        lines[node.lineIndex] = `${parsed.indent}${formatMarkerPrefix(
+            marker,
+            node.markerType
+        )}${parsed.content}`;
     });
 }
 

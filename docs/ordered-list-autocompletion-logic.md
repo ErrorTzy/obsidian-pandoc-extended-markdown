@@ -9,8 +9,8 @@ refactored.
 Although the setting is named ordered-list marker cycling, the editor behavior
 must operate on structural item-list levels as a whole. Ordered, unordered, hash,
 example, and custom-label markers can be adjacent depths in the same list chunk,
-and Tab, Shift+Tab, and Enter must resolve the target depth's marker type
-consistently.
+and Tab, Shift+Tab, and Enter must resolve the target depth's structural marker
+type consistently.
 
 Definition-list markers `:` and `~` are intentionally excluded. They describe
 definitions for a preceding term rather than peer list items, so owner movement,
@@ -57,6 +57,20 @@ store or copy the source label, placeholder, or expression. Newly inserted
 custom-label markers use `{::}` and place the cursor between `::` and `}` when
 the inserted item is otherwise empty.
 
+Task checkbox syntax is a modifier on supported Pandoc-native list markers, not
+a separate list family. The supported task forms are `[ ]`, `[x]`, and `[X]`
+after the base list marker and at least one whitespace character. The checkbox
+must be followed by either the end of the item or at least one whitespace
+character before content; `- [ ]text` and `- [x]text` are plain list content.
+Generated checked task syntax normalizes to `[x]`; generated unchecked task
+syntax uses `[ ]`.
+
+Task checkbox modifiers apply to unordered markers, ordered markers, hash
+markers, and example-list markers. They do not apply to definition-list markers
+`:` or `~`, and they do not apply to custom-label markers `{::...}`. Rendering
+for task checkboxes remains Obsidian-native in Live Preview; this document only
+defines source-editing behavior.
+
 Hash, example-list, and custom-label markers are enabled only when their
 corresponding syntax feature is enabled. When a feature is disabled, its marker
 text is treated as plain text by structural list autocompletion and must not
@@ -82,15 +96,21 @@ create owners or depth-map overrides.
   belongs to the owner, stopping at a blank line. If that block contains direct
   continuations followed by a nested child list, the nested child list supplies
   the explicit child marker type.
-- Marker type: one of an ordered style such as `lower-alpha-period`, an
+- Base marker type: one of an ordered style such as `lower-alpha-period`, an
   unordered marker such as `-`, hash, example-list, or custom-label.
+- Task state: `unchecked`, `checked`, or `null`. A `null` task state means the
+  item is not using task checkbox syntax.
+- Structural marker type: a base marker type plus task state. Custom-label
+  structural marker types always have `taskState: null`, and definition-list
+  markers are excluded from this model.
 - Editable placeholder marker: an unlabeled example marker `(@)` or empty
   custom-label marker `{::}` with the cursor inside the marker's editable region.
   For example, `(@|)` and `{::|}` are editable placeholders; `(@) |` and
   `{::} |` are ordinary list items at cursor position after the marker.
 - Ordinal: the numeric value represented by an ordered marker. For example,
   `b.`, `B)`, `ii.`, and `2.` all have ordinal `2`.
-- Depth map: the chunk-local function from parsed list depth to marker type.
+- Depth map: the chunk-local function from parsed list depth to structural
+  marker type.
 - Bridge decimal item: a `decimal-period` ordered-list item nested under a
   plugin-owned fancy ordered list. This is intentional and should behave as a
   normal child ordered list while preserving a return path to the fancy parent
@@ -154,17 +174,18 @@ item is its own owner, so it stays unless selected.
 
 ## Chunk Depth Map
 
-Marker type inference is depth-based. For each list chunk, build a parsed list
-tree and infer a depth map:
+Structural marker type inference is depth-based. For each list chunk, build a
+parsed list tree and infer a depth map:
 
 - Root list items are depth `1`.
 - A list item whose nearest shallower list parent is depth `n` is depth `n + 1`.
 - Depth is based on parsed list relationships, not on raw `indentColumns / 4`.
-- The depth map stores marker type only. It does not store ordinal values.
-- Parent marker type is not part of the override key; chunk and depth are the
-  relevant scope.
+- The depth map stores structural marker type only. It does not store ordinal
+  values.
+- Parent structural marker type is not part of the override key; chunk and depth
+  are the relevant scope.
 
-When resolving a marker type for a target depth:
+When resolving a structural marker type for a target depth:
 
 1. If the operation has an explicit child or parent target, that explicit target
    wins.
@@ -259,6 +280,13 @@ only because a target depth is currently empty.
   target-depth override preserve their own marker kind. Hash inserts `#.`,
   example-list inserts `(@)`, and custom-label inserts `{::}`.
 
+Task state participates in the same depth-map resolution as the base marker
+type. A target depth whose selected structural marker type is taskful creates or
+rewrites task syntax; a target depth whose selected structural marker type is
+non-task drops task syntax. When the plugin introduces new task syntax, the new
+task state is always unchecked. Existing task state is preserved only when
+rewriting an existing task item into a taskful target marker type.
+
 This keeps list-family changes intentional. For example, an ordered item can
 move into an unordered child level when an existing unordered child level is
 present, and an unordered item can move into an ordered child level when an
@@ -267,7 +295,7 @@ unordered Tab cycling must remain within `-`, `+`, and `*`.
 
 ## Ordinal Resolution
 
-Ordinal resolution applies only after the marker type has been resolved as an
+Ordinal resolution applies only after the structural marker type has been resolved as an
 ordered style.
 
 Renumbering and marker type inference are separate features. Disabling
@@ -292,9 +320,16 @@ When `autoRenumberLists` is disabled:
 - Inserted or moved items can create duplicate ordered markers, such as
   `a.`, `a.`, `b.`.
 
-The depth map stores only marker type. For example and custom-label markers, it
-stores only the marker kind, not the source label or expression. Ordinals are
-resolved separately from local sibling context and `autoRenumberLists`.
+The depth map stores only structural marker type. For example and custom-label
+markers, it stores only the marker kind, not the source label or expression.
+Ordinals are resolved separately from local sibling context and
+`autoRenumberLists`.
+
+Ordered renumbering ignores task state when identifying a sibling group. Task
+and non-task ordered items at the same depth with the same parent and base
+ordered style share one ordinal sequence. When renumbering rewrites a task item,
+it preserves that item's existing task state and normalizes checked state to
+`[x]`.
 
 Example with renumbering enabled:
 
@@ -412,10 +447,12 @@ Pressing Enter should produce:
 For a non-empty list item with no immediately following deeper nonblank block:
 
 - Insert a new item at the same depth.
+- If the current item is taskful, insert unchecked task syntax regardless of
+  whether the current item is checked or unchecked.
 - Preserve the current unordered marker exactly for unordered items.
 - Preserve hash marker type by inserting `#.`.
 - Preserve example-list marker type by inserting `(@)` and placing the cursor
-  between `@` and `)`.
+  between `@` and `)` when the inserted item is not taskful.
 - Preserve custom-label marker type by inserting `{::}` and placing the cursor
   between `::` and `}`.
 - Preserve the current ordered style for ordered items.
@@ -432,6 +469,10 @@ For an empty nested item:
 
 - Return to the nearest parent depth.
 - Use the parent depth's marker type from the explicit parent target.
+- Treat task checkbox syntax as part of the empty marker prefix. Checked empty
+  task items are empty list items.
+- If the resolved parent depth is taskful, insert unchecked task syntax. Do not
+  preserve the checked state of the empty child marker.
 - If the target is ordered, resolve the ordinal according to
   `autoRenumberLists`.
 - If the target is unordered, preserve the parent depth's unordered marker.
@@ -445,6 +486,8 @@ For an empty nested item:
 For an empty top-level item:
 
 - Remove the marker and leave a plain empty line.
+- Top-level empty task items, including checked task items, follow this same
+  marker-removal rule.
 
 For example-list and custom-label items, the empty-item path applies only to
 editable placeholder markers with the cursor inside the editable region. `(@|)`

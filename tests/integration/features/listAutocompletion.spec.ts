@@ -1264,4 +1264,128 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('    - ');
         });
     });
+
+    describe('Task checkbox list autocompletion', () => {
+        it('should continue unchecked unordered task items with an unchecked task marker', () => {
+            const doc = '- [ ] xxx';
+            const view = createMockView(doc, doc.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('- [ ] xxx\n- [ ] ');
+        });
+
+        it('should continue checked unordered task items with an unchecked task marker', () => {
+            const doc = '- [x] xxx';
+            const view = createMockView(doc, doc.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('- [x] xxx\n- [ ] ');
+        });
+
+        it('should continue example task items with unchecked task syntax and leave rendering to Obsidian', () => {
+            const doc = '(@foo) [x] example';
+            const view = createMockView(doc, doc.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('(@foo) [x] example\n(@) [ ] ');
+        });
+
+        it('should continue hash task items with unchecked task syntax', () => {
+            const doc = '#. [x] hash task';
+            const view = createMockView(doc, doc.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('#. [x] hash task\n#. [ ] ');
+        });
+
+        it('should treat checked empty task items as empty list items', () => {
+            const doc = '- [x]\nnext';
+            const view = createMockView(doc, '- [x]'.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('\nnext');
+        });
+
+        it('should return checked empty nested task items to the parent as unchecked task items', () => {
+            const listText = '- [ ] parent\n    + [x]';
+            const doc = `${listText}\nnext`;
+            const view = createMockView(doc, listText.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('- [ ] parent\n- [ ] \nnext');
+        });
+
+        it('should preserve existing checked task state when moving into a task target depth', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '1. parent\n    a. [ ] child\n2. [X] done';
+            const doc = `${listText}\nnext`;
+            const view = createMockView(doc, listText.length);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('1. parent\n    a. [ ] child\n    b. [x] done\nnext');
+        });
+
+        it('should introduce unchecked task syntax when moving a non-task item into a task target depth', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '1. parent\n    a. [x] child\n2. plain';
+            const doc = `${listText}\nnext`;
+            const view = createMockView(doc, listText.length);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('1. parent\n    a. [x] child\n    b. [ ] plain\nnext');
+        });
+
+        it('should drop task syntax when moving a task item into a non-task target depth', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const listText = '1. parent\n    a. child\n2. [x] done';
+            const doc = `${listText}\nnext`;
+            const view = createMockView(doc, listText.length);
+
+            const tabHandler = keybindings.find(kb => kb.key === 'Tab');
+            const result = tabHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('1. parent\n    a. child\n    b. done\nnext');
+        });
+
+        it('should renumber ordered task and non-task siblings in one sequence', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const doc = '1. [ ] task\n2. plain';
+            const view = createMockView(doc, '1. [ ] task'.length);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe('1. [ ] task\n2. [ ] \n3. plain');
+        });
+    });
 });

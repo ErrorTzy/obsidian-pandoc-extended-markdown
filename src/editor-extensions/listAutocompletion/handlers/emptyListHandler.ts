@@ -14,9 +14,12 @@ import { renumberOrderedGroup } from '../utils/orderedSiblingRenumbering';
 import {
     findNearestNodeAtDepth,
     findTargetParentLineIndex,
+    formatMarkerPrefix,
     formatNonOrderedMarker,
+    getInsertedTaskState,
     getInsertedMarkerCursorOffset,
     getPreviousSiblingOrdinal,
+    parseStructuralListItem,
     removeIndentLevel,
     resolveListOwnerAtLine,
     resolveMarkerTypeForDepth,
@@ -63,13 +66,15 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
     const { view, currentLine } = config;
     const { line, lineText } = currentLine;
     const state = view.state;
+    const lineIndex = line.number - 1;
+    const allLines = state.doc.toString().split('\n');
+    const structuralItem = parseStructuralListItem(lineText, config.settings);
+    const isEmptyStructuralTask = structuralItem?.taskState !== null && structuralItem?.content === '';
 
-    if (!isEmptyListItem(lineText)) {
+    if (!isEmptyListItem(lineText) && !isEmptyStructuralTask) {
         return false;
     }
 
-    const lineIndex = line.number - 1;
-    const allLines = state.doc.toString().split('\n');
     if (isEnabledStandardListLine(lineText, allLines, lineIndex, config.settings)) {
         if (handleStandardEmptyListItem(config)) {
             return true;
@@ -138,7 +143,11 @@ function handleStandardEmptyListItem(config: EmptyListHandlingConfig): boolean {
             targetMarkerType,
             settings
         );
-    const newLine = `${targetIndent}${marker}${owner.spaces || ' '}`;
+    const newLine = `${targetIndent}${formatMarkerPrefix(
+        marker,
+        targetMarkerType,
+        getInsertedTaskState(targetMarkerType)
+    )}`;
     const nextLines = [...lines];
     nextLines[lineIndex] = newLine;
 

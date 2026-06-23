@@ -1,5 +1,6 @@
 import { ListPatterns } from '../patterns';
 import { ROMAN_NUMERALS } from '../../core/constants';
+import { parseStandardListItem } from './listContext';
 
 // Helper function to convert letter to number (A=1, B=2, etc.)
 export function letterToNumber(letter: string): number {
@@ -45,6 +46,9 @@ export function intToRoman(num: number, isUpperCase: boolean): string {
 
 // Helper function to check if a line is empty (only contains the list marker)
 export function isEmptyListItem(line: string): boolean {
+    const standardItem = parseStandardListItem(line);
+    if (standardItem?.content === '') return true;
+
     // Check hash lists
     if (line.match(ListPatterns.EMPTY_HASH_LIST)) return true;
     

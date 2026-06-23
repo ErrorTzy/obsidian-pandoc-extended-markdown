@@ -23,7 +23,8 @@ import {
     formatNonOrderedMarker,
     getInsertedMarkerCursorOffset,
     parseStructuralListItem,
-    resolveListOwnerAtLine
+    resolveListOwnerAtLine,
+    StandardListMarkerType
 } from '../utils/standardListStructure';
 import { NewListItemConfig } from '../types';
 
@@ -239,15 +240,15 @@ function getNextStandardListMarker(
         return {
             marker: standardItem.marker,
             indent: standardItem.indent,
-            spaces: standardItem.spaces || ' '
+            spaces: getInsertedSpaces(standardItem)
         };
     }
 
     if (standardItem.kind === 'hash' || standardItem.kind === 'example' || standardItem.kind === 'custom-label') {
         return {
-            marker: formatNonOrderedMarker({ kind: standardItem.kind }),
+            marker: formatNonOrderedMarker(getNonOrderedMarkerType(standardItem)),
             indent: standardItem.indent,
-            spaces: standardItem.spaces || ' '
+            spaces: getInsertedSpaces(standardItem)
         };
     }
 
@@ -267,6 +268,30 @@ function getNextStandardListMarker(
     return {
         marker: formatOrderedListMarker(ordered.style, ordinal),
         indent: ordered.indent,
-        spaces: ordered.spaces || ' '
+        spaces: getInsertedSpaces(standardItem)
     };
+}
+
+function getInsertedSpaces(
+    item: NonNullable<ReturnType<typeof parseStructuralListItem>>
+): string {
+    return item.taskState === null ? item.spaces || ' ' : ' [ ] ';
+}
+
+function getNonOrderedMarkerType(
+    item: NonNullable<ReturnType<typeof parseStructuralListItem>>
+): Exclude<StandardListMarkerType, { kind: 'ordered' }> {
+    if (item.kind === 'unordered') {
+        return { kind: 'unordered', marker: item.marker, taskState: item.taskState };
+    }
+
+    if (item.kind === 'hash') {
+        return { kind: 'hash', taskState: item.taskState };
+    }
+
+    if (item.kind === 'example') {
+        return { kind: 'example', taskState: item.taskState };
+    }
+
+    return { kind: 'custom-label', taskState: null };
 }
