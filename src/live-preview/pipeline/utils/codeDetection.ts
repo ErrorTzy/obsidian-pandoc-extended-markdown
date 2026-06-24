@@ -2,14 +2,67 @@ import { EditorState, Text } from '@codemirror/state';
 import { ensureSyntaxTree, syntaxTree } from '@codemirror/language';
 import { CodeRegion } from '../../../shared/types/codeTypes';
 
+export { detectInlineCodeAndMathRegionsInRange } from './inlineCodeMathDetection';
+
 /**
  * Detects code blocks, inline code, and math regions in a document
  */
 export function detectCodeRegions(doc: Text, state: EditorState): CodeRegion[] {
-    return detectCodeRegionsFromSyntaxTree(state, doc);
+    return detectCodeRegionsFromSyntaxTree(state, doc, 0, doc.length);
 }
 
-function detectCodeRegionsFromSyntaxTree(state: EditorState, doc: Text): CodeRegion[] {
+export function detectCodeRegionsInRange(
+    doc: Text,
+    state: EditorState,
+    from: number,
+    to: number
+): CodeRegion[] {
+    return detectCodeRegionsFromSyntaxTree(state, doc, from, to);
+}
+
+export function detectMarkdownCodeBlockRegions(doc: Text): CodeRegion[] {
+    const regions: CodeRegion[] = [];
+    let openingMarker: string | undefined;
+    let openingFrom = 0;
+
+    for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber++) {
+        const line = doc.line(lineNumber);
+        if (!openingMarker) {
+            const marker = getMarkdownCodeFenceMarker(line.text);
+            if (marker) {
+                openingMarker = marker;
+                openingFrom = line.from;
+            }
+            continue;
+        }
+
+        if (isMarkdownCodeFenceClosing(line.text, openingMarker)) {
+            regions.push({
+                from: openingFrom,
+                to: line.to,
+                type: 'codeblock'
+            });
+            openingMarker = undefined;
+        }
+    }
+
+    if (openingMarker) {
+        regions.push({
+            from: openingFrom,
+            to: doc.length,
+            type: 'codeblock'
+        });
+    }
+
+    return regions;
+}
+
+function detectCodeRegionsFromSyntaxTree(
+    state: EditorState,
+    doc: Text,
+    from: number,
+    to: number
+): CodeRegion[] {
     const regions: CodeRegion[] = [];
     const inlineCandidates: CodeRegion[] = [];
     const blockCandidates: CodeRegion[] = [];
@@ -17,9 +70,14 @@ function detectCodeRegionsFromSyntaxTree(state: EditorState, doc: Text): CodeReg
     const blockStarts: number[] = [];
     const blockEnds: number[] = [];
     
-    const tree = ensureSyntaxTree(state, doc.length, 1000) ?? syntaxTree(state);
+    const safeFrom = Math.max(0, Math.min(from, doc.length));
+    const safeTo = Math.max(safeFrom, Math.min(to, doc.length));
+    const timeoutMs = safeTo >= doc.length ? 1000 : 50;
+    const tree = ensureSyntaxTree(state, safeTo, timeoutMs) ?? syntaxTree(state);
     
     tree.iterate({
+        from: safeFrom,
+        to: safeTo,
         enter: node => {
             const name = node.type.name.toLowerCase();
             
@@ -71,7 +129,11 @@ function detectCodeRegionsFromSyntaxTree(state: EditorState, doc: Text): CodeReg
     regions.push(...inlineRegions);
     regions.push(...mathRegions);
     
-    return regions;
+    return regions.filter(region => rangesOverlap(region.from, region.to, safeFrom, safeTo));
+}
+
+function rangesOverlap(leftFrom: number, leftTo: number, rightFrom: number, rightTo: number): boolean {
+    return leftFrom < rightTo && leftTo > rightFrom;
 }
 
 function isInlineCodeNode(name: string): boolean {

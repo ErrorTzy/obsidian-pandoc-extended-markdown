@@ -1,6 +1,6 @@
 // External libraries
 import { EditorView, DecorationSet, Decoration } from '@codemirror/view';
-import { RangeSetBuilder, Text } from '@codemirror/state';
+import { RangeSetBuilder } from '@codemirror/state';
 import { App, Component } from 'obsidian';
 
 // Types
@@ -9,11 +9,10 @@ import {
     StructuralProcessor, 
     InlineProcessor,
     ContentRegion,
-    InlineMatch 
+    InlineMatch
 } from './types';
 import { CodeRegion } from '../../shared/types/codeTypes';
 import { PandocExtendedMarkdownSettings } from '../../core/settings';
-import { isCustomLabelListsEnabled, isSyntaxFeatureEnabled } from '../../shared/types/settingsTypes';
 
 // Constants
 import { CSS_CLASSES } from '../../core/constants';
@@ -22,11 +21,8 @@ import { CSS_CLASSES } from '../../core/constants';
 import { ListPatterns } from '../../shared/patterns';
 
 // Utils
-import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
-import { parseTaskCheckboxPrefix } from '../../shared/utils/listContext';
 import { handleError } from '../../shared/utils/errorHandler';
 import {
-    detectCodeRegions,
     getMarkdownCodeFenceMarker,
     isLineInCodeRegion,
     isMarkdownCodeFenceClosing,
@@ -36,54 +32,7 @@ import { allowsFencedDivOpeningAfterLine } from './structural/fencedDiv/parser';
 
 // Internal modules
 import { PluginStateManager } from '../../core/state/pluginStateManager';
-import { scanCustomLabels } from '../scanners/customLabelScanner';
-import { scanFencedDivs } from '../scanners/fencedDivScanner';
-import { validateListBlocks } from '../validators/listBlockValidator';
-
-// Helper: Process a single example list line
-function processExampleLine(
-    line: string,
-    lineNum: number,
-    counter: { value: number },
-    result: ReturnType<typeof createExampleScanResult>,
-    duplicateLineNumbers: Set<number>
-): void {
-    const exampleMatch = ListPatterns.isExampleList(line);
-    
-    if (exampleMatch && exampleMatch.length >= 5) {
-        const indent = exampleMatch[1] || '';
-        const fullMarker = exampleMatch[2] || '';
-        const label = exampleMatch[3] || '';
-        const space = exampleMatch[4] || '';
-        const rawContent = line.substring(
-            indent.length + fullMarker.length + space.length
-        );
-        const content = parseTaskCheckboxPrefix(space, rawContent)?.content ?? rawContent;
-        
-        // Only check for duplicates if there's an actual label (not empty)
-        // Unlabeled example lists (@) should not be flagged as duplicates
-        if (label && result.exampleLabels.has(label)) {
-            // This is a duplicate - mark THIS line as duplicate, not the first
-            duplicateLineNumbers.add(lineNum);
-            // Store info about the first occurrence for reference
-            if (!result.duplicateLabels.has(label)) {
-                const firstOccurrenceNumber = result.exampleLabels.get(label)!;
-                const firstLine = Array.from(result.exampleLineNumbers.entries())
-                    .find(([, num]) => num === firstOccurrenceNumber)?.[0] || 0;
-                result.duplicateLabels.set(label, firstLine);
-                result.duplicateLabelContent.set(label, result.exampleContent.get(label) || '');
-            }
-        } else if (label) {
-            // First occurrence of this label - track it
-            result.exampleLabels.set(label, counter.value);
-            result.exampleContent.set(label, content);
-        }
-        
-        // Always track line numbers for all example lists
-        result.exampleLineNumbers.set(lineNum, counter.value);
-        counter.value++;
-    }
-}
+import { ProcessingContextFactory } from './context/ProcessingContextFactory';
 
 function isCodeRegionEndLine(
     line: { from: number; to: number },
@@ -101,58 +50,16 @@ function isNativeListLine(line: string): boolean {
         ListPatterns.NUMBERED_LIST_WITH_SPACE.test(line);
 }
 
-// Helper: Create empty example scan result
-function createExampleScanResult() {
-    return {
-        exampleLabels: new Map<string, number>(),
-        exampleContent: new Map<string, string>(),
-        exampleLineNumbers: new Map<number, number>(),
-        duplicateLabels: new Map<string, number>(),
-        duplicateLabelContent: new Map<string, string>()
-    };
-}
-
-// Scan example labels from document
-function scanExampleLabelsFromDoc(doc: Text, settings: PandocExtendedMarkdownSettings, codeRegions?: CodeRegion[]) {
-    const result = createExampleScanResult();
-    if (!isSyntaxFeatureEnabled(settings, 'enableExampleLists')) {
-        return { ...result, duplicateLineNumbers: new Set<number>() };
-    }
-
-    const counter = { value: 1 };
-    const lines = doc.toString().split('\n');
-    const invalidLines = settings.enforcePandocListSpacing ? validateListBlocks(doc) : new Set<number>();
-    const duplicateLineNumbers = new Set<number>();
-    
-    for (let i = 0; i < lines.length; i++) {
-        // Skip lines in code regions
-        if (codeRegions && isLineInCodeRegion(i + 1, doc, codeRegions)) {
-            continue;
-        }
-        
-        if (!invalidLines.has(i + 1)) { // invalidLines now contains 1-based line numbers
-            processExampleLine(lines[i], i + 1, counter, result, duplicateLineNumbers);
-        }
-    }
-    
-    // Return result with duplicate line numbers
-    return { ...result, duplicateLineNumbers };
-}
-
 /**
  * Orchestrates the two-phase processing pipeline for decorations
  */
 export class ProcessingPipeline {
     private structuralProcessors: StructuralProcessor[] = [];
     private inlineProcessors: InlineProcessor[] = [];
-    private stateManager: PluginStateManager;
-    private app: App | undefined; // Will be passed from plugin to avoid global app access
-    private component: Component | undefined; // Component for lifecycle management
+    private contextFactory: ProcessingContextFactory;
     
     constructor(stateManager: PluginStateManager, app?: App, component?: Component) {
-        this.stateManager = stateManager;
-        this.app = app;
-        this.component = component;
+        this.contextFactory = new ProcessingContextFactory(stateManager, app, component);
     }
     
     /**
@@ -177,141 +84,25 @@ export class ProcessingPipeline {
     process(view: EditorView, settings: PandocExtendedMarkdownSettings): DecorationSet {
         const context = this.createContext(view, settings);
         
-        // Phase 1: Structural processing
         this.processStructural(context);
-        
-        // Phase 2: Inline processing
         this.processInline(context);
-        
-        // Build and return the decoration set
         return this.buildDecorationSet(context);
     }
-    
-    /**
-     * Create the processing context with pre-scanned data
-     */
-    // Helper: Get document path from workspace
-    private getDocumentPath(): string | null {
-        const workspace = this.app?.workspace;
-        const activeFile = workspace?.getActiveFile();
-        return activeFile?.path || null;
-    }
-    
-    // Helper: Get or create placeholder context
-    private getPlaceholderContext(docPath: string | null): PlaceholderContext {
-        return docPath 
-            ? this.stateManager.getDocumentCounters(docPath).placeholderContext 
-            : new PlaceholderContext();
-    }
-    
-    // Helper: Get custom scan result
-    private getCustomScanResult(
-        doc: Text,
-        settings: PandocExtendedMarkdownSettings,
-        placeholderContext: PlaceholderContext,
-        codeRegions?: CodeRegion[]
-    ) {
-        return isCustomLabelListsEnabled(settings)
-            ? scanCustomLabels(doc, settings, placeholderContext, codeRegions)
-            : {
-                customLabels: new Map<string, string>(),
-                rawToProcessed: new Map<string, string>(),
-                duplicateLabels: new Set<string>(),
-                placeholderContext: placeholderContext
-            };
-    }
-    
-    // Helper: Build final context object
-    private buildContext(
-        view: EditorView,
-        settings: PandocExtendedMarkdownSettings,
-        exampleScanResult: ReturnType<typeof scanExampleLabelsFromDoc>,
-        customScanResult: ReturnType<typeof scanCustomLabels>,
-        fencedDivLabels: ReturnType<typeof scanFencedDivs>,
-        invalidLines: Set<number>
-    ): ProcessingContext {
-        return {
-            document: view.state.doc,
-            view,
-            settings,
-            app: this.app,
-            component: this.component,
-            
-            // Scanned data
-            exampleLabels: exampleScanResult.exampleLabels,
-            exampleContent: exampleScanResult.exampleContent,
-            exampleLineNumbers: exampleScanResult.exampleLineNumbers,
-            duplicateExampleLabels: exampleScanResult.duplicateLabels,
-            duplicateExampleContent: exampleScanResult.duplicateLabelContent,
-            duplicateExampleLineNumbers: exampleScanResult.duplicateLineNumbers,
-            customLabels: customScanResult.customLabels,
-            rawToProcessed: customScanResult.rawToProcessed,
-            duplicateCustomLabels: customScanResult.duplicateLabels,
-            duplicateCustomLineInfo: customScanResult.duplicateLineInfo,
-            fencedDivLabels,
-            placeholderContext: customScanResult.placeholderContext,
-            invalidLines,
-            
-            // Processing metadata
-            contentRegions: [],
-            structuralDecorations: [],
-            inlineDecorations: [],
-            
-            // State tracking
-            hashCounter: { value: 1 },
-            definitionState: {
-                lastWasItem: false,
-                pendingBlankLine: false
-            },
-            fencedDivStack: [],
-            fencedDivTypeCounters: new Map(),
-            fencedDivCanOpenAtCurrentLine: true
-        };
-    }
-    
+
     private createContext(view: EditorView, settings: PandocExtendedMarkdownSettings): ProcessingContext {
-        const doc = view.state.doc;
-        const docPath = this.getDocumentPath();
-        
-        // Detect code regions that should be skipped
-        const codeRegions = detectCodeRegions(doc, view.state);
-        
-        // Pre-scan and validate (pass codeRegions to skip scanning inside them)
-        const exampleScanResult = scanExampleLabelsFromDoc(doc, settings, codeRegions);
-        const placeholderContext = this.getPlaceholderContext(docPath);
-        const customScanResult = this.getCustomScanResult(doc, settings, placeholderContext, codeRegions);
-        const fencedDivLabels = scanFencedDivs(doc, settings, codeRegions);
-        const invalidLines = settings.enforcePandocListSpacing ? validateListBlocks(doc) : new Set<number>();
-        
-        // Update state manager
-        if (docPath && customScanResult.placeholderContext) {
-            const counters = this.stateManager.getDocumentCounters(docPath);
-            counters.placeholderContext = customScanResult.placeholderContext;
-        }
-        
-        const context = this.buildContext(
-            view,
-            settings,
-            exampleScanResult,
-            customScanResult,
-            fencedDivLabels,
-            invalidLines
-        );
-        context.codeRegions = codeRegions;
-        return context;
+        return this.contextFactory.create(view, settings);
     }
-    
-    /**
-     * Phase 1: Process structural elements
-     */
+
     private processStructural(context: ProcessingContext): void {
         const doc = context.document;
-        const numLines = doc.lines;
+        const processingRange = context.processingRange;
+        const startLine = processingRange?.startLine ?? 1;
+        const endLine = processingRange?.endLine ?? doc.lines;
         const codeRegions = context.codeRegions || [];
-        let fencedDivCanOpenAtCurrentLine = true;
+        let fencedDivCanOpenAtCurrentLine = context.fencedDivCanOpenAtCurrentLine ?? true;
         let fallbackCodeFenceMarker: string | undefined;
         
-        for (let lineNum = 1; lineNum <= numLines; lineNum++) {
+        for (let lineNum = startLine; lineNum <= endLine; lineNum++) {
             const line = doc.line(lineNum);
             context.fencedDivCanOpenAtCurrentLine = fencedDivCanOpenAtCurrentLine;
             
@@ -412,7 +203,7 @@ export class ProcessingPipeline {
         
         for (const region of context.contentRegions) {
             // Skip invalid regions
-            if (!this.isValidRegion(region, docLength)) {
+            if (!this.isValidRegion(region, docLength) || !this.isInRenderRange(region, context)) {
                 continue;
             }
             
@@ -426,6 +217,15 @@ export class ProcessingPipeline {
      */
     private isValidRegion(region: ContentRegion, docLength: number): boolean {
         return region.from < region.to && region.from >= 0 && region.to <= docLength;
+    }
+
+    private isInRenderRange(region: ContentRegion, context: ProcessingContext): boolean {
+        const range = context.processingRange;
+        if (!range) {
+            return true;
+        }
+
+        return region.to > range.renderFrom && region.from < range.renderTo;
     }
     
     /**
@@ -539,6 +339,10 @@ export class ProcessingPipeline {
         
         // Add decorations to builder with bounds checking
         for (const { from, to, decoration } of allDecorations) {
+            if (!this.isDecorationInRenderRange(from, to, context)) {
+                continue;
+            }
+
             // Validate positions are within document bounds
             if (from < 0 || to > docLength || from > to) {
                 handleError(new Error(`Invalid decoration position: from=${from}, to=${to}, docLength=${docLength}`), 'ProcessingPipeline.buildDecorationSet');
@@ -557,6 +361,19 @@ export class ProcessingPipeline {
         }
         
         return builder.finish();
+    }
+
+    private isDecorationInRenderRange(from: number, to: number, context: ProcessingContext): boolean {
+        const range = context.processingRange;
+        if (!range) {
+            return true;
+        }
+
+        if (from === to) {
+            return from >= range.renderFrom && from <= range.renderTo;
+        }
+
+        return to > range.renderFrom && from < range.renderTo;
     }
     
     /**

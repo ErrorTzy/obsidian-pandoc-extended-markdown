@@ -6,6 +6,7 @@ import { PandocExtendedMarkdownSettings } from '../../core/settings';
 import { PlaceholderContext } from '../../shared/utils/placeholderProcessor';
 import { FencedDivTypeCounters } from '../../shared/utils/fencedDivReferenceMetadata';
 import { FencedDivReference, FencedDivStackItem } from '../../shared/types/fencedDivTypes';
+import type { ResolvedOrderedListItem } from '../../shared/utils/orderedListMarkers';
 
 /**
  * Represents a region of content that needs inline processing
@@ -24,16 +25,26 @@ export interface ContentRegion {
     }; // Structure-specific metadata
 }
 
+export interface ProcessingRange {
+    startLine: number;
+    endLine: number;
+    renderFrom: number;
+    renderTo: number;
+}
+
 /**
  * Unified context that flows through the entire processing pipeline
  */
 export interface ProcessingContext {
     // Document-level data
     document: Text;
+    documentLines?: string[];
     view: EditorView;
     settings: PandocExtendedMarkdownSettings;
     app?: App;
     component?: Component;
+    processingRange?: ProcessingRange;
+    orderedListItemsByLine?: Map<number, ResolvedOrderedListItem>;
     
     // Scanned data (pre-computed)
     exampleLabels: Map<string, number>;

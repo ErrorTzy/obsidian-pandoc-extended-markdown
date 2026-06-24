@@ -20,6 +20,9 @@ const pandocExtendedMarkdownPlugin = (
     class PandocExtendedMarkdownView {
         decorations: DecorationSet;
         private pipeline: ProcessingPipeline;
+        private rebuildTimer: number | null = null;
+        private rebuildRequested = false;
+        private readonly rebuildDelayMs = 120;
 
         constructor(view: EditorView) {
             this.initializePipeline(getApp, getComponent);
@@ -57,9 +60,46 @@ const pandocExtendedMarkdownPlugin = (
             const prevLivePreview = update.startState.field(editorLivePreviewField);
             const currLivePreview = update.state.field(editorLivePreviewField);
             const livePreviewChanged = prevLivePreview !== currLivePreview;
-            
-            if (update.docChanged || update.viewportChanged || update.selectionSet || livePreviewChanged) {
+
+            if (this.rebuildRequested) {
+                this.rebuildRequested = false;
                 this.decorations = this.buildDecorations(update.view);
+                return;
+            }
+
+            if (update.docChanged) {
+                this.decorations = this.decorations.map(update.changes);
+                this.scheduleRebuild(update.view);
+                return;
+            }
+
+            if (this.rebuildTimer !== null && update.selectionSet) {
+                return;
+            }
+
+            if (update.viewportChanged || update.selectionSet || livePreviewChanged) {
+                this.clearScheduledRebuild();
+                this.decorations = this.buildDecorations(update.view);
+            }
+        }
+
+        destroy() {
+            this.clearScheduledRebuild();
+        }
+
+        private scheduleRebuild(view: EditorView): void {
+            this.clearScheduledRebuild();
+            this.rebuildTimer = window.setTimeout(() => {
+                this.rebuildTimer = null;
+                this.rebuildRequested = true;
+                view.dispatch({});
+            }, this.rebuildDelayMs);
+        }
+
+        private clearScheduledRebuild(): void {
+            if (this.rebuildTimer !== null) {
+                window.clearTimeout(this.rebuildTimer);
+                this.rebuildTimer = null;
             }
         }
 

@@ -21,21 +21,13 @@ export class FancyListProcessor extends BaseStructuralProcessor {
             return false;
         }
 
-        const item = resolveOrderedListItem(
-            getContextLines(line, context),
-            line.number - 1,
-            context.settings
-        );
+        const item = getResolvedOrderedListItem(line, context);
 
         return item !== null && isPluginOwnedOrderedListItem(item);
     }
 
     process(line: Line, context: ProcessingContext): StructuralResult {
-        const item = resolveOrderedListItem(
-            getContextLines(line, context),
-            line.number - 1,
-            context.settings
-        );
+        const item = getResolvedOrderedListItem(line, context);
 
         if (!item || !isPluginOwnedOrderedListItem(item)) {
             return { decorations: [] };
@@ -93,12 +85,25 @@ function getListLevel(indent: string): number {
     return Math.floor(getListIndentColumns(indent) / 4) + 1;
 }
 
+function getResolvedOrderedListItem(line: Line, context: ProcessingContext) {
+    const cachedItem = context.orderedListItemsByLine?.get(line.number);
+    if (cachedItem) {
+        return cachedItem;
+    }
+
+    return resolveOrderedListItem(
+        getContextLines(line, context),
+        line.number - 1,
+        context.settings
+    );
+}
+
 function getContextLines(line: Line, context: ProcessingContext): string[] {
     const contextLine = line.number <= context.document.lines
         ? context.document.line(line.number).text
         : undefined;
 
     return contextLine === line.text
-        ? context.document.toString().split('\n')
+        ? context.documentLines || context.document.toString().split('\n')
         : [line.text];
 }

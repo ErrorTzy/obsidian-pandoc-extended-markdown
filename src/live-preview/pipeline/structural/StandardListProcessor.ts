@@ -141,7 +141,7 @@ function isNestedUnderPluginOwnedOrderedList(
         return false;
     }
 
-    const lines = context.document.toString().split('\n');
+    const lines = context.documentLines || context.document.toString().split('\n');
 
     for (let index = line.number - 2; index >= 0; index--) {
         const previousLine = lines[index];
@@ -155,7 +155,8 @@ function isNestedUnderPluginOwnedOrderedList(
             continue;
         }
 
-        const item = resolveOrderedListItem(lines, index, context.settings);
+        const item = context.orderedListItemsByLine?.get(index + 1) ??
+            resolveOrderedListItem(lines, index, context.settings);
         if (item && isPluginOwnedOrderedListItem(item)) {
             return true;
         }
