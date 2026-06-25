@@ -26,7 +26,8 @@ const SKIP_SELECTOR = [
     `.${CSS_CLASSES.FENCED_DIV_HEADER}`,
     `.${CSS_CLASSES.FENCED_DIV_TITLE}`,
     `.${CSS_CLASSES.SUPERSCRIPT}`,
-    `.${CSS_CLASSES.SUBSCRIPT}`
+    `.${CSS_CLASSES.SUBSCRIPT}`,
+    `.${CSS_CLASSES.SMART_DASH}`
 ].join(', ');
 
 export function processInlineTextNodes(

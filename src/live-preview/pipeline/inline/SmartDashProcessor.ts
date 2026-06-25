@@ -1,10 +1,9 @@
 import { Decoration } from '@codemirror/view';
 import { ContentRegion, InlineMatch, InlineProcessor, ProcessingContext } from '../types';
 import { isSyntaxFeatureEnabled } from '../../../shared/types/settingsTypes';
+import { findSmartDashMatches, renderPandocDashRun } from '../../../shared/utils/smartDash';
 import { getRegionCursorPosition } from '../../../shared/utils/cursorUtils';
 import { SmartDashWidget } from '../../widgets';
-
-const DASH_RUN_PATTERN = /-{2,}/g;
 
 /**
  * Processes Pandoc smart dash syntax in Live Preview.
@@ -23,20 +22,19 @@ export class SmartDashProcessor implements InlineProcessor {
 
         const regionCursorPos = getRegionCursorPosition(context, region);
 
-        let match: RegExpExecArray | null;
-        while ((match = DASH_RUN_PATTERN.exec(text)) !== null) {
-            const dashStart = match.index;
-            const dashEnd = dashStart + match[0].length;
+        for (const match of findSmartDashMatches(text)) {
+            const dashStart = match.start;
+            const dashEnd = match.end;
             const cursorInDash = regionCursorPos >= dashStart && regionCursorPos <= dashEnd;
 
-            if (!cursorInDash && !isEscaped(text, dashStart)) {
+            if (!cursorInDash) {
                 matches.push({
                     from: dashStart,
                     to: dashEnd,
                     type: 'smart-dash',
                     data: {
-                        renderedText: renderPandocDashRun(match[0]),
-                        rawText: match[0],
+                        renderedText: match.renderedText,
+                        rawText: match.rawText,
                         absoluteFrom: region.from + dashStart
                     }
                 });
@@ -56,28 +54,4 @@ export class SmartDashProcessor implements InlineProcessor {
     }
 }
 
-export function renderPandocDashRun(dashRun: string): string {
-    let remaining = dashRun.length;
-    let rendered = '';
-
-    while (remaining >= 3) {
-        rendered += '\u2014';
-        remaining -= 3;
-    }
-
-    if (remaining === 2) {
-        rendered += '\u2013';
-    } else if (remaining === 1) {
-        rendered += '-';
-    }
-
-    return rendered;
-}
-
-function isEscaped(text: string, index: number): boolean {
-    let slashCount = 0;
-    for (let cursor = index - 1; cursor >= 0 && text[cursor] === '\\'; cursor--) {
-        slashCount++;
-    }
-    return slashCount % 2 === 1;
-}
+export { renderPandocDashRun };

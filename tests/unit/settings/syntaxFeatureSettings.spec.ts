@@ -115,8 +115,10 @@ describe('Syntax feature settings', () => {
         const settings = normalizeSettings({
             enableSmartDashes: false
         });
+        const config = createProcessorConfig({ strictLineBreaks: false }, settings);
 
         expect(settings.enableSmartDashes).toBe(false);
+        expect(config.enableSmartDashes).toBe(false);
     });
 
     it('enables unordered list enhancements by default', () => {

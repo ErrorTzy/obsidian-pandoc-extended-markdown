@@ -218,6 +218,7 @@ Inline processors report text-node matches and create replacement nodes. They do
 | **FencedDivReferenceInlineProcessor** | `@id` → numbered fenced-div reference with tooltip |
 | **SuperscriptInlineProcessor** | `^text^` → `<sup class="pem-superscript">` |
 | **SubscriptInlineProcessor** | `~text~` → `<sub class="pem-subscript">` |
+| **SmartDashInlineProcessor** | Pandoc smart dash runs: `--` → en dash and `---` → em dash; longer runs use the same greedy conversion as Live Preview |
 | **CustomLabelReferenceInlineProcessor** | `{::ref}` → processed custom label reference |
 
 The shared inline walker skips code, preformatted blocks, headings, math containers, already rendered spans, fenced div headers, and plugin-rendered references/markers.

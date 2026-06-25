@@ -30,6 +30,7 @@ export interface ProcessorConfig {
     enableSuperSubscripts?: boolean;
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
+    enableSmartDashes?: boolean;
     enableCustomLabelLists?: boolean;
     enableUnorderedListMarkerStyles?: boolean;
 }
@@ -55,6 +56,7 @@ export function createProcessorConfig(
             || isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
         enableSuperscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSuperscript'),
         enableSubscript: isSyntaxFeatureEnabled(pluginSettings, 'enableSubscript'),
+        enableSmartDashes: isSyntaxFeatureEnabled(pluginSettings, 'enableSmartDashes'),
         enableCustomLabelLists: isCustomLabelListsEnabled(pluginSettings),
         enableUnorderedListMarkerStyles: isSyntaxFeatureEnabled(pluginSettings, 'enableUnorderedListMarkerStyles')
     };

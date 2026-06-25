@@ -9,6 +9,7 @@ import {
     SubscriptInlineProcessor,
     SuperscriptInlineProcessor
 } from './inline/superSubInlineProcessors';
+import { SmartDashInlineProcessor } from './inline/smartDashInlineProcessor';
 import { CustomLabelListProcessor } from './processors/customLabelListProcessor';
 import { DefinitionListNormalizationProcessor } from './processors/definitionListNormalizationProcessor';
 import { ExtendedListBlockProcessor } from './processors/extendedListBlockProcessor';
@@ -25,6 +26,7 @@ export function createDefaultReadingModePipeline(): ReadingModePipeline {
         new FencedDivReferenceInlineProcessor(),
         new SuperscriptInlineProcessor(),
         new SubscriptInlineProcessor(),
+        new SmartDashInlineProcessor(),
         new CustomLabelReferenceInlineProcessor()
     ];
 
