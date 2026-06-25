@@ -204,18 +204,21 @@ function getStandaloneDefinitionListSource(text: string, context: ReadingModeCon
         return text;
     }
 
-    return matchesDefinitionListSection(text, blocks) ? sectionText : text;
+    return matchesCompleteDefinitionListSection(text, blocks) ? sectionText : text;
 }
 
-function matchesDefinitionListSection(
+function matchesCompleteDefinitionListSection(
     text: string,
     blocks: ReturnType<typeof findPandocDefinitionListBlocks>
 ): boolean {
     const normalizedText = normalizeCandidateText(text);
-    return blocks.some(block =>
-        block.termTexts.some(term => normalizedText.includes(normalizeCandidateText(term))) ||
-        block.definitionTexts.some(definition => normalizedText.includes(normalizeCandidateText(definition)))
-    );
+    return blocks.every(block => {
+        const requiredTexts = [...block.termTexts, ...block.definitionTexts]
+            .map(normalizeCandidateText)
+            .filter(requiredText => requiredText.length > 0);
+
+        return requiredTexts.every(requiredText => normalizedText.includes(requiredText));
+    });
 }
 
 function normalizeCandidateText(text: string): string {

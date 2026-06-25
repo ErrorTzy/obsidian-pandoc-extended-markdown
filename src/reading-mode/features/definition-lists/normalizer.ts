@@ -52,7 +52,11 @@ function normalizeDefinitionListsFromSource(
         strictLineBreaks: config.strictLineBreaks
     };
 
-    if (fullSourceText && isStandalonePandocDefinitionList(sourceText, blocks)) {
+    if (
+        fullSourceText &&
+        isStandalonePandocDefinitionList(sourceText, blocks) &&
+        containsCompleteDefinitionBlocks(replacement, blocks)
+    ) {
         const rendered = blocks.map(block => renderPandocDefinitionListBlock(
             block,
             effectiveRenderContext,
@@ -65,6 +69,10 @@ function normalizeDefinitionListsFromSource(
     if (fullSourceText || sectionInfo?.text) {
         const usedCandidates = new Set<HTMLElement>();
         blocks.forEach(block => {
+            if (!containsCompleteDefinitionBlockText(replacement, block)) {
+                return;
+            }
+
             const rendered = [renderPandocDefinitionListBlock(
                 block,
                 effectiveRenderContext,
@@ -74,6 +82,25 @@ function normalizeDefinitionListsFromSource(
         });
     }
     return true;
+}
+
+function containsCompleteDefinitionBlocks(
+    element: HTMLElement,
+    blocks: PandocDefinitionListBlock[]
+): boolean {
+    return blocks.every(block => containsCompleteDefinitionBlockText(element, block));
+}
+
+function containsCompleteDefinitionBlockText(
+    element: HTMLElement,
+    block: PandocDefinitionListBlock
+): boolean {
+    const normalizedText = normalizeCandidateText(element.textContent ?? '');
+    const requiredTexts = [...block.termTexts, ...block.definitionTexts]
+        .map(normalizeCandidateText)
+        .filter(text => text.length > 0);
+
+    return requiredTexts.every(text => normalizedText.includes(text));
 }
 
 function normalizeDefinitionListsFromDom(element: HTMLElement): void {

@@ -330,4 +330,113 @@ describe('definition list reading mode rendering', () => {
         expect(directChildren(lists[1], 'DD').map(def => def.textContent))
             .toEqual(['second detail1']);
     });
+
+    it('does not multiply definition lists when a subheading embed reads full source', async () => {
+        jest.useFakeTimers();
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = `
+            <div class="el-p">
+                <p><dl class="pem-definition-list"><dt>Term</dt><dd>Definition 1</dd><dd>Definition 2</dd><dd>Definition 3</dd></dl></p>
+            </div>
+            <div class="el-p">
+                <p><dl class="pem-definition-list"><dt>Top-Level Category</dt><dd>Sub-category 1</dd><dd>Sub-category 2</dd></dl></p>
+            </div>
+        `;
+        const sectionSource = [
+            'Term',
+            ': Definition 1',
+            ': Definition 2',
+            ': Definition 3',
+            '',
+            'Top-Level Category',
+            ': Sub-category 1',
+            ': Sub-category 2'
+        ].join('\n');
+        const fullSource = [
+            '# Note-1',
+            '',
+            '## SubHeading',
+            '',
+            sectionSource
+        ].join('\n');
+        const file = { path: docPath };
+        const app = {
+            workspace: {
+                getActiveFile: jest.fn(() => file)
+            },
+            vault: {
+                cachedRead: jest.fn(() => Promise.resolve(fullSource))
+            }
+        };
+
+        processReadingMode(
+            section,
+            createContext(sectionSource),
+            config,
+            app as any
+        );
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+
+        const lists = Array.from(section.querySelectorAll('dl.pem-definition-list')) as HTMLElement[];
+        const terms = lists.flatMap(list => directChildren(list, 'DT').map(term => term.textContent));
+        const definitions = lists.flatMap(list => directChildren(list, 'DD').map(def => def.textContent));
+
+        expect(lists).toHaveLength(1);
+        expect(terms).toEqual(['Term', 'Top-Level Category']);
+        expect(definitions).toEqual([
+            'Definition 1',
+            'Definition 2',
+            'Definition 3',
+            'Sub-category 1',
+            'Sub-category 2'
+        ]);
+    });
+
+    it('does not expand each rendered block to the full source definition list', () => {
+        jest.useFakeTimers();
+        const container = document.createElement('div');
+        container.innerHTML = `
+            <div class="el-p">
+                <p><dl class="pem-definition-list"><dt>Term</dt><dd>Definition 1</dd><dd>Definition 2</dd><dd>Definition 3</dd></dl></p>
+            </div>
+            <div class="el-p">
+                <p><dl class="pem-definition-list"><dt>Top-Level Category</dt><dd>Sub-category 1</dd><dd>Sub-category 2</dd></dl></p>
+            </div>
+        `;
+        const sectionSource = [
+            'Term',
+            ': Definition 1',
+            ': Definition 2',
+            ': Definition 3',
+            '',
+            'Top-Level Category',
+            ': Sub-category 1',
+            ': Sub-category 2'
+        ].join('\n');
+        const blocks = Array.from(container.querySelectorAll<HTMLElement>('.el-p'));
+
+        blocks.forEach(block => {
+            processReadingMode(
+                block,
+                createContext(sectionSource),
+                config
+            );
+        });
+        jest.runOnlyPendingTimers();
+
+        const lists = Array.from(container.querySelectorAll('dl.pem-definition-list')) as HTMLElement[];
+        const terms = lists.flatMap(list => directChildren(list, 'DT').map(term => term.textContent));
+        const definitions = lists.flatMap(list => directChildren(list, 'DD').map(def => def.textContent));
+
+        expect(terms).toEqual(['Term', 'Top-Level Category']);
+        expect(definitions).toEqual([
+            'Definition 1',
+            'Definition 2',
+            'Definition 3',
+            'Sub-category 1',
+            'Sub-category 2'
+        ]);
+    });
 });

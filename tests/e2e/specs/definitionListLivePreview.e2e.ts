@@ -102,6 +102,56 @@ plain text`;
         }
     });
 
+    it('does not multiply definition lists inside a subheading embed in reading mode', async () => {
+        const embeddedPath = 'definition-list-embed-source.md';
+        const containerPath = 'definition-list-embed-container.md';
+        const embeddedContent = `# Note-1
+
+## SubHeading
+
+Term
+: Definition 1
+: Definition 2
+: Definition 3
+
+Top-Level Category
+: Sub-category 1
+: Sub-category 2`;
+        const containerContent = `# Note-2
+
+![[${embeddedPath}#SubHeading]]`;
+
+        try {
+            await createOrReplaceFile(embeddedPath, embeddedContent);
+            await createOrReplaceFile(containerPath, containerContent);
+            await openFileInActiveLeaf(containerPath);
+            await ensureReadingMode();
+
+            await browser.waitUntil(async () => {
+                const state = await getEmbeddedDefinitionListState();
+                return state.ready;
+            }, {
+                timeout: 8000,
+                timeoutMsg: 'Expected embedded definition list to render in reading mode'
+            });
+
+            const state = await getEmbeddedDefinitionListState();
+
+            expect(state.listCount).toBe(1);
+            expect(state.terms).toEqual(['Term', 'Top-Level Category']);
+            expect(state.definitions).toEqual([
+                'Definition 1',
+                'Definition 2',
+                'Definition 3',
+                'Sub-category 1',
+                'Sub-category 2'
+            ]);
+        } finally {
+            await deleteFileIfExists(containerPath);
+            await deleteFileIfExists(embeddedPath);
+        }
+    });
+
     it('shows source definition marker text when a selection range intersects it', async () => {
         const filePath = 'definition-list-live-preview-selection.md';
         const content = 'Description Term\n: details1';
@@ -346,6 +396,38 @@ async function getReadingModeDefinitionListAlignmentState(): Promise<{
                 `term=${definitionTerm?.outerHTML ?? ''}`,
                 `plain=${plainParagraph?.outerHTML ?? ''}`
             ]
+        };
+    });
+}
+
+async function getEmbeddedDefinitionListState(): Promise<{
+    ready: boolean;
+    listCount: number;
+    terms: string[];
+    definitions: string[];
+    diagnostics: string;
+}> {
+    return browser.execute(() => {
+        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
+        const embed = Array.from(preview?.querySelectorAll('.markdown-embed') ?? [])
+            .find(candidate => candidate.textContent?.includes('Definition 1')) as HTMLElement | undefined;
+        const root = embed ?? preview;
+        const lists = Array.from(root?.querySelectorAll('dl.pem-definition-list') ?? []) as HTMLElement[];
+        const terms = lists.flatMap(list =>
+            Array.from(list.querySelectorAll(':scope > dt'))
+                .map(term => term.textContent?.trim() ?? '')
+        );
+        const definitions = lists.flatMap(list =>
+            Array.from(list.querySelectorAll(':scope > dd'))
+                .map(definition => definition.textContent?.trim() ?? '')
+        );
+
+        return {
+            ready: lists.length > 0,
+            listCount: lists.length,
+            terms,
+            definitions,
+            diagnostics: root?.innerHTML ?? ''
         };
     });
 }
