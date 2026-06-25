@@ -2076,6 +2076,10 @@ sub.pem-subscript {
     line-height: 0;
 }
 
+.pem-smart-dash {
+    font-variant-ligatures: none;
+}
+
 /* List Panel View Styles */
 .pem-list-panel-view-container {
     display: flex;

@@ -76,6 +76,7 @@ export const SETTINGS = {
     FENCED_DIV_EXTRAS: 'enableFencedDivExtras',
     SUPERSCRIPT: 'enableSuperscript',
     SUBSCRIPT: 'enableSubscript',
+    SMART_DASHES: 'enableSmartDashes',
     CUSTOM_LABEL: 'enableCustomLabelLists',
     UNORDERED_LIST_MARKER_ORDER: 'unorderedListMarkerOrder',
     ORDERED_LIST_MARKER_CYCLING: 'enableOrderedListMarkerCycling',
@@ -145,6 +146,10 @@ export const SETTINGS_UI = {
     SUBSCRIPT: {
         NAME: 'Subscript',
         DESCRIPTION: 'Render inline subscript syntax like `H~2~O`.'
+    },
+    SMART_DASHES: {
+        NAME: 'Smart dashes',
+        DESCRIPTION: 'Render Pandoc smart dash syntax: `--` as en dash and `---` as em dash.'
     },
     CUSTOM_LABEL: {
         NAME: 'Custom label lists',

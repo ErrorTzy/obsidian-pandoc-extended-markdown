@@ -11,7 +11,7 @@ import {
     CustomLabelInlineNumberWidget,
     CustomLabelReferenceWidget
 } from '../../../src/live-preview/widgets/customLabelWidget';
-import { SuperscriptWidget, SubscriptWidget } from '../../../src/live-preview/widgets/formatWidgets';
+import { SuperscriptWidget, SubscriptWidget, SmartDashWidget } from '../../../src/live-preview/widgets/formatWidgets';
 import { ExampleReferenceWidget } from '../../../src/live-preview/widgets/referenceWidget';
 
 describe('Widget Editability', () => {
@@ -140,6 +140,12 @@ describe('Widget Editability', () => {
             const widget = new SubscriptWidget('text');
             
             // No event parameter means it should return false for all events
+            expect(widget.ignoreEvent()).toBe(false);
+        });
+
+        it('SmartDashWidget should allow all events through', () => {
+            const widget = new SmartDashWidget('\u2013');
+
             expect(widget.ignoreEvent()).toBe(false);
         });
     });

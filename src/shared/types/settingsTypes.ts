@@ -69,6 +69,7 @@ export interface PandocExtendedMarkdownSettings {
     enableFencedDivExtras?: boolean;
     enableSuperscript?: boolean;
     enableSubscript?: boolean;
+    enableSmartDashes?: boolean;
     enableCustomLabelLists?: boolean;
     enableUnorderedListMarkerCycling?: boolean;
     enableUnorderedListMarkerStyles?: boolean;
@@ -92,6 +93,7 @@ export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableFencedDivExtras: true,
     enableSuperscript: true,
     enableSubscript: true,
+    enableSmartDashes: true,
     enableCustomLabelLists: true,
     enableUnorderedListMarkerCycling: true,
     enableUnorderedListMarkerStyles: true,
@@ -112,6 +114,7 @@ export type SyntaxFeatureSettingKey =
     | 'enableFencedDivExtras'
     | 'enableSuperscript'
     | 'enableSubscript'
+    | 'enableSmartDashes'
     | 'enableCustomLabelLists'
     | 'enableUnorderedListMarkerCycling'
     | 'enableUnorderedListMarkerStyles'
@@ -155,6 +158,7 @@ export function normalizeSettings(
         enableFencedDivExtras: isSyntaxFeatureEnabled(sourceSettings, 'enableFencedDivExtras'),
         enableSuperscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSuperscript'),
         enableSubscript: isSyntaxFeatureEnabled(sourceSettings, 'enableSubscript'),
+        enableSmartDashes: isSyntaxFeatureEnabled(sourceSettings, 'enableSmartDashes'),
         enableCustomLabelLists: isSyntaxFeatureEnabled(sourceSettings, 'enableCustomLabelLists'),
         enableUnorderedListMarkerCycling: isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerCycling'),
         enableUnorderedListMarkerStyles: isSyntaxFeatureEnabled(sourceSettings, 'enableUnorderedListMarkerStyles'),

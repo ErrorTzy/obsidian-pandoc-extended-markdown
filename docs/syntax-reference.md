@@ -4,6 +4,18 @@ Pandoc Extended Markdown renders supported Pandoc-style syntax in Live Preview a
 
 Supported syntax families are enabled by default. Custom label lists are a core plugin extension and need the bundled Lua filter for matching Pandoc export.
 
+## Smart Dashes
+
+```markdown
+double -- dash
+triple --- dash
+longer ---- ----- ------ runs
+```
+
+In Live Preview, Pandoc smart dash syntax renders `--` as an en dash and `---` as an em dash. Longer runs follow Pandoc's greedy rule: consume triples first, then doubles, and preserve a final single hyphen. That means `----` renders as em dash plus `-`, `-----` renders as em dash plus en dash, and `------` renders as two em dashes.
+
+Escaped dash runs such as `\--` stay as source text. Inline code, fenced code blocks, and LaTeX inline or block math are not rewritten.
+
 ## Superscript And Subscript
 
 ```markdown

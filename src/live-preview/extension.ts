@@ -7,7 +7,7 @@ import { pluginStateManager } from '../core/state/pluginStateManager';
 // Pipeline imports
 import { ProcessingPipeline } from './pipeline/ProcessingPipeline';
 import { HashListProcessor, FancyListProcessor, ExampleListProcessor, CustomLabelProcessor, DefinitionProcessor, FencedDivProcessor, StandardListProcessor, ListContinuationProcessor } from './pipeline/structural';
-import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, CustomLabelReferenceProcessor, FencedDivReferenceProcessor } from './pipeline/inline';
+import { ExampleReferenceProcessor, SuperscriptProcessor, SubscriptProcessor, SmartDashProcessor, CustomLabelReferenceProcessor, FencedDivReferenceProcessor } from './pipeline/inline';
 import { fencedDivDragExtension } from './fencedDivDragExtension';
 
 // Main view plugin for rendering Pandoc extended markdown
@@ -52,6 +52,7 @@ const pandocExtendedMarkdownPlugin = (
             this.pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
             this.pipeline.registerInlineProcessor(new SuperscriptProcessor());
             this.pipeline.registerInlineProcessor(new SubscriptProcessor());
+            this.pipeline.registerInlineProcessor(new SmartDashProcessor());
             this.pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
         }
 

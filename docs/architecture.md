@@ -33,6 +33,7 @@ The optional Pandoc export backend is a separate desktop-only module. It is not 
 | **Fenced Divs** | `::: {.theorem #id title="Theorem &"}` or readable `::: Theorem & #id` renders `Theorem 1`; `@id` → `Theorem 1` | FencedDivProcessor + FencedDivReferenceProcessor |
 | **Superscript** | `^text^` with escaped spaces | SuperscriptProcessor |
 | **Subscript** | `~text~` with escaped spaces | SubscriptProcessor |
+| **Smart Dashes** | `--` → en dash, `---` → em dash | SmartDashProcessor |
 
 ## Core Architecture
 
@@ -143,6 +144,7 @@ decorations.
 | **FencedDivReferenceProcessor** | 12 | `@id` → fenced-div `referenceText` such as `Proposition 1` or `Warning` | normal, fenced-div-content, list-content, definition-content |
 | **SuperscriptProcessor** | 20 | `^text^` → superscript | list-content, definition-content |
 | **SubscriptProcessor** | 20 | `~text~` → subscript | list-content, definition-content |
+| **SmartDashProcessor** | 35 | Pandoc smart dash runs: `--` → en dash and `---` → em dash; longer runs are consumed greedily as triples, then doubles, with a final single hyphen preserved | normal, fenced-div-content, list-content, definition-content |
 | **CustomLabelReferenceProcessor** | 40 | `{::ref}` → processed | list-content, definition-content |
 
 #### Widgets (`/live-preview/widgets/`)
@@ -175,6 +177,7 @@ All widgets extend `BaseWidget` which provides:
 | **ExampleReferenceWidget** | BaseWidget | `(@ref)` → `(n)` with hover |
 | **SuperscriptWidget** | BaseWidget | Superscript formatting |
 | **SubscriptWidget** | BaseWidget | Subscript formatting |
+| **SmartDashWidget** | BaseWidget | Rendered Pandoc smart dash text |
 
 ### Reading Mode Components
 
@@ -388,6 +391,7 @@ For each content region from Phase 1:
      - FencedDivReferenceProcessor
      - SuperscriptProcessor
      - SubscriptProcessor
+     - SmartDashProcessor
      - CustomLabelReferenceProcessor
   2. Filter overlapping matches
   3. Skip matches in code regions

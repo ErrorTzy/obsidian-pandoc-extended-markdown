@@ -42,6 +42,7 @@ export const CSS_CLASSES = {
     // Superscript and Subscript Classes
     SUPERSCRIPT: 'pem-superscript',
     SUBSCRIPT: 'pem-subscript',
+    SMART_DASH: 'pem-smart-dash',
 
     // Suggestion Classes
     SUGGESTION_CONTENT: 'pem-suggestion-content',

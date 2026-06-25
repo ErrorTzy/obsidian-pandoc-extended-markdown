@@ -7,6 +7,7 @@ import { FancyListProcessor } from '../../../src/live-preview/pipeline/structura
 import { ExampleListProcessor } from '../../../src/live-preview/pipeline/structural/ExampleListProcessor';
 import { CustomLabelProcessor } from '../../../src/live-preview/pipeline/structural/CustomLabelProcessor';
 import { SuperscriptProcessor } from '../../../src/live-preview/pipeline/inline/SuperscriptProcessor';
+import { SmartDashProcessor } from '../../../src/live-preview/pipeline/inline/SmartDashProcessor';
 import { PluginStateManager } from '../../../src/core/state/pluginStateManager';
 import { normalizeSettings } from '../../../src/shared/types/settingsTypes';
 
@@ -25,7 +26,7 @@ describe('Syntax feature toggles', () => {
     it('skips live preview decorations for disabled syntax features', () => {
         const view = new EditorView({
             state: EditorState.create({
-                doc: 'A. Fancy item\n(@a) Example item\n{::P} Custom label\n^sup^'
+                doc: 'A. Fancy item\n(@a) Example item\n{::P} Custom label\n^sup^\nsmart -- dash'
             }),
             parent: container
         });
@@ -34,12 +35,14 @@ describe('Syntax feature toggles', () => {
         pipeline.registerStructuralProcessor(new ExampleListProcessor());
         pipeline.registerStructuralProcessor(new CustomLabelProcessor());
         pipeline.registerInlineProcessor(new SuperscriptProcessor());
+        pipeline.registerInlineProcessor(new SmartDashProcessor());
 
         const settings = normalizeSettings({
             enableFancyLists: false,
             enableExampleLists: false,
             enableCustomLabelLists: false,
-            enableSuperscript: false
+            enableSuperscript: false,
+            enableSmartDashes: false
         });
 
         const decorations = pipeline.process(view, settings);

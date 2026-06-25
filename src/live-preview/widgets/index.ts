@@ -11,7 +11,7 @@ export {
 export { DefinitionBulletWidget } from './definitionWidget';
 export { FencedDivHeaderWidget, FencedDivClosingWidget, FencedDivReferenceWidget } from './fencedDivWidget';
 export { ExampleReferenceWidget } from './referenceWidget';
-export { SuperscriptWidget, SubscriptWidget } from './formatWidgets';
+export { SuperscriptWidget, SubscriptWidget, SmartDashWidget } from './formatWidgets';
 export { 
     CustomLabelMarkerWidget, 
     CustomLabelReferenceWidget,

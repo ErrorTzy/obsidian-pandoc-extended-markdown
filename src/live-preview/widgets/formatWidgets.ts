@@ -55,3 +55,25 @@ export class SubscriptWidget extends BaseWidget {
         return other.content === this.content && other.pos === this.pos;
     }
 }
+
+export class SmartDashWidget extends BaseWidget {
+    constructor(
+        private content: string,
+        view?: EditorView,
+        pos?: number
+    ) {
+        super(view, pos);
+    }
+
+    protected applyStyles(element: HTMLElement): void {
+        element.className = CSS_CLASSES.SMART_DASH;
+    }
+
+    protected setContent(element: HTMLElement): void {
+        element.textContent = this.content;
+    }
+
+    eq(other: SmartDashWidget): boolean {
+        return other.content === this.content && other.pos === this.pos;
+    }
+}

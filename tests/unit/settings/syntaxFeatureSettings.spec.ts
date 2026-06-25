@@ -9,6 +9,7 @@ describe('Syntax feature settings', () => {
         expect(settings.enableReadableFencedDivSyntax).toBe(true);
         expect(settings.enableCustomLabelLists).toBe(true);
         expect(settings.enableFencedDivExtras).toBe(true);
+        expect(settings.enableSmartDashes).toBe(true);
         expect(settings.autoRenumberLists).toBe(true);
     });
 
@@ -108,6 +109,14 @@ describe('Syntax feature settings', () => {
         expect(config.enableSuperSubscripts).toBe(true);
         expect(config.enableSuperscript).toBe(false);
         expect(config.enableSubscript).toBe(true);
+    });
+
+    it('preserves disabled smart dash rendering setting', () => {
+        const settings = normalizeSettings({
+            enableSmartDashes: false
+        });
+
+        expect(settings.enableSmartDashes).toBe(false);
     });
 
     it('enables unordered list enhancements by default', () => {

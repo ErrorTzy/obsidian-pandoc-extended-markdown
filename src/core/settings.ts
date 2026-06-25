@@ -131,6 +131,12 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             SETTINGS_UI.SUBSCRIPT.DESCRIPTION,
             'enableSubscript'
         );
+        this.createFeatureToggle(
+            containerEl,
+            SETTINGS_UI.SMART_DASHES.NAME,
+            SETTINGS_UI.SMART_DASHES.DESCRIPTION,
+            'enableSmartDashes'
+        );
     }
 
     private renderNonNativeSyntaxSettings(containerEl: HTMLElement): void {
