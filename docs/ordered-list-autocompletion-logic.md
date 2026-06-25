@@ -8,13 +8,14 @@ refactored.
 
 Although the setting is named ordered-list marker cycling, the editor behavior
 must operate on structural item-list levels as a whole. Ordered, unordered, hash,
-example, and custom-label markers can be adjacent depths in the same list chunk,
-and Tab, Shift+Tab, and Enter must resolve the target depth's structural marker
-type consistently.
+example, custom-label, and definition markers can be adjacent depths in the same
+list chunk, and Tab, Shift+Tab, and Enter must resolve the target depth's
+structural marker type consistently.
 
-Definition-list markers `:` and `~` are intentionally excluded. They describe
-definitions for a preceding term rather than peer list items, so owner movement,
-depth inference, and empty-item return behavior would be ambiguous.
+Definition-list markers `:` and `~` are an isolated structural marker family.
+Definition items never convert to ordered, unordered, hash, example, or
+custom-label items during autocompletion, and normal list items ignore
+definition-list depth overrides.
 
 ## Supported Marker Types
 
@@ -57,6 +58,12 @@ store or copy the source label, placeholder, or expression. Newly inserted
 custom-label markers use `{::}` and place the cursor between `::` and `}` when
 the inserted item is otherwise empty.
 
+Definition-list markers are `:` and `~`. Structural marker inference stores the
+exact marker because both forms are meaningful in source. Newly inserted
+definition items use the resolved definition marker followed by one space.
+Definition item text such as `: [x] text` is plain definition content, not task
+checkbox syntax.
+
 Task checkbox syntax is a modifier on supported Pandoc-native list markers, not
 a separate list family. The supported task forms are `[ ]`, `[x]`, and `[X]`
 after the base list marker and at least one whitespace character. The checkbox
@@ -72,10 +79,10 @@ Preview and Reading Mode render supported task modifiers with Obsidian-native
 checkbox interaction while preserving Pandoc list structure. This document
 defines only source-editing behavior.
 
-Hash, example-list, and custom-label markers are enabled only when their
-corresponding syntax feature is enabled. When a feature is disabled, its marker
-text is treated as plain text by structural list autocompletion and must not
-create owners or depth-map overrides.
+Hash, example-list, custom-label, and definition markers are enabled only when
+their corresponding syntax feature is enabled. When a feature is disabled, its
+marker text is treated as plain text by structural list autocompletion and must
+not create owners or depth-map overrides.
 
 ## Terms
 
@@ -101,9 +108,8 @@ create owners or depth-map overrides.
   unordered marker such as `-`, hash, example-list, or custom-label.
 - Task state: `unchecked`, `checked`, or `null`. A `null` task state means the
   item is not using task checkbox syntax.
-- Structural marker type: a base marker type plus task state. Custom-label
-  structural marker types always have `taskState: null`, and definition-list
-  markers are excluded from this model.
+- Structural marker type: a base marker type plus task state. Custom-label and
+  definition-list structural marker types always have `taskState: null`.
 - Editable placeholder marker: an unlabeled example marker `(@)` or empty
   custom-label marker `{::}` with the cursor inside the marker's editable region.
   For example, `(@|)` and `{::|}` are editable placeholders; `(@) |` and
@@ -189,15 +195,24 @@ parsed list tree and infer a depth map:
 When resolving a structural marker type for a target depth:
 
 1. If the operation has an explicit child or parent target, that explicit target
-   wins.
+   wins when it is in the same marker family as the current owner.
 2. Otherwise, use the nearest previous item at the target depth in the same
-   chunk.
+   chunk and marker family.
 3. If no previous item at that depth exists, use the nearest following item at
-   the target depth in the same chunk.
+   the target depth in the same chunk and marker family.
 4. If no item at that depth exists, use the default configured cycle resumed
    from the deepest explicit depth override in the chunk.
 5. If the chunk has no usable override, use the configured default mapping for
    the target depth.
+
+Normal list markers and definition-list markers are separate marker families.
+For normal owners, definition target-depth items are ignored. For definition
+owners, normal target-depth items are ignored. Definition owners resolve target
+markers with this fallback order:
+
+1. Existing target-depth definition marker override.
+2. Definition parent marker at the target parent depth.
+3. Source definition marker from the moved or continued owner.
 
 Conflicts are resolved by cursor position. Previous target-depth items have
 priority over later items; among later items, the closest following item wins.
@@ -668,8 +683,8 @@ affected ordered sibling groups only when `autoRenumberLists` is enabled.
 
 Hybrid structural lists are list chunks where adjacent depths use different
 marker types, such as ordered parent to unordered child, unordered parent to
-example-list child, hash parent to ordered child, or custom-label child to
-unordered grandchild.
+example-list child, hash parent to ordered child, custom-label child to
+unordered grandchild, or definition parent to definition child.
 
 The core rule is:
 
@@ -677,8 +692,8 @@ The core rule is:
 > continues the owner according to the immediate following block; the target
 > depth's marker type wins.
 
-Unordered, hash, example-list, and custom-label list items are not part of the
-ordered marker cycle:
+Unordered, hash, example-list, custom-label, and definition list items are not
+part of the ordered marker cycle:
 
 - Enter on a non-empty unordered item with no following deeper block inserts a new
   unordered item at the same depth and preserves the exact unordered marker from
@@ -689,14 +704,19 @@ ordered marker cycle:
   `(@)` at the same depth and places the cursor inside the marker.
 - Enter on a non-empty custom-label item with no following deeper block inserts
   `{::}` at the same depth and places the cursor inside the marker.
+- Enter on a non-empty definition item with no following deeper block inserts
+  the resolved `:` or `~` marker at the same depth.
 - Enter on an empty nested unordered item returns to the nearest parent depth.
 - Enter on an empty nested hash item returns to the nearest parent depth.
 - Enter on an editable nested example-list or custom-label placeholder returns to
   the nearest parent depth.
+- Enter on an empty nested definition item returns to the nearest parent depth
+  and uses that parent definition marker when the parent is also a definition
+  item.
 - Shift+Tab on an empty nested unordered item returns to the nearest parent depth
   and must produce the same marker type and ordinal as Enter would.
-- Shift+Tab on an empty nested hash, example-list, or custom-label item follows
-  the same return-to-parent rule.
+- Shift+Tab on an empty nested hash, example-list, custom-label, or definition
+  item follows the same return-to-parent rule.
 - When returning to an unordered parent depth, the new item preserves that parent
   depth's unordered marker.
 - When returning to a hash parent depth, the new item uses `#.`.
@@ -704,20 +724,23 @@ ordered marker cycle:
   places the cursor inside the marker.
 - When returning to a custom-label parent depth, the new item uses `{::}` and
   places the cursor inside the marker.
+- When returning to a definition parent depth, the new item uses the parent's
+  `:` or `~` marker and places the cursor after the trailing space.
 - When returning to an ordered parent depth, the new item resolves the ordered
   style through explicit parent/depth-map rules and resolves ordinal values
   according to `autoRenumberLists`.
-- Hash, example-list, and custom-label markers do not participate in unordered
-  marker cycling. Only `-`, `+`, and `*` cycle as unordered markers.
+- Hash, example-list, custom-label, and definition markers do not participate in
+  unordered marker cycling. Only `-`, `+`, and `*` cycle as unordered markers.
 - Ordered grandchildren nested under unordered items still use ordered
   continuation at their own depth. If an ordered grandchild item is empty, Enter
   returns one depth to the unordered parent, not all the way to the ordered root.
-  The same rule applies under hash, example-list, and custom-label parents.
+  The same rule applies under hash, example-list, custom-label, and definition
+  parents.
 
 If there is no explicit child block and no existing target-depth override, Tab
-preserves the marker family of the current owner. Hash, example-list, and
-custom-label owners repeat their marker kind instead of falling into the ordered
-cycle:
+preserves the marker family of the current owner. Hash, example-list,
+custom-label, and definition owners repeat their marker kind instead of falling
+into the ordered cycle:
 
 ```markdown
 #. parent
@@ -732,8 +755,9 @@ Pressing Tab should produce:
 ```
 
 An existing target-depth override can still switch a hash child to another
-marker kind; the owner marker only controls fallback when no target-depth marker
-kind exists.
+normal marker kind; the owner marker only controls fallback when no target-depth
+marker kind exists. Definition target-depth overrides only apply to definition
+owners.
 
 Example: unordered child under ordered parent continues as unordered:
 

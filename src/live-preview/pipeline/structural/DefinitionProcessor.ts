@@ -8,6 +8,7 @@ import { CSS_CLASSES } from '../../../core/constants';
 
 import { ListPatterns } from '../../../shared/patterns';
 
+import { getListIndentColumns } from '../../../shared/utils/listContext';
 import { DefinitionBulletWidget } from '../../widgets';
 import { handleError } from '../../../shared/utils/errorHandler';
 import {
@@ -89,14 +90,6 @@ export class DefinitionProcessor implements StructuralProcessor {
             return { decorations };
         }
 
-        decorations.push({
-            from: line.from,
-            to: line.from,
-            decoration: Decoration.line({
-                class: CSS_CLASSES.DEFINITION_PARAGRAPH
-            })
-        });
-        
         const indent = defItemMatch[1] || '';
         const marker = defItemMatch[2] || '';
         const space = defItemMatch[3] || '';
@@ -105,6 +98,14 @@ export class DefinitionProcessor implements StructuralProcessor {
         if (!marker) {
             return { decorations };
         }
+
+        decorations.push({
+            from: line.from,
+            to: line.from,
+            decoration: Decoration.line({
+                class: getDefinitionItemLineClasses(indent)
+            })
+        });
         
         const markerStart = line.from + indent.length;
         const markerEnd = line.from + indent.length + marker.length + space.length;
@@ -323,5 +324,31 @@ export class DefinitionProcessor implements StructuralProcessor {
         
         // Check if we're in definition context
         return context.definitionState.lastWasItem || context.definitionState.pendingBlankLine;
+    }
+}
+
+function getDefinitionItemLineClasses(indent: string): string {
+    return [
+        CSS_CLASSES.DEFINITION_PARAGRAPH,
+        CSS_CLASSES.LIST_LINE,
+        getListLevelClass(getDefinitionListLevel(indent)),
+        CSS_CLASSES.PANDOC_LIST_LINE
+    ].join(' ');
+}
+
+function getDefinitionListLevel(indent: string): number {
+    return Math.floor(getListIndentColumns(indent) / 4) + 1;
+}
+
+function getListLevelClass(level: number): string {
+    switch (level) {
+        case 2:
+            return CSS_CLASSES.LIST_LINE_2;
+        case 3:
+            return CSS_CLASSES.LIST_LINE_3;
+        case 4:
+            return CSS_CLASSES.LIST_LINE_4;
+        default:
+            return CSS_CLASSES.LIST_LINE_1;
     }
 }

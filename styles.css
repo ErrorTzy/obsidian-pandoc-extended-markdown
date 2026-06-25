@@ -1545,6 +1545,9 @@
     font-weight: var(--pem-definition-desc-font-weight);
     text-align: var(--pem-definition-desc-align);
     text-decoration: var(--pem-definition-desc-text-decoration);
+}
+
+.cm-pem-definition-paragraph:not(.HyperMD-list-line) {
     text-indent: 0 !important;
 }
 

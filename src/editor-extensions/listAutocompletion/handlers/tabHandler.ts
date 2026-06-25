@@ -370,6 +370,14 @@ function resolveMovedParentChildMarkerType(
     settings: PandocExtendedMarkdownSettings
 ): StandardListMarkerType | null {
     if (
+        movedParent &&
+        owner.markerType.kind === 'definition' &&
+        movedParent.targetMarkerType.kind === 'definition'
+    ) {
+        return movedParent.targetMarkerType;
+    }
+
+    if (
         !movedParent ||
         owner.markerType.kind !== 'unordered' ||
         movedParent.targetMarkerType.kind !== 'unordered'

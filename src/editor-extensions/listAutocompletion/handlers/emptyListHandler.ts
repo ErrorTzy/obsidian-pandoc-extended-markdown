@@ -71,6 +71,10 @@ export function handleEmptyListItem(config: EmptyListHandlingConfig): boolean {
     const structuralItem = parseStructuralListItem(lineText, config.settings);
     const isEmptyStructuralTask = structuralItem?.taskState !== null && structuralItem?.content === '';
 
+    if (!structuralItem) {
+        return false;
+    }
+
     if (!isEmptyListItem(lineText) && !isEmptyStructuralTask) {
         return false;
     }

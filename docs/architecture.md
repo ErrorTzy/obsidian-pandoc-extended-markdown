@@ -287,8 +287,8 @@ listAutocompletion/
 └── utils/
     ├── lineInfo.ts        # Line information utilities
     ├── markerDetection.ts # List marker detection
-    ├── orderedMarkers.ts  # Ordered marker context cycling
-    ├── standardListStructure.ts # Standard list owner/depth parsing
+    ├── standardListStructure.ts # Structural list owner/depth parsing and marker-family resolution
+    ├── documentChanges.ts # Minimal text changes for line-oriented edits
     ├── orderedSiblingRenumbering.ts # Ordered sibling renumbering
     ├── listBlockReconciliation.ts # Post-transaction list repair
     └── debugNotice.ts     # Debug notices for failed standard resolution

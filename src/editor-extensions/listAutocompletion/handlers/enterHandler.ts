@@ -17,6 +17,7 @@ import {
     getInsertedMarkerCursorOffset,
     getPreviousSiblingOrdinal,
     resolveListOwnerAtLine,
+    resolveMarkerTypeForDepth,
     StandardListMarkerType
 } from '../utils/standardListStructure';
 import {
@@ -174,10 +175,22 @@ function handleEnterBeforeExplicitChildBlock(
 }
 
 function formatMarkerForInsertedChild(
-    markerType: StandardListMarkerType,
+    explicitMarkerType: StandardListMarkerType,
     ownerContext: NonNullable<ReturnType<typeof resolveListOwnerAtLine>>,
     settings: ReturnType<typeof resolveSettings>
 ): string {
+    const targetDepth = ownerContext.owner.depth + 1;
+    const markerType = resolveMarkerTypeForDepth(
+        ownerContext.chunk,
+        ownerContext.owner.lineIndex + 1,
+        targetDepth,
+        settings,
+        {
+            explicitMarkerType,
+            fallbackMarkerType: ownerContext.owner.markerType
+        }
+    );
+
     if (markerType.kind !== 'ordered') {
         return formatMarkerPrefix(
             formatNonOrderedMarker(markerType),
@@ -186,7 +199,6 @@ function formatMarkerForInsertedChild(
         );
     }
 
-    const targetDepth = ownerContext.owner.depth + 1;
     const targetParentLineIndex = findTargetParentLineIndex(
         ownerContext.chunk,
         ownerContext.owner.lineIndex + 1,

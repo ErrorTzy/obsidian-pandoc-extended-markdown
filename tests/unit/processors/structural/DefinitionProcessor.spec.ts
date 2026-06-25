@@ -215,6 +215,19 @@ describe('DefinitionProcessor', () => {
                 expect(context.definitionState.lastWasItem).toBe(true);
                 expect(context.definitionState.pendingBlankLine).toBe(false);
             });
+
+            it('should decorate nested definition items as structural list lines at the source depth', () => {
+                context = createContext('Term\n: Parent\n    : Nested definition');
+                const line = context.document.line(3);
+                const result = processor.process(line, context);
+                const lineDecoration = result.decorations.find(item => item.from === line.from && item.to === line.from);
+                const lineClass = lineDecoration?.decoration.spec?.class ?? '';
+
+                expect(lineClass).toContain('cm-pem-definition-paragraph');
+                expect(lineClass).toContain('HyperMD-list-line');
+                expect(lineClass).toContain('HyperMD-list-line-2');
+                expect(lineClass).toContain('pem-list-line');
+            });
             
             it('should skip processing when Pandoc list spacing enforcement marks a line invalid', () => {
                 context = createContext(': Definition', { enforcePandocListSpacing: true });

@@ -66,6 +66,40 @@ plain text`;
         }
     });
 
+    it('aligns nested definition item rule, marker, and text with ordinary nested list geometry in live preview', async () => {
+        const filePath = 'definition-list-live-preview-nested-alignment.md';
+        const content = `- ordinary parent
+    - nested ordinary
+
+Definition term
+: parent definition
+    : nested definition`;
+
+        try {
+            await createOrReplaceFile(filePath, content);
+            await openFileInActiveLeaf(filePath);
+            await ensureLivePreviewMode();
+            await waitForDefinitionMarkerWidget();
+
+            await browser.waitUntil(async () => {
+                const state = await getNestedDefinitionListGeometryState();
+                return state.ready;
+            }, {
+                timeout: 5000,
+                timeoutMsg: 'Expected nested ordinary and definition list geometry in live preview'
+            });
+
+            const state = await getNestedDefinitionListGeometryState();
+
+            expect(state.ready).toBe(true);
+            expect(state.definitionLineToOrdinaryDelta).toBeLessThanOrEqual(1);
+            expect(state.definitionMarkerToOrdinaryDelta).toBeLessThanOrEqual(1);
+            expect(state.definitionTextToOrdinaryDelta).toBeLessThanOrEqual(1);
+        } finally {
+            await deleteFileIfExists(filePath);
+        }
+    });
+
     it('aligns definition descriptions with ordinary unordered list items in reading mode', async () => {
         const filePath = 'definition-list-reading-mode-alignment.md';
         const content = `plain text
@@ -313,6 +347,99 @@ async function getDefinitionListAlignmentState(): Promise<{
             lineDiagnostics: lines
                 .filter(line => /plain text|ordinary lists|Definition term|definition list/.test(line.textContent ?? ''))
                 .map(line => `${line.className}: ${line.textContent}`)
+        };
+    });
+}
+
+async function getNestedDefinitionListGeometryState(): Promise<{
+    ready: boolean;
+    ordinaryLineLeft: number;
+    definitionLineLeft: number;
+    ordinaryMarkerLeft: number;
+    definitionMarkerLeft: number;
+    ordinaryTextLeft: number;
+    definitionTextLeft: number;
+    definitionLineToOrdinaryDelta: number;
+    definitionMarkerToOrdinaryDelta: number;
+    definitionTextToOrdinaryDelta: number;
+    diagnostics: string[];
+}> {
+    return browser.execute(() => {
+        const lines = Array.from(document.querySelectorAll('.cm-line')) as HTMLElement[];
+        const ordinaryLine = lines.find(line => line.textContent?.includes('nested ordinary')) ?? null;
+        const definitionLine = lines.find(line => line.textContent?.includes('nested definition')) ?? null;
+
+        const getMarkerLeft = (line: HTMLElement | null): number => {
+            const marker = line?.querySelector(
+                '.cm-formatting-list-ul .list-bullet, .cm-formatting-list-ul, .pem-list-marker'
+            ) as HTMLElement | null;
+            return marker?.getBoundingClientRect().left ?? Number.NaN;
+        };
+
+        const getTextLeft = (line: HTMLElement | null, text: string): number => {
+            if (!line) {
+                return Number.NaN;
+            }
+
+            const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+            while (node) {
+                const textContent = node.textContent ?? '';
+                const index = textContent.indexOf(text);
+                if (index >= 0) {
+                    const range = document.createRange();
+                    range.setStart(node, index);
+                    range.setEnd(node, index + text.length);
+                    const rect = range.getBoundingClientRect();
+                    range.detach();
+                    return rect.left;
+                }
+                node = walker.nextNode();
+            }
+
+            return Number.NaN;
+        };
+
+        const ordinaryLineLeft = ordinaryLine?.getBoundingClientRect().left ?? Number.NaN;
+        const definitionLineLeft = definitionLine?.getBoundingClientRect().left ?? Number.NaN;
+        const ordinaryMarkerLeft = getMarkerLeft(ordinaryLine);
+        const definitionMarkerLeft = getMarkerLeft(definitionLine);
+        const ordinaryTextLeft = getTextLeft(ordinaryLine, 'nested ordinary');
+        const definitionTextLeft = getTextLeft(definitionLine, 'nested definition');
+        const positions = [
+            ordinaryLineLeft,
+            definitionLineLeft,
+            ordinaryMarkerLeft,
+            definitionMarkerLeft,
+            ordinaryTextLeft,
+            definitionTextLeft
+        ];
+        const ready = positions.every(value => Number.isFinite(value) && value > 0);
+
+        return {
+            ready,
+            ordinaryLineLeft,
+            definitionLineLeft,
+            ordinaryMarkerLeft,
+            definitionMarkerLeft,
+            ordinaryTextLeft,
+            definitionTextLeft,
+            definitionLineToOrdinaryDelta: ready ? Math.abs(definitionLineLeft - ordinaryLineLeft) : Number.POSITIVE_INFINITY,
+            definitionMarkerToOrdinaryDelta: ready ? Math.abs(definitionMarkerLeft - ordinaryMarkerLeft) : Number.POSITIVE_INFINITY,
+            definitionTextToOrdinaryDelta: ready ? Math.abs(definitionTextLeft - ordinaryTextLeft) : Number.POSITIVE_INFINITY,
+            diagnostics: [ordinaryLine, definitionLine]
+                .filter((line): line is HTMLElement => line !== null)
+                .map(line => {
+                    const style = window.getComputedStyle(line);
+                    return [
+                        line.className,
+                        line.textContent,
+                        `left=${line.getBoundingClientRect().left}`,
+                        `padding=${style.paddingInlineStart}`,
+                        `textIndent=${style.textIndent}`,
+                        `html=${line.innerHTML}`
+                    ].join(' | ');
+                })
         };
     });
 }

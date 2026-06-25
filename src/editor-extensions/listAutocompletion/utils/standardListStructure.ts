@@ -21,12 +21,14 @@ export type StandardListMarkerType =
     | { kind: 'unordered'; marker: string; taskState: TaskState }
     | { kind: 'hash'; taskState: TaskState }
     | { kind: 'example'; taskState: TaskState }
-    | { kind: 'custom-label'; taskState: null };
+    | { kind: 'custom-label'; taskState: null }
+    | { kind: 'definition'; marker: ':' | '~'; taskState: null };
 
 type StructuralListMarkerKind = ParsedStandardListItem['kind'] |
     'hash' |
     'example' |
-    'custom-label';
+    'custom-label' |
+    'definition';
 
 export interface ParsedStructuralListItem extends Omit<ParsedStandardListItem, 'kind'> {
     kind: StructuralListMarkerKind;
@@ -155,6 +157,13 @@ export function parseStructuralListItem(
         };
     }
 
+    const definitionMatch = isSyntaxFeatureEnabled(settings, 'enableDefinitionLists')
+        ? ListPatterns.isDefinitionMarker(line) ?? line.match(ListPatterns.EMPTY_DEFINITION_LIST)
+        : null;
+    if (definitionMatch) {
+        return parseDefinitionListMatch(line, definitionMatch);
+    }
+
     return null;
 }
 
@@ -168,6 +177,8 @@ export function formatNonOrderedMarker(markerType: Exclude<StandardListMarkerTyp
             return LIST_MARKERS.EXAMPLE_FULL;
         case 'custom-label':
             return LIST_MARKERS.CUSTOM_LABEL_FULL;
+        case 'definition':
+            return markerType.marker;
     }
 }
 
@@ -405,22 +416,31 @@ export function resolveMarkerTypeForDepth(
     settings: PandocExtendedMarkdownSettings,
     options: MarkerTypeResolutionOptions = {}
 ): StandardListMarkerType {
-    const explicitMarkerType = options.explicitMarkerType ?? null;
+    const markerFamily = getMarkerFamily(options.fallbackMarkerType ?? options.explicitMarkerType ?? null);
+    const explicitMarkerType = getCompatibleMarkerType(options.explicitMarkerType ?? null, markerFamily);
     if (explicitMarkerType) {
         return explicitMarkerType;
     }
 
-    const previous = findPreviousNodeAtDepth(chunk, editLineIndex, targetDepth);
+    const previous = findPreviousNodeAtDepth(chunk, editLineIndex, targetDepth, markerFamily);
     if (previous) {
         return previous.markerType;
     }
 
-    const following = findFollowingNodeAtDepth(chunk, editLineIndex, targetDepth);
+    const following = findFollowingNodeAtDepth(chunk, editLineIndex, targetDepth, markerFamily);
     if (following) {
         return following.markerType;
     }
 
-    return resolveFallbackMarkerType(chunk, targetDepth, settings, options.fallbackMarkerType ?? null);
+    const fallbackMarkerType = getCompatibleMarkerType(options.fallbackMarkerType ?? null, markerFamily);
+    if (markerFamily === 'definition') {
+        const parent = findDefinitionParentNode(chunk, editLineIndex, targetDepth);
+        if (parent?.markerType.kind === 'definition') {
+            return parent.markerType;
+        }
+    }
+
+    return resolveFallbackMarkerType(chunk, targetDepth, settings, fallbackMarkerType);
 }
 
 export function findNearestNodeAtDepth(
@@ -533,6 +553,10 @@ function resolveMarkerType(
         return { kind: 'custom-label', taskState: null };
     }
 
+    if (item.kind === 'definition') {
+        return { kind: 'definition', marker: item.marker as ':' | '~', taskState: null };
+    }
+
     const ordered = parseOrderedListMarker(lines[lineIndex], lines, lineIndex);
     if (!ordered) {
         return null;
@@ -548,11 +572,16 @@ function resolveMarkerType(
 function findPreviousNodeAtDepth(
     chunk: StandardListChunk,
     editLineIndex: number,
-    targetDepth: number
+    targetDepth: number,
+    markerFamily: MarkerFamily | null = null
 ): StandardListNode | null {
     for (let index = chunk.nodes.length - 1; index >= 0; index--) {
         const node = chunk.nodes[index];
-        if (node.lineIndex < editLineIndex && node.depth === targetDepth) {
+        if (
+            node.lineIndex < editLineIndex &&
+            node.depth === targetDepth &&
+            isMarkerTypeInFamily(node.markerType, markerFamily)
+        ) {
             return node;
         }
     }
@@ -563,10 +592,15 @@ function findPreviousNodeAtDepth(
 function findFollowingNodeAtDepth(
     chunk: StandardListChunk,
     editLineIndex: number,
-    targetDepth: number
+    targetDepth: number,
+    markerFamily: MarkerFamily | null = null
 ): StandardListNode | null {
     for (const node of chunk.nodes) {
-        if (node.lineIndex > editLineIndex && node.depth === targetDepth) {
+        if (
+            node.lineIndex > editLineIndex &&
+            node.depth === targetDepth &&
+            isMarkerTypeInFamily(node.markerType, markerFamily)
+        ) {
             return node;
         }
     }
@@ -628,6 +662,14 @@ function resolveFallbackMarkerType(
 
     if (fallbackMarkerType?.kind === 'custom-label') {
         return { kind: 'custom-label', taskState: null };
+    }
+
+    if (fallbackMarkerType?.kind === 'definition') {
+        return {
+            kind: 'definition',
+            marker: fallbackMarkerType.marker,
+            taskState: null
+        };
     }
 
     return {
@@ -693,5 +735,67 @@ function parseExtendedListMatch(
         spaces: taskPrefix?.spaces ?? spaces,
         content: taskPrefix?.content ?? content,
         taskState: taskPrefix?.taskState ?? null
+    };
+}
+
+type MarkerFamily = 'definition' | 'normal';
+
+function getMarkerFamily(markerType: StandardListMarkerType | null): MarkerFamily | null {
+    if (!markerType) {
+        return null;
+    }
+
+    return markerType.kind === 'definition' ? 'definition' : 'normal';
+}
+
+function getCompatibleMarkerType(
+    markerType: StandardListMarkerType | null,
+    markerFamily: MarkerFamily | null
+): StandardListMarkerType | null {
+    return markerType && isMarkerTypeInFamily(markerType, markerFamily) ? markerType : null;
+}
+
+function isMarkerTypeInFamily(
+    markerType: StandardListMarkerType,
+    markerFamily: MarkerFamily | null
+): boolean {
+    if (!markerFamily) {
+        return true;
+    }
+
+    return markerFamily === 'definition'
+        ? markerType.kind === 'definition'
+        : markerType.kind !== 'definition';
+}
+
+function findDefinitionParentNode(
+    chunk: StandardListChunk,
+    editLineIndex: number,
+    targetDepth: number
+): StandardListNode | null {
+    const parentLineIndex = findTargetParentLineIndex(chunk, editLineIndex, targetDepth);
+
+    return parentLineIndex === null
+        ? null
+        : chunk.nodes.find(node => node.lineIndex === parentLineIndex && node.markerType.kind === 'definition') ?? null;
+}
+
+function parseDefinitionListMatch(
+    line: string,
+    match: RegExpMatchArray
+): ParsedStructuralListItem {
+    const indent = match[1];
+    const marker = match[2];
+    const spaces = match[3] ?? '';
+    const content = line.slice(match[0].length);
+
+    return {
+        kind: 'definition',
+        indent,
+        indentColumns: getIndentColumns(indent),
+        marker,
+        spaces,
+        content,
+        taskState: null
     };
 }

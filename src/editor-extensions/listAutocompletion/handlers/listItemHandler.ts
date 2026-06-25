@@ -244,7 +244,12 @@ function getNextStandardListMarker(
         };
     }
 
-    if (standardItem.kind === 'hash' || standardItem.kind === 'example' || standardItem.kind === 'custom-label') {
+    if (
+        standardItem.kind === 'hash' ||
+        standardItem.kind === 'example' ||
+        standardItem.kind === 'custom-label' ||
+        standardItem.kind === 'definition'
+    ) {
         return {
             marker: formatNonOrderedMarker(getNonOrderedMarkerType(standardItem)),
             indent: standardItem.indent,
@@ -293,5 +298,9 @@ function getNonOrderedMarkerType(
         return { kind: 'example', taskState: item.taskState };
     }
 
-    return { kind: 'custom-label', taskState: null };
+    if (item.kind === 'custom-label') {
+        return { kind: 'custom-label', taskState: null };
+    }
+
+    return { kind: 'definition', marker: item.marker as ':' | '~', taskState: null };
 }
