@@ -20,7 +20,7 @@
 - TypeScript-first; follow ESLint rules in `eslint.config.mjs`.
 - Use 4-space indentation, single quotes, and semicolons as seen in `src/`.
 - Import order follows the architecture guide: External → Types → Constants → Patterns → Utils → Internal.
-- Try to keep typescript files in src ≤500 lines and functions ≤50 lines (this is not a hard constraint)
+- Try to keep typescript files in src ≤500 lines and functions ≤50 lines (this is not a hard constraint. This is for maintainability. Don't shorten the code to make it ugly just because of this constraint)
 - Naming: `PascalCase` for classes/types, `camelCase` for functions/vars, `UPPER_SNAKE_CASE` for constants.
 
 ## Testing Guidelines
@@ -44,6 +44,10 @@
 - Add new host capabilities through core ports instead of importing Obsidian, DOM, Node, or Electron APIs into core; keep preview support registration-based with core format modules and GUI renderer modules.
 - Prefer service boundaries that accept argument arrays and injectable process runners; avoid shell-string command construction except for explicit custom shell profiles with `type: "custom"` and `shell: true`.
 - UI should be task-oriented around export profiles, output paths, bundled Lua filters, extra args, and output preview rather than exposing raw command templates as the primary workflow.
+
+## Bug Fixing Guidelines
+- read /docs/architecture.md before fixing the bug
+- Reproduce the bug in failing test first, and then fix the bug, and then refactor the fix to make the code look more organized if needed
 
 ## Commit & Pull Request Guidelines
 - Recent commits are short, imperative, one-line summaries (e.g., “Fix…”, “Add…”, “Address…”); follow that style and avoid scopes unless needed.
