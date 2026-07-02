@@ -3,6 +3,7 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 import { processReadingMode } from '../../../src/reading-mode/processor';
 import { pluginStateManager } from '../../../src/core/state/pluginStateManager';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
+import { normalizeExistingDefinitionLists } from '../../../src/reading-mode/features/definition-lists/normalizer';
 
 describe('definition list reading mode rendering', () => {
     const docPath = 'definition-list-test.md';
@@ -24,6 +25,9 @@ describe('definition list reading mode rendering', () => {
         Array.from(element.children)
             .filter(child => child.tagName === tagName)
             .map(child => child as HTMLElement);
+
+    const countOccurrences = (text: string, search: string): number =>
+        text.split(search).length - 1;
 
     beforeEach(() => {
         pluginStateManager.resetDocumentCounters(docPath);
@@ -235,6 +239,144 @@ describe('definition list reading mode rendering', () => {
             .toEqual(['Description Term', 'Another Term']);
         expect(directChildren(list, 'DD').map(def => def.textContent))
             .toEqual(['details1', 'another detail1']);
+    });
+
+    it('rebuilds a partial heading-embed definition list with later raw definition text', () => {
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = `
+            <div class="el-h2"><h2>SubHeading1</h2></div>
+            <div class="el-p">
+                <p><dl class="pem-definition-list"><dt>Term</dt><dd>Sub-category 1</dd></dl></p>
+            </div>
+            <div class="el-p">
+                <p>Top-Level Category<br>~ Sub-category 1<br>~ Sub-category 2</p>
+            </div>
+        `;
+        const sectionSource = [
+            'Term',
+            '~ Sub-category 1',
+            '',
+            'Top-Level Category',
+            '~ Sub-category 1',
+            '~ Sub-category 2'
+        ].join('\n');
+
+        normalizeExistingDefinitionLists(
+            section,
+            createContext(sectionSource),
+            config,
+            { strictLineBreaks: false }
+        );
+
+        const lists = Array.from(section.querySelectorAll('dl.pem-definition-list')) as HTMLElement[];
+        const text = section.textContent ?? '';
+
+        expect(lists).toHaveLength(1);
+        expect(directChildren(lists[0], 'DT').map(term => term.textContent))
+            .toEqual(['Term', 'Top-Level Category']);
+        expect(directChildren(lists[0], 'DD').map(def => def.textContent))
+            .toEqual(['Sub-category 1', 'Sub-category 1', 'Sub-category 2']);
+        expect(countOccurrences(text, 'Top-Level Category')).toBe(1);
+        expect(text).not.toContain('~ Sub-category 2');
+    });
+
+    it('removes duplicate rendered definition fragments left by live-preview embed refresh', () => {
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = `
+            <div class="el-h2"><h2>SubHeading1</h2></div>
+            <div class="el-p">
+                <dl class="pem-definition-list">
+                    <dt class="pem-definition-term">Term</dt>
+                    <dd class="pem-list-definition-desc pem-definition-desc-item">Sub-category 1</dd>
+                    <dt class="pem-definition-term">Top-Level Category</dt>
+                    <dd class="pem-list-definition-desc pem-definition-desc-item">Sub-category 1</dd>
+                    <dd class="pem-list-definition-desc pem-definition-desc-item">Sub-category 2</dd>
+                </dl>
+            </div>
+            <div class="el-p">
+                <dl class="pem-definition-list">
+                    <dt class="pem-definition-term">Top-Level Category</dt>
+                    <dd class="pem-list-definition-desc pem-definition-desc-item"><p>Sub-category 1</p></dd>
+                </dl>
+                <p>~ Sub-category 2</p>
+            </div>
+        `;
+
+        normalizeExistingDefinitionLists(
+            section,
+            createContext([
+                'Term',
+                '~ Sub-category 1',
+                '',
+                'Top-Level Category',
+                '~ Sub-category 1',
+                '~ Sub-category 2'
+            ].join('\n')),
+            config,
+            { strictLineBreaks: false }
+        );
+
+        const lists = Array.from(section.querySelectorAll('dl.pem-definition-list')) as HTMLElement[];
+        const text = section.textContent ?? '';
+
+        expect(lists).toHaveLength(1);
+        expect(directChildren(lists[0], 'DT').map(term => term.textContent))
+            .toEqual(['Term', 'Top-Level Category']);
+        expect(countOccurrences(text, 'Top-Level Category')).toBe(1);
+        expect(text).not.toContain('~ Sub-category 2');
+    });
+
+    it('releases stale embedded preview minimum height after normalizing source-backed lists', async () => {
+        jest.useFakeTimers();
+        const embed = document.createElement('div');
+        embed.className = 'markdown-embed';
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.style.minHeight = '300px';
+        section.innerHTML = `
+            <div class="el-h2"><h2>SubHeading1</h2></div>
+            <div class="el-p">
+                <dl class="pem-definition-list">
+                    <dt class="pem-definition-term">Term</dt>
+                    <dd class="pem-list-definition-desc pem-definition-desc-item">Sub-category 1</dd>
+                </dl>
+            </div>
+            <div class="el-p">
+                <p>Top-Level Category<br>~ Sub-category 1<br>~ Sub-category 2</p>
+            </div>
+        `;
+        embed.appendChild(section);
+        document.body.appendChild(embed);
+        const source = [
+            'Term',
+            '~ Sub-category 1',
+            '',
+            'Top-Level Category',
+            '~ Sub-category 1',
+            '~ Sub-category 2'
+        ].join('\n');
+        const file = { path: docPath };
+        const app = {
+            workspace: {
+                getActiveFile: jest.fn(() => file)
+            },
+            vault: {
+                cachedRead: jest.fn(() => Promise.resolve(source))
+            }
+        };
+
+        processReadingMode(
+            section,
+            createContext(source),
+            config,
+            app as any
+        );
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+
+        expect(section.style.minHeight).toBe('0px');
     });
 
     it('preserves unrelated rendered siblings when rebuilding from source lines', () => {

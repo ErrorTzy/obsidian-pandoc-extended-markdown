@@ -162,14 +162,14 @@ Top-Level Category
             await ensureReadingMode();
 
             await browser.waitUntil(async () => {
-                const state = await getEmbeddedDefinitionListState();
+                const state = await getEmbeddedDefinitionListState('Definition 1');
                 return state.ready;
             }, {
                 timeout: 8000,
                 timeoutMsg: 'Expected embedded definition list to render in reading mode'
             });
 
-            const state = await getEmbeddedDefinitionListState();
+            const state = await getEmbeddedDefinitionListState('Definition 1');
 
             expect(state.listCount).toBe(1);
             expect(state.terms).toEqual(['Term', 'Top-Level Category']);
@@ -181,6 +181,72 @@ Top-Level Category
                 'Sub-category 2'
             ]);
         } finally {
+            await deleteFileIfExists(containerPath);
+            await deleteFileIfExists(embeddedPath);
+        }
+    });
+
+    it('does not multiply tilde-marker definition lists inside a live-preview embed after switching tabs', async () => {
+        const embeddedPath = 'Note1.md';
+        const containerPath = 'definition-list-tilde-embed-container.md';
+        const switchPath = 'definition-list-tilde-switch-tab.md';
+        const embeddedContent = `## SubHeading1
+
+Term
+~ Sub-category 1
+
+Top-Level Category
+~ Sub-category 1
+~ Sub-category 2`;
+        const containerContent = `text
+
+![[Note1.md]]
+
+text`;
+        const switchContent = `# Switch Target
+
+plain text`;
+
+        try {
+            await browser.reloadObsidian({
+                vault: './tests/e2e/vaults/test-vault'
+            });
+            await enableDefinitionListRendering();
+            await createOrReplaceFile(embeddedPath, embeddedContent);
+            await createOrReplaceFile(containerPath, containerContent);
+            await createOrReplaceFile(switchPath, switchContent);
+            await openFilesInLivePreviewTabs(containerPath, switchPath);
+            await revealLivePreviewEmbeds();
+
+            await waitForEmbeddedDefinitionList('Sub-category 1', 'live preview');
+            assertEmbeddedTildeDefinitionListState(
+                await getEmbeddedDefinitionListState('Sub-category 1')
+            );
+
+            for (let index = 0; index < 8; index++) {
+                await switchAwayAndBackToTab(containerPath, switchPath);
+                await revealLivePreviewEmbeds();
+
+                await waitForEmbeddedDefinitionList(
+                    'Sub-category 1',
+                    `live preview after switching notes (${index + 1})`
+                );
+                assertEmbeddedTildeDefinitionListState(
+                    await getEmbeddedDefinitionListState('Sub-category 1')
+                );
+            }
+
+            await ensureReadingMode();
+            await rerenderActivePreview();
+            await rerenderActivePreview();
+
+            await waitForEmbeddedDefinitionList('Sub-category 1', 'reading mode');
+
+            const state = await getEmbeddedDefinitionListState('Sub-category 1');
+
+            assertEmbeddedTildeDefinitionListState(state);
+        } finally {
+            await deleteFileIfExists(switchPath);
             await deleteFileIfExists(containerPath);
             await deleteFileIfExists(embeddedPath);
         }
@@ -527,19 +593,26 @@ async function getReadingModeDefinitionListAlignmentState(): Promise<{
     });
 }
 
-async function getEmbeddedDefinitionListState(): Promise<{
+async function getEmbeddedDefinitionListState(expectedText: string): Promise<{
     ready: boolean;
+    embedFound: boolean;
     listCount: number;
     terms: string[];
     definitions: string[];
+    rootText: string;
+    trailingBlankBlockCount: number;
+    previewSectionMinHeight: string;
     diagnostics: string;
 }> {
-    return browser.execute(() => {
-        const preview = document.querySelector('.markdown-preview-view') as HTMLElement | null;
-        const embed = Array.from(preview?.querySelectorAll('.markdown-embed') ?? [])
-            .find(candidate => candidate.textContent?.includes('Definition 1')) as HTMLElement | undefined;
-        const root = embed ?? preview;
+    return browser.execute((text: string) => {
+        const embeds = Array.from(document.querySelectorAll('.markdown-embed')) as HTMLElement[];
+        const embed = embeds.find(candidate => candidate.textContent?.includes(text));
+        const root = embed ?? null;
         const lists = Array.from(root?.querySelectorAll('dl.pem-definition-list') ?? []) as HTMLElement[];
+        const firstListWrapper = lists[0]?.closest('.el-p') as HTMLElement | null;
+        const trailingBlankBlockCount = countTrailingBlankBlocks(firstListWrapper);
+        const previewSection = lists[0]?.closest('.markdown-preview-section') as HTMLElement | null;
+        const previewSectionMinHeight = previewSection?.style.minHeight ?? '';
         const terms = lists.flatMap(list =>
             Array.from(list.querySelectorAll(':scope > dt'))
                 .map(term => term.textContent?.trim() ?? '')
@@ -550,13 +623,151 @@ async function getEmbeddedDefinitionListState(): Promise<{
         );
 
         return {
-            ready: lists.length > 0,
+            ready: Boolean(embed) && lists.length > 0,
+            embedFound: Boolean(embed),
             listCount: lists.length,
             terms,
             definitions,
-            diagnostics: root?.innerHTML ?? ''
+            rootText: root?.textContent ?? '',
+            trailingBlankBlockCount,
+            previewSectionMinHeight,
+            diagnostics: root?.innerHTML ?? document.body.innerHTML
         };
+
+        function countTrailingBlankBlocks(start: HTMLElement | null): number {
+            if (!start) {
+                return 0;
+            }
+
+            let count = 0;
+            let sibling = start.nextElementSibling;
+            while (sibling?.classList.contains('el-p') && !sibling.textContent?.trim()) {
+                count++;
+                sibling = sibling.nextElementSibling;
+            }
+            return count;
+        }
+    }, expectedText);
+}
+
+async function waitForEmbeddedDefinitionList(expectedText: string, mode: string): Promise<void> {
+    await browser.waitUntil(async () => {
+        const state = await getEmbeddedDefinitionListState(expectedText);
+        return state.ready;
+    }, {
+        timeout: 8000,
+        timeoutMsg: `Expected embedded tilde definition list to render in ${mode}`
     });
+}
+
+function assertEmbeddedTildeDefinitionListState(state: {
+    embedFound?: boolean;
+    listCount: number;
+    terms: string[];
+    definitions: string[];
+    rootText?: string;
+    trailingBlankBlockCount?: number;
+    previewSectionMinHeight?: string;
+}): void {
+    expect(state.embedFound).toBe(true);
+    expect(state.listCount).toBe(1);
+    expect(state.terms).toEqual(['Term', 'Top-Level Category']);
+    expect(state.definitions).toEqual([
+        'Sub-category 1',
+        'Sub-category 1',
+        'Sub-category 2'
+    ]);
+    expect(countOccurrences(state.rootText ?? '', 'Term')).toBe(1);
+    expect(countOccurrences(state.rootText ?? '', 'Top-Level Category')).toBe(1);
+    expect(countOccurrences(state.rootText ?? '', 'Sub-category 1')).toBe(2);
+    expect(countOccurrences(state.rootText ?? '', 'Sub-category 2')).toBe(1);
+    expect(state.rootText ?? '').not.toContain('~ Sub-category 2');
+    expect(state.trailingBlankBlockCount).toBe(0);
+    expect(state.previewSectionMinHeight).toBe('0px');
+}
+
+function countOccurrences(text: string, search: string): number {
+    return text.split(search).length - 1;
+}
+
+async function openFilesInLivePreviewTabs(containerPath: string, switchPath: string): Promise<void> {
+    await browser.execute(async (referencePath: string, otherPath: string) => {
+        // @ts-ignore
+        const referenceFile = app.vault.getAbstractFileByPath(referencePath);
+        // @ts-ignore
+        const otherFile = app.vault.getAbstractFileByPath(otherPath);
+        if (!referenceFile || !otherFile) {
+            return;
+        }
+
+        // @ts-ignore
+        const referenceLeaf = app.workspace.getLeaf();
+        await referenceLeaf.openFile(referenceFile);
+        // @ts-ignore
+        const otherLeaf = app.workspace.getLeaf('tab');
+        await otherLeaf.openFile(otherFile);
+
+        for (const leaf of [referenceLeaf, otherLeaf]) {
+            const state = leaf.getViewState();
+            state.state = {
+                ...(state.state ?? {}),
+                mode: 'source',
+                source: false
+            };
+            await leaf.setViewState(state);
+        }
+
+        // @ts-ignore
+        app.workspace.setActiveLeaf(referenceLeaf, { focus: true });
+        // @ts-ignore
+        app.workspace.updateOptions();
+    }, containerPath, switchPath);
+    await browser.pause(500);
+    await placeCursorAfterEmbed(containerPath);
+}
+
+async function switchAwayAndBackToTab(containerPath: string, switchPath: string): Promise<void> {
+    await browser.execute((referencePath: string, otherPath: string) => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        const referenceLeaf = leaves.find((leaf: { view?: { file?: { path?: string } } }) =>
+            leaf.view?.file?.path === referencePath
+        );
+        const otherLeaf = leaves.find((leaf: { view?: { file?: { path?: string } } }) =>
+            leaf.view?.file?.path === otherPath
+        );
+
+        if (otherLeaf) {
+            // @ts-ignore
+            app.workspace.setActiveLeaf(otherLeaf, { focus: true });
+        }
+        if (referenceLeaf) {
+            // @ts-ignore
+            app.workspace.setActiveLeaf(referenceLeaf, { focus: true });
+        }
+        // @ts-ignore
+        app.workspace.updateOptions();
+    }, containerPath, switchPath);
+    await placeCursorAfterEmbed(containerPath);
+    await browser.pause(400);
+}
+
+async function placeCursorAfterEmbed(path: string): Promise<void> {
+    await browser.execute((filePath: string) => {
+        // @ts-ignore
+        const leaves = app.workspace.getLeavesOfType('markdown');
+        const leaf = leaves.find((candidate: { view?: { file?: { path?: string } } }) =>
+            candidate.view?.file?.path === filePath
+        );
+        const cm = leaf?.view?.editor?.cm;
+        if (!cm) {
+            return;
+        }
+
+        const line = cm.state.doc.line(cm.state.doc.lines);
+        cm.dispatch({ selection: { anchor: line.from } });
+        cm.focus();
+    }, path);
 }
 
 async function getDefinitionMarkerRenderState(): Promise<{
@@ -593,6 +804,19 @@ async function createOrReplaceFile(path: string, content: string): Promise<void>
     }, path, content);
 }
 
+async function enableDefinitionListRendering(): Promise<void> {
+    await browser.execute(() => {
+        // @ts-ignore
+        const plugin = app.plugins.plugins['pandoc-extended-markdown'];
+        if (plugin?.settings) {
+            plugin.settings.enableDefinitionLists = true;
+            plugin.saveSettings();
+            // @ts-ignore
+            app.workspace.updateOptions();
+        }
+    });
+}
+
 async function openFileInActiveLeaf(path: string): Promise<void> {
     await browser.execute(async (filePath: string) => {
         // @ts-ignore
@@ -602,7 +826,15 @@ async function openFileInActiveLeaf(path: string): Promise<void> {
             await app.workspace.getLeaf().openFile(file);
         }
     }, path);
-    await browser.pause(500);
+    await browser.waitUntil(async () =>
+        browser.execute((filePath: string) => {
+            // @ts-ignore
+            return app.workspace.getActiveFile()?.path === filePath;
+        }, path),
+    {
+        timeout: 5000,
+        timeoutMsg: `Expected ${path} to be the active file`
+    });
 }
 
 async function ensureLivePreviewMode(): Promise<void> {
@@ -626,8 +858,35 @@ async function ensureLivePreviewMode(): Promise<void> {
     await browser.pause(500);
 }
 
+async function revealLivePreviewEmbeds(): Promise<void> {
+    await browser.execute(() => {
+        // @ts-ignore
+        const leaf = app.workspace.getLeaf();
+        const cm = leaf?.view?.editor?.cm;
+        if (!cm) {
+            return;
+        }
+
+        const line = cm.state.doc.line(cm.state.doc.lines);
+        cm.dispatch({ selection: { anchor: line.from } });
+        cm.focus();
+    });
+    await browser.pause(1000);
+}
+
 async function ensureReadingMode(): Promise<void> {
     await ensureActiveFileReadingMode();
+    await browser.pause(500);
+}
+
+async function rerenderActivePreview(): Promise<void> {
+    await browser.execute(() => {
+        // @ts-ignore
+        const leaf = app.workspace.getLeaf();
+        leaf?.view?.previewMode?.rerender?.(true);
+        // @ts-ignore
+        app.workspace.updateOptions();
+    });
     await browser.pause(500);
 }
 

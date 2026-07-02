@@ -35,12 +35,12 @@ function normalizeDefinitionListsFromSource(
     renderContext?: RenderContext,
     fullSourceText?: string
 ): boolean {
-    const sourceText = fullSourceText ?? getSourceSectionInfo(element, context)?.text;
+    const sectionInfo = fullSourceText ? null : getSourceSectionInfo(element, context);
+    const sourceText = fullSourceText ?? sectionInfo?.text;
     if (!sourceText) {
         return false;
     }
 
-    const sectionInfo = getSourceSectionInfo(element, context);
     const blocks = findPandocDefinitionListBlocks(sourceText);
     if (blocks.length === 0) {
         return true;
@@ -95,12 +95,7 @@ function containsCompleteDefinitionBlockText(
     element: HTMLElement,
     block: PandocDefinitionListBlock
 ): boolean {
-    const normalizedText = normalizeCandidateText(element.textContent ?? '');
-    const requiredTexts = [...block.termTexts, ...block.definitionTexts]
-        .map(normalizeCandidateText)
-        .filter(text => text.length > 0);
-
-    return requiredTexts.every(text => normalizedText.includes(text));
+    return containsRequiredDefinitionBlockText(element.textContent ?? '', block);
 }
 
 function normalizeDefinitionListsFromDom(element: HTMLElement): void {
@@ -125,7 +120,7 @@ function getSourceSectionInfo(
     const section = getMarkdownSection(element);
     return safeGetContextSectionInfo(context, element) ??
         safeGetContextSectionInfo(context, section) ??
-        getSectionInfo(section);
+        safeGetDomSectionInfo(section);
 }
 
 function safeGetContextSectionInfo(
@@ -141,6 +136,16 @@ function safeGetContextSectionInfo(
     } catch {
         return null;
     }
+}
+
+function safeGetDomSectionInfo(
+    section: HTMLElement | null
+): ReturnType<MarkdownPostProcessorContext['getSectionInfo']> {
+    if (!section || typeof getSectionInfo !== 'function') {
+        return null;
+    }
+
+    return getSectionInfo(section);
 }
 
 function getReplacementRoot(element: HTMLElement): HTMLElement {
@@ -173,6 +178,15 @@ function replaceDefinitionListContent(
 ): void {
     const candidates = getDefinitionListBlockCandidates(root, block, usedCandidates);
     if (candidates.length === 0) {
+        return;
+    }
+
+    if (!containsCompleteDefinitionBlockCandidateText(candidates, block)) {
+        return;
+    }
+
+    if (isCanonicalDefinitionBlockCandidate(candidates, block)) {
+        candidates.forEach(candidate => usedCandidates.add(candidate));
         return;
     }
 
@@ -232,6 +246,80 @@ function getDefinitionListBlockCandidates(
     return group;
 }
 
+function containsCompleteDefinitionBlockCandidateText(
+    candidates: HTMLElement[],
+    block: PandocDefinitionListBlock
+): boolean {
+    return containsRequiredDefinitionBlockText(
+        candidates.map(candidate => candidate.textContent ?? '').join('\n'),
+        block
+    );
+}
+
+function containsRequiredDefinitionBlockText(
+    text: string,
+    block: PandocDefinitionListBlock
+): boolean {
+    const normalizedText = normalizeCandidateText(text);
+    return getRequiredDefinitionBlockTexts(block)
+        .every(requiredText => normalizedText.includes(requiredText));
+}
+
+function getRequiredDefinitionBlockTexts(block: PandocDefinitionListBlock): string[] {
+    return [...block.termTexts, ...block.definitionTexts]
+        .map(normalizeCandidateText)
+        .filter(text => text.length > 0);
+}
+
+function isCanonicalDefinitionBlockCandidate(
+    candidates: HTMLElement[],
+    block: PandocDefinitionListBlock
+): boolean {
+    if (candidates.length !== 1) {
+        return false;
+    }
+
+    const list = getSingleDefinitionList(candidates[0]);
+    if (!list || hasRawDefinitionMarkerText(candidates[0])) {
+        return false;
+    }
+
+    return getDefinitionListSequence(list).join('\n') ===
+        getDefinitionBlockSequence(block).join('\n');
+}
+
+function getSingleDefinitionList(candidate: HTMLElement): HTMLElement | null {
+    const lists = Array.from(candidate.querySelectorAll<HTMLElement>(`dl.${CSS_CLASSES.DEFINITION_LIST}`));
+    if (candidate.matches(`dl.${CSS_CLASSES.DEFINITION_LIST}`)) {
+        lists.unshift(candidate);
+    }
+
+    const uniqueLists = Array.from(new Set(lists));
+    return uniqueLists.length === 1 ? uniqueLists[0] : null;
+}
+
+function hasRawDefinitionMarkerText(candidate: HTMLElement): boolean {
+    return Array.from(candidate.querySelectorAll<HTMLElement>('p, li'))
+        .some(element => /^[:~]\s+\S/.test(normalizeCandidateText(getTextWithLineBreaks(element))));
+}
+
+function getDefinitionListSequence(list: HTMLElement): string[] {
+    return Array.from(list.children)
+        .filter(child => child.tagName === 'DT' || child.tagName === 'DD')
+        .map(child => normalizeCandidateText(child.textContent ?? ''));
+}
+
+function getDefinitionBlockSequence(block: PandocDefinitionListBlock): string[] {
+    const sequence: string[] = [];
+    block.items.forEach(item => {
+        sequence.push(normalizeCandidateText(item.term));
+        item.definitions.forEach(definition => {
+            sequence.push(normalizeCandidateText(definition.plainText));
+        });
+    });
+    return sequence;
+}
+
 function getDefinitionCandidateElements(root: HTMLElement, block: PandocDefinitionListBlock): HTMLElement[] {
     const candidates = getDefinitionListCandidates(root, block);
     getDefinitionMarkerCandidates(root, block).forEach(candidate => {
@@ -256,7 +344,11 @@ function getDefinitionMarkerCandidates(root: HTMLElement, block: PandocDefinitio
         if (element.querySelector(`dl.${CSS_CLASSES.DEFINITION_LIST}`)) {
             return;
         }
-        if (matchesDefinitionMarkerText(element.textContent ?? '', block.definitionTexts)) {
+        const text = getTextWithLineBreaks(element);
+        if (
+            matchesDefinitionMarkerText(text, block.definitionTexts) ||
+            matchesRawDefinitionParagraphText(text, block)
+        ) {
             addUniqueCandidate(candidates, getDefinitionListBlockCandidate(element, root));
         }
     });
@@ -310,6 +402,20 @@ function matchesDefinitionMarkerText(text: string, definitionTexts: string[]): b
 
     const content = normalizeCandidateText(markerMatch[1]);
     return definitionTexts.some(definition => content === normalizeCandidateText(definition));
+}
+
+function matchesRawDefinitionParagraphText(text: string, block: PandocDefinitionListBlock): boolean {
+    const lines = text.split('\n')
+        .map(normalizeCandidateText)
+        .filter(line => line.length > 0);
+    const hasTerm = block.termTexts.some(term =>
+        lines.includes(normalizeCandidateText(term))
+    );
+    const hasDefinition = lines.some(line =>
+        matchesDefinitionMarkerText(line, block.definitionTexts)
+    );
+
+    return hasTerm && hasDefinition;
 }
 
 function normalizeCandidateText(text: string): string {
