@@ -31,6 +31,8 @@ export interface ResolvedOrderedListItem extends ParsedOrderedListMarker {
     parentLineIndex?: number;
 }
 
+type ParsedMarkerCache = Map<number, ParsedOrderedListMarker | null>;
+
 interface ListAncestor {
     indentColumns: number;
     lineIndex: number;
@@ -54,27 +56,35 @@ export function getIndentColumns(indent: string): number {
 export function parseOrderedListMarker(
     line: string,
     lines?: string[],
-    lineIndex?: number
+    lineIndex?: number,
+    cache?: ParsedMarkerCache
 ): ParsedOrderedListMarker | null {
+    if (lineIndex !== undefined && cache?.has(lineIndex)) {
+        return cache.get(lineIndex) ?? null;
+    }
+
     const match = line.match(ORDERED_LINE);
     if (!match) {
+        cacheParsedMarker(cache, lineIndex, null);
         return null;
     }
 
     const [, indent, token, delimiter, spaces, content] = match;
     if (spaces.length === 0 && content.length > 0) {
+        cacheParsedMarker(cache, lineIndex, null);
         return null;
     }
 
     const standardItem = parseStandardListItem(line);
-    const style = getStyleForToken(token, delimiter as OrderedListMarkerDelimiter, indent, lines, lineIndex);
+    const style = getStyleForToken(token, delimiter as OrderedListMarkerDelimiter, indent, lines, lineIndex, cache);
     const ordinal = getOrdinalForToken(token, style);
 
     if (ordinal < 1) {
+        cacheParsedMarker(cache, lineIndex, null);
         return null;
     }
 
-    return {
+    const parsed = {
         indent,
         indentColumns: getIndentColumns(indent),
         style,
@@ -83,6 +93,8 @@ export function parseOrderedListMarker(
         spaces: standardItem?.spaces ?? spaces,
         content: standardItem?.content ?? content
     };
+    cacheParsedMarker(cache, lineIndex, parsed);
+    return parsed;
 }
 
 export function formatOrderedListMarker(style: OrderedListMarkerStyle, ordinal: number): string {
@@ -142,6 +154,7 @@ export function resolveOrderedListItems(
 ): ResolvedOrderedListItem[] {
     const items: ResolvedOrderedListItem[] = [];
     const stack: ListAncestor[] = [];
+    const parsedMarkerCache: ParsedMarkerCache = new Map();
 
     lines.forEach((line, lineIndex) => {
         if (!line.trim()) {
@@ -149,7 +162,7 @@ export function resolveOrderedListItems(
             return;
         }
 
-        const parsed = parseOrderedListMarker(line, lines, lineIndex);
+        const parsed = parseOrderedListMarker(line, lines, lineIndex, parsedMarkerCache);
         const standardItem = parseStandardListItem(line);
         const indentColumns = standardItem?.indentColumns ??
             parsed?.indentColumns ??
@@ -236,19 +249,30 @@ function getStyleForToken(
     delimiter: OrderedListMarkerDelimiter,
     indent: string,
     lines?: string[],
-    lineIndex?: number
+    lineIndex?: number,
+    cache?: ParsedMarkerCache
 ): OrderedListMarkerStyle {
     if (/^\d+$/.test(token)) {
         return delimiter === ')' ? 'decimal-one-paren' : 'decimal-period';
     }
 
     const isUpper = token[0] === token[0].toUpperCase();
-    const isRoman = isRomanToken(token, indent, delimiter, lines, lineIndex);
+    const isRoman = isRomanToken(token, indent, delimiter, lines, lineIndex, cache);
     const family = isRoman ? 'roman' : 'alpha';
     const prefix = isUpper ? 'upper' : 'lower';
     const suffix = delimiter === ')' ? 'one-paren' : 'period';
 
     return `${prefix}-${family}-${suffix}` as OrderedListMarkerStyle;
+}
+
+function cacheParsedMarker(
+    cache: ParsedMarkerCache | undefined,
+    lineIndex: number | undefined,
+    marker: ParsedOrderedListMarker | null
+): void {
+    if (cache && lineIndex !== undefined) {
+        cache.set(lineIndex, marker);
+    }
 }
 
 function getOrdinalForToken(token: string, style: OrderedListMarkerStyle): number {
@@ -283,9 +307,10 @@ function isRomanToken(
     indent: string,
     delimiter: OrderedListMarkerDelimiter,
     lines?: string[],
-    lineIndex?: number
+    lineIndex?: number,
+    cache?: ParsedMarkerCache
 ): boolean {
-    const previousStyle = findPreviousOrderedStyleAtIndent(indent, delimiter, lines, lineIndex);
+    const previousStyle = findPreviousOrderedStyleAtIndent(indent, delimiter, lines, lineIndex, cache);
     if (previousStyle) {
         return previousStyle.includes('roman');
     }
@@ -309,7 +334,8 @@ function findPreviousOrderedStyleAtIndent(
     indent: string,
     delimiter: OrderedListMarkerDelimiter,
     lines?: string[],
-    lineIndex?: number
+    lineIndex?: number,
+    cache?: ParsedMarkerCache
 ): OrderedListMarkerStyle | null {
     if (!lines || lineIndex === undefined) {
         return null;
@@ -318,7 +344,7 @@ function findPreviousOrderedStyleAtIndent(
     const targetIndentColumns = getIndentColumns(indent);
 
     for (let index = lineIndex - 1; index >= 0; index--) {
-        const parsed = parseOrderedListMarker(lines[index], lines, index);
+        const parsed = parseOrderedListMarker(lines[index], lines, index, cache);
         if (!parsed) {
             break;
         }

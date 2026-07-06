@@ -71,6 +71,12 @@ describe('orderedListMarkers', () => {
         });
     });
 
+    it('preserves previous roman context for non-roman same-indent markers', () => {
+        const lines = ['i. first roman', 'h. previous behavior treats this as invalid roman'];
+
+        expect(parseOrderedListMarker(lines[1], lines, 1)).toBeNull();
+    });
+
     it('treats first same-group i markers as roman even when unrelated previous children are alphabetic', () => {
         const lines = [
             'a. earlier parent',
