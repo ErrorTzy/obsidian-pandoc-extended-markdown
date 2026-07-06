@@ -54,8 +54,7 @@ function normalizeDefinitionListsFromSource(
 
     if (
         fullSourceText &&
-        isStandalonePandocDefinitionList(sourceText, blocks) &&
-        containsCompleteDefinitionBlocks(replacement, blocks)
+        isStandalonePandocDefinitionList(sourceText, blocks)
     ) {
         const rendered = blocks.map(block => renderPandocDefinitionListBlock(
             block,
@@ -82,13 +81,6 @@ function normalizeDefinitionListsFromSource(
         });
     }
     return true;
-}
-
-function containsCompleteDefinitionBlocks(
-    element: HTMLElement,
-    blocks: PandocDefinitionListBlock[]
-): boolean {
-    return blocks.every(block => containsCompleteDefinitionBlockText(element, block));
 }
 
 function containsCompleteDefinitionBlockText(

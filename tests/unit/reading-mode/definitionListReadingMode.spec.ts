@@ -148,6 +148,73 @@ describe('definition list reading mode rendering', () => {
         expect(definitions[1].querySelector('ul > li')?.textContent).toBe(' checked');
     });
 
+    it('rebuilds standalone source-backed definition lists even when preview dropped math content', () => {
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        const source = [
+            'Math Term',
+            ': inline math $x^2 + y^2 = z^2$',
+            ': $$\\int_0^1 x\\,dx$$'
+        ].join('\n');
+        section.innerHTML = `
+            <div class="el-p">
+                <dl class="pem-definition-list">
+                    <dt>Math Term</dt>
+                    <dd>inline math</dd>
+                </dl>
+            </div>
+        `;
+
+        normalizeExistingDefinitionLists(
+            section,
+            createContext(source),
+            config,
+            { strictLineBreaks: false },
+            source
+        );
+
+        const list = section.querySelector('dl.pem-definition-list') as HTMLElement;
+        const definitions = directChildren(list, 'DD');
+
+        expect(definitions).toHaveLength(2);
+        expect(definitions[0].querySelector('.math-inline')?.textContent).toBe('x^2 + y^2 = z^2');
+        expect(definitions[1].querySelector('.math-block')?.textContent).toBe('\\int_0^1 x\\,dx');
+    });
+
+    it('rebuilds standalone source-backed definition lists with inline markdown from source', () => {
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        const source = [
+            '*apple*',
+            ': **red** fruit',
+            ': `computer`'
+        ].join('\n');
+        section.innerHTML = `
+            <div class="el-p">
+                <dl class="pem-definition-list">
+                    <dt>apple</dt>
+                    <dd><p>red fruit</p></dd>
+                </dl>
+            </div>
+        `;
+
+        normalizeExistingDefinitionLists(
+            section,
+            createContext(source),
+            config,
+            { strictLineBreaks: false },
+            source
+        );
+
+        const list = section.querySelector('dl.pem-definition-list') as HTMLElement;
+        const definitions = directChildren(list, 'DD');
+
+        expect(list.querySelector('dt > em')?.textContent).toBe('apple');
+        expect(definitions[0].querySelector('strong')?.textContent).toBe('red');
+        expect(definitions[0].textContent).toBe('red fruit');
+        expect(definitions[1].querySelector('code')?.textContent).toBe('computer');
+    });
+
     it('rebuilds malformed existing definition list markup from source lines', () => {
         jest.useFakeTimers();
         const section = document.createElement('div');
