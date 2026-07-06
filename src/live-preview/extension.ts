@@ -21,8 +21,12 @@ const pandocExtendedMarkdownPlugin = (
         decorations: DecorationSet;
         private pipeline: ProcessingPipeline;
         private rebuildTimer: number | null = null;
+        private viewportRebuildTimer: number | null = null;
         private rebuildRequested = false;
-        private readonly rebuildDelayMs = 120;
+        private viewportRebuildRequested = false;
+        private viewportTrailingRebuildRequested = false;
+        private readonly rebuildDelayMs = 100;
+        private readonly viewportRebuildThrottleMs = 100;
 
         constructor(view: EditorView) {
             this.initializePipeline(getApp, getComponent);
@@ -62,30 +66,38 @@ const pandocExtendedMarkdownPlugin = (
             const currLivePreview = update.state.field(editorLivePreviewField);
             const livePreviewChanged = prevLivePreview !== currLivePreview;
 
-            if (this.rebuildRequested) {
+            if (this.rebuildRequested || this.viewportRebuildRequested) {
                 this.rebuildRequested = false;
+                this.viewportRebuildRequested = false;
                 this.decorations = this.buildDecorations(update.view);
                 return;
             }
 
             if (update.docChanged) {
                 this.decorations = this.decorations.map(update.changes);
+                this.clearScheduledViewportRebuild();
                 this.scheduleRebuild(update.view);
                 return;
             }
 
-            if (this.rebuildTimer !== null && update.selectionSet) {
+            if (this.rebuildTimer !== null && (update.selectionSet || livePreviewChanged)) {
                 return;
             }
 
-            if (update.viewportChanged || update.selectionSet || livePreviewChanged) {
-                this.clearScheduledRebuild();
+            if (update.selectionSet || livePreviewChanged) {
+                this.clearScheduledViewportRebuild();
                 this.decorations = this.buildDecorations(update.view);
+                return;
+            }
+
+            if (update.viewportChanged) {
+                this.scheduleViewportRebuild(update.view);
             }
         }
 
         destroy() {
             this.clearScheduledRebuild();
+            this.clearScheduledViewportRebuild();
         }
 
         private scheduleRebuild(view: EditorView): void {
@@ -102,6 +114,34 @@ const pandocExtendedMarkdownPlugin = (
                 window.clearTimeout(this.rebuildTimer);
                 this.rebuildTimer = null;
             }
+        }
+
+        private scheduleViewportRebuild(view: EditorView): void {
+            if (this.viewportRebuildTimer === null) {
+                this.decorations = this.buildDecorations(view);
+                this.viewportRebuildTimer = window.setTimeout(() => {
+                    this.viewportRebuildTimer = null;
+                    if (!this.viewportTrailingRebuildRequested) {
+                        return;
+                    }
+
+                    this.viewportTrailingRebuildRequested = false;
+                    this.viewportRebuildRequested = true;
+                    view.dispatch({});
+                }, this.viewportRebuildThrottleMs);
+                return;
+            }
+
+            this.viewportTrailingRebuildRequested = true;
+        }
+
+        private clearScheduledViewportRebuild(): void {
+            if (this.viewportRebuildTimer !== null) {
+                window.clearTimeout(this.viewportRebuildTimer);
+                this.viewportRebuildTimer = null;
+            }
+            this.viewportRebuildRequested = false;
+            this.viewportTrailingRebuildRequested = false;
         }
 
         buildDecorations(view: EditorView): DecorationSet {
