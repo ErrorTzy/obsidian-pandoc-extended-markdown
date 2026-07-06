@@ -191,6 +191,57 @@ describe('Fenced div list panel', () => {
 
         await deleteFileIfExists(filePath);
     });
+
+    it('removes an open content popover when the panel refreshes', async () => {
+        const filePath = 'fenced-div-panel-popover-refresh.md';
+        const longContent = 'This fenced div content is intentionally long enough to be truncated in the list panel, so hovering the content cell opens the rendered hover popover before the panel refreshes.';
+        const content = [
+            '::: {.theorem #thm:popover-refresh}',
+            longContent,
+            ':::'
+        ].join('\n');
+
+        await createOrReplaceFile(filePath, content);
+        await openFileInActiveLeaf(filePath);
+        await ensureLivePreviewMode();
+        await openFencedDivPanel();
+
+        const contentCell = await $('.pem-fenced-div-panel-content');
+        await contentCell.moveTo();
+
+        await browser.waitUntil(async () => {
+            const popoverCount = await browser.execute(() =>
+                document.querySelectorAll('.pem-hover-popover').length
+            );
+            return popoverCount > 0;
+        }, {
+            timeout: 5000,
+            timeoutMsg: 'Expected fenced div content hover popover to open'
+        });
+
+        const cleanupState = await browser.execute(async () => {
+            const oldCell = document.querySelector('.pem-fenced-div-panel-content') as HTMLElement | null;
+            (window as unknown as { __pemOldPanelContentCell?: HTMLElement | null }).__pemOldPanelContentCell = oldCell;
+
+            // @ts-ignore
+            const listPanelLeaf = app.workspace.getLeavesOfType('list-panel-view')[0];
+            await listPanelLeaf?.view?.updateView?.();
+
+            const storedOldCell = (window as unknown as {
+                __pemOldPanelContentCell?: HTMLElement | null;
+            }).__pemOldPanelContentCell;
+
+            return {
+                oldCellConnected: Boolean(storedOldCell?.isConnected),
+                popoverCount: document.querySelectorAll('.pem-hover-popover').length
+            };
+        });
+
+        expect(cleanupState.oldCellConnected).toBe(false);
+        expect(cleanupState.popoverCount).toBe(0);
+
+        await deleteFileIfExists(filePath);
+    });
 });
 
 async function openFencedDivPanel(): Promise<void> {

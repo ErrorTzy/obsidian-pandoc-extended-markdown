@@ -75,25 +75,22 @@ function removePopover(state: HoverState): void {
 /**
  * Schedules popover removal after a delay
  */
-function scheduleRemoval(state: HoverState): void {
+function scheduleRemoval(state: HoverState, remove: () => void): void {
     clearCleanupTimeout(state);
     state.cleanupTimeout = window.setTimeout(() => {
         if (!state.isMouseOverElement && !state.isMouseOverPopover) {
-            removePopover(state);
+            remove();
         }
     }, UI_CONSTANTS.HOVER_CLEANUP_DELAY_MS);
 }
 
 /**
- * Schedules async popover removal after a delay
+ * Clears hover state and immediately removes the current popover.
  */
-function scheduleAsyncRemoval(state: AsyncHoverState): void {
-    clearCleanupTimeout(state);
-    state.cleanupTimeout = window.setTimeout(() => {
-        if (!state.isMouseOverElement && !state.isMouseOverPopover) {
-            removeAsyncPopover(state);
-        }
-    }, UI_CONSTANTS.HOVER_CLEANUP_DELAY_MS);
+function dismissPopover(state: HoverState, remove: () => void): void {
+    state.isMouseOverElement = false;
+    state.isMouseOverPopover = false;
+    remove();
 }
 
 /**
@@ -119,39 +116,37 @@ function positionPopover(popoverElement: HTMLElement, referenceElement: HTMLElem
  */
 function attachPopoverListeners(
     popoverElement: HTMLElement, 
-    state: HoverState
+    state: HoverState,
+    remove: () => void
 ): void {
     state.popoverController = new AbortController();
+    const { signal } = state.popoverController;
     
     popoverElement.addEventListener('mouseenter', () => {
         clearCleanupTimeout(state);
         state.isMouseOverPopover = true;
-    }, { signal: state.popoverController.signal });
+    }, { signal });
     
     popoverElement.addEventListener('mouseleave', () => {
         state.isMouseOverPopover = false;
-        scheduleRemoval(state);
-    }, { signal: state.popoverController.signal });
-}
+        scheduleRemoval(state, remove);
+    }, { signal });
+    
+    popoverElement.addEventListener('click', () => {
+        dismissPopover(state, remove);
+    }, { signal });
 
-/**
- * Attaches hover event listeners to the async popover element
- */
-function attachAsyncPopoverListeners(
-    popoverElement: HTMLElement, 
-    state: AsyncHoverState
-): void {
-    state.popoverController = new AbortController();
-    
-    popoverElement.addEventListener('mouseenter', () => {
-        clearCleanupTimeout(state);
-        state.isMouseOverPopover = true;
-    }, { signal: state.popoverController.signal });
-    
-    popoverElement.addEventListener('mouseleave', () => {
-        state.isMouseOverPopover = false;
-        scheduleAsyncRemoval(state);
-    }, { signal: state.popoverController.signal });
+    document.addEventListener('pointerdown', (event) => {
+        const target = event.target;
+        if (target instanceof Node && popoverElement.contains(target)) {
+            return;
+        }
+        dismissPopover(state, remove);
+    }, { signal });
+
+    document.addEventListener('click', () => {
+        dismissPopover(state, remove);
+    }, { signal });
 }
 
 /**
@@ -173,6 +168,7 @@ export function setupSimpleHoverPreview(
     abortSignal?: AbortSignal
 ): void {
     const state = createHoverState();
+    const remove = () => removePopover(state);
     
     const mouseEnterHandler = () => {
         clearCleanupTimeout(state);
@@ -189,27 +185,21 @@ export function setupSimpleHoverPreview(
         positionPopover(hoverElement, element);
         
         state.hoverPopover = hoverElement;
-        attachPopoverListeners(hoverElement, state);
-        
-        if (abortSignal) {
-            abortSignal.addEventListener('abort', () => removePopover(state), { once: true });
-        }
+        attachPopoverListeners(hoverElement, state, remove);
     };
     
     const mouseLeaveHandler = () => {
         state.isMouseOverElement = false;
-        scheduleRemoval(state);
+        scheduleRemoval(state, remove);
     };
     
     const clickHandler = () => {
-        state.isMouseOverElement = false;
-        state.isMouseOverPopover = false;
-        removePopover(state);
+        dismissPopover(state, remove);
     };
     
     // Clean up on abort signal
     if (abortSignal) {
-        abortSignal.addEventListener('abort', () => removePopover(state), { once: true });
+        abortSignal.addEventListener('abort', remove, { once: true });
     }
     
     element.addEventListener('mouseenter', mouseEnterHandler, { signal: abortSignal });
@@ -307,6 +297,7 @@ export function setupRenderedHoverPreview(
     abortSignal?: AbortSignal
 ): void {
     const state = createAsyncHoverState();
+    const remove = () => removeAsyncPopover(state);
     
     const mouseEnterHandler = async () => {
         clearCleanupTimeout(state);
@@ -344,11 +335,7 @@ export function setupRenderedHoverPreview(
         // Final check before setting the popover as active
         if (currentGeneration === state.renderingGeneration && state.isMouseOverElement) {
             state.hoverPopover = hoverElement;
-            attachAsyncPopoverListeners(hoverElement, state);
-            
-            if (abortSignal) {
-                abortSignal.addEventListener('abort', () => removeAsyncPopover(state), { once: true });
-            }
+            attachPopoverListeners(hoverElement, state, remove);
         } else {
             hoverElement.remove(); // Conditions changed while setting up
         }
@@ -356,63 +343,20 @@ export function setupRenderedHoverPreview(
     
     const mouseLeaveHandler = () => {
         state.isMouseOverElement = false;
-        scheduleAsyncRemoval(state);
+        scheduleRemoval(state, remove);
     };
     
     const clickHandler = () => {
-        state.isMouseOverElement = false;
-        state.isMouseOverPopover = false;
-        removeAsyncPopover(state);
+        dismissPopover(state, remove);
     };
     
     // Clean up on abort signal
     if (abortSignal) {
-        abortSignal.addEventListener('abort', () => removeAsyncPopover(state), { once: true });
+        abortSignal.addEventListener('abort', remove, { once: true });
     }
     
     const enterListener = () => { void mouseEnterHandler(); };
     element.addEventListener('mouseenter', enterListener, { signal: abortSignal });
     element.addEventListener('mouseleave', mouseLeaveHandler, { signal: abortSignal });
     element.addEventListener('click', clickHandler, { signal: abortSignal });
-}
-
-/**
- * Positions a hover element relative to a reference element with intelligent overflow handling.
- * Places the hover element below the reference by default, but moves it above if it would
- * overflow the bottom of the screen. Also handles horizontal overflow.
- * 
- * @param hoverEl - The hover element to position (popover, tooltip, etc.)
- * @param referenceEl - The reference element to position relative to
- * @param maxWidth - Optional maximum width constraint for the hover element
- * @param maxHeight - Optional maximum height constraint for the hover element
- * @throws Does not throw exceptions - handles positioning calculations safely
- * @example
- * positionHoverElement(popoverDiv, triggerButton, '300px', '200px');
- */
-export function positionHoverElement(
-    hoverEl: HTMLElement, 
-    referenceEl: HTMLElement, 
-    maxWidth?: string, 
-    maxHeight?: string
-): void {
-    const rect = referenceEl.getBoundingClientRect();
-    hoverEl.style.left = `${rect.left}px`;
-    hoverEl.style.top = `${rect.bottom + UI_CONSTANTS.HOVER_OFFSET_BOTTOM}px`;
-    
-    if (maxWidth) {
-        hoverEl.style.maxWidth = maxWidth;
-    }
-    if (maxHeight) {
-        hoverEl.style.maxHeight = maxHeight;
-    }
-    hoverEl.style.overflow = DOM_ATTRIBUTES.OVERFLOW_AUTO;
-    
-    // Adjust if goes off screen
-    const hoverRect = hoverEl.getBoundingClientRect();
-    if (hoverRect.right > window.innerWidth) {
-        hoverEl.style.left = `${window.innerWidth - hoverRect.width - UI_CONSTANTS.HOVER_OFFSET_HORIZONTAL}px`;
-    }
-    if (hoverRect.bottom > window.innerHeight) {
-        hoverEl.style.top = `${rect.top - hoverRect.height - UI_CONSTANTS.HOVER_OFFSET_TOP}px`;
-    }
 }

@@ -17,7 +17,6 @@ jest.mock('../../../src/shared/utils/hoverPopovers', () => {
             element.addEventListener('mouseleave', jest.fn());
         }),
         setupSimpleHoverPreview: jest.fn(),
-        positionHoverElement: jest.fn(),
         // Use the real processPopoverContent implementation
         processPopoverContent: actual.processPopoverContent
     };

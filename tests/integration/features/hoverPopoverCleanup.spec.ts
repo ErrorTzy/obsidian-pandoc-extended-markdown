@@ -5,6 +5,16 @@
 import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../src/shared/utils/hoverPopovers';
 import { CSS_CLASSES } from '../../../src/core/constants';
 
+jest.mock('obsidian', () => ({
+    ...jest.requireActual('../../../__mocks__/obsidian'),
+    MarkdownRenderer: {
+        render: jest.fn((_app, content, element: HTMLElement) => {
+            element.textContent = content;
+            return Promise.resolve();
+        })
+    }
+}));
+
 describe('Hover Popover Cleanup', () => {
     let element: HTMLElement;
     let abortController: AbortController;
@@ -166,6 +176,83 @@ describe('Hover Popover Cleanup', () => {
                     done();
                 }, 10);
             }, 10);
+        });
+
+        it('should remove popover on popover click', () => {
+            setupSimpleHoverPreview(element, 'Full text', CSS_CLASSES.HOVER_POPOVER_LABEL, abortController.signal);
+            element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+            const popover = document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`) as HTMLElement;
+            expect(popover).toBeTruthy();
+
+            popover.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
+        });
+
+        it('should remove popover on outside document pointer interaction', () => {
+            setupSimpleHoverPreview(element, 'Full text', CSS_CLASSES.HOVER_POPOVER_LABEL, abortController.signal);
+            element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeTruthy();
+
+            document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
+        });
+    });
+
+    describe('setupRenderedHoverPreview', () => {
+        const showRenderedPopover = async (localAbortController = abortController) => {
+            setupRenderedHoverPreview(
+                element,
+                '**Full** text',
+                {} as any,
+                {} as any,
+                undefined,
+                CSS_CLASSES.HOVER_POPOVER_CONTENT,
+                localAbortController.signal
+            );
+            element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            await new Promise(resolve => window.setTimeout(resolve, 0));
+            return document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`) as HTMLElement | null;
+        };
+
+        it('should remove rendered popover on trigger click', async () => {
+            const popover = await showRenderedPopover();
+            expect(popover).toBeTruthy();
+
+            element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
+        });
+
+        it('should remove rendered popover on popover click', async () => {
+            const popover = await showRenderedPopover();
+            expect(popover).toBeTruthy();
+
+            popover?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
+        });
+
+        it('should remove rendered popover on outside document click', async () => {
+            const popover = await showRenderedPopover();
+            expect(popover).toBeTruthy();
+
+            document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
+        });
+
+        it('should clean up rendered popover when abort signal is triggered', async () => {
+            const localAbortController = new AbortController();
+            const popover = await showRenderedPopover(localAbortController);
+            expect(popover).toBeTruthy();
+
+            localAbortController.abort();
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
         });
     });
 });

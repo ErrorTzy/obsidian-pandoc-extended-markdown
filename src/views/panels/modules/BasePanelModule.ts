@@ -39,8 +39,6 @@ export abstract class BasePanelModule implements PanelModule {
         this.isActive = true;
         this.containerEl = containerEl;
         this.lastActiveMarkdownView = activeView;
-        // Create new abort controller for cleanup
-        this.abortController = new AbortController();
         this.updateContent(activeView);
     }
 
@@ -85,6 +83,8 @@ export abstract class BasePanelModule implements PanelModule {
     protected updateContent(activeView: MarkdownView | null): void {
         if (!this.containerEl) return;
 
+        this.abortRenderCycle();
+        this.abortController = new AbortController();
         this.containerEl.empty();
 
         if (!activeView || !activeView.file) {
@@ -198,5 +198,14 @@ export abstract class BasePanelModule implements PanelModule {
     protected cleanupModuleData(): void {
         // Default implementation does nothing
         // Subclasses should override to clean up their specific data
+    }
+
+    private abortRenderCycle(): void {
+        if (!this.abortController) {
+            return;
+        }
+
+        this.abortController.abort();
+        this.abortController = null;
     }
 }

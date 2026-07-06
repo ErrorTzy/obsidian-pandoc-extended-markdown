@@ -1,5 +1,7 @@
-import { ExampleListPanelModule } from '../../../src/views/panels/modules/ExampleListPanelModule';
 import { App, MarkdownView, Plugin, MarkdownRenderer } from 'obsidian';
+
+import { CSS_CLASSES } from '../../../src/core/constants';
+import { ExampleListPanelModule } from '../../../src/views/panels/modules/ExampleListPanelModule';
 
 // Mock Obsidian modules
 jest.mock('obsidian', () => ({
@@ -321,6 +323,26 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             const labelCell = containerEl.querySelector('.pem-example-list-view-label');
             expect(labelCell?.textContent).toBe('@new');
+        });
+
+        it('should remove an open body popover before rebuilding rows on update', async () => {
+            const longContent = 'This is a long example list item that exceeds the panel truncation limit and opens a hover preview.';
+            mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(`(@long) ${longContent}`);
+            module.onActivate(containerEl, mockMarkdownView);
+
+            const oldContentCell = containerEl.querySelector('.pem-example-list-view-content') as HTMLElement;
+            expect(oldContentCell).toBeTruthy();
+
+            oldContentCell.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            await new Promise(resolve => window.setTimeout(resolve, 0));
+
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeTruthy();
+
+            mockMarkdownView.editor.getValue = jest.fn().mockReturnValue('(@new) New example list');
+            module.onUpdate(mockMarkdownView);
+
+            expect(oldContentCell.isConnected).toBe(false);
+            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
         });
 
         it('should clean up on destroy', () => {

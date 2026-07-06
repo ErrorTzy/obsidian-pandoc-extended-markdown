@@ -13,10 +13,9 @@ import { truncateLabel, truncateContentWithRendering } from '../utils/contentTru
 import {
     setupLabelClickHandler,
     setupContentClickHandler,
-    setupLabelHoverPreview,
     renderContentWithMath
 } from '../utils/viewInteractions';
-import { setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
+import { setupSimpleHoverPreview, setupRenderedHoverPreview } from '../../../shared/utils/hoverPopovers';
 
 // Internal modules
 import { BasePanelModule } from './BasePanelModule';
@@ -113,7 +112,7 @@ export class CustomLabelPanelModule extends BasePanelModule {
         labelEl.textContent = displayLabel;
         
         if (displayLabel !== label.label) {
-            setupLabelHoverPreview(labelEl, label.label, this.abortController?.signal);
+            setupSimpleHoverPreview(labelEl, label.label, CSS_CLASSES.HOVER_POPOVER_LABEL, this.abortController?.signal);
         }
         
         setupLabelClickHandler(labelEl, label.rawLabel, this.abortController?.signal);

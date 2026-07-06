@@ -177,7 +177,7 @@ export class ExampleListPanelModule extends BasePanelModule {
     }
     
     private setupNumberHoverPreview(element: HTMLElement, fullNumber: string): void {
-        setupSimpleHoverPreview(element, fullNumber, CSS_CLASSES.HOVER_POPOVER_LABEL);
+        setupSimpleHoverPreview(element, fullNumber, CSS_CLASSES.HOVER_POPOVER_LABEL, this.abortController?.signal);
     }
     
     private setupLabelHoverPreview(element: HTMLElement, fullLabel: string): void {
