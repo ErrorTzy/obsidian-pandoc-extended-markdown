@@ -33,6 +33,7 @@ import { allowsFencedDivOpeningAfterLine } from './structural/fencedDiv/parser';
 // Internal modules
 import { PluginStateManager } from '../../core/state/pluginStateManager';
 import { ProcessingContextFactory } from './context/ProcessingContextFactory';
+import { primeContextBetweenLines } from './context/contextPriming';
 
 function isCodeRegionEndLine(
     line: { from: number; to: number },
@@ -95,10 +96,30 @@ export class ProcessingPipeline {
 
     private processStructural(context: ProcessingContext): void {
         const doc = context.document;
-        const processingRange = context.processingRange;
-        const startLine = processingRange?.startLine ?? 1;
-        const endLine = processingRange?.endLine ?? doc.lines;
         const codeRegions = context.codeRegions || [];
+        const lineRanges = context.processingRange?.lineRanges ?? [{ startLine: 1, endLine: doc.lines }];
+
+        for (let index = 0; index < lineRanges.length; index++) {
+            const range = lineRanges[index];
+            if (index > 0) {
+                primeContextBetweenLines(
+                    context,
+                    lineRanges[index - 1].endLine + 1,
+                    range.startLine - 1,
+                    codeRegions as CodeRegion[]
+                );
+            }
+            this.processStructuralRange(context, range.startLine, range.endLine, codeRegions as CodeRegion[]);
+        }
+    }
+
+    private processStructuralRange(
+        context: ProcessingContext,
+        startLine: number,
+        endLine: number,
+        codeRegions: CodeRegion[]
+    ): void {
+        const doc = context.document;
         let fencedDivCanOpenAtCurrentLine = context.fencedDivCanOpenAtCurrentLine ?? true;
         let fallbackCodeFenceMarker: string | undefined;
         
@@ -114,8 +135,8 @@ export class ProcessingPipeline {
             }
             
             // Skip lines that are inside code regions
-            if (isLineInCodeRegion(lineNum, doc, codeRegions as CodeRegion[])) {
-                fencedDivCanOpenAtCurrentLine = isCodeRegionEndLine(line, codeRegions as CodeRegion[]);
+            if (isLineInCodeRegion(lineNum, doc, codeRegions)) {
+                fencedDivCanOpenAtCurrentLine = isCodeRegionEndLine(line, codeRegions);
                 continue;
             }
 
@@ -175,6 +196,8 @@ export class ProcessingPipeline {
             fencedDivCanOpenAtCurrentLine = allowsFencedDivOpeningAfterLine(line.text) ||
                 context.fencedDivBoundaryLine === lineNum;
         }
+
+        context.fencedDivCanOpenAtCurrentLine = fencedDivCanOpenAtCurrentLine;
     }
 
     private decorateInvalidNativeListLine(
@@ -225,7 +248,9 @@ export class ProcessingPipeline {
             return true;
         }
 
-        return region.to > range.renderFrom && region.from < range.renderTo;
+        return range.renderRanges.some(renderRange =>
+            region.to > renderRange.from && region.from < renderRange.to
+        );
     }
     
     /**
@@ -369,11 +394,10 @@ export class ProcessingPipeline {
             return true;
         }
 
-        if (from === to) {
-            return from >= range.renderFrom && from <= range.renderTo;
-        }
-
-        return to > range.renderFrom && from < range.renderTo;
+        return range.renderRanges.some(renderRange => from === to
+            ? from >= renderRange.from && from <= renderRange.to
+            : to > renderRange.from && from < renderRange.to
+        );
     }
     
     /**

@@ -129,14 +129,12 @@ export class ProcessingContextFactory {
         processingRange: ProcessingRange
     ): CodeRegion[] {
         const doc = view.state.doc;
-        const renderText = doc.sliceString(processingRange.renderFrom, processingRange.renderTo);
-        return renderText.includes('`') || renderText.includes('$')
-            ? detectInlineCodeAndMathRegionsInRange(
-                doc,
-                processingRange.renderFrom,
-                processingRange.renderTo
-            )
-            : [];
+        return processingRange.renderRanges.flatMap(range => {
+            const renderText = doc.sliceString(range.from, range.to);
+            return renderText.includes('`') || renderText.includes('$')
+                ? detectInlineCodeAndMathRegionsInRange(doc, range.from, range.to)
+                : [];
+        });
     }
 
     private buildContext(args: {

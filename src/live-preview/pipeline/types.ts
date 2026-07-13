@@ -26,6 +26,14 @@ export interface ContentRegion {
 }
 
 export interface ProcessingRange {
+    lineRanges: Array<{
+        startLine: number;
+        endLine: number;
+    }>;
+    renderRanges: Array<{
+        from: number;
+        to: number;
+    }>;
     startLine: number;
     endLine: number;
     renderFrom: number;

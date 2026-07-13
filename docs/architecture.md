@@ -362,11 +362,17 @@ listAutocompletion/
    - Get hash counter
    - Get definition state
    - Get placeholder context
+
+5. Visible Range Planning
+   - Intersect CodeMirror `visibleRanges` with the viewport
+   - Keep folded/replaced source gaps as disjoint processing and decoration ranges
+   - Merge adjacent fragments so inline replacement widgets do not fragment line processing
+   - Retain lightweight state priming across skipped gaps for correct numbering and fenced-div context
 ```
 
 #### Phase 1: Structural Processing
 ```typescript
-For each line (top to bottom):
+For each line in the disjoint visible processing ranges (top to bottom):
   1. Skip if in code block
   2. Try processors by priority:
      - HashListProcessor (10)

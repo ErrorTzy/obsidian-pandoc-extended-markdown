@@ -51,6 +51,69 @@ describe('ProcessingPipeline long document performance', () => {
         expect(processor.seenLines).toContain(900);
     });
 
+    it('does not process source hidden between folded headings that are both visible', () => {
+        const processor = new CountingStructuralProcessor();
+        const pipeline = new ProcessingPipeline(new PluginStateManager());
+        pipeline.registerStructuralProcessor(processor);
+        const lines = createLongDocumentLines(1500);
+        lines[99] = '# First folded heading';
+        lines[1399] = '# Second folded heading';
+        const view = createViewAtLine(lines.join('\n'), 100, 100);
+        const firstHeading = view.state.doc.line(100);
+        const secondHeading = view.state.doc.line(1400);
+
+        view.viewport = { from: firstHeading.from, to: secondHeading.to };
+        Object.defineProperty(view, 'visibleRanges', {
+            configurable: true,
+            value: [
+                { from: firstHeading.from, to: firstHeading.to },
+                { from: secondHeading.from, to: secondHeading.to }
+            ]
+        });
+
+        pipeline.process(view, settings);
+
+        expect(processor.seenLines).toContain(100);
+        expect(processor.seenLines).toContain(1400);
+        expect(processor.seenLines).not.toContain(750);
+        expect(processor.seenLines.length).toBeLessThan(250);
+    });
+
+    it('preserves list numbering state across folded source gaps', () => {
+        const pipeline = new ProcessingPipeline(new PluginStateManager());
+        pipeline.registerStructuralProcessor(new ExampleListProcessor());
+        const lines = createLongDocumentLines(300);
+        lines[9] = '(@first) First visible item';
+        lines[149] = '(@hidden) Hidden folded item';
+        lines[289] = '(@last) Last visible item';
+        const view = createViewAtLine(lines.join('\n'), 10, 10);
+        const firstVisible = view.state.doc.line(10);
+        const lastVisible = view.state.doc.line(290);
+
+        view.viewport = { from: firstVisible.from, to: lastVisible.to };
+        Object.defineProperty(view, 'visibleRanges', {
+            configurable: true,
+            value: [
+                { from: firstVisible.from, to: firstVisible.to },
+                { from: lastVisible.from, to: lastVisible.to }
+            ]
+        });
+
+        const decorations = pipeline.process(view, settings) as unknown as {
+            decorations: Array<{ from: number; decoration: Decoration & { spec?: Record<string, unknown> } }>;
+        };
+        const numberedWidgets = decorations.decorations
+            .map(entry => ({
+                line: view.state.doc.lineAt(entry.from).number,
+                widget: entry.decoration.spec?.widget as { number?: number } | undefined
+            }))
+            .filter(entry => entry.widget?.number !== undefined);
+
+        expect(numberedWidgets).toContainEqual(expect.objectContaining({ line: 10, widget: expect.objectContaining({ number: 1 }) }));
+        expect(numberedWidgets).toContainEqual(expect.objectContaining({ line: 290, widget: expect.objectContaining({ number: 3 }) }));
+        expect(numberedWidgets.some(entry => entry.line === 150)).toBe(false);
+    });
+
     it('constrains decorations to the buffered viewport instead of the cursor line or full document', () => {
         const pipeline = new ProcessingPipeline(new PluginStateManager());
         pipeline.registerInlineProcessor(new SuperscriptProcessor());

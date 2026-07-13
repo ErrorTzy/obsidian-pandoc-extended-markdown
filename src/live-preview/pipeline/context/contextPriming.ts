@@ -31,12 +31,25 @@ export function primeContextBeforeRange(
         return;
     }
 
+    primeContextBetweenLines(context, 1, startLine - 1, codeRegions);
+}
+
+export function primeContextBetweenLines(
+    context: ProcessingContext,
+    startLine: number,
+    endLine: number,
+    codeRegions: CodeRegion[]
+): void {
+    if (startLine > endLine) {
+        return;
+    }
+
     const doc = context.document;
     const lines = context.documentLines || doc.toString().split('\n');
-    let fencedDivCanOpenAtCurrentLine = true;
+    let fencedDivCanOpenAtCurrentLine = context.fencedDivCanOpenAtCurrentLine ?? true;
     let fallbackCodeFenceMarker: string | undefined;
 
-    for (let lineNum = 1; lineNum < startLine; lineNum++) {
+    for (let lineNum = startLine; lineNum <= endLine; lineNum++) {
         const lineText = lines[lineNum - 1] || '';
         const line = doc.line(lineNum);
 
