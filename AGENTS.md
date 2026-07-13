@@ -46,7 +46,7 @@
 - UI should be task-oriented around export profiles, output paths, bundled Lua filters, extra args, and output preview rather than exposing raw command templates as the primary workflow.
 
 ## Bug Fixing Guidelines
-- read /docs/architecture.md before fixing the bug
+- read /docs/architecture.md before fixing the bug, and keep this doc up to date
 - Reproduce the bug in failing test first, and then fix the bug, and then refactor the fix to make the code look more organized if needed
 
 ## Commit & Pull Request Guidelines
