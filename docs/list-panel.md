@@ -18,7 +18,8 @@ Every module uses the same structured item layout:
   They are never shortened character-by-character.
 - Each body renders its complete Markdown, math, and known references. A
   collapsed item limits only the visible area to three rendered lines and adds
-  a bottom fade; it does not modify the source or inject an ellipsis.
+  a theme-aware bottom fade; it does not modify the source or inject an
+  ellipsis.
 - `Show more⌄` appears only when the rendered body overflows. Expanded bodies
   have no inner maximum height or scrollbar.
 - `Expand all` and `Collapse all` appear in the panel heading when at least one

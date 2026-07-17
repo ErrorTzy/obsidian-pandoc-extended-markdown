@@ -283,8 +283,10 @@ The panel content element is a CSS inline-size container. Below `32rem`, item
 identity and body stack; at and above `32rem`, a bounded identity column sits
 beside a flexible content column. Collapsed bodies retain complete rendered DOM
 and constrain only visible height through `--pem-panel-preview-lines` (default
-`3`). Module-specific legacy class names remain compatibility hooks, but the
-old `table`/`tr`/`td` element structure is not preserved.
+`3`). Overflowing content uses an alpha mask for its bottom fade so it blends
+with the active theme's sidebar surface without assuming a background color.
+Module-specific legacy class names remain compatibility hooks, but the old
+`table`/`tr`/`td` element structure is not preserved.
 
 ### Editor Extensions
 

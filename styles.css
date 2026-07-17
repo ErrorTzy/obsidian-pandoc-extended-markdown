@@ -2302,6 +2302,7 @@ button.pem-list-panel-icon-button.is-active {
 /* Shared structured panel collection */
 .pem-panel-collection {
     --pem-panel-preview-lines: 3;
+    --pem-panel-preview-fade-height: 1.6em;
     width: 100%;
     min-width: 0;
     color: var(--text-normal);
@@ -2447,7 +2448,6 @@ button.pem-panel-identity-token {
 }
 
 .pem-panel-item-preview {
-    position: relative;
     width: 100%;
     min-width: 0;
     max-width: 100%;
@@ -2463,18 +2463,18 @@ button.pem-panel-identity-token {
     overflow: hidden;
 }
 
-.pem-panel-item-preview.is-collapsed.is-overflowing::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 1.6em;
-    pointer-events: none;
-    background: linear-gradient(
+.pem-panel-item-preview.is-collapsed.is-overflowing {
+    -webkit-mask-image: linear-gradient(
         to bottom,
-        transparent,
-        color-mix(in srgb, var(--background-primary) 96%, transparent)
+        #000 0,
+        #000 calc(100% - var(--pem-panel-preview-fade-height)),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--pem-panel-preview-fade-height)),
+        transparent 100%
     );
 }
 

@@ -132,8 +132,12 @@ The default collapsed density is controlled by:
 ```css
 .pem-list-panel-content-container {
     --pem-panel-preview-lines: 3;
+    --pem-panel-preview-fade-height: 1.6em;
 }
 ```
+
+The fade is an alpha mask on the rendered content, so it reveals the active
+theme's sidebar surface instead of painting a fixed background color.
 
 Module-specific hooks remain available on equivalent semantic elements, such
 as `.pem-fenced-div-panel-row`, `.pem-definition-list-view-term`, and
