@@ -110,9 +110,9 @@ Term 3
             
             // Check first item (Term 1 with single definition)
             const firstRow = rows[0];
-            const cells = firstRow.querySelectorAll('td');
-            expect(cells[0].textContent).toBe('Term 1'); // Term column
-            expect(cells[1].textContent?.trim()).toMatch(/Def 1/); // Definition column
+            expect(firstRow.querySelector('.pem-definition-list-view-term')?.textContent).toBe('Term 1');
+            expect(firstRow.querySelector('.pem-definition-list-view-definitions')?.textContent?.trim())
+                .toMatch(/Def 1/);
         });
 
         it('should extract definition lists with multiple definitions', () => {
@@ -189,8 +189,8 @@ Term 3
         });
     });
 
-    describe('Term Truncation', () => {
-        it('should truncate long terms', () => {
+    describe('Complete term rendering', () => {
+        it('does not truncate long terms', () => {
             const longTerm = 'This is a very long term that should be truncated in the display because it exceeds one hundred characters total';
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(
                 `${longTerm}
@@ -201,8 +201,7 @@ Term 3
             
             const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell?.textContent).toBeTruthy();
-            expect(termCell?.textContent?.length).toBeLessThanOrEqual(100);
-            expect(termCell?.textContent).toContain('…');
+            expect(termCell?.textContent).toBe(longTerm);
         });
 
         it('should not truncate short terms', () => {
@@ -218,8 +217,8 @@ Term 3
         });
     });
 
-    describe('Definition Content Truncation', () => {
-        it('should truncate long definition content', () => {
+    describe('Complete definition rendering', () => {
+        it('does not truncate long definition content', () => {
             const longContent = 'This is a very long definition that definitely exceeds the character limit for display in the panel and should be truncated appropriately. It needs to be much longer now because we increased the limit to 300 characters. So I am adding more text here to ensure it exceeds the new limit and will be truncated with an ellipsis at the end.';
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(
                 `Term
@@ -230,8 +229,8 @@ Term 3
             
             const defCell = containerEl.querySelector('.pem-definition-list-view-definitions');
             const displayedContent = defCell?.textContent || '';
-            expect(displayedContent.length).toBeLessThanOrEqual(300);
-            expect(displayedContent).toContain('…');
+            expect(displayedContent).toBe(longContent);
+            expect(defCell?.classList).toContain('is-collapsed');
         });
     });
 

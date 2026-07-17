@@ -1,6 +1,4 @@
 import { ListPanelView, VIEW_TYPE_LIST_PANEL } from '../../../src/views/panels/ListPanelView';
-import { truncateLabel, truncateContent, truncateContentWithRendering } from '../../../src/views/panels/utils/contentTruncator';
-import { renderMathToText } from '../../../src/shared/utils/mathRenderer';
 import { App, MarkdownView, WorkspaceLeaf, Plugin } from 'obsidian';
 
 // Mock Obsidian modules
@@ -118,76 +116,6 @@ Therefore, from {::P(#a)} and {::P(#b)}, we conclude our conclusion.`),
                 renderedContent: 'P1 $=$ P2',
                 lineNumber: 3
             });
-        });
-    });
-
-    describe('Label Display', () => {
-        it('should truncate long labels to 6 characters', () => {
-            // Now using the extracted utility function
-            const truncated = truncateLabel('PPPPPP1');
-            expect(truncated).toBe('PPPPP…');
-        });
-
-        it('should not truncate labels with 6 or fewer characters', () => {
-            const truncated = truncateLabel('P1');
-            expect(truncated).toBe('P1');
-            const truncated6 = truncateLabel('PPPPPP');
-            expect(truncated6).toBe('PPPPPP');
-        });
-
-        it('should truncate content exceeding 51 characters', () => {
-            const longContent = 'This is a very long content that definitely exceeds the fifty-one character limit for truncation';
-            const truncated = truncateContent(longContent);
-            expect(truncated).toBe('This is a very long content that definitely exceed…');
-            expect(truncated.length).toBe(51);
-        });
-
-        it('should truncate based on rendered length for math content', () => {
-            // Math content that renders short but has long raw text
-            const mathContent = '$\\therefore \\therefore \\therefore \\therefore \\therefore \\therefore \\therefore \\therefore$';
-            // When rendered, this shows as: ∴∴∴∴∴∴∴∴
-            // The rendered length is 8 characters, well under 51
-            // So it should NOT be truncated
-            const truncated = truncateContentWithRendering(mathContent);
-            expect(truncated).toBe(mathContent); // Should not truncate
-        });
-
-        it('should not have trailing spaces before closing $ in math', () => {
-            // Math content with spaces after commands
-            const mathWithSpaces = '$\\therefore \\therefore \\therefore $';
-            const truncated = truncateContentWithRendering(mathWithSpaces);
-            // Should not have space before closing $
-            expect(truncated).not.toMatch(/\s\$/);
-            expect(truncated).toBe('$\\therefore \\therefore \\therefore$');
-        });
-
-        it('should truncate rendered math content properly when exceeding limit', () => {
-            // Create content with many math symbols that would exceed 51 when rendered
-            let longMathContent = '$';
-            for (let i = 0; i < 60; i++) {
-                longMathContent += '\\therefore ';
-            }
-            longMathContent += '$';
-            // When rendered, this would show 60 ∴ symbols
-            // Should truncate at 50 symbols with ellipsis
-            const truncated = truncateContentWithRendering(longMathContent);
-            
-            // The truncated version should preserve complete LaTeX commands
-            // and end with ellipsis when truncated
-            expect(truncated).toContain('$');
-            expect(truncated).toContain('\\therefore');
-            expect(truncated).toContain('…');
-            
-            // Extract the math content between dollar signs and before ellipsis
-            const mathMatch = truncated.match(/\$([^$]+)(?:\$|…)/);
-            if (mathMatch) {
-                const mathContent = mathMatch[1];
-                const renderedText = renderMathToText(mathContent);
-                // The rendered length should not exceed 50 (51 - 1 for ellipsis)
-                expect(renderedText.length).toBeLessThanOrEqual(50);
-            } else {
-                fail('Could not extract math content from truncated string');
-            }
         });
     });
 

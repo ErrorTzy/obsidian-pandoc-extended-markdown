@@ -190,14 +190,23 @@ export class ListPanelView extends ItemView {
         });
         
         this.iconRowEl = viewContainer.createDiv({
-            cls: CSS_CLASSES.LIST_PANEL_ICON_ROW
+            cls: CSS_CLASSES.LIST_PANEL_ICON_ROW,
+            attr: {
+                role: 'tablist',
+                'aria-label': 'Structured content panels'
+            }
         });
         
         for (const panel of this.panels) {
-            const iconButton = this.iconRowEl.createDiv({
+            const panelId = `pem-panel-tabpanel-${panel.id}`;
+            const iconButton = this.iconRowEl.createEl('button', {
                 cls: CSS_CLASSES.LIST_PANEL_ICON_BUTTON,
                 attr: {
+                    type: 'button',
+                    role: 'tab',
                     'aria-label': panel.displayName,
+                    'aria-selected': 'false',
+                    'aria-controls': panelId,
                     'data-panel-id': panel.id
                 }
             });
@@ -245,6 +254,9 @@ export class ListPanelView extends ItemView {
             iconButton.addEventListener('click', () => {
                 this.switchToPanel(panel);
             });
+            iconButton.addEventListener('keydown', event => {
+                this.handleTabKeydown(event, panel);
+            });
         }
         
         viewContainer.createEl('hr', {
@@ -252,7 +264,10 @@ export class ListPanelView extends ItemView {
         });
         
         this.contentContainerEl = viewContainer.createDiv({
-            cls: CSS_CLASSES.LIST_PANEL_CONTENT_CONTAINER
+            cls: CSS_CLASSES.LIST_PANEL_CONTENT_CONTAINER,
+            attr: {
+                role: 'tabpanel'
+            }
         });
         
         if (this.panels.length > 0) {
@@ -270,18 +285,52 @@ export class ListPanelView extends ItemView {
         }
         
         const allButtons = this.iconRowEl?.querySelectorAll(`.${CSS_CLASSES.LIST_PANEL_ICON_BUTTON}`);
-        allButtons?.forEach(btn => btn.removeClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE));
+        allButtons?.forEach(btn => {
+            btn.removeClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE);
+            btn.setAttribute('aria-selected', 'false');
+            btn.setAttribute('tabindex', '-1');
+        });
         
         const activeButton = this.iconRowEl?.querySelector(`[data-panel-id="${panelInfo.id}"]`);
         activeButton?.addClass(CSS_CLASSES.LIST_PANEL_ICON_ACTIVE);
+        activeButton?.setAttribute('aria-selected', 'true');
+        activeButton?.setAttribute('tabindex', '0');
         
         this.activePanel = panelInfo.module;
         
         if (this.contentContainerEl) {
             this.contentContainerEl.empty();
+            this.contentContainerEl.id = `pem-panel-tabpanel-${panelInfo.id}`;
+            const activeButtonId = `pem-panel-tab-${panelInfo.id}`;
+            activeButton?.setAttribute('id', activeButtonId);
+            this.contentContainerEl.setAttribute('aria-labelledby', activeButtonId);
             
             this.activePanel.onActivate(this.contentContainerEl, this.lastActiveMarkdownView);
         }
+    }
+
+    private handleTabKeydown(event: KeyboardEvent, currentPanel: PanelTabInfo): void {
+        const currentIndex = this.panels.indexOf(currentPanel);
+        let targetIndex: number | null = null;
+        if (event.key === 'ArrowRight') {
+            targetIndex = (currentIndex + 1) % this.panels.length;
+        } else if (event.key === 'ArrowLeft') {
+            targetIndex = (currentIndex - 1 + this.panels.length) % this.panels.length;
+        } else if (event.key === 'Home') {
+            targetIndex = 0;
+        } else if (event.key === 'End') {
+            targetIndex = this.panels.length - 1;
+        }
+        if (targetIndex === null) {
+            return;
+        }
+        event.preventDefault();
+        const targetPanel = this.panels[targetIndex];
+        this.switchToPanel(targetPanel);
+        const targetButton = this.iconRowEl?.querySelector<HTMLElement>(
+            `[data-panel-id="${targetPanel.id}"]`
+        );
+        targetButton?.focus();
     }
     
     private scheduleUpdate(): void {

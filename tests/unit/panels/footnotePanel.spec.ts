@@ -107,6 +107,6 @@ describe('FootnotePanelModule', () => {
         indexCell?.dispatchEvent(new MouseEvent('click'));
 
         expect(editorSetCursor).toHaveBeenCalledWith({ line: 0, ch: expectedCh });
-        expect(highlightLineMock).toHaveBeenCalledWith(expect.any(MarkdownView), 0, { line: 0, ch: expectedCh });
+        expect(highlightLineMock).toHaveBeenCalledWith(expect.any(MarkdownView), 0);
     });
 });

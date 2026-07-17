@@ -2085,38 +2085,54 @@ sub.pem-subscript {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 8px;
+    padding: 10px 12px;
 }
 
 .pem-list-panel-icon-row {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    padding: 4px 0;
-    margin-bottom: 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(2.5rem, 1fr));
+    gap: 2px;
+    padding: 3px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background-color: var(--background-secondary);
 }
 
-.pem-list-panel-icon-button {
-    width: 32px;
-    height: 32px;
+button.pem-list-panel-icon-button {
+    appearance: none;
+    width: 100%;
+    height: 30px;
+    min-height: 0;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background-color: var(--background-primary);
-    transition: all 0.2s ease;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
 }
 
-.pem-list-panel-icon-button:hover {
+button.pem-list-panel-icon-button:hover {
     background-color: var(--background-modifier-hover);
-    border-color: var(--text-accent);
 }
 
-.pem-list-panel-icon-button.is-active {
+.pem-list-panel-icon-button:focus-visible,
+.pem-panel-action:focus-visible,
+.pem-panel-item-navigable:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+button.pem-list-panel-icon-button.is-active {
     background-color: var(--interactive-accent);
-    border-color: var(--interactive-accent);
+    box-shadow: none;
 }
 
 .pem-list-panel-icon-button.is-active svg {
@@ -2167,14 +2183,20 @@ sub.pem-subscript {
 }
 
 .pem-list-panel-separator {
-    margin: 8px 0;
+    margin: 0 0 8px;
     border: none;
     border-top: 1px solid var(--background-modifier-border);
 }
 
 .pem-list-panel-content-container {
     flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-gutter: stable;
+    container-name: pem-panel-content;
+    container-type: inline-size;
 }
 
 /* Panel Order Settings Styles */
@@ -2277,419 +2299,253 @@ sub.pem-subscript {
     text-align: left;
 }
 
-/* Custom Label View Styles */
-table.custom-label-view-container {
+/* Shared structured panel collection */
+.pem-panel-collection {
+    --pem-panel-preview-lines: 3;
     width: 100%;
-    border-collapse: collapse;
-    table-layout: auto;
-}
-
-/* Header styles removed - no longer using header */
-
-tr.custom-label-view-row {
-    border-bottom: 1px solid var(--background-modifier-border-hover);
-    transition: background-color 0.15s ease;
-}
-
-tr.custom-label-view-row:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.custom-label-view-label {
-    font-family: var(--font-monospace);
-    font-size: 0.9em;
-    color: var(--text-accent);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    transition: background-color 0.15s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 1%;
-    min-width: fit-content;
-}
-
-td.custom-label-view-label:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.custom-label-view-content {
-    font-size: 0.9em;
+    min-width: 0;
     color: var(--text-normal);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    transition: background-color 0.15s ease;
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 4.5em;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    line-height: 1.3;
 }
 
-/* Normalize paragraph spacing in custom label panel content */
-td.custom-label-view-content p {
-    margin: 0;
-    line-height: 1.3;
-}
-
-td.custom-label-view-content p:not(:last-child) {
-    margin-bottom: 0.3em;
-}
-
-/* Also normalize lists in custom label panel */
-td.custom-label-view-content ul,
-td.custom-label-view-content ol {
-    margin: 0;
-    padding-left: 1.2em;
-    line-height: 1.3;
-}
-
-td.custom-label-view-content ul:not(:last-child),
-td.custom-label-view-content ol:not(:last-child) {
-    margin-bottom: 0.3em;
-}
-
-td.custom-label-view-content li {
-    margin: 0;
-    line-height: 1.3;
-}
-
-td.custom-label-view-content:hover {
-    background-color: var(--background-modifier-hover);
-    color: var(--text-accent);
-}
-
-.custom-label-view-empty {
+.pem-panel-collection-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-/* Example List View Styles */
-table.pem-example-list-view-container {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: auto;
-}
-
-tr.pem-example-list-view-row {
-    border-bottom: 1px solid var(--background-modifier-border-hover);
-    transition: background-color 0.15s ease;
-}
-
-tr.pem-example-list-view-row:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.pem-example-list-view-number {
-    font-family: var(--font-monospace);
-    font-size: 0.9em;
-    color: var(--text-muted);
-    cursor: default;
-    padding: 6px 8px;
-    border-radius: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 1%;
-    min-width: fit-content;
-}
-
-td.pem-example-list-view-label {
-    font-family: var(--font-monospace);
-    font-size: 0.9em;
-    color: var(--text-accent);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    transition: background-color 0.15s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 1%;
-    min-width: fit-content;
-}
-
-td.pem-example-list-view-label:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.pem-example-list-view-content {
-    font-size: 0.9em;
-    color: var(--text-normal);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    transition: background-color 0.15s ease;
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 4.5em;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    line-height: 1.3;
-}
-
-/* Normalize paragraph spacing in example list panel content */
-td.pem-example-list-view-content p {
-    margin: 0;
-    line-height: 1.3;
-}
-
-td.pem-example-list-view-content p:not(:last-child) {
-    margin-bottom: 0.3em;
-}
-
-/* Also normalize lists in example list panel */
-td.pem-example-list-view-content ul,
-td.pem-example-list-view-content ol {
-    margin: 0;
-    padding-left: 1.2em;
-    line-height: 1.3;
-}
-
-td.pem-example-list-view-content ul:not(:last-child),
-td.pem-example-list-view-content ol:not(:last-child) {
-    margin-bottom: 0.3em;
-}
-
-td.pem-example-list-view-content li {
-    margin: 0;
-    line-height: 1.3;
-}
-
-td.pem-example-list-view-content:hover {
-    background-color: var(--background-modifier-hover);
-    color: var(--text-accent);
-}
-
-.pem-example-list-view-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-/* Definition List View Styles */
-table.pem-definition-list-view-container {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875em;
-    table-layout: fixed;
-}
-
-tr.pem-definition-list-view-row {
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    padding: 7px 2px 10px;
     border-bottom: 1px solid var(--background-modifier-border);
-    transition: background-color 0.15s ease;
 }
 
-tr.pem-definition-list-view-row:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.pem-definition-list-view-term {
-    width: 30%;
-    padding: 8px;
-    font-weight: 600;
+.pem-panel-collection .pem-panel-collection-heading {
+    min-width: 0;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
     color: var(--text-normal);
-    vertical-align: top;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+}
+
+.pem-panel-bulk-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 4px;
+}
+
+.pem-panel-bulk-actions[hidden],
+.pem-panel-item-toggle[hidden] {
+    display: none;
+}
+
+button.pem-panel-action {
+    appearance: none;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    min-width: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 4px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    font: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    white-space: normal;
+    transform: none;
+}
+
+button.pem-panel-action:hover:not(:disabled) {
+    color: var(--text-accent);
+    background-color: var(--background-modifier-hover);
+    box-shadow: none;
+    transform: none;
+}
+
+button.pem-panel-action:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.pem-panel-expand-all,
+.pem-panel-collapse-all,
+.pem-panel-item-toggle {
+    padding: 3px 5px;
+    font-size: var(--font-ui-smaller);
     white-space: nowrap;
 }
 
-td.pem-definition-list-view-definitions {
-    width: 70%;
-    padding: 8px;
-    color: var(--text-normal);
-    vertical-align: top;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-td.pem-definition-list-view-definitions ul {
+.pem-panel-collection ol.pem-panel-item-list {
     margin: 0;
-    padding-left: 1.2em;
-    list-style-type: disc;
+    padding: 0;
+    list-style: none !important;
 }
 
-td.pem-definition-list-view-definitions li {
-    margin-bottom: 4px;
+.pem-panel-collection .pem-panel-list-item {
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+    list-style: none !important;
 }
 
-td.pem-definition-list-view-definitions li:last-child {
+.pem-panel-collection .pem-panel-list-item::marker {
+    content: '';
+}
+
+.pem-panel-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    min-width: 0;
+    padding: 11px 2px 12px;
+}
+
+.pem-panel-item-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 3px 8px;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+.pem-panel-identity-part {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    border-radius: 4px;
+    text-align: left;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+}
+
+.pem-panel-identity-title {
+    font-size: var(--font-ui-small);
+    font-weight: 650;
+    color: var(--text-normal);
+}
+
+.pem-panel-identity-token {
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-smaller);
+    line-height: 1.45;
+    color: var(--text-accent);
+}
+
+button.pem-panel-identity-token {
+    padding: 1px 3px;
+    margin: -1px -3px;
+}
+
+.pem-panel-item-body {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.pem-panel-item-preview {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: var(--font-ui-small);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.pem-panel-item-preview.is-collapsed {
+    max-height: calc(var(--pem-panel-preview-lines) * 1.45em);
+    overflow: hidden;
+}
+
+.pem-panel-item-preview.is-collapsed.is-overflowing::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1.6em;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--background-primary) 96%, transparent)
+    );
+}
+
+.pem-panel-item-navigable {
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+}
+
+.pem-panel-item-navigable:hover {
+    color: var(--text-accent);
+}
+
+.pem-panel-item-toggle {
+    display: block;
+    margin-top: 5px;
+    margin-left: -5px;
+    color: var(--text-accent);
+    font-weight: 500;
+}
+
+.pem-panel-item-preview p,
+.pem-panel-item-preview ul,
+.pem-panel-item-preview ol {
+    margin-top: 0;
+    margin-bottom: 0.45em;
+}
+
+.pem-panel-item-preview p:last-child,
+.pem-panel-item-preview ul:last-child,
+.pem-panel-item-preview ol:last-child {
     margin-bottom: 0;
 }
 
-td.pem-definition-list-view-definitions p {
+.pem-panel-item-preview ul,
+.pem-panel-item-preview ol {
+    padding-left: 1.2em;
+}
+
+.pem-panel-item-preview li {
     margin: 0;
     line-height: 1.4;
 }
 
-td.pem-definition-list-view-definitions:hover {
-    background-color: var(--interactive-hover);
-}
-
-.pem-definition-list-view-empty {
+.pem-panel-empty,
+.custom-label-view-empty,
+.pem-example-list-view-empty,
+.pem-definition-list-view-empty,
+.pem-fenced-div-panel-empty,
+.pem-footnote-panel-empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
+    min-height: 6rem;
     color: var(--text-muted);
     font-style: italic;
 }
 
-/* Fenced Div Panel Styles */
-table.pem-fenced-div-panel-container {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: auto;
-}
+@container pem-panel-content (min-width: 32rem) {
+    .pem-panel-item {
+        grid-template-columns: minmax(8rem, min(30%, 14rem)) minmax(0, 1fr);
+        gap: 16px;
+        padding-top: 12px;
+        padding-bottom: 13px;
+    }
 
-tr.pem-fenced-div-panel-row {
-    border-bottom: 1px solid var(--background-modifier-border-hover);
-    transition: background-color 0.15s ease;
-}
-
-tr.pem-fenced-div-panel-row:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.pem-fenced-div-panel-title {
-    width: 1%;
-    font-size: 0.9em;
-    font-weight: 600;
-    color: var(--text-normal);
-    cursor: default;
-    padding: 6px 8px;
-    vertical-align: top;
-    white-space: nowrap;
-    overflow: visible;
-}
-
-td.pem-fenced-div-panel-label {
-    width: 1%;
-    font-family: var(--font-monospace);
-    font-size: 0.9em;
-    color: var(--text-accent);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    vertical-align: top;
-    white-space: nowrap;
-    overflow: visible;
-    transition: background-color 0.15s ease;
-}
-
-td.pem-fenced-div-panel-label:empty {
-    cursor: default;
-}
-
-td.pem-fenced-div-panel-label:not(:empty):hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.pem-fenced-div-panel-content {
-    width: auto;
-    font-size: 0.9em;
-    color: var(--text-normal);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    vertical-align: top;
-    white-space: pre-wrap;
-    word-break: break-word;
-    line-height: 1.3;
-    transition: background-color 0.15s ease;
-}
-
-td.pem-fenced-div-panel-content p {
-    margin: 0;
-    line-height: 1.3;
-}
-
-td.pem-fenced-div-panel-content p:not(:last-child) {
-    margin-bottom: 0.3em;
-}
-
-td.pem-fenced-div-panel-content ul,
-td.pem-fenced-div-panel-content ol {
-    margin: 0;
-    padding-left: 1.2em;
-    line-height: 1.3;
-}
-
-td.pem-fenced-div-panel-content li {
-    margin: 0;
-    line-height: 1.3;
-}
-
-td.pem-fenced-div-panel-content:hover {
-    background-color: var(--background-modifier-hover);
-    color: var(--text-accent);
-}
-
-.pem-fenced-div-panel-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-/* Footnote Panel Styles */
-table.pem-footnote-panel-container {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-tr.pem-footnote-panel-row {
-    border-bottom: 1px solid var(--background-modifier-border);
-    transition: background-color 0.15s ease;
-}
-
-tr.pem-footnote-panel-row:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-td.pem-footnote-panel-index {
-    font-family: var(--font-monospace);
-    font-size: 0.95em;
-    color: var(--text-accent);
-    cursor: pointer;
-    padding: 6px 8px;
-    text-align: center;
-    white-space: nowrap;
-    width: 56px;
-}
-
-td.pem-footnote-panel-content {
-    font-size: 0.9em;
-    color: var(--text-normal);
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 3px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    line-height: 1.3;
-}
-
-td.pem-footnote-panel-content:hover {
-    background-color: var(--background-modifier-hover);
-    color: var(--text-accent);
+    .pem-panel-item-identity {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
 }
 
 .pem-footnote-panel-empty {

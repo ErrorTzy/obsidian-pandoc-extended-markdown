@@ -13,11 +13,14 @@ interface PanelClickState {
 }
 
 interface PanelLayoutInfo {
-    tableLayout: string;
+    itemColumns: string;
     titleFits: boolean;
     labelFits: boolean;
-    titleWidth: number;
-    labelWidth: number;
+    identityTop: number;
+    identityBottom: number;
+    contentTop: number;
+    contentLeft: number;
+    identityLeft: number;
     contentWidth: number;
 }
 
@@ -63,10 +66,10 @@ describe('Fenced div list panel', () => {
         });
     });
 
-    it('shows title metadata, citation label, and content columns', async () => {
+    it('shows complete metadata and responds to the panel container width', async () => {
         const filePath = 'fenced-div-panel-layout.md';
         const content = [
-            '::: {.theorem #thm:compact}',
+            '::: {.theorem #thm:a-very-long-semantic-label-that-must-wrap-completely}',
             'Every compact metric space is complete.',
             ':::',
             '',
@@ -93,7 +96,7 @@ describe('Fenced div list panel', () => {
         expect(rows).toHaveLength(4);
         expect(rows[0]).toEqual({
             title: 'Theorem',
-            label: '@thm:compact',
+            label: '@thm:a-very-long-semantic-label-that-must-wrap-completely',
             content: 'Every compact metric space is complete.'
         });
         expect(rows[1]).toEqual({
@@ -112,11 +115,17 @@ describe('Fenced div list panel', () => {
             content: 'Admonition content without a citation label.'
         });
 
-        const layout = await getFirstRowLayout();
-        expect(layout.titleFits).toBe(true);
-        expect(layout.labelFits).toBe(true);
-        expect(layout.tableLayout).toBe('auto');
-        expect(layout.contentWidth).toBeGreaterThan(0);
+        const narrowLayout = await getFirstRowLayout('28rem');
+        expect(narrowLayout.titleFits).toBe(true);
+        expect(narrowLayout.labelFits).toBe(true);
+        expect(narrowLayout.itemColumns.split(' ')).toHaveLength(1);
+        expect(narrowLayout.contentTop).toBeGreaterThanOrEqual(narrowLayout.identityBottom);
+        expect(narrowLayout.contentWidth).toBeGreaterThan(200);
+
+        const wideLayout = await getFirstRowLayout('40rem');
+        expect(wideLayout.itemColumns.split(' ').length).toBeGreaterThan(1);
+        expect(wideLayout.contentLeft).toBeGreaterThan(wideLayout.identityLeft);
+        expect(wideLayout.contentWidth).toBeGreaterThan(250);
 
         await deleteFileIfExists(filePath);
     });
@@ -159,14 +168,16 @@ describe('Fenced div list panel', () => {
         await deleteFileIfExists(filePath);
     });
 
-    it('does not cut display math in the content preview', async () => {
+    it('renders complete display math and expansion exposes the full body', async () => {
         const filePath = 'fenced-div-panel-display-math.md';
         const content = [
             '::: {.theorem #thm:display-math}',
             '$$',
             '\\frac{a_1 + a_2 + a_3 + a_4 + a_5 + a_6 + a_7 + a_8 + a_9 + a_{10}}{b_1 + b_2 + b_3 + b_4 + b_5 + b_6 + b_7 + b_8 + b_9 + b_{10}} = c',
             '$$',
-            'This trailing sentence keeps the fenced div content long enough to require truncation.',
+            'This trailing sentence keeps the fenced div content long enough to overflow the collapsed three-line preview.',
+            '',
+            'A final paragraph proves that the full rendered source remains available after expansion.',
             ':::'
         ].join('\n');
 
@@ -177,26 +188,45 @@ describe('Fenced div list panel', () => {
 
         await browser.waitUntil(async () => {
             const state = await getPanelMathRenderInfo();
-            return state.text.includes('…') && state.rawDollarCount === 0 && state.mathErrorCount === 0;
+            const hasVisibleToggle = await browser.execute(() => {
+                const toggle = document.querySelector<HTMLButtonElement>('.pem-panel-item-toggle');
+                return Boolean(toggle && !toggle.hidden);
+            });
+            return hasVisibleToggle && state.rawDollarCount === 0 && state.mathErrorCount === 0;
         }, {
             timeout: 5000,
-            timeoutMsg: 'Expected fenced div panel preview to truncate without raw or errored display math'
+            timeoutMsg: 'Expected a valid overflowing fenced div preview with rendered display math'
         });
 
-        const state = await getPanelMathRenderInfo();
-        expect(state.text).toContain('…');
+        let state = await getPanelMathRenderInfo();
+        expect(state.text).toContain('A final paragraph proves that the full rendered source remains available');
+        expect(state.text).not.toContain('…');
         expect(state.rawDollarCount).toBe(0);
         expect(state.mathErrorCount).toBe(0);
         expect(state.html).not.toContain('mjx-merror');
 
+        await clickPanelCell('.pem-panel-item-toggle');
+        state = await getPanelMathRenderInfo();
+        const expanded = await $('.pem-panel-item-toggle').getAttribute('aria-expanded');
+        expect(expanded).toBe('true');
+        expect(state.text).toContain('A final paragraph proves that the full rendered source remains available');
+
         await deleteFileIfExists(filePath);
     });
 
-    it('removes an open content popover when the panel refreshes', async () => {
-        const filePath = 'fenced-div-panel-popover-refresh.md';
-        const longContent = 'This fenced div content is intentionally long enough to be truncated in the list panel, so hovering the content cell opens the rendered hover popover before the panel refreshes.';
+    it('supports bulk expansion and collapse for overflowing items', async () => {
+        const filePath = 'fenced-div-panel-bulk-expansion.md';
+        const longContent = 'This fenced div body has enough rendered prose to wrap across several lines in the sidebar. It retains every character while collapsed and continues with another sentence for reliable overflow detection.';
         const content = [
-            '::: {.theorem #thm:popover-refresh}',
+            '::: {.theorem #thm:first-long-item}',
+            longContent,
+            '',
+            longContent,
+            ':::',
+            '',
+            '::: {.lemma #lemma:second-long-item}',
+            longContent,
+            '',
             longContent,
             ':::'
         ].join('\n');
@@ -206,39 +236,23 @@ describe('Fenced div list panel', () => {
         await ensureLivePreviewMode();
         await openFencedDivPanel();
 
-        const contentCell = await $('.pem-fenced-div-panel-content');
-        await contentCell.moveTo();
-
         await browser.waitUntil(async () => {
-            const popoverCount = await browser.execute(() =>
-                document.querySelectorAll('.pem-hover-popover').length
-            );
-            return popoverCount > 0;
+            return browser.execute(() => {
+                const toggles = Array.from(document.querySelectorAll<HTMLButtonElement>('.pem-panel-item-toggle'));
+                return toggles.length === 2 && toggles.every(toggle => !toggle.hidden);
+            });
         }, {
             timeout: 5000,
-            timeoutMsg: 'Expected fenced div content hover popover to open'
+            timeoutMsg: 'Expected both fenced div items to overflow'
         });
 
-        const cleanupState = await browser.execute(async () => {
-            const oldCell = document.querySelector('.pem-fenced-div-panel-content') as HTMLElement | null;
-            (window as unknown as { __pemOldPanelContentCell?: HTMLElement | null }).__pemOldPanelContentCell = oldCell;
+        await clickPanelCell('.pem-panel-expand-all');
+        let states = await getExpansionStates();
+        expect(states).toEqual(['true', 'true']);
 
-            // @ts-ignore
-            const listPanelLeaf = app.workspace.getLeavesOfType('list-panel-view')[0];
-            await listPanelLeaf?.view?.updateView?.();
-
-            const storedOldCell = (window as unknown as {
-                __pemOldPanelContentCell?: HTMLElement | null;
-            }).__pemOldPanelContentCell;
-
-            return {
-                oldCellConnected: Boolean(storedOldCell?.isConnected),
-                popoverCount: document.querySelectorAll('.pem-hover-popover').length
-            };
-        });
-
-        expect(cleanupState.oldCellConnected).toBe(false);
-        expect(cleanupState.popoverCount).toBe(0);
+        await clickPanelCell('.pem-panel-collapse-all');
+        states = await getExpansionStates();
+        expect(states).toEqual(['false', 'false']);
 
         await deleteFileIfExists(filePath);
     });
@@ -275,6 +289,14 @@ async function openFencedDivPanel(): Promise<void> {
         timeout: 5000,
         timeoutMsg: 'Expected fenced div panel content to render'
     });
+
+    await browser.execute(() => {
+        const container = document.querySelector('.pem-list-panel-content-container') as HTMLElement | null;
+        if (container) {
+            container.style.removeProperty('flex');
+            container.style.removeProperty('width');
+        }
+    });
 }
 
 async function getPanelRows(): Promise<PanelRowInfo[]> {
@@ -288,23 +310,45 @@ async function getPanelRows(): Promise<PanelRowInfo[]> {
     });
 }
 
-async function getFirstRowLayout(): Promise<PanelLayoutInfo> {
-    return browser.execute((): PanelLayoutInfo => {
+async function getFirstRowLayout(width: string): Promise<PanelLayoutInfo> {
+    return browser.execute((containerWidth: string): PanelLayoutInfo => {
+        const container = document.querySelector('.pem-list-panel-content-container') as HTMLElement | null;
+        if (container) {
+            container.style.flex = '0 0 auto';
+            container.style.width = containerWidth;
+        }
         const row = document.querySelector('.pem-fenced-div-panel-row');
-        const table = document.querySelector('.pem-fenced-div-panel-container') as HTMLElement | null;
+        const identity = row?.querySelector('.pem-panel-item-identity') as HTMLElement | null;
         const title = row?.querySelector('.pem-fenced-div-panel-title') as HTMLElement | null;
         const label = row?.querySelector('.pem-fenced-div-panel-label') as HTMLElement | null;
         const content = row?.querySelector('.pem-fenced-div-panel-content') as HTMLElement | null;
+        const identityRect = identity?.getBoundingClientRect();
+        const contentRect = content?.getBoundingClientRect();
 
-        return {
-            tableLayout: table ? getComputedStyle(table).tableLayout : '',
+        const result = {
+            itemColumns: row ? getComputedStyle(row).gridTemplateColumns : '',
             titleFits: Boolean(title && title.scrollWidth <= title.clientWidth),
             labelFits: Boolean(label && label.scrollWidth <= label.clientWidth),
-            titleWidth: title?.getBoundingClientRect().width ?? 0,
-            labelWidth: label?.getBoundingClientRect().width ?? 0,
-            contentWidth: content?.getBoundingClientRect().width ?? 0
+            identityTop: identityRect?.top ?? 0,
+            identityBottom: identityRect?.bottom ?? 0,
+            contentTop: contentRect?.top ?? 0,
+            contentLeft: contentRect?.left ?? 0,
+            identityLeft: identityRect?.left ?? 0,
+            contentWidth: contentRect?.width ?? 0
         };
-    });
+        if (container) {
+            container.style.removeProperty('flex');
+            container.style.removeProperty('width');
+        }
+        return result;
+    }, width);
+}
+
+async function getExpansionStates(): Promise<string[]> {
+    return browser.execute(() => Array.from(
+        document.querySelectorAll('.pem-panel-item-toggle'),
+        toggle => toggle.getAttribute('aria-expanded') ?? ''
+    ));
 }
 
 async function getPanelMathRenderInfo(): Promise<PanelMathRenderInfo> {

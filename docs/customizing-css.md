@@ -107,6 +107,42 @@ same visual line as the first content paragraph needs first-class rendering
 support because Live Preview uses CodeMirror line widgets while Reading mode
 uses a normal preview DOM block.
 
+## Structured List Panel
+
+All five sidebar modules share semantic panel hooks:
+
+- `.pem-panel-collection`: active collection section and size-container child
+- `.pem-panel-collection-header`: heading, item count, and bulk actions
+- `.pem-panel-item-list`: ordered list of items
+- `.pem-panel-item`: one article-style item
+- `.pem-panel-item-identity`: title, term, label, number, or index group
+- `.pem-panel-identity-title`: semibold identity metadata
+- `.pem-panel-identity-token`: monospace accent metadata
+- `.pem-panel-item-body`: flexible body column
+- `.pem-panel-item-preview`: complete rendered Markdown body
+- `.pem-panel-item-toggle`: per-item expansion button
+- `.pem-panel-bulk-actions`: `Expand all` and `Collapse all` buttons
+
+The content container is an inline-size container named
+`pem-panel-content`. Its built-in breakpoint is `32rem`: items stack below the
+breakpoint and use bounded identity plus flexible body columns above it.
+
+The default collapsed density is controlled by:
+
+```css
+.pem-list-panel-content-container {
+    --pem-panel-preview-lines: 3;
+}
+```
+
+Module-specific hooks remain available on equivalent semantic elements, such
+as `.pem-fenced-div-panel-row`, `.pem-definition-list-view-term`, and
+`.custom-label-view-content`. The old table structure is intentionally gone,
+so element-qualified selectors such as
+`td.pem-fenced-div-panel-content`, `tr.pem-example-list-view-row`, and
+`table.custom-label-view-container` no longer match. Use the class selector
+without `table`, `tr`, or `td`.
+
 ## Definition Lists
 
 Definition lists can be styled in both Live Preview and Reading mode.

@@ -25,3 +25,33 @@ export interface PanelTabInfo {
     icon: string;
     module: PanelModule;
 }
+
+export type PanelIdentityKind = 'title' | 'token' | 'text';
+
+export interface PanelIdentityPart {
+    text: string;
+    kind?: PanelIdentityKind;
+    className?: string;
+    actionLabel?: string;
+    onActivate?: () => void;
+    render?: (element: HTMLElement) => void | Promise<void>;
+}
+
+export interface PanelItemSpec {
+    key: string;
+    identityParts: PanelIdentityPart[];
+    renderContent: (element: HTMLElement) => void | Promise<void>;
+    rowClassName?: string;
+    contentClassName?: string;
+    navigationLabel?: string;
+    onContentActivate?: () => void;
+}
+
+export interface PanelCollectionOptions {
+    title: string;
+    items: PanelItemSpec[];
+    expandedKeys: Set<string>;
+    containerClassName?: string;
+    emptyClassName?: string;
+    emptyMessage?: string;
+}

@@ -259,17 +259,32 @@ Fenced-div file names describe their ownership:
 
 All panels extend `BasePanelModule` which provides:
 - Lifecycle management (activate/deactivate/update)
-- State management (containerEl, activeView, abortController)
+- State management (containerEl, activeView, abortController, note-local expansion)
 - Context building (example labels, custom labels)
+- Shared editor focus, source scrolling, highlighting, and clipboard actions
 - Base update flow
 
-| Module | ID | Displays |
-|--------|----|---------|
-| **ExampleListPanelModule** | example-lists | Three columns: number, label, content |
-| **CustomLabelPanelModule** | custom-labels | Two columns: processed label, content |
-| **DefinitionListPanelModule** | definition-lists | Two columns: term, definitions |
-| **FencedDivPanelModule** | fenced-divs | Three columns: title metadata, citation label, content |
-| **FootnotePanelModule** | footnotes | Two columns: footnote label, rendered content |
+`StructuredPanelCollection` renders all modules as an accessible `section`
+containing an ordered list of article-style items. A `PanelItemSpec` supplies a
+stable semantic key, `PanelIdentityPart[]`, a complete-content render callback,
+and optional identity/content actions. One render-cycle `ResizeObserver`
+measures actual rendered overflow after asynchronous Markdown rendering and is
+disconnected through the base module's abort lifecycle.
+
+| Module | ID | Identity | Body |
+|--------|----|----------|------|
+| **ExampleListPanelModule** | example-lists | Complete number and raw label | Example content |
+| **CustomLabelPanelModule** | custom-labels | Complete processed label | Custom-label content |
+| **DefinitionListPanelModule** | definition-lists | Rendered term | One definition or a multi-definition bullet list |
+| **FencedDivPanelModule** | fenced-divs | Block title and citation label | Fenced-div content |
+| **FootnotePanelModule** | footnotes | Reference label | Footnote definition |
+
+The panel content element is a CSS inline-size container. Below `32rem`, item
+identity and body stack; at and above `32rem`, a bounded identity column sits
+beside a flexible content column. Collapsed bodies retain complete rendered DOM
+and constrain only visible height through `--pem-panel-preview-lines` (default
+`3`). Module-specific legacy class names remain compatibility hooks, but the
+old `table`/`tr`/`td` element structure is not preserved.
 
 ### Editor Extensions
 
@@ -591,8 +606,20 @@ class NewPanelModule extends BasePanelModule {
     }
 
     protected renderContent(activeView: MarkdownView): void {
-        // Render your content
-        // See ExampleListPanelModule for pattern
+        this.renderCollection({
+            title: this.displayName,
+            items: this.data.map(item => ({
+                key: item.semanticIdentity,
+                identityParts: [{ text: item.title, kind: 'title' }],
+                renderContent: element => renderContentWithMath(
+                    element,
+                    item.completeMarkdown,
+                    this.plugin.app,
+                    this.plugin,
+                    this.currentContext
+                )
+            }))
+        });
     }
 
     protected cleanupModuleData(): void {
@@ -614,7 +641,7 @@ availablePanels.push({...});
 1. Extract labels during scanning
 2. Build Map<label, value> in context
 3. Processors use context to resolve references
-4. Panels use context for hover previews
+4. Panels use context while rendering their complete item bodies
 ```
 
 ### Pattern 5: Modular File Organization
@@ -715,12 +742,13 @@ async function myAsyncFunction() {
 
 #### Task: Process Content with Math
 1. Use `renderContentWithMath()` from `views/panels/utils/viewInteractions.ts`
-2. It handles markdown, math, and references
-3. See panel modules for examples
+2. It handles markdown, math, and references and returns the rendering promise
+3. Await or return that promise before measuring rendered layout
+4. See panel modules for examples
 
 #### Task: Add New Panel Tab
 1. Extend `BasePanelModule`
-2. Implement `extractData()` and `renderContent()`
+2. Implement `extractData()` and map data to `PanelItemSpec` entries
 3. Register in `ListPanelView.initializePanels()`
 4. Add icon to `constants.ts`
 

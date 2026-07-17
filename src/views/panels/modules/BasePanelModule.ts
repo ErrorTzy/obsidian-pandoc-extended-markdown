@@ -1,5 +1,6 @@
-import { MarkdownView } from 'obsidian';
-import { PanelModule } from './PanelTypes';
+import { EditorPosition, MarkdownView, Notice } from 'obsidian';
+
+import { PanelCollectionOptions, PanelModule } from './PanelTypes';
 import { PandocExtendedMarkdownPlugin } from '../../../core/main';
 import { MESSAGES } from '../../../core/constants';
 import { ProcessingContext } from '../../../shared/rendering/ContentProcessorRegistry';
@@ -13,6 +14,9 @@ import {
     isSyntaxFeatureEnabled
 } from '../../../shared/types/settingsTypes';
 import { FencedDivTypeCounters, createFencedDivReference } from '../../../shared/utils/fencedDivReferenceMetadata';
+import { handleError } from '../../../shared/utils/errorHandler';
+import { highlightLine } from '../../editor/highlightUtils';
+import { StructuredPanelCollection } from '../StructuredPanelCollection';
 
 /**
  * Base class for all panel modules.
@@ -30,6 +34,8 @@ export abstract class BasePanelModule implements PanelModule {
     protected lastActiveMarkdownView: MarkdownView | null = null;
     protected abortController: AbortController | null = null;
     protected currentContext: ProcessingContext = {};
+    protected readonly expandedItemKeys = new Set<string>();
+    private activeNotePath: string | null = null;
 
     constructor(plugin: PandocExtendedMarkdownPlugin) {
         this.plugin = plugin;
@@ -75,6 +81,8 @@ export abstract class BasePanelModule implements PanelModule {
     destroy(): void {
         this.onDeactivate();
         this.lastActiveMarkdownView = null;
+        this.activeNotePath = null;
+        this.expandedItemKeys.clear();
     }
 
     /**
@@ -91,6 +99,8 @@ export abstract class BasePanelModule implements PanelModule {
             this.showNoFileMessage();
             return;
         }
+
+        this.resetStateForNoteChange(activeView.file.path);
 
         const content = activeView.editor.getValue();
 
@@ -198,6 +208,50 @@ export abstract class BasePanelModule implements PanelModule {
     protected cleanupModuleData(): void {
         // Default implementation does nothing
         // Subclasses should override to clean up their specific data
+    }
+
+    protected renderCollection(options: Omit<PanelCollectionOptions, 'expandedKeys'>): void {
+        if (!this.containerEl || !this.abortController) {
+            return;
+        }
+        new StructuredPanelCollection(this.containerEl, {
+            ...options,
+            expandedKeys: this.expandedItemKeys
+        }, this.abortController.signal).render();
+    }
+
+    protected navigateToSource(
+        activeView: MarkdownView | null,
+        position: EditorPosition | null,
+        lineNumber?: number
+    ): void {
+        if (!activeView?.editor) {
+            return;
+        }
+
+        const leaves = this.plugin.app.workspace.getLeavesOfType('markdown');
+        const targetLeaf = leaves.find(leaf => leaf.view === activeView);
+        if (targetLeaf) {
+            this.plugin.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+        }
+
+        const target = position ?? { line: lineNumber ?? 0, ch: 0 };
+        activeView.editor.setCursor(target);
+        activeView.editor.scrollIntoView({ from: target, to: target }, true);
+        highlightLine(activeView, lineNumber ?? target.line);
+    }
+
+    protected copyText(text: string): void {
+        void navigator.clipboard.writeText(text)
+            .then(() => new Notice(MESSAGES.LABEL_COPIED))
+            .catch(error => handleError(error, 'Copy panel reference'));
+    }
+
+    private resetStateForNoteChange(notePath: string): void {
+        if (this.activeNotePath !== null && this.activeNotePath !== notePath) {
+            this.expandedItemKeys.clear();
+        }
+        this.activeNotePath = notePath;
     }
 
     private abortRenderCycle(): void {

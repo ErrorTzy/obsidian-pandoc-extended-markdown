@@ -188,7 +188,7 @@ export function renderContentWithMath(
     app: App,
     component: Component,
     context?: ProcessingContext
-): void {
+): Promise<void> {
     // Process content to replace references if context is provided
     let contentToRender = truncatedContent;
     if (context) {
@@ -196,7 +196,7 @@ export function renderContentWithMath(
     }
     
     // Use MarkdownRenderer for proper math and markdown rendering
-    void MarkdownRenderer.render(
+    return MarkdownRenderer.render(
         app,
         contentToRender,
         element,

@@ -150,7 +150,7 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
             expect(termCell?.innerHTML).toContain('<em>italic</em>');
         });
 
-        it('should truncate long rendered terms properly', () => {
+        it('should preserve complete long rendered terms', () => {
             const longTerm = '**' + 'A'.repeat(120) + '**'; // Will render to 120 chars
             mockMarkdownView.editor = {
                 getValue: jest.fn().mockReturnValue(`${longTerm}
@@ -164,10 +164,8 @@ describe('DefinitionListPanelModule - Term Rendering', () => {
 
             const termCell = containerEl.querySelector('.pem-definition-list-view-term');
             expect(termCell).toBeTruthy();
-            // Should be truncated with ellipsis (100 char limit for terms)
             const text = termCell?.textContent || '';
-            expect(text.length).toBeLessThanOrEqual(101); // 100 + ellipsis
-            expect(text).toContain('…');
+            expect(text).toBe('A'.repeat(120));
         });
     });
 });

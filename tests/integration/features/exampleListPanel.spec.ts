@@ -1,6 +1,5 @@
 import { App, MarkdownView, Plugin, MarkdownRenderer } from 'obsidian';
 
-import { CSS_CLASSES } from '../../../src/core/constants';
 import { ExampleListPanelModule } from '../../../src/views/panels/modules/ExampleListPanelModule';
 
 // Mock Obsidian modules
@@ -105,10 +104,9 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             // Check first item
             const firstRow = rows[0];
-            const cells = firstRow.querySelectorAll('td');
-            expect(cells[0].textContent).toBe('1'); // Rendered number
-            expect(cells[1].textContent).toBe('@a'); // Raw label
-            expect(cells[2].textContent).toBe('Proposition 1'); // Content
+            expect(firstRow.querySelector('.pem-example-list-view-number')?.textContent).toBe('1');
+            expect(firstRow.querySelector('.pem-example-list-view-label')?.textContent).toBe('@a');
+            expect(firstRow.querySelector('.pem-example-list-view-content')?.textContent).toBe('Proposition 1');
         });
 
         it('should extract unlabeled example lists', () => {
@@ -118,10 +116,9 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             // Check second item (unlabeled)
             const secondRow = rows[1];
-            const cells = secondRow.querySelectorAll('td');
-            expect(cells[0].textContent).toBe('2'); // Rendered number
-            expect(cells[1].textContent).toBe('@'); // Raw label (empty)
-            expect(cells[2].textContent).toBe('Proposition 2'); // Content
+            expect(secondRow.querySelector('.pem-example-list-view-number')?.textContent).toBe('2');
+            expect(secondRow.querySelector('.pem-example-list-view-label')?.textContent).toBe('@');
+            expect(secondRow.querySelector('.pem-example-list-view-content')?.textContent).toBe('Proposition 2');
         });
 
         it('should assign sequential numbers to example lists', () => {
@@ -136,8 +133,8 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
         });
     });
 
-    describe('Number Truncation', () => {
-        it('should not truncate two-digit numbers', () => {
+    describe('Complete number rendering', () => {
+        it('renders two-digit numbers', () => {
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(
                 Array.from({ length: 99 }, (_, i) => `(@ex${i + 1}) Example ${i + 1}`).join('\n')
             );
@@ -148,10 +145,10 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             const lastRow = rows[rows.length - 1];
             const numberCell = lastRow.querySelector('.pem-example-list-view-number');
             
-            expect(numberCell?.textContent).toBe('99'); // Should not be truncated
+            expect(numberCell?.textContent).toBe('99');
         });
 
-        it('should truncate three-digit numbers', () => {
+        it('does not shorten three-digit numbers', () => {
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(
                 Array.from({ length: 100 }, (_, i) => `(@ex${i + 1}) Example ${i + 1}`).join('\n')
             );
@@ -162,12 +159,12 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             const lastRow = rows[rows.length - 1];
             const numberCell = lastRow.querySelector('.pem-example-list-view-number');
             
-            expect(numberCell?.textContent).toBe('10…'); // Should be truncated
+            expect(numberCell?.textContent).toBe('100');
         });
     });
 
-    describe('Label Truncation', () => {
-        it('should truncate long labels', () => {
+    describe('Complete label rendering', () => {
+        it('does not truncate long labels', () => {
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(
                 `(@verylonglabel) Example with long label`
             );
@@ -175,7 +172,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             module.onActivate(containerEl, mockMarkdownView);
             
             const labelCell = containerEl.querySelector('.pem-example-list-view-label');
-            expect(labelCell?.textContent).toBe('@very…'); // Should be truncated at 6 chars
+            expect(labelCell?.textContent).toBe('@verylonglabel');
         });
 
         it('should not truncate short labels', () => {
@@ -186,7 +183,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             module.onActivate(containerEl, mockMarkdownView);
             
             const labelCell = containerEl.querySelector('.pem-example-list-view-label');
-            expect(labelCell?.textContent).toBe('@short'); // Should not be truncated
+            expect(labelCell?.textContent).toBe('@short');
         });
     });
 
@@ -204,7 +201,7 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             expect(contentCell?.innerHTML).toContain('$');
         });
 
-        it('should truncate long content', () => {
+        it('renders complete long content', () => {
             const longContent = 'This is a very long content that definitely exceeds the character limit for display in the panel and should be truncated';
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(
                 `(@long) ${longContent}`
@@ -214,8 +211,8 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             
             const contentCell = containerEl.querySelector('.pem-example-list-view-content');
             const displayedContent = contentCell?.textContent || '';
-            expect(displayedContent.length).toBeLessThanOrEqual(51);
-            expect(displayedContent).toContain('…');
+            expect(displayedContent).toBe(longContent);
+            expect(contentCell?.classList).toContain('is-collapsed');
         });
     });
 
@@ -325,24 +322,22 @@ Therefore, from (@a) and (@b), we conclude our conclusion.`),
             expect(labelCell?.textContent).toBe('@new');
         });
 
-        it('should remove an open body popover before rebuilding rows on update', async () => {
-            const longContent = 'This is a long example list item that exceeds the panel truncation limit and opens a hover preview.';
+        it('should replace complete rendered rows on update', () => {
+            const longContent = 'This is a long example list item whose complete source remains rendered.';
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue(`(@long) ${longContent}`);
             module.onActivate(containerEl, mockMarkdownView);
 
             const oldContentCell = containerEl.querySelector('.pem-example-list-view-content') as HTMLElement;
             expect(oldContentCell).toBeTruthy();
 
-            oldContentCell.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-            await new Promise(resolve => window.setTimeout(resolve, 0));
-
-            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeTruthy();
+            expect(oldContentCell.textContent).toBe(longContent);
 
             mockMarkdownView.editor.getValue = jest.fn().mockReturnValue('(@new) New example list');
             module.onUpdate(mockMarkdownView);
 
             expect(oldContentCell.isConnected).toBe(false);
-            expect(document.querySelector(`.${CSS_CLASSES.HOVER_POPOVER}`)).toBeFalsy();
+            expect(containerEl.querySelector('.pem-example-list-view-content')?.textContent)
+                .toBe('New example list');
         });
 
         it('should clean up on destroy', () => {
