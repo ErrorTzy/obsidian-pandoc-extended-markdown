@@ -37,9 +37,9 @@ describe('List Continuation Processing', () => {
     });
 
     it('should detect and decorate continuation lines in fancy lists', () => {
-        const docText = `A. First item
+        const docText = `A.  First item
    with continuation
-B. Second item`;
+B.  Second item`;
         
         // Create mock document
         const mockDoc = Text.of(docText.split('\n'));
@@ -78,12 +78,12 @@ B. Second item`;
         expect(line1Decoration?.value?.spec?.class).toContain('pem-list-line');
         
         // Should have decoration for line 2 (continuation)
-        const line2Decoration = lineDecorations.find(d => d.from === 14); // Position after "A. First item\n"
+        const line2Decoration = lineDecorations.find(d => d.from === 15);
         expect(line2Decoration).toBeDefined();
         expect(line2Decoration?.value?.spec?.class).toContain('HyperMD-list-line-nobullet');
         
         // Should have decoration for line 3 (B. Second item)
-        const line3Decoration = lineDecorations.find(d => d.from === 35); // Position after first two lines
+        const line3Decoration = lineDecorations.find(d => d.from === 36);
         expect(line3Decoration).toBeDefined();
         expect(line3Decoration?.value?.spec?.class).toContain('pem-list-line');
     });

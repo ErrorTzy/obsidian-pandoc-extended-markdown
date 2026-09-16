@@ -20,6 +20,11 @@ const SOURCE_PATH = '/home/scott/Documents/OBtest/test/Performance Issue.md';
 const WORKING_PATH = 'performance-issue-large-list-working.md';
 const SAMPLE_COUNT = 5;
 const MAX_ENABLED_TO_DISABLED_RATIO = 1.5;
+const REQUIRED_FIXTURE_TEXT = [
+    'Helmet and Face Mask',
+    'The body of the jersey shall contain only',
+    'Nonremovable cleats are limited'
+];
 
 describe('Performance issue large-list baseline', () => {
     before(async () => {
@@ -221,7 +226,7 @@ async function configurePluginForPerformanceBaseline(): Promise<void> {
         }
 
         if (plugin?.settings) {
-            plugin.settings.enforcePandocListSpacing = false;
+            plugin.settings.enableListsWithoutPrecedingBlankline = true;
             plugin.settings.enableCustomLabelLists = true;
             plugin.settings.enableFancyLists = true;
             plugin.settings.enableHashAutoNumber = true;
@@ -315,7 +320,10 @@ async function deleteFileIfExists(path: string): Promise<void> {
 
 function getPerformanceIssueContent(): string {
     if (existsSync(SOURCE_PATH)) {
-        return readFileSync(SOURCE_PATH, 'utf8');
+        const content = readFileSync(SOURCE_PATH, 'utf8');
+        if (REQUIRED_FIXTURE_TEXT.every(text => content.includes(text))) {
+            return content;
+        }
     }
 
     return createFallbackLargeListContent();

@@ -6,7 +6,7 @@ import {
     parseFencedDivOpening
 } from '../../../live-preview/pipeline/structural/fencedDiv/parser';
 
-import { SourceOpeningState, SourceOpeningEligibility } from './types';
+import { CapturedListClosingSignatures, SourceOpeningState, SourceOpeningEligibility } from './types';
 
 export function getAllowedFencedDivOpening(
     lineText: string,
@@ -39,7 +39,8 @@ export function getAllowedFencedDivOpening(
 
 export function createSourceOpeningState(
     sourceText: string,
-    config: ProcessorConfig
+    config: ProcessorConfig,
+    capturedListClosingSignatures?: CapturedListClosingSignatures
 ): SourceOpeningState {
     const openings: SourceOpeningEligibility[] = [];
     const sourceLines = sourceText.split('\n');
@@ -83,7 +84,8 @@ export function createSourceOpeningState(
         index: 0,
         sourceLines,
         lineIndex: 0,
-        inObsidianComment: false
+        inObsidianComment: false,
+        capturedListClosingSignatures
     };
 }
 

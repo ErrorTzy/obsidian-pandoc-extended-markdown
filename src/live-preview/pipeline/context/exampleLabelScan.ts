@@ -36,7 +36,7 @@ export function scanExampleLabelsFromDoc(
 
     const counter = { value: 1 };
     const lines = doc.toString().split('\n');
-    const invalidLines = settings.enforcePandocListSpacing ? validateListBlocks(doc) : new Set<number>();
+    const invalidLines = validateListBlocks(doc, settings);
     const duplicateLineNumbers = new Set<number>();
 
     for (let i = 0; i < lines.length; i++) {

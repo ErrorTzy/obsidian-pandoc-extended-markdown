@@ -51,6 +51,17 @@ function ensureCssHelpers(): void {
     }
   }
 
+  if (typeof Element !== 'undefined') {
+    const elementProto = Element.prototype as unknown as {
+      instanceOf?: (constructor: typeof Element) => boolean;
+    };
+    if (typeof elementProto.instanceOf !== 'function') {
+      elementProto.instanceOf = function instanceOf(constructor: typeof Element) {
+        return this instanceof constructor;
+      };
+    }
+  }
+
   if (typeof SVGElement !== 'undefined') {
     const svgProto = SVGElement.prototype as SVGElement & {
       setCssProps?: (props: Record<string, string>) => void;
@@ -146,6 +157,91 @@ export class MarkdownPostProcessorContext {
       lineEnd: 0
     };
   }
+}
+
+export class MarkdownRenderChild {
+  containerEl: HTMLElement;
+
+  constructor(containerEl: HTMLElement) {
+    this.containerEl = containerEl;
+  }
+
+  load(): void {}
+  onload(): void {}
+  unload(): void {}
+  onunload(): void {}
+}
+
+export const MarkdownRenderer = {
+  render: jest.fn(async (
+    _app: App,
+    markdown: string,
+    element: HTMLElement
+  ): Promise<void> => {
+    markdown.split(/\n{2,}/).forEach(block => appendMockMarkdownBlock(element, block));
+  })
+};
+
+function appendMockMarkdownBlock(element: HTMLElement, markdown: string): void {
+  const lines = markdown.split('\n');
+  if (/^\s*[-+*]\s*$/.test(lines[0]) && lines.length > 1) {
+    const list = document.createElement('ul');
+    const item = document.createElement('li');
+    const body = lines.slice(1)
+      .map(line => line.startsWith(' ') ? line.slice(1) : line)
+      .join('\n');
+    appendMockMarkdownBlock(item, body);
+    list.appendChild(item);
+    element.appendChild(list);
+    return;
+  }
+  const quotedLines = lines.map(line => line.match(/^ {0,3}> ?(.*)$/));
+  if (quotedLines.every(Boolean)) {
+    const blockquote = document.createElement('blockquote');
+    appendMockMarkdownBlock(
+      blockquote,
+      quotedLines.map(match => match?.[1] ?? '').join('\n')
+    );
+    element.appendChild(blockquote);
+    return;
+  }
+
+  const listItems = lines.map(line => line.match(/^\s*[-+*]\s+(.+)$/));
+  if (listItems.every(Boolean)) {
+    const list = document.createElement('ul');
+    listItems.forEach(match => {
+      const item = document.createElement('li');
+      appendMockInlineMarkdown(item, match?.[1] ?? '');
+      list.appendChild(item);
+    });
+    element.appendChild(list);
+    return;
+  }
+
+  const paragraph = document.createElement('p');
+  appendMockInlineMarkdown(paragraph, markdown.replace(/\\([#().+*_-])/g, '$1'));
+  element.appendChild(paragraph);
+}
+
+function appendMockInlineMarkdown(element: HTMLElement, markdown: string): void {
+  const inline = /(\*\*([^*]+)\*\*|__([^_]+)__|\[([^\]]+)\]\(([^)]+)\)|\*([^*]+)\*|(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])|`([^`]+)`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = inline.exec(markdown)) !== null) {
+    element.appendChild(document.createTextNode(markdown.slice(lastIndex, match.index)));
+    const child = document.createElement(
+      match[2] || match[3] ? 'strong' : match[4] ? 'a' : match[8] ? 'code' : 'em'
+    );
+    child.textContent = match[2] ?? match[3] ?? match[4] ?? match[6] ?? match[7] ?? match[8];
+    if (child instanceof HTMLAnchorElement) {
+      child.setAttribute('href', match[5]);
+    }
+    element.appendChild(child);
+    lastIndex = match.index + match[0].length;
+  }
+
+  element.appendChild(document.createTextNode(markdown.slice(lastIndex)));
 }
 
 export class ItemView {

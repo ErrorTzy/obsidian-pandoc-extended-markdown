@@ -3,61 +3,18 @@ import { ValidationContext, LintingIssue } from '../shared/types/listTypes';
 import { INDENTATION } from '../core/constants';
 
 import { ListPatterns } from '../shared/patterns';
+import { ListBlockValidator } from '../shared/utils/listBlockValidator';
 
-/**
- * Validates whether the current line conforms to Pandoc list spacing rules.
- * When enforcement is on, lists must be surrounded by empty lines and capital letter lists
- * with periods require double spacing.
- * 
- * @param context - The validation context containing lines and current position
- * @param strictMode - Whether to enforce Pandoc formatting rules
- * @returns True if formatting is valid or enforcement is disabled, false otherwise
- * @throws Does not throw exceptions - returns false for validation failures
- * @example
- * const context = { lines: ['', 'A. First item', ''], currentLine: 1 };
- * const isValid = isStrictPandocFormatting(context, true); // returns true
- */
-export function isStrictPandocFormatting(context: ValidationContext, strictMode: boolean): boolean {
-    if (!strictMode) {
-        return true;
-    }
-
+/** Return whether Pandoc recognizes the current line as list syntax for this extension state. */
+export function isPandocListLine(
+    context: ValidationContext,
+    enableListsWithoutPrecedingBlankline: boolean
+): boolean {
     const { lines, currentLine } = context;
-    const line = lines[currentLine];
-    
-    // Check if previous line is also a list item (part of same list block)
-    const isPartOfListBlock = currentLine > 0 && isListItem(lines[currentLine - 1], false);
-    
-    // Check for empty line before list (unless it's the first line or part of a list block)
-    if (currentLine > 0 && !isPartOfListBlock) {
-        const prevLine = lines[currentLine - 1];
-        if (prevLine.trim() !== '') {
-            return false;
-        }
-    }
-    
-    // Check for capital letter lists requiring double space
-    const capitalLetterMatch = line.match(ListPatterns.CAPITAL_LETTER_LIST);
-    if (capitalLetterMatch && capitalLetterMatch[3] === '.') {
-        // Capital letter with period requires at least 2 spaces
-        if (capitalLetterMatch[4].length < INDENTATION.DOUBLE_SPACE) {
-            return false;
-        }
-    }
-    
-    // Check if this is part of a list block and verify empty line after
-    if (currentLine < lines.length - 1) {
-        const nextLine = lines[currentLine + 1];
-        // Check if next line is also a list item
-        const nextIsListItem = isListItem(nextLine, false);
-        
-        if (!nextIsListItem && nextLine.trim() !== '') {
-            // Next line is not a list item and not empty.
-            return false;
-        }
-    }
-    
-    return true;
+    const invalidLines = ListBlockValidator.validateListBlocks(lines, {
+        enableListsWithoutPrecedingBlankline
+    });
+    return !invalidLines.has(currentLine);
 }
 
 export function isListItem(line: string, includeCustomLabels: boolean = false): boolean {
@@ -76,37 +33,6 @@ export function isListItem(line: string, includeCustomLabels: boolean = false): 
     }
     
     return false;
-}
-
-export function isStrictPandocHeading(context: ValidationContext, strictMode: boolean): boolean {
-    if (!strictMode) {
-        return true;
-    }
-    
-    const { lines, currentLine } = context;
-    const line = lines[currentLine];
-    
-    if (!ListPatterns.isHeading(line)) {
-        return true; // Not a heading
-    }
-    
-    // Check for empty line before heading (unless it's the first line)
-    if (currentLine > 0) {
-        const prevLine = lines[currentLine - 1];
-        if (prevLine.trim() !== '') {
-            return false;
-        }
-    }
-    
-    // Check for empty line after heading (unless it's the last line)
-    if (currentLine < lines.length - 1) {
-        const nextLine = lines[currentLine + 1];
-        if (nextLine.trim() !== '') {
-            return false;
-        }
-    }
-    
-    return true;
 }
 
 /**
@@ -207,11 +133,13 @@ export function formatToPandocStandard(content: string, enableCustomLabelLists: 
 
 /**
  * Analyzes markdown content and returns a list of Pandoc formatting violations.
- * Checks for missing empty lines around lists and headings, and validates
+ * Checks for lists that interrupt paragraphs, heading spacing, and validates
  * spacing requirements for capital letter lists.
  * 
  * @param content - The markdown content to analyze for formatting issues
  * @param enableCustomLabelLists - Whether to include custom label lists in validation
+ * @param enableListsWithoutPrecedingBlankline - Whether Pandoc's corresponding
+ * extension is enabled
  * @returns Array of LintingIssue objects describing formatting problems with line numbers
  * @throws Does not throw exceptions - returns empty array for valid content
  * @example
@@ -219,9 +147,18 @@ export function formatToPandocStandard(content: string, enableCustomLabelLists: 
  * const issues = checkPandocFormatting(content);
  * // Returns issues for missing empty lines and insufficient spacing
  */
-export function checkPandocFormatting(content: string, enableCustomLabelLists: boolean = false): LintingIssue[] {
+export function checkPandocFormatting(
+    content: string,
+    enableCustomLabelLists: boolean = false,
+    enableListsWithoutPrecedingBlankline: boolean = false
+): LintingIssue[] {
     const lines = content.split('\n');
     const issues: LintingIssue[] = [];
+    const interruptedListStarts = new Set(
+        ListBlockValidator.analyzeListBlocks(lines, {
+            enableListsWithoutPrecedingBlankline
+        }).interruptedParagraphs.map(paragraph => paragraph.listStartIndex)
+    );
     let inListBlock = false;
     
     for (let i = 0; i < lines.length; i++) {
@@ -232,11 +169,13 @@ export function checkPandocFormatting(content: string, enableCustomLabelLists: b
         
         // Check list formatting
         if (isCurrentLineList) {
-            // Check for empty line before list
-            if (!inListBlock && i > 0 && lines[i - 1].trim() !== '') {
+            const isNativeList = ListBlockValidator.isListItemForValidation(line);
+            const customListInterrupts = !isNativeList && !inListBlock && i > 0 &&
+                lines[i - 1].trim() !== '' && !ListPatterns.isHeading(lines[i - 1]);
+            if (interruptedListStarts.has(i) || customListInterrupts) {
                 issues.push({
                     line: i + 1,
-                    message: 'List should have an empty line before it'
+                    message: 'List cannot interrupt a paragraph'
                 });
             }
             
@@ -251,13 +190,6 @@ export function checkPandocFormatting(content: string, enableCustomLabelLists: b
             
             inListBlock = true;
         } else if (!isEmpty && inListBlock) {
-            // Non-empty, non-list line after list
-            if (i > 0 && isListItem(lines[i - 1])) {
-                issues.push({
-                    line: i,
-                    message: 'List should have an empty line after it'
-                });
-            }
             inListBlock = false;
         } else if (isEmpty) {
             inListBlock = false;

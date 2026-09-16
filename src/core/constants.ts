@@ -65,7 +65,7 @@ export const COMMANDS = {
 
 // Settings keys
 export const SETTINGS = {
-    PANDOC_LIST_SPACING: 'enforcePandocListSpacing',
+    PANDOC_LIST_SPACING: 'enableListsWithoutPrecedingBlankline',
     READABLE_FENCED_DIV_SYNTAX: 'enableReadableFencedDivSyntax',
     AUTO_RENUMBER: 'autoRenumberLists',
     HASH_AUTO_NUMBER: 'enableHashAutoNumber',
@@ -101,7 +101,7 @@ export const SETTINGS_UI = {
     },
     PANDOC_LIST_SPACING: {
         NAME: 'Pandoc list lenient spacing',
-        DESCRIPTION: 'Allow list enhancements to render with looser spacing. Turn this off to require Pandoc-compatible blank lines around list blocks and double spacing after capital letter markers.'
+        DESCRIPTION: 'Match Pandoc\'s lists_without_preceding_blankline extension. When enabled, a list may interrupt paragraph text without a preceding blank line, including inside containers such as block quotes and footnotes.'
     },
     READABLE_FENCED_DIV_SYNTAX: {
         NAME: 'Readable fenced div shorthand',

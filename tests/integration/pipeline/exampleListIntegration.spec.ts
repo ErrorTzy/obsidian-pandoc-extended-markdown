@@ -6,7 +6,7 @@ describe('Example List Integration - ProcessingPipeline scanning', () => {
     const settings: PandocExtendedMarkdownSettings = {
         enablePandocLists: true,
         strictLineBreaks: false,
-        enforcePandocListSpacing: false,
+        enableListsWithoutPrecedingBlankline: true,
         debugMode: false,
         enableCustomLabelLists: false,
         toggleDefinitionStyle: false,

@@ -1,8 +1,8 @@
+import { CSS_CLASSES } from '../../../core/constants';
 import { pluginStateManager } from '../../../core/state/pluginStateManager';
-import { isStrictPandocFormatting } from '../../../editor-extensions/pandocValidator';
 import { ListPatterns } from '../../../shared/patterns';
 import { ProcessorConfig } from '../../../shared/types/processorConfig';
-import { ValidationContext } from '../../../shared/types/listTypes';
+import { ListBlockValidator } from '../../../shared/utils/listBlockValidator';
 import {
     findPandocDefinitionListBlocks,
     isStandalonePandocDefinitionList
@@ -11,7 +11,10 @@ import { renderPandocDefinitionSource } from '../../features/definition-lists/so
 import { ReadingModeParser, ExampleListData } from '../../features/extended-lists/lineParser';
 import { ReadingModeRenderer } from '../../features/extended-lists/lineRenderer';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
-import { tryRenderSemanticListParagraph } from '../../features/extended-lists/semanticBlockRenderer';
+import {
+    resolveSourceDataLines,
+    tryRenderSemanticListParagraph
+} from '../../features/extended-lists/semanticBlockRenderer';
 
 export class ExtendedListBlockProcessor implements BlockDomProcessor {
     name = 'extended-list-blocks';
@@ -23,18 +26,46 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
 
     process(context: ReadingModeContext): void {
         const elementsToProcess = getCandidateTextContainers(context.element);
+        const validation = ListBlockValidator.analyzeListBlocks(
+            context.validationLines,
+            {
+                enableListsWithoutPrecedingBlankline:
+                    context.config.enableListsWithoutPrecedingBlankline
+            },
+            true
+        );
+        const sourceDataLines = resolveCandidateSourceDataLines(
+            elementsToProcess,
+            context,
+            validation.candidateListLines ?? new Set()
+        );
 
         elementsToProcess.forEach(element => {
             if (shouldSkipElement(element, context.sourcePath)) {
                 return;
             }
 
-            this.processElementTextNodes(element, context);
-            pluginStateManager.markElementProcessed(element, 'pem-processed', true);
+            const containsProcessableSyntax = getTextWithLineBreaks(element)
+                .split('\n')
+                .some(line => containsPandocSyntax(line, context.config));
+            this.processElementTextNodes(
+                element,
+                context,
+                sourceDataLines.get(element),
+                validation.invalidLines
+            );
+            if (containsProcessableSyntax) {
+                pluginStateManager.markElementProcessed(element, 'pem-processed', true);
+            }
         });
     }
 
-    private processElementTextNodes(elem: Element, context: ReadingModeContext): void {
+    private processElementTextNodes(
+        elem: Element,
+        context: ReadingModeContext,
+        elementDataLines: Array<number | undefined> | undefined,
+        invalidListLines: Set<number>
+    ): void {
         if (shouldKeepSourceBackedDefinitionMarkerPlain(elem, context)) {
             return;
         }
@@ -45,7 +76,12 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
             return;
         }
 
-        if (elem.nodeName === 'P' && this.processExtendedListParagraph(elem, context)) {
+        if ((elem.nodeName === 'P' || elem.nodeName === 'LI') && this.processExtendedListParagraph(
+            elem,
+            context,
+            elementDataLines,
+            invalidListLines
+        )) {
             return;
         }
 
@@ -55,15 +91,32 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
             null
         );
 
-        const nodesToProcess: Text[] = [];
+        const nodesToProcess: Array<{
+            node: Text;
+            dataLines: Array<number | undefined>;
+        }> = [];
         while (walker.nextNode()) {
-            nodesToProcess.push(walker.currentNode as Text);
+            const node = walker.currentNode as Text;
+            nodesToProcess.push({
+                node,
+                dataLines: getTextNodeSourceDataLines(node, elem, elementDataLines)
+            });
         }
 
-        nodesToProcess.forEach(node => this.processTextNode(node, context));
+        nodesToProcess.forEach(item => this.processTextNode(
+            item.node,
+            context,
+            item.dataLines,
+            invalidListLines
+        ));
     }
 
-    private processTextNode(node: Text, context: ReadingModeContext): void {
+    private processTextNode(
+        node: Text,
+        context: ReadingModeContext,
+        dataLines: Array<number | undefined>,
+        invalidListLines: Set<number>
+    ): void {
         const parent = node.parentNode;
         if (!parent || parent.nodeName === 'CODE' || parent.nodeName === 'PRE') {
             return;
@@ -81,20 +134,20 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
             lines,
             isInParagraph,
             isAtParagraphStart,
-            context.config
+            context.config,
+            dataLines
         );
 
         applySourceDefinitionBoundaries(parsedLines, lines, context);
 
-        if (context.config.enforcePandocListSpacing) {
-            parsedLines.forEach((parsedLine, index) => {
-                if (parsedLine.type === 'fancy' &&
-                    context.validationLines.length > 0 &&
-                    !validateListInStrictMode(lines[index], context.validationLines, context.config)) {
-                    parsedLine.type = 'plain';
-                }
-            });
-        }
+        parsedLines.forEach((parsedLine, index) => {
+            if (isOrderedListSyntax(parsedLine.type) &&
+                context.validationLines.length > 0 &&
+                (parsedLine.dataLine === undefined ||
+                    invalidListLines.has(parsedLine.dataLine))) {
+                parsedLine.type = 'plain';
+            }
+        });
 
         const numberProvider = (type: string, index: number): number => {
             const parsedLine = parsedLines[index];
@@ -141,7 +194,8 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
         const text = getTextWithLineBreaks(elem);
         const sourceText = getStandaloneDefinitionListSource(text, context);
 
-        if (!sourceText.includes('\n') || findPandocDefinitionListBlocks(sourceText).length === 0) {
+        if (!sourceText.includes('\n') ||
+            findPandocDefinitionListBlocks(sourceText, context.config).length === 0) {
             return false;
         }
 
@@ -150,7 +204,8 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
             context.renderContext,
             (target, content, renderContext) => {
                 this.renderer.appendContent(target, content, renderContext);
-            }
+            },
+            context.config
         );
 
         if (sourceText !== text) {
@@ -177,11 +232,105 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
 
     private processExtendedListParagraph(
         elem: Element,
-        context: ReadingModeContext
+        context: ReadingModeContext,
+        sourceDataLines: Array<number | undefined> | undefined,
+        invalidListLines: Set<number>
     ): boolean {
+        // Obsidian has already established the semantics of a source-less LI.
+        // Do not reinterpret literal text at its start as a new Pandoc list.
+        if (elem.nodeName === 'LI' &&
+            !sourceDataLines?.some(line => line !== undefined)) {
+            return false;
+        }
+
         const text = getTextWithLineBreaks(elem);
-        return tryRenderSemanticListParagraph(elem, context, this.parser, this.renderer, text);
+        return tryRenderSemanticListParagraph(
+            elem,
+            context,
+            this.parser,
+            this.renderer,
+            text,
+            sourceDataLines,
+            invalidListLines
+        );
     }
+}
+
+function resolveCandidateSourceDataLines(
+    elements: Element[],
+    context: ReadingModeContext,
+    candidateListLines: Set<number>
+): Map<Element, Array<number | undefined>> {
+    const result = new Map<Element, Array<number | undefined>>();
+    let nextDisjointSourceLine = 0;
+
+    elements.forEach(element => {
+        const lines = getTextWithLineBreaks(element).split('\n');
+        const isNestedCandidate = Boolean(element.parentElement?.closest('p, li'));
+        const dataLines = resolveSourceDataLines(
+            lines,
+            context,
+            element,
+            isNestedCandidate ? 0 : nextDisjointSourceLine,
+            candidateListLines
+        );
+        result.set(element, dataLines);
+
+        if (!isNestedCandidate) {
+            const resolvedLines = dataLines.filter((line): line is number => line !== undefined);
+            if (resolvedLines.length > 0) {
+                nextDisjointSourceLine = Math.max(...resolvedLines) + 1;
+            }
+        }
+    });
+
+    return result;
+}
+
+function getTextNodeSourceDataLines(
+    node: Text,
+    container: Element,
+    elementDataLines: Array<number | undefined> | undefined
+): Array<number | undefined> {
+    const lineCount = (node.textContent?.match(/\n/g)?.length ?? 0) + 1;
+    if (!elementDataLines) {
+        return Array.from({ length: lineCount }, () => undefined);
+    }
+
+    const startLine = getTextNodeLineIndex(node, container);
+    return Array.from(
+        { length: lineCount },
+        (_, index) => elementDataLines[startLine + index]
+    );
+}
+
+function getTextNodeLineIndex(target: Text, container: Element): number {
+    let lineIndex = 0;
+    let targetLineIndex = 0;
+    let found = false;
+
+    const visit = (node: Node): void => {
+        if (found) {
+            return;
+        }
+        if (node === target) {
+            targetLineIndex = lineIndex;
+            found = true;
+            return;
+        }
+        if (node.nodeName === 'BR') {
+            lineIndex++;
+            return;
+        }
+        if (node.nodeType === Node.TEXT_NODE) {
+            lineIndex += node.textContent?.match(/\n/g)?.length ?? 0;
+            return;
+        }
+        node.childNodes.forEach(visit);
+    };
+
+    container.childNodes.forEach(visit);
+    return targetLineIndex;
 }
 
 function getCandidateTextContainers(element: HTMLElement): Element[] {
@@ -199,7 +348,7 @@ function getStandaloneDefinitionListSource(text: string, context: ReadingModeCon
         return text;
     }
 
-    const blocks = findPandocDefinitionListBlocks(sectionText);
+    const blocks = findPandocDefinitionListBlocks(sectionText, context.config);
     if (!isStandalonePandocDefinitionList(sectionText, blocks)) {
         return text;
     }
@@ -228,6 +377,7 @@ function normalizeCandidateText(text: string): string {
 function shouldSkipElement(element: Element, sourcePath: string): boolean {
     return Boolean(
         element.closest('h1, h2, h3, h4, h5, h6') ||
+        element.closest(`.${CSS_CLASSES.PANDOC_INVALID_NATIVE_LIST}`) ||
         pluginStateManager.isElementProcessed(element, 'pem-processed', sourcePath)
     );
 }
@@ -244,24 +394,42 @@ function shouldKeepSourceBackedDefinitionMarkerPlain(
         return false;
     }
 
-    const text = normalizeCandidateText(getTextWithLineBreaks(element));
-    if (!ListPatterns.isDefinitionMarker(text)) {
+    const markerTexts = getTextWithLineBreaks(element)
+        .split('\n')
+        .map(normalizeCandidateText)
+        .filter(line => Boolean(ListPatterns.isDefinitionMarker(line)));
+    if (markerTexts.length === 0) {
         return false;
+    }
+
+    // Rendered marker text has already lost source formatting such as emphasis,
+    // so it cannot be matched byte-for-byte to the source reliably. Defer every
+    // marker paragraph when the full-source host renderer is available; that
+    // owner performs source validation and leaves rejected markers unchanged.
+    if (context.app) {
+        return true;
     }
 
     const sourceLines = context.sectionInfo.text.split('\n');
     const matchingSourceLineIndexes = sourceLines
         .map((line, index) => ({ line: normalizeCandidateText(line), index }))
-        .filter(item => item.line === text)
+        .filter(item => markerTexts.includes(item.line))
         .map(item => item.index);
 
     if (matchingSourceLineIndexes.length === 0) {
         return false;
     }
 
-    const blocks = findPandocDefinitionListBlocks(context.sectionInfo.text);
-    return matchingSourceLineIndexes.every(index =>
-        !blocks.some(block => index >= block.startLine && index <= block.endLine)
+    const blocks = findPandocDefinitionListBlocks(context.sectionInfo.text, context.config);
+    const isInBlock = (index: number): boolean => blocks.some(block =>
+        index >= block.startLine && index <= block.endLine
+    );
+    const isInLazyContainerBlock = (index: number): boolean => blocks.some(block =>
+        block.joinsLazyContainer && index >= block.startLine && index <= block.endLine
+    );
+
+    return matchingSourceLineIndexes.some(index =>
+        !isInBlock(index) || isInLazyContainerBlock(index)
     );
 }
 
@@ -277,7 +445,11 @@ function applySourceDefinitionBoundaries(
     parsedLines.forEach((parsedLine, index) => {
         if (
             parsedLine.type !== 'definition-item' ||
-            isSourceLineInDefinitionBlock(lines[index], context.sectionInfo?.text ?? '')
+            isSourceLineInDefinitionBlock(
+                lines[index],
+                context.sectionInfo?.text ?? '',
+                context.config
+            )
         ) {
             return;
         }
@@ -287,7 +459,11 @@ function applySourceDefinitionBoundaries(
     });
 }
 
-function isSourceLineInDefinitionBlock(line: string, sourceText: string): boolean {
+function isSourceLineInDefinitionBlock(
+    line: string,
+    sourceText: string,
+    config: ProcessorConfig
+): boolean {
     const normalizedLine = normalizeCandidateText(line);
     const sourceLines = sourceText.split('\n');
     const matchingSourceLineIndexes = sourceLines
@@ -299,7 +475,7 @@ function isSourceLineInDefinitionBlock(line: string, sourceText: string): boolea
         return true;
     }
 
-    const blocks = findPandocDefinitionListBlocks(sourceText);
+    const blocks = findPandocDefinitionListBlocks(sourceText, config);
     return matchingSourceLineIndexes.some(index =>
         blocks.some(block => index >= block.startLine && index <= block.endLine)
     );
@@ -345,27 +521,6 @@ function containsPandocSyntax(text: string, config?: ProcessorConfig): boolean {
     return hasBasicSyntax || Boolean(hasCustomLabelSyntax);
 }
 
-function validateListInStrictMode(
-    line: string,
-    documentLines: string[],
-    config: ProcessorConfig
-): boolean {
-    let lineNum = -1;
-    for (let index = 0; index < documentLines.length; index++) {
-        if (documentLines[index].includes(line.trim())) {
-            lineNum = index;
-            break;
-        }
-    }
-
-    if (lineNum >= 0) {
-        const validationContext: ValidationContext = {
-            lines: documentLines,
-            currentLine: lineNum
-        };
-
-        return isStrictPandocFormatting(validationContext, config.enforcePandocListSpacing);
-    }
-
-    return true;
+function isOrderedListSyntax(type: string): boolean {
+    return type === 'hash' || type === 'fancy' || type === 'example';
 }

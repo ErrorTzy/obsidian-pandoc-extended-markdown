@@ -34,7 +34,7 @@ export class StandardListProcessor implements StructuralProcessor {
             return { decorations: [] };
         }
 
-        if (context.settings.enforcePandocListSpacing && context.invalidLines.has(line.number)) {
+        if (context.invalidLines.has(line.number)) {
             return { decorations: [] };
         }
 

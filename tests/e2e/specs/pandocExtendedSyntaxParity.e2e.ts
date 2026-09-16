@@ -190,7 +190,7 @@ async function enableAllSyntaxes(): Promise<void> {
         }
 
         if (plugin?.settings) {
-            plugin.settings.enforcePandocListSpacing = false;
+            plugin.settings.enableListsWithoutPrecedingBlankline = true;
             plugin.settings.enableReadableFencedDivSyntax = true;
             plugin.settings.enableHashAutoNumber = true;
             plugin.settings.enableFancyLists = true;

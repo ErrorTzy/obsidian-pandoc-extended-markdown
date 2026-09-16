@@ -275,17 +275,6 @@ export class ReadingModeParser {
         return references;
     }
 
-    /**
-     * Check if strict validation should be applied
-     */
-    shouldValidateStrict(parsedLine: ParsedLine, lines: string[], currentLineIndex: number): boolean {
-        if (parsedLine.type !== 'fancy') {
-            return false;
-        }
-
-        // Additional validation logic can be added here
-        return true;
-    }
 }
 
 function parseListContent(

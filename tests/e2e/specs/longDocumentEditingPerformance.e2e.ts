@@ -167,7 +167,7 @@ async function configurePluginForPerformanceBaseline(): Promise<void> {
             plugin = app.plugins.plugins['pandoc-extended-markdown'];
         }
         if (plugin?.settings) {
-            plugin.settings.enforcePandocListSpacing = false;
+            plugin.settings.enableListsWithoutPrecedingBlankline = true;
             plugin.settings.enableCustomLabelLists = true;
             plugin.settings.enableFancyLists = true;
             plugin.settings.enableHashAutoNumber = true;

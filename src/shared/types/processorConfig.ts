@@ -17,7 +17,7 @@ export interface ProcessorConfig {
     strictLineBreaks: boolean;
     
     // Plugin settings
-    enforcePandocListSpacing: boolean;
+    enableListsWithoutPrecedingBlankline: boolean;
     enableReadableFencedDivSyntax: boolean;
     
     // Optional features
@@ -44,7 +44,8 @@ export function createProcessorConfig(
 ): ProcessorConfig {
     return {
         strictLineBreaks: vaultConfig.strictLineBreaks ?? false,
-        enforcePandocListSpacing: pluginSettings.enforcePandocListSpacing ?? false,
+        enableListsWithoutPrecedingBlankline:
+            pluginSettings.enableListsWithoutPrecedingBlankline ?? true,
         enableReadableFencedDivSyntax: pluginSettings.enableReadableFencedDivSyntax ?? true,
         enableHashLists: isSyntaxFeatureEnabled(pluginSettings, 'enableHashAutoNumber'),
         enableFancyLists: isSyntaxFeatureEnabled(pluginSettings, 'enableFancyLists'),

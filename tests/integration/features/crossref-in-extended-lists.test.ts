@@ -16,7 +16,7 @@ describe('Cross-references in extended lists bug', () => {
         pluginStateManager.resetDocumentCounters(docPath);
         
         config = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true,

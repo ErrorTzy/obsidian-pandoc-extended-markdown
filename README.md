@@ -82,7 +82,7 @@ Start here if you want more than the quick start:
 - Live Preview is the main editing surface.
 - Reading mode renders the implemented syntax after Obsidian has produced its HTML.
 - Source mode preserves plain Markdown.
-- Pandoc list lenient spacing allows list enhancements to render with looser spacing; disabling it requires Pandoc-compatible spacing.
+- Pandoc list lenient spacing maps to Pandoc's `lists_without_preceding_blankline` extension: enable it to let a list interrupt paragraph text without a blank line; disable it to keep those markers in the paragraph. The rule applies within containers such as block quotes, footnotes, and fenced divs too. It does not impose a blank line after a list; a list following a heading can still contain nested lists with either setting.
 - Readable fenced div shorthand can be disabled separately when you want source closer to native Pandoc Markdown.
 
 The plugin settings let you enable or disable individual syntax families, list marker cycling, auto-renumbering, distinct unordered-list marker rendering, and the sidebar list panel.

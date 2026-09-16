@@ -1,6 +1,9 @@
 import type { MarkdownRenderChild } from 'obsidian';
 
-import { normalizeExistingDefinitionLists } from '../../features/definition-lists/normalizer';
+import {
+    normalizeExistingDefinitionLists,
+    normalizeExistingDefinitionListsWithHost
+} from '../../features/definition-lists/normalizer';
 import { readFullSourceText } from '../sourceText';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
 
@@ -141,6 +144,7 @@ class DefinitionListReconciliationController {
     private scheduled = false;
     private running = false;
     private pending = false;
+    private generation = 0;
 
     constructor(private readonly root: HTMLElement, context: ReadingModeContext) {
         this.context = context;
@@ -148,6 +152,7 @@ class DefinitionListReconciliationController {
 
     updateContext(context: ReadingModeContext): void {
         this.context = context;
+        this.generation++;
     }
 
     start(): void {
@@ -187,9 +192,15 @@ class DefinitionListReconciliationController {
         }
 
         this.running = true;
+        const generation = this.generation;
+        const context = this.context;
         try {
             this.observeCurrentRoot();
-            await normalizeDefinitionRoot(this.root, this.context);
+            await normalizeDefinitionRoot(
+                this.root,
+                context,
+                () => this.generation === generation
+            );
             this.observeCurrentRoot();
             this.observeConnectionIfDetached();
         } finally {
@@ -255,34 +266,50 @@ class DefinitionListReconciliationController {
 
 async function normalizeDefinitionRoot(
     definitionRoot: HTMLElement,
-    context: ReadingModeContext
+    context: ReadingModeContext,
+    isCurrent: () => boolean = () => true
 ): Promise<void> {
-    const roots = getCurrentDefinitionRoots(definitionRoot);
-    roots.forEach(root => normalizeExistingDefinitionLists(
-        root,
-        context.postProcessorContext,
-        context.config,
-        context.renderContext
-    ));
-    releaseEmbeddedPreviewMinimumHeight(definitionRoot);
-
+    if (!isCurrent()) {
+        return;
+    }
     if (!context.app) {
+        getCurrentDefinitionRoots(definitionRoot).forEach(root => normalizeExistingDefinitionLists(
+            root,
+            context.postProcessorContext,
+            context.config,
+            context.renderContext
+        ));
+        releaseEmbeddedPreviewMinimumHeight(definitionRoot);
         return;
     }
 
     const fullSourceText = await readFullSourceText(context.sourcePath, context.app);
+    if (!isCurrent()) {
+        return;
+    }
     if (!fullSourceText) {
+        getCurrentDefinitionRoots(definitionRoot).forEach(root => normalizeExistingDefinitionLists(
+            root,
+            context.postProcessorContext,
+            context.config,
+            context.renderContext
+        ));
+        releaseEmbeddedPreviewMinimumHeight(definitionRoot);
         return;
     }
 
     context.fullSource = fullSourceText;
-    getCurrentDefinitionRoots(definitionRoot).forEach(root => normalizeExistingDefinitionLists(
-        root,
-        context.postProcessorContext,
-        context.config,
-        context.renderContext,
-        fullSourceText
-    ));
+    for (const root of getCurrentDefinitionRoots(definitionRoot)) {
+        if (!isCurrent()) {
+            break;
+        }
+        await normalizeExistingDefinitionListsWithHost(
+            root,
+            context,
+            fullSourceText,
+            isCurrent
+        );
+    }
     releaseEmbeddedPreviewMinimumHeight(definitionRoot);
 }
 

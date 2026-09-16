@@ -27,7 +27,7 @@ describe('FencedDivProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 enableFencedDivs: true,
                 ...settings
             } as PandocExtendedMarkdownSettings,

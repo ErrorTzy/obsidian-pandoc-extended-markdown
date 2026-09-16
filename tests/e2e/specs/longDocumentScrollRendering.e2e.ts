@@ -92,7 +92,7 @@ async function configurePluginForScrollRendering(): Promise<void> {
         }
 
         if (plugin?.settings) {
-            plugin.settings.enforcePandocListSpacing = false;
+            plugin.settings.enableListsWithoutPrecedingBlankline = true;
             plugin.settings.enableSuperscript = true;
             plugin.settings.enableSubscript = true;
             await plugin.saveSettings();

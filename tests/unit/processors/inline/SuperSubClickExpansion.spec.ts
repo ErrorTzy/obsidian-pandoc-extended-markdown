@@ -29,7 +29,7 @@ describe('Superscript and Subscript Click Expansion', () => {
         document: view.state.doc,
         view,
         settings: {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             autoRenumberLists: false,
             enableCustomLabelLists: true,
             panelOrder: [],

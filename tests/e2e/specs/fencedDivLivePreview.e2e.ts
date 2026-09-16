@@ -152,7 +152,7 @@ describe('Fenced div live preview', () => {
                 return app.plugins.enablePlugin('pandoc-extended-markdown');
             }
             if (plugin && plugin.settings) {
-                plugin.settings.enforcePandocListSpacing = false;
+                plugin.settings.enableListsWithoutPrecedingBlankline = true;
                 plugin.settings.enableReadableFencedDivSyntax = true;
                 plugin.settings.enableFencedDivs = true;
                 plugin.settings.enableFencedDivExtras = true;

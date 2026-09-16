@@ -1,6 +1,7 @@
 import { CSS_CLASSES } from '../../../core/constants';
 
 import {
+    DefinitionListSpacingSettings,
     findPandocDefinitionListBlocks,
     normalizePlainText,
     PandocDefinitionDescription,
@@ -12,11 +13,18 @@ import {
 import type { RenderContext } from '../extended-lists/lineRenderer';
 
 type ContentAppender = (element: HTMLElement, content: string, context: RenderContext) => void;
+type BlockContentAppender = (
+    element: HTMLElement,
+    source: string,
+    context: RenderContext,
+    unwrapSingleParagraph: boolean
+) => void;
 
 export function renderPandocDefinitionListBlock(
     block: PandocDefinitionListBlock,
     context: RenderContext,
-    appendContent: ContentAppender
+    appendContent: ContentAppender,
+    appendBlockContent?: BlockContentAppender
 ): HTMLElement {
     const dl = document.createElement('dl');
     dl.className = CSS_CLASSES.DEFINITION_LIST;
@@ -30,7 +38,13 @@ export function renderPandocDefinitionListBlock(
         item.definitions.forEach(definition => {
             const dd = document.createElement('dd');
             dd.className = `${CSS_CLASSES.DEFINITION_DESC} ${CSS_CLASSES.DEFINITION_DESC_ITEM}`;
-            appendDefinitionDescription(dd, definition, context, appendContent);
+            appendDefinitionDescription(
+                dd,
+                definition,
+                context,
+                appendContent,
+                appendBlockContent
+            );
             dl.appendChild(dd);
         });
     });
@@ -41,10 +55,11 @@ export function renderPandocDefinitionListBlock(
 export function renderPandocDefinitionSource(
     sourceText: string,
     context: RenderContext,
-    appendContent: ContentAppender
+    appendContent: ContentAppender,
+    settings?: DefinitionListSpacingSettings
 ): HTMLElement[] {
     const lines = sourceText.split('\n');
-    const blocks = findPandocDefinitionListBlocks(sourceText);
+    const blocks = findPandocDefinitionListBlocks(sourceText, settings);
     const nodes: HTMLElement[] = [];
     let index = 0;
 
@@ -62,11 +77,113 @@ function appendDefinitionDescription(
     dd: HTMLElement,
     definition: PandocDefinitionDescription,
     context: RenderContext,
-    appendContent: ContentAppender
+    appendContent: ContentAppender,
+    appendBlockContent?: BlockContentAppender
 ): void {
-    const lines = trimOuterBlankLines(definition.lines);
+    if (definition.nestedDefinitionBlocks.length > 0) {
+        appendDefinitionBodyWithNestedBlocks(
+            dd,
+            definition,
+            context,
+            appendContent,
+            appendBlockContent
+        );
+        return;
+    }
+
+    appendDefinitionBodyFragment(
+        dd,
+        definition.lines,
+        definition.wrapParagraph,
+        context,
+        appendContent,
+        appendBlockContent
+    );
+}
+
+function appendDefinitionBodyWithNestedBlocks(
+    dd: HTMLElement,
+    definition: PandocDefinitionDescription,
+    context: RenderContext,
+    appendContent: ContentAppender,
+    appendBlockContent?: BlockContentAppender
+): void {
+    let index = 0;
+    definition.nestedDefinitionBlocks.forEach(block => {
+        if (block.endLine < index) {
+            return;
+        }
+        const blockStart = block.nativeListParentIndex ?? block.startLine;
+        appendDefinitionBodyFragment(
+            dd,
+            definition.lines.slice(index, blockStart),
+            definition.wrapParagraph,
+            context,
+            appendContent,
+            appendBlockContent
+        );
+        if (block.nativeListParentIndex !== undefined) {
+            const renderedList = renderListBlock(
+                definition.lines.slice(blockStart),
+                context,
+                appendContent
+            );
+            if (renderedList) {
+                dd.appendChild(renderedList.element);
+                index = blockStart + renderedList.consumedLines;
+                return;
+            }
+
+            appendDefinitionBodyFragment(
+                dd,
+                definition.lines.slice(blockStart, block.endLine + 1),
+                definition.wrapParagraph,
+                context,
+                appendContent,
+                appendBlockContent
+            );
+            index = block.endLine + 1;
+            return;
+        }
+        dd.appendChild(renderPandocDefinitionListBlock(
+            block,
+            context,
+            appendContent,
+            appendBlockContent
+        ));
+        index = block.endLine + 1;
+    });
+    appendDefinitionBodyFragment(
+        dd,
+        definition.lines.slice(index),
+        definition.wrapParagraph,
+        context,
+        appendContent,
+        appendBlockContent
+    );
+}
+
+function appendDefinitionBodyFragment(
+    dd: HTMLElement,
+    sourceLines: string[],
+    wrapParagraph: boolean,
+    context: RenderContext,
+    appendContent: ContentAppender,
+    appendBlockContent?: BlockContentAppender
+): void {
+    const lines = trimOuterBlankLines(sourceLines);
 
     if (lines.length === 0) {
+        return;
+    }
+
+    if (appendBlockContent) {
+        appendBlockContent(
+            dd,
+            lines.join('\n'),
+            context,
+            !wrapParagraph
+        );
         return;
     }
 
@@ -79,7 +196,7 @@ function appendDefinitionDescription(
     }
 
     const content = normalizePlainText(lines);
-    if (definition.wrapParagraph) {
+    if (wrapParagraph) {
         const paragraph = document.createElement('p');
         appendInlineContent(paragraph, content, context, appendContent);
         dd.appendChild(paragraph);
@@ -126,9 +243,23 @@ function appendListBlock(
     context: RenderContext,
     appendContent: ContentAppender
 ): boolean {
+    const rendered = renderListBlock(lines, context, appendContent);
+    if (!rendered || rendered.consumedLines !== lines.length) {
+        return false;
+    }
+
+    parent.appendChild(rendered.element);
+    return true;
+}
+
+function renderListBlock(
+    lines: string[],
+    context: RenderContext,
+    appendContent: ContentAppender
+): { element: HTMLUListElement | HTMLOListElement, consumedLines: number } | null {
     const firstItem = parseMarkdownListItem(lines[0]);
     if (!firstItem) {
-        return false;
+        return null;
     }
 
     const list = document.createElement(firstItem.ordered ? 'ol' : 'ul');
@@ -167,8 +298,7 @@ function appendListBlock(
         list.appendChild(li);
     }
 
-    parent.appendChild(list);
-    return true;
+    return { element: list, consumedLines: index };
 }
 
 function appendNestedDefinitionList(
@@ -231,43 +361,5 @@ function appendInlineContent(
     context: RenderContext,
     appendContent: ContentAppender
 ): void {
-    splitInlineMarkdown(content).forEach(segment => {
-        if (segment.type === 'text') {
-            appendContent(element, segment.content, context);
-            return;
-        }
-
-        const child = document.createElement(segment.type);
-        appendContent(child, segment.content, context);
-        element.appendChild(child);
-    });
-}
-
-function splitInlineMarkdown(content: string): Array<{ type: 'text' | 'strong' | 'em' | 'code', content: string }> {
-    const parts: Array<{ type: 'text' | 'strong' | 'em' | 'code', content: string }> = [];
-    const regex = /(\*\*([^*]+)\*\*|__([^_]+)__|`([^`]+)`|\*([^*]+)\*|_([^_]+)_)/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(content)) !== null) {
-        if (match.index > lastIndex) {
-            parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
-        }
-
-        if (match[2] || match[3]) {
-            parts.push({ type: 'strong', content: match[2] ?? match[3] });
-        } else if (match[4]) {
-            parts.push({ type: 'code', content: match[4] });
-        } else {
-            parts.push({ type: 'em', content: match[5] ?? match[6] });
-        }
-
-        lastIndex = match.index + match[0].length;
-    }
-
-    if (lastIndex < content.length) {
-        parts.push({ type: 'text', content: content.slice(lastIndex) });
-    }
-
-    return parts;
+    appendContent(element, content, context);
 }

@@ -3,7 +3,7 @@ import { PandocExtendedMarkdownSettings } from '../../../src/core/settings';
 
 describe('extractFencedDivs', () => {
     const settings = {
-        enforcePandocListSpacing: false,
+        enableListsWithoutPrecedingBlankline: true,
         enableFencedDivs: true
     } as PandocExtendedMarkdownSettings;
 

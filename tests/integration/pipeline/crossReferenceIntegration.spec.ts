@@ -63,7 +63,7 @@ describe('Cross-references in lists (Pipeline)', () => {
         
         settings = {
             enableAutoFormatting: true,
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             enableCustomLabelLists: true,
             panelOrder: [],
             useNewPipeline: true
@@ -86,7 +86,7 @@ describe('Cross-references in lists (Pipeline)', () => {
     
     describe('Example references in lists', () => {
         it('should process example references in fancy lists', () => {
-            const doc = '(@a) Example list item\nA. crossref in fancy list (@a)';
+            const doc = '(@a) Example list item\nA.  crossref in fancy list (@a)';
             updateView(doc);
             
             const decorations = pipeline.process(view, settings);
@@ -176,7 +176,7 @@ describe('Cross-references in lists (Pipeline)', () => {
         });
         
         it('should process custom label references in fancy lists', () => {
-            const doc = '{::P(#a)} First custom label\nA. crossref in fancy list {::P(#a)}';
+            const doc = '{::P(#a)} First custom label\nA.  crossref in fancy list {::P(#a)}';
             updateView(doc);
             
             const decorations = pipeline.process(view, settings);
@@ -230,7 +230,7 @@ describe('Cross-references in lists (Pipeline)', () => {
         });
         
         it('should process mixed references in fancy lists', () => {
-            const doc = '(@ex) Example\n{::Label} Label\nA. List with (@ex) and {::Label}';
+            const doc = '(@ex) Example\n{::Label} Label\nA.  List with (@ex) and {::Label}';
             updateView(doc);
             
             const decorations = pipeline.process(view, settings);
@@ -244,7 +244,7 @@ describe('Cross-references in lists (Pipeline)', () => {
             const doc = `(@a) First example
 {::P(#a)} First custom label
 #. Hash with (@a) reference
-A. Fancy with {::P(#a)} reference
+A.  Fancy with {::P(#a)} reference
 i. Roman with both (@a) and {::P(#a)}`;
             updateView(doc);
             

@@ -15,7 +15,7 @@ describe('Debug cross-reference bug', () => {
         pluginStateManager.resetDocumentCounters(docPath);
         
         config = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true,

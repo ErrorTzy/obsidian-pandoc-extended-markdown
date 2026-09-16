@@ -49,7 +49,9 @@ const ROMAN_CHARS = /^[ivxlcdm]+$/i;
 
 export function getIndentColumns(indent: string): number {
     return Array.from(indent).reduce((columns, character) => {
-        return columns + (character === INDENTATION.TAB ? INDENTATION.TAB_SIZE : 1);
+        return columns + (character === INDENTATION.TAB
+            ? INDENTATION.TAB_SIZE - columns % INDENTATION.TAB_SIZE
+            : 1);
     }, 0);
 }
 

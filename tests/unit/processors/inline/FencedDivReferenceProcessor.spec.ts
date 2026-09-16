@@ -23,7 +23,7 @@ describe('FencedDivReferenceProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 enableFencedDivs: true,
                 enableFencedDivExtras: true
             },
@@ -99,8 +99,8 @@ describe('FencedDivReferenceProcessor', () => {
         expect(matches).toHaveLength(0);
     });
 
-    it('finds references when Pandoc list spacing enforcement and fenced div extras are enabled', () => {
-        context.settings.enforcePandocListSpacing = true;
+    it('finds references when the Pandoc list extension is disabled and fenced div extras are enabled', () => {
+        context.settings.enableListsWithoutPrecedingBlankline = false;
         const region: ContentRegion = {
             from: 0,
             to: view.state.doc.length,

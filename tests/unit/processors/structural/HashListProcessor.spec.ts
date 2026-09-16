@@ -26,7 +26,7 @@ describe('HashListProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 autoRenumberLists: false,
                 enableCustomLabelLists: false,
                 panelOrder: [],
@@ -154,8 +154,8 @@ describe('HashListProcessor', () => {
             expect(checkboxDecoration).toBeUndefined();
         });
         
-        it('should skip invalid lines when Pandoc list spacing enforcement is enabled', () => {
-            context.settings.enforcePandocListSpacing = true;
+        it('should skip lines that Pandoc keeps in a paragraph when the list extension is disabled', () => {
+            context.settings.enableListsWithoutPrecedingBlankline = false;
             context.invalidLines.add(1); // Line 1 is invalid
             
             const line = view.state.doc.line(1);

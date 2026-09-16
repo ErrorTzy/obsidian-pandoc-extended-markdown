@@ -19,7 +19,7 @@ describe('smart dash processing in reading mode', () => {
 
     const createConfig = (overrides: Partial<ProcessorConfig> = {}): ProcessorConfig => ({
         strictLineBreaks: false,
-        enforcePandocListSpacing: false,
+        enableListsWithoutPrecedingBlankline: true,
         enableReadableFencedDivSyntax: true,
         enableHashLists: false,
         enableFancyLists: false,

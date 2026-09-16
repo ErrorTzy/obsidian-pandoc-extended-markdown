@@ -166,7 +166,8 @@ export class ListContinuationProcessor implements StructuralProcessor {
                 visualLength += INDENTATION.SINGLE_SPACE;
                 textLength += 1;
             } else if (char === INDENTATION.TAB) {
-                visualLength += INDENTATION.TAB_SIZE;
+                visualLength += INDENTATION.TAB_SIZE -
+                    visualLength % INDENTATION.TAB_SIZE;
                 textLength += 1;
             } else {
                 break;

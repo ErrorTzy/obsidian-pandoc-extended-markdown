@@ -30,13 +30,13 @@ const content = [
     'See @thm:strict.'
 ].join('\n');
 
-describe('Pandoc list spacing non-native syntax toggles', () => {
+describe('Pandoc list-extension independence from non-native syntax', () => {
     before(async () => {
         await browser.reloadObsidian({
             vault: './tests/e2e/vaults/test-vault'
         });
         await setSyntaxSettings({
-            enforcePandocListSpacing: true,
+            enableListsWithoutPrecedingBlankline: false,
             enableCustomLabelLists: true,
             enableFencedDivs: true,
             enableFencedDivExtras: true
@@ -46,7 +46,7 @@ describe('Pandoc list spacing non-native syntax toggles', () => {
 
     after(async () => {
         await setSyntaxSettings({
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             enableCustomLabelLists: true,
             enableFencedDivs: true,
             enableFencedDivExtras: true
@@ -57,7 +57,7 @@ describe('Pandoc list spacing non-native syntax toggles', () => {
         await deleteFileIfExists(readingFencedOffPath);
     });
 
-    it('keeps custom labels and fenced div extras rendering in Live Preview with list spacing enforcement', async () => {
+    it('keeps custom labels and fenced div extras rendering in Live Preview when the list extension is disabled', async () => {
         await openFileInActiveLeaf(filePath);
         await ensureLivePreviewMode();
         await moveCursorToLine(6);
@@ -126,9 +126,9 @@ describe('Pandoc list spacing non-native syntax toggles', () => {
         expect(state.rawText).toContain('::: {.theorem #thm:strict title="Theorem &"}');
     });
 
-    it('keeps custom labels and fenced div extras rendering in Reading mode with list spacing enforcement', async () => {
+    it('keeps custom labels and fenced div extras rendering in Reading mode when the list extension is disabled', async () => {
         await setSyntaxSettings({
-            enforcePandocListSpacing: true,
+            enableListsWithoutPrecedingBlankline: false,
             enableCustomLabelLists: true,
             enableFencedDivs: true,
             enableFencedDivExtras: true
@@ -247,7 +247,7 @@ async function getState(mode: 'live' | 'reading'): Promise<NonNativeSyntaxState>
 }
 
 async function setSyntaxSettings(settings: Partial<{
-    enforcePandocListSpacing: boolean;
+    enableListsWithoutPrecedingBlankline: boolean;
     enableCustomLabelLists: boolean;
     enableFencedDivs: boolean;
     enableFencedDivExtras: boolean;

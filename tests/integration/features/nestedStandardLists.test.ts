@@ -76,16 +76,16 @@ describe('Nested Standard Lists', () => {
         pipeline.registerInlineProcessor(new CustomLabelReferenceProcessor());
         
         settings = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             enableCustomLabelLists: false
         } as PandocExtendedMarkdownSettings;
     });
 
     test('should handle standard unordered lists nested with fancy lists', () => {
-        const text = `A. First fancy list item
+        const text = `A.  First fancy list item
    * Nested standard list item
    * Another nested item
-B. Second fancy list item`;
+B.  Second fancy list item`;
 
         const view = createMockView(text) as any;
         const decorationSet = pipeline.process(view, settings);
@@ -119,10 +119,10 @@ B. Second fancy list item`;
     });
 
     test('should handle standard unordered lists with + marker', () => {
-        const text = `A. First fancy list item
+        const text = `A.  First fancy list item
    + Plus marker item
    + Another plus item
-B. Second fancy list item`;
+B.  Second fancy list item`;
 
         const view = createMockView(text) as any;
         const decorationSet = pipeline.process(view, settings);
@@ -135,11 +135,11 @@ B. Second fancy list item`;
     });
 
     test('should handle deeply nested standard lists', () => {
-        const text = `A. First level fancy
+        const text = `A.  First level fancy
    * Second level standard
      + Third level standard
        - Fourth level standard
-B. Back to first level`;
+B.  Back to first level`;
 
         const view = createMockView(text) as any;
         const decorationSet = pipeline.process(view, settings);
@@ -152,7 +152,7 @@ B. Back to first level`;
     });
 
     test('should preserve indentation for nested standard lists', () => {
-        const text = `A. Parent item
+        const text = `A.  Parent item
     * Child with 4 spaces
         * Grandchild with 8 spaces`;
 

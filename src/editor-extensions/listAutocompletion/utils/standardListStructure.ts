@@ -15,6 +15,7 @@ import {
     ParsedStandardListItem,
     TaskState
 } from '../../../shared/utils/listContext';
+import { getPandocOrderedMarkerSpacing } from '../../../shared/utils/pandocListMarkers';
 
 export type StandardListMarkerType =
     | { kind: 'ordered'; style: OrderedListMarkerStyle; taskState: TaskState }
@@ -77,7 +78,9 @@ export function getLineIndent(line: string): string {
 
 export function getIndentColumns(indent: string): number {
     return Array.from(indent).reduce((columns, character) => {
-        return columns + (character === INDENTATION.TAB ? INDENTATION.TAB_SIZE : 1);
+        return columns + (character === INDENTATION.TAB
+            ? INDENTATION.TAB_SIZE - columns % INDENTATION.TAB_SIZE
+            : 1);
     }, 0);
 }
 
@@ -187,11 +190,14 @@ export function formatMarkerPrefix(
     markerType: StandardListMarkerType,
     taskState: TaskState = markerType.taskState
 ): string {
+    const spacing = markerType.kind === 'ordered'
+        ? getPandocOrderedMarkerSpacing(marker)
+        : ' ';
     if (taskState === null) {
-        return `${marker} `;
+        return `${marker}${spacing}`;
     }
 
-    return `${marker} [${taskState === 'checked' ? 'x' : ' '}] `;
+    return `${marker}${spacing}[${taskState === 'checked' ? 'x' : ' '}] `;
 }
 
 export function getInsertedTaskState(markerType: StandardListMarkerType): TaskState {

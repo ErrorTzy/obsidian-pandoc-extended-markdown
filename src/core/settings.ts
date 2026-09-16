@@ -174,14 +174,24 @@ export class PandocExtendedMarkdownSettingTab extends PluginSettingTab {
             .setName(SETTINGS_UI.PANDOC_LIST_SPACING.NAME)
             .setDesc(SETTINGS_UI.PANDOC_LIST_SPACING.DESCRIPTION)
             .addToggle(toggle => toggle
-                .setValue(!this.plugin.settings.enforcePandocListSpacing)
+                .setValue(this.plugin.settings.enableListsWithoutPrecedingBlankline)
                 .onChange(async (value) => {
-                    this.plugin.settings.enforcePandocListSpacing = !value;
+                    this.plugin.settings.enableListsWithoutPrecedingBlankline = value;
                     await this.plugin.saveSettings();
-                    this.app.workspace.updateOptions();
+                    this.refreshMarkdownRendering();
                     this.refreshListPanels();
                     this.refreshPanelOrderList();
                 }));
+    }
+
+    private refreshMarkdownRendering(): void {
+        this.app.workspace.updateOptions();
+        this.app.workspace.getLeavesOfType('markdown').forEach(leaf => {
+            const view = leaf.view as typeof leaf.view & {
+                previewMode?: { rerender?: (full: boolean) => void };
+            };
+            view.previewMode?.rerender?.(true);
+        });
     }
 
     private renderReadableFencedDivSyntaxSetting(containerEl: HTMLElement): void {

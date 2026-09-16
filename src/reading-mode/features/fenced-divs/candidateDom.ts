@@ -95,6 +95,45 @@ export function shouldSkipElement(element: Element): boolean {
     );
 }
 
+export function getCandidateBlock(element: Element): Element {
+    if (!element.matches('li')) {
+        return element;
+    }
+
+    let list = element.parentElement?.matches('ul, ol')
+        ? element.parentElement
+        : null;
+    while (list?.parentElement?.closest('ul, ol')) {
+        list = list.parentElement.closest('ul, ol');
+    }
+
+    if (!list) {
+        return element;
+    }
+    return list.parentElement?.matches('.el-ul, .el-ol')
+        ? list.parentElement
+        : list;
+}
+
+/**
+ * Remove a final fenced-div delimiter that Obsidian folded into a list item.
+ * Only the delimiter line (and its own line break) is removed; the list and all
+ * of its content nodes retain their identity.
+ */
+export function removeTrailingFencedDivClosing(element: Element): string | null {
+    const text = getTextWithLineBreaks(element);
+    const closing = text.match(/(?:^|\n):{3,}[ \t]*(?:\n[ \t]*)*$/);
+    if (!closing || closing.index === undefined) {
+        return null;
+    }
+
+    const suffix = text.slice(closing.index);
+    if (!removeTextSuffix(element, suffix)) {
+        return null;
+    }
+    return text.slice(0, text.length - suffix.length);
+}
+
 function appendNodeToCandidateLines(node: Node, lines: CandidateLine[]): void {
     if (node.nodeName === 'BR') {
         lines.push(createCandidateLine());
@@ -148,6 +187,57 @@ function appendNodeText(node: Node, parts: string[]): void {
     if (node.nodeType === Node.ELEMENT_NODE && !isCodeElement(node as Element)) {
         node.childNodes.forEach(child => appendNodeText(child, parts));
     }
+}
+
+function removeTextSuffix(element: Element, suffix: string): boolean {
+    const contributors: Node[] = [];
+    collectTextContributors(element, contributors);
+    let remaining = suffix.length;
+    const removals: Array<{ node: Node; consumed: number }> = [];
+
+    for (let index = contributors.length - 1; index >= 0 && remaining > 0; index--) {
+        const node = contributors[index];
+        const contribution = node.nodeName === 'BR' ? '\n' : node.textContent ?? '';
+        const consumed = Math.min(remaining, contribution.length);
+        const expected = suffix.slice(remaining - consumed, remaining);
+        const actual = contribution.slice(contribution.length - consumed);
+        if (actual !== expected) {
+            return false;
+        }
+
+        removals.push({ node, consumed });
+        remaining -= consumed;
+    }
+
+    if (remaining !== 0) {
+        return false;
+    }
+    // Validate the complete suffix before changing any live node.
+    for (const { node, consumed } of removals) {
+        if (node.nodeName === 'BR') {
+            node.parentNode?.removeChild(node);
+        } else if (node.nodeType === Node.TEXT_NODE) {
+            const textNode = node as Text;
+            textNode.deleteData(textNode.length - consumed, consumed);
+            if (textNode.length === 0) {
+                textNode.remove();
+            }
+        }
+    }
+
+    return true;
+}
+
+function collectTextContributors(element: Element, contributors: Node[]): void {
+    element.childNodes.forEach(node => {
+        if (node.nodeName === 'BR' || node.nodeType === Node.TEXT_NODE) {
+            contributors.push(node);
+            return;
+        }
+        if (node.nodeType === Node.ELEMENT_NODE && !isCodeElement(node as Element)) {
+            collectTextContributors(node as Element, contributors);
+        }
+    });
 }
 
 function isCodeElement(element: Element): boolean {

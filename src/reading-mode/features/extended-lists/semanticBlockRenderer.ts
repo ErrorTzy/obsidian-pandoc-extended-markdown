@@ -1,8 +1,5 @@
 import { CSS_CLASSES, getFancyListClass } from '../../../core/constants';
 import { pluginStateManager } from '../../../core/state/pluginStateManager';
-import { isStrictPandocFormatting } from '../../../editor-extensions/pandocValidator';
-import { ProcessorConfig } from '../../../shared/types/processorConfig';
-import { ValidationContext } from '../../../shared/types/listTypes';
 import {
     ExampleListData,
     FancyListData,
@@ -14,27 +11,50 @@ import { ReadingModeRenderer } from './lineRenderer';
 import { appendExtendedListItemContent } from './taskListItem';
 
 import { ReadingModeContext } from '../../pipeline/types';
+import {
+    findSourceItemSubtreeEnd,
+    parseNativeListLine
+} from '../native-lists/sourceLine';
 import { getIndentColumns } from '../../../shared/utils/orderedListMarkers';
+import { parsePandocListMarker } from '../../../shared/utils/pandocListMarkers';
+import { ListBlockValidator } from '../../../shared/utils/listBlockValidator';
 
 export function tryRenderSemanticListParagraph(
     elem: Element,
     context: ReadingModeContext,
     parser: ReadingModeParser,
     renderer: ReadingModeRenderer,
-    text: string
+    text: string,
+    sourceDataLines?: Array<number | undefined>,
+    invalidListLines?: Set<number>
 ): boolean {
-    const lines = text.split('\n').filter(line => line.trim().length > 0);
-    const dataLines = resolveSourceDataLines(lines, context);
+    const sourceEntries = text.split('\n')
+        .map((line, index) => ({ line, index }))
+        .filter(entry => entry.line.trim().length > 0);
+    const lines = sourceEntries.map(entry => entry.line);
+    const dataLines = sourceDataLines
+        ? sourceEntries.map(entry => sourceDataLines[entry.index])
+        : resolveSourceDataLines(lines, context, elem);
     const parsedLines = parser.parseLines(lines, true, true, context.config, dataLines);
 
-    applyStrictFancyValidation(parsedLines, lines, context);
+    applyPandocListValidation(parsedLines, context, invalidListLines);
+    makeRenderedDataLinesSectionRelative(parsedLines, elem, context);
 
-    if (!isSemanticListBlock(parsedLines)) {
+    const firstListLine = parsedLines.findIndex(isListLine);
+    if (firstListLine < 0 || !isSemanticListSuffix(parsedLines, firstListLine)) {
         return false;
     }
 
-    const rendered = groupListLines(parsedLines)
+    const rendered = groupListLines(parsedLines.slice(firstListLine))
         .flatMap(group => renderSemanticList(group, context, renderer));
+
+    if (firstListLine > 0) {
+        return replaceTrailingSourceLinesWithLists(
+            elem,
+            sourceEntries[firstListLine].index,
+            rendered
+        );
+    }
 
     if (elem.parentNode) {
         elem.replaceWith(...rendered);
@@ -44,19 +64,39 @@ export function tryRenderSemanticListParagraph(
     return true;
 }
 
-function applyStrictFancyValidation(
+function makeRenderedDataLinesSectionRelative(
     parsedLines: ParsedLine[],
-    lines: string[],
+    element: Element,
     context: ReadingModeContext
 ): void {
-    if (!context.config.enforcePandocListSpacing) {
+    const sectionStart = context.postProcessorContext.getSectionInfo?.(element)?.lineStart ??
+        context.sectionInfo?.lineStart ??
+        0;
+    if (sectionStart <= 0) {
         return;
     }
 
+    parsedLines.forEach(line => {
+        if (line.dataLine !== undefined && line.dataLine >= sectionStart) {
+            line.dataLine -= sectionStart;
+        }
+    });
+}
+
+function applyPandocListValidation(
+    parsedLines: ParsedLine[],
+    context: ReadingModeContext,
+    knownInvalidListLines?: Set<number>
+): void {
+    const invalidListLines = knownInvalidListLines ??
+        ListBlockValidator.validateListBlocks(context.validationLines, {
+            enableListsWithoutPrecedingBlankline:
+                context.config.enableListsWithoutPrecedingBlankline
+        });
     parsedLines.forEach((parsedLine, index) => {
-        if (parsedLine.type === 'fancy' &&
+        if (isListLine(parsedLine) &&
             context.validationLines.length > 0 &&
-            !validateListInStrictMode(lines[index], context.validationLines, context.config)) {
+            (parsedLine.dataLine === undefined || invalidListLines.has(parsedLine.dataLine))) {
             parsedLine.type = 'plain';
         }
     });
@@ -224,41 +264,102 @@ function updateCountersForListItem(
     }
 }
 
-function validateListInStrictMode(
-    line: string,
-    documentLines: string[],
-    config: ProcessorConfig
-): boolean {
-    let lineNum = -1;
-    for (let index = 0; index < documentLines.length; index++) {
-        if (documentLines[index].includes(line.trim())) {
-            lineNum = index;
-            break;
-        }
-    }
-
-    if (lineNum < 0) {
-        return true;
-    }
-
-    const validationContext: ValidationContext = {
-        lines: documentLines,
-        currentLine: lineNum
-    };
-
-    return isStrictPandocFormatting(validationContext, config.enforcePandocListSpacing);
-}
-
-function isSemanticListBlock(parsedLines: ParsedLine[]): boolean {
-    return parsedLines.length > 0 &&
-        parsedLines.every(line => line.content.trim().length > 0) &&
-        parsedLines.every(line => isListLine(line));
+function isSemanticListSuffix(parsedLines: ParsedLine[], startIndex: number): boolean {
+    return parsedLines.slice(startIndex).every(line =>
+        line.content.trim().length > 0 && isListLine(line)
+    );
 }
 
 function isListLine(parsedLine: ParsedLine): boolean {
     return parsedLine.type === 'hash' ||
         parsedLine.type === 'fancy' ||
         parsedLine.type === 'example';
+}
+
+function replaceTrailingSourceLinesWithLists(
+    element: Element,
+    firstListLine: number,
+    lists: HTMLOListElement[]
+): boolean {
+    const boundary = findLogicalLineBoundary(element, firstListLine);
+    if (!boundary) {
+        return false;
+    }
+    if (!element.instanceOf(HTMLLIElement) && !element.parentNode) {
+        return false;
+    }
+
+    const range = document.createRange();
+    range.setStart(boundary.container, boundary.offset);
+    range.setEnd(element, element.childNodes.length);
+    range.deleteContents();
+
+    if (element.instanceOf(HTMLLIElement)) {
+        element.append(...lists);
+        return true;
+    }
+
+    element.after(...lists);
+    return true;
+}
+
+interface DomBoundary {
+    container: Node;
+    offset: number;
+}
+
+function findLogicalLineBoundary(
+    element: Element,
+    targetLine: number
+): DomBoundary | null {
+    if (targetLine <= 0) {
+        return { container: element, offset: 0 };
+    }
+
+    let linesRemaining = targetLine;
+    let boundary: DomBoundary | null = null;
+
+    const visit = (node: Node): void => {
+        if (boundary) {
+            return;
+        }
+
+        if (node.nodeName === 'BR') {
+            linesRemaining--;
+            if (linesRemaining === 0 && node.parentNode) {
+                boundary = {
+                    container: node.parentNode,
+                    offset: Array.from(node.parentNode.childNodes).indexOf(node)
+                };
+            }
+            return;
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent ?? '';
+            for (let index = 0; index < text.length; index++) {
+                if (text[index] !== '\n') {
+                    continue;
+                }
+                linesRemaining--;
+                if (linesRemaining === 0) {
+                    boundary = { container: node, offset: index };
+                    return;
+                }
+            }
+            return;
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE ||
+            node.nodeName === 'CODE' || node.nodeName === 'PRE') {
+            return;
+        }
+
+        node.childNodes.forEach(visit);
+    };
+
+    element.childNodes.forEach(visit);
+    return boundary;
 }
 
 function groupListLines(parsedLines: ParsedLine[]): ParsedLine[][] {
@@ -334,40 +435,149 @@ function getRenderedTaskItem(parsedLine: ParsedLine): {
     };
 }
 
-function resolveSourceDataLines(
+export function resolveSourceDataLines(
     lines: string[],
-    context: ReadingModeContext
+    context: ReadingModeContext,
+    element?: Element,
+    minimumSourceLine: number = 0,
+    knownCandidateListLines?: Set<number>
 ): Array<number | undefined> {
-    const sectionInfo = context.sectionInfo;
-    if (!sectionInfo?.text) {
+    if (context.validationLines.length === 0) {
         return lines.map(() => undefined);
     }
 
-    const sourceLines = sectionInfo.text.split('\n');
-    const startLine = Math.max(0, sectionInfo.lineStart);
-    const endLine = Math.min(sourceLines.length - 1, sectionInfo.lineEnd);
+    const sourceLines = context.validationLines;
+    const candidateListLines = knownCandidateListLines ??
+        ListBlockValidator.getListMarkerCandidateLines(sourceLines, {
+            enableListsWithoutPrecedingBlankline:
+                context.config.enableListsWithoutPrecedingBlankline
+        });
+    const bounds = getElementSourceBounds(element, context, sourceLines.length);
+    const startLine = Math.max(bounds.startLine, minimumSourceLine);
+    const endLine = getCandidateSourceEndLine(
+        element,
+        sourceLines,
+        startLine,
+        bounds.endLine
+    );
     const dataLines: Array<number | undefined> = [];
     let sourceIndex = startLine;
 
     for (const line of lines) {
-        const normalizedLine = line.trim();
+        let matchIndex = sourceIndex;
         while (
-            sourceIndex <= endLine &&
-            sourceLines[sourceIndex].trim() !== normalizedLine
+            matchIndex <= endLine &&
+            !sourceLinesCorrespond(
+                line,
+                sourceLines[matchIndex],
+                matchIndex,
+                candidateListLines
+            )
         ) {
-            sourceIndex++;
+            matchIndex++;
         }
 
-        if (sourceIndex > endLine) {
+        if (matchIndex > endLine) {
             dataLines.push(undefined);
             continue;
         }
 
-        dataLines.push(sourceIndex - startLine);
-        sourceIndex++;
+        dataLines.push(matchIndex);
+        sourceIndex = matchIndex + 1;
     }
 
     return dataLines;
+}
+
+function getCandidateSourceEndLine(
+    element: Element | undefined,
+    sourceLines: string[],
+    startLine: number,
+    reportedEndLine: number
+): number {
+    if (!element?.instanceOf(HTMLLIElement)) {
+        return reportedEndLine;
+    }
+
+    const owner = parseNativeListLine(sourceLines[startLine] ?? '');
+    if (!owner) {
+        return reportedEndLine >= startLine
+            ? reportedEndLine
+            : sourceLines.length - 1;
+    }
+
+    return Math.max(
+        reportedEndLine,
+        findSourceItemSubtreeEnd(startLine, owner.indentColumns, sourceLines)
+    );
+}
+
+function getElementSourceBounds(
+    element: Element | undefined,
+    context: ReadingModeContext,
+    sourceLineCount: number
+): { startLine: number; endLine: number } {
+    const fallback = { startLine: 0, endLine: sourceLineCount - 1 };
+    if (!element || !context.sectionInfo) {
+        return fallback;
+    }
+
+    const elementInfo = context.postProcessorContext.getSectionInfo?.(element);
+    if (!elementInfo) {
+        return fallback;
+    }
+
+    const absoluteBounds = {
+        startLine: elementInfo.lineStart,
+        endLine: elementInfo.lineEnd
+    };
+    if (areValidSourceBounds(absoluteBounds, sourceLineCount)) {
+        return absoluteBounds;
+    }
+
+    const sectionRelativeBounds = {
+        startLine: elementInfo.lineStart - context.sectionInfo.lineStart,
+        endLine: elementInfo.lineEnd - context.sectionInfo.lineStart
+    };
+    return areValidSourceBounds(sectionRelativeBounds, sourceLineCount)
+        ? sectionRelativeBounds
+        : fallback;
+}
+
+function areValidSourceBounds(
+    bounds: { startLine: number; endLine: number },
+    sourceLineCount: number
+): boolean {
+    return bounds.startLine >= 0 &&
+        bounds.endLine >= bounds.startLine &&
+        bounds.endLine < sourceLineCount;
+}
+
+function sourceLinesCorrespond(
+    renderedLine: string,
+    sourceLine: string,
+    sourceIndex: number,
+    candidateListLines: Set<number>
+): boolean {
+    const renderedMarker = parsePandocListMarker(renderedLine, true);
+    const sourceMarker = parsePandocListMarker(sourceLine, true);
+    if (!renderedMarker && !sourceMarker) {
+        return renderedLine.trim() === sourceLine.trim();
+    }
+    if (!renderedMarker || !sourceMarker || renderedMarker.kind !== sourceMarker.kind) {
+        return false;
+    }
+    if (!candidateListLines.has(sourceIndex)) {
+        return false;
+    }
+
+    const renderedMarkerText = renderedLine.slice(
+        renderedMarker.markerStart,
+        renderedMarker.markerEnd
+    );
+    const sourceMarkerText = sourceLine.slice(sourceMarker.markerStart, sourceMarker.markerEnd);
+    return renderedMarkerText === sourceMarkerText &&
+        renderedMarker.orderedGroup === sourceMarker.orderedGroup;
 }
 
 function getOrderedListTypeAttribute(type: string): string | null {

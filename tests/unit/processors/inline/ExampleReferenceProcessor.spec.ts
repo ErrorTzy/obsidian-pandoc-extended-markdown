@@ -24,7 +24,7 @@ describe('ExampleReferenceProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 autoRenumberLists: false,
                 enableCustomLabelLists: false,
                 panelOrder: [],

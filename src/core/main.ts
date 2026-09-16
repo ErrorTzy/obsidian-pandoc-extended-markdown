@@ -21,6 +21,7 @@ import { ListPatterns } from '../shared/patterns';
 // Internal modules
 import { pandocExtendedMarkdownExtension } from '../live-preview/extension';
 import { processReadingMode } from '../reading-mode/processor';
+import { isInternalMarkdownFragment } from '../reading-mode/utils/fragmentRenderer';
 import { ExampleReferenceSuggest } from '../editor-extensions/suggestions/exampleReferenceSuggest';
 import { CustomLabelReferenceSuggest } from '../editor-extensions/suggestions/customLabelReferenceSuggest';
 import { FencedDivReferenceSuggest } from '../editor-extensions/suggestions/fencedDivReferenceSuggest';
@@ -119,6 +120,10 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     private registerPostProcessor(): void {
         // Register markdown post-processor for reading mode
         this.registerMarkdownPostProcessor((element, context) => {
+            if (isInternalMarkdownFragment(element)) {
+                return;
+            }
+
             // Create processor config from current settings
             const vault = this.app.vault as typeof this.app.vault & {
                 getConfig(key: 'strictLineBreaks'): boolean;
@@ -152,7 +157,7 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     }
 
     private registerCommands(): void {
-        // Add command to check strict pandoc linting
+        // Add command to check Pandoc formatting
         this.addCommand({
             id: COMMANDS.CHECK_PANDOC,
             name: 'Check pandoc formatting',
@@ -160,7 +165,8 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
                 const content = editor.getValue();
                 const issues = checkPandocFormatting(
                     content,
-                    isCustomLabelListsEnabled(this.settings)
+                    isCustomLabelListsEnabled(this.settings),
+                    this.settings.enableListsWithoutPrecedingBlankline
                 );
                 
                 if (issues.length === 0) {

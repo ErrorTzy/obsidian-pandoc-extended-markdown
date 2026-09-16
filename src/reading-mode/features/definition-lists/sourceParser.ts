@@ -1,4 +1,7 @@
 import { ListPatterns } from '../../../shared/patterns';
+import { getBlockQuoteDepth } from '../../../shared/utils/pandocBlockBoundaries';
+import { ListBlockValidator } from '../../../shared/utils/listBlockValidator';
+import { parsePandocListMarker } from '../../../shared/utils/pandocListMarkers';
 import {
     isFencedDivClosing,
     parseFencedDivOpening
@@ -10,6 +13,10 @@ export interface PandocDefinitionListBlock {
     termTexts: string[];
     definitionTexts: string[];
     items: PandocDefinitionListItem[];
+    joinsLazyContainer: boolean;
+    termContainerDepth: number;
+    definitionContainerDepth: number;
+    nativeListParentIndex?: number;
 }
 
 export interface PandocDefinitionListItem {
@@ -18,9 +25,11 @@ export interface PandocDefinitionListItem {
 }
 
 export interface PandocDefinitionDescription {
+    marker: ':' | '~';
     lines: string[];
     plainText: string;
     wrapParagraph: boolean;
+    nestedDefinitionBlocks: PandocDefinitionListBlock[];
 }
 
 export interface DefinitionMarker {
@@ -34,18 +43,76 @@ export interface MarkdownListItem {
     checked?: boolean;
 }
 
-export function findPandocDefinitionListBlocks(sourceText: string): PandocDefinitionListBlock[] {
-    const lines = sourceText.split('\n');
+export interface DefinitionListSpacingSettings {
+    enableListsWithoutPrecedingBlankline: boolean;
+}
+
+export function findPandocDefinitionListBlocks(
+    sourceText: string,
+    settings: DefinitionListSpacingSettings = {
+        enableListsWithoutPrecedingBlankline: true
+    }
+): PandocDefinitionListBlock[] {
+    const sourceLines = sourceText.split('\n');
+    const analysis = ListBlockValidator.analyzeListBlocks(sourceLines, {
+        enableListsWithoutPrecedingBlankline:
+            settings.enableListsWithoutPrecedingBlankline
+    });
+    const invalidLines = analysis.invalidLines;
+    const nativeListOwnedLines = getNativeListOwnedNonMarkerLines(
+        sourceLines,
+        invalidLines
+    );
+    const projections = new Map<number, string[]>();
     const blocks: PandocDefinitionListBlock[] = [];
     let index = 0;
 
-    while (index < lines.length) {
-        if (!canStartDefinitionListItem(lines, index)) {
+    while (index < sourceLines.length) {
+        const ownerContainerDepth = getBlockQuoteDepth(sourceLines[index]);
+        const lines = getDefinitionContainerProjection(
+            analysis.sourceLines,
+            sourceLines,
+            invalidLines,
+            ownerContainerDepth,
+            projections
+        );
+        const nativeProjection = getNativeListDefinitionProjection(
+            lines,
+            sourceLines,
+            index
+        );
+        const sourceMarker = parsePandocListMarker(sourceLines[index], true);
+        if (nativeListOwnedLines.has(index)) {
+            index++;
+            continue;
+        }
+        if (sourceMarker && sourceMarker.kind !== 'definition' && !nativeProjection) {
+            index++;
+            continue;
+        }
+        const candidateLines = nativeProjection?.lines ?? lines;
+        const allowLiteralMarkerTerm = isInvalidLiteralDefinitionTerm(
+            candidateLines,
+            invalidLines,
+            index
+        );
+        const markerIndex = findFirstDefinitionMarker(candidateLines, index);
+        if (!canStartDefinitionListItem(candidateLines, index, allowLiteralMarkerTerm) ||
+            invalidLines.has(markerIndex)) {
             index++;
             continue;
         }
 
-        const block = readDefinitionListBlock(lines, index);
+        const block = readDefinitionListBlock(
+            candidateLines,
+            sourceLines,
+            index,
+            markerIndex,
+            ownerContainerDepth,
+            settings.enableListsWithoutPrecedingBlankline,
+            nativeProjection ? index : undefined,
+            allowLiteralMarkerTerm
+        );
         blocks.push(block);
         index = block.endLine + 1;
     }
@@ -53,11 +120,206 @@ export function findPandocDefinitionListBlocks(sourceText: string): PandocDefini
     return blocks;
 }
 
+/**
+ * Lines owned by a native list item cannot also act as root definition terms.
+ * Nested native markers remain eligible to establish their own item projection.
+ */
+function getNativeListOwnedNonMarkerLines(
+    sourceLines: string[],
+    invalidLines: Set<number>
+): Set<number> {
+    const ownedLines = new Set<number>();
+    sourceLines.forEach((line, parentIndex) => {
+        const parent = parsePandocListMarker(line, true);
+        if (!parent || parent.kind === 'definition' || invalidLines.has(parentIndex)) {
+            return;
+        }
+
+        const endIndex = findNativeListItemEnd(
+            sourceLines,
+            parentIndex,
+            parent.indentColumns,
+            parent.contentIndentColumns,
+            getBlockQuoteDepth(line)
+        );
+        for (let index = parentIndex + 1; index < endIndex; index++) {
+            const marker = parsePandocListMarker(sourceLines[index], true);
+            if (!marker || marker.kind === 'definition') {
+                ownedLines.add(index);
+            }
+        }
+    });
+    return ownedLines;
+}
+
+function getDefinitionContainerProjection(
+    analyzedLines: string[],
+    sourceLines: string[],
+    invalidLines: Set<number>,
+    ownerContainerDepth: number,
+    projections: Map<number, string[]>
+): string[] {
+    const existing = projections.get(ownerContainerDepth);
+    if (existing) {
+        return existing;
+    }
+
+    const projected = analyzedLines.map(line =>
+        stripBlockQuoteDepth(line, ownerContainerDepth)
+    );
+    normalizeIndentedLazyDefinitionMarkers(projected, sourceLines, invalidLines);
+    projections.set(ownerContainerDepth, projected);
+    return projected;
+}
+
+function stripBlockQuoteDepth(line: string, depth: number): string {
+    let remaining = line;
+    for (let index = 0; index < depth; index++) {
+        const prefix = remaining.match(/^ {0,3}>[ \t]?/);
+        if (!prefix) {
+            break;
+        }
+        remaining = remaining.slice(prefix[0].length);
+    }
+    return remaining;
+}
+
+function isInvalidLiteralDefinitionTerm(
+    lines: string[],
+    invalidLines: Set<number>,
+    index: number
+): boolean {
+    return invalidLines.has(index) &&
+        parseTopLevelDefinitionMarker(lines[index] ?? '') !== null;
+}
+
+function getNativeListDefinitionProjection(
+    lines: string[],
+    sourceLines: string[],
+    index: number
+): { lines: string[] } | null {
+    const parent = parsePandocListMarker(sourceLines[index], true);
+    if (!parent || parent.kind === 'definition' ||
+        !sourceLines[index].slice(parent.markerEnd).trim()) {
+        return null;
+    }
+
+    const endIndex = findNativeListItemEnd(
+        sourceLines,
+        index,
+        parent.indentColumns,
+        parent.contentIndentColumns,
+        getBlockQuoteDepth(sourceLines[index])
+    );
+    const projected = lines.slice(0, endIndex);
+    projected[index] = sourceLines[index].slice(parent.markerEnd).trimStart();
+    for (let lineIndex = index + 1; lineIndex < endIndex; lineIndex++) {
+        projected[lineIndex] = stripIndentColumns(
+            lines[lineIndex],
+            parent.contentIndentColumns
+        );
+    }
+
+    const markerIndex = findFirstDefinitionMarker(projected, index);
+    if (markerIndex < 0) {
+        return null;
+    }
+    const originalMarker = parsePandocListMarker(sourceLines[markerIndex], true);
+    if (originalMarker?.kind !== 'definition' ||
+        originalMarker.indentColumns < parent.contentIndentColumns ||
+        originalMarker.indentColumns > parent.contentIndentColumns + 3) {
+        return null;
+    }
+    return { lines: projected };
+}
+
+function findNativeListItemEnd(
+    sourceLines: string[],
+    startIndex: number,
+    parentIndentColumns: number,
+    parentContentIndentColumns: number,
+    parentContainerDepth: number
+): number {
+    let followsBlank = false;
+    for (let index = startIndex + 1; index < sourceLines.length; index++) {
+        const ownerContent = stripBlockQuoteDepth(
+            sourceLines[index],
+            parentContainerDepth
+        );
+        if (ownerContent.trim().length === 0) {
+            followsBlank = true;
+            continue;
+        }
+
+        const marker = parsePandocListMarker(sourceLines[index], true);
+        if (marker && marker.kind !== 'definition' &&
+            marker.indentColumns <= parentIndentColumns) {
+            return index;
+        }
+        if (marker?.kind === 'definition' &&
+            marker.indentColumns < parentContentIndentColumns) {
+            return index;
+        }
+        if (followsBlank && (
+            getBlockQuoteDepth(sourceLines[index]) < parentContainerDepth ||
+            getIndentWidth(getLeadingWhitespace(ownerContent)) <
+                parentContentIndentColumns
+        )) {
+            return index;
+        }
+        followsBlank = false;
+    }
+    return sourceLines.length;
+}
+
+function stripIndentColumns(line: string, columnsToStrip: number): string {
+    let offset = 0;
+    let columns = 0;
+    while (offset < line.length && columns < columnsToStrip) {
+        if (line[offset] === ' ') {
+            columns++;
+            offset++;
+            continue;
+        }
+        if (line[offset] === '\t') {
+            columns += 4 - columns % 4;
+            offset++;
+            continue;
+        }
+        break;
+    }
+    return columns >= columnsToStrip ? line.slice(offset) : line;
+}
+
+function normalizeIndentedLazyDefinitionMarkers(
+    lines: string[],
+    sourceLines: string[],
+    invalidLines: Set<number>
+): void {
+    for (let index = 1; index < lines.length; index++) {
+        const marker = parsePandocListMarker(sourceLines[index], true);
+        if (invalidLines.has(index) || marker?.kind !== 'definition' ||
+            marker.indentColumns < 4 ||
+            getBlockQuoteDepth(sourceLines[index - 1]) <=
+                getBlockQuoteDepth(sourceLines[index])) {
+            continue;
+        }
+        lines[index] = lines[index].trimStart();
+    }
+}
+
 export function isStandalonePandocDefinitionList(
     sourceText: string,
     blocks: PandocDefinitionListBlock[] = findPandocDefinitionListBlocks(sourceText)
 ): boolean {
     if (blocks.length === 0) {
+        return false;
+    }
+    if (blocks.some(block =>
+        block.nativeListParentIndex !== undefined ||
+        block.termContainerDepth !== 0 ||
+        block.definitionContainerDepth !== 0
+    )) {
         return false;
     }
 
@@ -71,14 +333,14 @@ export function isStandalonePandocDefinitionList(
 }
 
 export function parseIndentedDefinitionMarker(line: string): DefinitionMarker | null {
-    const match = line.match(/^([ \t]*)([:~])(?:([ \t]+)(.*)|[ \t]*)$/);
-    if (!match || getIndentWidth(match[1]) < 4) {
+    const parsed = parseDefinitionMarkerAtAnyIndent(line);
+    if (!parsed || parsed.indentColumns < 4) {
         return null;
     }
 
     return {
-        marker: match[2] as ':' | '~',
-        content: removePandocMarkerPadding(match[4] ?? '')
+        marker: parsed.marker,
+        content: parsed.content
     };
 }
 
@@ -124,13 +386,27 @@ export function normalizePlainText(lines: string[]): string {
         .join(' ');
 }
 
-function readDefinitionListBlock(lines: string[], startLine: number): PandocDefinitionListBlock {
+function readDefinitionListBlock(
+    lines: string[],
+    sourceLines: string[],
+    startLine: number,
+    firstMarkerLine: number,
+    ownerContainerDepth: number,
+    enableListsWithoutPrecedingBlankline: boolean,
+    nativeListParentIndex?: number,
+    allowLiteralMarkerTerm = false
+): PandocDefinitionListBlock {
     const items: PandocDefinitionListItem[] = [];
     const termTexts: string[] = [];
     const definitionTexts: string[] = [];
     let index = startLine;
+    const definitionQuoteDepth = getBlockQuoteDepth(sourceLines[firstMarkerLine]);
 
-    while (canStartDefinitionListItem(lines, index)) {
+    while (canStartDefinitionListItem(
+        lines,
+        index,
+        allowLiteralMarkerTerm && index === startLine
+    ) && getBlockQuoteDepth(sourceLines[index]) >= ownerContainerDepth) {
         const itemStart = index;
         const term = lines[index].trim();
         const markerStart = findFirstDefinitionMarker(lines, itemStart);
@@ -139,11 +415,22 @@ function readDefinitionListBlock(lines: string[], startLine: number): PandocDefi
 
         const definitions: PandocDefinitionDescription[] = [];
         while (index < lines.length) {
-            if (!parseTopLevelDefinitionMarker(lines[index])) {
+            if (!isDefinitionMarkerInOwningContainer(
+                sourceLines[index],
+                ownerContainerDepth,
+                enableListsWithoutPrecedingBlankline
+            ) ||
+                !parseTopLevelDefinitionMarker(lines[index])) {
                 break;
             }
 
-            const result = readDefinitionDescription(lines, index, hasBlankAfterTerm, definitions.length);
+            const result = readDefinitionDescription(
+                lines,
+                index,
+                hasBlankAfterTerm,
+                definitions.length,
+                enableListsWithoutPrecedingBlankline
+            );
             definitions.push(result.description);
             definitionTexts.push(result.description.plainText);
             index = result.nextIndex;
@@ -156,8 +443,15 @@ function readDefinitionListBlock(lines: string[], startLine: number): PandocDefi
         items.push({ term, definitions });
         termTexts.push(term);
 
+        let crossedContainerBoundary = false;
         while (index < lines.length && lines[index].trim().length === 0) {
+            if (getBlockQuoteDepth(sourceLines[index]) < ownerContainerDepth) {
+                crossedContainerBoundary = true;
+            }
             index++;
+        }
+        if (crossedContainerBoundary) {
+            break;
         }
     }
 
@@ -166,7 +460,11 @@ function readDefinitionListBlock(lines: string[], startLine: number): PandocDefi
         endLine: Math.max(startLine, index - 1),
         termTexts,
         definitionTexts,
-        items
+        items,
+        joinsLazyContainer: ownerContainerDepth > definitionQuoteDepth,
+        termContainerDepth: ownerContainerDepth,
+        definitionContainerDepth: definitionQuoteDepth,
+        nativeListParentIndex
     };
 }
 
@@ -174,19 +472,26 @@ function readDefinitionDescription(
     lines: string[],
     markerLine: number,
     hasBlankAfterTerm: boolean,
-    definitionIndex: number
+    definitionIndex: number,
+    enableListsWithoutPrecedingBlankline: boolean
 ): { description: PandocDefinitionDescription, nextIndex: number } {
     const marker = parseTopLevelDefinitionMarker(lines[markerLine]);
+    const owner = parsePandocListMarker(lines[markerLine], true);
     const descriptionLines = [marker?.content ?? ''];
     let index = markerLine + 1;
     let sawBlank = false;
 
     while (index < lines.length) {
+        if (isDefinitionDescriptionListBoundary(lines, markerLine, index)) {
+            break;
+        }
+
         if (isDefinitionTermBoundary(lines[index])) {
             break;
         }
 
-        if (parseTopLevelDefinitionMarker(lines[index])) {
+        if (parseTopLevelDefinitionMarker(lines[index]) &&
+            !isNestedDefinitionMarker(owner, lines[index])) {
             break;
         }
 
@@ -204,25 +509,102 @@ function readDefinitionDescription(
             continue;
         }
 
-        descriptionLines.push(stripContinuationIndent(lines[index]));
+        descriptionLines.push(normalizeDefinitionContinuation(
+            lines[index],
+            owner?.contentIndentColumns ?? 2,
+            descriptionLines[0]
+        ));
         index++;
     }
 
+    const nestedDefinitionBlocks = findPandocDefinitionListBlocks(
+        descriptionLines.join('\n'),
+        { enableListsWithoutPrecedingBlankline }
+    ).filter(block => block.termContainerDepth === 0);
+
     return {
         description: {
+            marker: marker?.marker ?? ':',
             lines: trimTrailingBlankLines(descriptionLines),
             plainText: normalizePlainText(descriptionLines),
-            wrapParagraph: hasBlankAfterTerm && (definitionIndex > 0 || !hasInlineBlockContent(descriptionLines)) || sawBlank
+            wrapParagraph: hasBlankAfterTerm && (definitionIndex > 0 || !hasInlineBlockContent(descriptionLines)) || sawBlank,
+            nestedDefinitionBlocks
         },
         nextIndex: index
     };
 }
 
-function canStartDefinitionListItem(lines: string[], index: number): boolean {
+function isNestedDefinitionMarker(
+    owner: ReturnType<typeof parsePandocListMarker>,
+    candidateLine: string
+): boolean {
+    const candidate = parsePandocListMarker(candidateLine, true);
+    return owner?.kind === 'definition' &&
+        candidate?.kind === 'definition' &&
+        candidate.indentColumns >= owner.contentIndentColumns &&
+        candidate.indentColumns <= owner.contentIndentColumns + 3;
+}
+
+function normalizeDefinitionContinuation(
+    line: string,
+    ownerContentIndent: number,
+    firstLine: string
+): string {
+    // The description body starts at the definition marker's content column.
+    // Project continuations into that coordinate system so a child definition
+    // marker is parsed recursively at its actual body depth. Keep the existing
+    // list-body representation for the synchronous native-list fallback.
+    if (!parseMarkdownListItem(firstLine)) {
+        return stripIndentColumns(line, ownerContentIndent);
+    }
+    return stripContinuationIndent(line);
+}
+
+function isDefinitionMarkerInOwningContainer(
+    sourceLine: string,
+    ownerContainerDepth: number,
+    enableListsWithoutPrecedingBlankline: boolean
+): boolean {
+    const marker = parsePandocListMarker(sourceLine, true);
+    if (marker?.kind !== 'definition') {
+        return false;
+    }
+
+    const markerContainerDepth = getBlockQuoteDepth(sourceLine);
+    return markerContainerDepth >= ownerContainerDepth ||
+        !enableListsWithoutPrecedingBlankline ||
+        marker.indentColumns >= 4;
+}
+
+function isDefinitionDescriptionListBoundary(
+    lines: string[],
+    definitionMarkerLine: number,
+    candidateLine: number
+): boolean {
+    if (getBlockQuoteDepth(lines[candidateLine]) > 0) {
+        return false;
+    }
+
+    const candidate = parsePandocListMarker(lines[candidateLine], true);
+    if (!candidate || candidate.kind === 'definition') {
+        return false;
+    }
+
+    const definition = parsePandocListMarker(lines[definitionMarkerLine], true);
+    return Boolean(definition &&
+        candidate.indentColumns < definition.contentIndentColumns);
+}
+
+function canStartDefinitionListItem(
+    lines: string[],
+    index: number,
+    allowDefinitionMarkerTerm = false
+): boolean {
     if (
         index >= lines.length ||
         lines[index].trim().length === 0 ||
-        parseTopLevelDefinitionMarker(lines[index]) ||
+        getIndentWidth(getLeadingWhitespace(lines[index])) >= 4 ||
+        (!allowDefinitionMarkerTerm && parseTopLevelDefinitionMarker(lines[index])) ||
         isDefinitionTermBoundary(lines[index])
     ) {
         return false;
@@ -282,18 +664,36 @@ function isBlankBeforeSiblingDefinition(lines: string[], index: number): boolean
 }
 
 function parseTopLevelDefinitionMarker(line: string): DefinitionMarker | null {
-    const match = line.match(/^([ \t]*)([:~])(?:([ \t]+)(.*)|[ \t]*)$/);
-    if (!match || getIndentWidth(match[1]) >= 4) {
-        return null;
-    }
-
-    if (!match[3] && line.trim().length > 1) {
+    const parsed = parseDefinitionMarkerAtAnyIndent(line);
+    if (!parsed || parsed.indentColumns >= 4) {
         return null;
     }
 
     return {
-        marker: match[2] as ':' | '~',
-        content: removePandocMarkerPadding(match[4] ?? '')
+        marker: parsed.marker,
+        content: parsed.content
+    };
+}
+
+function parseDefinitionMarkerAtAnyIndent(
+    line: string
+): DefinitionMarker & { indentColumns: number } | null {
+    const parsed = parsePandocListMarker(line, true);
+    if (parsed?.kind !== 'definition' ||
+        !/^[ \t]*$/.test(line.slice(0, parsed.markerStart))) {
+        return null;
+    }
+
+    const marker = line.slice(parsed.markerStart, parsed.markerEnd);
+    if (marker !== ':' && marker !== '~') {
+        return null;
+    }
+    const markerEndColumn = parsed.indentColumns + marker.length;
+    const paddingColumns = parsed.contentIndentColumns - markerEndColumn;
+    return {
+        marker,
+        content: stripIndentColumns(line.slice(parsed.markerEnd), paddingColumns),
+        indentColumns: parsed.indentColumns
     };
 }
 
@@ -302,10 +702,6 @@ function stripContinuationIndent(line: string): string {
         return line;
     }
     return line.replace(/^ {0,2}/, '');
-}
-
-function removePandocMarkerPadding(content: string): string {
-    return content.replace(/^ {0,3}/, '');
 }
 
 function trimTrailingBlankLines(lines: string[]): string[] {
@@ -330,5 +726,6 @@ function getLeadingWhitespace(line: string): string {
 }
 
 function getIndentWidth(indent: string): number {
-    return Array.from(indent).reduce((width, char) => width + (char === '\t' ? 4 : 1), 0);
+    return Array.from(indent).reduce((width, char) => width +
+        (char === '\t' ? 4 - width % 4 : 1), 0);
 }

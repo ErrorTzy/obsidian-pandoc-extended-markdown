@@ -39,7 +39,7 @@ describe('Adjacent Superscript and Subscript Processing', () => {
             definitionLists: true,
             exampleLists: true,
             strictLineBreaks: false,
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             enableCustomLabelLists: false,
             useNewPipeline: true
         } as PandocExtendedMarkdownSettings;

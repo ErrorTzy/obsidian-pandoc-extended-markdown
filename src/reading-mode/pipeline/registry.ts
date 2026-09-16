@@ -64,9 +64,7 @@ export function createReadingModeContext(
         config,
         app,
         counters,
-        validationLines: config.enforcePandocListSpacing && sectionInfo?.text
-            ? sectionInfo.text.split('\n')
-            : [],
+        validationLines: sectionInfo?.text ? sectionInfo.text.split('\n') : [],
         renderContext: {
             strictLineBreaks: config.strictLineBreaks,
             getExampleNumber: (label: string) =>

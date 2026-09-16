@@ -51,7 +51,7 @@ describe('fenced div live-preview pipeline', () => {
         pipeline.registerStructuralProcessor(new DefinitionProcessor());
         pipeline.registerInlineProcessor(new FencedDivReferenceProcessor());
         settings = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             autoRenumberLists: false,
             enableFencedDivs: true,
             enableListPanel: true,
@@ -86,6 +86,16 @@ describe('fenced div live-preview pipeline', () => {
             .map(entry => entry.decoration.spec.widget)
             .filter(Boolean)
             .map(widget => (widget as { constructor: { name: string } }).constructor.name);
+    };
+
+    const getLineClasses = (): string[] => {
+        const decorations = pipeline.process(view, settings) as unknown as {
+            decorations: Array<{ decoration: { spec: { class?: string } } }>;
+        };
+
+        return decorations.decorations
+            .map(entry => entry.decoration.spec.class)
+            .filter((className): className is string => Boolean(className));
     };
 
     it('renders Pandoc fenced div blocks and known @id citations', () => {
@@ -240,10 +250,13 @@ describe('fenced div live-preview pipeline', () => {
         updateView('::: title\n: text\n:::');
 
         const widgetNames = getWidgetNames();
+        const lineClasses = getLineClasses();
 
         expect(widgetNames).toContain('FencedDivHeaderWidget');
         expect(widgetNames).toContain('FencedDivClosingWidget');
         expect(widgetNames).not.toContain('DefinitionBulletWidget');
+        expect(lineClasses).toContainEqual(expect.stringContaining('cm-pem-fenced-div-content'));
+        expect(lineClasses).not.toContainEqual(expect.stringContaining('cm-pem-definition-paragraph'));
     });
 
     it('still renders real definition lists inside fenced div content', () => {

@@ -103,7 +103,7 @@ The optional Pandoc export backend is a separate desktop-only module. It is not 
 
 All structural processors extend `BaseStructuralProcessor` which provides:
 - `isCursorInMarker()`: Check if cursor is within marker range
-- `isInvalidInStrictMode()`: Check whether strict Pandoc list spacing blocks rendering
+- `isInvalidPandocListLine()`: Check whether Pandoc parses a candidate marker as paragraph text
 - `createLineDecoration()`: Create standard line decorations
 - `createContentMarkDecoration()`: Create content area decorations
 - `createMarkerReplacement()`: Create marker replacement widgets
@@ -128,7 +128,9 @@ Fancy, hash, and example structural processors recognize Pandoc task modifiers
 after their base marker. They render the checkbox with Obsidian's native task
 classes, attach task state to the editor line, and keep the task prefix outside
 inline content regions. Native unordered and decimal task lists remain owned by
-Obsidian.
+Obsidian. A validator-rejected marker suppresses list-specific decoration only;
+the rest of the structural and inline pipeline still runs so fenced-div and
+other container processors preserve that line as ordinary content.
 
 Live Preview also registers `fencedDivDragExtension`, a small CodeMirror view
 plugin that listens for left-button drags that begin on a fenced-div rail and
@@ -191,7 +193,7 @@ Reading mode uses a small processor pipeline around rendered preview DOM. The pu
 | **types.ts** | Defines `ReadingModeContext`, `ReadingModeProcessor`, `BlockDomProcessor`, `InlineTextProcessor`, and Obsidian app adapter types |
 | **registry.ts** | Builds the default processor set and shared context |
 
-`ReadingModeContext` contains the rendered root element, Obsidian post-processor context, preview section and section info, source path, optional full source, processor config, render context, document counters, app adapter, and Pandoc list-spacing validation lines.
+`ReadingModeContext` contains the rendered root element, Obsidian post-processor context, preview section and section info, source path, optional full source, processor config, render context, document counters, app adapter, and source lines used for Pandoc list validation.
 
 #### Block/DOM Processors (`/reading-mode/pipeline/processors/`)
 
@@ -200,6 +202,7 @@ Reading mode uses a small processor pipeline around rendered preview DOM. The pu
 | **UnorderedListMarkerProcessor** | 20 | Adds or clears source-marker classes on rendered unordered list items |
 | **DefinitionListNormalizationProcessor** | 40 | Schedules delayed normalization/rebuild of rendered definition lists, using full source when available |
 | **FencedDivBlockProcessor** | 60 | Schedules section-scoped fenced div block rendering |
+| **NativeListSpacingProcessor** | 70 | Reconciles assembled container DOM with Pandoc's `lists_without_preceding_blankline` block behavior |
 | **ExtendedListBlockProcessor** | 120 | Preserves existing rendered behavior for hash, fancy, example, and source-backed definition list paragraphs |
 | **InlineTextEngineProcessor** | 300 | Runs registered inline processors through the shared text-node replacement engine |
 | **CustomLabelListProcessor** | 400 | Runs the existing two-pass custom label list processor after other replacements |
@@ -207,6 +210,181 @@ Reading mode uses a small processor pipeline around rendered preview DOM. The pu
 Extended ordered-list rendering emits Pandoc-compatible task item content and
 Obsidian task classes. Checkbox inputs carry section-relative source line
 metadata so Reading Mode clicks use Obsidian's existing source-toggle handler.
+Rendered extended markers are assigned to source lines by their section bounds
+and document order before any DOM mutation. The shared validator exposes only
+marker candidates reached outside opaque blocks, so duplicate text in fenced
+code cannot capture a later rendered list. If a source-backed marker cannot be
+located unambiguously, it remains untouched. Validation retains absolute source
+indices; only final checkbox metadata is converted to the host block's relative
+coordinate. `semanticBlockRenderer.ts` can split a validated trailing hash,
+fancy, or example-list suffix from either a paragraph or an existing native
+list item. It preserves the paragraph prefix or native item and inserts the
+semantic list as a sibling or child, respectively, so extended children are not
+flattened into native-parent text.
+
+`ListBlockValidator` is the shared source-state analyzer for Live Preview and
+Reading Mode. `enableListsWithoutPrecedingBlankline` is the direct, positive
+representation of Pandoc's `lists_without_preceding_blankline` extension:
+`true` targets `markdown+lists_without_preceding_blankline`, and `false` targets
+`markdown-lists_without_preceding_blankline`. There is no separate strict-mode
+switch. The same setting is passed through native, extended, and definition-list
+recognition, including nested lists and container transitions, so disabling it
+prevents a recognized list from interrupting an open paragraph wherever Pandoc
+does. Paragraph and list state belong to their containers: a
+physical blank can end lazy quote membership, whereas a deeper bare quote marker
+within a list item can remain literal continuation text. Nested lists and text
+following a valid list follow Pandoc's list grammar, not a blanket blank-line
+rule. When the extension is enabled, a valid marker which returns from a rejected
+deeper quote to the paragraph's container closes that rejected interruption and
+is reconsidered as a new list block; when disabled, it remains part of the same
+literal paragraph. Indentation is measured in visual columns throughout list parsing,
+validation, continuation handling, and editor list structure. A tab advances to
+the next four-column tab stop (`4 - column % 4`), rather than always adding four
+columns; nested-list ownership is therefore relative to the parsed parent
+marker's content column, including wide ordered markers such as `100.`.
+The optional installed-Pandoc oracle suite checks both extension states across
+block/container prefixes and compares nested-list classification and topology,
+including wide ordered markers and mixed space/tab indentation. Pandoc remains a
+development oracle rather than a runtime dependency.
+
+The analyzer also recognizes Pandoc block boundaries such as headings, fenced code,
+tables, HTML/native divs, fenced divs, line blocks, raw TeX commands, YAML
+metadata, and definition lists so paragraph continuation text is not mistaken
+for a standalone block. Raw TeX environments and indented multiline backtick
+spans remain in paragraph state, as they do in Pandoc; list-looking text inside
+those spans is kept opaque to list matching. Fenced-div delimiters establish
+container boundaries, while each fenced-div body uses the same list-spacing
+state machine as the document root.
+Reference definitions are recognized as complete destination/title/attribute
+ranges by `pandocReferenceDefinitions`, rather than by a prefix alone.
+`pandocRawTexBlocks` uses balanced arguments and Pandoc's inline-command table
+(`pandocTexCommandNames`) to distinguish raw blocks from paragraph content.
+`PandocBlockEntryWhitespace` models reader-cursor indentation consumed after raw
+TeX and at raw HTML body block entries. It does not dedent paragraph or list
+continuations; normalized entry lines are returned in the analysis's source map.
+Pandoc footnote definitions are projected into independent body regions with
+their continuation indentation removed before that same state machine runs.
+This keeps the setting effective for both indented and lazy unindented lists in
+a note without allowing paragraph state to leak between the note and document.
+`PandocListItemContinuations` also records source-owned literal continuations as
+structured `literalListContinuations` ranges. Each range carries its parent line,
+inclusive source bounds, the exact list-looking marker lines, and whether Pandoc
+classifies the range as paragraph or code content. Footnote-body ranges are
+projected back to their original document indices before `ListBlockAnalysis` is
+returned.
+
+When Obsidian has already emitted native list DOM for a list Pandoc keeps inside
+a paragraph, `NativeListSpacingProcessor` escapes only the affected source
+markers and renders that source through Obsidian's Markdown renderer. The
+replacement is atomic and source-backed, preserving inline markup, task text,
+lazy continuations, and every nested marker. Matches are ordered against the
+full source and use renderer-derived lead-text signatures, so repeated or
+prefix-matching item text cannot redirect a replacement to an earlier valid
+list. Indented backtick spans that Obsidian initially materializes as fenced code
+are normalized back to inline code during the paragraph render. Replacement
+ranges stop at the analyzer's Pandoc block boundary, while an
+indented block suffix that Obsidian materialized under the consumed item is retained.
+Subtree ownership removes only the quote prefixes shared with the owning item, so
+a nested block quote keeps its physical indentation instead of being mistaken for
+a root sibling. When the first source-owned suffix block can be matched exactly,
+the processor promotes that block and every following source-owned block sibling
+intact. Otherwise it renders the complete source-owned subtree, preserving content
+without guessing at DOM ownership. A following outer list tail is merged into a
+promoted list only when Pandoc keeps both markers in the same group: unordered
+markers are compatible, while ordered markers must have the same numeral style and
+delimiter. Mixed list kinds and incompatible forms such as `1)` followed by `7.`
+remain separate blocks.
+Block-quote wrappers that Obsidian creates for a deeper marker inside an outer
+Pandoc paragraph are reconciled at the paragraph's actual container depth, and
+the excess quote markers remain literal text. DOM cleanup removes only matched
+list blocks or an otherwise source-owned quote wrapper; it never consumes the
+unmatched siblings between separate list segments. Paragraph replacements own
+the exact matched paragraph, not its preview wrapper. Cleanup prunes empty
+containers only, retaining unmatched wrapper children. Async replacements
+revalidate individual matched item identities after rendering, not just list
+or root membership.
+For a literal paragraph continuation whose indent remains before its parsed
+parent's content column, the processor passes the analyzer's structured range to
+`literalContinuationReconciler.ts`. This is marker-width-relative behavior; a
+wide ordered marker is one example, not a special case. The reconciler acts only
+when an exact intervening host code block matches the source range. It renders
+the escaped continuation as inline content, matches the parent and any following
+same-list sibling by rendered source signature, and preflights every node before
+mutation. The original parent item, following item, and compatible list nodes
+are retained; only the matched code block and an emptied split-list wrapper are
+removed. If source, topology, or a generation check no longer matches,
+reconciliation is a no-op, so unrelated siblings and live event handlers are
+never consumed.
+Per-preview generations cancel stale asynchronous work after source, mode, or
+setting changes. The plain-source fallback is used only when the application
+renderer is unavailable. Fenced-div assembly moves a native list together with
+its root list block, preserving nested list structure instead of detaching list
+items from their container.
+Captured fenced-div closings use a source-checked list-prefix split: only the
+delimiter is removed, existing item subtrees move together, and a shared outside
+list tail retains its original list/item nodes and ordered numbering. Native
+list items never enter the paragraph-fragment splitter. Delimiter removal
+preflights the entire text suffix before mutating live DOM.
+Captured prefixes are matched against renderer-derived source signatures when
+the application renderer is available, preserving inline-extension semantics.
+Fenced-div coordination awaits actual section assembly, including its deferred
+DOM pass, before native-list reconciliation starts.
+Lazy quote normalization also runs when the host produced a code block and no
+native list items. Whole source-region render signatures identify the owning
+quote; only source-matched code blocks, thematic breaks, or excess quote
+wrappers are reconciled. Literal quote-prefix restoration inserts text around
+the original inline nodes, retaining links, widgets, and event listeners.
+Footnote endnote-index lists are excluded from native-list matching; only a
+list rooted in a footnote body is eligible. When Obsidian materializes a lazy
+footnote list at the document root, its source label and generated reference
+target identify the exact footnote item before matched list items are moved.
+Strict paragraph demotion then runs inside that item, retaining the endnote
+index, footnote item, backlink DOM, unmatched list tails, and event listeners.
+
+Definition-list source parsing uses the same `ListBlockValidator` result and the
+current extension setting instead of assuming lenient spacing. It parses
+container-normalized source while retaining raw quote depths, which identifies
+the Pandoc case where a definition marker joins a term from a lazy container.
+Full-source Reading Mode normalization then source-matches the rendered term and
+marker candidates before moving the generated definition list into the term's
+container. For this cross-container replacement, `normalizer.ts` stores the
+original term and marker nodes together with their parents and insertion anchors
+in a `WeakMap`. When a later setting/source analysis deactivates the recorded
+lazy replacement, it restores those exact nodes rather than reconstructing their
+text. If that in-memory restoration is unavailable after a plugin reload, an
+exact source/DOM signature can demote a canonical lazy definition list instead.
+The cold fallback preflights container ownership before mutation, retains inline
+descendants and soft breaks, renders block-valued definitions back to literal
+marker text from source, and replaces only the matched list or its exclusive
+paragraph so host-wrapper siblings are not consumed. Definition lists inside
+native list items are projected relative to the parent marker's content column
+and stop at that item's source boundary. Their exact-match reconciliation keeps
+the native list and list-item nodes intact, and does not run when the outer list
+is rejected by the current `lists_without_preceding_blankline` mode. The
+standalone-root optimization is limited to root-container definitions; quoted
+definitions are reconciled in place so every blockquote and layout wrapper keeps
+its identity and unrelated wrapper children are never discarded. Definition
+description bodies are projected relative to their marker's content column.
+Definition markers in that owned indentation range become recursive block models,
+so `sourceRenderer.ts` constructs the same nested `dl` topology as Pandoc for both
+root definitions and definitions owned by native list items. Non-definition body
+regions are sent to the host renderer as complete Markdown fragments, so mixed
+block sequences such as a plain paragraph followed by a nested list stay as sibling
+block nodes inside the same `dd` instead of being flattened to text. Definition
+bodies are host-rendered inside a synthetic outer list item and then unwrapped;
+this preserves the list-item-relative indentation Pandoc assigns to description
+content without retaining a synthetic list in the final DOM. At that single host
+boundary, soft breaks become collapsible spaces while explicit Markdown/HTML
+hard breaks remain `br` elements. Ordered lists and task lists are normalized to
+Pandoc's HTML shape (`ol[type]`, `ul.task-list`, and a task `label`) without
+replacing the host-rendered inline nodes. The
+definition-list reconciliation controller waits for full source when the app is
+available and uses generation checks so an older async pass cannot overwrite a
+new toggle state. Source-backed definition structures delegate term fragments
+and complete description-body fragments to Obsidian's Markdown renderer, rather
+than maintaining a partial Markdown parser. Internal fragment targets are marked so this plugin's
+own postprocessor does not recursively normalize them; the marker stays on the
+temporary wrapper and is not moved into the resulting definition list.
 
 #### Inline Text Processors (`/reading-mode/pipeline/inline/`)
 
@@ -233,6 +411,7 @@ Pipeline processors should orchestrate work only. Feature-specific parsing, rend
 | **definition-lists/** | Owns source-backed Pandoc definition-list parsing, rendering, parsed-line adaptation, and DOM normalization |
 | **fenced-divs/** | Owns fenced-div scheduling, source-opening validation, DOM candidate splitting, block rendering, label hydration, and reference hydration |
 | **custom-labels/** | Owns custom-label list parsing, marker rendering, definition paragraph rendering, and reference replacement |
+| **native-lists/** | Reconciles native-list paragraphs and blockquote/footnote container placement without dropping source-backed content or live DOM tails |
 | **super-sub/** | Provides the legacy whole-element superscript/subscript processor used by focused tests and compatibility paths |
 | **unordered-lists/** | Maps source unordered-list markers to rendered reading-mode list item classes |
 
@@ -240,10 +419,18 @@ Definition-list file names describe their data flow:
 
 | File | Purpose |
 |------|---------|
-| **sourceParser.ts** | Parses markdown source text into Pandoc definition-list blocks |
+| **sourceParser.ts** | Parses validator-approved, container-normalized source into Pandoc definition-list blocks and records lazy-container joins |
 | **sourceRenderer.ts** | Renders parsed source blocks and surrounding paragraph content |
+| **hostRenderer.ts** | Builds definition-list structure while rendering arbitrary inline fragments through Obsidian |
 | **parsedLineAdapter.ts** | Adapts `ParsedLine[]` blocks into the canonical source-backed renderer |
-| **normalizer.ts** | Rebuilds malformed rendered definition-list DOM from source when needed |
+| **normalizer.ts** | Rebuilds malformed rendered definition-list DOM from source and reversibly reconciles lazy-container joins |
+
+Native-list files with source/DOM reconciliation responsibilities include:
+
+| File | Purpose |
+|------|---------|
+| **literalContinuationReconciler.ts** | Repairs source-proven literal paragraph continuations that Obsidian split into code/list blocks while preserving matched list-item identities |
+| **sourceOwnedBlockSuffix.ts** | Plans every source-owned list/quote suffix block and its safe promotion or complete-render fallback |
 
 Fenced-div file names describe their ownership:
 
@@ -344,6 +531,10 @@ listAutocompletion/
 | **contentTruncator** | Smart content truncation | Panel displays |
 | **fencedDivReferenceMetadata** | Fenced-div title, numbering, and reference metadata | Live Preview, Reading mode, panels, export parity tests |
 | **listHelpers** | List manipulation | Autocompletion |
+| **pandocListMarkers** | Pandoc list-start grammar, ambiguity rules, and safe marker escaping | Shared list block validation and Reading mode source rendering |
+| **pandocBlockBoundaries** | Pandoc paragraph-interrupting block, container, table, raw block, reference-definition, and block/inline fence recognition | Shared list block validation and Reading mode source rendering |
+| **listBlockValidator** | Tracks Pandoc paragraph/list block state for `lists_without_preceding_blankline` | Live Preview and Reading mode |
+| **pandocListItemContinuations** | Tracks nested-list item frames and reports literal paragraph/code continuation ranges in source coordinates | Shared list validation and Reading Mode reconciliation |
 | **placeholderProcessor** | Process `#a`, `#b` | Custom labels |
 | **cursorUtils** | Cursor position calculations | Inline processors |
 | **contextUtils** | Reference context building | Inline processors, widgets |
@@ -371,9 +562,9 @@ listAutocompletion/
    - Extract labeled fenced divs, including readable shorthand title templates when enabled → Map<label, reference metadata>
    - Skip code regions
 
-3. Validation (Pandoc List Spacing Enforcement)
-   - Check Pandoc compliance
-   - Mark invalid lines
+3. Validation (`lists_without_preceding_blankline` parity)
+   - Track Pandoc paragraph and native-list boundaries
+   - Mark lines that Pandoc keeps as paragraph text
 
 4. State Retrieval
    - Get hash counter
@@ -441,12 +632,13 @@ For each content region from Phase 1:
    - source path and section info
    - ProcessorConfig and RenderContext
    - document counters and label maps from PluginStateManager
-   - Pandoc list-spacing validation lines
+   - source lines for Pandoc list validation
 3. createDefaultReadingModePipeline() registers block and inline processors
 4. ReadingModePipeline runs enabled processors by priority:
    - source-aware marker classes
    - delayed definition list normalization
    - section-scoped fenced div rendering
+   - Pandoc native-list/container reconciliation after fenced-div assembly
    - extended list paragraph rendering
    - shared inline text replacement
    - custom label list post-pass

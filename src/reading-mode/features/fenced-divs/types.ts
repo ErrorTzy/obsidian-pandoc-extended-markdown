@@ -30,7 +30,11 @@ export interface SourceOpeningState {
     sourceLines: string[];
     lineIndex: number;
     inObsidianComment: boolean;
+    capturedListClosingSignatures?: CapturedListClosingSignatures;
 }
+
+/** Closing source index → list-prefix start source index → rendered word sequence. */
+export type CapturedListClosingSignatures = Map<number, Map<number, string>>;
 
 export interface SourceOpeningEligibility {
     text: string;

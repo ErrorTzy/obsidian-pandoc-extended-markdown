@@ -1593,7 +1593,7 @@ async function configureOrderedListSettings(
                 enableOrderedListMarkerCycling: true,
                 enableUnorderedListMarkerCycling: true,
                 autoRenumberLists: true,
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 orderedListMarkerOrder
             }, settingsOverrides);
             await enabledPlugin.saveSettings();
@@ -1943,16 +1943,20 @@ function nextStyle(style: OrderedListMarkerStyle): OrderedListMarkerStyle {
 
 function marker(style: OrderedListMarkerStyle, ordinal: number): string {
     const delimiter = style.endsWith('one-paren') ? ')' : '.';
+    const disambiguationPadding = style === 'upper-alpha-period' ||
+        (style === 'upper-roman-period' && [1, 5, 10, 50, 100, 500, 1000].includes(ordinal))
+        ? ' '
+        : '';
 
     if (style.startsWith('decimal')) {
-        return `${ordinal}${delimiter}`;
+        return `${ordinal}${delimiter}${disambiguationPadding}`;
     }
 
     if (style.includes('roman')) {
-        return `${toRoman(ordinal, style.startsWith('upper'))}${delimiter}`;
+        return `${toRoman(ordinal, style.startsWith('upper'))}${delimiter}${disambiguationPadding}`;
     }
 
-    return `${toAlpha(ordinal, style.startsWith('upper'))}${delimiter}`;
+    return `${toAlpha(ordinal, style.startsWith('upper'))}${delimiter}${disambiguationPadding}`;
 }
 
 function toAlpha(ordinal: number, isUpperCase: boolean): string {

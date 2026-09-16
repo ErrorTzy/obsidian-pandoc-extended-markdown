@@ -29,7 +29,7 @@ describe('ProcessingPipeline long document performance', () => {
     beforeEach(() => {
         settings = {
             ...DEFAULT_SETTINGS,
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             enableCustomLabelLists: false,
             enableFencedDivs: false,
             enableFencedDivExtras: false,
@@ -175,7 +175,7 @@ function createLongDocumentLines(lineCount: number): string[] {
     return Array.from({ length: lineCount }, (_value, index) => {
         const lineNumber = index + 1;
         if (lineNumber % 5 === 0) {
-            return `A. Ordered item ${lineNumber} with ^superscript^ and ~subscript~`;
+            return `A.  Ordered item ${lineNumber} with ^superscript^ and ~subscript~`;
         }
         if (lineNumber % 7 === 0) {
             return `- Unordered item ${lineNumber} with reference (@alpha)`;

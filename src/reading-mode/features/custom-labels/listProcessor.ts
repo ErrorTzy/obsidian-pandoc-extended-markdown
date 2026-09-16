@@ -104,11 +104,11 @@ export function processCustomLabelLists(element: HTMLElement, context: MarkdownP
 
 function getCandidateTextContainers(element: HTMLElement): Element[] {
     const descendants = Array.from(element.querySelectorAll('p, li'));
-    if (element.matches('p, li')) {
-        return [element, ...descendants];
-    }
+    const candidates = element.matches('p, li') ? [element, ...descendants] : descendants;
 
-    return descendants;
+    return candidates.filter(candidate =>
+        !candidate.closest(`.${CSS_CLASSES.PANDOC_INVALID_NATIVE_LIST}`)
+    );
 }
 
 function processTextNode(node: Node, container: HTMLElement, placeholderContext?: PlaceholderContext): void {

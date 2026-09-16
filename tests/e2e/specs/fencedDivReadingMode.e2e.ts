@@ -54,7 +54,7 @@ describe('Fenced div reading mode', () => {
             // @ts-ignore
             const enabledPlugin = app.plugins.plugins['pandoc-extended-markdown'];
             if (enabledPlugin?.settings) {
-                enabledPlugin.settings.enforcePandocListSpacing = false;
+                enabledPlugin.settings.enableListsWithoutPrecedingBlankline = true;
                 enabledPlugin.settings.enableReadableFencedDivSyntax = true;
                 enabledPlugin.settings.enableFencedDivs = true;
                 enabledPlugin.settings.enableFencedDivExtras = true;

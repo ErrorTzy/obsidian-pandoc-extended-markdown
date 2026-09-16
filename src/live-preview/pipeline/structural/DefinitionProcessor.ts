@@ -85,8 +85,7 @@ export class DefinitionProcessor implements StructuralProcessor {
     ): StructuralResult {
         const decorations: Array<{from: number, to: number, decoration: Decoration}> = [];
         
-        // Check Pandoc list spacing enforcement.
-        if (context.settings.enforcePandocListSpacing && context.invalidLines.has(lineNum)) {
+        if (context.invalidLines.has(lineNum)) {
             return { decorations };
         }
 
@@ -253,7 +252,8 @@ export class DefinitionProcessor implements StructuralProcessor {
             const nextText = context.document.sliceString(nextLine.from, nextLine.to);
             
             // Direct definition (no empty line)
-            if (ListPatterns.isDefinitionMarker(nextText)) {
+            if (ListPatterns.isDefinitionMarker(nextText) &&
+                !context.invalidLines.has(nextLine.number)) {
                 return true;
             }
             
@@ -261,7 +261,8 @@ export class DefinitionProcessor implements StructuralProcessor {
             if (nextText.trim() === '' && lineNum + 1 < context.document.lines) {
                 const lineAfterEmpty = context.document.line(lineNum + 2);
                 const afterEmptyText = context.document.sliceString(lineAfterEmpty.from, lineAfterEmpty.to);
-                if (ListPatterns.isDefinitionMarker(afterEmptyText)) {
+                if (ListPatterns.isDefinitionMarker(afterEmptyText) &&
+                    !context.invalidLines.has(lineAfterEmpty.number)) {
                     return true;
                 }
             }

@@ -127,11 +127,12 @@ export class ProcessingPipeline {
             const line = doc.line(lineNum);
             context.fencedDivCanOpenAtCurrentLine = fencedDivCanOpenAtCurrentLine;
             
-            // Skip lines blocked by Pandoc list spacing enforcement.
+            // An invalid line is invalid only as a Pandoc list item. Keep running the
+            // structural pipeline so containers can decorate it as ordinary content
+            // and inline processors can preserve everything on the line. Each Pandoc
+            // list processor consults invalidLines before creating list decorations.
             if (context.invalidLines.has(lineNum)) {
                 this.decorateInvalidNativeListLine(line, context);
-                fencedDivCanOpenAtCurrentLine = false;
-                continue;
             }
             
             // Skip lines that are inside code regions

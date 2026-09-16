@@ -34,12 +34,12 @@ describe('Pandoc native list spacing in Live Preview', () => {
         await browser.reloadObsidian({
             vault: './tests/e2e/vaults/test-vault'
         });
-        await setSyntaxSettings({ enforcePandocListSpacing: true });
+        await setSyntaxSettings({ enableListsWithoutPrecedingBlankline: false });
         await createOrReplaceFile(filePath, content);
     });
 
     after(async () => {
-        await setSyntaxSettings({ enforcePandocListSpacing: false });
+        await setSyntaxSettings({ enableListsWithoutPrecedingBlankline: true });
         await deleteFileIfExists(filePath);
     });
 
@@ -122,7 +122,7 @@ async function getNativeListLines(): Promise<NativeListLineState[]> {
 }
 
 async function setSyntaxSettings(settings: Partial<{
-    enforcePandocListSpacing: boolean;
+    enableListsWithoutPrecedingBlankline: boolean;
 }>): Promise<void> {
     await browser.execute(async (nextSettings) => {
         // @ts-ignore

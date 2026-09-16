@@ -1,82 +1,556 @@
-import { CSS_CLASSES } from '../../../core/constants';
-import { ListPatterns } from '../../../shared/patterns';
-import { ListBlockValidator } from '../../../shared/utils/listBlockValidator';
+import {
+    escapePandocListMarker,
+    InterruptedListParagraph,
+    ListBlockValidator
+} from '../../../shared/utils/listBlockValidator';
+import { getBlockQuoteDepth } from '../../../shared/utils/pandocBlockBoundaries';
+import { waitForFencedDivRun } from '../../features/fenced-divs/processingCoordinator';
+import { reconcileLazyBlockQuoteContent } from '../../features/native-lists/lazyBlockQuoteContent';
+import { reconcileLiteralListContinuations } from '../../features/native-lists/literalContinuationReconciler';
+import {
+    replaceInterruptedListParagraph
+} from '../../features/native-lists/interruptedParagraphRenderer';
+import {
+    createSourceOwnedSuffixMatch,
+    getSourceOwnedSuffixCandidate,
+    matchSourceOwnedBlockSuffix,
+    SourceOwnedSuffixMatch
+} from '../../features/native-lists/sourceOwnedBlockSuffix';
+import {
+    findLazyBlockQuoteListRelocations,
+    MatchedLazyBlockQuoteRelocation,
+    relocateLazyBlockQuoteListItems
+} from '../../features/native-lists/blockQuoteRelocation';
+import {
+    findFootnoteListRelocations,
+    MatchedFootnoteListRelocation,
+    relocateFootnoteListItems
+} from '../../features/native-lists/footnoteRelocation';
+import {
+    renderBlockQuoteLeadText,
+    renderNativeListLeadText,
+    renderParagraphText
+} from '../../features/native-lists/sourceSignature';
+import {
+    findNativeListGroup,
+    findNativeListItem,
+    getDirectItems,
+    getRootNativeListElements,
+    hasMaterializedTailInsideMatchedItem,
+    markNativeListGroupScheduled,
+    NativeListGroupMatch,
+    NativeListReplacementLine,
+    NativeListSourceLine
+} from '../../features/native-lists/sourceDomMatcher';
+import {
+    escapeExcessBlockQuoteMarkers,
+    findInterruptedSourceSubtreeEnd,
+    findSourceItemSubtreeEnd,
+    getComparableNativeListText,
+    normalizeNativeListText,
+    ParsedNativeListLine,
+    parseNativeListLine,
+    rewriteIndentedBacktickCodeSpans,
+    stripBlockQuotePrefix
+} from '../../features/native-lists/sourceLine';
 import { readFullSourceText } from '../sourceText';
 import { BlockDomProcessor, ReadingModeContext } from '../types';
 
-type NativeListKind = 'ul' | 'ol';
+type CurrentRunCheck = () => boolean;
 
-interface ParsedNativeListLine {
-    kind: NativeListKind;
-    itemText: string;
-}
-
-interface NativeListSourceLine {
-    index: number;
-    kind: NativeListKind;
-    source: string;
-    itemText: string;
-}
-
-interface NativeListReplacementLine {
-    sourceLine: NativeListSourceLine;
-    trailingText: string;
-}
-
-interface NativeListMatch {
-    itemStartIndex: number;
-    lines: NativeListReplacementLine[];
-}
+const alwaysCurrent: CurrentRunCheck = () => true;
+const rootGenerations = new WeakMap<HTMLElement, number>();
 
 export class NativeListSpacingProcessor implements BlockDomProcessor {
     name = 'native-list-spacing';
     phase = 'block' as const;
-    priority = 30;
+    priority = 70;
 
     isEnabled(context: ReadingModeContext): boolean {
-        return Boolean(context.config.enforcePandocListSpacing && context.sectionInfo?.text);
+        return Boolean(context.sectionInfo?.text);
     }
 
     process(context: ReadingModeContext): void {
-        this.processWithSourceResolver(context, list => getSourceTextForList(list, context));
-
         if (context.app) {
             runAfterPreviewSettles(() => {
-                void this.processWithFullSource(context);
+                const root = getPreviewRoot(context);
+                const isCurrent = beginRootGeneration(root);
+                void this.processWithFullSource(context, root, isCurrent);
             });
-        }
-    }
-
-    private async processWithFullSource(context: ReadingModeContext): Promise<void> {
-        const fullSourceText = await readFullSourceText(context.sourcePath, context.app);
-        if (!fullSourceText) {
             return;
         }
 
-        this.processWithSourceResolver(context, () => fullSourceText);
+        this.processWithSourceResolver(context, list => getSourceTextForList(list, context));
+    }
+
+    private async processWithFullSource(
+        context: ReadingModeContext,
+        root: HTMLElement,
+        isCurrent: CurrentRunCheck
+    ): Promise<void> {
+        await waitForFencedDivRun(root);
+        if (!isCurrent()) {
+            return;
+        }
+        const fullSourceText = await readFullSourceText(context.sourcePath, context.app);
+        if (!isCurrent()) {
+            return;
+        }
+        if (fullSourceText) {
+            await this.processWithRenderedSourceResolver(
+                context,
+                () => fullSourceText,
+                root,
+                isCurrent
+            );
+            return;
+        }
+
+        await this.processWithRenderedSourceResolver(
+            context,
+            list => getSourceTextForList(list, context),
+            root,
+            isCurrent
+        );
     }
 
     private processWithSourceResolver(
         context: ReadingModeContext,
-        getSourceText: (list: HTMLElement) => string
+        getSourceText: (list: HTMLElement) => string,
+        root: HTMLElement = context.section ?? context.element
     ): void {
-        const consumedSourceLines = new Set<string>();
+        const lists = getRootNativeListElements(root, context.element)
+            .filter(list => root.contains(list));
+        const processedSources = new Set<string>();
 
-        getNativeListElements(context).forEach(list => {
+        lists.forEach(list => {
             const sourceText = getSourceText(list);
-            const sourceLines = sourceText.split('\n');
-            const invalidLines = ListBlockValidator.validateListBlocks(sourceLines, context.config);
-            const candidates = getInvalidNativeListLines(sourceLines, invalidLines);
-            const match = findMatchingSourceLines(list, candidates, consumedSourceLines, sourceText);
-            if (!match) {
+            if (!sourceText || processedSources.has(sourceText)) {
                 return;
             }
 
-            match.lines.forEach(line =>
-                consumedSourceLines.add(getSourceLineKey(sourceText, line.sourceLine.index))
-            );
-            replaceListSegmentWithPlainText(list, match);
+            processedSources.add(sourceText);
+            processSourceText(sourceText, context, root);
         });
+    }
+
+    private async processWithRenderedSourceResolver(
+        context: ReadingModeContext,
+        getSourceText: (list: HTMLElement) => string,
+        root: HTMLElement,
+        isCurrent: CurrentRunCheck
+    ): Promise<void> {
+        if (!isCurrent()) {
+            return;
+        }
+        const lists = getRootNativeListElements(root, context.element)
+            .filter(list => root.contains(list));
+        const processedSources = new Set<string>();
+
+        // Source-aware container repair also handles list markers which the host
+        // materialized as code, so a native list is not a prerequisite.
+        for (const list of lists.length ? lists : [root]) {
+            if (!isCurrent()) {
+                return;
+            }
+            const sourceText = getSourceText(list);
+            if (!sourceText || processedSources.has(sourceText)) {
+                continue;
+            }
+
+            processedSources.add(sourceText);
+            await processSourceTextWithRenderedSignatures(
+                sourceText,
+                context,
+                root,
+                isCurrent
+            );
+        }
+    }
+}
+
+function processSourceText(
+    sourceText: string,
+    context: ReadingModeContext,
+    root: HTMLElement
+): void {
+    const sourceLines = sourceText.split('\n');
+    const analysis = ListBlockValidator.analyzeListBlocks(sourceLines, context.config);
+    relocateLazyBlockQuoteLists(sourceLines, analysis.invalidLines, context, root);
+    const relocatedFootnoteLists = relocateFootnoteLists(sourceLines, root);
+    const analysisLines = analysis.sourceLines;
+    const currentLists = getRootNativeListElements(root, context.element)
+        .filter(list => root.contains(list));
+
+    analysis.interruptedParagraphs.forEach(paragraph => {
+        const rootLines = getRootNativeLines(analysisLines, analysis.invalidLines, paragraph);
+        const matchLines = rootLines.map(sourceLine => ({
+            sourceLine,
+            expectedLeadText: normalizeNativeListText(
+                getComparableNativeListText(sourceLine.itemText)
+            )
+        }));
+        const paragraphText = getUnrenderedParagraphText(analysisLines, paragraph);
+        scheduleInterruptedParagraph(
+            analysisLines,
+            analysis.invalidLines,
+            paragraph,
+            matchLines,
+            paragraphText,
+            currentLists,
+            context,
+            root,
+            alwaysCurrent,
+            relocatedFootnoteLists.get(paragraph.listStartIndex),
+            createSourceOwnedSuffixMatch(getSourceOwnedSuffixCandidate(
+                analysisLines,
+                analysis.invalidLines,
+                paragraph,
+                rootLines
+            ))
+        );
+    });
+}
+
+function getUnrenderedParagraphText(
+    sourceLines: string[],
+    paragraph: InterruptedListParagraph
+): string {
+    const paragraphDepth = getBlockQuoteDepth(sourceLines[paragraph.paragraphStartIndex]);
+    const visibleLines = sourceLines
+        .slice(paragraph.paragraphStartIndex, paragraph.listStartIndex)
+        .filter(line => getBlockQuoteDepth(line) <= paragraphDepth)
+        .map(stripBlockQuotePrefix);
+    return normalizeNativeListText(getComparableNativeListText(visibleLines.join(' ')));
+}
+
+async function processSourceTextWithRenderedSignatures(
+    sourceText: string,
+    context: ReadingModeContext,
+    root: HTMLElement,
+    isCurrent: CurrentRunCheck
+): Promise<void> {
+    const sourceLines = sourceText.split('\n');
+    const analysis = ListBlockValidator.analyzeListBlocks(sourceLines, context.config);
+    const renderedLeadTextCache = new Map<string, Promise<string | null>>();
+    await reconcileLazyBlockQuoteContent(sourceLines, context, root, isCurrent, analysis.invalidLines);
+    if (!isCurrent()) {
+        return;
+    }
+    await relocateLazyBlockQuoteListsWithRenderedSignatures(
+        sourceLines,
+        analysis.invalidLines,
+        context,
+        root,
+        renderedLeadTextCache,
+        isCurrent
+    );
+    const relocatedFootnoteLists = await relocateFootnoteListsWithRenderedSignatures(
+        sourceLines,
+        context,
+        root,
+        renderedLeadTextCache,
+        isCurrent
+    );
+    if (!isCurrent()) {
+        return;
+    }
+    const analysisLines = analysis.sourceLines;
+    await reconcileLiteralListContinuations(
+        analysisLines,
+        analysis.literalListContinuations,
+        context,
+        root,
+        isCurrent
+    );
+    if (!isCurrent()) {
+        return;
+    }
+    const currentLists = getRootNativeListElements(root, context.element)
+        .filter(list => root.contains(list));
+
+    for (const paragraph of analysis.interruptedParagraphs) {
+        if (!isCurrent()) {
+            return;
+        }
+        const rootLines = getRootNativeLines(analysisLines, analysis.invalidLines, paragraph);
+        const renderedLeadTexts: Array<string | null> = [];
+        for (const line of rootLines) {
+            const itemEndIndex = findSourceItemSubtreeEnd(
+                line.index,
+                line.indentColumns,
+                analysisLines
+            );
+            const subtreeSource = analysisLines
+                .slice(line.index, itemEndIndex + 1)
+                .join('\n');
+            const subtreeLeadText = await getRenderedLeadText(
+                subtreeSource,
+                context,
+                renderedLeadTextCache
+            );
+            if (!isCurrent()) {
+                return;
+            }
+            renderedLeadTexts.push(subtreeLeadText ?? await getRenderedLeadText(
+                line.source,
+                context,
+                renderedLeadTextCache
+            ));
+            if (!isCurrent()) {
+                return;
+            }
+        }
+        if (renderedLeadTexts.some(text => text === null)) {
+            continue;
+        }
+
+        const paragraphText = await renderParagraphText(
+            analysisLines.slice(paragraph.paragraphStartIndex, paragraph.listStartIndex).join('\n'),
+            context
+        );
+        if (!isCurrent()) {
+            return;
+        }
+        if (paragraphText === null) {
+            continue;
+        }
+
+        const matchLines = rootLines.map((sourceLine, index) => ({
+            sourceLine,
+            expectedLeadText: renderedLeadTexts[index] as string
+        }));
+        const suffixCandidate = getSourceOwnedSuffixCandidate(
+            analysisLines,
+            analysis.invalidLines,
+            paragraph,
+            rootLines
+        );
+        let suffixMatch: SourceOwnedSuffixMatch | null = null;
+        if (suffixCandidate) {
+            const suffixLeadText = suffixCandidate.kind === 'list'
+                ? await getRenderedLeadText(
+                    suffixCandidate.source,
+                    context,
+                    renderedLeadTextCache
+                )
+                : await renderBlockQuoteLeadText(suffixCandidate.source, context);
+            if (!isCurrent()) {
+                return;
+            }
+            if (suffixLeadText !== null) {
+                suffixMatch = { ...suffixCandidate, expectedLeadText: suffixLeadText };
+            }
+        }
+        scheduleInterruptedParagraph(
+            analysisLines,
+            analysis.invalidLines,
+            paragraph,
+            matchLines,
+            paragraphText,
+            currentLists,
+            context,
+            root,
+            isCurrent,
+            relocatedFootnoteLists.get(paragraph.listStartIndex),
+            suffixMatch
+        );
+    }
+}
+
+function relocateLazyBlockQuoteLists(
+    sourceLines: string[],
+    invalidLines: Set<number>,
+    context: ReadingModeContext,
+    root: HTMLElement
+): void {
+    const relocations = findLazyBlockQuoteListRelocations(
+        sourceLines,
+        invalidLines,
+        context.config.enableListsWithoutPrecedingBlankline
+    );
+    const matched = relocations.map(relocation => {
+        const expectedLeadText = normalizeNativeListText(
+            getComparableNativeListText(relocation.sourceLine.itemText)
+        );
+        const match = findNativeListItem(root, {
+            sourceLine: relocation.sourceLine,
+            expectedLeadText
+        }, sourceLines);
+        return match ? { ...relocation, match } : null;
+    });
+    if (matched.every((item): item is MatchedLazyBlockQuoteRelocation => item !== null)) {
+        relocateLazyBlockQuoteListItems(root, matched);
+    }
+}
+
+async function relocateLazyBlockQuoteListsWithRenderedSignatures(
+    sourceLines: string[],
+    invalidLines: Set<number>,
+    context: ReadingModeContext,
+    root: HTMLElement,
+    cache: Map<string, Promise<string | null>>,
+    isCurrent: CurrentRunCheck
+): Promise<void> {
+    const relocations = findLazyBlockQuoteListRelocations(
+        sourceLines,
+        invalidLines,
+        context.config.enableListsWithoutPrecedingBlankline
+    );
+    const matched: MatchedLazyBlockQuoteRelocation[] = [];
+    for (const relocation of relocations) {
+        const expectedLeadText = await getRenderedLeadText(
+            relocation.sourceLine.source,
+            context,
+            cache
+        );
+        if (!isCurrent() || expectedLeadText === null) {
+            return;
+        }
+        const match = findNativeListItem(root, {
+            sourceLine: relocation.sourceLine,
+            expectedLeadText
+        }, sourceLines);
+        if (!match) {
+            return;
+        }
+        matched.push({ ...relocation, match });
+    }
+    if (isCurrent()) {
+        relocateLazyBlockQuoteListItems(root, matched);
+    }
+}
+
+function relocateFootnoteLists(
+    sourceLines: string[],
+    root: HTMLElement
+): Map<number, HTMLElement> {
+    const matched = findFootnoteListRelocations(sourceLines).map(relocation => {
+        const expectedLeadText = normalizeNativeListText(
+            getComparableNativeListText(relocation.sourceLine.itemText)
+        );
+        return {
+            ...relocation,
+            match: findNativeListItem(root, {
+                sourceLine: relocation.sourceLine,
+                expectedLeadText
+            }, sourceLines)
+        };
+    });
+    return relocateFootnoteListItems(root, matched);
+}
+
+async function relocateFootnoteListsWithRenderedSignatures(
+    sourceLines: string[],
+    context: ReadingModeContext,
+    root: HTMLElement,
+    cache: Map<string, Promise<string | null>>,
+    isCurrent: CurrentRunCheck
+): Promise<Map<number, HTMLElement>> {
+    const matched: MatchedFootnoteListRelocation[] = [];
+    for (const relocation of findFootnoteListRelocations(sourceLines)) {
+        const expectedLeadText = await getRenderedLeadText(
+            relocation.sourceLine.source,
+            context,
+            cache
+        );
+        if (!isCurrent()) {
+            return new Map();
+        }
+        matched.push({
+            ...relocation,
+            match: expectedLeadText === null ? null : findNativeListItem(root, {
+                sourceLine: relocation.sourceLine,
+                expectedLeadText
+            }, sourceLines)
+        });
+    }
+    return relocateFootnoteListItems(root, matched);
+}
+
+function getRenderedLeadText(
+    source: string,
+    context: ReadingModeContext,
+    cache: Map<string, Promise<string | null>>
+): Promise<string | null> {
+    const cached = cache.get(source);
+    if (cached) {
+        return cached;
+    }
+
+    const rendered = renderNativeListLeadText(source, context);
+    cache.set(source, rendered);
+    return rendered;
+}
+
+function scheduleInterruptedParagraph(
+    sourceLines: string[],
+    invalidLines: Set<number>,
+    paragraph: InterruptedListParagraph,
+    rootLines: NativeListReplacementLine[],
+    paragraphText: string,
+    lists: HTMLElement[],
+    context: ReadingModeContext,
+    root: HTMLElement,
+    isCurrent: CurrentRunCheck,
+    preferredList?: HTMLElement,
+    sourceOwnedSuffix?: SourceOwnedSuffixMatch | null
+): void {
+    if (!isCurrent()) {
+        return;
+    }
+    const match = findNativeListGroup(
+        lists,
+        rootLines,
+        sourceLines,
+        paragraphText,
+        root,
+        preferredList
+    );
+    if (!match) {
+        return;
+    }
+
+    const sourceOwnedBlockSuffix = matchSourceOwnedBlockSuffix(
+        match,
+        sourceOwnedSuffix ?? null,
+        sourceLines,
+        root,
+        rootLines[0].sourceLine.indentColumns
+    );
+    const endIndex = sourceOwnedBlockSuffix
+        ? paragraph.endIndex
+        : findInterruptedSourceSubtreeEnd(
+            match.lines[match.lines.length - 1].sourceLine.index,
+            rootLines[0].sourceLine.indentColumns,
+            paragraph.endIndex,
+            hasMaterializedTailInsideMatchedItem(match),
+            sourceLines
+        );
+    const didSchedule = replaceInterruptedListParagraph({
+        listSegments: match.segments,
+        sourceLines: sourceLines.slice(paragraph.paragraphStartIndex, endIndex + 1),
+        listStartOffset: paragraph.listStartIndex - paragraph.paragraphStartIndex,
+        transformedParagraphSource: transformInterruptedParagraph(
+            sourceLines,
+            invalidLines,
+            paragraph,
+            endIndex
+        ),
+        remainingListStart: findRemainingOrderedListStart(
+            match,
+            sourceLines,
+            endIndex,
+            rootLines[0].sourceLine.indentColumns
+        ),
+        sourceOwnedBlockSuffix,
+        root,
+        context,
+        isCurrent
+    });
+
+    if (didSchedule) {
+        markNativeListGroupScheduled(match, isCurrent);
     }
 }
 
@@ -89,228 +563,83 @@ function getSourceTextForList(list: HTMLElement, context: ReadingModeContext): s
         '';
 }
 
-function getInvalidNativeListLines(
+function getRootNativeLines(
     sourceLines: string[],
-    invalidLines: Set<number>
+    invalidLines: Set<number>,
+    paragraph: InterruptedListParagraph
 ): NativeListSourceLine[] {
-    return sourceLines
+    const candidates = sourceLines
         .map((source, index) => ({ source, index, parsed: parseNativeListLine(source) }))
-        .filter((line): line is { source: string; index: number; parsed: ParsedNativeListLine } =>
-            invalidLines.has(line.index) && line.parsed !== null
-        )
+        .filter((line): line is {
+            source: string;
+            index: number;
+            parsed: ParsedNativeListLine;
+        } => invalidLines.has(line.index) &&
+            line.index >= paragraph.listStartIndex &&
+            line.index <= paragraph.endIndex &&
+            line.parsed !== null)
         .map(line => ({ ...line.parsed, source: line.source, index: line.index }));
+
+    if (candidates.length === 0) {
+        return [];
+    }
+
+    const rootIndent = Math.min(...candidates.map(line => line.indentColumns));
+    return candidates.filter(line => line.indentColumns === rootIndent);
 }
 
-function parseNativeListLine(line: string): ParsedNativeListLine | null {
-    const unorderedMatch = line.match(ListPatterns.UNORDERED_LIST_MARKER_WITH_SPACE);
-    if (unorderedMatch) {
-        return {
-            kind: 'ul',
-            itemText: line.slice(unorderedMatch[0].length).trim()
-        };
-    }
-
-    const orderedMatch = line.match(/^(\s*)(\d+[.)])(\s+)/);
-    if (!orderedMatch) {
-        return null;
-    }
-
-    return {
-        kind: 'ol',
-        itemText: line.slice(orderedMatch[0].length).trim()
-    };
+function getPreviewRoot(context: ReadingModeContext): HTMLElement {
+    return context.element.closest<HTMLElement>('.markdown-preview-section') ??
+        context.section?.closest<HTMLElement>('.markdown-preview-section') ??
+        context.section ??
+        context.element;
 }
 
-function getNativeListElements(context: ReadingModeContext): HTMLElement[] {
-    const root = context.section ?? context.element;
-    const lists = Array.from(root.querySelectorAll<HTMLElement>('ul, ol'));
-
-    if (context.element.matches('ul, ol')) {
-        lists.unshift(context.element);
+function findRemainingOrderedListStart(
+    match: NativeListGroupMatch,
+    sourceLines: string[],
+    endIndex: number,
+    rootIndentColumns: number
+): number | undefined {
+    const finalSegment = match.segments[match.segments.length - 1];
+    if (!finalSegment || finalSegment.list.tagName !== 'OL' ||
+        finalSegment.itemCount >= getDirectItems(finalSegment.list).length) {
+        return undefined;
     }
 
-    return lists.filter(list => !list.closest('.pem-fenced-div'));
-}
-
-function findMatchingSourceLines(
-    list: HTMLElement,
-    candidates: NativeListSourceLine[],
-    consumedSourceLines: Set<string>,
-    sourceText: string
-): NativeListMatch | null {
-    const kind = list.tagName.toLowerCase() as NativeListKind;
-    const itemTexts = getDirectListItemTexts(list);
-
-    if (itemTexts.length === 0) {
-        return null;
-    }
-
-    for (let i = 0; i <= candidates.length - itemTexts.length; i++) {
-        const fullListMatch = getReplacementLinesForSlice(
-            candidates.slice(i, i + itemTexts.length),
-            itemTexts,
-            kind,
-            consumedSourceLines,
-            sourceText
-        );
-        if (fullListMatch.length > 0) {
-            return {
-                itemStartIndex: 0,
-                lines: fullListMatch
-            };
+    for (let index = endIndex + 1; index < sourceLines.length; index++) {
+        const parsed = parseNativeListLine(sourceLines[index]);
+        if (!parsed || parsed.indentColumns !== rootIndentColumns) {
+            continue;
         }
+        return parsed.kind === 'ol' ? parsed.startNumber : undefined;
     }
 
-    for (let itemStartIndex = 0; itemStartIndex < itemTexts.length; itemStartIndex++) {
-        for (let candidateStartIndex = 0; candidateStartIndex < candidates.length; candidateStartIndex++) {
-            const maxLength = Math.min(
-                itemTexts.length - itemStartIndex,
-                candidates.length - candidateStartIndex
-            );
-            for (let length = maxLength; length > 0; length--) {
-                const sourceSlice = candidates.slice(candidateStartIndex, candidateStartIndex + length);
-                if (!isContiguousSourceSlice(sourceSlice)) {
-                    continue;
-                }
-
-                const itemSlice = itemTexts.slice(itemStartIndex, itemStartIndex + length);
-                const partialMatch = getReplacementLinesForSlice(
-                    sourceSlice,
-                    itemSlice,
-                    kind,
-                    consumedSourceLines,
-                    sourceText
-                );
-                if (partialMatch.length > 0) {
-                    return {
-                        itemStartIndex,
-                        lines: partialMatch
-                    };
-                }
-            }
-        }
-    }
-
-    return null;
+    return undefined;
 }
 
-function isContiguousSourceSlice(sourceSlice: NativeListSourceLine[]): boolean {
-    return sourceSlice.every((line, index) =>
-        index === 0 || line.index === sourceSlice[index - 1].index + 1
+function transformInterruptedParagraph(
+    sourceLines: string[],
+    invalidLines: Set<number>,
+    paragraph: InterruptedListParagraph,
+    endIndex: number
+): string {
+    const paragraphBlockQuoteDepth = getBlockQuoteDepth(
+        sourceLines[paragraph.paragraphStartIndex]
     );
-}
-
-function getReplacementLinesForSlice(
-    sourceSlice: NativeListSourceLine[],
-    itemTexts: string[],
-    kind: NativeListKind,
-    consumedSourceLines: Set<string>,
-    sourceText: string
-): NativeListReplacementLine[] {
-    if (sourceSlice.length !== itemTexts.length) {
-        return [];
-    }
-
-    const replacementLines: NativeListReplacementLine[] = [];
-    for (let index = 0; index < sourceSlice.length; index++) {
-        const line = sourceSlice[index];
-        const trailingText = getTrailingListItemText(itemTexts[index], line.itemText);
-        if (line.kind !== kind ||
-            consumedSourceLines.has(getSourceLineKey(sourceText, line.index)) ||
-            trailingText === null) {
-            return [];
-        }
-        replacementLines.push({ sourceLine: line, trailingText });
-    }
-
-    return replacementLines;
-}
-
-function getSourceLineKey(sourceText: string, index: number): string {
-    return `${index}:${sourceText}`;
-}
-
-function getTrailingListItemText(renderedItemText: string, sourceItemText: string): string | null {
-    if (renderedItemText === sourceItemText) {
-        return '';
-    }
-
-    if (!renderedItemText.startsWith(sourceItemText)) {
-        return null;
-    }
-
-    const trailingText = renderedItemText.slice(sourceItemText.length).trim();
-    return trailingText.length > 0 ? trailingText : null;
-}
-
-function getDirectListItemTexts(list: HTMLElement): string[] {
-    return Array.from(list.children)
-        .filter((child): child is HTMLLIElement => child.tagName === 'LI')
-        .map(item => getListItemOwnText(item))
-        .map(text => text.trim())
-        .filter(Boolean);
-}
-
-function getListItemOwnText(item: HTMLLIElement): string {
-    const parts: string[] = [];
-    item.childNodes.forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE) {
-            parts.push(node.textContent ?? '');
-        } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName !== 'UL' &&
-            (node as Element).tagName !== 'OL') {
-            parts.push((node.textContent ?? ''));
-        }
-    });
-    return parts.join('');
-}
-
-function getReplacementTextLines(match: NativeListReplacementLine[]): string[] {
-    return match.flatMap(line => [
-        line.sourceLine.source,
-        ...(line.trailingText ? [line.trailingText] : [])
-    ]);
-}
-
-function replaceListSegmentWithPlainText(list: HTMLElement, match: NativeListMatch): void {
-    const items = Array.from(list.children)
-        .filter((child): child is HTMLLIElement => child.tagName === 'LI');
-    const matchedItemCount = match.lines.length;
-    const beforeItems = items.slice(0, match.itemStartIndex);
-    const afterItems = items.slice(match.itemStartIndex + matchedItemCount);
-    const replacementNodes: Node[] = [
-        ...createListCloneWithItems(list, beforeItems),
-        createPlainTextParagraph(getReplacementTextLines(match.lines)),
-        ...createListCloneWithItems(list, afterItems)
-    ];
-
-    list.replaceWith(...replacementNodes);
-}
-
-function createPlainTextParagraph(sourceLines: string[]): HTMLElement {
-    const paragraph = document.createElement('p');
-    paragraph.classList.add(CSS_CLASSES.PANDOC_INVALID_NATIVE_LIST);
-
-    sourceLines.forEach((line, index) => {
-        if (index > 0) {
-            paragraph.appendChild(document.createElement('br'));
-        }
-        paragraph.appendChild(document.createTextNode(line));
-    });
-
-    return paragraph;
-}
-
-function createListCloneWithItems(list: HTMLElement, items: HTMLLIElement[]): HTMLElement[] {
-    if (items.length === 0) {
-        return [];
-    }
-
-    const clone = document.createElement(list.tagName.toLowerCase());
-    Array.from(list.attributes).forEach(attribute => {
-        clone.setAttribute(attribute.name, attribute.value);
-    });
-    items.forEach(item => clone.appendChild(item.cloneNode(true)));
-    return [clone];
+    const transformedLines = sourceLines
+        .slice(paragraph.paragraphStartIndex, endIndex + 1)
+        .map((line, offset) => {
+            const lineIndex = paragraph.paragraphStartIndex + offset;
+            const escapedMarker = invalidLines.has(lineIndex)
+                ? escapePandocListMarker(line)
+                : line;
+            return escapeExcessBlockQuoteMarkers(
+                escapedMarker,
+                paragraphBlockQuoteDepth
+            );
+        });
+    return rewriteIndentedBacktickCodeSpans(transformedLines).join('\n');
 }
 
 function runAfterPreviewSettles(callback: () => void): void {
@@ -319,7 +648,11 @@ function runAfterPreviewSettles(callback: () => void): void {
         return;
     }
 
-    window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(callback);
-    });
+    window.requestAnimationFrame(() => window.requestAnimationFrame(callback));
+}
+
+function beginRootGeneration(root: HTMLElement): CurrentRunCheck {
+    const generation = (rootGenerations.get(root) ?? 0) + 1;
+    rootGenerations.set(root, generation);
+    return () => rootGenerations.get(root) === generation;
 }

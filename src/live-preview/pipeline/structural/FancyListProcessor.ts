@@ -34,7 +34,7 @@ export class FancyListProcessor extends BaseStructuralProcessor {
         }
 
         // Check if this list item is in an invalid block
-        if (this.isInvalidInStrictMode(line, context)) {
+        if (this.isInvalidPandocListLine(line, context)) {
             return { decorations: [] };
         }
 

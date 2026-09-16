@@ -20,7 +20,9 @@ import {
     getLineStartOffset
 } from '../utils/documentChanges';
 import {
+    formatMarkerPrefix,
     formatNonOrderedMarker,
+    getInsertedTaskState,
     getInsertedMarkerCursorOffset,
     parseStructuralListItem,
     resolveListOwnerAtLine,
@@ -214,11 +216,13 @@ function insertNewStandardListItem(
         return false;
     }
 
+    const finalInsertedLine = nextLines[insertedLineIndex];
+
     view.dispatch({
         changes: lineChanges.changes,
         selection: EditorSelection.cursor(
             getLineStartOffset(nextLines, insertedLineIndex) +
-                getInsertedMarkerCursorOffset(insertedLine, ownerContext.owner.markerType)
+                getInsertedMarkerCursorOffset(finalInsertedLine, ownerContext.owner.markerType)
         )
     });
 
@@ -270,10 +274,21 @@ function getNextStandardListMarker(
         ? ordered.ordinal + 1
         : ordered.ordinal;
 
+    const marker = formatOrderedListMarker(ordered.style, ordinal);
+    const markerType: StandardListMarkerType = {
+        kind: 'ordered',
+        style: ordered.style,
+        taskState: standardItem.taskState
+    };
+
     return {
-        marker: formatOrderedListMarker(ordered.style, ordinal),
+        marker,
         indent: ordered.indent,
-        spaces: getInsertedSpaces(standardItem)
+        spaces: formatMarkerPrefix(
+            marker,
+            markerType,
+            getInsertedTaskState(markerType)
+        ).slice(marker.length)
     };
 }
 

@@ -25,7 +25,7 @@ describe('DefinitionProcessor', () => {
             document: view.state.doc,
             view,
             settings: {
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 ...settings
             } as PandocExtendedMarkdownSettings,
             exampleLabels: new Map(),
@@ -229,8 +229,8 @@ describe('DefinitionProcessor', () => {
                 expect(lineClass).toContain('pem-list-line');
             });
             
-            it('should skip processing when Pandoc list spacing enforcement marks a line invalid', () => {
-                context = createContext(': Definition', { enforcePandocListSpacing: true });
+            it('should skip processing when Pandoc list validation marks a line invalid', () => {
+                context = createContext(': Definition', { enableListsWithoutPrecedingBlankline: false });
                 context.invalidLines.add(1);
                 
                 const line = context.document.line(1);
@@ -266,6 +266,15 @@ describe('DefinitionProcessor', () => {
                 );
                 
                 expect(termDecoration).toBeDefined();
+            });
+
+            it('does not decorate a term whose definition marker is invalid in Pandoc', () => {
+                context = createContext('Term one\nterm two\n: Definition');
+                context.invalidLines.add(3);
+                const line = context.document.line(2);
+
+                expect(processor.canProcess(line, context)).toBe(false);
+                expect(processor.process(line, context).decorations).toHaveLength(0);
             });
             
             it('should not mark as content region', () => {

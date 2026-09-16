@@ -106,7 +106,7 @@ describe('Ordered list marker settings', () => {
         expect(indexOfSetting('List panel')).toBeLessThan(indexOfSetting('Panel Order'));
     });
 
-    it('stores lenient list spacing as the inverse of Pandoc list spacing enforcement', async () => {
+    it('stores lenient list spacing as the Pandoc extension value', async () => {
         const { plugin, tab } = createSettingTab();
 
         tab.display();
@@ -122,8 +122,28 @@ describe('Ordered list marker settings', () => {
 
         await Promise.resolve();
 
-        expect(plugin.settings.enforcePandocListSpacing).toBe(true);
+        expect(plugin.settings.enableListsWithoutPrecedingBlankline).toBe(false);
         expect(plugin.saveSettings).toHaveBeenCalled();
+    });
+
+    it('rebuilds open Reading views when the extension value changes', async () => {
+        const { app, tab } = createSettingTab();
+        const rerender = jest.fn();
+        app.workspace.getLeavesOfType.mockReturnValue([{
+            view: { previewMode: { rerender } }
+        }] as never);
+        tab.display();
+
+        const toggle = Array.from(
+            tab.containerEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+        ).find(input => input.closest('.setting-item')?.textContent
+            ?.includes('Pandoc list lenient spacing'));
+
+        toggle!.checked = false;
+        toggle!.dispatchEvent(new Event('change'));
+        await Promise.resolve();
+
+        expect(rerender).toHaveBeenCalledWith(true);
     });
 
     it('toggles syntax features without rebuilding the settings tab', async () => {

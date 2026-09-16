@@ -38,11 +38,9 @@ export abstract class BaseStructuralProcessor implements StructuralProcessor {
         return cursorPos !== undefined && cursorPos >= markerStart && cursorPos < markerEnd;
     }
 
-    /**
-     * Check if Pandoc list spacing enforcement should block processing
-     */
-    protected isInvalidInStrictMode(line: Line, context: ProcessingContext): boolean {
-        return context.settings.enforcePandocListSpacing && context.invalidLines.has(line.number);
+    /** Check whether Pandoc would parse this marker as paragraph text. */
+    protected isInvalidPandocListLine(line: Line, context: ProcessingContext): boolean {
+        return context.invalidLines.has(line.number);
     }
 
     /**

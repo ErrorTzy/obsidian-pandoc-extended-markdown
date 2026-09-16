@@ -54,7 +54,7 @@ async function configureDefinitionListSettings(): Promise<void> {
                 enableOrderedListMarkerCycling: true,
                 enableUnorderedListMarkerCycling: true,
                 autoRenumberLists: true,
-                enforcePandocListSpacing: false
+                enableListsWithoutPrecedingBlankline: true
             });
             await enabledPlugin.saveSettings();
             // @ts-ignore

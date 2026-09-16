@@ -61,7 +61,9 @@ List editing helpers:
 - Ordered marker cycling chooses marker styles from the surrounding ordered-list context and configured order.
 - Auto-renumbering can update affected list items when inserting in the middle of a list.
 
-Pandoc list lenient spacing is enabled by default and allows list enhancements to render with looser spacing. Disable it to require blank lines around list blocks and at least two spaces after uppercase period markers such as `A.  Item` before list enhancements render.
+Pandoc list lenient spacing is enabled by default and maps to Pandoc's `lists_without_preceding_blankline` extension (`markdown+lists_without_preceding_blankline` when on; `markdown-lists_without_preceding_blankline` when off). With it on, a recognized list can interrupt paragraph text. With it off, those markers remain paragraph text. This also applies inside block quotes, footnotes, and fenced divs; lazy block-quote continuation can change container placement when toggled. Neither setting requires a blank line after a list. A valid list after a heading, for example, can contain nested children in both modes.
+
+Uppercase period markers follow Pandoc's marker grammar in either mode: use at least two spaces in an ambiguous marker such as `A.  Item`. This requirement is independent of `lists_without_preceding_blankline`.
 
 ## Unordered Lists
 
@@ -185,7 +187,7 @@ The plugin adds these commands:
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| Pandoc list lenient spacing | On | Allows list enhancements to render with looser spacing. Turn it off to require Pandoc-compatible list spacing. |
+| Pandoc list lenient spacing | On | Enables Pandoc's `lists_without_preceding_blankline`: lists may interrupt paragraphs, including within containers. Turning it off keeps such markers in the paragraph. It does not require a trailing blank line. |
 | Readable fenced div shorthand | On | Enables plugin-specific readable fenced div opener forms in addition to native Pandoc attributes. |
 | Hash auto-number lists | On | Enables `#.` rendering and continuation. |
 | Fancy lists | On | Enables alphabetic and Roman numeral lists. |

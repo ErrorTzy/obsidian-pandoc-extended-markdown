@@ -16,7 +16,7 @@ describe('Inline custom label reference breaks example reference', () => {
         pluginStateManager.resetDocumentCounters(docPath);
         
         config = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true

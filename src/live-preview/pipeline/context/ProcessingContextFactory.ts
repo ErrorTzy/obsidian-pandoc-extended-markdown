@@ -72,7 +72,7 @@ export class ProcessingContextFactory {
         const fencedDivLabels: ReturnType<typeof scanFencedDivs> = hasFencedDivSyntax
             ? scanFencedDivs(doc, settings, fullCodeBlockRegions)
             : new Map<string, FencedDivReference>();
-        const invalidLines = settings.enforcePandocListSpacing ? validateListBlocks(doc) : new Set<number>();
+        const invalidLines = validateListBlocks(doc, settings);
 
         if (docPath && customScanResult.placeholderContext) {
             const counters = this.stateManager.getDocumentCounters(docPath);

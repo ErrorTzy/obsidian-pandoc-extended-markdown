@@ -31,7 +31,9 @@ const TASK_CHECKBOX_PREFIX = /^(\s+)\[([ xX])\](?:(\s+)(.*))?$/;
 
 export function getListIndentColumns(indent: string): number {
     return Array.from(indent).reduce((columns, character) => {
-        return columns + (character === INDENTATION.TAB ? INDENTATION.TAB_SIZE : 1);
+        return columns + (character === INDENTATION.TAB
+            ? INDENTATION.TAB_SIZE - columns % INDENTATION.TAB_SIZE
+            : 1);
     }, 0);
 }
 

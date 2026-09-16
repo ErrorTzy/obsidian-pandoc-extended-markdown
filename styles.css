@@ -1370,7 +1370,7 @@
     list-style-type: circle;
 }
 
-/* Pandoc list spacing enforcement: invalid native lists render as source text */
+/* Pandoc list-extension parity: paragraph-interrupting markers render as source text */
 .markdown-source-view.mod-cm6 .cm-line.pem-pandoc-invalid-native-list {
     padding-inline-start: 0 !important;
     text-indent: 0 !important;

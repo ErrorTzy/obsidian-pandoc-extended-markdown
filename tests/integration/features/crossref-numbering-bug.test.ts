@@ -29,7 +29,7 @@ describe('Cross-reference numbering bug', () => {
         setupElement.innerHTML = '<p>(@a) Example list</p>';
         
         const config: ProcessorConfig = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: false
@@ -45,6 +45,7 @@ describe('Cross-reference numbering bug', () => {
         
         // Verify the example was registered with number 1
         expect(pluginStateManager.getLabeledExampleNumber(docPath, 'a')).toBe(1);
+        expect(pluginStateManager.getDocumentCounters(docPath).exampleCounter).toBe(1);
         
         // Now process lines that contain (@) in various list contexts
         const testCases = [
@@ -80,11 +81,6 @@ describe('Cross-reference numbering bug', () => {
             // Check the rendered output
             const renderedText = element.textContent || '';
             
-            // console.log(`Test case: ${testCase.description}`);
-            // console.log(`HTML input: ${testCase.html}`);
-            // console.log(`Rendered text: ${renderedText}`);
-            // console.log(`Counter before: ${counterBefore}, after: ${counterAfter}`);
-            
             // The reference (@a) should always show as (1)
             if (testCase.description === 'example list') {
                 // This is a real example list, so counter should increment
@@ -94,8 +90,6 @@ describe('Cross-reference numbering bug', () => {
             } else {
                 // These are NOT example lists, just contain (@) as text
                 // The counter should NOT increment
-                
-                // FAILING: Currently (@) in list items incorrectly increments the counter
                 expect(counterAfter).toBe(counterBefore);
                 
                 // The (@a) reference should show as (1)
@@ -124,7 +118,7 @@ describe('Cross-reference numbering bug', () => {
         `;
         
         const config: ProcessorConfig = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             strictLineBreaks: false,
             enableSuperSubscripts: false,
             enableCustomLabelLists: true  // Enable custom labels

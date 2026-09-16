@@ -3,6 +3,7 @@ import { setTooltip } from 'obsidian';
 import { CSS_CLASSES, DECORATION_STYLES } from '../../../core/constants';
 import { pluginStateManager } from '../../../core/state/pluginStateManager';
 import { FencedDivReference } from '../../../shared/types/fencedDivTypes';
+import { ProcessorConfig } from '../../../shared/types/processorConfig';
 import { processInlineTextNodes } from '../../pipeline/inline/textReplacementEngine';
 import { FencedDivReferenceInlineProcessor } from '../../pipeline/inline/fencedDivReferenceInlineProcessor';
 import { ReadingModeContext } from '../../pipeline/types';
@@ -98,7 +99,8 @@ export function hydrateRenderedFencedDivLabels(
 
 export function processHydratedFencedDivReferences(
     element: HTMLElement,
-    docPath: string
+    docPath: string,
+    config: ProcessorConfig
 ): void {
     const counters = pluginStateManager.getDocumentCounters(docPath);
     if (counters.fencedDivLabels.size === 0) {
@@ -113,13 +115,7 @@ export function processHydratedFencedDivReferences(
             section: element.closest<HTMLElement>('.markdown-preview-section'),
             sectionInfo: null,
             sourcePath: docPath,
-            config: {
-                strictLineBreaks: false,
-                enforcePandocListSpacing: false,
-                enableReadableFencedDivSyntax: true,
-                enableFencedDivs: true,
-                enableFencedDivExtras: true
-            },
+            config,
             renderContext: {},
             counters,
             validationLines: []

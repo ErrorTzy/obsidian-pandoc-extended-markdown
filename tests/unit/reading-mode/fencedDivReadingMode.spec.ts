@@ -1,7 +1,8 @@
-import { MarkdownPostProcessorContext } from 'obsidian';
+import { App, MarkdownPostProcessorContext, MarkdownRenderer } from 'obsidian';
 
 import { processReadingMode } from '../../../src/reading-mode/processor';
-import { processFencedDivs } from '../../../src/reading-mode/features/fenced-divs/processor';
+import { processFencedDivs, scheduleFencedDivProcessing } from '../../../src/reading-mode/features/fenced-divs/processor';
+import { waitForFencedDivRun } from '../../../src/reading-mode/features/fenced-divs/processingCoordinator';
 import { CSS_CLASSES } from '../../../src/core/constants';
 import { ProcessorConfig } from '../../../src/shared/types/processorConfig';
 
@@ -24,7 +25,7 @@ describe('fenced div reading mode rendering', () => {
         overrides: Partial<ProcessorConfig & { enableFencedDivs: boolean }> = {}
     ): ProcessorConfig & { enableFencedDivs: boolean } => ({
         strictLineBreaks: false,
-        enforcePandocListSpacing: false,
+        enableListsWithoutPrecedingBlankline: true,
         enableSuperSubscripts: false,
         enableCustomLabelLists: false,
         enableFencedDivs: true,
@@ -73,6 +74,250 @@ describe('fenced div reading mode rendering', () => {
         expect(reference?.dataset.pandocDivRef).toBe('thm:pythagoras');
         expect(reference?.textContent).toBe('Theorem 1');
         expect(element.textContent).not.toContain('@thm:pythagoras');
+    });
+
+    it('applies lists_without_preceding_blankline inside a fenced div without consuming content', () => {
+        const source = [
+            '::: note',
+            'paragraph',
+            '- parent',
+            '  - CHILD_MUST_STAY',
+            ':::',
+            '',
+            'AFTER_MUST_STAY'
+        ].join('\n');
+        const createElement = (): HTMLDivElement => {
+            const element = document.createElement('div');
+            element.innerHTML = [
+                '<p>::: note</p>',
+                '<p>paragraph</p>',
+                '<ul><li>parent<ul><li>CHILD_MUST_STAY</li></ul></li></ul>',
+                '<p>:::</p>',
+                '<p class="after">AFTER_MUST_STAY</p>'
+            ].join('');
+            return element;
+        };
+
+        const strictElement = createElement();
+        const strictAfter = strictElement.querySelector('.after');
+        processReadingMode(
+            strictElement,
+            createContext(source),
+            createConfig({ enableListsWithoutPrecedingBlankline: false })
+        );
+
+        const lenientElement = createElement();
+        const lenientList = lenientElement.querySelector('ul');
+        const lenientChild = lenientElement.querySelector('ul ul li');
+        processReadingMode(lenientElement, createContext(source), createConfig());
+
+        const strictDiv = strictElement.querySelector('.pem-fenced-div');
+        const lenientDiv = lenientElement.querySelector('.pem-fenced-div');
+        expect(strictDiv?.querySelectorAll('ul, ol')).toHaveLength(0);
+        expect(strictDiv?.textContent).toContain('paragraph\n- parent\n  - CHILD_MUST_STAY');
+        expect(lenientDiv?.querySelectorAll('ul')).toHaveLength(2);
+        expect(Array.from(lenientDiv?.querySelectorAll('li') ?? []).map(item => item.textContent))
+            .toEqual(['parentCHILD_MUST_STAY', 'CHILD_MUST_STAY']);
+        expect(lenientDiv?.querySelector('.pem-fenced-div-content > ul')).toBe(lenientList);
+        expect(lenientDiv?.querySelector('ul ul li')).toBe(lenientChild);
+        expect(strictElement.querySelector('.after')).toBe(strictAfter);
+        expect(strictDiv?.contains(strictAfter)).toBe(false);
+        expect(strictElement.textContent).toContain('AFTER_MUST_STAY');
+    });
+
+    it('extracts a closing fence that Obsidian materializes inside a nested list item', () => {
+        const source = [
+            '::: note',
+            'paragraph',
+            '- parent',
+            '  - CHILD_MUST_STAY',
+            ':::',
+            '',
+            'AFTER_MUST_STAY'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>::: note<br>paragraph</p>',
+            '<div class="el-ul"><ul><li>parent<ul>',
+            '<li>CHILD_MUST_STAY<br>\n:::\n</li>',
+            '</ul></li></ul></div>',
+            '<p class="after">AFTER_MUST_STAY</p>'
+        ].join('');
+        const list = element.querySelector('.el-ul');
+        const child = element.querySelector('ul ul li');
+        const after = element.querySelector('.after');
+
+        processFencedDivs(element, docPath, createConfig(), false, source);
+
+        const fencedDiv = element.querySelector('.pem-fenced-div');
+        expect(fencedDiv).not.toBeNull();
+        expect(fencedDiv?.querySelector('.pem-fenced-div-content > .el-ul')).toBe(list);
+        expect(fencedDiv?.querySelector('ul ul li')).toBe(child);
+        expect(child?.textContent).toBe('CHILD_MUST_STAY');
+        expect(fencedDiv?.textContent).not.toContain(':::');
+        expect(element.querySelector('.after')).toBe(after);
+        expect(fencedDiv?.contains(after)).toBe(false);
+    });
+
+    it('splits a native list at a captured closing without moving or recreating the outside tail', () => {
+        const source = [
+            '::: note', '- inside', '  - child', ':::', '- OUTSIDE_MUST_STAY'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = '<p>::: note</p><div class="el-ul"><ul>' +
+            '<li class="inside">inside<ul><li class="child">child<br>:::</li></ul></li>' +
+            '<li class="outside">OUTSIDE_MUST_STAY</li></ul></div>';
+        const tailList = element.querySelector('ul');
+        const inside = element.querySelector('.inside');
+        const child = element.querySelector('.child');
+        const outside = element.querySelector('.outside') as HTMLElement;
+        const listener = jest.fn();
+        outside.addEventListener('click', listener);
+
+        processFencedDivs(element, docPath, createConfig(), false, source);
+
+        const fencedDiv = element.querySelector('.pem-fenced-div');
+        expect(fencedDiv?.querySelector('.inside')).toBe(inside);
+        expect(fencedDiv?.querySelector('.child')).toBe(child);
+        expect(child?.textContent).toBe('child');
+        expect(fencedDiv?.textContent).not.toContain(':::');
+        expect(fencedDiv?.contains(outside)).toBe(false);
+        expect(Array.from(element.children).find(block => block.matches('.el-ul'))
+            ?.querySelector('ul')).toBe(tailList);
+        expect(outside.parentElement).toBe(tailList);
+        outside.click();
+        expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('matches captured list closings against rendered inline source, retaining live links', async () => {
+        const source = '::: note\n- [inside](https://example.test)\n  - child\n:::';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>::: note</p><ul><li>' +
+            '<a href="https://example.test">inside</a><ul><li>child<br>:::</li></ul></li></ul>';
+        const link = element.querySelector('a');
+        const child = element.querySelector('ul ul li');
+        processReadingMode(element, createContext(source), createConfig(), {} as App);
+
+        await new Promise(resolve => window.setTimeout(resolve, 100));
+
+        expect(element.querySelector('.pem-fenced-div a')).toBe(link);
+        expect(element.querySelector('.pem-fenced-div ul ul li')).toBe(child);
+        expect(child?.textContent).toBe('child');
+        expect(element.querySelector('.pem-fenced-div')?.textContent).not.toContain(':::');
+    });
+
+    it('finishes section assembly before releasing dependent list processors', async () => {
+        const source = '::: note\n- inside\n:::';
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = '<p>::: note</p><ul><li>inside<br>:::</li></ul>';
+
+        processReadingMode(section, createContext(source), createConfig(), {} as App);
+        await waitForFencedDivRun(section);
+
+        expect(section.querySelector('.pem-fenced-div li')?.textContent).toBe('inside');
+        expect(section.querySelector('.pem-fenced-div')?.textContent).not.toContain(':::');
+    });
+
+    it('uses host inline extensions when checking a captured source prefix', async () => {
+        const source = '::: note\n- CUSTOM_INLINE_SOURCE\n  - child\n:::';
+        const section = document.createElement('div');
+        section.innerHTML = '<p>::: note</p><ul><li><span>host-rendered value</span>' +
+            '<ul><li>child<br>:::</li></ul></li></ul>';
+        const liveInline = section.querySelector('span');
+        const renderMock = MarkdownRenderer.render as jest.Mock;
+        const implementation = renderMock.getMockImplementation();
+        renderMock.mockImplementationOnce(async (...args: unknown[]) => {
+            await implementation?.(...args);
+            const target = args[2] as HTMLElement;
+            target.innerHTML = target.innerHTML.replace('CUSTOM_INLINE_SOURCE', 'host-rendered value');
+        });
+
+        processReadingMode(section, createContext(source), createConfig(), {} as App);
+        await waitForFencedDivRun(section);
+
+        expect(section.querySelector('.pem-fenced-div span')).toBe(liveInline);
+        expect(section.querySelector('.pem-fenced-div ul ul li')?.textContent).toBe('child');
+    });
+
+    it('does not remove a captured closing when source content is repeated or reordered', async () => {
+        const source = '::: note\n- first\n  - second\n:::';
+        const section = document.createElement('div');
+        section.innerHTML = '<p>::: note</p><ul><li>second<ul><li>first first<br>:::</li></ul></li></ul>';
+        const list = section.querySelector('ul');
+        const before = list?.innerHTML;
+
+        processReadingMode(section, createContext(source), createConfig({
+            enableUnorderedListMarkerStyles: false
+        }), {} as App);
+        await waitForFencedDivRun(section);
+
+        expect(section.querySelector('ul')).toBe(list);
+        expect(list?.innerHTML).toBe(before);
+    });
+
+    it('revalidates the captured DOM prefix after awaiting its source renderer', async () => {
+        const source = '::: note\n- [inside](https://example.test)\n  - child\n:::';
+        const section = document.createElement('div');
+        section.innerHTML = '<p>::: note</p><ul><li><a href="https://example.test">inside</a>' +
+            '<ul><li>child<br>:::</li></ul></li></ul>';
+        const list = section.querySelector('ul');
+        const liveLink = section.querySelector('a')!;
+        const renderMock = MarkdownRenderer.render as jest.Mock;
+        const implementation = renderMock.getMockImplementation();
+        let releaseRender: () => void = () => undefined;
+        let signalStarted: () => void = () => undefined;
+        const started = new Promise<void>(resolve => { signalStarted = resolve; });
+        const gate = new Promise<void>(resolve => { releaseRender = resolve; });
+        renderMock.mockImplementationOnce(async (...args: unknown[]) => {
+            signalStarted();
+            await gate;
+            return implementation?.(...args);
+        });
+
+        processReadingMode(section, createContext(source), createConfig({
+            enableUnorderedListMarkerStyles: false
+        }), {} as App);
+        await started;
+        liveLink.textContent = 'NEW_CONTENT_MUST_STAY';
+        const before = list?.innerHTML;
+        releaseRender();
+        await waitForFencedDivRun(section);
+
+        expect(section.querySelector('ul')).toBe(list);
+        expect(list?.innerHTML).toBe(before);
+        expect(section.querySelector('a')).toBe(liveLink);
+    });
+
+    it('cancels stale section assembly before mutating its DOM', async () => {
+        const source = '::: note\n- inside\n:::';
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = '<p>::: note</p><ul><li>inside<br>:::</li></ul>';
+        const before = section.innerHTML;
+        let current = true;
+        const assembly = scheduleFencedDivProcessing(section, docPath, createConfig(), source, {
+            isCurrent: () => current
+        });
+        current = false;
+
+        await assembly;
+
+        expect(section.innerHTML).toBe(before);
+    });
+
+    it('settles a superseded section schedule without losing the replacement assembly', async () => {
+        const source = '::: note\n- inside\n:::';
+        const section = document.createElement('div');
+        section.className = 'markdown-preview-section';
+        section.innerHTML = '<p>::: note</p><ul><li>inside<br>:::</li></ul>';
+        const superseded = scheduleFencedDivProcessing(section, docPath, createConfig(), source);
+        const active = scheduleFencedDivProcessing(section, docPath, createConfig(), source);
+
+        await Promise.all([superseded, active]);
+
+        expect(section.querySelectorAll('.pem-fenced-div')).toHaveLength(1);
+        expect(section.querySelector('.pem-fenced-div li')?.textContent).toBe('inside');
     });
 
     it('renders adjacent and nested fenced divs without leaking fence markers', () => {

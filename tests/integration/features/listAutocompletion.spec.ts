@@ -624,7 +624,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('    A. ');
+            expect(changes!.insert).toBe('    A.  ');
         });
 
         it('should preserve ordered marker styles when ordered marker cycling is disabled', () => {
@@ -987,6 +987,21 @@ describe('List Autocompletion', () => {
             expect(changes!.insert).toBe('28. ');
         });
 
+        it('should place the cursor from the final Pandoc-normalized continuation line', () => {
+            mockSettings.autoRenumberLists = true;
+            keybindings = createListAutocompletionKeymap(mockSettings);
+            const doc = 'A.  parent\n    I.  child';
+            const view = createMockView(doc, doc.length - 1);
+
+            const enterHandler = keybindings.find(kb => kb.key === 'Enter');
+            const result = enterHandler.run(view);
+            const expected = 'A.  parent\n    I.  child\n    II. ';
+
+            expect(result).toBe(true);
+            expect(view.state.doc.toString()).toBe(expected);
+            expect((view as any).lastTransaction.selection.main.from).toBe(expected.length);
+        });
+
         it('should dispatch bounded changes when continuing an ordered list item', () => {
             mockSettings.autoRenumberLists = true;
             keybindings = createListAutocompletionKeymap(mockSettings);
@@ -1051,7 +1066,7 @@ describe('List Autocompletion', () => {
         it('should preserve an empty ordered child ordinal when returning to an ordered parent with auto-renumber disabled', () => {
             mockSettings.autoRenumberLists = false;
             keybindings = createListAutocompletionKeymap(mockSettings);
-            const listText = 'A. parent\n    5. ';
+            const listText = 'A.  parent\n    5. ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
             const view = createMockView(doc, cursorPos);
@@ -1064,13 +1079,13 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('E. ');
+            expect(changes!.insert).toBe('E.  ');
         });
 
         it('should continue the parent ordinal when returning from an empty ordered child with auto-renumber enabled', () => {
             mockSettings.autoRenumberLists = true;
             keybindings = createListAutocompletionKeymap(mockSettings);
-            const listText = 'A. parent\n    5. ';
+            const listText = 'A.  parent\n    5. ';
             const doc = `${listText}\nnext`;
             const cursorPos = listText.length;
             const view = createMockView(doc, cursorPos);
@@ -1083,7 +1098,7 @@ describe('List Autocompletion', () => {
 
             const changes = getChangesFromTransaction(view.lastTransaction);
             expect(changes).toBeDefined();
-            expect(changes!.insert).toBe('B. ');
+            expect(changes!.insert).toBe('B.  ');
         });
 
         it('should dispatch bounded changes when returning an empty ordered child with Enter', () => {

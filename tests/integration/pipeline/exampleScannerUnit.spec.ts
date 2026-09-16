@@ -8,7 +8,7 @@ describe('Example List Scanning Logic', () => {
     const settings: PandocExtendedMarkdownSettings = {
         enablePandocLists: true,
         strictLineBreaks: false,
-        enforcePandocListSpacing: false,
+        enableListsWithoutPrecedingBlankline: true,
         debugMode: false,
         enableCustomLabelLists: false,
         toggleDefinitionStyle: false,

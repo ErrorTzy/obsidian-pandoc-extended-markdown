@@ -28,7 +28,7 @@ describe('CustomLabelProcessor', () => {
             view,
             settings: {
                 enableCustomLabelLists: true,
-                enforcePandocListSpacing: false,
+                enableListsWithoutPrecedingBlankline: true,
                 ...settings
             } as PandocExtendedMarkdownSettings,
             exampleLabels: new Map(),
@@ -77,8 +77,8 @@ describe('CustomLabelProcessor', () => {
             expect(processor.canProcess(line, context)).toBe(false);
         });
 
-        it('should return true when Pandoc list spacing enforcement and custom label lists are enabled', () => {
-            context = createContext('{::Label} Content', { enforcePandocListSpacing: true });
+        it('should remain enabled when the Pandoc list extension is disabled', () => {
+            context = createContext('{::Label} Content', { enableListsWithoutPrecedingBlankline: false });
             const line = context.document.line(1);
             expect(processor.canProcess(line, context)).toBe(true);
         });
@@ -169,15 +169,15 @@ describe('CustomLabelProcessor', () => {
             expect(duplicateWidget).toBeDefined();
         });
         
-        it('should skip processing when Pandoc list spacing enforcement marks a line invalid', () => {
-            context = createContext('{::Label} Content', { enforcePandocListSpacing: true });
-            context.invalidLines.add(1); // Mark line as invalid
+        it('does not couple plugin-only labels to Pandoc list interruption state', () => {
+            context = createContext('{::Label} Content', { enableListsWithoutPrecedingBlankline: false });
+            context.invalidLines.add(1);
             
             const line = context.document.line(1);
             const result = processor.process(line, context);
             
-            expect(result.decorations).toHaveLength(0);
-            expect(result.contentRegion).toBeUndefined();
+            expect(result.decorations.length).toBeGreaterThan(0);
+            expect(result.contentRegion).toBeDefined();
         });
         
         it('should handle multiple placeholders in label', () => {

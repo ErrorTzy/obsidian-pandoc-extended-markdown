@@ -29,7 +29,7 @@ describe('reading mode pipeline', () => {
 
     const createConfig = (overrides: Partial<ProcessorConfig> = {}): ProcessorConfig => ({
         strictLineBreaks: false,
-        enforcePandocListSpacing: false,
+        enableListsWithoutPrecedingBlankline: true,
         enableHashLists: true,
         enableFancyLists: true,
         enableExampleLists: true,
@@ -150,13 +150,13 @@ describe('reading mode pipeline', () => {
         expect(element.textContent).toBe('H2O and x2');
     });
 
-    it('renders custom labels when Pandoc list spacing enforcement is enabled and custom label lists are enabled', () => {
+    it('renders custom labels when lists_without_preceding_blankline is disabled', () => {
         const element = document.createElement('div');
         element.innerHTML = '<p>{::P} Premise.</p><p>Therefore {::P}.</p>';
         const context = createPostProcessorContext('{::P} Premise.\n\nTherefore {::P}.');
 
         processReadingMode(element, context, createConfig({
-            enforcePandocListSpacing: true,
+            enableListsWithoutPrecedingBlankline: false,
             enableCustomLabelLists: true
         }));
 
@@ -171,7 +171,7 @@ describe('reading mode pipeline', () => {
         const context = createPostProcessorContext('{::P} Premise.\n\nTherefore {::P}.');
 
         processReadingMode(element, context, createConfig({
-            enforcePandocListSpacing: true,
+            enableListsWithoutPrecedingBlankline: false,
             enableCustomLabelLists: false
         }));
 
@@ -233,6 +233,217 @@ describe('reading mode pipeline', () => {
         expect(items[2].querySelector('label')?.textContent).toBe('unchecked');
         expect(element.textContent).not.toContain('[X]');
         expect(element.textContent).not.toContain('[ ]');
+    });
+
+    it('does not validate an interrupted extended list against an earlier duplicate line', () => {
+        const markdown = [
+            'A.  duplicate',
+            '',
+            'Paragraph',
+            'A.  duplicate'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p class="valid">A.  duplicate</p>',
+            '<p class="interrupted">Paragraph<br>A.  duplicate</p>'
+        ].join('');
+
+        processReadingMode(
+            element,
+            createPostProcessorContext(markdown),
+            createConfig({ enableListsWithoutPrecedingBlankline: false })
+        );
+
+        expect(element.querySelector('ol.pem-list-upper-alpha li')?.textContent)
+            .toBe('duplicate');
+        expect(element.querySelector('.interrupted ol')).toBeNull();
+        expect(element.querySelector('.interrupted .pem-list-fancy-upper-alpha')).toBeNull();
+        expect(element.querySelector('.interrupted')?.textContent)
+            .toContain('A.  duplicate');
+    });
+
+    it('assigns duplicate standalone extended lists to their own source lines', () => {
+        const markdown = [
+            'A.  [ ] duplicate',
+            '',
+            'A.  [ ] duplicate'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>A.  [ ] duplicate</p>',
+            '<p>A.  [ ] duplicate</p>'
+        ].join('');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const sourceLines = Array.from(
+            element.querySelectorAll<HTMLInputElement>('.task-list-item-checkbox'),
+            checkbox => checkbox.dataset.line
+        );
+        expect(sourceLines).toEqual(['0', '2']);
+    });
+
+    it('does not assign a rendered list to identical marker text inside a code fence', () => {
+        const markdown = [
+            '```',
+            'A.  [ ] duplicate',
+            '```',
+            '',
+            'A.  [ ] duplicate'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<pre><code>A.  [ ] duplicate</code></pre>',
+            '<p>A.  [ ] duplicate</p>'
+        ].join('');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const checkbox = element.querySelector<HTMLInputElement>('.task-list-item-checkbox');
+        expect(checkbox?.dataset.line).toBe('4');
+        expect(element.querySelector('pre')?.textContent).toBe('A.  [ ] duplicate');
+    });
+
+    it('locates a list marker after host-rendered inline markup in the preceding line', () => {
+        const markdown = 'Paragraph **with markup**\nA.  child';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>Paragraph <strong>with markup</strong><br>A.  child</p>';
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        expect(element.querySelector('ol[type="A"] > li')?.textContent).toBe('child');
+        expect(element.querySelector('strong')?.textContent).toBe('with markup');
+    });
+
+    it.each([
+        ['upper alpha', 'A.  ', 'ol[type="A"]'],
+        ['default ordered', '#. ', 'ol:not([type])'],
+        ['example', '(@example) ', 'ol.example[type="1"]']
+    ])(
+        'matches Pandoc paragraph interruption for a %s list in both extension modes',
+        (_name, marker, listSelector) => {
+            for (const enabled of [false, true]) {
+                const markdown = `Paragraph\n${marker}CHILD_MUST_STAY`;
+                const element = document.createElement('div');
+                element.innerHTML = `<p>Paragraph<br>${marker}CHILD_MUST_STAY</p>`;
+
+                processReadingMode(element, createPostProcessorContext(markdown), createConfig({
+                    enableListsWithoutPrecedingBlankline: enabled
+                }));
+
+                const list = element.querySelector(listSelector);
+                if (enabled) {
+                    expect(Array.from(element.children).map(child => child.tagName))
+                        .toEqual(['P', 'OL']);
+                    expect(element.querySelector(':scope > p')?.textContent).toBe('Paragraph');
+                    expect(list?.querySelector(':scope > li')?.textContent)
+                        .toBe('CHILD_MUST_STAY');
+                } else {
+                    expect(list).toBeNull();
+                    expect(element.querySelector(':scope > p')?.textContent)
+                        .toContain(`${marker}CHILD_MUST_STAY`);
+                }
+            }
+        }
+    );
+
+    it.each([false, true])(
+        'renders an extended child as a nested list inside a native parent (extension=%s)',
+        enabled => {
+            const markdown = '- NATIVE_PARENT\n  A.  CHILD_MUST_STAY';
+            const element = document.createElement('div');
+            element.innerHTML = [
+                '<ul><li><span class="list-bullet"></span>NATIVE_PARENT<br>',
+                '\nA.  CHILD_MUST_STAY</li></ul>'
+            ].join('');
+
+            processReadingMode(element, createPostProcessorContext(markdown), createConfig({
+                enableListsWithoutPrecedingBlankline: enabled
+            }));
+
+            const nativeItem = element.querySelector('ul > li');
+            const nested = nativeItem?.querySelector(':scope > ol[type="A"]');
+            expect(nativeItem?.textContent).toContain('NATIVE_PARENT');
+            expect(nested?.querySelector(':scope > li')?.textContent).toBe('CHILD_MUST_STAY');
+            expect(element.textContent?.match(/CHILD_MUST_STAY/g)).toHaveLength(1);
+        }
+    );
+
+    it('renders an extended child after a native parent interrupts a paragraph', () => {
+        const markdown = [
+            'Paragraph',
+            '- NATIVE_PARENT',
+            '  A.  CHILD_MUST_STAY'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<p>Paragraph</p>',
+            '<ul><li data-line="0"><span class="list-bullet"></span>',
+            'NATIVE_PARENT<br>\nA.  CHILD_MUST_STAY</li></ul>'
+        ].join('');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig({
+            enableListsWithoutPrecedingBlankline: true
+        }));
+
+        const nativeItem = element.querySelector('ul > li');
+        const nested = nativeItem?.querySelector(':scope > ol[type="A"]');
+        expect(element.querySelector(':scope > p')?.textContent).toBe('Paragraph');
+        expect(nativeItem?.textContent).toContain('NATIVE_PARENT');
+        expect(nested?.querySelector(':scope > li')?.textContent).toBe('CHILD_MUST_STAY');
+        expect(element.textContent?.match(/CHILD_MUST_STAY/g)).toHaveLength(1);
+    });
+
+    it('uses absolute Obsidian section lines for a separately rendered native-list block', () => {
+        const markdown = [
+            'Paragraph',
+            '- NATIVE_PARENT',
+            '  A.  CHILD_MUST_STAY'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = [
+            '<ul><li><span class="list-bullet"></span>',
+            'NATIVE_PARENT<br>\nA.  CHILD_MUST_STAY</li></ul>'
+        ].join('');
+        const context = createPostProcessorContext(markdown);
+        (context.getSectionInfo as jest.Mock).mockReturnValue({
+            text: markdown,
+            lineStart: 1,
+            lineEnd: 2
+        });
+
+        processReadingMode(element, context, createConfig({
+            enableListsWithoutPrecedingBlankline: true
+        }));
+
+        const nativeItem = element.querySelector('ul > li');
+        expect(nativeItem?.querySelector(':scope > ol[type="A"] > li')?.textContent)
+            .toBe('CHILD_MUST_STAY');
+        expect(element.textContent?.match(/CHILD_MUST_STAY/g)).toHaveLength(1);
+    });
+
+    it('keeps validation absolute but emits block-relative task source metadata', () => {
+        const markdown = [
+            'Paragraph',
+            '',
+            'A.  plain',
+            '',
+            '#. [x] HASH_TASK'
+        ].join('\n');
+        const element = document.createElement('div');
+        element.innerHTML = '<p>#. [x] HASH_TASK</p>';
+        const context = createPostProcessorContext(markdown);
+        (context.getSectionInfo as jest.Mock).mockReturnValue({
+            text: markdown,
+            lineStart: 4,
+            lineEnd: 4
+        });
+
+        processReadingMode(element, context, createConfig());
+
+        const checkbox = element.querySelector<HTMLInputElement>('.task-list-item-checkbox');
+        expect(checkbox?.dataset.line).toBe('0');
+        expect(element.querySelector('ol > li')?.textContent).toContain('HASH_TASK');
     });
 });
 

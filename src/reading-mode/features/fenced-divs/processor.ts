@@ -12,12 +12,14 @@ import {
 import {
     appendContentLine,
     appendRenderedLineNode,
+    getCandidateBlock,
     getTextWithLineBreaks,
     insertFencedDiv,
     replaceCandidateWithFragments,
     shouldSkipElement,
     splitCandidateIntoLines
 } from './candidateDom';
+import { processListWithCapturedClosing } from './capturedListClosing';
 import {
     createFencedDivElement,
     hydrateRenderedFencedDivLabels,
@@ -29,13 +31,24 @@ import {
 } from './sourceOpenings';
 import {
     ActiveFencedDiv,
+    CapturedListClosingSignatures,
     CandidateLine,
     MultilineCandidateResult,
     PreparedFencedDiv,
     SourceOpeningState
 } from './types';
 
-const pendingSectionProcessing = new WeakMap<HTMLElement, number>();
+interface PendingSectionProcessing {
+    timeout: number;
+    complete: () => void;
+}
+
+interface FencedDivProcessingOptions {
+    capturedListClosingSignatures?: CapturedListClosingSignatures;
+    isCurrent?: () => boolean;
+}
+
+const pendingSectionProcessing = new WeakMap<HTMLElement, PendingSectionProcessing>();
 const chunkStacks = new Map<string, ActiveFencedDiv[]>();
 const chunkLastProcessedFenceWasClosing = new Map<string, boolean>();
 const documentTypeCounters = new Map<string, FencedDivTypeCounters>();
@@ -44,31 +57,44 @@ export function scheduleFencedDivProcessing(
     element: HTMLElement,
     docPath: string,
     config: ProcessorConfig,
-    sourceText?: string
-): void {
+    sourceText?: string,
+    options: FencedDivProcessingOptions = {}
+): Promise<void> {
     if (config.enableFencedDivs === false) {
-        return;
+        return Promise.resolve();
     }
 
-    const section = element.closest('.markdown-preview-section');
+    const section = element.closest<HTMLElement>('.markdown-preview-section');
+    const process = (root: HTMLElement): void => {
+        if (options.isCurrent?.() === false) {
+            return;
+        }
+        processFencedDivs(root, docPath, config, true, sourceText, options.capturedListClosingSignatures);
+        scheduleFencedDivLabelHydration(root, docPath, config);
+    };
     if (!section) {
-        processFencedDivs(element, docPath, config, true, sourceText);
-        scheduleFencedDivLabelHydration(element, docPath, config);
-        return;
+        process(element);
+        return Promise.resolve();
     }
 
     const pending = pendingSectionProcessing.get(section);
     if (pending !== undefined) {
-        window.clearTimeout(pending);
+        window.clearTimeout(pending.timeout);
+        pending.complete();
     }
 
-    const timeout = window.setTimeout(() => {
-        pendingSectionProcessing.delete(section);
-        processFencedDivs(section, docPath, config, true, sourceText);
-        scheduleFencedDivLabelHydration(section, docPath, config);
-    }, 0);
-
-    pendingSectionProcessing.set(section, timeout);
+    return new Promise((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+            pendingSectionProcessing.delete(section);
+            try {
+                process(section);
+                resolve();
+            } catch (error) {
+                reject(error instanceof Error ? error : new Error(String(error)));
+            }
+        }, 0);
+        pendingSectionProcessing.set(section, { timeout, complete: resolve });
+    });
 }
 
 function scheduleFencedDivLabelHydration(
@@ -83,7 +109,7 @@ function scheduleFencedDivLabelHydration(
     window.setTimeout(() => {
         const labels = pluginStateManager.getDocumentCounters(docPath).fencedDivLabels;
         hydrateRenderedFencedDivLabels(element, labels);
-        processHydratedFencedDivReferences(element, docPath);
+        processHydratedFencedDivReferences(element, docPath, config);
     }, 0);
 }
 
@@ -92,7 +118,8 @@ export function processFencedDivs(
     docPath: string,
     config: ProcessorConfig,
     preserveStack: boolean = false,
-    sourceText?: string
+    sourceText?: string,
+    capturedListClosingSignatures?: CapturedListClosingSignatures
 ): void {
     if (config.enableFencedDivs === false) {
         return;
@@ -106,7 +133,9 @@ export function processFencedDivs(
     }
     const typeCounters = getDocumentTypeCounters(docPath);
     const candidates = Array.from(element.querySelectorAll('p, li'));
-    const sourceOpeningState = sourceText ? createSourceOpeningState(sourceText, config) : undefined;
+    const sourceOpeningState = sourceText
+        ? createSourceOpeningState(sourceText, config, capturedListClosingSignatures)
+        : undefined;
     let canOpenAtCurrentLine = true;
     let lastProcessedFenceWasClosing = preserveStack
         ? chunkLastProcessedFenceWasClosing.get(docPath) ?? false
@@ -118,6 +147,16 @@ export function processFencedDivs(
         }
 
         const lineText = getTextWithLineBreaks(candidate);
+        if (candidate.matches('li') && stack.length > 0 &&
+            processListWithCapturedClosing(
+                candidate,
+                stack,
+                sourceOpeningState
+            )) {
+            canOpenAtCurrentLine = true;
+            lastProcessedFenceWasClosing = true;
+            continue;
+        }
         if (!lineText.includes('\n')) {
             synchronizeSourceClosingsBeforeRenderedLine(
                 stack,
@@ -184,7 +223,7 @@ export function processFencedDivs(
                 active.contentLines.push(lineText);
                 active.reference.content = active.contentLines.join('\n').trim();
             }
-            stack[stack.length - 1].contentElement.appendChild(candidate);
+            stack[stack.length - 1].contentElement.appendChild(getCandidateBlock(candidate));
         }
         if (lineText.trim()) {
             lastProcessedFenceWasClosing = false;
@@ -261,7 +300,9 @@ function processMultilineCandidate(
     initialCanOpenAtCurrentLine: boolean,
     sourceOpeningState?: SourceOpeningState
 ): MultilineCandidateResult {
-    if (!text.includes('\n')) {
+    // Native list items own nested live DOM. They must be reconciled through
+    // the source-backed list path, never flattened into paragraph fragments.
+    if (candidate.matches('li') || !text.includes('\n')) {
         return {
             processed: false,
             canOpenAtNextLine: initialCanOpenAtCurrentLine,

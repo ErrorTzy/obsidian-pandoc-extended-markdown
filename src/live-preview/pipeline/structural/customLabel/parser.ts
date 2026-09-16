@@ -15,15 +15,9 @@ import { ListPatterns } from '../../../../shared/patterns';
  */
 export function parseCustomLabel(line: Line, context: ProcessingContext): ParsedCustomLabel | null {
     const lineText = context.document.sliceString(line.from, line.to);
-    const lineNum = context.document.lineAt(line.from).number;
 
     const customLabelMatch = ListPatterns.isCustomLabelList(lineText);
     if (!customLabelMatch) {
-        return null;
-    }
-
-    // Check Pandoc list spacing enforcement.
-    if (context.settings.enforcePandocListSpacing && context.invalidLines.has(lineNum)) {
         return null;
     }
 

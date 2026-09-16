@@ -73,7 +73,7 @@ describe('unordered list marker reading mode styles', () => {
         `;
         const config: ProcessorConfig = {
             strictLineBreaks: false,
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             enableUnorderedListMarkerStyles: false
         };
 

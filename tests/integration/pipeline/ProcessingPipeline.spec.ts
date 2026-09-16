@@ -58,7 +58,7 @@ describe('ProcessingPipeline', () => {
         pipeline = new ProcessingPipeline(stateManager);
         
         settings = {
-            enforcePandocListSpacing: false,
+            enableListsWithoutPrecedingBlankline: true,
             autoRenumberLists: false,
             enableCustomLabelLists: false,
             panelOrder: [],
@@ -122,7 +122,7 @@ describe('ProcessingPipeline', () => {
     
     describe('Fancy list processing', () => {
         it('should process uppercase letter lists', () => {
-            const doc = 'A. First item\nB. Second item';
+            const doc = 'A.  First item\nB.  Second item';
             updateView(doc);
             
             const decorations = pipeline.process(view, settings);
