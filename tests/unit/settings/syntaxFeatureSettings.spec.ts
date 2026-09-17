@@ -23,13 +23,22 @@ describe('Syntax feature settings', () => {
         expect(settings).not.toHaveProperty('strictPandocMode');
     });
 
-    it('ignores the removed inverted list-spacing setting', () => {
-        const settings = normalizeSettings({
+    it('migrates the removed inverted list-spacing setting', () => {
+        const strictSettings = normalizeSettings({
             enforcePandocListSpacing: true
-        } as Parameters<typeof normalizeSettings>[0] & { enforcePandocListSpacing: boolean });
+        });
+        const lenientSettings = normalizeSettings({
+            enforcePandocListSpacing: false
+        });
+        const currentSettingWins = normalizeSettings({
+            enableListsWithoutPrecedingBlankline: true,
+            enforcePandocListSpacing: true
+        });
 
-        expect(settings.enableListsWithoutPrecedingBlankline).toBe(true);
-        expect(settings).not.toHaveProperty('enforcePandocListSpacing');
+        expect(strictSettings.enableListsWithoutPrecedingBlankline).toBe(false);
+        expect(lenientSettings.enableListsWithoutPrecedingBlankline).toBe(true);
+        expect(currentSettingWins.enableListsWithoutPrecedingBlankline).toBe(true);
+        expect(strictSettings).not.toHaveProperty('enforcePandocListSpacing');
     });
 
     it('keeps custom labels disabled when only the granular toggle is false', () => {

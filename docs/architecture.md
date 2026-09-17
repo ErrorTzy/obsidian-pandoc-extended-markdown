@@ -65,7 +65,7 @@ The optional Pandoc export backend is a separate desktop-only module. It is not 
 
 5. **Feature Flags**
    - Syntax enable/disable state is centralized in `shared/types/settingsTypes.ts`
-   - `normalizeSettings()` keeps persisted settings consistent and preserves legacy `moreExtendedSyntax` compatibility
+- `normalizeSettings()` keeps persisted settings consistent and migrates the former inverted `enforcePandocListSpacing` flag to `enableListsWithoutPrecedingBlankline`
    - `isSyntaxFeatureEnabled()` is the shared gate for live preview, reading mode, editor suggestions, autocompletion, and panel visibility
    - Settings UI groups syntax toggles separately from list auto-completion controls and sidebar panel controls
    - Unordered list marker cycling and source-aware marker rendering are separate settings so keyboard behavior and visual styling can be enabled independently
@@ -422,13 +422,27 @@ Definition-list file names describe their data flow:
 | **sourceParser.ts** | Parses validator-approved, container-normalized source into Pandoc definition-list blocks and records lazy-container joins |
 | **sourceRenderer.ts** | Renders parsed source blocks and surrounding paragraph content |
 | **hostRenderer.ts** | Builds definition-list structure while rendering arbitrary inline fragments through Obsidian |
+| **definitionSignature.ts** | Builds normalized source/DOM signatures for deterministic candidate matching without coupling matching rules to DOM mutation |
+| **definitionTextMatcher.ts** | Compares source-backed definition text with rendered DOM without owning candidate selection or mutation |
+| **definitionCandidateMatcher.ts** | Finds complete, source-proven rendered candidates and orders them for replacement |
+| **inactiveLazyDefinitionDom.ts** | Plans and validates the DOM moves needed to split inactive lazy-container definitions safely |
+| **inactiveLazyDefinitionNormalizer.ts** | Reconciles and restores inactive lazy-container definition lists while preserving DOM identity |
 | **parsedLineAdapter.ts** | Adapts `ParsedLine[]` blocks into the canonical source-backed renderer |
-| **normalizer.ts** | Rebuilds malformed rendered definition-list DOM from source and reversibly reconciles lazy-container joins |
+| **normalizer.ts** | Orchestrates source-backed replacement and delegates candidate matching and lazy-container reconciliation |
+
+Extended-list source/DOM responsibilities are similarly separated:
+
+| File | Purpose |
+|------|---------|
+| **sourceDataLineResolver.ts** | Maps rendered list lines to validator-approved source coordinates without DOM mutation |
+| **sourceBackedCandidate.ts** | Applies source ownership and definition-list boundaries to rendered candidates |
+| **semanticBlockRenderer.ts** | Parses and renders semantic list paragraphs after source ownership is resolved |
 
 Native-list files with source/DOM reconciliation responsibilities include:
 
 | File | Purpose |
 |------|---------|
+| **nativeListDom.ts** | Centralizes direct-item lookup, Obsidian list-wrapper ownership, ordered-item numbering, and safe empty-list cleanup |
 | **literalContinuationReconciler.ts** | Repairs source-proven literal paragraph continuations that Obsidian split into code/list blocks while preserving matched list-item identities |
 | **sourceOwnedBlockSuffix.ts** | Plans every source-owned list/quote suffix block and its safe promotion or complete-render fallback |
 

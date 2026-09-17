@@ -1,4 +1,5 @@
 import { getNativeListItemLeadText } from './sourceSignature';
+import { getDirectListItems, getNativeListBlock } from './nativeListDom';
 import {
     getNativeListSourceOccurrence,
     getNativeListSourceTextOccurrence,
@@ -92,7 +93,7 @@ export function findNativeListGroup(
     let domOccurrence = -1;
     for (let startIndex = 0; startIndex < lists.length; startIndex++) {
         let firstItemOccurrence: number | null = null;
-        getDirectItems(lists[startIndex]).forEach((item, itemIndex) => {
+        getDirectListItems(lists[startIndex]).forEach((item, itemIndex) => {
             if (matchesSourceItem(lists[startIndex], item, sourceLines[0])) {
                 domOccurrence++;
                 if (itemIndex === 0) {
@@ -135,7 +136,7 @@ export function findNativeListDomAnchor(
     list: HTMLElement,
     root: HTMLElement
 ): NativeListDomAnchor | null {
-    let replacementBlock = getListBlock(list);
+    let replacementBlock = getNativeListBlock(list);
     while (replacementBlock !== root) {
         const precedingBlock = replacementBlock.previousElementSibling;
         if (precedingBlock?.instanceOf(HTMLElement)) {
@@ -160,11 +161,6 @@ export function markNativeListGroupScheduled(
     isCurrent: () => boolean
 ): void {
     match.segments.forEach(segment => scheduledLists.set(segment.list, isCurrent));
-}
-
-export function getDirectItems(list: HTMLElement): HTMLLIElement[] {
-    return Array.from(list.children)
-        .filter((child): child is HTMLLIElement => child.tagName === 'LI');
 }
 
 export function findNativeListItem(
@@ -194,7 +190,7 @@ export function findNativeListItem(
 export function hasMaterializedTailInsideMatchedItem(match: NativeListGroupMatch): boolean {
     const finalSegment = match.segments[match.segments.length - 1];
     const finalItem = finalSegment
-        ? getDirectItems(finalSegment.list)[finalSegment.itemCount - 1]
+        ? getDirectListItems(finalSegment.list)[finalSegment.itemCount - 1]
         : null;
     if (!finalItem) {
         return false;
@@ -266,7 +262,7 @@ function matchNativeListGroup(
             return { segments, lines };
         }
 
-        if (itemMatch.length < getDirectItems(list).length) {
+        if (itemMatch.length < getDirectListItems(list).length) {
             break;
         }
     }
@@ -279,7 +275,7 @@ function matchDirectItems(
     sourceLines: NativeListReplacementLine[],
     sourceStartIndex: number
 ): NativeListReplacementLine[] {
-    const items = getDirectItems(list);
+    const items = getDirectListItems(list);
     const matches: NativeListReplacementLine[] = [];
 
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
@@ -321,11 +317,6 @@ function getParagraphTextWithoutFootnoteBacklinks(paragraph: Element): string {
     clone.querySelectorAll('a.footnote-back, a.footnote-backref')
         .forEach(backlink => backlink.remove());
     return clone.textContent ?? '';
-}
-
-function getListBlock(list: HTMLElement): HTMLElement {
-    const parent = list.parentElement;
-    return parent?.matches('.el-ul, .el-ol') ? parent : list;
 }
 
 function isExclusiveQuoteContainer(parent: HTMLElement, child: HTMLElement): boolean {

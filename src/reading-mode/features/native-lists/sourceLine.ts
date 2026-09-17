@@ -13,7 +13,8 @@ import {
     isFencedDivOpening,
     isLineBlock,
     isLineBlockContinuation,
-    isYamlMetadataStart
+    isYamlMetadataStart,
+    stripBlockQuoteDepth
 } from '../../../shared/utils/pandocBlockBoundaries';
 
 export type NativeListKind = 'ul' | 'ol';
@@ -81,18 +82,6 @@ export function findSourceItemSubtreeEnd(
     }
 
     return endIndex;
-}
-
-function stripBlockQuoteDepth(line: string, depth: number): string {
-    let content = line;
-    for (let level = 0; level < depth; level++) {
-        const prefix = content.match(/^ {0,3}>[ \t]?/)?.[0];
-        if (!prefix) {
-            break;
-        }
-        content = content.slice(prefix.length);
-    }
-    return content;
 }
 
 export function findInterruptedSourceSubtreeEnd(

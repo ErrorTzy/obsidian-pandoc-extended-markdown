@@ -9,10 +9,10 @@ import {
 
 import {
     findNativeListItem,
-    getDirectItems,
     NativeListGroupMatch,
     NativeListSourceLine
 } from './sourceDomMatcher';
+import { getDirectListItems } from './nativeListDom';
 import {
     findSourceItemSubtreeEnd,
     getComparableNativeListText,
@@ -127,7 +127,7 @@ export function matchSourceOwnedBlockSuffix(
     }
     const finalSegment = match.segments[match.segments.length - 1];
     const ownerItem = finalSegment
-        ? getDirectItems(finalSegment.list)[finalSegment.itemCount - 1]
+        ? getDirectListItems(finalSegment.list)[finalSegment.itemCount - 1]
         : null;
     if (!ownerItem) {
         return undefined;
@@ -171,7 +171,7 @@ function findOwnedListSuffixAnchor(
     }, sourceLines);
     if (!suffixMatch || suffixMatch.item === ownerItem ||
         !ownerItem.contains(suffixMatch.list) ||
-        getDirectItems(suffixMatch.list)[0] !== suffixMatch.item) {
+        getDirectListItems(suffixMatch.list)[0] !== suffixMatch.item) {
         return null;
     }
     return suffixMatch.list;
@@ -242,7 +242,7 @@ function canMergeRemainingItems(
     rootIndentColumns: number
 ): boolean {
     const finalSegment = match.segments[match.segments.length - 1];
-    if (!finalSegment || finalSegment.itemCount >= getDirectItems(finalSegment.list).length ||
+    if (!finalSegment || finalSegment.itemCount >= getDirectListItems(finalSegment.list).length ||
         !getTrailingPromotedList(blocks)) {
         return false;
     }

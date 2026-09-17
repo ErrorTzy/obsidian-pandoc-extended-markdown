@@ -30,6 +30,7 @@ import {
 import {
     getPandocContainerContent,
     PandocListMarkerKind,
+    ParsedPandocListMarker,
     parsePandocListMarker
 } from './pandocListMarkers';
 import { getReferenceDefinitionEndIndex } from './pandocReferenceDefinitions';
@@ -158,6 +159,35 @@ export class ListBlockValidator {
         let definitionTermContainerDepth: number | null = null;
         let definitionBlankContainerDepth: number | null = null;
 
+        // Keep all block-state transitions in this single forward scan. Pandoc's
+        // precedence depends on the order below: opaque blocks, container exits,
+        // interrupted paragraphs, active lists, open paragraphs, then new blocks.
+        const stopListBlock = (): void => {
+            inListBlock = false;
+            listPendingBlank = false;
+        };
+
+        const startListBlock = (
+            sourceLine: string,
+            index: number,
+            marker: ParsedPandocListMarker,
+            containerDepth: number = getBlockQuoteDepth(sourceLine)
+        ): void => {
+            inListBlock = true;
+            listPendingBlank = false;
+            listContainerDepth = containerDepth;
+            listRootIndentColumns = marker.indentColumns;
+            listContinuationIndentColumns = marker.contentIndentColumns;
+            listRootKind = marker.kind;
+            listItems.startRoot(sourceLine, index, marker);
+        };
+
+        const clearPendingDefinitionTerm = (): void => {
+            definitionTermBeforeBlank = null;
+            definitionTermContainerDepth = null;
+            definitionBlankContainerDepth = null;
+        };
+
         const finishInterruptedParagraph = (endIndex: number): void => {
             if (!interruptedParagraph) {
                 return;
@@ -205,7 +235,7 @@ export class ListBlockValidator {
 
             if (isYamlMetadataStart(lines, index, content)) {
                 paragraphStartIndex = null;
-                inListBlock = false;
+                stopListBlock();
                 inYamlMetadata = true;
                 continue;
             }
@@ -241,7 +271,7 @@ export class ListBlockValidator {
             if (blockEntryWhitespace.closeHtml(content)) {
                 finishInterruptedParagraph(index - 1);
                 paragraphStartIndex = null;
-                inListBlock = false;
+                stopListBlock();
                 continue;
             }
 
@@ -259,7 +289,7 @@ export class ListBlockValidator {
             if (fencedDivDepth > 0 && isFencedDivClosing(content)) {
                 finishInterruptedParagraph(index - 1);
                 paragraphStartIndex = null;
-                inListBlock = false;
+                stopListBlock();
                 fencedDivDepth--;
                 continue;
             }
@@ -372,7 +402,7 @@ export class ListBlockValidator {
             if (openingFence && !inListBlock &&
                 (paragraphStartIndex === null || paragraphInterruptingFence)) {
                 paragraphStartIndex = null;
-                inListBlock = false;
+                stopListBlock();
                 fence = openingFence;
                 continue;
             }
@@ -388,8 +418,7 @@ export class ListBlockValidator {
             if (inListBlock && listPendingBlank &&
                 listBlankContainerDepth < listContainerDepth &&
                 getBlockQuoteDepth(line) < listContainerDepth) {
-                inListBlock = false;
-                listPendingBlank = false;
+                stopListBlock();
             }
 
             if (inListBlock) {
@@ -400,8 +429,7 @@ export class ListBlockValidator {
                         fence = openingFence;
                         continue;
                     }
-                    inListBlock = false;
-                    listPendingBlank = false;
+                    stopListBlock();
                     fence = openingFence;
                     continue;
                 }
@@ -412,8 +440,7 @@ export class ListBlockValidator {
                         line,
                         settings.enableListsWithoutPrecedingBlankline
                     )) {
-                    inListBlock = false;
-                    listPendingBlank = false;
+                    stopListBlock();
                     invalidLines.add(index);
                     paragraphStartIndex = index;
                     continue;
@@ -422,8 +449,7 @@ export class ListBlockValidator {
                     currentListMarker.indentColumns < listContinuationIndentColumns &&
                     currentListMarker.indentColumns < 4 &&
                     listRootKind !== 'definition') {
-                    inListBlock = false;
-                    listPendingBlank = false;
+                    stopListBlock();
                     invalidLines.add(index);
                     paragraphStartIndex = index;
                     continue;
@@ -443,8 +469,7 @@ export class ListBlockValidator {
                     }
                     continue;
                 }
-                inListBlock = false;
-                listPendingBlank = false;
+                stopListBlock();
             }
 
             const isLazyQuoteContinuation = paragraphStartIndex !== null &&
@@ -484,15 +509,8 @@ export class ListBlockValidator {
                         settings.enableListsWithoutPrecedingBlankline
                     )) {
                         paragraphStartIndex = null;
-                        inListBlock = true;
-                        listContainerDepth = getBlockQuoteDepth(line);
-                        listRootIndentColumns = marker.indentColumns;
-                        listContinuationIndentColumns = marker.contentIndentColumns;
-                        listRootKind = marker.kind;
-                        listItems.startRoot(line, index, marker);
-                        definitionTermBeforeBlank = null;
-                        definitionTermContainerDepth = null;
-                        definitionBlankContainerDepth = null;
+                        startListBlock(line, index, marker);
+                        clearPendingDefinitionTerm();
                     } else {
                         invalidLines.add(index);
                         if (settings.enableListsWithoutPrecedingBlankline) {
@@ -505,14 +523,10 @@ export class ListBlockValidator {
                 if (marker && marker.hasValidMarkerSpacing) {
                     if (settings.enableListsWithoutPrecedingBlankline) {
                         paragraphStartIndex = null;
-                        inListBlock = true;
-                        listContainerDepth = isLazyQuoteContinuation && marker.indentColumns > 3
+                        const containerDepth = isLazyQuoteContinuation && marker.indentColumns > 3
                             ? getBlockQuoteDepth(lines[activeParagraphStart ?? index])
                             : getBlockQuoteDepth(line);
-                        listRootIndentColumns = marker.indentColumns;
-                        listContinuationIndentColumns = marker.contentIndentColumns;
-                        listRootKind = marker.kind;
-                        listItems.startRoot(line, index, marker);
+                        startListBlock(line, index, marker, containerDepth);
                     } else {
                         invalidLines.add(index);
                         interruptedParagraph = {
@@ -541,22 +555,14 @@ export class ListBlockValidator {
                     settings.enableListsWithoutPrecedingBlankline
                 ) &&
                 definitionBlankContainerDepth !== null &&
+                definitionTermContainerDepth !== null &&
                 definitionBlankContainerDepth >= definitionTermContainerDepth) {
-                inListBlock = true;
-                listContainerDepth = getBlockQuoteDepth(line);
-                listRootIndentColumns = marker.indentColumns;
-                listContinuationIndentColumns = marker.contentIndentColumns;
-                listRootKind = marker.kind;
-                listItems.startRoot(line, index, marker);
-                definitionTermBeforeBlank = null;
-                definitionTermContainerDepth = null;
-                definitionBlankContainerDepth = null;
+                startListBlock(line, index, marker);
+                clearPendingDefinitionTerm();
                 continue;
             }
 
-            definitionTermBeforeBlank = null;
-            definitionTermContainerDepth = null;
-            definitionBlankContainerDepth = null;
+            clearPendingDefinitionTerm();
 
             const referenceEndIndex = getReferenceDefinitionEndIndex(lines, index);
             if (referenceEndIndex !== null) {
@@ -608,12 +614,7 @@ export class ListBlockValidator {
             }
 
             if (marker?.hasValidMarkerSpacing) {
-                inListBlock = true;
-                listContainerDepth = getBlockQuoteDepth(line);
-                listRootIndentColumns = marker.indentColumns;
-                listContinuationIndentColumns = marker.contentIndentColumns;
-                listRootKind = marker.kind;
-                listItems.startRoot(line, index, marker);
+                startListBlock(line, index, marker);
                 continue;
             }
 

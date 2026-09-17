@@ -6,6 +6,7 @@ import { keymap } from '@codemirror/view';
 // Types
 import {
     PandocExtendedMarkdownSettings,
+    StoredPandocExtendedMarkdownSettings,
     PandocExtendedMarkdownSettingTab,
     normalizeSettings,
     isCustomLabelListsEnabled
@@ -310,7 +311,8 @@ export class PandocExtendedMarkdownPlugin extends Plugin {
     }
     
     async loadSettings() {
-        const loadedSettings = await this.loadData() as Partial<PandocExtendedMarkdownSettings> | null;
+        const loadedSettings = await this.loadData() as
+            StoredPandocExtendedMarkdownSettings | null;
         this.settings = normalizeSettings(loadedSettings ?? undefined);
     }
 

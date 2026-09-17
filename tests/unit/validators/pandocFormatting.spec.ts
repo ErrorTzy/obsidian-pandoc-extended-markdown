@@ -1,6 +1,16 @@
-import { checkPandocFormatting } from '../../../src/editor-extensions/pandocValidator';
+import {
+    checkPandocFormatting,
+    isPandocListLine
+} from '../../../src/editor-extensions/pandocValidator';
 
 describe('Pandoc formatting command list-spacing parity', () => {
+    it('distinguishes valid list markers from ordinary prose', () => {
+        const lines = ['paragraph', '', '- item'];
+
+        expect(isPandocListLine({ lines, currentLine: 0 }, false)).toBe(false);
+        expect(isPandocListLine({ lines, currentLine: 2 }, false)).toBe(true);
+    });
+
     it('reports paragraph-interrupting lists only when the extension is disabled', () => {
         const content = [
             'Paragraph text',

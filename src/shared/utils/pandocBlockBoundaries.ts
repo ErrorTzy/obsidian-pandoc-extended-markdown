@@ -208,6 +208,19 @@ export function getBlockQuoteDepth(line: string): number {
     }
 }
 
+/** Strip at most `depth` leading block-quote container markers from a source line. */
+export function stripBlockQuoteDepth(line: string, depth: number): string {
+    let content = line;
+    for (let level = 0; level < depth; level++) {
+        const prefix = content.match(/^ {0,3}>[ \t]?/)?.[0];
+        if (!prefix) {
+            break;
+        }
+        content = content.slice(prefix.length);
+    }
+    return content;
+}
+
 export function isBlankContainerLine(content: string): boolean {
     return /^[ \t]*$/.test(content);
 }

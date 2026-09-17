@@ -1,5 +1,8 @@
 import { ListPatterns } from '../../../shared/patterns';
-import { getBlockQuoteDepth } from '../../../shared/utils/pandocBlockBoundaries';
+import {
+    getBlockQuoteDepth,
+    stripBlockQuoteDepth
+} from '../../../shared/utils/pandocBlockBoundaries';
 import { ListBlockValidator } from '../../../shared/utils/listBlockValidator';
 import { parsePandocListMarker } from '../../../shared/utils/pandocListMarkers';
 import {
@@ -47,6 +50,7 @@ export interface DefinitionListSpacingSettings {
     enableListsWithoutPrecedingBlankline: boolean;
 }
 
+// Discover validator-approved definition blocks across document and container projections.
 export function findPandocDefinitionListBlocks(
     sourceText: string,
     settings: DefinitionListSpacingSettings = {
@@ -170,18 +174,6 @@ function getDefinitionContainerProjection(
     normalizeIndentedLazyDefinitionMarkers(projected, sourceLines, invalidLines);
     projections.set(ownerContainerDepth, projected);
     return projected;
-}
-
-function stripBlockQuoteDepth(line: string, depth: number): string {
-    let remaining = line;
-    for (let index = 0; index < depth; index++) {
-        const prefix = remaining.match(/^ {0,3}>[ \t]?/);
-        if (!prefix) {
-            break;
-        }
-        remaining = remaining.slice(prefix[0].length);
-    }
-    return remaining;
 }
 
 function isInvalidLiteralDefinitionTerm(
@@ -386,6 +378,7 @@ export function normalizePlainText(lines: string[]): string {
         .join(' ');
 }
 
+// Parse one contiguous definition-list block and its descriptions.
 function readDefinitionListBlock(
     lines: string[],
     sourceLines: string[],
@@ -545,6 +538,7 @@ function isNestedDefinitionMarker(
         candidate.indentColumns <= owner.contentIndentColumns + 3;
 }
 
+// Definition-list boundary and continuation rules.
 function normalizeDefinitionContinuation(
     line: string,
     ownerContentIndent: number,

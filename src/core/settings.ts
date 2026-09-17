@@ -9,6 +9,7 @@ import {
     isCustomLabelListsEnabled,
     isFencedDivExtrasEnabled,
     isSyntaxFeatureEnabled,
+    StoredPandocExtendedMarkdownSettings,
     SyntaxFeatureSettingKey
 } from '../shared/types/settingsTypes';
 import { OrderedListMarkerStyle } from '../shared/types/orderedListTypes';
@@ -25,7 +26,10 @@ import { UnorderedListOrderControl } from './settingsUnorderedListOrder';
 import { renderPandocExportSettingsSection } from '../pandoc/gui/obsidian/settings/pandocExportSettingsSection';
 import { createObsidianPandocOsDependencies } from '../pandoc/obsidianDependencies';
 
-export type { PandocExtendedMarkdownSettings };
+export type {
+    PandocExtendedMarkdownSettings,
+    StoredPandocExtendedMarkdownSettings
+};
 export {
     DEFAULT_SETTINGS,
     normalizeSettings,

@@ -1,4 +1,4 @@
-import type { MarkdownRenderChild } from 'obsidian';
+import { MarkdownRenderChild } from 'obsidian';
 
 import {
     normalizeExistingDefinitionLists,
@@ -360,11 +360,18 @@ function createObserverRenderChild(
     containerEl: HTMLElement,
     onunload: () => void
 ): MarkdownRenderChild {
-    return {
-        containerEl,
-        load: () => undefined,
-        onload: () => undefined,
-        unload: onunload,
-        onunload
-    } as unknown as MarkdownRenderChild;
+    return new DefinitionListObserverChild(containerEl, onunload);
+}
+
+class DefinitionListObserverChild extends MarkdownRenderChild {
+    constructor(
+        containerEl: HTMLElement,
+        private readonly handleUnload: () => void
+    ) {
+        super(containerEl);
+    }
+
+    onunload(): void {
+        this.handleUnload();
+    }
 }

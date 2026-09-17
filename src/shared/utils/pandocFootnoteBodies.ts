@@ -7,7 +7,8 @@ import {
     getRawTexEnvironmentOpening,
     getStandaloneOpaqueBlockEndIndex,
     isFenceClosing,
-    isYamlMetadataStart
+    isYamlMetadataStart,
+    stripBlockQuoteDepth
 } from './pandocBlockBoundaries';
 import { getPandocContainerContent } from './pandocListMarkers';
 
@@ -172,18 +173,6 @@ function findFootnoteOpenings(lines: string[]): Map<number, FootnoteOpening> {
         inlineCodeEndIndex = getMultilineBacktickCodeSpanEndIndex(lines, index, content);
     }
     return openings;
-}
-
-function stripBlockQuoteDepth(line: string, depth: number): string {
-    let content = line;
-    for (let level = 0; level < depth; level++) {
-        const match = content.match(/^ {0,3}>[ \t]?/);
-        if (!match) {
-            break;
-        }
-        content = content.slice(match[0].length);
-    }
-    return content;
 }
 
 function isIndentedFootnoteContinuation(line: string): boolean {

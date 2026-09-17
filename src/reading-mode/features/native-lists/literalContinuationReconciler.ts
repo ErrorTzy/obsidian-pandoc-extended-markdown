@@ -11,10 +11,14 @@ import { ReadingModeContext } from '../../pipeline/types';
 import { renderMarkdownFragment } from '../../utils/fragmentRenderer';
 import {
     findNativeListItem,
-    getDirectItems,
     NativeListItemMatch,
     NativeListReplacementLine
 } from './sourceDomMatcher';
+import {
+    getDirectListItems,
+    getNativeListBlock,
+    removeEmptyNativeListBlock
+} from './nativeListDom';
 import { getNativeListItemLeadText, renderNativeListLeadText } from './sourceSignature';
 import {
     normalizeNativeListText,
@@ -112,7 +116,7 @@ async function prepareUnderIndentedContinuation(
         return null;
     }
 
-    const parentBlock = getListBlock(parentMatch.list);
+    const parentBlock = getNativeListBlock(parentMatch.list);
     const materializedBlock = parentBlock.nextElementSibling;
     if (!materializedBlock?.instanceOf(HTMLElement) ||
         !matchesMaterializedCodeBlock(materializedBlock, sourceLines, range)) {
@@ -124,9 +128,9 @@ async function prepareUnderIndentedContinuation(
     if (nextSibling) {
         tailMatch = await findRenderedSiblingMatch(nextSibling, sourceLines, context, root);
         if (!isCurrent() || !tailMatch ||
-            tailMatch.item !== getDirectItems(tailMatch.list)[0] ||
+            tailMatch.item !== getDirectListItems(tailMatch.list)[0] ||
             tailMatch.list.tagName !== parentMatch.list.tagName ||
-            getListBlock(tailMatch.list) !== materializedBlock.nextElementSibling) {
+            getNativeListBlock(tailMatch.list) !== materializedBlock.nextElementSibling) {
             return null;
         }
     } else if (materializedBlock.nextElementSibling?.matches('.el-ul, .el-ol, ul, ol')) {
@@ -265,8 +269,8 @@ function applyPreparedContinuation(prepared: PreparedLiteralContinuation): void 
     if (!tailMatch || tailMatch.list === parentMatch.list) {
         return;
     }
-    getDirectItems(tailMatch.list).forEach(item => parentMatch.list.appendChild(item));
-    removeEmptyListBlock(tailMatch.list);
+    getDirectListItems(tailMatch.list).forEach(item => parentMatch.list.appendChild(item));
+    removeEmptyNativeListBlock(tailMatch.list);
 }
 
 function appendInlineContinuation(item: HTMLLIElement, nodes: Node[]): void {
@@ -284,20 +288,4 @@ function appendInlineContinuation(item: HTMLLIElement, nodes: Node[]): void {
 
 function hasParagraphCodeBeforeNestedContent(item: HTMLLIElement): boolean {
     return Array.from(item.children).some(child => child.matches('pre'));
-}
-
-function getListBlock(list: HTMLElement): HTMLElement {
-    const parent = list.parentElement;
-    return parent?.matches('.el-ul, .el-ol') ? parent : list;
-}
-
-function removeEmptyListBlock(list: HTMLElement): void {
-    const block = getListBlock(list);
-    if (getDirectItems(list).length > 0 || list.textContent?.trim()) {
-        return;
-    }
-    list.remove();
-    if (block !== list && block.childElementCount === 0 && !block.textContent?.trim()) {
-        block.remove();
-    }
 }

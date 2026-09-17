@@ -6,6 +6,11 @@ import { getIndentColumns } from '../../../shared/utils/orderedListMarkers';
 
 import { NativeListItemMatch, NativeListSourceLine } from './sourceDomMatcher';
 import {
+    getDirectListItems,
+    getOrderedListItemNumber,
+    removeEmptyNativeListBlock
+} from './nativeListDom';
+import {
     getRenderableNativeListLineIndices,
     parseNativeListLine,
     stripBlockQuotePrefix
@@ -144,10 +149,10 @@ function hasDuplicateItems(matches: Array<NativeListItemMatch | null>): boolean 
 
 function moveItem(match: NativeListItemMatch, destination: HTMLLIElement): HTMLElement {
     const sourceList = match.list;
-    const sourceItems = getDirectItems(sourceList);
+    const sourceItems = getDirectListItems(sourceList);
     const sourceIndex = sourceItems.indexOf(match.item);
     const nextOrderedStart = sourceList.instanceOf(HTMLOListElement) && sourceIndex === 0
-        ? getOrderedItemNumber(sourceList, sourceItems, 1)
+        ? getOrderedListItemNumber(sourceList, sourceItems, 1)
         : null;
     const destinationList = getOrCreateDestinationList(
         destination,
@@ -157,8 +162,8 @@ function moveItem(match: NativeListItemMatch, destination: HTMLLIElement): HTMLE
     );
     destinationList.appendChild(match.item);
 
-    if (getDirectItems(sourceList).length === 0) {
-        removeEmptyListBlock(sourceList);
+    if (getDirectListItems(sourceList).length === 0) {
+        removeEmptyNativeListBlock(sourceList);
     } else if (nextOrderedStart !== null && sourceList.instanceOf(HTMLOListElement)) {
         sourceList.start = nextOrderedStart;
     }
@@ -179,7 +184,11 @@ function getOrCreateDestinationList(
 
     const list = sourceList.cloneNode(false) as HTMLElement;
     if (list.instanceOf(HTMLOListElement)) {
-        list.start = getOrderedItemNumber(sourceList as HTMLOListElement, sourceItems, sourceIndex);
+        list.start = getOrderedListItemNumber(
+            sourceList as HTMLOListElement,
+            sourceItems,
+            sourceIndex
+        );
     }
     destination.appendChild(list);
     return list;
@@ -188,44 +197,4 @@ function getOrCreateDestinationList(
 function getTrailingDirectList(destination: HTMLLIElement): HTMLElement | null {
     const finalChild = destination.lastElementChild;
     return finalChild?.matches('ul, ol') ? finalChild as HTMLElement : null;
-}
-
-function removeEmptyListBlock(list: HTMLElement): void {
-    const block = getListBlock(list);
-    list.remove();
-    if (block !== list && block.childElementCount === 0 && !block.textContent?.trim()) {
-        block.remove();
-    }
-}
-
-function getListBlock(list: HTMLElement): HTMLElement {
-    const parent = list.parentElement;
-    return parent?.matches('.el-ul, .el-ol') ? parent : list;
-}
-
-function getDirectItems(list: HTMLElement): HTMLLIElement[] {
-    return Array.from(list.children)
-        .filter((child): child is HTMLLIElement => child.instanceOf(HTMLLIElement));
-}
-
-function getOrderedItemNumber(
-    list: HTMLOListElement,
-    items: HTMLLIElement[],
-    itemIndex: number
-): number {
-    let number = list.start;
-    for (let index = 0; index <= itemIndex; index++) {
-        const item = items[index];
-        if (!item) {
-            break;
-        }
-        const explicitValue = Number(item.getAttribute('value'));
-        if (item.hasAttribute('value') && Number.isFinite(explicitValue)) {
-            number = explicitValue;
-        }
-        if (index < itemIndex) {
-            number++;
-        }
-    }
-    return number;
 }

@@ -34,7 +34,6 @@ import {
 import {
     findNativeListGroup,
     findNativeListItem,
-    getDirectItems,
     getRootNativeListElements,
     hasMaterializedTailInsideMatchedItem,
     markNativeListGroupScheduled,
@@ -42,6 +41,7 @@ import {
     NativeListReplacementLine,
     NativeListSourceLine
 } from '../../features/native-lists/sourceDomMatcher';
+import { getDirectListItems } from '../../features/native-lists/nativeListDom';
 import {
     escapeExcessBlockQuoteMarkers,
     findInterruptedSourceSubtreeEnd,
@@ -603,7 +603,7 @@ function findRemainingOrderedListStart(
 ): number | undefined {
     const finalSegment = match.segments[match.segments.length - 1];
     if (!finalSegment || finalSegment.list.tagName !== 'OL' ||
-        finalSegment.itemCount >= getDirectItems(finalSegment.list).length) {
+        finalSegment.itemCount >= getDirectListItems(finalSegment.list).length) {
         return undefined;
     }
 

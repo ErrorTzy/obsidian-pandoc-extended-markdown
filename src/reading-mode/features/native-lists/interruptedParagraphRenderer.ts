@@ -1,11 +1,19 @@
 import { MarkdownRenderChild, MarkdownRenderer } from 'obsidian';
 
 import { CSS_CLASSES } from '../../../core/constants';
-import { getBlockQuoteDepth } from '../../../shared/utils/pandocBlockBoundaries';
+import {
+    getBlockQuoteDepth,
+    stripBlockQuoteDepth
+} from '../../../shared/utils/pandocBlockBoundaries';
 
 import { ReadingModeContext } from '../../pipeline/types';
 import { renderMarkdownFragment } from '../../utils/fragmentRenderer';
 import { findNativeListDomAnchor } from './sourceDomMatcher';
+import {
+    getDirectListItems,
+    getNativeListBlock,
+    getOrderedListItemNumber
+} from './nativeListDom';
 import { SourceOwnedBlockSuffix } from './sourceOwnedBlockSuffix';
 
 interface InterruptedParagraphReplacement {
@@ -59,25 +67,25 @@ function guardMatchedItemIdentities(
 ): InterruptedParagraphReplacement {
     const matchedItems = replacement.listSegments.map(segment => ({
         ...segment,
-        items: getDirectItems(segment.list).slice(0, segment.itemCount)
+        items: getDirectListItems(segment.list).slice(0, segment.itemCount)
     }));
     const suffix = replacement.sourceOwnedBlockSuffix;
     const suffixBlocks = suffix ? [...suffix.blocks] : [];
     const suffixLists = suffixBlocks.flatMap(getOwnedLists).map(list => ({
         list,
-        items: getDirectItems(list)
+        items: getDirectListItems(list)
     }));
     return {
         ...replacement,
         isCurrent: () => replacement.isCurrent() && matchedItems.every(segment => {
-            const currentItems = getDirectItems(segment.list);
+            const currentItems = getDirectListItems(segment.list);
             return replacement.root.contains(segment.list) && segment.items.length === segment.itemCount &&
                 segment.items.every((item, index) => currentItems[index] === item);
         }) && (!suffix || Boolean(
             suffixBlocks.length > 0 &&
             suffixBlocks.every(block => block.parentElement === suffix.ownerItem) &&
             suffixLists.every(snapshot => {
-                const currentItems = getDirectItems(snapshot.list);
+                const currentItems = getDirectListItems(snapshot.list);
                 return currentItems.length === snapshot.items.length &&
                     snapshot.items.every((item, index) => currentItems[index] === item);
             })
@@ -191,7 +199,9 @@ function consumeListSegments(
     remainingListStart?: number
 ): void {
     segments.forEach((segment, index) => {
-        const block = index === 0 ? firstReplacementBlock : getListBlock(segment.list);
+        const block = index === 0
+            ? firstReplacementBlock
+            : getNativeListBlock(segment.list);
         consumeListItems(
             segment,
             index === segments.length - 1 ? remainingListStart : undefined
@@ -219,7 +229,7 @@ function getFootnoteBacklinks(
         return [];
     }
     const removedNodes = [precedingParagraph, ...segments.flatMap(segment =>
-        getDirectItems(segment.list).slice(0, segment.itemCount))];
+        getDirectListItems(segment.list).slice(0, segment.itemCount))];
     return Array.from(new Set(removedNodes.filter(node => footnoteItem.contains(node))
         .flatMap(node => Array.from(node.querySelectorAll<HTMLAnchorElement>(
             'a.footnote-back, a.footnote-backref'
@@ -239,15 +249,15 @@ function promoteSourceOwnedBlockSuffix(replacement: InterruptedParagraphReplacem
         return;
     }
     const ownerSegment = replacement.listSegments.find(segment =>
-        getDirectItems(segment.list).slice(0, segment.itemCount).includes(suffix.ownerItem)
+        getDirectListItems(segment.list).slice(0, segment.itemCount).includes(suffix.ownerItem)
     );
     if (!ownerSegment) {
         return;
     }
 
     const ownerList = ownerSegment.list;
-    const ownerBlock = getListBlock(ownerList);
-    const remainingOwnerItems = getDirectItems(ownerList).slice(ownerSegment.itemCount);
+    const ownerBlock = getNativeListBlock(ownerList);
+    const remainingOwnerItems = getDirectListItems(ownerList).slice(ownerSegment.itemCount);
     const trailingList = getTrailingOwnedList(suffix.blocks);
     if (suffix.mergeRemainingItems && trailingList?.tagName === ownerList.tagName) {
         remainingOwnerItems.forEach(item => trailingList.appendChild(item));
@@ -256,7 +266,7 @@ function promoteSourceOwnedBlockSuffix(replacement: InterruptedParagraphReplacem
     const promotedBlocks = suffix.blocks.map(block =>
         createPromotedBlock(block, ownerList, ownerBlock)
     );
-    const ownerWillRetainItems = getDirectItems(ownerList).length > ownerSegment.itemCount;
+    const ownerWillRetainItems = getDirectListItems(ownerList).length > ownerSegment.itemCount;
     if (ownerWillRetainItems) {
         ownerBlock.before(...promotedBlocks);
     } else {
@@ -328,11 +338,6 @@ function retainFootnoteBacklinks(nodes: Node[], backlinks: HTMLAnchorElement[]):
     }
 }
 
-function getListBlock(list: HTMLElement): HTMLElement {
-    const parent = list.parentElement;
-    return parent?.matches('.el-ul, .el-ol') ? parent : list;
-}
-
 function removeEmptyListContainers(list: HTMLElement, boundary: HTMLElement): void {
     let current: HTMLElement | null = list;
     while (current && current.childElementCount === 0 && !current.textContent?.trim()) {
@@ -346,40 +351,17 @@ function removeEmptyListContainers(list: HTMLElement, boundary: HTMLElement): vo
     }
 }
 
-function getDirectItems(list: HTMLElement): HTMLLIElement[] {
-    return Array.from(list.children)
-        .filter((child): child is HTMLLIElement => child.tagName === 'LI');
-}
-
 function consumeListItems(
     segment: InterruptedParagraphReplacement['listSegments'][number],
     remainingListStart?: number
 ): void {
-    const items = getDirectItems(segment.list);
+    const items = getDirectListItems(segment.list);
     if (segment.itemCount < items.length && segment.list.tagName === 'OL') {
         const orderedList = segment.list as HTMLOListElement;
         orderedList.start = remainingListStart ??
-            getOrderedItemNumber(orderedList, items, segment.itemCount);
+            getOrderedListItemNumber(orderedList, items, segment.itemCount);
     }
     items.slice(0, segment.itemCount).forEach(item => item.remove());
-}
-
-function getOrderedItemNumber(
-    list: HTMLOListElement,
-    items: HTMLLIElement[],
-    itemIndex: number
-): number {
-    let number = list.start;
-    for (let index = 0; index <= itemIndex; index++) {
-        const explicitValue = Number(items[index]?.getAttribute('value'));
-        if (items[index]?.hasAttribute('value') && Number.isFinite(explicitValue)) {
-            number = explicitValue;
-        }
-        if (index < itemIndex) {
-            number++;
-        }
-    }
-    return number;
 }
 
 function stripMaterializedBlockQuotePrefixes(
@@ -418,16 +400,4 @@ function getBlockQuoteAncestors(element: HTMLElement, root: HTMLElement): HTMLEl
         current = current.parentElement;
     }
     return ancestors;
-}
-
-function stripBlockQuoteDepth(line: string, depth: number): string {
-    let result = line;
-    for (let level = 0; level < depth; level++) {
-        const match = result.match(/^ {0,3}>[ \t]?/);
-        if (!match) {
-            break;
-        }
-        result = result.slice(match[0].length);
-    }
-    return result;
 }

@@ -81,6 +81,12 @@ export interface PandocExtendedMarkdownSettings {
     pandocExport?: PandocExportSettings;
 }
 
+/** Persisted settings accepted while migrating from the former inverted flag. */
+export type StoredPandocExtendedMarkdownSettings =
+    Partial<PandocExtendedMarkdownSettings> & {
+        enforcePandocListSpacing?: boolean;
+    };
+
 export const DEFAULT_SETTINGS: PandocExtendedMarkdownSettings = {
     enableListsWithoutPrecedingBlankline: true,
     enableReadableFencedDivSyntax: true,
@@ -141,12 +147,13 @@ export function isFencedDivExtrasEnabled(
 }
 
 export function normalizeSettings(
-    settings?: Partial<PandocExtendedMarkdownSettings>
+    settings?: StoredPandocExtendedMarkdownSettings
 ): PandocExtendedMarkdownSettings {
     const sourceSettings = settings ?? {};
     const normalized: PandocExtendedMarkdownSettings = {
         enableListsWithoutPrecedingBlankline:
             sourceSettings.enableListsWithoutPrecedingBlankline ??
+            invertLegacyListSpacingSetting(sourceSettings.enforcePandocListSpacing) ??
             DEFAULT_SETTINGS.enableListsWithoutPrecedingBlankline,
         enableReadableFencedDivSyntax: sourceSettings.enableReadableFencedDivSyntax ??
             DEFAULT_SETTINGS.enableReadableFencedDivSyntax,
@@ -172,4 +179,8 @@ export function normalizeSettings(
     };
 
     return normalized;
+}
+
+function invertLegacyListSpacingSetting(value: boolean | undefined): boolean | undefined {
+    return value === undefined ? undefined : !value;
 }

@@ -11,6 +11,9 @@ export function isPandocListLine(
     enableListsWithoutPrecedingBlankline: boolean
 ): boolean {
     const { lines, currentLine } = context;
+    if (!ListBlockValidator.isListItemForValidation(lines[currentLine] ?? '')) {
+        return false;
+    }
     const invalidLines = ListBlockValidator.validateListBlocks(lines, {
         enableListsWithoutPrecedingBlankline
     });
