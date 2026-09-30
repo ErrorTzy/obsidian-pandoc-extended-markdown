@@ -2199,8 +2199,6 @@ button.pem-list-panel-icon-button.is-active {
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-gutter: stable;
-    container-name: pem-panel-content;
-    container-type: inline-size;
 }
 
 /* Panel Order Settings Styles */
@@ -2416,6 +2414,7 @@ button.pem-panel-action:disabled {
     gap: 3px 8px;
     min-width: 0;
     line-height: 1.35;
+    overflow-wrap: anywhere;
 }
 
 .pem-panel-identity-part {
@@ -2535,21 +2534,6 @@ button.pem-panel-identity-token {
     min-height: 6rem;
     color: var(--text-muted);
     font-style: italic;
-}
-
-@container pem-panel-content (min-width: 32rem) {
-    .pem-panel-item {
-        grid-template-columns: minmax(8rem, min(30%, 14rem)) minmax(0, 1fr);
-        gap: 16px;
-        padding-top: 12px;
-        padding-bottom: 13px;
-    }
-
-    .pem-panel-item-identity {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-    }
 }
 
 .pem-footnote-panel-empty {

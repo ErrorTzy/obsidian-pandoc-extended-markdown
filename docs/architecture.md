@@ -489,9 +489,9 @@ disconnected through the base module's abort lifecycle.
 | **FencedDivPanelModule** | fenced-divs | Block title and citation label | Fenced-div content |
 | **FootnotePanelModule** | footnotes | Reference label | Footnote definition |
 
-The panel content element is a CSS inline-size container. Below `32rem`, item
-identity and body stack; at and above `32rem`, a bounded identity column sits
-beside a flexible content column. Collapsed bodies retain complete rendered DOM
+Shared panel items place identity metadata above a full-width body at every
+panel width, so long titles and labels wrap without entering the definition
+area. Collapsed bodies retain complete rendered DOM
 and constrain only visible height through `--pem-panel-preview-lines` (default
 `3`). Overflowing content uses an alpha mask for its bottom fade so it blends
 with the active theme's sidebar surface without assuming a background color.

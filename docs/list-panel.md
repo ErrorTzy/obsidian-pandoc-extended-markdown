@@ -10,10 +10,8 @@ item count.
 
 Every module uses the same structured item layout:
 
-- Below `32rem` of actual panel content width, identity metadata appears above
-  a full-width body.
-- At `32rem` and wider, a bounded identity column appears beside the flexible
-  body column.
+- Identity metadata appears above the full-width body at every panel width.
+  Long labels can take extra lines without entering the definition area.
 - Long titles, terms, numbers, labels, and footnote indices wrap completely.
   They are never shortened character-by-character.
 - Each body renders its complete Markdown, math, and known references. A

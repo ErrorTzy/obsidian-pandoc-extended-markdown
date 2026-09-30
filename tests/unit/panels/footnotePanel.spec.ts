@@ -94,6 +94,22 @@ describe('FootnotePanelModule', () => {
         expect(contentEl?.textContent).toContain('E=mc^2');
     });
 
+    it('keeps a long footnote label and its definition in separate panel regions', () => {
+        const label = 'small-details-with-a-much-longer-unbroken-title';
+        (mockMarkdownView.editor.getValue as jest.Mock).mockReturnValue(
+            `A reference[^${label}].\n\n[^${label}]: Small details can make a page easier to return to.`
+        );
+
+        module.onActivate(containerEl, mockMarkdownView);
+
+        const row = containerEl.querySelector('.pem-footnote-panel-row');
+        const identity = row?.querySelector('.pem-panel-item-identity');
+        const definition = row?.querySelector('.pem-footnote-panel-content');
+        expect(identity?.textContent).toBe(`[^${label}]`);
+        expect(definition?.textContent).toBe('Small details can make a page easier to return to.');
+        expect(identity?.nextElementSibling?.contains(definition ?? null)).toBe(true);
+    });
+
     it('moves cursor after the footnote marker when clicking the index', () => {
         module.onActivate(containerEl, mockMarkdownView);
 
