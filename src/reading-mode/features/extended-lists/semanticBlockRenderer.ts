@@ -7,7 +7,11 @@ import {
     ParsedLine,
     ReadingModeParser
 } from './lineParser';
-import { ReadingModeRenderer } from './lineRenderer';
+import {
+    extractRenderedLineContent,
+    getLogicalLineBoundary,
+    projectRenderedLines
+} from './renderedLineProjection';
 import { resolveSourceDataLines } from './sourceDataLineResolver';
 import { appendExtendedListItemContent } from './taskListItem';
 
@@ -19,11 +23,10 @@ export function tryRenderSemanticListParagraph(
     elem: Element,
     context: ReadingModeContext,
     parser: ReadingModeParser,
-    renderer: ReadingModeRenderer,
     text: string,
     sourceDataLines?: Array<number | undefined>,
     invalidListLines?: Set<number>
-): boolean {
+): boolean | 'unmapped' {
     const sourceEntries = text.split('\n')
         .map((line, index) => ({ line, index }))
         .filter(entry => entry.line.trim().length > 0);
@@ -40,9 +43,21 @@ export function tryRenderSemanticListParagraph(
     if (firstListLine < 0 || !isSemanticListSuffix(parsedLines, firstListLine)) {
         return false;
     }
+    if (firstListLine > 0 &&
+        (!getLogicalLineBoundary(elem, sourceEntries[firstListLine].index) ||
+            (!elem.instanceOf(HTMLLIElement) && !elem.parentNode))) {
+        return 'unmapped';
+    }
+
+    const projected = projectRenderedLines(elem, sourceEntries, parsedLines, firstListLine);
+    if (!projected) {
+        return 'unmapped';
+    }
+
+    const contents = extractRenderedLineContent(projected);
 
     const rendered = groupListLines(parsedLines.slice(firstListLine))
-        .flatMap(group => renderSemanticList(group, context, renderer));
+        .flatMap(group => renderSemanticList(group, context, contents));
 
     if (firstListLine > 0) {
         return replaceTrailingSourceLinesWithLists(
@@ -101,10 +116,10 @@ function applyPandocListValidation(
 function renderSemanticList(
     parsedLines: ParsedLine[],
     context: ReadingModeContext,
-    renderer: ReadingModeRenderer
+    contents: Map<ParsedLine, DocumentFragment>
 ): HTMLOListElement[] {
     if (parsedLines.some(line => line.type === 'fancy') && hasNestedIndent(parsedLines)) {
-        return renderNestedFancyLists(parsedLines, context, renderer);
+        return renderNestedFancyLists(parsedLines, context, contents);
     }
 
     const list = document.createElement('ol');
@@ -118,8 +133,7 @@ function renderSemanticList(
         appendExtendedListItemContent(
             item,
             getRenderedTaskItem(parsedLine),
-            renderer,
-            context.renderContext
+            getRenderedContent(contents, parsedLine)
         );
         list.appendChild(item);
     });
@@ -137,7 +151,7 @@ interface RenderedListFrame {
 function renderNestedFancyLists(
     parsedLines: ParsedLine[],
     context: ReadingModeContext,
-    renderer: ReadingModeRenderer
+    contents: Map<ParsedLine, DocumentFragment>
 ): HTMLOListElement[] {
     const roots: HTMLOListElement[] = [];
     const stack: RenderedListFrame[] = [];
@@ -171,8 +185,7 @@ function renderNestedFancyLists(
         appendExtendedListItemContent(
             item,
             getRenderedTaskItem(parsedLine),
-            renderer,
-            context.renderContext
+            getRenderedContent(contents, parsedLine)
         );
         frame.list.appendChild(item);
         frame.lastItem = item;
@@ -261,9 +274,7 @@ function updateCountersForListItem(
 }
 
 function isSemanticListSuffix(parsedLines: ParsedLine[], startIndex: number): boolean {
-    return parsedLines.slice(startIndex).every(line =>
-        line.content.trim().length > 0 && isListLine(line)
-    );
+    return parsedLines.slice(startIndex).every(isListLine);
 }
 
 function isListLine(parsedLine: ParsedLine): boolean {
@@ -277,7 +288,7 @@ function replaceTrailingSourceLinesWithLists(
     firstListLine: number,
     lists: HTMLOListElement[]
 ): boolean {
-    const boundary = findLogicalLineBoundary(element, firstListLine);
+    const boundary = getLogicalLineBoundary(element, firstListLine);
     if (!boundary) {
         return false;
     }
@@ -297,65 +308,6 @@ function replaceTrailingSourceLinesWithLists(
 
     element.after(...lists);
     return true;
-}
-
-interface DomBoundary {
-    container: Node;
-    offset: number;
-}
-
-function findLogicalLineBoundary(
-    element: Element,
-    targetLine: number
-): DomBoundary | null {
-    if (targetLine <= 0) {
-        return { container: element, offset: 0 };
-    }
-
-    let linesRemaining = targetLine;
-    let boundary: DomBoundary | null = null;
-
-    const visit = (node: Node): void => {
-        if (boundary) {
-            return;
-        }
-
-        if (node.nodeName === 'BR') {
-            linesRemaining--;
-            if (linesRemaining === 0 && node.parentNode) {
-                boundary = {
-                    container: node.parentNode,
-                    offset: Array.from(node.parentNode.childNodes).indexOf(node)
-                };
-            }
-            return;
-        }
-
-        if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent ?? '';
-            for (let index = 0; index < text.length; index++) {
-                if (text[index] !== '\n') {
-                    continue;
-                }
-                linesRemaining--;
-                if (linesRemaining === 0) {
-                    boundary = { container: node, offset: index };
-                    return;
-                }
-            }
-            return;
-        }
-
-        if (node.nodeType !== Node.ELEMENT_NODE ||
-            node.nodeName === 'CODE' || node.nodeName === 'PRE') {
-            return;
-        }
-
-        node.childNodes.forEach(visit);
-    };
-
-    element.childNodes.forEach(visit);
-    return boundary;
 }
 
 function groupListLines(parsedLines: ParsedLine[]): ParsedLine[][] {
@@ -400,35 +352,28 @@ function getNestedListFrameKey(parsedLine: ParsedLine): string {
     return getListGroupKey(parsedLine);
 }
 
-function getListItemContent(parsedLine: ParsedLine): string {
-    if (parsedLine.type === 'hash') {
-        return (parsedLine.metadata as HashListData).content;
-    }
-
-    if (parsedLine.type === 'fancy') {
-        return (parsedLine.metadata as FancyListData).content;
-    }
-
-    if (parsedLine.type === 'example') {
-        return (parsedLine.metadata as ExampleListData).content;
-    }
-
-    return parsedLine.content;
-}
-
 function getRenderedTaskItem(parsedLine: ParsedLine): {
     taskState: HashListData['taskState'];
     taskCharacter?: HashListData['taskCharacter'];
     dataLine?: number;
-    content: string;
 } {
     const data = parsedLine.metadata as HashListData | FancyListData | ExampleListData;
     return {
         taskState: data.taskState,
         taskCharacter: data.taskCharacter,
-        dataLine: parsedLine.dataLine,
-        content: getListItemContent(parsedLine)
+        dataLine: parsedLine.dataLine
     };
+}
+
+function getRenderedContent(
+    contents: Map<ParsedLine, DocumentFragment>,
+    parsedLine: ParsedLine
+): DocumentFragment {
+    const fragment = contents.get(parsedLine);
+    if (!fragment) {
+        throw new Error('A validated list line has no rendered content');
+    }
+    return fragment;
 }
 
 function getOrderedListTypeAttribute(type: string): string | null {
@@ -450,6 +395,10 @@ function getOrderedListTypeAttribute(type: string): string | null {
 
 function getFancyListStart(data: FancyListData): number {
     const value = data.marker.slice(0, -1);
+
+    if (data.type === 'decimal') {
+        return Number.parseInt(value, 10);
+    }
 
     if (data.type === 'upper-alpha' || data.type === 'lower-alpha') {
         return alphaToDecimal(value);

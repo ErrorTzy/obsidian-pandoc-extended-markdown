@@ -18,6 +18,10 @@ It focuses on syntax that is useful while writing notes: fancy lists, definition
 | List editing helpers | Enter, Tab, Shift+Tab | Continues lists, cycles ordered marker styles by context, and can renumber affected list items. |
 | List panel | Command: `Open list panel` | Shows responsive, expandable custom labels, examples, definition lists, fenced divs, and footnotes from the active note. |
 
+In Reading mode, extended list items retain rendered images, links, formatting,
+code, and math. Parenthesized markers such as `a)` follow the list's numbering
+style and starting value.
+
 ## Quick Start
 
 Paste this into a note and switch to Live Preview.

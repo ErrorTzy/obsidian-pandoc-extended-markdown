@@ -235,6 +235,187 @@ describe('reading mode pipeline', () => {
         expect(element.textContent).not.toContain('[ ]');
     });
 
+    it('keeps the rendered image in its original parenthesized list item', () => {
+        const markdown = 'a) ![](data:image/png;base64,AAAA)\nb) Second item';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>a) <img src="data:image/png;base64,AAAA"><br>b) Second item</p>';
+        const image = element.querySelector('img');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const items = Array.from(element.querySelectorAll('ol.pem-list-paren > li'));
+        expect(items).toHaveLength(2);
+        expect(items[0].querySelector('img')).toBe(image);
+        expect(items[1].textContent).toBe('Second item');
+        expect(element.querySelectorAll('img')).toHaveLength(1);
+    });
+
+    it('removes a marker split across rendered text nodes without losing content', () => {
+        const markdown = 'a) ![](x)';
+        const element = document.createElement('div');
+        element.innerHTML = '<p><span>a</span>) <img src="x"></p>';
+        const image = element.querySelector('img');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        expect(element.querySelector('ol > li > img')).toBe(image);
+        expect(element.querySelector('ol > li')?.textContent).toBe('');
+    });
+
+    it('leaves an unmappable rendered list line intact', () => {
+        const markdown = 'a) text';
+        const element = document.createElement('div');
+        element.innerHTML = '<p><code>unmapped</code>a) text</p>';
+        const originalCode = element.querySelector('code');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        expect(element.querySelector('ol')).toBeNull();
+        expect(element.querySelector('code')).toBe(originalCode);
+        expect(element.querySelector('p')?.textContent).toBe('unmappeda) text');
+    });
+
+    it('moves content across newline boundaries inside one text node', () => {
+        const markdown = 'a) first\nb) ![](x)';
+        const element = document.createElement('div');
+        const paragraph = document.createElement('p');
+        paragraph.appendChild(document.createTextNode('a) first\nb) '));
+        const image = document.createElement('img');
+        image.src = 'x';
+        paragraph.appendChild(image);
+        element.appendChild(paragraph);
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const items = element.querySelectorAll('ol > li');
+        expect(items).toHaveLength(2);
+        expect(items[0].textContent).toBe('first');
+        expect(items[1].querySelector('img')).toBe(image);
+        expect(element.querySelectorAll('img')).toHaveLength(1);
+    });
+
+    it('keeps inline wrappers that span two logical list lines', () => {
+        const markdown = 'a) first\nb) second';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>a) <em>first<br>b) second</em></p>';
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const items = element.querySelectorAll('ol > li');
+        expect(items).toHaveLength(2);
+        expect(items[0].querySelector('em')?.textContent).toBe('first');
+        expect(items[1].querySelector('em')?.textContent).toBe('second');
+        expect(element.textContent).toBe('firstsecond');
+    });
+
+    it('keeps a paragraph prefix when its list suffix shares one text node', () => {
+        const markdown = 'Intro\nA.  child';
+        const element = document.createElement('div');
+        const paragraph = document.createElement('p');
+        paragraph.textContent = markdown;
+        element.appendChild(paragraph);
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        expect(element.querySelector('p')?.textContent).toBe('Intro');
+        expect(element.querySelector('ol > li')?.textContent).toBe('child');
+        expect(element.textContent?.match(/child/g)).toHaveLength(1);
+    });
+
+    it.each([
+        ['fancy', 'A.  ', 'B.  '],
+        ['hash', '#. ', '#. '],
+        ['example', '(@first) ', '(@second) ']
+    ])('preserves rendered inline nodes in a later %s item', (_kind, first, second) => {
+        const markdown = `${first}first\n${second}link bold code math image`;
+        const element = document.createElement('div');
+        element.innerHTML = `<p>${first}first<br>${second}` +
+            '<a href="https://example.com">link</a> <em>bold</em> ' +
+            '<code>code</code> <span class="math">math</span> ' +
+            '<img src="data:image/png;base64,AAAA"></p>';
+        const nodes = Array.from(element.querySelectorAll('a, em, code, .math, img'));
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const items = Array.from(element.querySelectorAll('ol > li'));
+        expect(items).toHaveLength(2);
+        expect(items[0].textContent).toBe('first');
+        nodes.forEach(node => expect(items[1].contains(node)).toBe(true));
+        expect(element.querySelectorAll('img')).toHaveLength(1);
+    });
+
+    it('preserves rendered content after a paragraph prefix and in a nested native item', () => {
+        const markdown = 'Prefix\n- parent\n  A.  ![](x)';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>Prefix</p><ul><li>parent<br>\nA.  <img src="x"></li></ul>';
+        const image = element.querySelector('img');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        expect(element.querySelector('ul > li > ol > li > img')).toBe(image);
+        expect(element.querySelector('ul > li')?.textContent).toContain('parent');
+        expect(element.querySelectorAll('img')).toHaveLength(1);
+    });
+
+    it('puts rendered task content inside the checkbox label', () => {
+        const markdown = 'A.  [x] image';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>A.  [x] <img src="x"></p>';
+        const image = element.querySelector('img');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const label = element.querySelector('ol > li > label');
+        expect(label?.querySelector('img')).toBe(image);
+        expect(label?.querySelector<HTMLInputElement>('input')?.checked).toBe(true);
+        expect(element.querySelectorAll('img')).toHaveLength(1);
+    });
+
+    it('renders raw math in moved list text while retaining host-rendered math', () => {
+        const markdown = 'A.  raw $x$\nB.  host math';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>A.  raw $x$<br>B.  <span class="math">host math</span></p>';
+        const hostMath = element.querySelector('.math');
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const items = element.querySelectorAll('ol > li');
+        expect(items[0].querySelector('.math-inline')).not.toBeNull();
+        expect(items[1].querySelector('.math')).toBe(hostMath);
+    });
+
+    it('processes inline references once in moved example content', () => {
+        const markdown = '(@first) first\n(@second) see (@first)';
+        const element = document.createElement('div');
+        element.innerHTML = '<p>(@first) first<br>(@second) see (@first)</p>';
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const second = element.querySelectorAll('ol.pem-example-list > li')[1];
+        expect(second?.textContent).toBe('see (1)');
+        expect(second?.querySelectorAll('.pem-example-reference')).toHaveLength(1);
+        expect(element.textContent).not.toContain('(@first)');
+    });
+
+    it.each([
+        ['b) second', 'a', '2', 'pem-list-lower-alpha'],
+        ['B) second', 'A', '2', 'pem-list-upper-alpha'],
+        ['ii) second', 'i', '2', 'pem-list-lower-roman'],
+        ['II) second', 'I', '2', 'pem-list-upper-roman'],
+        ['2) second', '1', '2', 'pem-list-decimal']
+    ])('keeps the marker type and start value for %s', (markdown, type, start, className) => {
+        const element = document.createElement('div');
+        element.innerHTML = `<p>${markdown}</p>`;
+
+        processReadingMode(element, createPostProcessorContext(markdown), createConfig());
+
+        const list = element.querySelector('ol');
+        expect(list?.getAttribute('type')).toBe(type);
+        expect(list?.getAttribute('start')).toBe(start);
+        expect(list?.classList.contains(className)).toBe(true);
+        expect(list?.classList.contains('pem-list-paren')).toBe(true);
+    });
+
     it('does not validate an interrupted extended list against an earlier duplicate line', () => {
         const markdown = [
             'A.  duplicate',

@@ -1,22 +1,18 @@
 import { TaskState } from '../../../shared/utils/listContext';
 
-import { RenderContext, ReadingModeRenderer } from './lineRenderer';
-
 export interface RenderedTaskItem {
     taskState: TaskState;
     taskCharacter?: ' ' | 'x' | 'X';
     dataLine?: number;
-    content: string;
 }
 
 export function appendExtendedListItemContent(
     item: HTMLLIElement,
     data: RenderedTaskItem,
-    renderer: ReadingModeRenderer,
-    context: RenderContext
+    content: DocumentFragment
 ): void {
     if (data.taskState === null) {
-        renderer.appendContent(item, data.content.trimStart(), context);
+        item.appendChild(content);
         return;
     }
 
@@ -44,6 +40,6 @@ export function appendExtendedListItemContent(
     }
 
     label.appendChild(checkbox);
-    renderer.appendContent(label, data.content.trimStart(), context);
+    label.appendChild(content);
     item.appendChild(label);
 }

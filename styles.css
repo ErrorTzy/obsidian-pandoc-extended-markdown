@@ -1427,20 +1427,24 @@
     list-style-type: lower-roman;
 }
 
-.pem-list-paren {
-    counter-reset: pem-list;
+.pem-list-paren > li::marker {
+    content: counter(list-item) ") ";
 }
 
-.pem-list-paren > li {
-    counter-increment: pem-list;
-    list-style: none;
-    position: relative;
+.pem-list-paren.pem-list-lower-alpha > li::marker {
+    content: counter(list-item, lower-alpha) ") ";
 }
 
-.pem-list-paren > li::before {
-    content: counter(pem-list) ") ";
-    position: absolute;
-    left: -2em;
+.pem-list-paren.pem-list-upper-alpha > li::marker {
+    content: counter(list-item, upper-alpha) ") ";
+}
+
+.pem-list-paren.pem-list-lower-roman > li::marker {
+    content: counter(list-item, lower-roman) ") ";
+}
+
+.pem-list-paren.pem-list-upper-roman > li::marker {
+    content: counter(list-item, upper-roman) ") ";
 }
 
 /* Definition Lists Styles */

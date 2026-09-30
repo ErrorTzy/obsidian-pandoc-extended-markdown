@@ -252,11 +252,10 @@ export class ExtendedListBlockProcessor implements BlockDomProcessor {
             elem,
             context,
             this.parser,
-            this.renderer,
             text,
             sourceDataLines,
             invalidListLines
-        );
+        ) !== false;
     }
 }
 

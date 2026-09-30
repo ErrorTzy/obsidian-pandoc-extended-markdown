@@ -221,6 +221,15 @@ fancy, or example-list suffix from either a paragraph or an existing native
 list item. It preserves the paragraph prefix or native item and inserts the
 semantic list as a sibling or child, respectively, so extended children are not
 flattened into native-parent text.
+Before changing either container, `renderedLineProjection.ts` maps every rendered
+list line to DOM boundaries and verifies the source marker prefix. It then moves
+the existing rendered content into each new list item, preserving images, links, emphasis,
+code, and host-rendered math. Unmappable lines leave the original DOM in place.
+Task content moves inside the checkbox label, and raw math still uses the math
+renderer. The inline pipeline processes moved example-list text while skipping
+only generated marker spans. Parenthesized ordered lists use native list-item
+markers with the list type and `start` value, keeping markers in the normal
+list layout.
 
 `ListBlockValidator` is the shared source-state analyzer for Live Preview and
 Reading Mode. `enableListsWithoutPrecedingBlankline` is the direct, positive
