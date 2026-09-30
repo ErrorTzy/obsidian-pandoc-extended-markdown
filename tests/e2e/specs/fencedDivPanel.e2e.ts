@@ -123,8 +123,11 @@ describe('Fenced div list panel', () => {
         expect(narrowLayout.contentWidth).toBeGreaterThan(200);
 
         const wideLayout = await getFirstRowLayout('40rem');
-        expect(wideLayout.itemColumns.split(' ').length).toBeGreaterThan(1);
-        expect(wideLayout.contentLeft).toBeGreaterThan(wideLayout.identityLeft);
+        expect(wideLayout.titleFits).toBe(true);
+        expect(wideLayout.labelFits).toBe(true);
+        expect(wideLayout.itemColumns.split(' ')).toHaveLength(1);
+        expect(wideLayout.contentTop).toBeGreaterThanOrEqual(wideLayout.identityBottom);
+        expect(wideLayout.contentLeft).toBeCloseTo(wideLayout.identityLeft, 0);
         expect(wideLayout.contentWidth).toBeGreaterThan(250);
 
         await deleteFileIfExists(filePath);
