@@ -24,6 +24,14 @@ describe('Pandoc Lua filter resources', () => {
             '.obsidian/plugins/pandoc-extended-markdown/lua_filter'
         );
         expect(adapter.write).toHaveBeenCalledWith(
+            '.obsidian/plugins/pandoc-extended-markdown/lua_filter/CustomLabelSupport.lua',
+            '-- mocked lua filter'
+        );
+        expect(adapter.write).toHaveBeenCalledWith(
+            '.obsidian/plugins/pandoc-extended-markdown/lua_filter/CustomLabelReader.lua',
+            '-- mocked lua filter'
+        );
+        expect(adapter.write).toHaveBeenCalledWith(
             '.obsidian/plugins/pandoc-extended-markdown/lua_filter/CustomLabelList.lua',
             '-- mocked lua filter'
         );

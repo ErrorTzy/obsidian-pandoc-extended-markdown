@@ -303,10 +303,27 @@ bundle, and `releaseBundledPandocLuaFilters()` writes them into the installed
 plugin directory on startup.
 
 Default profiles reference `${luaFilterDir}` so users do not need to download
-filters separately. The two current bundled filters are:
+filters separately. The bundled Lua resources are:
 
 - `FencedDivExtendedSyntax.lua`
 - `CustomLabelList.lua`
+- `CustomLabelReader.lua` (source-aware Markdown reader)
+- `CustomLabelSupport.lua` (shared reader/filter annotations and inline operations)
+
+The custom-label entry points load the helper beside their own script paths,
+independently of the working directory. Deployment includes it automatically;
+it is not passed as a separate reader or filter argument.
+
+At argument construction, Markdown profiles automatically receive missing
+bundled syntax filters, the source-aware reader, and `--preserve-tabs`, preserving
+their extension suffix and persisted configuration. This includes saved and new
+profiles with empty filter lists. `core/args/bundledSyntax.ts` shares the filter
+templates with default profiles and avoids automatically duplicating paths
+configured in profile rows or extra arguments. Export and preview share this
+construction. Other readers and custom shell profiles are unchanged. The
+reader expands non-label tabs at their original columns and delegates Markdown
+parsing with the chosen extensions and reader options. It is verified on Pandoc
+3.10.2; other versions may be compatible but are untested.
 
 Resource release and Obsidian plugin path handling belong in
 `gui/obsidian/workspace/resources.ts`. Filter source and Pandoc behavior belong

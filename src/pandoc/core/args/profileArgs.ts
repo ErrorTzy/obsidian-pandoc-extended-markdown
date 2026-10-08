@@ -7,6 +7,7 @@ import {
     renderExportTemplates
 } from '../templates/template';
 import { inferOutputExtension } from '../export/outputExtension';
+import { resolveBundledSyntax } from './bundledSyntax';
 
 export interface BuildProfileArgsRequest {
     profile: PandocExportProfile;
@@ -21,13 +22,23 @@ export function buildPandocProfileArgs(request: BuildProfileArgsRequest): string
         ...variables,
         outputExtension: inferOutputExtension(to, variables.outputExtension)
     };
+    const from = renderExportTemplate(profile.from ?? variables.fromFormat, effectiveVariables);
+    const extraArgs = [
+        ...renderExportTemplates(profile.extraArgs, effectiveVariables),
+        ...(request.extraArgs ?? [])
+    ];
+    const { reader, filters, extraArgs: resolvedExtraArgs } = resolveBundledSyntax(
+        from, renderExportTemplates(profile.luaFilters, effectiveVariables), extraArgs, effectiveVariables
+    );
     const args = [
         renderExportTemplate(profile.inputPath ?? '${currentPath}', effectiveVariables),
         '-f',
-        renderExportTemplate(profile.from ?? variables.fromFormat, effectiveVariables),
+        reader,
         '-t',
         to
     ];
+
+    if (reader !== from) args.push('--preserve-tabs');
 
     appendOutputArgs(args, profile, effectiveVariables);
 
@@ -36,14 +47,12 @@ export function buildPandocProfileArgs(request: BuildProfileArgsRequest): string
     }
 
     appendRepeatedArgs(args, '--resource-path', profile.resourcePaths, effectiveVariables);
-    appendRepeatedArgs(args, '--lua-filter', profile.luaFilters, effectiveVariables);
+    for (const filter of filters) {
+        if (filter.length > 0) args.push('--lua-filter', filter);
+    }
     appendMetadataArgs(args, profile.metadata, effectiveVariables);
 
-    return [
-        ...args,
-        ...renderExportTemplates(profile.extraArgs, effectiveVariables),
-        ...(request.extraArgs ?? [])
-    ];
+    return [...args, ...resolvedExtraArgs];
 }
 
 function appendOutputArgs(

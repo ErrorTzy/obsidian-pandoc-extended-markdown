@@ -47,6 +47,34 @@ function createResult(request: PandocRunRequest): PandocRunResult {
 }
 
 describe('PandocExportExecutionService', () => {
+    it('automatically applies bundled syntax to export and preview without configured filters', async () => {
+        const requests: PandocRunRequest[] = [];
+        const service = new PandocExportExecutionService({
+            system: createSystemPort({
+                runProcess: async request => {
+                    requests.push(request);
+                    return createResult(request);
+                }
+            })
+        });
+        const request = {
+            profile: {
+                id: 'saved', name: 'Saved', type: 'pandoc' as const, extension: '.html', to: 'html'
+            }, variables: createVariables()
+        };
+        await service.exportPandocProfile(request);
+        await service.previewPandocProfile({ ...request, previewOutputPath: '/tmp/preview.html' });
+        for (const processRequest of requests) {
+            expect(processRequest.args[2]).toBe('/vault/.obsidian/plugins/pem/lua_filter/CustomLabelReader.lua');
+            expect(processRequest.args).toContain('--preserve-tabs');
+            expect(processRequest.args).toEqual(expect.arrayContaining([
+                '/vault/.obsidian/plugins/pem/lua_filter/FencedDivExtendedSyntax.lua',
+                '/vault/.obsidian/plugins/pem/lua_filter/CustomLabelList.lua'
+            ]));
+        }
+        expect(requests[1].args.slice(-2)).toEqual(['-o', '/tmp/preview.html']);
+    });
+
     it('runs pandoc profiles through the process port', async () => {
         const requests: PandocRunRequest[] = [];
         const service = new PandocExportExecutionService({
@@ -81,12 +109,17 @@ describe('PandocExportExecutionService', () => {
             args: [
                 '/vault/note.md',
                 '-f',
-                'markdown',
+                '/vault/.obsidian/plugins/pem/lua_filter/CustomLabelReader.lua',
                 '-t',
                 'html',
+                '--preserve-tabs',
                 '-o',
                 '/exports/note.html',
                 '--standalone',
+                '--lua-filter',
+                '/vault/.obsidian/plugins/pem/lua_filter/FencedDivExtendedSyntax.lua',
+                '--lua-filter',
+                '/vault/.obsidian/plugins/pem/lua_filter/CustomLabelList.lua',
                 '--toc'
             ]
         });

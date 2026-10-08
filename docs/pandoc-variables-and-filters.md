@@ -41,6 +41,13 @@ Default export profiles use:
 
 `embedDirs` may be empty. Empty rendered template values are skipped for repeated path options.
 
+For `markdown` input (including extension suffixes), the module automatically
+adds missing bundled syntax filters, selects `CustomLabelReader.lua`, and supplies
+`--preserve-tabs`. Export and preview share this behavior for default, saved, and
+new profiles, without changing their stored configuration. Existing filter paths
+in profile rows or extra arguments are recognized to avoid automatic duplicates.
+Other readers and custom shell profiles use their configured options.
+
 ## Process Environment Overrides
 
 Open **Advanced Pandoc settings** to edit global Pandoc process environment overrides. The **Pandoc process environment** table stores one variable per row with separate **Variable** and **Value** fields. Variable names must use conventional environment variable syntax such as `TEXINPUTS` or `PATH`; blank rows are ignored, duplicate names are rejected, and an empty value is allowed when a variable name is present.
@@ -53,15 +60,23 @@ The repository keeps source filters in `lua_filter/`:
 
 - `FencedDivExtendedSyntax.lua`
 - `CustomLabelList.lua`
+- `CustomLabelReader.lua` (source-aware Markdown reader, selected with `-f`)
+- `CustomLabelSupport.lua` (internal shared reader/filter helper)
 
 The build config loads `.lua` files as text and embeds them into `main.js`. On plugin load, `releaseBundledPandocLuaFilters()` writes them into:
 
 ```text
 <pluginDir>/lua_filter/FencedDivExtendedSyntax.lua
 <pluginDir>/lua_filter/CustomLabelList.lua
+<pluginDir>/lua_filter/CustomLabelReader.lua
+<pluginDir>/lua_filter/CustomLabelSupport.lua
 ```
 
 This keeps the normal Obsidian release assets simple while still ensuring installed users have the filters required by the default export profiles.
+
+When copying custom-label scripts for direct CLI use, keep `CustomLabelSupport.lua`
+beside the reader and filter. Both load it relative to their own script paths;
+no extra command argument is needed.
 
 ## Filter Responsibilities
 
@@ -72,6 +87,28 @@ This keeps the normal Obsidian release assets simple while still ensuring instal
 - `&` placeholder numbering
 - known simple `@id` references
 - preservation of unknown citations
+
+`CustomLabelReader.lua` preserves source details for `CustomLabelList.lua`:
+
+```bash
+pandoc input.md --preserve-tabs -f lua_filter/CustomLabelReader.lua-smart \
+    --lua-filter=lua_filter/CustomLabelList.lua -o output.docx
+```
+
+The reader supports the normal Markdown extension suffixes, such as `-smart` or
+`+wikilinks_title_after_pipe`. Plugin export and preview automatically select it
+for Markdown profiles, including saved profiles with empty filter lists.
+`--preserve-tabs` is necessary because Pandoc expands tabs before
+calling a reader; the plugin supplies it automatically. The reader retains exact
+whitespace identity in labels, keeps escaped openings literal, and records
+following whitespace even on marker-only lines. Ordinary tabs are expanded at
+their original source columns so code, indentation, and hard breaks keep their
+normal behavior. This path is verified with Pandoc 3.10.2; other versions may be
+compatible but remain untested.
+
+Using only the filter retains the AST-only limitations: repeated spaces and tabs
+can alias names, escaped openings can become definitions/references, and trailing
+whitespace-only definitions can be missed.
 
 `CustomLabelList.lua` handles plugin-specific custom labels:
 
@@ -92,6 +129,8 @@ boundary, preserving inline formatting and soft/hard breaks. Adjacent custom
 items form native definition lists for HTML/LaTeX and other non-Word writers;
 DOCX, ODT, and RTF use a bold label followed by a tab and the preserved body.
 Definitions without following whitespace are rejected and keep their content.
+With the source-aware reader, a marker-only line with following whitespace is
+a valid definition, including when its body is empty.
 Compound labels such as `1.1` are literal labels; indentation alone does not
 create a hierarchy of custom items.
 

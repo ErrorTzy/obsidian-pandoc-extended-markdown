@@ -9,13 +9,18 @@
 
   Keep the expression grammar and prime matching aligned with
   src/shared/utils/placeholderProcessor.ts and src/shared/patterns.ts.
-  This filter is self-contained because it is also bundled as a single resource.
+  Shared annotations and inline operations live in CustomLabelSupport.lua,
+  loaded beside this filter independently of the working directory.
 --]]
 
 local pandoc = require 'pandoc'
 local List = require 'pandoc.List'
 local SYNTAX_PATTERN = '{::([^}]+)}'
 local PLACEHOLDER_PATTERN = '%(#([^%)]+)%)'
+local support = dofile(pandoc.path.join {
+    pandoc.path.directory(PANDOC_SCRIPT_FILE), 'CustomLabelSupport.lua',
+})
+local Annotations, TextRun = support.Annotations, support.TextRun
 
 local function format_label(label)
     return '(' .. label .. ')'
@@ -51,50 +56,6 @@ function Whitespace.normalize(text)
         table.insert(parts, Whitespace.contains(codepoint) and ' ' or utf8.char(codepoint))
     end
     return table.concat(parts)
-end
-
--- Text-run operations use byte offsets, like Lua patterns. Str and Space are
--- the only syntax-bearing nodes. Breaks, code, math, and rich nodes are barriers.
-local TextRun = {}
-
-function TextRun.text(inline)
-    if inline.t == 'Str' then return inline.text end
-    if inline.t == 'Space' then return ' ' end
-    return nil
-end
-
-function TextRun.prefix(inlines)
-    local parts = {}
-    for _, inline in ipairs(inlines) do
-        local text = TextRun.text(inline)
-        if not text then break end
-        table.insert(parts, text)
-    end
-    return table.concat(parts)
-end
-
--- Keep whole nodes wherever possible, splitting only a Str at a syntax edge.
-function TextRun.slice(inlines, first, last)
-    local result = List{}
-    local offset = 1
-    for _, inline in ipairs(inlines) do
-        local text = TextRun.text(inline)
-        local length = text and #text or 0
-        if offset > last then break end
-        if not text then
-            if offset >= first then result:insert(inline) end
-        elseif offset + length > first then
-            local from = math.max(1, first - offset + 1)
-            local to = math.min(length, last - offset + 1)
-            if from == 1 and to == length then
-                result:insert(inline)
-            elseif to >= from then
-                result:insert(pandoc.Str(text:sub(from, to)))
-            end
-        end
-        offset = offset + length
-    end
-    return result
 end
 
 local MarkerParser = {}
@@ -295,23 +256,7 @@ function InlineProcessor.resolve_run(run, registry)
 end
 
 function InlineProcessor.process(inlines, registry)
-    local result, run = List{}, List{}
-    local function flush()
-        if #run > 0 then
-            result:extend(InlineProcessor.resolve_run(run, registry))
-            run = List{}
-        end
-    end
-    for _, inline in ipairs(inlines) do
-        if TextRun.text(inline) then
-            run:insert(inline)
-        else
-            flush()
-            result:insert(inline)
-        end
-    end
-    flush()
-    return result
+    return TextRun.map(inlines, function(run) return InlineProcessor.resolve_run(run, registry) end)
 end
 
 local function process_document(doc)
@@ -322,9 +267,12 @@ local function process_document(doc)
     doc.blocks = pandoc.Pandoc(doc.blocks):walk {
         Blocks = function(blocks) return BlockTransformer.transform(blocks, registry) end,
     }.blocks
-    return doc:walk {
+    doc = doc:walk {
         Inlines = function(inlines) return InlineProcessor.process(inlines, registry) end,
     }
+    -- Unwrap only after all syntax detection/resolution has finished; otherwise
+    -- an escaped opening could be mistaken for an ordinary marker again.
+    return doc:walk { Span = Annotations.unwrap }
 end
 
 return {{ Pandoc = process_document }}

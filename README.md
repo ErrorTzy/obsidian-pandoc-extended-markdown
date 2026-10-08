@@ -101,13 +101,21 @@ Obsidian rendering does not automatically change Pandoc CLI output. The plugin b
 
 ```bash
 pandoc input.md --lua-filter=lua_filter/FencedDivExtendedSyntax.lua -o output.docx
-pandoc input.md --lua-filter=lua_filter/CustomLabelList.lua -o output.docx
+pandoc input.md --preserve-tabs -f lua_filter/CustomLabelReader.lua \
+    --lua-filter=lua_filter/CustomLabelList.lua -o output.docx
 ```
 
 Custom label definitions require whitespace after the marker, as in `{::P(#step)} Body`.
+For direct CLI use, keep `CustomLabelSupport.lua` beside the custom-label reader
+and filter. The plugin deploys all three files automatically.
 The filter numbers definitions throughout nested containers and resolves known references,
 including forward references. Paragraph continuation lines retain their content and formatting;
-unknown references remain literal.
+unknown references remain literal. Markdown export and preview profiles automatically
+apply both bundled syntax filters, the custom-label reader, and `--preserve-tabs`.
+This includes saved and new profiles with no configured Lua filters; no setup is needed.
+This preserves distinct whitespace in names, escaped markers, and marker-only lines
+with following whitespace. Verified with Pandoc 3.10.2; other versions may be
+compatible but have not been tested.
 
 See [Pandoc export](docs/pandoc-export.md) and [Pandoc variables and Lua filters](docs/pandoc-variables-and-filters.md) for details.
 

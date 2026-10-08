@@ -112,10 +112,6 @@ function createHtmlFixtureProfile(): ExportProfile {
         to: 'html',
         extension: '.html',
         standalone: false,
-        luaFilters: [
-            '${luaFilterDir}/FencedDivExtendedSyntax.lua',
-            '${luaFilterDir}/CustomLabelList.lua'
-        ],
         resourcePaths: ['${currentDir}', '${vaultDir}']
     };
 }

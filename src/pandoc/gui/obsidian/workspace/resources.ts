@@ -5,6 +5,8 @@ import type {
 import { normalizePath } from 'obsidian';
 
 import customLabelListFilter from '../../../../../lua_filter/CustomLabelList.lua';
+import customLabelReader from '../../../../../lua_filter/CustomLabelReader.lua';
+import customLabelSupport from '../../../../../lua_filter/CustomLabelSupport.lua';
 import fencedDivExtendedSyntaxFilter from '../../../../../lua_filter/FencedDivExtendedSyntax.lua';
 
 interface ResourcePlugin {
@@ -13,6 +15,8 @@ interface ResourcePlugin {
 }
 
 const LUA_FILTER_RESOURCES = [
+    ['CustomLabelSupport.lua', customLabelSupport],
+    ['CustomLabelReader.lua', customLabelReader],
     ['CustomLabelList.lua', customLabelListFilter],
     ['FencedDivExtendedSyntax.lua', fencedDivExtendedSyntaxFilter]
 ] as const;

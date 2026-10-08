@@ -1,9 +1,5 @@
 import { ExportProfile, PandocExportSettings } from '../export/types';
-
-const BUNDLED_FILTERS = [
-    '${luaFilterDir}/FencedDivExtendedSyntax.lua',
-    '${luaFilterDir}/CustomLabelList.lua'
-];
+import { BUNDLED_SYNTAX_FILTERS } from '../args/bundledSyntax';
 
 const COMMON_RESOURCE_PATHS = [
     '${currentDir}',
@@ -28,7 +24,7 @@ function profile(
         extension,
         standalone,
         resourcePaths: COMMON_RESOURCE_PATHS,
-        luaFilters: BUNDLED_FILTERS,
+        luaFilters: BUNDLED_SYNTAX_FILTERS,
         extraArgs
     };
 }

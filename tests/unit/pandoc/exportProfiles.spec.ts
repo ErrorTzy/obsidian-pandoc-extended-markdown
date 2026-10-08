@@ -29,6 +29,130 @@ const variables: ExportVariables = {
 };
 
 describe('export profiles', () => {
+    it.each([undefined, []])('automatically applies bundled syntax to Markdown profiles with filters %j', luaFilters => {
+        const profile: PandocExportProfile = {
+            id: 'saved', name: 'Saved', type: 'pandoc', to: 'html', extension: '.html',
+            from: 'markdown-smart+wikilinks_title_after_pipe', luaFilters
+        };
+        const before = JSON.stringify(profile);
+        const args = buildPandocProfileArgs({ profile, variables });
+        expect(args[2]).toBe('/plugin/lua_filter/CustomLabelReader.lua-smart+wikilinks_title_after_pipe');
+        expect(args).toContain('--preserve-tabs');
+        expect(args.filter(arg => arg === '--lua-filter')).toHaveLength(2);
+        expect(args).toEqual(expect.arrayContaining([
+            '/plugin/lua_filter/FencedDivExtendedSyntax.lua',
+            '/plugin/lua_filter/CustomLabelList.lua'
+        ]));
+        expect(JSON.stringify(profile)).toBe(before);
+    });
+
+    it('does not apply bundled syntax automatically to other readers', () => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'html', name: 'HTML input', type: 'pandoc', to: 'docx', extension: '.docx',
+                from: 'html', luaFilters: ['/custom/filter.lua']
+            }, variables
+        });
+        expect(args[2]).toBe('html');
+        expect(args.filter(arg => arg === '--lua-filter')).toHaveLength(1);
+        expect(args).not.toContain('--preserve-tabs');
+    });
+
+    it('applies bundled filters only once when already configured', () => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'html', name: 'HTML', type: 'pandoc', to: 'html', extension: '.html',
+                luaFilters: ['${luaFilterDir}/FencedDivExtendedSyntax.lua', '${luaFilterDir}/CustomLabelList.lua']
+            }, variables
+        });
+        expect(args.filter(arg => arg === '/plugin/lua_filter/FencedDivExtendedSyntax.lua')).toHaveLength(1);
+        expect(args.filter(arg => arg === '/plugin/lua_filter/CustomLabelList.lua')).toHaveLength(1);
+    });
+
+    it.each(['FencedDivExtendedSyntax.lua', 'CustomLabelList.lua'])
+    ('keeps the bundled processing order when only %s is configured', file => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'html', name: 'HTML', type: 'pandoc', to: 'html', extension: '.html',
+                luaFilters: [`${variables.luaFilterDir}/${file}`]
+            }, variables
+        });
+        expect(args.indexOf('/plugin/lua_filter/FencedDivExtendedSyntax.lua'))
+            .toBeLessThan(args.indexOf('/plugin/lua_filter/CustomLabelList.lua'));
+    });
+
+    it.each([
+        ['--lua-filter', '${luaFilterDir}/CustomLabelList.lua'],
+        ['--lua-filter=${luaFilterDir}/CustomLabelList.lua'],
+        ['-L', '${luaFilterDir}/CustomLabelList.lua'],
+        ['-L${luaFilterDir}/CustomLabelList.lua']
+    ])('does not repeat a bundled filter configured in extra args %j', (...extraArgs) => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'html', name: 'HTML', type: 'pandoc', to: 'html', extension: '.html', extraArgs
+            }, variables
+        });
+        expect(args.filter(arg => arg.includes('/plugin/lua_filter/CustomLabelList.lua'))).toHaveLength(1);
+        expect(args).toContain('/plugin/lua_filter/FencedDivExtendedSyntax.lua');
+    });
+
+    it('adds the label filter after a fenced-div filter supplied in export extra args', () => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'html', name: 'HTML', type: 'pandoc', to: 'html', extension: '.html'
+            }, variables, extraArgs: ['--lua-filter=/plugin/lua_filter/FencedDivExtendedSyntax.lua']
+        });
+        expect(args.filter(arg => arg.includes('FencedDivExtendedSyntax.lua'))).toHaveLength(1);
+        expect(args.indexOf('--lua-filter=/plugin/lua_filter/FencedDivExtendedSyntax.lua'))
+            .toBeLessThan(args.indexOf('/plugin/lua_filter/CustomLabelList.lua'));
+    });
+
+    it('automatically selects the source-aware reader for saved bundled-filter profiles', () => {
+        const profile: PandocExportProfile = {
+            id: 'saved', name: 'Saved', type: 'pandoc', to: 'html', extension: '.html',
+            from: 'markdown-smart+wikilinks_title_after_pipe',
+            luaFilters: ['${luaFilterDir}/CustomLabelList.lua']
+        };
+        const before = JSON.stringify(profile);
+        const args = buildPandocProfileArgs({ profile, variables });
+        expect(args[2]).toBe('/plugin/lua_filter/CustomLabelReader.lua-smart+wikilinks_title_after_pipe');
+        expect(args).toContain('--preserve-tabs');
+        expect(JSON.stringify(profile)).toBe(before);
+    });
+
+    it.each(['html', 'commonmark', '/custom/reader.lua'])('retains an explicit %s reader', from => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'saved', name: 'Saved', type: 'pandoc', to: 'html', extension: '.html',
+                from, luaFilters: ['${luaFilterDir}/CustomLabelList.lua']
+            }, variables
+        });
+        expect(args[2]).toBe(from);
+        expect(args).not.toContain('--preserve-tabs');
+    });
+
+    it('keeps unrelated custom filters alongside the bundled syntax filters', () => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'custom', name: 'Custom', type: 'pandoc', to: 'html', extension: '.html',
+                luaFilters: ['/custom/CustomLabelList.lua']
+            }, variables
+        });
+        expect(args).toContain('/custom/CustomLabelList.lua');
+        expect(args).toContain('/plugin/lua_filter/CustomLabelList.lua');
+        expect(args[2]).toBe('/plugin/lua_filter/CustomLabelReader.lua+wikilinks_title_after_pipe');
+    });
+
+    it('keeps an explicit reader override in extra arguments', () => {
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'saved', name: 'Saved', type: 'pandoc', to: 'html', extension: '.html',
+                luaFilters: ['${luaFilterDir}/CustomLabelList.lua']
+            }, variables, extraArgs: ['--from=html']
+        });
+        expect(args.at(-1)).toBe('--from=html');
+    });
+
     it('ships the reference plugin core export formats as default profiles', () => {
         expect(DEFAULT_EXPORT_PROFILES.map(profile => profile.name)).toEqual([
             'Markdown',
@@ -86,9 +210,10 @@ describe('export profiles', () => {
         })).toEqual([
             '/vault/note.md',
             '-f',
-            'markdown+wikilinks_title_after_pipe',
+            '/plugin/lua_filter/CustomLabelReader.lua+wikilinks_title_after_pipe',
             '-t',
             'html',
+            '--preserve-tabs',
             '-o',
             '/exports/note.html',
             '--standalone',
@@ -98,6 +223,8 @@ describe('export profiles', () => {
             '/vault/assets',
             '--lua-filter',
             '/plugin/lua_filter/FencedDivExtendedSyntax.lua',
+            '--lua-filter',
+            '/plugin/lua_filter/CustomLabelList.lua',
             '--metadata',
             'title=note',
             '--embed-resources',
@@ -131,11 +258,16 @@ describe('export profiles', () => {
         expect(buildPandocProfileArgs({ profile, variables })).toEqual([
             '/vault/note.md',
             '-f',
-            'markdown+wikilinks_title_after_pipe',
+            '/plugin/lua_filter/CustomLabelReader.lua+wikilinks_title_after_pipe',
             '-t',
             'markdown',
+            '--preserve-tabs',
             '-o',
-            '/exports/note.md'
+            '/exports/note.md',
+            '--lua-filter',
+            '/plugin/lua_filter/FencedDivExtendedSyntax.lua',
+            '--lua-filter',
+            '/plugin/lua_filter/CustomLabelList.lua'
         ]);
     });
 

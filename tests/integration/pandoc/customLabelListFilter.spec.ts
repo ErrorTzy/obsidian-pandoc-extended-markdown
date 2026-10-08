@@ -1,10 +1,16 @@
 import { execFileSync } from 'child_process';
-import { resolve } from 'path';
+import { copyFileSync, mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join, resolve } from 'path';
 import { strFromU8, unzipSync } from 'fflate';
 
 import { PlaceholderContext } from '../../../src/shared/utils/placeholderProcessor';
+import { ListPatterns } from '../../../src/shared/patterns';
+import { buildPandocProfileArgs } from '../../../src/pandoc/core/args/profileArgs';
+import { ExportVariables } from '../../../src/pandoc/core/export/types';
 
 const filter = resolve(__dirname, '../../../lua_filter/CustomLabelList.lua');
+const sourceReader = resolve(__dirname, '../../../lua_filter/CustomLabelReader.lua');
 
 function hasPandoc(): boolean {
     try {
@@ -16,9 +22,9 @@ function hasPandoc(): boolean {
     }
 }
 
-function render(source: string, reader = 'markdown-smart', extraArgs: string[] = []): string {
+function render(source: string, reader = `${sourceReader}-smart`, extraArgs: string[] = []): string {
     return execFileSync('pandoc', [
-        '-f', reader, '-t', 'html', '--lua-filter', filter, ...extraArgs
+        '-f', reader, '--preserve-tabs', '-t', 'html', '--lua-filter', filter, ...extraArgs
     ], { input: source, encoding: 'utf8', timeout: 5000 });
 }
 
@@ -27,6 +33,189 @@ function render(source: string, reader = 'markdown-smart', extraArgs: string[] =
 const pandocDescribe = hasPandoc() ? describe : describe.skip;
 
 pandocDescribe('CustomLabelList Pandoc filter', () => {
+    it.each([true, false])('loads copied shared support outside the script directory (reader: %j)', useReader => {
+        const directory = mkdtempSync(join(tmpdir(), 'custom label bundle '));
+        try {
+            for (const name of ['CustomLabelReader.lua', 'CustomLabelList.lua', 'CustomLabelSupport.lua']) {
+                copyFileSync(resolve(__dirname, '../../../lua_filter', name), join(directory, name));
+            }
+            const source = useReader
+                ? '\\{::P(#ignored)} literal\n{::P(#a\tb)} first\n{::P(#a b)} second\n\nSee {::P(#a\tb)}, {::P(#a b)}.'
+                : '{::P(#a)} **body**\n\nSee {::P(#a)}.';
+            const output = execFileSync('pandoc', [
+                '-f', useReader ? `${join(directory, 'CustomLabelReader.lua')}-smart` : 'markdown-smart',
+                '--preserve-tabs', '-t', 'html', '--lua-filter', join(directory, 'CustomLabelList.lua')
+            ], { input: source, encoding: 'utf8', cwd: tmpdir(), timeout: 5000 });
+            expect(output).toContain(useReader ? '<p>See (P1), (P2).</p>' : '<p>See (P1).</p>');
+            expect(output).not.toContain('data-pem-custom-label');
+        } finally {
+            rmSync(directory, { recursive: true, force: true });
+        }
+    });
+
+    it('retains ordinary filter-only CLI support', () => {
+        expect(render('{::P(#a)} **body**\n\nSee {::P(#a)}.', 'markdown-smart'))
+            .toContain('<p>See (P1).</p>');
+    });
+
+    it.each(['  ', '\t', ' \t '])('keeps placeholder names distinct for %j', whitespace => {
+        const labels = [`P(#a${whitespace}b)`, 'P(#a b)'];
+        const context = new PlaceholderContext();
+        const expected = labels.map(label => `(${context.processLabel(label)})`);
+        const output = render(labels.map(label => `{::${label}} body`).join('\n')
+            + `\n\nSee {::${labels[0]}} and {::${labels[1]}}.`);
+        const dom = new DOMParser().parseFromString(output, 'text/html');
+        expect([...dom.querySelectorAll('dt')].map(term => term.textContent)).toEqual(expected);
+        expect(dom.querySelector('p')?.textContent).toBe(`See ${expected.join(' and ')}.`);
+    });
+
+    it('matches manual labels using exact source whitespace', () => {
+        const context = new PlaceholderContext();
+        context.processLabel('Alpha  Beta');
+        expect(context.getProcessedLabel('Alpha Beta')).toBeNull();
+        expect(render('{::Alpha  Beta} body\n\nSee {::Alpha Beta} and {::Alpha  Beta}.'))
+            .toContain('<p>See {::Alpha Beta} and (Alpha  Beta).</p>');
+    });
+
+    it('does not allocate a number for an escaped definition', () => {
+        const literal = '\\{::P(#a)} literal text';
+        expect(ListPatterns.isCustomLabelList(literal)).toBeNull();
+        const output = render(`${literal}\n{::P(#b)} actual item\n\nSee {::P(#a)}, {::P(#b)}.`);
+        expect(output).toContain('<p>{::P(#a)} literal text</p>');
+        expect(output).toContain('<dt>(P1)</dt>');
+        expect(output).not.toContain('(P2)');
+        expect(output).toContain('<p>See {::P(#a)}, (P1).</p>');
+    });
+
+    it.each([' ', '  ', '\t', '   '])('registers a marker-only line followed by %j', whitespace => {
+        expect(ListPatterns.isCustomLabelList(`{::P}${whitespace}`)).not.toBeNull();
+        const output = render(`{::P}${whitespace}\nBody\n\nSee {::P}.`);
+        const dom = new DOMParser().parseFromString(output, 'text/html');
+        expect(dom.querySelector('dt')?.textContent).toBe('(P)');
+        expect(dom.querySelector('dd')?.textContent?.trim()).toBe('Body');
+        expect(dom.querySelector('p')?.textContent).toBe('See (P).');
+        expect(dom.querySelectorAll('br')).toHaveLength(whitespace === ' ' ? 0 : 1);
+    });
+
+    it.each(['{::P} ', '{::P}  \n\nSee {::P}.'])('registers an empty item: %j', source => {
+        const dom = new DOMParser().parseFromString(render(source), 'text/html');
+        expect(dom.querySelector('dt')?.textContent).toBe('(P)');
+        expect(dom.querySelector('dd')?.textContent?.trim()).toBe('');
+    });
+
+    it('keeps escaped references literal and removes internal boundaries', () => {
+        const output = render('{::P(#a)} body\n\nSee \\{::P(#a)} and {::P(#a)}.');
+        expect(output).toContain('<p>See {::P(#a)} and (P1).</p>');
+        expect(output).not.toMatch(/PEMCUSTOMLABEL|data-pem-custom-label|<span/);
+    });
+
+    it.each([1, 2, 3, 4])('preserves Markdown backslash parity with %i backslashes', count => {
+        const slashes = '\\'.repeat(count);
+        const output = render(`{::P} body\n\nSee ${slashes}{::P}.`);
+        expect(output).toContain(`<p>See ${'\\'.repeat(Math.floor(count / 2))}`
+            + `${count % 2 ? '{::P}' : '(P)'}.</p>`);
+    });
+
+    it.each([
+        '```\n{::P(#a\tb)}\tcode\n\\{::P} literal\n```',
+        '`{::P(#a\tb)}` and `{::P} `',
+        '    {::P(#a\tb)}\tcode',
+        '$\\{::P(#a  b)}$ and $$ {::P}  $$',
+        '<pre>\\{::P(#a  b)} raw</pre>',
+        '[link](<https://example.com/{::Alpha  Beta}>)',
+        '![alt](<foo{::Alpha  Beta}.png>)',
+        '[link](<https://example.com/\\{::P}>)',
+        '::: {.box title="{::Alpha  Beta} body"}\nordinary\n:::',
+        '---\nlabel: "{::Alpha  Beta} text"\n---\n\nordinary'
+    ])('restores opaque content without leaking tokens: %j', source => {
+        const options = { input: source, encoding: 'utf8' as const, timeout: 5000 };
+        const actual = execFileSync('pandoc', [
+            '-f', `${sourceReader}-smart`, '--preserve-tabs', '-t', 'json', '--lua-filter', filter
+        ], options);
+        const expected = execFileSync('pandoc', ['-f', 'markdown-smart', '-t', 'json'], options);
+        expect(JSON.parse(actual)).toEqual(JSON.parse(expected));
+        expect(actual).not.toMatch(/[\u200b\u200c\u2060\u2063]|data-pem-custom-label/);
+    });
+
+    it('avoids token collisions with source text', () => {
+        const output = render('\u2060 \u2060\u2060\n\n'
+            + '{::P(#a  b)} body\n{::P(#a b)} other');
+        expect(output).toContain('<p>\u2060 \u2060\u2060</p>');
+        expect(output).toContain('<dt>(P2)</dt>');
+        expect(output).not.toContain('\u2060\u2060\u2060');
+    });
+
+    it('preserves fixed-width table boundaries and original column widths', () => {
+        const output = render('+-----------------------+\n| {::P(#a  b)} body     |\n'
+            + '+=======================+\n| {::P(#a b)} body      |\n+-----------------------+');
+        const dom = new DOMParser().parseFromString(output, 'text/html');
+        expect(dom.querySelector('thead th dt')?.textContent).toBe('(P1)');
+        expect(dom.querySelector('tbody td dt')?.textContent).toBe('(P2)');
+        expect(dom.querySelector('col')?.getAttribute('style')).toBe('width: 33%');
+        expect(output).not.toMatch(/[\u200b\u200c\u2060\u2063]|data-pem-custom-label/);
+    });
+
+    it.each(['{::Alpha  *Beta*} body', '{::Alpha*\t*Beta} body', '{::*a\t*b} body'])
+    ('retains Markdown inline boundaries inside labels: %j', source => {
+        const options = { input: source, encoding: 'utf8' as const, timeout: 5000 };
+        const actual = execFileSync('pandoc', [
+            '-f', `${sourceReader}-smart`, '--preserve-tabs', '-t', 'html', '--lua-filter', filter
+        ], options);
+        if (source === '{::Alpha*\t*Beta} body') {
+            expect(actual).toContain('<dt>(Alpha*\t*Beta)</dt>');
+        } else {
+            expect(actual).toBe(execFileSync('pandoc', ['-f', 'markdown-smart', '-t', 'html'], options));
+        }
+    });
+
+    it('preserves tab indentation and tab-stop options outside labels', () => {
+        const source = '\t{::P(#code)} code\n\n{::P(#a\tb)}\tbody\n\tcontinuation';
+        const output = render(source, `${sourceReader}-smart`, ['--tab-stop=8']);
+        expect(output).toContain('<code>{::P(#code)} code</code>');
+        expect(output).toContain('<dt>(P1)</dt>');
+        expect(output).toContain('continuation');
+    });
+
+    it.each(['html', 'docx', 'odt', 'rtf'])('preserves source-sensitive numbering in %s', format => {
+        const data = execFileSync('pandoc', [
+            '-f', `${sourceReader}-smart`, '--preserve-tabs', '-t', format, '--lua-filter', filter
+        ], {
+            input: '\\{::P(#escaped)} LITERAL\n{::P(#a\tb)} FIRST\n{::P(#a b)}  \nBODY\n\n'
+                + 'See {::P(#a\tb)}, {::P(#a b)}.', timeout: 5000
+        });
+        const output = format === 'docx' || format === 'odt'
+            ? strFromU8(unzipSync(new Uint8Array(data))[
+                format === 'docx' ? 'word/document.xml' : 'content.xml'
+            ]) : data.toString('utf8');
+        for (const token of ['LITERAL', 'FIRST', 'BODY', '(P1)', '(P2)']) expect(output).toContain(token);
+        expect(output).not.toMatch(/PEMCUSTOMLABEL|data-pem-custom-label|\(P3\)/);
+    });
+
+    it('automatically exports custom labels and fenced divs without configured filters', () => {
+        const variables = {
+            currentPath: '-', fromFormat: 'markdown-smart+wikilinks_title_after_pipe',
+            outputPath: '-', outputExtension: '.html',
+            luaFilterDir: resolve(__dirname, '../../../lua_filter')
+        } as ExportVariables;
+        const args = buildPandocProfileArgs({
+            profile: {
+                id: 'saved', name: 'Saved', type: 'pandoc', to: 'html', extension: '.html'
+            }, variables
+        });
+        const output = execFileSync('pandoc', args, {
+            input: '::: {.theorem #thm title="Theorem &"}\n'
+                + '\\{::P(#ignored)} literal\n{::P(#a\tb)} first\n{::P(#a b)} second\n:::\n\n'
+                + 'See @thm, {::P(#a\tb)}, {::P(#a b)}, [[Note|Alias]].',
+            encoding: 'utf8', timeout: 5000
+        });
+        expect(output).toContain('Theorem 1');
+        expect(output).toContain('<dt>(P1)</dt>');
+        expect(output).toContain('<dt>(P2)</dt>');
+        expect(output).toContain('See Theorem 1, (P1), (P2),');
+        expect(output).toContain('>Alias</a>');
+        expect(output).not.toMatch(/PEMCUSTOMLABEL|data-pem-custom-label/);
+    });
+
     it('numbers definitions and forward references while preserving body markup', () => {
         const output = render('See {::P(#a)} and {::Q(#b)}.\n\n'
             + '{::P(#a)} **bold** [link](https://example.com)\n{::Q(#b)} second');
@@ -168,7 +357,7 @@ pandocDescribe('CustomLabelList Pandoc filter', () => {
     });
 
     it.each(['odt', 'rtf'])('keeps body markup and continuation content in %s', format => {
-        const data = execFileSync('pandoc', ['-f', 'markdown-smart', '-t', format, '--lua-filter', filter], {
+        const data = execFileSync('pandoc', ['-f', `${sourceReader}-smart`, '-t', format, '--lua-filter', filter], {
             input: '{::P(#a)} **BODY**\nCONTINUATION\n\nSee {::P(#a)}.', timeout: 5000
         });
         const output = format === 'odt'
@@ -180,14 +369,14 @@ pandocDescribe('CustomLabelList Pandoc filter', () => {
 
     it('preserves unmatched inline nodes exactly', () => {
         const source = 'See pre{::P(#long unknown name)}post and [link](https://example.com).';
-        const args = ['-f', 'markdown-smart', '-t', 'json'];
+        const args = ['-f', `${sourceReader}-smart`, '-t', 'json'];
         const options = { input: source, encoding: 'utf8' as const, timeout: 5000 };
         expect(JSON.parse(execFileSync('pandoc', [...args, '--lua-filter', filter], options)))
             .toEqual(JSON.parse(execFileSync('pandoc', args, options)));
     });
 
     it('keeps label and body separate in Word output, including invalid markers', () => {
-        const data = execFileSync('pandoc', ['-f', 'markdown-smart', '-t', 'docx', '--lua-filter', filter], {
+        const data = execFileSync('pandoc', ['-f', `${sourceReader}-smart`, '-t', 'docx', '--lua-filter', filter], {
             input: '{::P(#one two)} **BOLD_BODY** tail\nContinuation\n\n'
                 + '{::INVALID}**KEEP_BOLD** tail\n\n{::OTHER}KEEP_WORD tail', timeout: 5000
         });
@@ -202,7 +391,7 @@ pandocDescribe('CustomLabelList Pandoc filter', () => {
     });
 
     it('uses native definition lists for LaTeX output', () => {
-        const output = execFileSync('pandoc', ['-f', 'markdown-smart', '-t', 'latex', '--lua-filter', filter], {
+        const output = execFileSync('pandoc', ['-f', `${sourceReader}-smart`, '-t', 'latex', '--lua-filter', filter], {
             input: '{::P(#a)} **body**\nContinuation\n\nSee {::P(#a)}.', encoding: 'utf8', timeout: 5000
         });
         expect(output).toContain('\\item[(P1)]');

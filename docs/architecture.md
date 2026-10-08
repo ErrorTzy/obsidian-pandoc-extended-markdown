@@ -1088,16 +1088,51 @@ ${luaFilterDir}/FencedDivExtendedSyntax.lua
 ${luaFilterDir}/CustomLabelList.lua
 ```
 
+`core/args/bundledSyntax.ts` shares the bundled filter templates with default
+profiles. Argument construction automatically adds missing bundled filters for
+`markdown` input, selects `${luaFilterDir}/CustomLabelReader.lua` with the same
+extension suffix, and supplies `--preserve-tabs`. Configured filter order is
+retained, missing filters respect the bundled order, and explicit filter paths
+in extra arguments prevent automatic duplicates. Export and preview use the
+same construction without migrating saved profiles, including empty filter
+lists. Other readers and custom shell profiles retain their configured behavior.
+The reader and shared helper are bundled and released beside the filters.
+
 See [Pandoc variables and Lua filters](pandoc-variables-and-filters.md) for the variable list and filter behavior.
 
 ### Custom Label Lua Filter Pipeline
 
-`lua_filter/CustomLabelList.lua` is self-contained so direct CLI use and bundled
-resource deployment use the same implementation. Its stages have distinct
-responsibilities:
+`lua_filter/CustomLabelList.lua` is paired with `CustomLabelReader.lua` for
+source-aware parity. Both load the sibling `CustomLabelSupport.lua` relative to
+their script path, independently of the working directory. Bundled deployment
+includes all three files; copied CLI scripts must keep the helper beside them.
+The helper owns the annotation contract (kinds, attributes, construction, syntax
+text, and cleanup) and shared `TextRun` operations (prefix, slicing, and mapping
+contiguous runs). It owns no document state. Reader decoding maps plain text
+runs; filter parsing also includes whitespace/separator annotations and treats
+escaped openings as boundaries. Marker grammar and numbering remain in the filter.
+The reader shields exact label whitespace, escaped openings, and following
+whitespace before delegating to Markdown parsing. Its document-local tokens use
+zero-width format characters with original whitespace padding so fixed-width
+tables retain their boundaries and column widths. The reader expands ordinary
+tabs at their original columns; `--preserve-tabs` is required to receive raw
+tabs from Pandoc in the first place.
+
+Opaque AST strings and URL destinations are restored before filtering through
+a JSON traversal that leaves syntax-bearing Str nodes for inline decoding.
+Internal spans retain exact whitespace identity while displaying normal Space
+nodes, record separator presence, and isolate escaped openings. They are
+unwrapped after reference resolution, preserving unmatched display nodes and
+preventing protection artifacts from reaching writers. Metadata and code never
+define labels. The source-aware path is verified with Pandoc 3.10.2; other
+versions may work but have not been tested. Filter-only CLI use remains available
+with the limitations of normalized input.
+
+The filter stages have distinct responsibilities:
 
 1. `TextRun` and `MarkerParser` parse syntax across contiguous `Str`/`Space`
-   nodes without inline-count limits. A shared Unicode whitespace predicate
+   nodes and reader-generated whitespace/separator spans without inline-count
+   limits. A shared Unicode whitespace predicate
    mirrors JavaScript `\s` for markers and expressions. Definitions require line-start markers
    and following whitespace. Marker extraction returns the raw label and a
    separate body sliced from the original AST, preserving rich inline nodes.
