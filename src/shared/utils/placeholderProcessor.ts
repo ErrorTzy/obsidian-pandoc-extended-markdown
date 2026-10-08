@@ -123,11 +123,11 @@ export class PlaceholderContext {
             return processedLabel;
         }
         
-        // For partial matches (like P(#good)' when P(#good)''' is defined),
-        // check if the base form exists in defined labels
+        // Prime variations share an exact base (e.g. Theorem1' and Theorem1''').
+        // Prefixes such as Theorem1 must never match a definition of Theorem10.
         const baseProcessedLabel = this.getBaseLabel(processedLabel);
         for (const definedLabel of this.definedLabels) {
-            if (definedLabel.startsWith(baseProcessedLabel)) {
+            if (this.getBaseLabel(definedLabel) === baseProcessedLabel) {
                 // This is a valid reference to a variation of a defined label
                 return processedLabel;
             }
@@ -162,9 +162,9 @@ export class PlaceholderContext {
     }
     
     /**
-     * Get the base label without trailing primes or other modifiers.
+     * Get the base label without trailing ASCII primes.
      * Used to match variations like "P1'" against defined labels like "P1'''".
-     * Enables partial matching of label references against their defined counterparts.
+     * Enables exact base matching of prime variations.
      * 
      * @param label - The label to extract base form from
      * @returns The base label with trailing primes/quotes removed

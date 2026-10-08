@@ -104,6 +104,11 @@ pandoc input.md --lua-filter=lua_filter/FencedDivExtendedSyntax.lua -o output.do
 pandoc input.md --lua-filter=lua_filter/CustomLabelList.lua -o output.docx
 ```
 
+Custom label definitions require whitespace after the marker, as in `{::P(#step)} Body`.
+The filter numbers definitions throughout nested containers and resolves known references,
+including forward references. Paragraph continuation lines retain their content and formatting;
+unknown references remain literal.
+
 See [Pandoc export](docs/pandoc-export.md) and [Pandoc variables and Lua filters](docs/pandoc-variables-and-filters.md) for details.
 
 ## Development

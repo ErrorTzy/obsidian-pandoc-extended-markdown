@@ -2,6 +2,26 @@ import { PlaceholderContext } from '../../../src/shared/utils/placeholderProcess
 
 describe('Custom Label Placeholder Numbering', () => {
     describe('PlaceholderContext', () => {
+        it('matches only exact base labels when resolving prime variations', () => {
+            const context = new PlaceholderContext();
+            context.processLabel("Theorem10'''");
+            context.processLabel("Lemma1'''");
+            expect(context.getProcessedLabel("Theorem10'")).toBe("Theorem10'");
+            expect(context.getProcessedLabel('Theorem10')).toBe('Theorem10');
+            expect(context.getProcessedLabel('Theorem1')).toBeNull();
+            expect(context.getProcessedLabel('Theorem')).toBeNull();
+            expect(context.getProcessedLabel('Lemma')).toBeNull();
+        });
+
+        it('never assigns numbers while looking up unknown references', () => {
+            const context = new PlaceholderContext();
+            context.processLabel('P1');
+            expect(context.getProcessedLabel('P(#unknown)')).toBeNull();
+            expect(context.getProcessedLabel('(#unknown)')).toBeNull();
+            expect(context.getPlaceholderMappings().size).toBe(0);
+            expect(context.processLabel('P(#first)')).toBe('P1');
+        });
+
         it('should maintain correct numbering when inserting items between existing ones', () => {
             // Test the bug: When we insert a new item between existing ones,
             // the numbering should be reassigned correctly

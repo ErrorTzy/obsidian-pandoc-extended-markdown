@@ -79,6 +79,34 @@ This keeps the normal Obsidian release assets simple while still ensuring instal
 - `{::LABEL}` references
 - placeholder numbering such as `{::P(#a)}`
 
+Definitions start a paragraph line with `{::LABEL}` followed by whitespace. The
+filter scans definitions in document order inside fenced divs, quotes, native
+lists, definition bodies, table cells, and footnotes before resolving references.
+Repeated placeholder names share their number; references never allocate numbers.
+Forward references therefore work, while a reference containing any unknown
+placeholder remains literal even if it could match a manually numbered label.
+
+Text before the first marker remains ordinary paragraph content. Non-marker
+lines after a marker continue that item until the next marker or the paragraph
+boundary, preserving inline formatting and soft/hard breaks. Adjacent custom
+items form native definition lists for HTML/LaTeX and other non-Word writers;
+DOCX, ODT, and RTF use a bold label followed by a tab and the preserved body.
+Definitions without following whitespace are rejected and keep their content.
+Compound labels such as `1.1` are literal labels; indentation alone does not
+create a hierarchy of custom items.
+
+Reference expressions follow the plugin's grammar: after removing known
+placeholder groups, the remainder may contain one initial ASCII letter and
+whitespace, digits, arithmetic operators (`+ - * /`), commas, parentheses, and
+ASCII primes. Thus `{::P(#a),(#b)}` can resolve without that exact label being
+defined, while `{::UNDEFINED+(#a)}` cannot. Other references must match a defined
+label's exact base after removing trailing ASCII primes; `Theorem1` does not
+match `Theorem10'''`. Syntax spanning `Str`/`Space` nodes supports long names and
+adjacent text. Breaks, code, math, and rich inline nodes delimit syntax runs;
+references inside emphasis or links are processed within those nodes. Pandoc
+smart typography is applied before filters; use `markdown-smart` to retain
+literal ASCII primes in labels when invoking Pandoc directly.
+
 ## Profile Notes
 
 Pandoc profiles are represented as argument arrays and executed without shell-string construction. Advanced custom shell profiles are available only when explicitly configured with `type: "custom"` and `shell: true`.

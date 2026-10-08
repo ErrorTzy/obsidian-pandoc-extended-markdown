@@ -1,506 +1,330 @@
 --[[
-  Universal Labeled Example Filter for Pandoc
-  ============================================
-  
-  Purpose: Transform {::LABEL} syntax into formatted labels for examples and references.
-  Features:
-    - Custom labels for list items (e.g., P, Q, Alpha)
-    - Auto-numbering with (#placeholder) syntax
-    - Cross-references throughout the document
-    - Format-specific output (LaTeX/PDF vs Word/DOCX)
-  
-  Architecture:
-    1. Label Parser - Extract and parse labels from text
-    2. Placeholder Manager - Handle auto-numbering
-    3. Label Registry - Store and retrieve label definitions
-    4. Output Formatter - Generate format-specific output
-    5. Main Pipeline - Orchestrate the filter process
+  Custom label lists: {::LABEL} body and {::LABEL} references.
+
+  Pipeline invariants:
+    1. One parser separates markers from bodies without flattening rich inlines.
+    2. Only definitions allocate placeholders, in document traversal order.
+    3. Every block sequence is transformed in its original container.
+    4. Reference resolution is read-only; unmatched nodes remain untouched.
+
+  Keep the expression grammar and prime matching aligned with
+  src/shared/utils/placeholderProcessor.ts and src/shared/patterns.ts.
+  This filter is self-contained because it is also bundled as a single resource.
 --]]
 
 local pandoc = require 'pandoc'
 local List = require 'pandoc.List'
+local SYNTAX_PATTERN = '{::([^}]+)}'
+local PLACEHOLDER_PATTERN = '%(#([^%)]+)%)'
 
--- ============================================================================
--- CONFIGURATION
--- ============================================================================
+local function format_label(label)
+    return '(' .. label .. ')'
+end
 
-local Config = {
-    DEBUG = false,
-    SYNTAX_PATTERN = "{::([^}]+)}",           -- Matches {::anything}
-    PLACEHOLDER_PATTERN = "%(#([^%)]+)%)",    -- Matches (#anything)
+local function base_label(label)
+    return (label:gsub("'+$", ''))
+end
+
+-- JavaScript \s includes Unicode whitespace; Lua's byte-oriented %s does not.
+-- Share this predicate between marker parsing and expression validation.
+local Whitespace = {}
+local UNICODE_WHITESPACE = {
+    [0x00a0] = true, [0x1680] = true, [0x2028] = true, [0x2029] = true,
+    [0x202f] = true, [0x205f] = true, [0x3000] = true, [0xfeff] = true,
 }
 
--- ============================================================================
--- UTILITIES
--- ============================================================================
-
-local Utils = {}
-
-function Utils.debug(msg)
-    if Config.DEBUG then
-        io.stderr:write("[DEBUG] " .. msg .. "\n")
-    end
+function Whitespace.contains(codepoint)
+    return (codepoint >= 0x09 and codepoint <= 0x0d) or codepoint == 0x20
+        or (codepoint >= 0x2000 and codepoint <= 0x200a) or UNICODE_WHITESPACE[codepoint]
 end
 
-function Utils.format_label(label)
-    return "(" .. label .. ")"
+function Whitespace.skip(text, offset)
+    while offset <= #text and Whitespace.contains(utf8.codepoint(text, offset)) do
+        offset = utf8.offset(text, 2, offset) or (#text + 1)
+    end
+    return offset
 end
 
--- ============================================================================
--- PLACEHOLDER MANAGER
--- Handles auto-numbering of (#placeholder) patterns
--- ============================================================================
-
-local PlaceholderManager = {
-    numbers = {},      -- Map: placeholder_name -> assigned_number
-    next_number = 1,   -- Counter for next assignment
-}
-
-function PlaceholderManager:reset()
-    self.numbers = {}
-    self.next_number = 1
+function Whitespace.normalize(text)
+    local parts = {}
+    for _, codepoint in utf8.codes(text) do
+        table.insert(parts, Whitespace.contains(codepoint) and ' ' or utf8.char(codepoint))
+    end
+    return table.concat(parts)
 end
 
-function PlaceholderManager:get_number(placeholder_name)
-    if not self.numbers[placeholder_name] then
-        self.numbers[placeholder_name] = self.next_number
-        self.next_number = self.next_number + 1
-        Utils.debug("Assigned number " .. self.numbers[placeholder_name] .. 
-                   " to placeholder '" .. placeholder_name .. "'")
-    end
-    return self.numbers[placeholder_name]
-end
+-- Text-run operations use byte offsets, like Lua patterns. Str and Space are
+-- the only syntax-bearing nodes. Breaks, code, math, and rich nodes are barriers.
+local TextRun = {}
 
-function PlaceholderManager:process_label(raw_label)
-    -- Return label as-is if no placeholders
-    if not raw_label:match(Config.PLACEHOLDER_PATTERN) then
-        return raw_label
-    end
-    
-    -- Replace all placeholders with their assigned numbers
-    return raw_label:gsub(Config.PLACEHOLDER_PATTERN, function(placeholder_name)
-        return tostring(self:get_number(placeholder_name))
-    end)
-end
-
--- ============================================================================
--- LABEL REGISTRY
--- Stores and manages label definitions and references
--- ============================================================================
-
-local LabelRegistry = {
-    definitions = {},      -- Map: processed_label -> formatted_label
-    raw_to_processed = {}, -- Map: raw_label -> processed_label
-}
-
-function LabelRegistry:reset()
-    self.definitions = {}
-    self.raw_to_processed = {}
-end
-
-function LabelRegistry:register(raw_label, processed_label)
-    -- Always store the raw to processed mapping
-    self.raw_to_processed[raw_label] = processed_label
-    
-    if self.definitions[processed_label] then
-        Utils.debug("Warning: Duplicate label '" .. processed_label .. "'")
-    else
-        self.definitions[processed_label] = Utils.format_label(processed_label)
-        Utils.debug("Registered: raw='" .. raw_label .. "' processed='" .. processed_label .. 
-                   "' -> '" .. self.definitions[processed_label] .. "'")
-    end
-end
-
-function LabelRegistry:lookup(raw_label)
-    -- First check if it's a known raw label
-    local processed = self.raw_to_processed[raw_label]
-    if processed and self.definitions[processed] then
-        return self.definitions[processed]
-    end
-    
-    -- Check if it's already a processed label
-    if self.definitions[raw_label] then
-        return self.definitions[raw_label]
-    end
-    
-    -- For labels with placeholders, only process if we know the base label exists
-    if raw_label:match(Config.PLACEHOLDER_PATTERN) then
-        local ref_processed = PlaceholderManager:process_label(raw_label)
-        if self.definitions[ref_processed] then
-            return self.definitions[ref_processed]
-        else
-            -- Check if this is a pure expression like (#a)+(#b)
-            -- These are special cases that should be processed
-            if raw_label:match("^%(#[^%)]+%)") or raw_label:match("%+") then
-                -- It's an expression with placeholders
-                return Utils.format_label(ref_processed)
-            else
-                -- It's an undefined label with placeholders - don't process
-                return nil
-            end
-        end
-    end
-    
-    -- Unknown label
+function TextRun.text(inline)
+    if inline.t == 'Str' then return inline.text end
+    if inline.t == 'Space' then return ' ' end
     return nil
 end
 
--- ============================================================================
--- LABEL PARSER
--- Extracts and processes labels from inline content
--- ============================================================================
-
-local LabelParser = {}
-
-function LabelParser.extract_label_from_inlines(inlines)
-    if #inlines == 0 then return nil end
-    
-    -- Concatenate text to handle split labels
-    local text = ""
-    local max_check = math.min(10, #inlines)
-    
-    for i = 1, max_check do
-        local elem = inlines[i]
-        if elem.t == "Str" then
-            text = text .. elem.text
-        elseif elem.t == "Space" then
-            text = text .. " "
-        else
-            break
-        end
-        
-        -- Check for complete label
-        local label = text:match("^" .. Config.SYNTAX_PATTERN)
-        if label then
-            return label
-        end
-    end
-    
-    return nil
-end
-
-function LabelParser.split_by_break(inlines)
-    local groups = {}
-    local current = pandoc.List{}
-    
+function TextRun.prefix(inlines)
+    local parts = {}
     for _, inline in ipairs(inlines) do
-        if inline.t == "SoftBreak" or inline.t == "LineBreak" then
-            if #current > 0 then
-                table.insert(groups, current)
-                current = pandoc.List{}
-            end
-        else
-            current:insert(inline)
-        end
+        local text = TextRun.text(inline)
+        if not text then break end
+        table.insert(parts, text)
     end
-    
-    if #current > 0 then
-        table.insert(groups, current)
-    end
-    
-    return groups
+    return table.concat(parts)
 end
 
--- ============================================================================
--- INLINE PROCESSOR
--- Handles replacement of {::LABEL} patterns in inline content
--- ============================================================================
-
-local InlineProcessor = {}
-
-function InlineProcessor.process_split_label(inlines, start_idx, is_definition, first_in_def)
-    local text = inlines[start_idx].text
-    
-    -- Check if this starts a split label
-    if not (text:match("^{::") and not text:match("}")) then
-        return nil, start_idx
-    end
-    
-    -- Reconstruct the split label
-    local combined = text
-    local end_idx = start_idx
-    
-    for j = start_idx + 1, math.min(#inlines, start_idx + 10) do
-        local elem = inlines[j]
-        if elem.t == "Str" then
-            combined = combined .. elem.text
-            if elem.text:match("}") then
-                end_idx = j
-                break
+-- Keep whole nodes wherever possible, splitting only a Str at a syntax edge.
+function TextRun.slice(inlines, first, last)
+    local result = List{}
+    local offset = 1
+    for _, inline in ipairs(inlines) do
+        local text = TextRun.text(inline)
+        local length = text and #text or 0
+        if offset > last then break end
+        if not text then
+            if offset >= first then result:insert(inline) end
+        elseif offset + length > first then
+            local from = math.max(1, first - offset + 1)
+            local to = math.min(length, last - offset + 1)
+            if from == 1 and to == length then
+                result:insert(inline)
+            elseif to >= from then
+                result:insert(pandoc.Str(text:sub(from, to)))
             end
-        elseif elem.t == "Space" then
-            combined = combined .. " "
-        else
-            break
         end
+        offset = offset + length
     end
-    
-    -- Extract the label if complete
-    local raw_label = combined:match(Config.SYNTAX_PATTERN)
-    if not raw_label then
-        return nil, start_idx
-    end
-    
-    -- Process the label
-    local replacement
-    if is_definition and first_in_def then
-        local processed = LabelRegistry.raw_to_processed[raw_label] or raw_label
-        replacement = Utils.format_label(processed)
-    else
-        replacement = LabelRegistry:lookup(raw_label) or ("{::" .. raw_label .. "}")
-    end
-    
-    -- Handle remaining text after the label
-    local remaining = combined:gsub("^" .. Config.SYNTAX_PATTERN:gsub("%)%}", ")%%}"), "")
-    if remaining ~= "" then
-        replacement = replacement .. remaining
-    end
-    
-    return pandoc.Str(replacement), end_idx
-end
-
-function InlineProcessor.process(inlines, is_definition)
-    local result = pandoc.List{}
-    local first_replaced = false
-    local i = 1
-    
-    while i <= #inlines do
-        local elem = inlines[i]
-        
-        if elem.t == "Str" then
-            -- Try to handle split label
-            local replacement, new_idx = InlineProcessor.process_split_label(
-                inlines, i, is_definition, not first_replaced
-            )
-            
-            if replacement then
-                result:insert(replacement)
-                if is_definition then first_replaced = true end
-                i = new_idx + 1
-            else
-                -- Process normal text with complete labels
-                local new_text = elem.text:gsub(Config.SYNTAX_PATTERN, function(raw_label)
-                    if is_definition and not first_replaced then
-                        first_replaced = true
-                        local processed = LabelRegistry.raw_to_processed[raw_label] or raw_label
-                        return Utils.format_label(processed)
-                    else
-                        local replacement = LabelRegistry:lookup(raw_label)
-                        return replacement or ("{::" .. raw_label .. "}")
-                    end
-                end)
-                
-                result:insert(pandoc.Str(new_text))
-                i = i + 1
-            end
-        else
-            result:insert(elem)
-            i = i + 1
-        end
-    end
-    
     return result
 end
 
--- ============================================================================
--- OUTPUT FORMATTER
--- Generates format-specific output (LaTeX/Word)
--- ============================================================================
+local MarkerParser = {}
+
+function MarkerParser.definition(inlines)
+    local text = TextRun.prefix(inlines)
+    -- Match the complete marker and mandatory following whitespace, exactly as
+    -- CUSTOM_LABEL_LIST does. The body is sliced from the original AST.
+    local start = Whitespace.skip(text, 1)
+    local first, finish, label = text:find(SYNTAX_PATTERN, start)
+    if first ~= start then return nil end
+    local body_start = Whitespace.skip(text, finish + 1)
+    if body_start == finish + 1 then return nil end
+    return { raw = label, body = TextRun.slice(inlines, body_start, math.huge) }
+end
+
+function MarkerParser.lines(inlines)
+    local lines = {}
+    local line = { content = List{}, separator = nil }
+    for _, inline in ipairs(inlines) do
+        if inline.t == 'SoftBreak' or inline.t == 'LineBreak' then
+            table.insert(lines, line)
+            line = { content = List{}, separator = inline }
+        else
+            line.content:insert(inline)
+        end
+    end
+    table.insert(lines, line)
+    return lines
+end
+
+-- The document registry owns all state. Resolving a reference never calls the
+-- allocator, even when its processed text could coincide with a manual label.
+local LabelRegistry = {}
+LabelRegistry.__index = LabelRegistry
+
+function LabelRegistry.new()
+    return setmetatable({ numbers = {}, next_number = 1, raw = {}, bases = {} }, LabelRegistry)
+end
+
+function LabelRegistry:register(label)
+    if self.raw[label] then return end
+    local processed = label:gsub(PLACEHOLDER_PATTERN, function(name)
+        if not self.numbers[name] then
+            self.numbers[name] = self.next_number
+            self.next_number = self.next_number + 1
+        end
+        return tostring(self.numbers[name])
+    end)
+    self.raw[label] = processed
+    self.bases[base_label(processed)] = true
+end
+
+local function is_expression(label)
+    local remainder = label:gsub(PLACEHOLDER_PATTERN, '')
+    -- Equivalent to PURE_EXPRESSION_PATTERN: one optional ASCII letter prefix,
+    -- then whitespace, arithmetic operators, commas, parentheses, primes, digits.
+    return Whitespace.normalize(remainder):match("^[A-Za-z]?[ +%-%*/,()'%d]*$") ~= nil
+end
+
+function LabelRegistry:resolve(label)
+    if self.raw[label] then return self.raw[label] end
+    local known, has_placeholders = true, false
+    local processed = label:gsub(PLACEHOLDER_PATTERN, function(name)
+        has_placeholders = true
+        if not self.numbers[name] then
+            known = false
+            return '(#' .. name .. ')'
+        end
+        return tostring(self.numbers[name])
+    end)
+    if not known then return nil end
+    if has_placeholders and is_expression(label) then return processed end
+    if self.bases[base_label(processed)] then return processed end
+    return nil
+end
+
+local DocumentScanner = {}
+
+function DocumentScanner.scan(blocks, registry)
+    local filter = { traverse = 'topdown' }
+    local function scan_paragraph(block)
+        -- Register line markers before scanning notes on that same line, then
+        -- proceed to the next line. A paragraph-level scan alone would register
+        -- later lines before an earlier footnote, breaking document order.
+        for _, line in ipairs(MarkerParser.lines(block.content)) do
+            local marker = MarkerParser.definition(line.content)
+            if marker then registry:register(marker.raw) end
+            pandoc.Inlines(line.content):walk {
+                traverse = 'topdown',
+                Note = function(note)
+                    pandoc.Pandoc(note.content):walk(filter)
+                    return note, false
+                end,
+            }
+        end
+        return block, false
+    end
+    filter.Para = scan_paragraph
+    filter.Plain = scan_paragraph
+    -- Metadata is not a source of list definitions. Pandoc's walker visits all
+    -- body containers, including table cells, native definitions, and notes.
+    pandoc.Pandoc(blocks):walk(filter)
+end
 
 local OutputFormatter = {}
 
 function OutputFormatter.is_word_format()
-    return FORMAT and (FORMAT:match("docx") or FORMAT:match("odt") or FORMAT:match("rtf"))
+    return FORMAT and (FORMAT:match('docx') or FORMAT:match('odt') or FORMAT:match('rtf'))
 end
 
-function OutputFormatter.create_definition_list_item(label, content)
-    -- Create term
-    local term = pandoc.List{pandoc.Str(Utils.format_label(label))}
-    
-    -- Create definition (skip the label part in content)
-    local def_inlines = pandoc.List{}
-    local label_pattern = "^%(" .. label:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1") .. "%)%s*"
-    local skip_first = true
-    
-    for _, inline in ipairs(content) do
-        if skip_first and inline.t == "Str" then
-            local text = inline.text:gsub(label_pattern, "")
-            if text ~= "" then
-                def_inlines:insert(pandoc.Str(text))
-            end
-            skip_first = false
-        elseif not skip_first then
-            def_inlines:insert(inline)
-        end
+function OutputFormatter.word_item(item, registry)
+    local label = format_label(registry.raw[item.raw])
+    local inlines = List{ pandoc.Strong{ pandoc.Str(label) } }
+    if #item.body > 0 then
+        inlines:insert(pandoc.Str('\t'))
+        inlines:extend(item.body)
     end
-    
-    return {term, {{pandoc.Plain(def_inlines)}}}
+    return pandoc.Para(inlines)
 end
 
-function OutputFormatter.create_word_paragraph(content)
-    -- Extract label for bold formatting
-    local label_text = ""
-    local i = 1
-    
-    while i <= #content and content[i].t == "Str" do
-        label_text = label_text .. content[i].text
-        i = i + 1
-        if i <= #content and content[i].t == "Space" then
-            break
-        end
-    end
-    
-    -- Build paragraph with bold label
-    local result = pandoc.List{pandoc.Strong({pandoc.Str(label_text)})}
-    
-    if i <= #content then
-        result:insert(pandoc.Str("\t"))
-        for j = i + 1, #content do
-            result:insert(content[j])
-        end
-    end
-    
-    return pandoc.Para(result)
+function OutputFormatter.definition_item(item, registry)
+    local term = { pandoc.Str(format_label(registry.raw[item.raw])) }
+    return { term, {{ pandoc.Plain(item.body) }} }
 end
-
--- ============================================================================
--- DOCUMENT SCANNER
--- First pass to identify and register all label definitions
--- ============================================================================
-
-local DocumentScanner = {}
-
-function DocumentScanner.scan(blocks)
-    local example_blocks = {}
-    
-    for i, block in ipairs(blocks) do
-        if block.t == "Para" or block.t == "Plain" then
-            local groups = LabelParser.split_by_break(block.content)
-            local has_examples = false
-            
-            for _, group in ipairs(groups) do
-                local raw_label = LabelParser.extract_label_from_inlines(group)
-                if raw_label then
-                    -- Process and register the label
-                    local processed = PlaceholderManager:process_label(raw_label)
-                    LabelRegistry:register(raw_label, processed)
-                    has_examples = true
-                end
-            end
-            
-            if has_examples then
-                example_blocks[i] = true
-            end
-        end
-    end
-    
-    return example_blocks
-end
-
--- ============================================================================
--- BLOCK TRANSFORMER
--- Second pass to transform blocks with labels and references
--- ============================================================================
 
 local BlockTransformer = {}
 
-function BlockTransformer.process_example_group(group)
-    local raw_label = LabelParser.extract_label_from_inlines(group)
-    if not raw_label then
-        return nil, nil
+function BlockTransformer.paragraph_parts(block)
+    local parts = {}
+    local current = { body = List{} }
+    local has_definition = false
+    for _, line in ipairs(MarkerParser.lines(block.content)) do
+        local marker = MarkerParser.definition(line.content)
+        if marker then
+            if #current.body > 0 or current.raw then table.insert(parts, current) end
+            current = { raw = marker.raw, body = marker.body }
+            has_definition = true
+        else
+            if line.separator then current.body:insert(line.separator) end
+            current.body:extend(line.content)
+        end
     end
-    
-    local processed_label = LabelRegistry.raw_to_processed[raw_label] or raw_label
-    local processed_inlines = InlineProcessor.process(group, true)
-    
-    return processed_inlines, processed_label
+    if #current.body > 0 or current.raw then table.insert(parts, current) end
+    return has_definition and parts or nil
 end
 
-function BlockTransformer.transform(blocks, example_blocks)
-    local new_blocks = pandoc.List{}
-    local definition_items = {}
-    local is_word = OutputFormatter.is_word_format()
-    
-    for i, block in ipairs(blocks) do
-        if example_blocks[i] then
-            -- Process example block
-            local groups = LabelParser.split_by_break(block.content)
-            
-            for _, group in ipairs(groups) do
-                local content, label = BlockTransformer.process_example_group(group)
-                
-                if content and label then
-                    if is_word then
-                        -- Output any pending definition items first
-                        if #definition_items > 0 then
-                            for _, item in ipairs(definition_items) do
-                                new_blocks:insert(OutputFormatter.create_word_paragraph(item))
-                            end
-                            definition_items = {}
-                        end
-                        
-                        -- Create Word paragraph
-                        new_blocks:insert(OutputFormatter.create_word_paragraph(content))
-                    else
-                        -- Accumulate for definition list
-                        table.insert(definition_items, 
-                                   OutputFormatter.create_definition_list_item(label, content))
-                    end
-                end
-            end
+function BlockTransformer.transform(blocks, registry)
+    local result, items = List{}, {}
+    local word = OutputFormatter.is_word_format()
+    local function flush()
+        if #items > 0 then
+            result:insert(pandoc.DefinitionList(items))
+            items = {}
+        end
+    end
+    for _, block in ipairs(blocks) do
+        local parts = (block.t == 'Para' or block.t == 'Plain')
+            and BlockTransformer.paragraph_parts(block)
+        if not parts then
+            flush()
+            result:insert(block)
         else
-            -- Output pending definition list
-            if #definition_items > 0 and not is_word then
-                new_blocks:insert(pandoc.DefinitionList(definition_items))
-                definition_items = {}
-            end
-            
-            -- Process references in regular blocks
-            if block.t == "Para" then
-                new_blocks:insert(pandoc.Para(InlineProcessor.process(block.content, false)))
-            elseif block.t == "Plain" then
-                new_blocks:insert(pandoc.Plain(InlineProcessor.process(block.content, false)))
-            else
-                new_blocks:insert(block)
+            for _, part in ipairs(parts) do
+                if not part.raw then
+                    flush()
+                    result:insert(block.t == 'Plain' and pandoc.Plain(part.body) or pandoc.Para(part.body))
+                elseif word then
+                    result:insert(OutputFormatter.word_item(part, registry))
+                else
+                    table.insert(items, OutputFormatter.definition_item(part, registry))
+                end
             end
         end
     end
-    
-    -- Output any remaining definition items
-    if #definition_items > 0 and not is_word then
-        new_blocks:insert(pandoc.DefinitionList(definition_items))
+    flush()
+    return result
+end
+
+local InlineProcessor = {}
+
+function InlineProcessor.resolve_run(run, registry)
+    local text = TextRun.prefix(run)
+    local result, cursor, search = List{}, 1, 1
+    while true do
+        local first, last, raw = text:find(SYNTAX_PATTERN, search)
+        if not first then break end
+        local label = registry:resolve(raw)
+        if label then
+            result:extend(TextRun.slice(run, cursor, first - 1))
+            result:insert(pandoc.Str(format_label(label)))
+            cursor = last + 1
+        end
+        search = last + 1
     end
-    
-    return new_blocks
+    result:extend(TextRun.slice(run, cursor, math.huge))
+    return result
 end
 
--- ============================================================================
--- MAIN FILTER PIPELINE
--- ============================================================================
-
--- First pass: scan the document and collect all label definitions
-function Pandoc(doc)
-    -- Reset all managers
-    PlaceholderManager:reset()
-    LabelRegistry:reset()
-    
-    -- First pass: scan and register all labels
-    local example_blocks = DocumentScanner.scan(doc.blocks)
-    
-    -- Second pass: transform blocks
-    doc.blocks = BlockTransformer.transform(doc.blocks, example_blocks)
-    
-    return doc
+function InlineProcessor.process(inlines, registry)
+    local result, run = List{}, List{}
+    local function flush()
+        if #run > 0 then
+            result:extend(InlineProcessor.resolve_run(run, registry))
+            run = List{}
+        end
+    end
+    for _, inline in ipairs(inlines) do
+        if TextRun.text(inline) then
+            run:insert(inline)
+        else
+            flush()
+            result:insert(inline)
+        end
+    end
+    flush()
+    return result
 end
 
--- Third pass: process all inline content throughout the document
-function Inlines(inlines)
-    -- Process references in all inline content
-    return InlineProcessor.process(inlines, false)
+local function process_document(doc)
+    local registry = LabelRegistry.new()
+    DocumentScanner.scan(doc.blocks, registry)
+    -- Bottom-up Blocks traversal transforms every original sequence once,
+    -- preserving parent containers and avoiding re-parsing generated bodies.
+    doc.blocks = pandoc.Pandoc(doc.blocks):walk {
+        Blocks = function(blocks) return BlockTransformer.transform(blocks, registry) end,
+    }.blocks
+    return doc:walk {
+        Inlines = function(inlines) return InlineProcessor.process(inlines, registry) end,
+    }
 end
 
--- Return the filter with two passes
-return {
-    {Pandoc = Pandoc},
-    {Inlines = Inlines}
-}
+return {{ Pandoc = process_document }}

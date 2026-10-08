@@ -1090,6 +1090,44 @@ ${luaFilterDir}/CustomLabelList.lua
 
 See [Pandoc variables and Lua filters](pandoc-variables-and-filters.md) for the variable list and filter behavior.
 
+### Custom Label Lua Filter Pipeline
+
+`lua_filter/CustomLabelList.lua` is self-contained so direct CLI use and bundled
+resource deployment use the same implementation. Its stages have distinct
+responsibilities:
+
+1. `TextRun` and `MarkerParser` parse syntax across contiguous `Str`/`Space`
+   nodes without inline-count limits. A shared Unicode whitespace predicate
+   mirrors JavaScript `\s` for markers and expressions. Definitions require line-start markers
+   and following whitespace. Marker extraction returns the raw label and a
+   separate body sliced from the original AST, preserving rich inline nodes.
+2. `DocumentScanner` traverses body containers top-down to register definitions.
+   It scans paragraph lines and their inline notes in order, preventing later
+   lines from allocating numbers before earlier footnotes. Metadata and code
+   do not define labels.
+3. A document-local `LabelRegistry` owns placeholder allocation and exact raw
+   definitions. Only registration mutates numbering. Read-only lookup rejects
+   unknown placeholders, validates the entire expression against the shared
+   TypeScript grammar, and matches prime variants by exact base equality.
+4. `BlockTransformer` uses Pandoc's bottom-up `Blocks` traversal to transform
+   each original block sequence inside its parent. It preserves leading prose,
+   attaches non-marker continuation lines to the current item with their
+   original breaks, and groups adjacent items only within that sequence.
+   `OutputFormatter` receives separate labels and bodies rather than trying to
+   recover a label from already formatted text.
+5. A final `Inlines` walk resolves references everywhere, preserving unmatched
+   nodes, adjacent text, and syntax boundaries. It does not allocate state or
+   perform structural definition detection.
+
+The Lua reference grammar and ASCII prime matching stay aligned with
+`src/shared/utils/placeholderProcessor.ts` and `ListPatterns`. Prime variants
+share an exact base; arbitrary prefixes are never references to longer labels.
+Real-Pandoc integration coverage lives in
+`tests/integration/pandoc/customLabelListFilter.spec.ts`, including HTML container
+topology, document-order numbering, shared-reference parity, content conservation,
+and DOCX/ODT/RTF/LaTeX output. These tests skip when Pandoc is absent, keeping it
+an optional development dependency.
+
 ### Code Standards Summary
 - **File Size**: Maximum 400 lines (split larger files into modules)
 - **Function Size**: Maximum 50 lines (use Extract Method pattern)
